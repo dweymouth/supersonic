@@ -90,13 +90,14 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 		if r.prefetchedPos == len(r.prefetched) {
 			r.prefetched = nil
 			r.prefetchedPos = 0
+			r.pos++
 		}
 		r.pos++
 
 		r.l.CacheAlbum(a)
 		return a
 	}
-	albums, err := r.s.GetAlbumList2(r.listType, map[string]string{"size": "20", "offset": strconv.Itoa(r.pos + 1)})
+	albums, err := r.s.GetAlbumList2(r.listType, map[string]string{"size": "20", "offset": strconv.Itoa(r.pos)})
 	if err != nil {
 		log.Println(err)
 		albums = nil
