@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/yourok/go-mpv/mpv"
+	"github.com/wildeyedskies/go-mpv/mpv"
 )
 
 // Error returned by many Player functions if called before the player has not been initialized.
@@ -332,7 +332,7 @@ func (p *Player) Destroy() {
 	}
 	if p.mpv != nil {
 		p.mpv.Command([]string{"stop"})
-		p.mpv.DetachDestroy()
+		p.mpv.TerminateDestroy()
 		p.mpv = nil
 	}
 }
