@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"image"
 	"log"
 
@@ -39,8 +40,14 @@ type AlbumCard struct {
 	albumID   string
 	title     *widget.Label
 	artist    *widget.Label
-	Cover     *TappableImage
 	container *fyne.Container
+
+	// updated by AlbumGrid
+	Cover *TappableImage
+
+	// these fields are used by AlbumGrid to track async update tasks
+	PrevAlbumID   string
+	ImgLoadCancel context.CancelFunc
 
 	OnTapped func()
 }
