@@ -6,51 +6,43 @@ import (
 	"gomuse/backend"
 	"gomuse/player"
 	"gomuse/ui"
+	"log"
 	"net/http"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"github.com/20after4/configdir"
 	"github.com/dweymouth/go-subsonic"
 )
 
+const appname = "gomuse"
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
+	cachePath := configdir.LocalCache(appname)
+	log.Println(cachePath)
 
-	myApp := app.New()
-	myWindow := myApp.NewWindow("gomuse")
-
-	p := player.NewWithClientName("gomuse")
+	p := player.NewWithClientName(appname)
 	fmt.Println(p.Init())
 
 	s := &subsonic.Client{
 		Client:     &http.Client{},
 		BaseUrl:    "***REMOVED***",
 		User:       "drew",
-		ClientName: "gomuse",
+		ClientName: appname,
 	}
 
 	lm := backend.NewLibraryManager(s)
 	pm := backend.NewPlaybackManager(ctx, s, p)
-	im := backend.NewImageManager(s)
+	im := backend.NewImageManager(s, configdir.LocalCache(appname, "covers"))
 
 	if err := s.Authenticate("***REMOVED***"); err != nil {
 		fmt.Printf("error authenticating: %v\n", err)
 	}
 
-	/*
-		if len(os.Args) > 1 {
-			// search albums by args[1] and load first matching album
-			log.Printf("Searching for %q\n", os.Args[1])
-			if res, err := s.Search3(os.Args[1], map[string]string{}); err == nil {
-				if len(res.Album) > 0 {
-					log.Println("Got album search result")
-					album := res.Album[0]
-					pm.LoadAlbum(album.ID)
-				}
-			}
-		}
-	*/
+	myApp := app.New()
+	myWindow := myApp.NewWindow(appname)
 
 	b := ui.NewBottomPanel(p, pm, im)
 	ag := ui.NewAlbumGrid(lm.RecentlyAddedIter(), pm, im)

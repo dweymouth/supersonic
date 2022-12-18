@@ -64,7 +64,7 @@ func NewAlbumCard() *AlbumCard {
 	a.title.Wrapping = fyne.TextTruncate
 	a.artist.Wrapping = fyne.TextTruncate
 	a.title.TextStyle = fyne.TextStyle{Bold: true}
-	a.Cover.im.SetMinSize(fyne.NewSize(225, 225))
+	a.Cover.im.SetMinSize(fyne.NewSize(200, 200))
 	a.Cover.im.FillMode = canvas.ImageFillContain
 
 	a.createContainer()
