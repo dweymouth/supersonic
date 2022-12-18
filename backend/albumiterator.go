@@ -96,7 +96,7 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 		r.l.CacheAlbum(a)
 		return a
 	}
-	albums, err := r.s.GetAlbumList2(r.listType, map[string]string{"size": "20", "offset": strconv.Itoa(r.pos)})
+	albums, err := r.s.GetAlbumList2(r.listType, map[string]string{"size": "20", "offset": strconv.Itoa(r.pos + 1)})
 	if err != nil {
 		log.Println(err)
 		albums = nil
