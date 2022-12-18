@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"gomuse/backend"
 
 	"fyne.io/fyne/v2"
@@ -41,15 +42,33 @@ func NewAlbumGrid(iter backend.AlbumIterator, pm *backend.PlaybackManager, im *b
 		// update func
 		func(itemID int, obj fyne.CanvasObject) {
 			ac := obj.(*AlbumCard)
-			ac.Update(ag.albums[itemID])
+			album := ag.albums[itemID]
+			if ac.PrevAlbumID == album.ID {
+				// nothing to do
+				return
+			}
+			ac.Update(album)
+			ac.PrevAlbumID = album.ID
 			// TODO: set image to a placeholder before spinning off async fetch
-			go func() {
-				i, err := im.GetAlbumThumbnail(ag.albums[itemID].ID)
-				if err == nil {
-					ac.Cover.SetImage(i)
-					ac.Refresh()
+			// cancel any previous image fetch
+			if ac.ImgLoadCancel != nil {
+				ac.ImgLoadCancel()
+				ac.ImgLoadCancel = nil
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			go func(ctx context.Context) {
+				i, err := im.GetAlbumThumbnail(album.ID)
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					if err == nil {
+						ac.Cover.SetImage(i)
+						ac.Refresh()
+					}
 				}
-			}()
+			}(ctx)
+			ac.ImgLoadCancel = cancel
 
 			// TODO: remove magic number 10
 			if !ag.done && !ag.fetching && itemID > len(ag.albums)-10 {
