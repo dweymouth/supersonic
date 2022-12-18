@@ -6,7 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.2.4
 	github.com/bluele/gcache v0.0.2
 	github.com/dweymouth/go-subsonic v0.0.0-20221214005741-bd8048fa1863
-	github.com/yourok/go-mpv v0.0.0-20160721123233-ecdfd901e332
+	github.com/wildeyedskies/go-mpv v0.0.0-20221204042335-e8961dc66756
 )
 
 require (
