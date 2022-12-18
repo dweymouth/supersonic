@@ -55,68 +55,102 @@ func (t *TrackPosSlider) IsDragging() bool {
 	return t.isDragging
 }
 
+type PlayerControls struct {
+	widget.BaseWidget
+
+	slider         *TrackPosSlider
+	curTimeLabel   *widget.Label
+	totalTimeLabel *widget.Label
+	prev           *widget.Button
+	playpause      *widget.Button
+	next           *widget.Button
+	container      *fyne.Container
+
+	totalTime       float64
+	playbackManager *backend.PlaybackManager
+}
+
+var _ fyne.Widget = (*PlayerControls)(nil)
+
 // NewPlayerControls sets up the seek bar, and transport buttons, and returns the encompassing Container.
-func NewPlayerControls(p *player.Player, pm *backend.PlaybackManager) *fyne.Container {
-	slider := NewTrackPosSlider()
-	curTimeLabel := widget.NewLabel("0:00")
-	totalTimeLabel := widget.NewLabel("0:00")
+func NewPlayerControls(p *player.Player, pm *backend.PlaybackManager) *PlayerControls {
+	pc := &PlayerControls{playbackManager: pm}
+	pc.ExtendBaseWidget(pc)
 
-	c := container.NewBorder(nil, nil, curTimeLabel, totalTimeLabel, slider)
+	pc.slider = NewTrackPosSlider()
+	pc.curTimeLabel = widget.NewLabel("0:00")
+	pc.totalTimeLabel = widget.NewLabel("0:00")
 
-	slider.OnDragEnd = func(f float64) {
+	pc.slider.OnDragEnd = func(f float64) {
 		p.Seek(fmt.Sprintf("%d", int(f*100)), player.SeekAbsolutePercent)
 	}
+	pc.slider.OnChanged = func(f float64) {
+		time := f * pc.totalTime
+		pc.curTimeLabel.SetText(SecondsToTimeString(time))
+	}
 
-	prev := widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {
+	pc.prev = widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {
 		p.SeekBackOrPrevious()
 	})
-	next := widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), func() {
+	pc.next = widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), func() {
 		p.SeekNext()
 	})
-	playpause := widget.NewButtonWithIcon("", theme.MediaPlayIcon(), func() {
+	pc.playpause = widget.NewButtonWithIcon("", theme.MediaPlayIcon(), func() {
 		p.PlayPause()
 	})
 
 	p.OnPaused(func() {
-		playpause.SetIcon(theme.MediaPlayIcon())
+		pc.playpause.SetIcon(theme.MediaPlayIcon())
 	})
 	p.OnPlaying(func() {
-		playpause.SetIcon(theme.MediaPauseIcon())
+		pc.playpause.SetIcon(theme.MediaPauseIcon())
 	})
 	p.OnStopped(func() {
-		playpause.SetIcon(theme.MediaPlayIcon())
+		pc.playpause.SetIcon(theme.MediaPlayIcon())
 	})
 
-	buttons := container.NewHBox(prev, playpause, next)
+	buttons := container.NewHBox(pc.prev, pc.playpause, pc.next)
 	b := container.New(layout.NewCenterLayout(), buttons)
-	content := container.NewVBox(c, b)
+
+	c := container.NewBorder(nil, nil, pc.curTimeLabel, pc.totalTimeLabel, pc.slider)
+	pc.container = container.NewVBox(c, b)
 
 	pm.OnPlayTimeUpdate(func(curTime float64, totalTime float64) {
-		if !pm.IsSeeking() {
-			v := 0.0
-			if totalTime > 0 {
-				v = curTime / totalTime
-			}
-			ct := SecondsToTimeString(curTime)
-			updated := false
-			if ct != curTimeLabel.Text {
-				curTimeLabel.SetText(ct)
-				updated = true
-			}
-			tt := SecondsToTimeString(totalTime)
-			if tt != totalTimeLabel.Text {
-				totalTimeLabel.SetText(tt)
-				updated = true
-			}
-			if !slider.IsDragging() {
-				if totalTime < 210 || updated {
-					// if current track is long, we only need to redraw the slider
-					// when the time label updates, to reduce screen redraws.
-					slider.SetValue(v)
-				}
-			}
-		}
+		pc.doPlayTimeUpdate(curTime, totalTime)
 	})
 
-	return content
+	return pc
+}
+
+func (pc *PlayerControls) doPlayTimeUpdate(curTime, totalTime float64) {
+	pc.totalTime = totalTime
+	if !pc.playbackManager.IsSeeking() {
+		v := 0.0
+		if totalTime > 0 {
+			v = curTime / totalTime
+		}
+
+		updated := false
+		tt := SecondsToTimeString(totalTime)
+		if tt != pc.totalTimeLabel.Text {
+			pc.totalTimeLabel.SetText(tt)
+			updated = true
+		}
+		if !pc.slider.IsDragging() {
+			ct := SecondsToTimeString(curTime)
+			if ct != pc.curTimeLabel.Text {
+				pc.curTimeLabel.SetText(ct)
+				updated = true
+			}
+			if totalTime < 210 || updated {
+				// if current track is long, we only need to redraw the slider
+				// when the time label updates, to reduce screen redraws.
+				pc.slider.SetValue(v)
+			}
+		}
+	}
+}
+
+func (p *PlayerControls) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(p.container)
 }
