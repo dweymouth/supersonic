@@ -64,7 +64,6 @@ func (p *PlaybackManager) NowPlaying() *subsonic.Child {
 	if len(p.playQueue) == 0 || p.player.GetStatus().State == player.Stopped {
 		return nil
 	}
-	// TODO: somehow ran into an index out of range crash here
 	return p.playQueue[p.nowPlayingIdx]
 }
 
@@ -86,6 +85,7 @@ func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool) error {
 	}
 	if !appendToQueue {
 		p.player.Stop()
+		p.nowPlayingIdx = 0
 		p.playQueue = nil
 	}
 	for _, song := range album.Song {
@@ -125,6 +125,8 @@ func (p *PlaybackManager) startPollTimePos() {
 	ctx, cancel := context.WithCancel(p.ctx)
 	p.cancelPollPos = cancel
 	p.pollingTick = time.NewTicker(p.getPollSpeed())
+
+	// TODO: fix occasional nil pointer dereference on app quit
 	go func() {
 		for {
 			select {
