@@ -5,7 +5,7 @@ import (
 	"image"
 	"log"
 
-	"gomuse/ui/layout"
+	"supersonic/ui/layout"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"

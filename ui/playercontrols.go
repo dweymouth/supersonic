@@ -2,8 +2,8 @@ package ui
 
 import (
 	"fmt"
-	"gomuse/backend"
-	"gomuse/player"
+	"supersonic/backend"
+	"supersonic/player"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -67,14 +67,15 @@ type PlayerControls struct {
 	container      *fyne.Container
 
 	totalTime       float64
+	player          *player.Player
 	playbackManager *backend.PlaybackManager
 }
 
 var _ fyne.Widget = (*PlayerControls)(nil)
 
 // NewPlayerControls sets up the seek bar, and transport buttons, and returns the encompassing Container.
-func NewPlayerControls(p *player.Player, pm *backend.PlaybackManager) *PlayerControls {
-	pc := &PlayerControls{playbackManager: pm}
+func NewPlayerControls(p *player.Player) *PlayerControls {
+	pc := &PlayerControls{player: p}
 	pc.ExtendBaseWidget(pc)
 
 	pc.slider = NewTrackPosSlider()
@@ -115,14 +116,19 @@ func NewPlayerControls(p *player.Player, pm *backend.PlaybackManager) *PlayerCon
 	c := container.NewBorder(nil, nil, pc.curTimeLabel, pc.totalTimeLabel, pc.slider)
 	pc.container = container.NewVBox(c, b)
 
-	pm.OnPlayTimeUpdate(func(curTime float64, totalTime float64) {
-		pc.doPlayTimeUpdate(curTime, totalTime)
-	})
-
 	return pc
 }
 
+func (pc *PlayerControls) SetPlaybackManager(pm *backend.PlaybackManager) {
+	pc.playbackManager = pm
+	pm.OnPlayTimeUpdate(func(curTime float64, totalTime float64) {
+		pc.doPlayTimeUpdate(curTime, totalTime)
+	})
+}
+
 func (pc *PlayerControls) doPlayTimeUpdate(curTime, totalTime float64) {
+	// TODO: there is a bug with very long tracks (~20min) where the
+	// curtime label will bounce back and forth +- 1sec (rounding issue?)
 	pc.totalTime = totalTime
 	if !pc.playbackManager.IsSeeking() {
 		v := 0.0
