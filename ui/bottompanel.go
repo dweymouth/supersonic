@@ -1,13 +1,15 @@
 package ui
 
 import (
-	"gomuse/backend"
-	"gomuse/player"
+	"image"
+	"supersonic/backend"
+	"supersonic/player"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic"
 )
 
@@ -48,18 +50,51 @@ func (b *bottomPanelLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
 	}
 }
 
-func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, im *backend.ImageManager) fyne.CanvasObject {
-	n := NewNowPlayingCard()
-	c := NewPlayerControls(p, pm)
+type BottomPanel struct {
+	widget.BaseWidget
 
+	ImageManager *backend.ImageManager
+
+	playbackManager *backend.PlaybackManager
+
+	nowPlaying *NowPlayingCard
+	controls   *PlayerControls
+	container  *fyne.Container
+}
+
+var _ fyne.Widget = (*BottomPanel)(nil)
+
+func NewBottomPanel(p *player.Player) *BottomPanel {
+	bp := &BottomPanel{}
+	bp.ExtendBaseWidget(bp)
+
+	bp.nowPlaying = NewNowPlayingCard()
+	bp.controls = NewPlayerControls(p)
+
+	bp.container = container.New(newBottomPanelLayout(500, bp.nowPlaying, bp.controls, nil), bp.nowPlaying, bp.controls)
+	return bp
+}
+
+func (bp *BottomPanel) SetPlaybackManager(pm *backend.PlaybackManager) {
+	bp.playbackManager = pm
+	bp.controls.SetPlaybackManager(pm)
 	pm.OnSongChange(func(song *subsonic.Child) {
-		if song == nil {
-			n.Update("", "", "", nil)
-		} else {
-			im, _ := im.GetAlbumThumbnail(song.AlbumID)
-			n.Update(song.Title, song.Artist, song.Album, im)
-		}
+		bp.onSongChange(song)
 	})
+}
 
-	return container.New(newBottomPanelLayout(500, n, c, nil), n, c)
+func (bp *BottomPanel) onSongChange(song *subsonic.Child) {
+	if song == nil {
+		bp.nowPlaying.Update("", "", "", nil)
+	} else {
+		var im image.Image
+		if bp.ImageManager != nil {
+			im, _ = bp.ImageManager.GetAlbumThumbnail(song.AlbumID)
+		}
+		bp.nowPlaying.Update(song.Title, song.Artist, song.Album, im)
+	}
+}
+
+func (bp *BottomPanel) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(bp.container)
 }

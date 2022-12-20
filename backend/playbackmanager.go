@@ -2,7 +2,7 @@ package backend
 
 import (
 	"context"
-	"gomuse/player"
+	"supersonic/player"
 	"time"
 
 	subsonic "github.com/dweymouth/go-subsonic"

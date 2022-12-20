@@ -1,17 +1,18 @@
-module gomuse
+module supersonic
 
 go 1.19
 
 require (
 	fyne.io/fyne/v2 v2.2.4
+	github.com/20after4/configdir v0.1.1
 	github.com/bluele/gcache v0.0.2
 	github.com/dweymouth/go-subsonic v0.0.0-20221214005741-bd8048fa1863
+	github.com/pelletier/go-toml v1.9.3
 	github.com/wildeyedskies/go-mpv v0.0.0-20221204042335-e8961dc66756
 )
 
 require (
 	fyne.io/systray v1.10.1-0.20220621085403-9a2652634e93 // indirect
-	github.com/20after4/configdir v0.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v0.0.0-20181227131451-3dcfdacbaaf3 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -39,4 +40,4 @@ require (
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.2.4 => github.com/dweymouth/fyne/v2 v2.2.5-0.20221217035723-f7a791ca52e4
+replace fyne.io/fyne/v2 v2.2.4 => github.com/dweymouth/fyne/v2 v2.2.5-0.20221220015227-bd9b07f93ac4
