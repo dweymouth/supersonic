@@ -32,9 +32,7 @@ func NewPlaybackManager(ctx context.Context, cli *subsonic.Client, p *player.Pla
 		for _, cb := range pm.onSongChange {
 			cb(pm.NowPlaying())
 		}
-		if pm.pollingTick != nil {
-			pm.pollingTick.Reset(pm.getPollSpeed())
-		}
+		pm.doUpdateTimePos()
 	})
 	p.OnSeek(func() {
 		pm.doUpdateTimePos()
@@ -106,25 +104,10 @@ func (p *PlaybackManager) PlayAlbum(albumID string) error {
 	return p.player.PlayFromBeginning()
 }
 
-// depending on the length of the current track, we need to poll
-// faster or less fast to make track position scroll bar look smooth
-func (p *PlaybackManager) getPollSpeed() time.Duration {
-	t := p.player.GetStatus().Duration
-	if t < 30 {
-		return 100 * time.Millisecond
-	} else if t < 90 {
-		return 150 * time.Millisecond
-	} else if t < 120 {
-		return 250 * time.Millisecond
-	} else {
-		return 333 * time.Millisecond
-	}
-}
-
 func (p *PlaybackManager) startPollTimePos() {
 	ctx, cancel := context.WithCancel(p.ctx)
 	p.cancelPollPos = cancel
-	p.pollingTick = time.NewTicker(p.getPollSpeed())
+	p.pollingTick = time.NewTicker(250 * time.Millisecond)
 
 	// TODO: fix occasional nil pointer dereference on app quit
 	go func() {
@@ -152,5 +135,8 @@ func (p *PlaybackManager) stopPollTimePos() {
 	if p.cancelPollPos != nil {
 		p.cancelPollPos()
 		p.cancelPollPos = nil
+	}
+	if p.pollingTick != nil {
+		p.pollingTick.Stop()
 	}
 }

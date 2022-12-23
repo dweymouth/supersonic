@@ -148,9 +148,8 @@ func (pc *PlayerControls) doPlayTimeUpdate(curTime, totalTime float64) {
 				pc.curTimeLabel.SetText(ct)
 				updated = true
 			}
-			if totalTime < 210 || updated {
-				// if current track is long, we only need to redraw the slider
-				// when the time label updates, to reduce screen redraws.
+			if updated {
+				// Only update slider once a second when time label changes
 				pc.slider.SetValue(v)
 			}
 		}
