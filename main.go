@@ -94,7 +94,7 @@ func setupServer(ctx context.Context, myWindow ui.MainWindow, p *player.Player, 
 
 	lm := backend.NewLibraryManager(s)
 	pm := backend.NewPlaybackManager(ctx, s, p)
-	im := backend.NewImageManager(s, configdir.LocalCache(appname, "covers"))
+	im := backend.NewImageManager(s, configdir.LocalCache(appname, server.ID.String(), "covers"))
 	myWindow.BottomPanel.ImageManager = im
 
 	myWindow.BottomPanel.SetPlaybackManager(pm)
