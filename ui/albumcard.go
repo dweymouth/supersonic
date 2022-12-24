@@ -3,35 +3,58 @@ package ui
 import (
 	"context"
 	"image"
-	"log"
 
 	"supersonic/ui/layout"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic"
 )
 
 var _ fyne.Widget = (*AlbumCard)(nil)
 
-var _ fyne.Tappable = (*TappableImage)(nil)
+var _ fyne.Widget = (*albumCover)(nil)
+var _ fyne.Tappable = (*albumCover)(nil)
+var _ fyne.DoubleTappable = (*albumCover)(nil)
 
-type TappableImage struct {
-	im *canvas.Image
+type albumCover struct {
+	widget.BaseWidget
 
-	onTapped func()
+	Im             *canvas.Image
+	OnDoubleTapped func()
+	OnTapped       func()
 }
 
-func (t *TappableImage) Tapped(*fyne.PointEvent) {
-	log.Println("tapped!")
-	t.onTapped()
+func newAlbumCover() *albumCover {
+	a := &albumCover{}
+	a.ExtendBaseWidget(a)
+	a.Im = &canvas.Image{FillMode: canvas.ImageFillContain}
+	a.Im.SetMinSize(fyne.NewSize(200, 200))
+	return a
 }
 
-func (t *TappableImage) SetImage(im image.Image) {
-	t.im.Image = im
-	t.im.Refresh()
+func (a *albumCover) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(a.Im)
+}
+
+func (a *albumCover) DoubleTapped(e *fyne.PointEvent) {
+	if a.OnDoubleTapped != nil {
+		a.OnDoubleTapped()
+	}
+}
+
+func (a *albumCover) Tapped(e *fyne.PointEvent) {
+	if a.OnTapped != nil {
+		a.OnTapped()
+	}
+}
+
+func (a *albumCover) SetImage(im image.Image) {
+	a.Im.Image = im
+	a.Refresh()
 }
 
 type AlbumCard struct {
@@ -43,29 +66,36 @@ type AlbumCard struct {
 	container *fyne.Container
 
 	// updated by AlbumGrid
-	Cover *TappableImage
+	Cover *albumCover
 
 	// these fields are used by AlbumGrid to track async update tasks
 	PrevAlbumID   string
 	ImgLoadCancel context.CancelFunc
 
-	OnTapped func()
+	OnPlay func()
 }
+
+func (a *AlbumCard) MouseIn(*desktop.MouseEvent) {}
+
+func (a *AlbumCard) MouseOut() {}
+
+func (a *AlbumCard) MouseMoved(*desktop.MouseEvent) {}
 
 func NewAlbumCard() *AlbumCard {
 	a := &AlbumCard{
 		title:  widget.NewLabel(""),
 		artist: widget.NewLabel(""),
-		Cover: &TappableImage{
-			im: &canvas.Image{},
-		},
+		Cover:  newAlbumCover(),
 	}
 	a.ExtendBaseWidget(a)
+	a.Cover.OnDoubleTapped = func() {
+		if a.OnPlay != nil {
+			a.OnPlay()
+		}
+	}
 	a.title.Wrapping = fyne.TextTruncate
 	a.artist.Wrapping = fyne.TextTruncate
 	a.title.TextStyle = fyne.TextStyle{Bold: true}
-	a.Cover.im.SetMinSize(fyne.NewSize(200, 200))
-	a.Cover.im.FillMode = canvas.ImageFillContain
 
 	a.createContainer()
 	return a
@@ -73,7 +103,7 @@ func NewAlbumCard() *AlbumCard {
 
 func (a *AlbumCard) createContainer() {
 	titleArtist := container.New(&layout.VboxCustomPadding{ExtraPad: -16}, a.title, a.artist)
-	c := container.New(&layout.VboxCustomPadding{ExtraPad: -5}, a.Cover.im, titleArtist)
+	c := container.New(&layout.VboxCustomPadding{ExtraPad: -5}, a.Cover, titleArtist)
 	pad := &layout.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
 	a.container = container.New(pad, c)
 }
@@ -90,11 +120,4 @@ func (a *AlbumCard) AlbumID() string {
 
 func (a *AlbumCard) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
-	//return widget.NewSimpleRenderer(container.New(&layout.VboxCustomPadding{-10}, a.Cover.im, a.title, a.artist))
-}
-
-func (a *AlbumCard) Tapped(*fyne.PointEvent) {
-	if a.OnTapped != nil {
-		a.OnTapped()
-	}
 }
