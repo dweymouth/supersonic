@@ -36,7 +36,7 @@ func NewAlbumGrid(iter backend.AlbumIterator, pm *backend.PlaybackManager, im *b
 		// create func
 		func() fyne.CanvasObject {
 			ac := NewAlbumCard()
-			ac.OnTapped = func() {
+			ac.OnPlay = func() {
 				pm.PlayAlbum(ac.AlbumID())
 			}
 			return ac
@@ -77,7 +77,6 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 		default:
 			if err == nil {
 				ac.Cover.SetImage(i)
-				ac.Refresh()
 			}
 		}
 	}(ctx)
