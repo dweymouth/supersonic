@@ -1,4 +1,4 @@
-package ui
+package widgets
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/dweymouth/go-subsonic"
 )
 

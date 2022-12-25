@@ -1,9 +1,7 @@
-package ui
+package widgets
 
 import (
-	"fmt"
-	"supersonic/backend"
-	"supersonic/player"
+	"supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -66,49 +64,28 @@ type PlayerControls struct {
 	next           *widget.Button
 	container      *fyne.Container
 
-	totalTime       float64
-	player          *player.Player
-	playbackManager *backend.PlaybackManager
+	totalTime float64
 }
 
 var _ fyne.Widget = (*PlayerControls)(nil)
 
-// NewPlayerControls sets up the seek bar, and transport buttons, and returns the encompassing Container.
-func NewPlayerControls(p *player.Player) *PlayerControls {
-	pc := &PlayerControls{player: p}
+// NewPlayerControls sets up the seek bar, and transport buttons.
+func NewPlayerControls() *PlayerControls {
+	pc := &PlayerControls{}
 	pc.ExtendBaseWidget(pc)
 
 	pc.slider = NewTrackPosSlider()
 	pc.curTimeLabel = widget.NewLabel("0:00")
 	pc.totalTimeLabel = widget.NewLabel("0:00")
 
-	pc.slider.OnDragEnd = func(f float64) {
-		p.Seek(fmt.Sprintf("%d", int(f*100)), player.SeekAbsolutePercent)
-	}
 	pc.slider.OnChanged = func(f float64) {
 		time := f * pc.totalTime
-		pc.curTimeLabel.SetText(SecondsToTimeString(time))
+		pc.curTimeLabel.SetText(util.SecondsToTimeString(time))
 	}
 
-	pc.prev = widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {
-		p.SeekBackOrPrevious()
-	})
-	pc.next = widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), func() {
-		p.SeekNext()
-	})
-	pc.playpause = widget.NewButtonWithIcon("", theme.MediaPlayIcon(), func() {
-		p.PlayPause()
-	})
-
-	p.OnPaused(func() {
-		pc.playpause.SetIcon(theme.MediaPlayIcon())
-	})
-	p.OnPlaying(func() {
-		pc.playpause.SetIcon(theme.MediaPauseIcon())
-	})
-	p.OnStopped(func() {
-		pc.playpause.SetIcon(theme.MediaPlayIcon())
-	})
+	pc.prev = widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {})
+	pc.next = widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), func() {})
+	pc.playpause = widget.NewButtonWithIcon("", theme.MediaPlayIcon(), func() {})
 
 	buttons := container.NewHBox(pc.prev, pc.playpause, pc.next)
 	b := container.New(layout.NewCenterLayout(), buttons)
@@ -119,39 +96,54 @@ func NewPlayerControls(p *player.Player) *PlayerControls {
 	return pc
 }
 
-func (pc *PlayerControls) SetPlaybackManager(pm *backend.PlaybackManager) {
-	pc.playbackManager = pm
-	pm.OnPlayTimeUpdate(func(curTime float64, totalTime float64) {
-		pc.doPlayTimeUpdate(curTime, totalTime)
-	})
+func (pc *PlayerControls) OnSeek(f func(float64)) {
+	pc.slider.OnDragEnd = f
 }
 
-func (pc *PlayerControls) doPlayTimeUpdate(curTime, totalTime float64) {
+func (pc *PlayerControls) OnSeekPrevious(f func()) {
+	pc.prev.OnTapped = f
+}
+
+func (pc *PlayerControls) OnSeekNext(f func()) {
+	pc.next.OnTapped = f
+}
+
+func (pc *PlayerControls) OnPlayPause(f func()) {
+	pc.playpause.OnTapped = f
+}
+
+func (pc *PlayerControls) SetPlaying(playing bool) {
+	if playing {
+		pc.playpause.SetIcon(theme.MediaPauseIcon())
+	} else {
+		pc.playpause.SetIcon(theme.MediaPlayIcon())
+	}
+}
+
+func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 	// TODO: there is a bug with very long tracks (~20min) where the
 	// curtime label will bounce back and forth +- 1sec (rounding issue?)
 	pc.totalTime = totalTime
-	if !pc.playbackManager.IsSeeking() {
-		v := 0.0
-		if totalTime > 0 {
-			v = curTime / totalTime
-		}
+	v := 0.0
+	if totalTime > 0 {
+		v = curTime / totalTime
+	}
 
-		updated := false
-		tt := SecondsToTimeString(totalTime)
-		if tt != pc.totalTimeLabel.Text {
-			pc.totalTimeLabel.SetText(tt)
+	updated := false
+	tt := util.SecondsToTimeString(totalTime)
+	if tt != pc.totalTimeLabel.Text {
+		pc.totalTimeLabel.SetText(tt)
+		updated = true
+	}
+	if !pc.slider.IsDragging() {
+		ct := util.SecondsToTimeString(curTime)
+		if ct != pc.curTimeLabel.Text {
+			pc.curTimeLabel.SetText(ct)
 			updated = true
 		}
-		if !pc.slider.IsDragging() {
-			ct := SecondsToTimeString(curTime)
-			if ct != pc.curTimeLabel.Text {
-				pc.curTimeLabel.SetText(ct)
-				updated = true
-			}
-			if updated {
-				// Only update slider once a second when time label changes
-				pc.slider.SetValue(v)
-			}
+		if updated {
+			// Only update slider once a second when time label changes
+			pc.slider.SetValue(v)
 		}
 	}
 }

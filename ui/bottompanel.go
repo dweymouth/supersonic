@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"fmt"
 	"image"
 	"supersonic/backend"
 	"supersonic/player"
+	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -57,8 +59,8 @@ type BottomPanel struct {
 
 	playbackManager *backend.PlaybackManager
 
-	nowPlaying *NowPlayingCard
-	controls   *PlayerControls
+	nowPlaying *widgets.NowPlayingCard
+	controls   *widgets.PlayerControls
 	container  *fyne.Container
 }
 
@@ -67,9 +69,30 @@ var _ fyne.Widget = (*BottomPanel)(nil)
 func NewBottomPanel(p *player.Player) *BottomPanel {
 	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
+	p.OnPaused(func() {
+		bp.controls.SetPlaying(false)
+	})
+	p.OnPlaying(func() {
+		bp.controls.SetPlaying(true)
+	})
+	p.OnStopped(func() {
+		bp.controls.SetPlaying(false)
+	})
 
-	bp.nowPlaying = NewNowPlayingCard()
-	bp.controls = NewPlayerControls(p)
+	bp.nowPlaying = widgets.NewNowPlayingCard()
+	bp.controls = widgets.NewPlayerControls()
+	bp.controls.OnPlayPause(func() {
+		p.PlayPause()
+	})
+	bp.controls.OnSeekNext(func() {
+		p.SeekNext()
+	})
+	bp.controls.OnSeekPrevious(func() {
+		p.SeekBackOrPrevious()
+	})
+	bp.controls.OnSeek(func(f float64) {
+		p.Seek(fmt.Sprintf("%d", int(f*100)), player.SeekAbsolutePercent)
+	})
 
 	bp.container = container.New(newBottomPanelLayout(500, bp.nowPlaying, bp.controls, nil), bp.nowPlaying, bp.controls)
 	return bp
@@ -77,9 +100,11 @@ func NewBottomPanel(p *player.Player) *BottomPanel {
 
 func (bp *BottomPanel) SetPlaybackManager(pm *backend.PlaybackManager) {
 	bp.playbackManager = pm
-	bp.controls.SetPlaybackManager(pm)
-	pm.OnSongChange(func(song *subsonic.Child) {
-		bp.onSongChange(song)
+	pm.OnSongChange(bp.onSongChange)
+	pm.OnPlayTimeUpdate(func(cur, total float64) {
+		if !pm.IsSeeking() {
+			bp.controls.UpdatePlayTime(cur, total)
+		}
 	})
 }
 

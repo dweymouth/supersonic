@@ -9,6 +9,7 @@ import (
 	"supersonic/backend"
 	"supersonic/player"
 	"supersonic/ui"
+	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -50,7 +51,7 @@ func main() {
 	mainWindow := ui.NewMainWindow(myApp, appname, p)
 
 	if server == nil {
-		d := ui.NewAddServerDialog("Connect to Server")
+		d := widgets.NewAddServerForm("Connect to Server")
 		pop := widget.NewModalPopUp(d, mainWindow.Canvas())
 		d.OnSubmit = func() {
 			pop.Hide()

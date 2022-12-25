@@ -1,4 +1,4 @@
-package ui
+package widgets
 
 import (
 	"fyne.io/fyne/v2"
@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type AddServerDialog struct {
+type AddServerForm struct {
 	widget.BaseWidget
 
 	Nickname string
@@ -20,10 +20,10 @@ type AddServerDialog struct {
 	container *fyne.Container
 }
 
-var _ fyne.Widget = (*AddServerDialog)(nil)
+var _ fyne.Widget = (*AddServerForm)(nil)
 
-func NewAddServerDialog(title string) *AddServerDialog {
-	a := &AddServerDialog{}
+func NewAddServerForm(title string) *AddServerForm {
+	a := &AddServerForm{}
 	a.ExtendBaseWidget(a)
 	titleLabel := widget.NewLabel(title)
 	titleLabel.TextStyle.Bold = true
@@ -59,11 +59,11 @@ func NewAddServerDialog(title string) *AddServerDialog {
 	return a
 }
 
-func (a *AddServerDialog) MinSize() fyne.Size {
+func (a *AddServerForm) MinSize() fyne.Size {
 	a.ExtendBaseWidget(a)
 	return fyne.NewSize(300, a.container.MinSize().Height)
 }
 
-func (a *AddServerDialog) CreateRenderer() fyne.WidgetRenderer {
+func (a *AddServerForm) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }
