@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"supersonic/backend"
+	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -35,7 +36,7 @@ func NewAlbumGrid(iter backend.AlbumIterator, pm *backend.PlaybackManager, im *b
 		},
 		// create func
 		func() fyne.CanvasObject {
-			ac := NewAlbumCard()
+			ac := widgets.NewAlbumCard()
 			ac.OnPlay = func() {
 				pm.PlayAlbum(ac.AlbumID())
 			}
@@ -43,7 +44,7 @@ func NewAlbumGrid(iter backend.AlbumIterator, pm *backend.PlaybackManager, im *b
 		},
 		// update func
 		func(itemID int, obj fyne.CanvasObject) {
-			ac := obj.(*AlbumCard)
+			ac := obj.(*widgets.AlbumCard)
 			ag.doUpdateAlbumCard(itemID, ac)
 		},
 	)
@@ -54,7 +55,7 @@ func NewAlbumGrid(iter backend.AlbumIterator, pm *backend.PlaybackManager, im *b
 	return ag
 }
 
-func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
+func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {
 	album := ag.albums[albumIdx]
 	if ac.PrevAlbumID == album.ID {
 		// nothing to do
