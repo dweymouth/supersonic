@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"image"
 	"supersonic/backend"
 	"supersonic/ui/widgets"
 
@@ -10,23 +11,27 @@ import (
 	"github.com/dweymouth/go-subsonic"
 )
 
+type ImageFetcher func(string) (image.Image, error)
+
 type AlbumGrid struct {
 	widget.BaseWidget
 
-	grid         *widget.GridWrapList
-	albums       []*subsonic.AlbumID3
-	iter         backend.AlbumIterator
-	imageManager *backend.ImageManager
-	fetching     bool
-	done         bool
+	grid     *widget.GridWrapList
+	albums   []*subsonic.AlbumID3
+	iter     backend.AlbumIterator
+	fetching bool
+	done     bool
+
+	imageFetcher func(string) (image.Image, error)
+	OnPlayAlbum  func(string)
 }
 
 var _ fyne.Widget = (*AlbumGrid)(nil)
 
-func NewAlbumGrid(iter backend.AlbumIterator, pm *backend.PlaybackManager, im *backend.ImageManager) *AlbumGrid {
+func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher) *AlbumGrid {
 	ag := &AlbumGrid{
 		iter:         iter,
-		imageManager: im,
+		imageFetcher: fetch,
 	}
 	ag.ExtendBaseWidget(ag)
 
@@ -38,7 +43,9 @@ func NewAlbumGrid(iter backend.AlbumIterator, pm *backend.PlaybackManager, im *b
 		func() fyne.CanvasObject {
 			ac := widgets.NewAlbumCard()
 			ac.OnPlay = func() {
-				pm.PlayAlbum(ac.AlbumID())
+				if ag.OnPlayAlbum != nil {
+					ag.OnPlayAlbum(ac.AlbumID())
+				}
 			}
 			return ac
 		},
@@ -71,7 +78,7 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	go func(ctx context.Context) {
-		i, err := ag.imageManager.GetAlbumThumbnail(album.ID)
+		i, err := ag.imageFetcher(album.ID)
 		select {
 		case <-ctx.Done():
 			return

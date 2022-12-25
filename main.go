@@ -107,7 +107,10 @@ func setupServer(ctx context.Context, myWindow ui.MainWindow, p *player.Player, 
 		myWindow.SetTitle(song.Title)
 	})
 
-	ag := ui.NewAlbumGrid(lm.RecentlyAddedIter(), pm, im)
+	ag := ui.NewAlbumGrid(lm.RecentlyAddedIter(), im.GetAlbumThumbnail)
+	ag.OnPlayAlbum = func(albumID string) {
+		_ = pm.PlayAlbum(albumID)
+	}
 	myWindow.SetContent(container.NewBorder(nil, myWindow.BottomPanel, nil, nil, ag))
 
 }
