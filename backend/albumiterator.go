@@ -14,11 +14,11 @@ type AlbumIterator interface {
 }
 
 type LibraryManager struct {
-	s          *subsonic.Client
+	s          *ServerManager
 	albumCache gcache.Cache
 }
 
-func NewLibraryManager(s *subsonic.Client) *LibraryManager {
+func NewLibraryManager(s *ServerManager) *LibraryManager {
 	cache := gcache.New(250).LRU().Build()
 	return &LibraryManager{
 		s:          s,
@@ -52,7 +52,7 @@ func (l *LibraryManager) GetAlbum(id string) (*subsonic.AlbumID3, error) {
 			return a.(*subsonic.AlbumID3), nil
 		}
 	}
-	a, err := l.s.GetAlbum(id)
+	a, err := l.s.Server.GetAlbum(id)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (l *LibraryManager) newBaseIter(listType string) *baseIter {
 	return &baseIter{
 		listType: listType,
 		l:        l,
-		s:        l.s,
+		s:        l.s.Server,
 	}
 }
 

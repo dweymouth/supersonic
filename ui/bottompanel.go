@@ -59,8 +59,8 @@ type BottomPanel struct {
 
 	playbackManager *backend.PlaybackManager
 
-	nowPlaying *widgets.NowPlayingCard
-	controls   *widgets.PlayerControls
+	NowPlaying *widgets.NowPlayingCard
+	Controls   *widgets.PlayerControls
 	container  *fyne.Container
 }
 
@@ -70,31 +70,31 @@ func NewBottomPanel(p *player.Player) *BottomPanel {
 	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
 	p.OnPaused(func() {
-		bp.controls.SetPlaying(false)
+		bp.Controls.SetPlaying(false)
 	})
 	p.OnPlaying(func() {
-		bp.controls.SetPlaying(true)
+		bp.Controls.SetPlaying(true)
 	})
 	p.OnStopped(func() {
-		bp.controls.SetPlaying(false)
+		bp.Controls.SetPlaying(false)
 	})
 
-	bp.nowPlaying = widgets.NewNowPlayingCard()
-	bp.controls = widgets.NewPlayerControls()
-	bp.controls.OnPlayPause(func() {
+	bp.NowPlaying = widgets.NewNowPlayingCard()
+	bp.Controls = widgets.NewPlayerControls()
+	bp.Controls.OnPlayPause(func() {
 		p.PlayPause()
 	})
-	bp.controls.OnSeekNext(func() {
+	bp.Controls.OnSeekNext(func() {
 		p.SeekNext()
 	})
-	bp.controls.OnSeekPrevious(func() {
+	bp.Controls.OnSeekPrevious(func() {
 		p.SeekBackOrPrevious()
 	})
-	bp.controls.OnSeek(func(f float64) {
+	bp.Controls.OnSeek(func(f float64) {
 		p.Seek(fmt.Sprintf("%d", int(f*100)), player.SeekAbsolutePercent)
 	})
 
-	bp.container = container.New(newBottomPanelLayout(500, bp.nowPlaying, bp.controls, nil), bp.nowPlaying, bp.controls)
+	bp.container = container.New(newBottomPanelLayout(500, bp.NowPlaying, bp.Controls, nil), bp.NowPlaying, bp.Controls)
 	return bp
 }
 
@@ -103,20 +103,20 @@ func (bp *BottomPanel) SetPlaybackManager(pm *backend.PlaybackManager) {
 	pm.OnSongChange(bp.onSongChange)
 	pm.OnPlayTimeUpdate(func(cur, total float64) {
 		if !pm.IsSeeking() {
-			bp.controls.UpdatePlayTime(cur, total)
+			bp.Controls.UpdatePlayTime(cur, total)
 		}
 	})
 }
 
 func (bp *BottomPanel) onSongChange(song *subsonic.Child) {
 	if song == nil {
-		bp.nowPlaying.Update("", "", "", nil)
+		bp.NowPlaying.Update("", "", "", nil)
 	} else {
 		var im image.Image
 		if bp.ImageManager != nil {
 			im, _ = bp.ImageManager.GetAlbumThumbnail(song.AlbumID)
 		}
-		bp.nowPlaying.Update(song.Title, song.Artist, song.Album, im)
+		bp.NowPlaying.Update(song.Title, song.Artist, song.Album, im)
 	}
 }
 

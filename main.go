@@ -1,21 +1,13 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
-	"net/http"
 	"path"
 	"supersonic/backend"
-	"supersonic/player"
 	"supersonic/ui"
-	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
 	"github.com/20after4/configdir"
-	"github.com/dweymouth/go-subsonic"
 	"github.com/zalando/go-keyring"
 )
 
@@ -29,88 +21,43 @@ func configPath() string {
 }
 
 func main() {
-	// TODO: organize this whole file better. Move some stuff to mainwindow?
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	p := player.NewWithClientName(appname)
-	if err := p.Init(); err != nil {
-		log.Fatalf("failed to initialize mpv player: %s", err.Error())
-	}
-
-	configdir.MakePath(configdir.LocalConfig(appname))
-
-	cfg, err := backend.ReadConfigFile(configPath())
+	myApp, err := backend.StartupApp()
 	if err != nil {
-		log.Printf("Error reading app config file: %v", err)
-		cfg = backend.DefaultConfig()
+		log.Fatalf("fatal startup error: %v", err.Error())
 	}
-	server := cfg.GetDefaultServer()
 
-	myApp := app.New()
-	mainWindow := ui.NewMainWindow(myApp, appname, p)
-
-	if server == nil {
-		d := widgets.NewAddServerForm("Connect to Server")
-		pop := widget.NewModalPopUp(d, mainWindow.Canvas())
-		d.OnSubmit = func() {
-			pop.Hide()
-			server = cfg.AddServer(d.Nickname, d.Host, d.Username)
-			err := keyring.Set(appname, server.ID.String(), d.Password)
+	fyneApp := app.New()
+	mainWindow := ui.NewMainWindow(fyneApp, appname, myApp)
+	defaultServer := myApp.Config.GetDefaultServer()
+	if defaultServer == nil {
+		mainWindow.PromptForFirstServer(func(nick, host, user, pass string) {
+			server := myApp.Config.AddServer(nick, host, user)
+			err := keyring.Set(appname, server.ID.String(), pass)
 			if err != nil {
 				log.Printf("error setting keyring credentials: %v", err)
+				// TODO: handle?
 			}
-			setupServer(ctx, mainWindow, p, server)
-		}
-		pop.Show()
+			setupServer(myApp, server)
+		})
 	} else {
-		setupServer(ctx, mainWindow, p, server)
+		setupServer(myApp, defaultServer)
 	}
 
 	mainWindow.Show()
-	myApp.Run()
-	cfg.WriteConfigFile(configPath())
+	fyneApp.Run()
 
-	cancel()
-	p.Destroy()
+	myApp.Config.WriteConfigFile(configPath())
+	myApp.Shutdown()
+
 }
 
-func setupServer(ctx context.Context, myWindow ui.MainWindow, p *player.Player, server *backend.ServerConfig) {
+func setupServer(app *backend.App, server *backend.ServerConfig) {
 	pass, err := keyring.Get(appname, server.ID.String())
 	if err != nil {
-		log.Printf("error reading keyring credentials: %v", err)
+		log.Printf("error getting password from keyring: %v", err)
 	}
-
-	s := &subsonic.Client{
-		Client:     &http.Client{},
-		BaseUrl:    server.Hostname,
-		User:       server.Username,
-		ClientName: appname,
+	if err := app.ServerManager.ConnectToServer(server, pass); err != nil {
+		log.Printf("error connecting to server: %v", err)
+		// TODO: surface error to user
 	}
-
-	if err := s.Authenticate(pass); err != nil {
-		// TODO: error dialog
-		fmt.Printf("error authenticating: %v\n", err)
-	}
-
-	lm := backend.NewLibraryManager(s)
-	pm := backend.NewPlaybackManager(ctx, s, p)
-	im := backend.NewImageManager(s, configdir.LocalCache(appname, server.ID.String(), "covers"))
-	myWindow.BottomPanel.ImageManager = im
-
-	myWindow.BottomPanel.SetPlaybackManager(pm)
-	pm.OnSongChange(func(song *subsonic.Child) {
-		if song == nil {
-			myWindow.SetTitle("gomuse")
-			return
-		}
-		myWindow.SetTitle(song.Title)
-	})
-
-	ag := ui.NewAlbumGrid(lm.RecentlyAddedIter(), im.GetAlbumThumbnail)
-	ag.OnPlayAlbum = func(albumID string) {
-		_ = pm.PlayAlbum(albumID)
-	}
-	myWindow.SetContent(container.NewBorder(nil, myWindow.BottomPanel, nil, nil, ag))
-
 }
