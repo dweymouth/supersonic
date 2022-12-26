@@ -6,6 +6,7 @@ import (
 	"image/jpeg"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/20after4/configdir"
@@ -40,8 +41,8 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	}
 
 	// on disc cache
-	path := filepath.Join(i.coverCacheDir(), fmt.Sprintf("%s.jpg", albumID))
-	if i.coverCacheDir() != "" {
+	path := filepath.Join(i.ensureCoverCacheDir(), fmt.Sprintf("%s.jpg", albumID))
+	if i.ensureCoverCacheDir() != "" {
 		if _, err := os.Stat(path); err == nil {
 			// serve image from on-disc cache
 			// TODO: image may have changed on server.
@@ -61,7 +62,7 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	if i.coverCacheDir() != "" {
+	if i.ensureCoverCacheDir() != "" {
 		if f, err := os.Create(path); err == nil {
 			defer f.Close()
 			if err := jpeg.Encode(f, img, nil /*options*/); err != nil {
@@ -73,6 +74,8 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	return img, nil
 }
 
-func (i *ImageManager) coverCacheDir() string {
-	return configdir.LocalCache(i.baseCacheDir, i.s.ServerID.String(), "covers")
+func (i *ImageManager) ensureCoverCacheDir() string {
+	path := path.Join(i.baseCacheDir, i.s.ServerID.String(), "covers")
+	configdir.MakePath(path)
+	return path
 }
