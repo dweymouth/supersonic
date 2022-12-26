@@ -12,7 +12,7 @@ type PlaybackManager struct {
 	ctx           context.Context
 	cancelPollPos context.CancelFunc
 	pollingTick   *time.Ticker
-	client        *subsonic.Client
+	sm            *ServerManager
 	player        *player.Player
 
 	playQueue        []*subsonic.Child
@@ -21,10 +21,10 @@ type PlaybackManager struct {
 	onPlayTimeUpdate []func(float64, float64)
 }
 
-func NewPlaybackManager(ctx context.Context, cli *subsonic.Client, p *player.Player) *PlaybackManager {
+func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player) *PlaybackManager {
 	pm := &PlaybackManager{
 		ctx:    ctx,
-		client: cli,
+		sm:     s,
 		player: p,
 	}
 	p.OnTrackChange(func(tracknum int64) {
@@ -77,7 +77,7 @@ func (p *PlaybackManager) OnPlayTimeUpdate(cb func(float64, float64)) {
 
 // Loads the specified album into the play queue.
 func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool) error {
-	album, err := p.client.GetAlbum(albumID)
+	album, err := p.sm.Server.GetAlbum(albumID)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool) error {
 		p.playQueue = nil
 	}
 	for _, song := range album.Song {
-		url, err := p.client.GetStreamURL(song.ID, map[string]string{})
+		url, err := p.sm.Server.GetStreamURL(song.ID, map[string]string{})
 		if err != nil {
 			return err
 		}

@@ -22,7 +22,7 @@ type AlbumGrid struct {
 	fetching bool
 	done     bool
 
-	imageFetcher func(string) (image.Image, error)
+	imageFetcher ImageFetcher
 	OnPlayAlbum  func(string)
 }
 

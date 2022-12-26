@@ -10,24 +10,23 @@ import (
 
 	"github.com/20after4/configdir"
 	"github.com/bluele/gcache"
-	subsonic "github.com/dweymouth/go-subsonic"
 )
 
 type ImageManager struct {
-	s              *subsonic.Client
-	cacheDir       string
+	s              *ServerManager
+	baseCacheDir   string
 	thumbnailCache gcache.Cache
 }
 
-func NewImageManager(s *subsonic.Client, cacheDir string) *ImageManager {
+func NewImageManager(s *ServerManager, baseCacheDir string) *ImageManager {
 	cache := gcache.New(100).LRU().Build()
-	if err := configdir.MakePath(cacheDir); err != nil {
+	if err := configdir.MakePath(baseCacheDir); err != nil {
 		log.Println("failed to create album cover cache dir")
-		cacheDir = ""
+		baseCacheDir = ""
 	}
 	return &ImageManager{
 		s:              s,
-		cacheDir:       cacheDir,
+		baseCacheDir:   baseCacheDir,
 		thumbnailCache: cache,
 	}
 }
@@ -41,8 +40,8 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	}
 
 	// on disc cache
-	path := filepath.Join(i.cacheDir, fmt.Sprintf("%s.jpg", albumID))
-	if i.cacheDir != "" {
+	path := filepath.Join(i.coverCacheDir(), fmt.Sprintf("%s.jpg", albumID))
+	if i.coverCacheDir() != "" {
 		if _, err := os.Stat(path); err == nil {
 			// serve image from on-disc cache
 			// TODO: image may have changed on server.
@@ -58,11 +57,11 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	}
 
 	// fetch from server
-	img, err := i.s.GetCoverArt(albumID, map[string]string{"size": "300"})
+	img, err := i.s.Server.GetCoverArt(albumID, map[string]string{"size": "300"})
 	if err != nil {
 		return nil, err
 	}
-	if i.cacheDir != "" {
+	if i.coverCacheDir() != "" {
 		if f, err := os.Create(path); err == nil {
 			defer f.Close()
 			if err := jpeg.Encode(f, img, nil /*options*/); err != nil {
@@ -72,4 +71,8 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	}
 	i.thumbnailCache.Set(albumID, img)
 	return img, nil
+}
+
+func (i *ImageManager) coverCacheDir() string {
+	return configdir.LocalCache(i.baseCacheDir, i.s.ServerID.String(), "covers")
 }
