@@ -42,6 +42,10 @@ func (l *LibraryManager) FrequentlyPlayedIter() AlbumIterator {
 	return l.newBaseIter("frequent")
 }
 
+func (l *LibraryManager) SearchIter(query string) AlbumIterator {
+	return l.newSearchIter(query)
+}
+
 func (l *LibraryManager) CacheAlbum(a *subsonic.AlbumID3) {
 	l.albumCache.Set(a.ID, a)
 }
@@ -77,8 +81,6 @@ func (l *LibraryManager) newBaseIter(listType string) *baseIter {
 		s:        l.s.Server,
 	}
 }
-
-// TODO: figure out why the iterator sometimes returns an album twice
 
 func (r *baseIter) Next() *subsonic.AlbumID3 {
 	if r.done {
@@ -127,4 +129,110 @@ func (r *baseIter) NextN(n int, cb func(*subsonic.AlbumID3)) {
 			}
 		}
 	}()
+}
+
+type searchIter struct {
+	query         string
+	artistOffset  int
+	albumOffset   int
+	songOffset    int
+	l             *LibraryManager
+	s             *subsonic.Client
+	prefetched    []*subsonic.AlbumID3
+	prefetchedPos int
+	albumIDset    map[string]bool
+	done          bool
+}
+
+func (l *LibraryManager) newSearchIter(query string) *searchIter {
+	return &searchIter{
+		query: query,
+		l:     l,
+		s:     l.s.Server,
+	}
+}
+
+func (s *searchIter) Next() *subsonic.AlbumID3 {
+	if s.done {
+		return nil
+	}
+
+	// prefetch more search results from server
+	if s.prefetched == nil {
+		searchOpts := map[string]string{
+			"artistOffset": strconv.Itoa(s.artistOffset),
+			"albumOffset":  strconv.Itoa(s.albumOffset),
+			"songOffset":   strconv.Itoa(s.songOffset),
+		}
+		results, err := s.s.Search3(s.query, searchOpts)
+		if err != nil {
+			log.Println(err)
+			results = nil
+		}
+		if results == nil || len(results.Album)+len(results.Artist)+len(results.Song) == 0 {
+			s.done = true
+			return nil
+		}
+
+		// add results from albums search
+		s.addNewAlbums(results.Album)
+		s.albumOffset += len(results.Album)
+
+		// add results from artists search
+		for _, artist := range results.Artist {
+			artist, err := s.s.GetArtist(artist.ID)
+			if err != nil {
+				log.Printf("error fetching artist: %s", err.Error())
+			}
+			s.addNewAlbums(artist.Album)
+		}
+		s.artistOffset += len(results.Artist)
+
+		// add results from songs search
+		for _, song := range results.Song {
+			album, err := s.s.GetAlbum(song.Parent)
+			if err != nil {
+				log.Printf("error fetching album: %s", err.Error())
+			}
+			s.addNewAlbums([]*subsonic.AlbumID3{album})
+		}
+		s.songOffset += len(results.Song)
+	}
+
+	// return from prefetched results
+	if len(s.prefetched) > 0 {
+		a := s.prefetched[s.prefetchedPos]
+		s.prefetchedPos++
+		if s.prefetchedPos == len(s.prefetched) {
+			s.prefetched = nil
+			s.prefetchedPos = 0
+		}
+
+		s.l.CacheAlbum(a)
+		return a
+	}
+
+	return nil
+}
+
+func (s *searchIter) NextN(n int, cb func(*subsonic.AlbumID3)) {
+	go func() {
+		for i := 0; i < n; i++ {
+			a := s.Next()
+			cb(a)
+			if a == nil {
+				break
+			}
+		}
+	}()
+}
+
+func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
+	for _, album := range al {
+		if _, have := s.albumIDset[album.ID]; have {
+			continue
+		}
+		s.prefetched = append(s.prefetched, album)
+		s.albumIDset[album.ID] = true
+	}
 }
