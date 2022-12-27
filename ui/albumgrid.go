@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"image"
 	"supersonic/backend"
 	"supersonic/ui/widgets"
@@ -84,7 +85,9 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {
 			return
 		default:
 			if err == nil {
+				fmt.Println("setting image")
 				ac.Cover.SetImage(i)
+				ag.Refresh()
 			}
 		}
 	}(ctx)
