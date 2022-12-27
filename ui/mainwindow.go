@@ -6,7 +6,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic"
 )
@@ -14,18 +13,22 @@ import (
 type MainWindow struct {
 	Window fyne.Window
 
-	BottomPanel *BottomPanel
+	BrowsingPane *BrowsingPane
+	BottomPanel  *BottomPanel
+
+	container *fyne.Container
 }
 
 func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindow {
 	m := MainWindow{
-		Window:      fyneApp.NewWindow(appName),
-		BottomPanel: NewBottomPanel(app.Player),
+		Window:       fyneApp.NewWindow(appName),
+		BrowsingPane: NewBrowsingPane(),
+		BottomPanel:  NewBottomPanel(app.Player),
 	}
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager
-	c := container.NewBorder(nil, m.BottomPanel, nil, nil, &layout.Spacer{})
-	m.Window.SetContent(c)
+	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
+	m.Window.SetContent(m.container)
 	m.Window.Resize(fyne.NewSize(1000, 800))
 	app.PlaybackManager.OnSongChange(func(song *subsonic.Child) {
 		if song == nil {
@@ -35,11 +38,11 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 		m.Window.SetTitle(song.Title)
 	})
 	app.ServerManager.OnServerConnected(func() {
-		ag := NewAlbumGrid(app.LibraryManager.RecentlyAddedIter(), app.ImageManager.GetAlbumThumbnail)
-		ag.OnPlayAlbum = func(albumID string) {
+		ap := NewAlbumsPage("Albums", app.LibraryManager, app.ImageManager)
+		ap.OnPlayAlbum = func(albumID string) {
 			_ = app.PlaybackManager.PlayAlbum(albumID)
 		}
-		m.Window.SetContent(container.NewBorder(nil, m.BottomPanel, nil, nil, ag))
+		m.BrowsingPane.SetPage(ap)
 	})
 	return m
 }
