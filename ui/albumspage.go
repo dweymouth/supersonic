@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"log"
 	"supersonic/backend"
 
 	"fyne.io/fyne/v2"
@@ -29,11 +28,7 @@ func NewAlbumsPage(title string, lm *backend.LibraryManager, im *backend.ImageMa
 	}
 	a.ExtendBaseWidget(a)
 	a.grid = NewAlbumGrid(lm.RecentlyAddedIter(), im.GetAlbumThumbnail)
-	a.grid.OnPlayAlbum = func(id string) {
-		if a.OnPlayAlbum != nil {
-			a.OnPlayAlbum(id)
-		}
-	}
+	a.grid.OnPlayAlbum = a.onPlayAlbum
 	a.gridContainer = container.NewMax(a.grid)
 	return a
 }
@@ -45,10 +40,16 @@ func (a *AlbumsPage) OnSearched(query string) {
 		a.Refresh()
 		return
 	}
-	log.Printf("searched %s", query)
 	a.searchGrid = NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail)
+	a.searchGrid.OnPlayAlbum = a.onPlayAlbum
 	a.gridContainer.Objects[0] = a.searchGrid
 	a.Refresh()
+}
+
+func (a *AlbumsPage) onPlayAlbum(albumID string) {
+	if a.OnPlayAlbum != nil {
+		a.OnPlayAlbum(albumID)
+	}
 }
 
 func (a *AlbumsPage) CreateRenderer() fyne.WidgetRenderer {
