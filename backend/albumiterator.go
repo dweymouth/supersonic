@@ -146,9 +146,10 @@ type searchIter struct {
 
 func (l *LibraryManager) newSearchIter(query string) *searchIter {
 	return &searchIter{
-		query: query,
-		l:     l,
-		s:     l.s.Server,
+		query:      query,
+		l:          l,
+		s:          l.s.Server,
+		albumIDset: make(map[string]bool),
 	}
 }
 

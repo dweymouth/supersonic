@@ -85,6 +85,7 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {
 		default:
 			if err == nil {
 				ac.Cover.SetImage(i)
+				ag.Refresh()
 			}
 		}
 	}(ctx)
@@ -112,6 +113,7 @@ func (a *AlbumGrid) fetchMoreAlbums(count int) {
 		if i == count {
 			a.fetching = false
 		}
+		a.Refresh()
 	})
 }
 
