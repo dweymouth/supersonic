@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -24,6 +25,7 @@ type BrowsingPane struct {
 
 	searchBar           *searchField
 	searchTimer         *time.Timer
+	searchTimerLock     sync.Mutex
 	cancelPendingSearch context.CancelFunc
 	curPage             Page
 
@@ -138,9 +140,12 @@ func (b *BrowsingPane) onSearchTextChanged(text string) {
 	if text == "" {
 		if b.cancelPendingSearch != nil {
 			b.cancelPendingSearch()
+			b.cancelPendingSearch = nil
 		}
 		b.sendSearch("")
 	}
+	b.searchTimerLock.Lock()
+	defer b.searchTimerLock.Unlock()
 	if b.searchTimer == nil {
 		ctx, cancel := context.WithCancel(context.Background())
 		b.cancelPendingSearch = cancel
@@ -148,9 +153,13 @@ func (b *BrowsingPane) onSearchTextChanged(text string) {
 		go func(ctx context.Context, trigger <-chan time.Time) {
 			select {
 			case <-ctx.Done():
+				b.searchTimerLock.Lock()
+				defer b.searchTimerLock.Unlock()
 				b.searchTimer = nil
 			case <-trigger:
 				b.sendSearch(b.searchBar.Text)
+				b.searchTimerLock.Lock()
+				defer b.searchTimerLock.Unlock()
 				b.searchTimer = nil
 			}
 		}(ctx, b.searchTimer.C)
