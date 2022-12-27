@@ -13,3 +13,17 @@ recently added, and double-clicking an album plays that album.
 
 ### Build
 * ``go build .``
+
+## Build (Mac OS)
+
+### Install dependencies
+* install go
+* install Xcode command-line tools (``xcode-select --install``)
+* install libmpv (``brew install mpv``)
+
+### Build
+* Make sure header and library include paths include the dir in which homebrew installs headers/dylibs (may differ dep. on OS/Homebrew version)
+  - ``export C_INCLUDE_PATH=/opt/homebrew/include:$C_INCLUDE_PATH``
+  - ``export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH``
+
+* ``go build .``
