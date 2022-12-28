@@ -24,8 +24,9 @@ type BrowsingPane struct {
 	widget.BaseWidget
 
 	searchBar           *searchField
-	searchTimer         *time.Timer
-	searchTimerLock     sync.Mutex
+	pendingSearchLock   sync.Mutex
+	pendingSearch       bool
+	searchGoroutine     bool
 	cancelPendingSearch context.CancelFunc
 	curPage             Page
 
@@ -138,33 +139,37 @@ func (b *BrowsingPane) SetPage(p Page) {
 
 func (b *BrowsingPane) onSearchTextChanged(text string) {
 	if text == "" {
-		if b.cancelPendingSearch != nil {
-			b.cancelPendingSearch()
-			b.cancelPendingSearch = nil
-		}
 		b.sendSearch("")
+		return
 	}
-	b.searchTimerLock.Lock()
-	defer b.searchTimerLock.Unlock()
-	if b.searchTimer == nil {
-		ctx, cancel := context.WithCancel(context.Background())
-		b.cancelPendingSearch = cancel
-		b.searchTimer = time.NewTimer(200 * time.Millisecond)
-		go func(ctx context.Context, trigger <-chan time.Time) {
-			select {
-			case <-ctx.Done():
-				b.searchTimerLock.Lock()
-				defer b.searchTimerLock.Unlock()
-				b.searchTimer = nil
-			case <-trigger:
+	b.pendingSearchLock.Lock()
+	defer b.pendingSearchLock.Unlock()
+	b.pendingSearch = true
+	if !b.searchGoroutine {
+		go b.waitAndSearch()
+		b.searchGoroutine = true
+	}
+}
+
+func (b *BrowsingPane) waitAndSearch() {
+	t := time.NewTicker(200 * time.Millisecond)
+	var getReadyToSearch bool
+	var done bool
+	for !done {
+		select {
+		case <-t.C:
+			b.pendingSearchLock.Lock()
+			if b.pendingSearch {
+				getReadyToSearch = true
+				b.pendingSearch = false
+			} else if getReadyToSearch {
 				b.sendSearch(b.searchBar.Text)
-				b.searchTimerLock.Lock()
-				defer b.searchTimerLock.Unlock()
-				b.searchTimer = nil
+				t.Stop()
+				b.searchGoroutine = false
+				done = true
 			}
-		}(ctx, b.searchTimer.C)
-	} else {
-		b.resetSearchTimer(200 * time.Millisecond)
+			b.pendingSearchLock.Unlock()
+		}
 	}
 }
 
@@ -176,14 +181,4 @@ func (b *BrowsingPane) sendSearch(query string) {
 
 func (b *BrowsingPane) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(b.container)
-}
-
-func (b *BrowsingPane) resetSearchTimer(d time.Duration) {
-	if b.searchTimer == nil {
-		return
-	}
-	if !b.searchTimer.Stop() {
-		<-b.searchTimer.C
-	}
-	b.searchTimer.Reset(d)
 }
