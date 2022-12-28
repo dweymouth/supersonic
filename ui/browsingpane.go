@@ -1,14 +1,13 @@
 package ui
 
 import (
-	"context"
+	"supersonic/ui/widgets"
 	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -23,33 +22,17 @@ type Searchable interface {
 type BrowsingPane struct {
 	widget.BaseWidget
 
-	searchBar           *searchField
-	pendingSearchLock   sync.Mutex
-	pendingSearch       bool
-	searchGoroutine     bool
-	cancelPendingSearch context.CancelFunc
-	curPage             Page
+	searchBar         *widgets.SearchEntry
+	pendingSearchLock sync.Mutex
+	pendingSearch     bool
+	searchGoroutine   bool
+	curPage           Page
 
-	container    *fyne.Container
-	pageContaner *fyne.Container
+	container *fyne.Container
 }
 
 type blankPage struct {
 	widget.Separator
-}
-
-type searchField struct {
-	widget.Entry
-	height        float32
-	OnTextChanged func(string)
-}
-
-var _ fyne.Tappable = (*clearTextButton)(nil)
-
-type clearTextButton struct {
-	widget.Icon
-
-	OnTapped func()
 }
 
 type hspace struct {
@@ -72,68 +55,21 @@ func (h *hspace) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(layout.NewSpacer())
 }
 
-func NewClearTextButton() *clearTextButton {
-	c := &clearTextButton{}
-	c.ExtendBaseWidget(c)
-	c.Resource = theme.SearchIcon()
-	return c
-}
-
-func (c *clearTextButton) Tapped(*fyne.PointEvent) {
-	if c.OnTapped != nil {
-		c.OnTapped()
-	}
-}
-
-func NewSearchField() *searchField {
-	sf := &searchField{}
-	sf.ExtendBaseWidget(sf)
-	// this is a bit hacky
-	sf.height = widget.NewEntry().MinSize().Height
-	sf.PlaceHolder = "Search"
-	c := NewClearTextButton()
-	c.OnTapped = func() {
-		sf.SetText("")
-	}
-	sf.ActionItem = c
-	sf.OnChanged = func(s string) {
-		if s == "" {
-			c.Resource = theme.SearchIcon()
-		} else {
-			c.Resource = theme.ContentClearIcon()
-		}
-		c.Refresh()
-		if sf.OnTextChanged != nil {
-			sf.OnTextChanged(s)
-		}
-	}
-	return sf
-}
-
-func (s *searchField) MinSize() fyne.Size {
-	return fyne.NewSize(200, s.height)
-}
-
 func NewBrowsingPane() *BrowsingPane {
 	b := &BrowsingPane{}
 	b.ExtendBaseWidget(b)
-	b.searchBar = NewSearchField()
+	b.searchBar = widgets.NewSearchEntry()
 	b.searchBar.OnTextChanged = b.onSearchTextChanged
 	b.curPage = &blankPage{}
-	b.pageContaner = container.NewMax(b.curPage)
 	b.container = container.NewBorder(
 		container.NewHBox(newHSpace(15), b.searchBar),
-		nil, nil, nil, b.pageContaner)
+		nil, nil, nil, b.curPage)
 	return b
 }
 
 func (b *BrowsingPane) SetPage(p Page) {
-	if b.cancelPendingSearch != nil {
-		b.cancelPendingSearch()
-		b.cancelPendingSearch = nil
-	}
 	b.curPage = p
-	b.pageContaner.Objects[0] = p
+	b.container.Objects[0] = p
 	b.Refresh()
 }
 
@@ -156,20 +92,18 @@ func (b *BrowsingPane) waitAndSearch() {
 	var getReadyToSearch bool
 	var done bool
 	for !done {
-		select {
-		case <-t.C:
-			b.pendingSearchLock.Lock()
-			if b.pendingSearch {
-				getReadyToSearch = true
-				b.pendingSearch = false
-			} else if getReadyToSearch {
-				b.sendSearch(b.searchBar.Text)
-				t.Stop()
-				b.searchGoroutine = false
-				done = true
-			}
-			b.pendingSearchLock.Unlock()
+		<-t.C
+		b.pendingSearchLock.Lock()
+		if b.pendingSearch {
+			getReadyToSearch = true
+			b.pendingSearch = false
+		} else if getReadyToSearch {
+			b.sendSearch(b.searchBar.Text)
+			t.Stop()
+			b.searchGoroutine = false
+			done = true
 		}
+		b.pendingSearchLock.Unlock()
 	}
 }
 
