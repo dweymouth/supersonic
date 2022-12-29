@@ -41,14 +41,14 @@ func (b *bottomPanelLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 
 func (b *bottomPanelLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
 	midW := fyne.Max(b.middleWidth, b.middle.MinSize().Width)
-	lrW := (size.Width - midW) / 2
+	lrW := (size.Width - midW - theme.Padding()*4) / 2
 	b.left.Resize(fyne.NewSize(lrW, size.Height))
-	b.left.Move(fyne.NewPos(0, 0))
+	b.left.Move(fyne.NewPos(theme.Padding(), 0))
 	b.middle.Resize(fyne.NewSize(midW, size.Height))
-	b.middle.Move(fyne.NewPos(lrW+theme.Padding(), 0))
+	b.middle.Move(fyne.NewPos(lrW+theme.Padding()*2, 0))
 	if b.right != nil {
 		b.right.Resize(fyne.NewSize(lrW, size.Height))
-		b.right.Move(fyne.NewPos(lrW+theme.Padding()*2, 0))
+		b.right.Move(fyne.NewPos(lrW+midW+theme.Padding()*3, 0))
 	}
 }
 
@@ -59,9 +59,10 @@ type BottomPanel struct {
 
 	playbackManager *backend.PlaybackManager
 
-	NowPlaying *widgets.NowPlayingCard
-	Controls   *widgets.PlayerControls
-	container  *fyne.Container
+	NowPlaying  *widgets.NowPlayingCard
+	Controls    *widgets.PlayerControls
+	AuxControls *widgets.AuxControls
+	container   *fyne.Container
 }
 
 var _ fyne.Widget = (*BottomPanel)(nil)
@@ -94,7 +95,13 @@ func NewBottomPanel(p *player.Player) *BottomPanel {
 		p.Seek(fmt.Sprintf("%d", int(f*100)), player.SeekAbsolutePercent)
 	})
 
-	bp.container = container.New(newBottomPanelLayout(500, bp.NowPlaying, bp.Controls, nil), bp.NowPlaying, bp.Controls)
+	bp.AuxControls = widgets.NewAuxControls()
+	bp.AuxControls.VolumeControl.OnVolumeChanged = func(v int) {
+		_ = p.SetVolume(v)
+	}
+
+	bp.container = container.New(newBottomPanelLayout(500, bp.NowPlaying, bp.Controls, bp.AuxControls),
+		bp.NowPlaying, bp.Controls, bp.AuxControls)
 	return bp
 }
 
@@ -121,5 +128,6 @@ func (bp *BottomPanel) onSongChange(song *subsonic.Child) {
 }
 
 func (bp *BottomPanel) CreateRenderer() fyne.WidgetRenderer {
+	bp.ExtendBaseWidget(bp)
 	return widget.NewSimpleRenderer(bp.container)
 }
