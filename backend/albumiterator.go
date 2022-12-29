@@ -29,34 +29,38 @@ func NewLibraryManager(s *ServerManager) *LibraryManager {
 type AlbumSortOrder string
 
 const (
-	RecentlyAdded    AlbumSortOrder = "Recently Added"
-	RecentlyPlayed   AlbumSortOrder = "Recently Played"
-	FrequentlyPlayed AlbumSortOrder = "Frequently Played"
-	TitleAZ          AlbumSortOrder = "Title (A-Z)"
-	ArtistAZ         AlbumSortOrder = "Artist (A-Z)"
+	AlbumSortRecentlyAdded    AlbumSortOrder = "Recently Added"
+	AlbumSortRecentlyPlayed   AlbumSortOrder = "Recently Played"
+	AlbumSortFrequentlyPlayed AlbumSortOrder = "Frequently Played"
+	AlbumSortRandom           AlbumSortOrder = "Random"
+	AlbumSortTitleAZ          AlbumSortOrder = "Title (A-Z)"
+	AlbumSortArtistAZ         AlbumSortOrder = "Artist (A-Z)"
 )
 
 var (
 	AlbumSortOrders []string = []string{
-		string(RecentlyAdded),
-		string(RecentlyPlayed),
-		string(FrequentlyPlayed),
-		string(TitleAZ),
-		string(ArtistAZ),
+		string(AlbumSortRecentlyAdded),
+		string(AlbumSortRecentlyPlayed),
+		string(AlbumSortFrequentlyPlayed),
+		string(AlbumSortRandom),
+		string(AlbumSortTitleAZ),
+		string(AlbumSortArtistAZ),
 	}
 )
 
 func (l *LibraryManager) AlbumsIter(sort AlbumSortOrder) AlbumIterator {
 	switch sort {
-	case RecentlyAdded:
+	case AlbumSortRecentlyAdded:
 		return l.newBaseIter("newest")
-	case RecentlyPlayed:
+	case AlbumSortRecentlyPlayed:
 		return l.newBaseIter("recent")
-	case FrequentlyPlayed:
+	case AlbumSortFrequentlyPlayed:
 		return l.newBaseIter("frequent")
-	case TitleAZ:
+	case AlbumSortRandom:
+		return l.newRandomIter()
+	case AlbumSortTitleAZ:
 		return l.newBaseIter("alphabeticalByName")
-	case ArtistAZ:
+	case AlbumSortArtistAZ:
 		return l.newBaseIter("alphabeticalByArtist")
 	default:
 		log.Printf("Undefined album sort order: %s", sort)
@@ -262,4 +266,104 @@ func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 		s.prefetched = append(s.prefetched, album)
 		s.albumIDset[album.ID] = true
 	}
+}
+
+type randomIter struct {
+	albumIDSet    map[string]bool
+	l             *LibraryManager
+	s             *subsonic.Client
+	prefetched    []*subsonic.AlbumID3
+	prefetchedPos int
+	// Random iter works in two phases - phase 1 by requesting random
+	// albums from the server. Since the Subsonic API provides no way
+	// of paginating a single random sort, we may get albums back twice.
+	// We use albumIDSet to keep track of which albums have already been returned.
+	// Once we start getting back too many already-returned albums,
+	// switch to requesting more albums from a deterministic sort order.
+	phaseTwo bool
+	offset   int
+	done     bool
+}
+
+func (l *LibraryManager) newRandomIter() *randomIter {
+	return &randomIter{
+		l:          l,
+		s:          l.s.Server,
+		albumIDSet: make(map[string]bool),
+	}
+}
+
+func (r *randomIter) Next() *subsonic.AlbumID3 {
+	if r.done {
+		return nil
+	}
+
+	if r.prefetched == nil {
+		if r.phaseTwo {
+			for len(r.prefetched) == 0 {
+				albums, err := r.s.GetAlbumList2("newest", map[string]string{"size": "20", "offset": strconv.Itoa(r.offset)})
+				if err != nil {
+					log.Println(err)
+					albums = nil
+				}
+				if len(albums) == 0 {
+					r.done = true
+					return nil
+				}
+				r.offset += len(albums)
+				for _, album := range albums {
+					if _, ok := r.albumIDSet[album.ID]; !ok {
+						r.prefetched = append(r.prefetched, album)
+						r.albumIDSet[album.ID] = true
+					}
+				}
+			}
+			r.prefetchedPos = 0
+		} else {
+			albums, err := r.s.GetAlbumList2("random", map[string]string{"size": "25"})
+			if err != nil {
+				log.Println(err)
+				r.done = true
+				return nil
+			}
+			var hitCount int
+			for _, album := range albums {
+				if _, ok := r.albumIDSet[album.ID]; !ok {
+					hitCount++
+					r.prefetched = append(r.prefetched, album)
+					r.albumIDSet[album.ID] = true
+				}
+			}
+			if successRatio := float64(hitCount) / float64(25); successRatio < 0.4 {
+				r.phaseTwo = true
+			}
+		}
+	}
+
+	// return from prefetched results
+	if len(r.prefetched) > 0 {
+		a := r.prefetched[r.prefetchedPos]
+		r.prefetchedPos++
+		if r.prefetchedPos == len(r.prefetched) {
+			r.prefetched = nil
+			r.prefetchedPos = 0
+		}
+
+		r.l.CacheAlbum(a)
+		return a
+	}
+
+	return nil
+}
+
+func (r *randomIter) NextN(n int, cb func(*subsonic.AlbumID3)) {
+	go func() {
+		for i := 0; i < n; i++ {
+			a := r.Next()
+			cb(a)
+			if a == nil {
+				break
+			}
+		}
+	}()
 }
