@@ -97,6 +97,7 @@ func (a *AlbumsPage) onPlayAlbum(albumID string) {
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
 	a.grid = NewAlbumGrid(a.lm.AlbumsIter(backend.AlbumSortOrder(order)), a.im.GetAlbumThumbnail)
+	a.grid.OnPlayAlbum = a.onPlayAlbum
 	if a.searchText == "" {
 		a.container.Objects[0] = a.grid
 		a.Refresh()
