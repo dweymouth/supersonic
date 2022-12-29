@@ -26,20 +26,46 @@ func NewLibraryManager(s *ServerManager) *LibraryManager {
 	}
 }
 
-func (l *LibraryManager) RecentlyAddedIter() AlbumIterator {
-	return l.newBaseIter("newest")
-}
+type AlbumSortOrder string
 
-func (l *LibraryManager) RecentlyPlayedIter() AlbumIterator {
-	return l.newBaseIter("recent")
+const (
+	RecentlyAdded    AlbumSortOrder = "Recently Added"
+	RecentlyPlayed   AlbumSortOrder = "Recently Played"
+	FrequentlyPlayed AlbumSortOrder = "Frequently Played"
+	TitleAZ          AlbumSortOrder = "Title (A-Z)"
+	ArtistAZ         AlbumSortOrder = "Artist (A-Z)"
+)
+
+var (
+	AlbumSortOrders []string = []string{
+		string(RecentlyAdded),
+		string(RecentlyPlayed),
+		string(FrequentlyPlayed),
+		string(TitleAZ),
+		string(ArtistAZ),
+	}
+)
+
+func (l *LibraryManager) AlbumsIter(sort AlbumSortOrder) AlbumIterator {
+	switch sort {
+	case RecentlyAdded:
+		return l.newBaseIter("newest")
+	case RecentlyPlayed:
+		return l.newBaseIter("recent")
+	case FrequentlyPlayed:
+		return l.newBaseIter("frequent")
+	case TitleAZ:
+		return l.newBaseIter("alphabeticalByName")
+	case ArtistAZ:
+		return l.newBaseIter("alphabeticalByArtist")
+	default:
+		log.Printf("Undefined album sort order: %s", sort)
+		return nil
+	}
 }
 
 func (l *LibraryManager) StarredIter() AlbumIterator {
 	return l.newBaseIter("starred")
-}
-
-func (l *LibraryManager) FrequentlyPlayedIter() AlbumIterator {
-	return l.newBaseIter("frequent")
 }
 
 func (l *LibraryManager) SearchIter(query string) AlbumIterator {

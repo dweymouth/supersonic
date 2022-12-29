@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -35,26 +34,6 @@ type blankPage struct {
 	widget.Separator
 }
 
-type hspace struct {
-	widget.BaseWidget
-
-	Width float32
-}
-
-func newHSpace(w float32) *hspace {
-	h := &hspace{Width: w}
-	h.ExtendBaseWidget(h)
-	return h
-}
-
-func (h *hspace) MinSize() fyne.Size {
-	return fyne.NewSize(h.Width, 0)
-}
-
-func (h *hspace) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(layout.NewSpacer())
-}
-
 func NewBrowsingPane() *BrowsingPane {
 	b := &BrowsingPane{}
 	b.ExtendBaseWidget(b)
@@ -62,7 +41,7 @@ func NewBrowsingPane() *BrowsingPane {
 	b.searchBar.OnTextChanged = b.onSearchTextChanged
 	b.curPage = &blankPage{}
 	b.container = container.NewBorder(
-		container.NewHBox(newHSpace(15), b.searchBar),
+		container.NewHBox(widgets.NewHSpace(15), b.searchBar),
 		nil, nil, nil, b.curPage)
 	return b
 }
