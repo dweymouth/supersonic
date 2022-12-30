@@ -28,6 +28,9 @@ func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player)
 		player: p,
 	}
 	p.OnTrackChange(func(tracknum int64) {
+		if tracknum >= int64(len(pm.playQueue)) {
+			return
+		}
 		pm.nowPlayingIdx = tracknum
 		for _, cb := range pm.onSongChange {
 			cb(pm.NowPlaying())
