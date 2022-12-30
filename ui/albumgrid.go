@@ -62,6 +62,19 @@ func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher) *AlbumGrid {
 	return ag
 }
 
+func (ag *AlbumGrid) Clear() {
+	ag.albums = nil
+	ag.done = true
+}
+
+func (ag *AlbumGrid) Reset(iter backend.AlbumIterator) {
+	ag.albums = nil
+	ag.fetching = false
+	ag.done = false
+	ag.iter = iter
+	ag.fetchMoreAlbums(36)
+}
+
 func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {
 	album := ag.albums[albumIdx]
 	if ac.PrevAlbumID == album.ID {

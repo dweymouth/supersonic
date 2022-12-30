@@ -79,12 +79,18 @@ func (a *AlbumsPage) OnSearched(query string) {
 	a.searchText = query
 	if query == "" {
 		a.container.Objects[0] = a.grid
-		a.searchGrid = nil
+		if a.searchGrid != nil {
+			a.searchGrid.Clear()
+		}
 		a.Refresh()
 		return
 	}
-	a.searchGrid = NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail)
-	a.searchGrid.OnPlayAlbum = a.onPlayAlbum
+	if a.searchGrid == nil {
+		a.searchGrid = NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail)
+		a.searchGrid.OnPlayAlbum = a.onPlayAlbum
+	} else {
+		a.searchGrid.Reset(a.lm.SearchIter(query))
+	}
 	a.container.Objects[0] = a.searchGrid
 	a.Refresh()
 }
@@ -96,8 +102,7 @@ func (a *AlbumsPage) onPlayAlbum(albumID string) {
 }
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
-	a.grid = NewAlbumGrid(a.lm.AlbumsIter(backend.AlbumSortOrder(order)), a.im.GetAlbumThumbnail)
-	a.grid.OnPlayAlbum = a.onPlayAlbum
+	a.grid.Reset(a.lm.AlbumsIter(backend.AlbumSortOrder(order)))
 	if a.searchText == "" {
 		a.container.Objects[0] = a.grid
 		a.Refresh()
