@@ -98,7 +98,7 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {
 		default:
 			if err == nil {
 				ac.Cover.SetImage(i)
-				ac.Refresh()
+				ac.Cover.Refresh()
 			}
 		}
 	}(ctx)
