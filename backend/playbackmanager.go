@@ -2,10 +2,17 @@ package backend
 
 import (
 	"context"
+	"log"
+	"strconv"
+	"supersonic/backend/util"
 	"supersonic/player"
 	"time"
 
 	subsonic "github.com/dweymouth/go-subsonic"
+)
+
+const (
+	ScrobbleThreshold = 0.6
 )
 
 type PlaybackManager struct {
@@ -14,6 +21,9 @@ type PlaybackManager struct {
 	pollingTick   *time.Ticker
 	sm            *ServerManager
 	player        *player.Player
+
+	playTimeStopwatch util.Stopwatch
+	curTrackTime      float64
 
 	playQueue        []*subsonic.Child
 	nowPlayingIdx    int64
@@ -27,11 +37,20 @@ func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player)
 		sm:     s,
 		player: p,
 	}
+	// TODO: we get some spurious OnTrackChange callbacks from the player,
+	// especially when loading/playing a new album,
+	// but for now they're pretty much harmless. Investigate later.
 	p.OnTrackChange(func(tracknum int64) {
 		if tracknum >= int64(len(pm.playQueue)) {
 			return
 		}
+		pm.checkScrobble(pm.playTimeStopwatch.Elapsed())
+		pm.playTimeStopwatch.Reset()
+		if pm.player.GetStatus().State == player.Playing {
+			pm.playTimeStopwatch.Start()
+		}
 		pm.nowPlayingIdx = tracknum
+		pm.curTrackTime = float64(pm.playQueue[pm.nowPlayingIdx].Duration)
 		for _, cb := range pm.onSongChange {
 			cb(pm.NowPlaying())
 		}
@@ -41,15 +60,20 @@ func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player)
 		pm.doUpdateTimePos()
 	})
 	p.OnStopped(func() {
+		pm.playTimeStopwatch.Stop()
+		pm.checkScrobble(pm.playTimeStopwatch.Elapsed())
+		pm.playTimeStopwatch.Reset()
 		pm.stopPollTimePos()
 		for _, cb := range pm.onSongChange {
 			cb(nil)
 		}
 	})
 	p.OnPaused(func() {
+		pm.playTimeStopwatch.Stop()
 		pm.stopPollTimePos()
 	})
 	p.OnPlaying(func() {
+		pm.playTimeStopwatch.Start()
 		pm.startPollTimePos()
 	})
 
@@ -105,6 +129,17 @@ func (p *PlaybackManager) PlayAlbum(albumID string) error {
 		return err
 	}
 	return p.player.PlayFromBeginning()
+}
+
+func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
+	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
+		return
+	}
+	song := p.playQueue[p.nowPlayingIdx]
+	if playDur.Seconds()/p.curTrackTime > ScrobbleThreshold {
+		log.Printf("Scrobbling %q", song.Title)
+		p.sm.Server.Scrobble(song.ID, map[string]string{"time": strconv.FormatInt(time.Now().Unix()*1000, 10)})
+	}
 }
 
 func (p *PlaybackManager) startPollTimePos() {
