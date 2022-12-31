@@ -83,6 +83,7 @@ func (a *App) LoginToDefaultServer() error {
 }
 
 func (a *App) Shutdown() {
+	a.Player.Stop()
 	a.cancel()
 	a.Player.Destroy()
 }
