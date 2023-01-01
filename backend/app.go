@@ -37,6 +37,10 @@ func StartupApp() (*App, error) {
 	a := &App{}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 
+	log.Printf("Starting %s...", AppName)
+	log.Printf("Using config dir: %s", configdir.LocalConfig(AppName))
+	log.Printf("Using cache dir: %s", configdir.LocalCache(AppName))
+
 	a.readConfig()
 
 	if err := a.initMPV(); err != nil {
