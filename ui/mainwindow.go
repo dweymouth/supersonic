@@ -13,6 +13,7 @@ import (
 type MainWindow struct {
 	Window fyne.Window
 
+	Router       Router
 	BrowsingPane *BrowsingPane
 	BottomPanel  *BottomPanel
 
@@ -22,9 +23,10 @@ type MainWindow struct {
 func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindow {
 	m := MainWindow{
 		Window:       fyneApp.NewWindow(appName),
-		BrowsingPane: NewBrowsingPane(),
+		BrowsingPane: NewBrowsingPane(app),
 		BottomPanel:  NewBottomPanel(app.Player),
 	}
+	m.Router = NewRouter(app, m.BrowsingPane)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
@@ -38,11 +40,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 		m.Window.SetTitle(song.Title)
 	})
 	app.ServerManager.OnServerConnected(func() {
-		ap := NewAlbumsPage("Albums", app.LibraryManager, app.ImageManager)
-		ap.OnPlayAlbum = func(albumID string) {
-			_ = app.PlaybackManager.PlayAlbum(albumID)
-		}
-		m.BrowsingPane.SetPage(ap)
+		m.Router.OpenRoute(AlbumsRoute(backend.AlbumSortFrequentlyPlayed))
 	})
 	return m
 }

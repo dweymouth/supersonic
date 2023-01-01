@@ -62,8 +62,9 @@ type AlbumCard struct {
 	widget.BaseWidget
 
 	albumID   string
+	artistID  string
 	title     *widget.Label
-	artist    *widget.Label
+	artist    *CustomHyperlink
 	container *fyne.Container
 
 	// updated by AlbumGrid
@@ -73,7 +74,9 @@ type AlbumCard struct {
 	PrevAlbumID   string
 	ImgLoadCancel context.CancelFunc
 
-	OnPlay func()
+	OnPlay           func()
+	OnShowAlbumPage  func()
+	OnShowArtistPage func()
 }
 
 func (a *AlbumCard) MouseIn(*desktop.MouseEvent) {}
@@ -85,7 +88,7 @@ func (a *AlbumCard) MouseMoved(*desktop.MouseEvent) {}
 func NewAlbumCard() *AlbumCard {
 	a := &AlbumCard{
 		title:  widget.NewLabel(""),
-		artist: widget.NewLabel(""),
+		artist: NewCustomHyperlink(),
 		Cover:  newAlbumCover(),
 	}
 	a.ExtendBaseWidget(a)
@@ -94,8 +97,12 @@ func NewAlbumCard() *AlbumCard {
 			a.OnPlay()
 		}
 	}
+	a.artist.OnTapped = func() {
+		if a.OnShowArtistPage != nil {
+			a.OnShowArtistPage()
+		}
+	}
 	a.title.Wrapping = fyne.TextTruncate
-	a.artist.Wrapping = fyne.TextTruncate
 	a.title.TextStyle = fyne.TextStyle{Bold: true}
 
 	a.createContainer()
@@ -113,10 +120,15 @@ func (a *AlbumCard) Update(al *subsonic.AlbumID3) {
 	a.title.SetText(al.Name)
 	a.artist.SetText(al.Artist)
 	a.albumID = al.ID
+	a.artistID = al.ArtistID
 }
 
 func (a *AlbumCard) AlbumID() string {
 	return a.albumID
+}
+
+func (a *AlbumCard) ArtistID() string {
+	return a.artistID
 }
 
 func (a *AlbumCard) CreateRenderer() fyne.WidgetRenderer {

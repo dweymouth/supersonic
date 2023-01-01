@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"supersonic/backend"
 	"supersonic/ui/widgets"
 	"sync"
 	"time"
@@ -18,8 +19,14 @@ type Searchable interface {
 	OnSearched(string)
 }
 
+type CanPlayAlbum interface {
+	SetPlayAlbumCallback(func(albumID string))
+}
+
 type BrowsingPane struct {
 	widget.BaseWidget
+
+	app *backend.App
 
 	searchBar         *widgets.SearchEntry
 	pendingSearchLock sync.Mutex
@@ -34,8 +41,8 @@ type blankPage struct {
 	widget.Separator
 }
 
-func NewBrowsingPane() *BrowsingPane {
-	b := &BrowsingPane{}
+func NewBrowsingPane(app *backend.App) *BrowsingPane {
+	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
 	b.searchBar = widgets.NewSearchEntry()
 	b.searchBar.OnTextChanged = b.onSearchTextChanged
@@ -48,6 +55,13 @@ func NewBrowsingPane() *BrowsingPane {
 
 func (b *BrowsingPane) SetPage(p Page) {
 	b.curPage = p
+	if pa, ok := p.(CanPlayAlbum); ok {
+		pa.SetPlayAlbumCallback(func(albumID string) {
+			_ = b.app.PlaybackManager.PlayAlbum(albumID)
+		})
+	}
+	_, s := p.(Searchable)
+	b.searchBar.Hidden = !s
 	b.container.Objects[0] = p
 	b.Refresh()
 }
