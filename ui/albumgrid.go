@@ -22,11 +22,23 @@ type AlbumGrid struct {
 	fetching bool
 	done     bool
 
-	imageFetcher ImageFetcher
-	OnPlayAlbum  func(string)
+	imageFetcher     ImageFetcher
+	OnPlayAlbum      func(string)
+	OnShowArtistPage func(string)
 }
 
 var _ fyne.Widget = (*AlbumGrid)(nil)
+
+func NewFixedAlbumGrid(albums []*subsonic.AlbumID3, fetch ImageFetcher) *AlbumGrid {
+	ag := &AlbumGrid{
+		albums:       albums,
+		done:         true,
+		imageFetcher: fetch,
+	}
+	ag.ExtendBaseWidget(ag)
+	ag.createGridWrapList()
+	return ag
+}
 
 func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher) *AlbumGrid {
 	ag := &AlbumGrid{
@@ -35,27 +47,7 @@ func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher) *AlbumGrid {
 	}
 	ag.ExtendBaseWidget(ag)
 
-	g := widget.NewGridWrapList(
-		func() int {
-			return len(ag.albums)
-		},
-		// create func
-		func() fyne.CanvasObject {
-			ac := widgets.NewAlbumCard()
-			ac.OnPlay = func() {
-				if ag.OnPlayAlbum != nil {
-					ag.OnPlayAlbum(ac.AlbumID())
-				}
-			}
-			return ac
-		},
-		// update func
-		func(itemID int, obj fyne.CanvasObject) {
-			ac := obj.(*widgets.AlbumCard)
-			ag.doUpdateAlbumCard(itemID, ac)
-		},
-	)
-	ag.grid = g
+	ag.createGridWrapList()
 
 	// fetch initial albums
 	ag.fetchMoreAlbums(36)
@@ -73,6 +65,35 @@ func (ag *AlbumGrid) Reset(iter backend.AlbumIterator) {
 	ag.done = false
 	ag.iter = iter
 	ag.fetchMoreAlbums(36)
+}
+
+func (ag *AlbumGrid) createGridWrapList() {
+	g := widget.NewGridWrapList(
+		func() int {
+			return len(ag.albums)
+		},
+		// create func
+		func() fyne.CanvasObject {
+			ac := widgets.NewAlbumCard()
+			ac.OnPlay = func() {
+				if ag.OnPlayAlbum != nil {
+					ag.OnPlayAlbum(ac.AlbumID())
+				}
+			}
+			ac.OnShowArtistPage = func() {
+				if ag.OnShowArtistPage != nil {
+					ag.OnShowArtistPage(ac.ArtistID())
+				}
+			}
+			return ac
+		},
+		// update func
+		func(itemID int, obj fyne.CanvasObject) {
+			ac := obj.(*widgets.AlbumCard)
+			ag.doUpdateAlbumCard(itemID, ac)
+		},
+	)
+	ag.grid = g
 }
 
 func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {

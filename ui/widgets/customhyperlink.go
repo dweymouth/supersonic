@@ -44,6 +44,8 @@ type CustomHyperlink struct {
 	widget.BaseWidget
 	h *hyperlinkWrapper
 
+	OnTapped func()
+
 	container *fyne.Container
 	minSize   fyne.Size
 }
@@ -51,6 +53,11 @@ type CustomHyperlink struct {
 func NewCustomHyperlink() *CustomHyperlink {
 	c := &CustomHyperlink{
 		h: newHyperlinkWrapper(200),
+	}
+	c.h.h.OnTapped = func() {
+		if c.OnTapped != nil {
+			c.OnTapped()
+		}
 	}
 	c.ExtendBaseWidget(c)
 	c.container = container.NewHBox(c.h, layout.NewSpacer())
