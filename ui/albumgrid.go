@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"image"
+	"log"
 	"supersonic/backend"
 	"supersonic/ui/widgets"
 
@@ -21,41 +22,35 @@ type AlbumGrid struct {
 	iter     backend.AlbumIterator
 	fetching bool
 	done     bool
+	showYear bool
 
-	imageFetcher ImageFetcher
-	OnPlayAlbum  func(string)
+	imageFetcher     ImageFetcher
+	OnPlayAlbum      func(string)
+	OnShowArtistPage func(string)
 }
 
 var _ fyne.Widget = (*AlbumGrid)(nil)
 
-func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher) *AlbumGrid {
+func NewFixedAlbumGrid(albums []*subsonic.AlbumID3, fetch ImageFetcher, showYear bool) *AlbumGrid {
+	ag := &AlbumGrid{
+		albums:       albums,
+		done:         true,
+		imageFetcher: fetch,
+		showYear:     showYear,
+	}
+	ag.ExtendBaseWidget(ag)
+	ag.createGridWrapList()
+	return ag
+}
+
+func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher, showYear bool) *AlbumGrid {
 	ag := &AlbumGrid{
 		iter:         iter,
 		imageFetcher: fetch,
 	}
 	ag.ExtendBaseWidget(ag)
 
-	g := widget.NewGridWrapList(
-		func() int {
-			return len(ag.albums)
-		},
-		// create func
-		func() fyne.CanvasObject {
-			ac := widgets.NewAlbumCard()
-			ac.OnPlay = func() {
-				if ag.OnPlayAlbum != nil {
-					ag.OnPlayAlbum(ac.AlbumID())
-				}
-			}
-			return ac
-		},
-		// update func
-		func(itemID int, obj fyne.CanvasObject) {
-			ac := obj.(*widgets.AlbumCard)
-			ag.doUpdateAlbumCard(itemID, ac)
-		},
-	)
-	ag.grid = g
+	ag.createGridWrapList()
 
 	// fetch initial albums
 	ag.fetchMoreAlbums(36)
@@ -73,6 +68,35 @@ func (ag *AlbumGrid) Reset(iter backend.AlbumIterator) {
 	ag.done = false
 	ag.iter = iter
 	ag.fetchMoreAlbums(36)
+}
+
+func (ag *AlbumGrid) createGridWrapList() {
+	g := widget.NewGridWrapList(
+		func() int {
+			return len(ag.albums)
+		},
+		// create func
+		func() fyne.CanvasObject {
+			ac := widgets.NewAlbumCard(ag.showYear)
+			ac.OnPlay = func() {
+				if ag.OnPlayAlbum != nil {
+					ag.OnPlayAlbum(ac.AlbumID())
+				}
+			}
+			ac.OnShowArtistPage = func() {
+				if ag.OnShowArtistPage != nil {
+					ag.OnShowArtistPage(ac.ArtistID())
+				}
+			}
+			return ac
+		},
+		// update func
+		func(itemID int, obj fyne.CanvasObject) {
+			ac := obj.(*widgets.AlbumCard)
+			ag.doUpdateAlbumCard(itemID, ac)
+		},
+	)
+	ag.grid = g
 }
 
 func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {
@@ -99,6 +123,8 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {
 			if err == nil {
 				ac.Cover.SetImage(i)
 				ac.Cover.Refresh()
+			} else {
+				log.Printf("error fetching image: %s", err.Error())
 			}
 		}
 	}(ctx)

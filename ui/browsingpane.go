@@ -1,12 +1,14 @@
 package ui
 
 import (
+	"supersonic/backend"
 	"supersonic/ui/widgets"
 	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -18,14 +20,26 @@ type Searchable interface {
 	OnSearched(string)
 }
 
+type CanPlayAlbum interface {
+	SetPlayAlbumCallback(func(albumID string))
+}
+
 type BrowsingPane struct {
 	widget.BaseWidget
+
+	app *backend.App
+
+	curPage Page
+
+	forward    *widget.Button
+	back       *widget.Button
+	history    []Page
+	historyIdx int
 
 	searchBar         *widgets.SearchEntry
 	pendingSearchLock sync.Mutex
 	pendingSearch     bool
 	searchGoroutine   bool
-	curPage           Page
 
 	container *fyne.Container
 }
@@ -34,22 +48,56 @@ type blankPage struct {
 	widget.Separator
 }
 
-func NewBrowsingPane() *BrowsingPane {
-	b := &BrowsingPane{}
+func NewBrowsingPane(app *backend.App) *BrowsingPane {
+	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
 	b.searchBar = widgets.NewSearchEntry()
 	b.searchBar.OnTextChanged = b.onSearchTextChanged
+	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
+	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.curPage = &blankPage{}
 	b.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(15), b.searchBar),
+		container.NewHBox(b.back, b.forward, b.searchBar),
 		nil, nil, nil, b.curPage)
 	return b
 }
 
 func (b *BrowsingPane) SetPage(p Page) {
+	b.addPageToHistory(p)
+	b.doSetPage(p)
+}
+
+func (b *BrowsingPane) doSetPage(p Page) {
 	b.curPage = p
+	if pa, ok := p.(CanPlayAlbum); ok {
+		pa.SetPlayAlbumCallback(func(albumID string) {
+			_ = b.app.PlaybackManager.PlayAlbum(albumID)
+		})
+	}
+	_, s := p.(Searchable)
+	b.searchBar.Hidden = !s
 	b.container.Objects[0] = p
 	b.Refresh()
+}
+
+func (b *BrowsingPane) addPageToHistory(p Page) {
+	b.history = b.history[:b.historyIdx]
+	b.history = append(b.history, p)
+	b.historyIdx++
+}
+
+func (b *BrowsingPane) GoBack() {
+	if b.historyIdx > 1 {
+		b.historyIdx -= 1
+		b.doSetPage(b.history[b.historyIdx-1])
+	}
+}
+
+func (b *BrowsingPane) GoForward() {
+	if b.historyIdx < len(b.history) {
+		b.historyIdx++
+		b.doSetPage(b.history[b.historyIdx-1])
+	}
 }
 
 func (b *BrowsingPane) onSearchTextChanged(text string) {
