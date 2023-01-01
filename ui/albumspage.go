@@ -18,6 +18,7 @@ type AlbumsPage struct {
 
 	im          *backend.ImageManager
 	lm          *backend.LibraryManager
+	nav         func(Route)
 	grid        *AlbumGrid
 	searchGrid  *AlbumGrid
 	searchText  string
@@ -48,10 +49,11 @@ func (s *selectWidget) MinSize() fyne.Size {
 	return fyne.NewSize(170, s.height)
 }
 
-func NewAlbumsPage(title string, lm *backend.LibraryManager, im *backend.ImageManager) *AlbumsPage {
+func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *AlbumsPage {
 	a := &AlbumsPage{
-		lm: lm,
-		im: im,
+		lm:  lm,
+		im:  im,
+		nav: nav,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -60,11 +62,13 @@ func NewAlbumsPage(title string, lm *backend.LibraryManager, im *backend.ImageMa
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.sortOrder = NewSelect(backend.AlbumSortOrders, nil)
-	a.sortOrder.Selected = a.sortOrder.Options[0]
+	a.sortOrder.Selected = sortOrder
 	a.sortOrder.OnChanged = a.onSortOrderChanged
 	sortVbox := container.NewVBox(layout.NewSpacer(), a.sortOrder, layout.NewSpacer())
-	a.grid = NewAlbumGrid(lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected)), im.GetAlbumThumbnail)
+	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected))
+	a.grid = NewAlbumGrid(iter, im.GetAlbumThumbnail, false /*showYear*/)
 	a.grid.OnPlayAlbum = a.onPlayAlbum
+	a.grid.OnShowArtistPage = a.onShowArtistPage
 	a.container = container.NewBorder(
 		container.NewHBox(widgets.NewHSpace(15), a.titleDisp, sortVbox),
 		nil,
@@ -86,8 +90,9 @@ func (a *AlbumsPage) OnSearched(query string) {
 		return
 	}
 	if a.searchGrid == nil {
-		a.searchGrid = NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail)
+		a.searchGrid = NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail, false /*showYear*/)
 		a.searchGrid.OnPlayAlbum = a.onPlayAlbum
+		a.searchGrid.OnShowArtistPage = a.onShowArtistPage
 	} else {
 		a.searchGrid.Reset(a.lm.SearchIter(query))
 	}
@@ -95,10 +100,18 @@ func (a *AlbumsPage) OnSearched(query string) {
 	a.Refresh()
 }
 
+func (a *AlbumsPage) SetPlayAlbumCallback(cb func(string)) {
+	a.OnPlayAlbum = cb
+}
+
 func (a *AlbumsPage) onPlayAlbum(albumID string) {
 	if a.OnPlayAlbum != nil {
 		a.OnPlayAlbum(albumID)
 	}
+}
+
+func (a *AlbumsPage) onShowArtistPage(artistID string) {
+	a.nav(ArtistRoute(artistID))
 }
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
