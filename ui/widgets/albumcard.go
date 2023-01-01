@@ -3,6 +3,7 @@ package widgets
 import (
 	"context"
 	"image"
+	"strconv"
 
 	"supersonic/ui/layout"
 
@@ -65,7 +66,10 @@ type AlbumCard struct {
 	artistID  string
 	title     *widget.Label
 	artist    *CustomHyperlink
+	year      *widget.Label
 	container *fyne.Container
+
+	showYear bool
 
 	// updated by AlbumGrid
 	Cover *albumCover
@@ -85,11 +89,13 @@ func (a *AlbumCard) MouseOut() {}
 
 func (a *AlbumCard) MouseMoved(*desktop.MouseEvent) {}
 
-func NewAlbumCard() *AlbumCard {
+func NewAlbumCard(showYear bool) *AlbumCard {
 	a := &AlbumCard{
-		title:  widget.NewLabel(""),
-		artist: NewCustomHyperlink(),
-		Cover:  newAlbumCover(),
+		title:    widget.NewLabel(""),
+		artist:   NewCustomHyperlink(),
+		year:     widget.NewLabel(""),
+		Cover:    newAlbumCover(),
+		showYear: showYear,
 	}
 	a.ExtendBaseWidget(a)
 	a.Cover.OnDoubleTapped = func() {
@@ -110,8 +116,12 @@ func NewAlbumCard() *AlbumCard {
 }
 
 func (a *AlbumCard) createContainer() {
-	titleArtist := container.New(&layout.VboxCustomPadding{ExtraPad: -16}, a.title, a.artist)
-	c := container.New(&layout.VboxCustomPadding{ExtraPad: -5}, a.Cover, titleArtist)
+	var secondLabel fyne.Widget = a.artist
+	if a.showYear {
+		secondLabel = a.year
+	}
+	info := container.New(&layout.VboxCustomPadding{ExtraPad: -16}, a.title, secondLabel)
+	c := container.New(&layout.VboxCustomPadding{ExtraPad: -5}, a.Cover, info)
 	pad := &layout.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
 	a.container = container.New(pad, c)
 }
@@ -119,6 +129,7 @@ func (a *AlbumCard) createContainer() {
 func (a *AlbumCard) Update(al *subsonic.AlbumID3) {
 	a.title.SetText(al.Name)
 	a.artist.SetText(al.Artist)
+	a.year.SetText(strconv.Itoa(al.Year))
 	a.albumID = al.ID
 	a.artistID = al.ArtistID
 }

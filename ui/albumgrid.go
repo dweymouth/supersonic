@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"image"
+	"log"
 	"supersonic/backend"
 	"supersonic/ui/widgets"
 
@@ -21,6 +22,7 @@ type AlbumGrid struct {
 	iter     backend.AlbumIterator
 	fetching bool
 	done     bool
+	showYear bool
 
 	imageFetcher     ImageFetcher
 	OnPlayAlbum      func(string)
@@ -29,18 +31,19 @@ type AlbumGrid struct {
 
 var _ fyne.Widget = (*AlbumGrid)(nil)
 
-func NewFixedAlbumGrid(albums []*subsonic.AlbumID3, fetch ImageFetcher) *AlbumGrid {
+func NewFixedAlbumGrid(albums []*subsonic.AlbumID3, fetch ImageFetcher, showYear bool) *AlbumGrid {
 	ag := &AlbumGrid{
 		albums:       albums,
 		done:         true,
 		imageFetcher: fetch,
+		showYear:     showYear,
 	}
 	ag.ExtendBaseWidget(ag)
 	ag.createGridWrapList()
 	return ag
 }
 
-func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher) *AlbumGrid {
+func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher, showYear bool) *AlbumGrid {
 	ag := &AlbumGrid{
 		iter:         iter,
 		imageFetcher: fetch,
@@ -74,7 +77,7 @@ func (ag *AlbumGrid) createGridWrapList() {
 		},
 		// create func
 		func() fyne.CanvasObject {
-			ac := widgets.NewAlbumCard()
+			ac := widgets.NewAlbumCard(ag.showYear)
 			ac.OnPlay = func() {
 				if ag.OnPlayAlbum != nil {
 					ag.OnPlayAlbum(ac.AlbumID())
@@ -120,6 +123,8 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *widgets.AlbumCard) {
 			if err == nil {
 				ac.Cover.SetImage(i)
 				ac.Cover.Refresh()
+			} else {
+				log.Printf("error fetching image: %s", err.Error())
 			}
 		}
 	}(ctx)
