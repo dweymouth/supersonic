@@ -40,7 +40,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 		m.Window.SetTitle(song.Title)
 	})
 	app.ServerManager.OnServerConnected(func() {
-		m.Router.OpenRoute(AlbumsRoute(backend.AlbumSortFrequentlyPlayed))
+		m.Router.OpenRoute(AlbumsRoute(backend.AlbumSortRecentlyAdded))
 	})
 	return m
 }
