@@ -14,15 +14,15 @@ type AlbumIterator interface {
 }
 
 type LibraryManager struct {
-	s          *ServerManager
-	albumCache gcache.Cache
+	s                *ServerManager
+	albumDetailCache gcache.Cache
 }
 
 func NewLibraryManager(s *ServerManager) *LibraryManager {
 	cache := gcache.New(250).LRU().Build()
 	return &LibraryManager{
-		s:          s,
-		albumCache: cache,
+		s:                s,
+		albumDetailCache: cache,
 	}
 }
 
@@ -77,12 +77,12 @@ func (l *LibraryManager) SearchIter(query string) AlbumIterator {
 }
 
 func (l *LibraryManager) CacheAlbum(a *subsonic.AlbumID3) {
-	l.albumCache.Set(a.ID, a)
+	l.albumDetailCache.Set(a.ID, a)
 }
 
 func (l *LibraryManager) GetAlbum(id string) (*subsonic.AlbumID3, error) {
-	if l.albumCache.Has(id) {
-		if a, err := l.albumCache.Get(id); err == nil {
+	if l.albumDetailCache.Has(id) {
+		if a, err := l.albumDetailCache.Get(id); err == nil {
 			return a.(*subsonic.AlbumID3), nil
 		}
 	}
@@ -90,7 +90,7 @@ func (l *LibraryManager) GetAlbum(id string) (*subsonic.AlbumID3, error) {
 	if err != nil {
 		return nil, err
 	}
-	l.albumCache.Set(a.ID, a)
+	l.albumDetailCache.Set(a.ID, a)
 	return a, nil
 }
 
@@ -126,7 +126,6 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 		}
 		r.pos++
 
-		r.l.CacheAlbum(a)
 		return a
 	}
 	albums, err := r.s.GetAlbumList2(r.listType, map[string]string{"size": "20", "offset": strconv.Itoa(r.pos)})
@@ -138,14 +137,12 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 		r.done = true
 		return nil
 	} else if len(albums) == 1 {
-		r.l.CacheAlbum(albums[0])
 		r.done = true
 		return albums[0]
 	}
 	r.prefetched = albums
 	r.prefetchedPos = 1
 
-	r.l.CacheAlbum(r.prefetched[0])
 	return r.prefetched[0]
 }
 
@@ -239,7 +236,6 @@ func (s *searchIter) Next() *subsonic.AlbumID3 {
 			s.prefetchedPos = 0
 		}
 
-		s.l.CacheAlbum(a)
 		return a
 	}
 
@@ -349,7 +345,6 @@ func (r *randomIter) Next() *subsonic.AlbumID3 {
 			r.prefetchedPos = 0
 		}
 
-		r.l.CacheAlbum(a)
 		return a
 	}
 
