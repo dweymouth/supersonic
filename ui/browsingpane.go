@@ -57,7 +57,10 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.curPage = &blankPage{}
 	b.container = container.NewBorder(
-		container.NewHBox(b.back, b.forward, b.searchBar),
+		container.NewVBox(
+			container.NewHBox(b.back, b.forward, b.searchBar),
+			widgets.NewThickSeparator(),
+		),
 		nil, nil, nil, b.curPage)
 	return b
 }
