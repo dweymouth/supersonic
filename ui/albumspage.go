@@ -93,6 +93,7 @@ func (a *AlbumsPage) OnSearched(query string) {
 	if a.searchGrid == nil {
 		a.searchGrid = NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail, false /*showYear*/)
 		a.searchGrid.OnPlayAlbum = a.onPlayAlbum
+		a.searchGrid.OnShowAlbumPage = a.onShowAlbumPage
 		a.searchGrid.OnShowArtistPage = a.onShowArtistPage
 	} else {
 		a.searchGrid.Reset(a.lm.SearchIter(query))
