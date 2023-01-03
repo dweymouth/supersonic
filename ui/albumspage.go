@@ -25,7 +25,7 @@ type AlbumsPage struct {
 	titleDisp   *widget.RichText
 	sortOrder   *selectWidget
 	container   *fyne.Container
-	OnPlayAlbum func(string)
+	OnPlayAlbum func(string, int)
 }
 
 type selectWidget struct {
@@ -69,6 +69,7 @@ func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, i
 	a.grid = NewAlbumGrid(iter, im.GetAlbumThumbnail, false /*showYear*/)
 	a.grid.OnPlayAlbum = a.onPlayAlbum
 	a.grid.OnShowArtistPage = a.onShowArtistPage
+	a.grid.OnShowAlbumPage = a.onShowAlbumPage
 	a.container = container.NewBorder(
 		container.NewHBox(widgets.NewHSpace(15), a.titleDisp, sortVbox),
 		nil,
@@ -100,18 +101,22 @@ func (a *AlbumsPage) OnSearched(query string) {
 	a.Refresh()
 }
 
-func (a *AlbumsPage) SetPlayAlbumCallback(cb func(string)) {
+func (a *AlbumsPage) SetPlayAlbumCallback(cb func(string, int)) {
 	a.OnPlayAlbum = cb
 }
 
 func (a *AlbumsPage) onPlayAlbum(albumID string) {
 	if a.OnPlayAlbum != nil {
-		a.OnPlayAlbum(albumID)
+		a.OnPlayAlbum(albumID, 0)
 	}
 }
 
 func (a *AlbumsPage) onShowArtistPage(artistID string) {
 	a.nav(ArtistRoute(artistID))
+}
+
+func (a *AlbumsPage) onShowAlbumPage(albumID string) {
+	a.nav(AlbumRoute(albumID))
 }
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {

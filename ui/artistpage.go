@@ -16,20 +16,23 @@ var _ fyne.Widget = (*ArtistPage)(nil)
 type ArtistPage struct {
 	widget.BaseWidget
 
-	artistID    string
-	im          *backend.ImageManager
-	sm          *backend.ServerManager
-	grid        *AlbumGrid
-	titleDisp   *widget.RichText
-	container   *fyne.Container
-	OnPlayAlbum func(string)
+	artistID  string
+	im        *backend.ImageManager
+	sm        *backend.ServerManager
+	nav       func(Route)
+	grid      *AlbumGrid
+	titleDisp *widget.RichText
+	container *fyne.Container
+
+	OnPlayAlbum func(string, int)
 }
 
-func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager) *ArtistPage {
+func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, nav func(Route)) *ArtistPage {
 	a := &ArtistPage{
 		artistID: artistID,
 		sm:       sm,
 		im:       im,
+		nav:      nav,
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp = widget.NewRichTextWithText("Artist")
@@ -41,14 +44,18 @@ func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.Image
 	return a
 }
 
-func (a *ArtistPage) SetPlayAlbumCallback(cb func(string)) {
+func (a *ArtistPage) SetPlayAlbumCallback(cb func(string, int)) {
 	a.OnPlayAlbum = cb
 }
 
 func (a *ArtistPage) onPlayAlbum(albumID string) {
 	if a.OnPlayAlbum != nil {
-		a.OnPlayAlbum(albumID)
+		a.OnPlayAlbum(albumID, 0)
 	}
+}
+
+func (a *ArtistPage) onShowAlbumPage(albumID string) {
+	a.nav(AlbumRoute(albumID))
 }
 
 func (a *ArtistPage) loadAsync() {
@@ -62,6 +69,7 @@ func (a *ArtistPage) loadAsync() {
 		a.titleDisp.Refresh()
 		ag := NewFixedAlbumGrid(artist.Album, a.im.GetAlbumThumbnail, true /*showYear*/)
 		ag.OnPlayAlbum = a.onPlayAlbum
+		ag.OnShowAlbumPage = a.onShowAlbumPage
 		a.container.Objects[0] = ag
 		a.container.Refresh()
 	}()

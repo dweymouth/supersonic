@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/wildeyedskies/go-mpv/mpv"
 )
@@ -220,6 +221,15 @@ func (p *Player) setPaused(paused bool) error {
 // Start playback from the first track in the play queue.
 func (p *Player) PlayFromBeginning() error {
 	err := p.mpv.Command([]string{"playlist-play-index", "0"})
+	if err == nil {
+		p.setState(Playing)
+	}
+	return err
+}
+
+// Start playback from the specified track index in the play queue.
+func (p *Player) PlayTrackAt(idx int) error {
+	err := p.mpv.Command([]string{"playlist-play-index", strconv.Itoa(idx)})
 	if err == nil {
 		p.setState(Playing)
 	}
