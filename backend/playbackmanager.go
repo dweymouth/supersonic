@@ -124,11 +124,14 @@ func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool) error {
 	return nil
 }
 
-func (p *PlaybackManager) PlayAlbum(albumID string) error {
+func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int) error {
 	if err := p.LoadAlbum(albumID, false); err != nil {
 		return err
 	}
-	return p.player.PlayFromBeginning()
+	if firstTrack <= 0 {
+		return p.player.PlayFromBeginning()
+	}
+	return p.player.PlayTrackAt(firstTrack)
 }
 
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {

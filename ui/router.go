@@ -27,6 +27,10 @@ func ArtistRoute(artistID string) Route {
 	return Route{Page: Artist, Arg: artistID}
 }
 
+func AlbumRoute(albumID string) Route {
+	return Route{Page: Album, Arg: albumID}
+}
+
 type NavigationHandler interface {
 	SetPage(Page)
 }
@@ -45,10 +49,12 @@ func NewRouter(app *backend.App, nav NavigationHandler) Router {
 
 func (r Router) CreatePage(rte Route) Page {
 	switch rte.Page {
+	case Album:
+		return NewAlbumPage(rte.Arg, r.App.LibraryManager)
 	case Albums:
 		return NewAlbumsPage("Albums", rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Artist:
-		return NewArtistPage(rte.Arg, r.App.ServerManager, r.App.ImageManager)
+		return NewArtistPage(rte.Arg, r.App.ServerManager, r.App.ImageManager, r.OpenRoute)
 	}
 	return nil
 }

@@ -26,6 +26,7 @@ type AlbumGrid struct {
 
 	imageFetcher     ImageFetcher
 	OnPlayAlbum      func(string)
+	OnShowAlbumPage  func(string)
 	OnShowArtistPage func(string)
 }
 
@@ -86,6 +87,11 @@ func (ag *AlbumGrid) createGridWrapList() {
 			ac.OnShowArtistPage = func() {
 				if ag.OnShowArtistPage != nil {
 					ag.OnShowArtistPage(ac.ArtistID())
+				}
+			}
+			ac.OnShowAlbumPage = func() {
+				if ag.OnShowAlbumPage != nil {
+					ag.OnShowAlbumPage(ac.AlbumID())
 				}
 			}
 			return ac
