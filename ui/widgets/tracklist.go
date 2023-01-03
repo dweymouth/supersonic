@@ -39,7 +39,7 @@ func NewTrackRow() *TrackRow {
 	t.artist.Wrapping = fyne.TextTruncate
 	t.dur = widget.NewRichTextWithText("")
 
-	t.container = container.New(layout.NewColumnsLayout([]float32{30, -1, -1, 50}),
+	t.container = container.New(layout.NewColumnsLayout([]float32{30, -1, -1, 55}),
 		t.num, t.name, t.artist, t.dur)
 	return t
 }
