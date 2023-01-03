@@ -64,7 +64,7 @@ type AlbumCard struct {
 
 	albumID   string
 	artistID  string
-	title     *widget.Label
+	title     *CustomHyperlink
 	artist    *CustomHyperlink
 	year      *widget.Label
 	container *fyne.Container
@@ -91,7 +91,7 @@ func (a *AlbumCard) MouseMoved(*desktop.MouseEvent) {}
 
 func NewAlbumCard(showYear bool) *AlbumCard {
 	a := &AlbumCard{
-		title:    widget.NewLabel(""),
+		title:    NewCustomHyperlink(),
 		artist:   NewCustomHyperlink(),
 		year:     widget.NewLabel(""),
 		Cover:    newAlbumCover(),
@@ -103,13 +103,16 @@ func NewAlbumCard(showYear bool) *AlbumCard {
 			a.OnPlay()
 		}
 	}
+	a.title.OnTapped = func() {
+		if a.OnShowAlbumPage != nil {
+			a.OnShowAlbumPage()
+		}
+	}
 	a.artist.OnTapped = func() {
 		if a.OnShowArtistPage != nil {
 			a.OnShowArtistPage()
 		}
 	}
-	a.title.Wrapping = fyne.TextTruncate
-	a.title.TextStyle = fyne.TextStyle{Bold: true}
 
 	a.createContainer()
 	return a

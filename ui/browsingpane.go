@@ -21,7 +21,7 @@ type Searchable interface {
 }
 
 type CanPlayAlbum interface {
-	SetPlayAlbumCallback(func(albumID string))
+	SetPlayAlbumCallback(func(albumID string, startingTrack int))
 }
 
 type BrowsingPane struct {
@@ -70,8 +70,8 @@ func (b *BrowsingPane) SetPage(p Page) {
 func (b *BrowsingPane) doSetPage(p Page) {
 	b.curPage = p
 	if pa, ok := p.(CanPlayAlbum); ok {
-		pa.SetPlayAlbumCallback(func(albumID string) {
-			_ = b.app.PlaybackManager.PlayAlbum(albumID)
+		pa.SetPlayAlbumCallback(func(albumID string, firstTrack int) {
+			_ = b.app.PlaybackManager.PlayAlbum(albumID, firstTrack)
 		})
 	}
 	_, s := p.(Searchable)
