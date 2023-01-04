@@ -12,14 +12,13 @@ type hyperlinkWrapper struct {
 
 	h        *widget.Hyperlink
 	l        *widget.Label
-	maxWidth float32
+	MaxWidth float32
 }
 
-func newHyperlinkWrapper(maxWidth float32) *hyperlinkWrapper {
+func newHyperlinkWrapper() *hyperlinkWrapper {
 	h := &hyperlinkWrapper{
-		h:        widget.NewHyperlink("", nil),
-		l:        widget.NewLabel(""),
-		maxWidth: maxWidth,
+		h: widget.NewHyperlink("", nil),
+		l: widget.NewLabel(""),
 	}
 	h.h.Wrapping = fyne.TextTruncate
 	h.ExtendBaseWidget(h)
@@ -27,7 +26,7 @@ func newHyperlinkWrapper(maxWidth float32) *hyperlinkWrapper {
 }
 
 func (h *hyperlinkWrapper) MinSize() fyne.Size {
-	w := fyne.Min(h.maxWidth, h.l.MinSize().Width)
+	w := fyne.Min(h.MaxWidth, h.l.MinSize().Width)
 	return fyne.NewSize(w, h.h.MinSize().Height)
 }
 
@@ -52,7 +51,7 @@ type CustomHyperlink struct {
 
 func NewCustomHyperlink() *CustomHyperlink {
 	c := &CustomHyperlink{
-		h: newHyperlinkWrapper(200),
+		h: newHyperlinkWrapper(),
 	}
 	c.h.h.OnTapped = func() {
 		if c.OnTapped != nil {
@@ -69,6 +68,11 @@ func (c *CustomHyperlink) SetText(text string) {
 	c.h.SetText(text)
 	c.minSize = fyne.NewSize(fyne.Min(c.Size().Width, s.Width), s.Height)
 	c.Refresh()
+}
+
+func (c *CustomHyperlink) Resize(size fyne.Size) {
+	c.h.MaxWidth = size.Width
+	c.BaseWidget.Resize(size)
 }
 
 func (c *CustomHyperlink) Refresh() {
