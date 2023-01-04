@@ -45,6 +45,10 @@ func (a *AlbumPage) SetPlayAlbumCallback(cb func(string, int)) {
 	a.OnPlayAlbum = cb
 }
 
+func (a *AlbumPage) Route() Route {
+	return AlbumRoute(a.albumID)
+}
+
 func (a *AlbumPage) onPlayTrackAt(tracknum int) {
 	if a.OnPlayAlbum != nil {
 		a.OnPlayAlbum(a.albumID, tracknum)

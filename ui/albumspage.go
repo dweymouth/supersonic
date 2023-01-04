@@ -102,6 +102,10 @@ func (a *AlbumsPage) OnSearched(query string) {
 	a.Refresh()
 }
 
+func (a *AlbumsPage) Route() Route {
+	return AlbumsRoute(backend.AlbumSortOrder(a.sortOrder.Selected))
+}
+
 func (a *AlbumsPage) SetPlayAlbumCallback(cb func(string, int)) {
 	a.OnPlayAlbum = cb
 }

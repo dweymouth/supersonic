@@ -44,6 +44,10 @@ func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.Image
 	return a
 }
 
+func (a *ArtistPage) Route() Route {
+	return ArtistRoute(a.artistID)
+}
+
 func (a *ArtistPage) SetPlayAlbumCallback(cb func(string, int)) {
 	a.OnPlayAlbum = cb
 }

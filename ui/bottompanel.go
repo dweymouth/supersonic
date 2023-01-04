@@ -55,8 +55,7 @@ func (b *bottomPanelLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
 type BottomPanel struct {
 	widget.BaseWidget
 
-	ImageManager *backend.ImageManager
-
+	ImageManager    *backend.ImageManager
 	playbackManager *backend.PlaybackManager
 
 	NowPlaying  *widgets.NowPlayingCard
@@ -67,7 +66,7 @@ type BottomPanel struct {
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(p *player.Player) *BottomPanel {
+func NewBottomPanel(p *player.Player, nav func(Route)) *BottomPanel {
 	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
 	p.OnPaused(func() {
@@ -81,6 +80,12 @@ func NewBottomPanel(p *player.Player) *BottomPanel {
 	})
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
+	bp.NowPlaying.OnAlbumNameTapped(func() {
+		nav(AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
+	})
+	bp.NowPlaying.OnArtistNameTapped(func() {
+		nav(ArtistRoute(bp.playbackManager.NowPlaying().ArtistID))
+	})
 	bp.Controls = widgets.NewPlayerControls()
 	bp.Controls.OnPlayPause(func() {
 		p.PlayPause()
