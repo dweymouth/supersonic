@@ -50,7 +50,7 @@ func NewRouter(app *backend.App, nav NavigationHandler) Router {
 func (r Router) CreatePage(rte Route) Page {
 	switch rte.Page {
 	case Album:
-		return NewAlbumPage(rte.Arg, r.App.LibraryManager)
+		return NewAlbumPage(rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Albums:
 		return NewAlbumsPage("Albums", rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Artist:
