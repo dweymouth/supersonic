@@ -5,7 +5,7 @@ import (
 	"image"
 	"strconv"
 
-	"supersonic/ui/layout"
+	"supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -123,9 +123,9 @@ func (a *AlbumCard) createContainer() {
 	if a.showYear {
 		secondLabel = a.year
 	}
-	info := container.New(&layout.VboxCustomPadding{ExtraPad: -16}, a.title, secondLabel)
-	c := container.New(&layout.VboxCustomPadding{ExtraPad: -5}, a.Cover, info)
-	pad := &layout.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
+	info := container.New(&layouts.VboxCustomPadding{ExtraPad: -16}, a.title, secondLabel)
+	c := container.New(&layouts.VboxCustomPadding{ExtraPad: -5}, a.Cover, info)
+	pad := &layouts.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
 	a.container = container.New(pad, c)
 }
 

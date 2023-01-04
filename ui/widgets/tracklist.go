@@ -2,7 +2,7 @@ package widgets
 
 import (
 	"strconv"
-	"supersonic/ui/layout"
+	"supersonic/ui/layouts"
 	"supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
@@ -39,7 +39,7 @@ func NewTrackRow() *TrackRow {
 	t.artist.Wrapping = fyne.TextTruncate
 	t.dur = widget.NewRichTextWithText("")
 
-	t.container = container.New(layout.NewColumnsLayout([]float32{30, -1, -1, 55}),
+	t.container = container.New(layouts.NewColumnsLayout([]float32{30, -1, -1, 55}),
 		t.num, t.name, t.artist, t.dur)
 	return t
 }

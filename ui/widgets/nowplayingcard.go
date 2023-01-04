@@ -2,8 +2,7 @@ package widgets
 
 import (
 	"image"
-
-	"supersonic/ui/layout"
+	"supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -35,7 +34,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.cover.SetMinSize(fyne.NewSize(100, 100))
 	n.cover.FillMode = canvas.ImageFillContain
 
-	n.c = container.NewBorder(nil, nil, n.cover, nil, container.New(&layout.VboxCustomPadding{ExtraPad: -10}, n.trackName, n.artistName, n.albumName))
+	n.c = container.NewBorder(nil, nil, n.cover, nil, container.New(&layouts.VboxCustomPadding{ExtraPad: -10}, n.trackName, n.artistName, n.albumName))
 	return n
 }
 
