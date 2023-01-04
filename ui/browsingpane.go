@@ -17,6 +17,8 @@ import (
 
 type Page interface {
 	fyne.CanvasObject
+
+	Route() Route
 }
 
 type Searchable interface {
@@ -48,10 +50,6 @@ type BrowsingPane struct {
 	container     *fyne.Container
 }
 
-type blankPage struct {
-	layout.Spacer
-}
-
 func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
@@ -59,10 +57,9 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.searchBar.OnTextChanged = b.onSearchTextChanged
 	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
-	b.curPage = &blankPage{}
 	b.pageContainer = container.NewMax(
 		canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 24, A: 255}),
-		b.curPage)
+		layout.NewSpacer())
 	b.container = container.NewBorder(
 		container.NewHBox(b.back, b.forward, b.searchBar),
 		nil, nil, nil, b.pageContainer)
@@ -70,11 +67,15 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 }
 
 func (b *BrowsingPane) SetPage(p Page) {
-	b.addPageToHistory(p)
-	b.doSetPage(p)
+	if b.doSetPage(p) {
+		b.addPageToHistory(p)
+	}
 }
 
-func (b *BrowsingPane) doSetPage(p Page) {
+func (b *BrowsingPane) doSetPage(p Page) bool {
+	if b.curPage != nil && b.curPage.Route() == p.Route() {
+		return false
+	}
 	b.curPage = p
 	if pa, ok := p.(CanPlayAlbum); ok {
 		pa.SetPlayAlbumCallback(func(albumID string, firstTrack int) {
@@ -85,6 +86,7 @@ func (b *BrowsingPane) doSetPage(p Page) {
 	b.searchBar.Hidden = !s
 	b.pageContainer.Objects[1] = p
 	b.Refresh()
+	return true
 }
 
 func (b *BrowsingPane) addPageToHistory(p Page) {
