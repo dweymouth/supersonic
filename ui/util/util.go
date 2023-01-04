@@ -13,5 +13,5 @@ func SecondsToTimeString(s float64) string {
 	min := sec / 60
 	sec -= min * 60
 
-	return fmt.Sprintf("%2d:%02d", min, sec)
+	return fmt.Sprintf("%3d:%02d", min, sec)
 }

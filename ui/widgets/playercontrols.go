@@ -75,8 +75,8 @@ func NewPlayerControls() *PlayerControls {
 	pc.ExtendBaseWidget(pc)
 
 	pc.slider = NewTrackPosSlider()
-	pc.curTimeLabel = widget.NewLabel("0:00")
-	pc.totalTimeLabel = widget.NewLabel("0:00")
+	pc.curTimeLabel = widget.NewLabel(util.SecondsToTimeString(0))
+	pc.totalTimeLabel = widget.NewLabel(util.SecondsToTimeString(0))
 
 	pc.slider.OnChanged = func(f float64) {
 		time := f * pc.totalTime
