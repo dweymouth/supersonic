@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"supersonic/backend"
+	"supersonic/ui/layouts"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
@@ -33,8 +34,10 @@ type AlbumPage struct {
 func NewAlbumPage(albumID string, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *AlbumPage {
 	a := &AlbumPage{albumID: albumID, lm: lm, im: im, nav: nav}
 	a.ExtendBaseWidget(a)
-	a.header = NewAlbumPageHeader(nav)
-	a.container = container.NewBorder(a.header, nil, nil, nil, layout.NewSpacer())
+	a.header = NewAlbumPageHeader(a)
+	a.container = container.NewBorder(
+		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
+		nil, nil, nil, layout.NewSpacer())
 	a.loadAsync()
 	return a
 }
@@ -67,7 +70,7 @@ func (a *AlbumPage) loadAsync() {
 		a.header.Update(album, a.im)
 		tl := widgets.NewTracklist(album.Song)
 		tl.OnPlayTrackAt = a.onPlayTrackAt
-		a.container.Objects[0] = tl
+		a.container.Objects[0] = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, tl)
 		a.container.Refresh()
 	}()
 }
@@ -84,10 +87,12 @@ type AlbumPageHeader struct {
 	genreLabel  *widget.Label // later custom hyperlink
 	miscLabel   *widget.Label
 
+	playButton *widget.Button
+
 	container *fyne.Container
 }
 
-func NewAlbumPageHeader(nav func(Route)) *AlbumPageHeader {
+func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a := &AlbumPageHeader{}
 	a.ExtendBaseWidget(a)
 	a.cover = &canvas.Image{FillMode: canvas.ImageFillContain}
@@ -99,13 +104,20 @@ func NewAlbumPageHeader(nav func(Route)) *AlbumPageHeader {
 	}
 	a.artistLabel = widgets.NewCustomHyperlink()
 	a.artistLabel.OnTapped = func() {
-		nav(ArtistRoute(a.artistID))
+		page.nav(ArtistRoute(a.artistID))
 	}
 	a.genreLabel = widget.NewLabel("")
 	a.miscLabel = widget.NewLabel("")
+	a.playButton = widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
+		page.onPlayTrackAt(0)
+	})
 
 	a.container = container.NewBorder(nil, nil, a.cover, nil,
-		container.NewVBox(a.titleLabel, a.artistLabel, a.genreLabel, a.miscLabel),
+		container.NewVBox(
+			a.titleLabel,
+			container.New(&layouts.VboxCustomPadding{ExtraPad: -10}, a.artistLabel, a.genreLabel, a.miscLabel),
+			container.NewHBox(a.playButton),
+		),
 	)
 	return a
 }
