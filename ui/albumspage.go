@@ -71,7 +71,7 @@ func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, i
 	a.grid.OnShowArtistPage = a.onShowArtistPage
 	a.grid.OnShowAlbumPage = a.onShowAlbumPage
 	a.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(15), a.titleDisp, sortVbox),
+		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, sortVbox),
 		nil,
 		nil,
 		nil,
