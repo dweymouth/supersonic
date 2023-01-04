@@ -100,9 +100,8 @@ func NewBottomPanel(p *player.Player) *BottomPanel {
 		_ = p.SetVolume(v)
 	}
 
-	main := container.New(newBottomPanelLayout(500, bp.NowPlaying, bp.Controls, bp.AuxControls),
+	bp.container = container.New(newBottomPanelLayout(500, bp.NowPlaying, bp.Controls, bp.AuxControls),
 		bp.NowPlaying, bp.Controls, bp.AuxControls)
-	bp.container = container.NewBorder(widgets.NewThickSeparator(), nil, nil, nil, main)
 	return bp
 }
 

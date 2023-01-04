@@ -1,19 +1,22 @@
 package ui
 
 import (
+	"image/color"
 	"supersonic/backend"
 	"supersonic/ui/widgets"
 	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 type Page interface {
-	fyne.Widget
+	fyne.CanvasObject
 }
 
 type Searchable interface {
@@ -41,11 +44,12 @@ type BrowsingPane struct {
 	pendingSearch     bool
 	searchGoroutine   bool
 
-	container *fyne.Container
+	pageContainer *fyne.Container
+	container     *fyne.Container
 }
 
 type blankPage struct {
-	widget.Separator
+	layout.Spacer
 }
 
 func NewBrowsingPane(app *backend.App) *BrowsingPane {
@@ -56,12 +60,12 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.curPage = &blankPage{}
+	b.pageContainer = container.NewMax(
+		canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 24, A: 255}),
+		b.curPage)
 	b.container = container.NewBorder(
-		container.NewVBox(
-			container.NewHBox(b.back, b.forward, b.searchBar),
-			widgets.NewThickSeparator(),
-		),
-		nil, nil, nil, b.curPage)
+		container.NewHBox(b.back, b.forward, b.searchBar),
+		nil, nil, nil, b.pageContainer)
 	return b
 }
 
@@ -79,7 +83,7 @@ func (b *BrowsingPane) doSetPage(p Page) {
 	}
 	_, s := p.(Searchable)
 	b.searchBar.Hidden = !s
-	b.container.Objects[0] = p
+	b.pageContainer.Objects[1] = p
 	b.Refresh()
 }
 

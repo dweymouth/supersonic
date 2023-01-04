@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/theme"
 	"github.com/20after4/configdir"
 	"github.com/zalando/go-keyring"
 )
@@ -29,7 +28,7 @@ func main() {
 	}
 
 	fyneApp := app.New()
-	fyneApp.Settings().SetTheme(theme.DarkTheme())
+	fyneApp.Settings().SetTheme(&ui.MyTheme{})
 	mainWindow := ui.NewMainWindow(fyneApp, appname, myApp)
 
 	// TODO: There is some race condition with running this initial startup
