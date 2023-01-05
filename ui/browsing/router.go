@@ -1,6 +1,8 @@
-package ui
+package browsing
 
-import "supersonic/backend"
+import (
+	"supersonic/backend"
+)
 
 type PageName int
 

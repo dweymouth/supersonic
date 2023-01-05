@@ -1,8 +1,9 @@
-package ui
+package browsing
 
 import (
 	"log"
 	"supersonic/backend"
+	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -20,7 +21,7 @@ type ArtistPage struct {
 	im        *backend.ImageManager
 	sm        *backend.ServerManager
 	nav       func(Route)
-	grid      *AlbumGrid
+	grid      *widgets.AlbumGrid
 	titleDisp *widget.RichText
 	container *fyne.Container
 
@@ -71,7 +72,7 @@ func (a *ArtistPage) loadAsync() {
 		}
 		a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
 		a.titleDisp.Refresh()
-		ag := NewFixedAlbumGrid(artist.Album, a.im.GetAlbumThumbnail, true /*showYear*/)
+		ag := widgets.NewFixedAlbumGrid(artist.Album, a.im.GetAlbumThumbnail, true /*showYear*/)
 		ag.OnPlayAlbum = a.onPlayAlbum
 		ag.OnShowAlbumPage = a.onShowAlbumPage
 		a.container.Objects[0] = ag

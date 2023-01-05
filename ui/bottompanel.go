@@ -5,6 +5,7 @@ import (
 	"image"
 	"supersonic/backend"
 	"supersonic/player"
+	"supersonic/ui/browsing"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -66,7 +67,7 @@ type BottomPanel struct {
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(p *player.Player, nav func(Route)) *BottomPanel {
+func NewBottomPanel(p *player.Player, nav func(browsing.Route)) *BottomPanel {
 	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
 	p.OnPaused(func() {
@@ -81,10 +82,10 @@ func NewBottomPanel(p *player.Player, nav func(Route)) *BottomPanel {
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
 	bp.NowPlaying.OnAlbumNameTapped(func() {
-		nav(AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
+		nav(browsing.AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
 	})
 	bp.NowPlaying.OnArtistNameTapped(func() {
-		nav(ArtistRoute(bp.playbackManager.NowPlaying().ArtistID))
+		nav(browsing.ArtistRoute(bp.playbackManager.NowPlaying().ArtistID))
 	})
 	bp.Controls = widgets.NewPlayerControls()
 	bp.Controls.OnPlayPause(func() {
