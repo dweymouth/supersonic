@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/go-subsonic"
 )
 
 type Page interface {
@@ -27,6 +28,10 @@ type Searchable interface {
 
 type CanPlayAlbum interface {
 	SetPlayAlbumCallback(func(albumID string, startingTrack int))
+}
+
+type CanShowNowPlaying interface {
+	OnSongChange(song *subsonic.Child)
 }
 
 type BrowsingPane struct {
@@ -57,6 +62,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.searchBar.OnTextChanged = b.onSearchTextChanged
 	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
+	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.pageContainer = container.NewMax(
 		canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 24, A: 255}),
 		layout.NewSpacer())
@@ -82,11 +88,23 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 			_ = b.app.PlaybackManager.PlayAlbum(albumID, firstTrack)
 		})
 	}
+	if np, ok := p.(CanShowNowPlaying); ok {
+		np.OnSongChange(b.app.PlaybackManager.NowPlaying())
+	}
 	_, s := p.(Searchable)
 	b.searchBar.Hidden = !s
 	b.pageContainer.Objects[1] = p
 	b.Refresh()
 	return true
+}
+
+func (b *BrowsingPane) onSongChange(song *subsonic.Child) {
+	if b.curPage == nil {
+		return
+	}
+	if p, ok := b.curPage.(CanShowNowPlaying); ok {
+		p.OnSongChange(song)
+	}
 }
 
 func (b *BrowsingPane) addPageToHistory(p Page) {
