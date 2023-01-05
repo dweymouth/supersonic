@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic"
@@ -20,13 +19,14 @@ import (
 type AlbumPage struct {
 	widget.BaseWidget
 
-	albumID   string
-	im        *backend.ImageManager
-	lm        *backend.LibraryManager
-	nav       func(Route)
-	header    *AlbumPageHeader
-	tracklist *widgets.Tracklist
-	container *fyne.Container
+	albumID      string
+	im           *backend.ImageManager
+	lm           *backend.LibraryManager
+	nav          func(Route)
+	header       *AlbumPageHeader
+	tracklist    *widgets.Tracklist
+	nowPlayingID string
+	container    *fyne.Container
 
 	OnPlayAlbum func(string, int)
 }
@@ -35,9 +35,11 @@ func NewAlbumPage(albumID string, lm *backend.LibraryManager, im *backend.ImageM
 	a := &AlbumPage{albumID: albumID, lm: lm, im: im, nav: nav}
 	a.ExtendBaseWidget(a)
 	a.header = NewAlbumPageHeader(a)
+	a.tracklist = widgets.NewTracklist(nil)
+	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
-		nil, nil, nil, layout.NewSpacer())
+		nil, nil, nil, container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, a.tracklist))
 	a.loadAsync()
 	return a
 }
@@ -54,6 +56,15 @@ func (a *AlbumPage) Route() Route {
 	return AlbumRoute(a.albumID)
 }
 
+func (a *AlbumPage) OnSongChange(song *subsonic.Child) {
+	if song == nil {
+		a.nowPlayingID = ""
+	} else {
+		a.nowPlayingID = song.ID
+	}
+	a.tracklist.SetNowPlaying(a.nowPlayingID)
+}
+
 func (a *AlbumPage) onPlayTrackAt(tracknum int) {
 	if a.OnPlayAlbum != nil {
 		a.OnPlayAlbum(a.albumID, tracknum)
@@ -68,10 +79,8 @@ func (a *AlbumPage) loadAsync() {
 			return
 		}
 		a.header.Update(album, a.im)
-		tl := widgets.NewTracklist(album.Song)
-		tl.OnPlayTrackAt = a.onPlayTrackAt
-		a.container.Objects[0] = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, tl)
-		a.container.Refresh()
+		a.tracklist.Tracks = album.Song
+		a.tracklist.SetNowPlaying(a.nowPlayingID)
 	}()
 }
 
