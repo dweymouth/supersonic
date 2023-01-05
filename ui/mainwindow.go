@@ -2,6 +2,7 @@ package ui
 
 import (
 	"supersonic/backend"
+	"supersonic/ui/browsing"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -13,8 +14,8 @@ import (
 type MainWindow struct {
 	Window fyne.Window
 
-	Router       Router
-	BrowsingPane *BrowsingPane
+	Router       browsing.Router
+	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
 	container *fyne.Container
@@ -23,9 +24,9 @@ type MainWindow struct {
 func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindow {
 	m := MainWindow{
 		Window:       fyneApp.NewWindow(appName),
-		BrowsingPane: NewBrowsingPane(app),
+		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
-	m.Router = NewRouter(app, m.BrowsingPane)
+	m.Router = browsing.NewRouter(app, m.BrowsingPane)
 	m.BottomPanel = NewBottomPanel(app.Player, m.Router.OpenRoute)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager
@@ -40,7 +41,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 		m.Window.SetTitle(song.Title)
 	})
 	app.ServerManager.OnServerConnected(func() {
-		m.Router.OpenRoute(AlbumsRoute(backend.AlbumSortRecentlyAdded))
+		m.Router.OpenRoute(browsing.AlbumsRoute(backend.AlbumSortRecentlyAdded))
 	})
 	return m
 }

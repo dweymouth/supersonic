@@ -1,4 +1,4 @@
-package ui
+package browsing
 
 import (
 	"supersonic/backend"
@@ -19,8 +19,8 @@ type AlbumsPage struct {
 	im          *backend.ImageManager
 	lm          *backend.LibraryManager
 	nav         func(Route)
-	grid        *AlbumGrid
-	searchGrid  *AlbumGrid
+	grid        *widgets.AlbumGrid
+	searchGrid  *widgets.AlbumGrid
 	searchText  string
 	titleDisp   *widget.RichText
 	sortOrder   *selectWidget
@@ -66,7 +66,7 @@ func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, i
 	a.sortOrder.OnChanged = a.onSortOrderChanged
 	sortVbox := container.NewVBox(layout.NewSpacer(), a.sortOrder, layout.NewSpacer())
 	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected))
-	a.grid = NewAlbumGrid(iter, im.GetAlbumThumbnail, false /*showYear*/)
+	a.grid = widgets.NewAlbumGrid(iter, im.GetAlbumThumbnail, false /*showYear*/)
 	a.grid.OnPlayAlbum = a.onPlayAlbum
 	a.grid.OnShowArtistPage = a.onShowArtistPage
 	a.grid.OnShowAlbumPage = a.onShowAlbumPage
@@ -91,7 +91,7 @@ func (a *AlbumsPage) OnSearched(query string) {
 		return
 	}
 	if a.searchGrid == nil {
-		a.searchGrid = NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail, false /*showYear*/)
+		a.searchGrid = widgets.NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail, false /*showYear*/)
 		a.searchGrid.OnPlayAlbum = a.onPlayAlbum
 		a.searchGrid.OnShowAlbumPage = a.onShowAlbumPage
 		a.searchGrid.OnShowArtistPage = a.onShowArtistPage

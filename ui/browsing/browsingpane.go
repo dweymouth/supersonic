@@ -1,4 +1,4 @@
-package ui
+package browsing
 
 import (
 	"image/color"
