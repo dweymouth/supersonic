@@ -3,9 +3,6 @@ package browsing
 import (
 	"image/color"
 	"supersonic/backend"
-	"supersonic/ui/widgets"
-	"sync"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -21,10 +18,6 @@ type Page interface {
 
 	Reload()
 	Route() Route
-}
-
-type Searchable interface {
-	OnSearched(string)
 }
 
 type CanPlayAlbum interface {
@@ -52,11 +45,6 @@ type BrowsingPane struct {
 	history    []Page
 	historyIdx int
 
-	searchBar         *widgets.SearchEntry
-	pendingSearchLock sync.Mutex
-	pendingSearch     bool
-	searchGoroutine   bool
-
 	pageContainer *fyne.Container
 	container     *fyne.Container
 }
@@ -64,8 +52,6 @@ type BrowsingPane struct {
 func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
-	b.searchBar = widgets.NewSearchEntry()
-	b.searchBar.OnTextChanged = b.onSearchTextChanged
 	b.home = widget.NewButtonWithIcon("", theme.HomeIcon(), b.goHome)
 	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
@@ -75,7 +61,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 		canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 24, A: 255}),
 		layout.NewSpacer())
 	b.container = container.NewBorder(
-		container.NewHBox(b.home, b.back, b.forward, b.reload, b.searchBar),
+		container.NewHBox(b.home, b.back, b.forward, b.reload),
 		nil, nil, nil, b.pageContainer)
 	return b
 }
@@ -99,8 +85,6 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	if np, ok := p.(CanShowNowPlaying); ok {
 		np.OnSongChange(b.app.PlaybackManager.NowPlaying())
 	}
-	_, s := p.(Searchable)
-	b.searchBar.Hidden = !s
 	b.pageContainer.Objects[1] = p
 	b.Refresh()
 	return true
@@ -144,46 +128,6 @@ func (b *BrowsingPane) GoForward() {
 func (b *BrowsingPane) Reload() {
 	if b.curPage != nil {
 		b.curPage.Reload()
-	}
-}
-
-func (b *BrowsingPane) onSearchTextChanged(text string) {
-	if text == "" {
-		b.sendSearch("")
-		return
-	}
-	b.pendingSearchLock.Lock()
-	defer b.pendingSearchLock.Unlock()
-	b.pendingSearch = true
-	if !b.searchGoroutine {
-		go b.waitAndSearch()
-		b.searchGoroutine = true
-	}
-}
-
-func (b *BrowsingPane) waitAndSearch() {
-	t := time.NewTicker(200 * time.Millisecond)
-	var getReadyToSearch bool
-	var done bool
-	for !done {
-		<-t.C
-		b.pendingSearchLock.Lock()
-		if b.pendingSearch {
-			getReadyToSearch = true
-			b.pendingSearch = false
-		} else if getReadyToSearch {
-			b.sendSearch(b.searchBar.Text)
-			t.Stop()
-			b.searchGoroutine = false
-			done = true
-		}
-		b.pendingSearchLock.Unlock()
-	}
-}
-
-func (b *BrowsingPane) sendSearch(query string) {
-	if s, ok := b.curPage.(Searchable); ok {
-		s.OnSearched(query)
 	}
 }
 
