@@ -19,6 +19,7 @@ import (
 type Page interface {
 	fyne.CanvasObject
 
+	Reload()
 	Route() Route
 }
 
@@ -43,6 +44,7 @@ type BrowsingPane struct {
 
 	forward    *widget.Button
 	back       *widget.Button
+	reload     *widget.Button
 	history    []Page
 	historyIdx int
 
@@ -62,12 +64,13 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.searchBar.OnTextChanged = b.onSearchTextChanged
 	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
+	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.pageContainer = container.NewMax(
 		canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 24, A: 255}),
 		layout.NewSpacer())
 	b.container = container.NewBorder(
-		container.NewHBox(b.back, b.forward, b.searchBar),
+		container.NewHBox(b.back, b.forward, b.reload, b.searchBar),
 		nil, nil, nil, b.pageContainer)
 	return b
 }
@@ -124,6 +127,12 @@ func (b *BrowsingPane) GoForward() {
 	if b.historyIdx < len(b.history) {
 		b.historyIdx++
 		b.doSetPage(b.history[b.historyIdx-1])
+	}
+}
+
+func (b *BrowsingPane) Reload() {
+	if b.curPage != nil {
+		b.curPage.Reload()
 	}
 }
 
