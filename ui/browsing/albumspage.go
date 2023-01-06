@@ -90,6 +90,26 @@ func (a *AlbumsPage) OnSearched(query string) {
 		a.Refresh()
 		return
 	}
+	a.doSearch(query)
+}
+
+func (a *AlbumsPage) Route() Route {
+	return AlbumsRoute(backend.AlbumSortOrder(a.sortOrder.Selected))
+}
+
+func (a *AlbumsPage) SetPlayAlbumCallback(cb func(string, int)) {
+	a.OnPlayAlbum = cb
+}
+
+func (a *AlbumsPage) Reload() {
+	if a.searchText != "" {
+		a.doSearch(a.searchText)
+	} else {
+		a.grid.Reset(a.lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected)))
+	}
+}
+
+func (a *AlbumsPage) doSearch(query string) {
 	if a.searchGrid == nil {
 		a.searchGrid = widgets.NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail, false /*showYear*/)
 		a.searchGrid.OnPlayAlbum = a.onPlayAlbum
@@ -100,14 +120,6 @@ func (a *AlbumsPage) OnSearched(query string) {
 	}
 	a.container.Objects[0] = a.searchGrid
 	a.Refresh()
-}
-
-func (a *AlbumsPage) Route() Route {
-	return AlbumsRoute(backend.AlbumSortOrder(a.sortOrder.Selected))
-}
-
-func (a *AlbumsPage) SetPlayAlbumCallback(cb func(string, int)) {
-	a.OnPlayAlbum = cb
 }
 
 func (a *AlbumsPage) onPlayAlbum(albumID string) {

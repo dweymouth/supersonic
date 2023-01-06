@@ -53,6 +53,10 @@ func (a *ArtistPage) SetPlayAlbumCallback(cb func(string, int)) {
 	a.OnPlayAlbum = cb
 }
 
+func (a *ArtistPage) Reload() {
+	a.loadAsync()
+}
+
 func (a *ArtistPage) onPlayAlbum(albumID string) {
 	if a.OnPlayAlbum != nil {
 		a.OnPlayAlbum(albumID, 0)

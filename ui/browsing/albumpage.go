@@ -65,6 +65,10 @@ func (a *AlbumPage) OnSongChange(song *subsonic.Child) {
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 }
 
+func (a *AlbumPage) Reload() {
+	a.loadAsync()
+}
+
 func (a *AlbumPage) onPlayTrackAt(tracknum int) {
 	if a.OnPlayAlbum != nil {
 		a.OnPlayAlbum(a.albumID, tracknum)
