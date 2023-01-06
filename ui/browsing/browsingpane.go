@@ -40,8 +40,12 @@ type BrowsingPane struct {
 
 	app *backend.App
 
+	// Invoked when the home button is clicked
+	OnGoHome func()
+
 	curPage Page
 
+	home       *widget.Button
 	forward    *widget.Button
 	back       *widget.Button
 	reload     *widget.Button
@@ -62,6 +66,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.ExtendBaseWidget(b)
 	b.searchBar = widgets.NewSearchEntry()
 	b.searchBar.OnTextChanged = b.onSearchTextChanged
+	b.home = widget.NewButtonWithIcon("", theme.HomeIcon(), b.goHome)
 	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
@@ -70,7 +75,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 		canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 24, A: 255}),
 		layout.NewSpacer())
 	b.container = container.NewBorder(
-		container.NewHBox(b.back, b.forward, b.reload, b.searchBar),
+		container.NewHBox(b.home, b.back, b.forward, b.reload, b.searchBar),
 		nil, nil, nil, b.pageContainer)
 	return b
 }
@@ -114,6 +119,12 @@ func (b *BrowsingPane) addPageToHistory(p Page) {
 	b.history = b.history[:b.historyIdx]
 	b.history = append(b.history, p)
 	b.historyIdx++
+}
+
+func (b *BrowsingPane) goHome() {
+	if b.OnGoHome != nil {
+		b.OnGoHome()
+	}
 }
 
 func (b *BrowsingPane) GoBack() {

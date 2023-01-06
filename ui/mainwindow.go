@@ -21,12 +21,20 @@ type MainWindow struct {
 	container *fyne.Container
 }
 
+var (
+	HomePage = browsing.AlbumsRoute(backend.AlbumSortRecentlyAdded)
+)
+
 func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindow {
 	m := MainWindow{
 		Window:       fyneApp.NewWindow(appName),
 		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
+
 	m.Router = browsing.NewRouter(app, m.BrowsingPane)
+	m.BrowsingPane.OnGoHome = func() {
+		m.Router.OpenRoute(HomePage)
+	}
 	m.BottomPanel = NewBottomPanel(app.Player, m.Router.OpenRoute)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager
@@ -41,7 +49,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 		m.Window.SetTitle(song.Title)
 	})
 	app.ServerManager.OnServerConnected(func() {
-		m.Router.OpenRoute(browsing.AlbumsRoute(backend.AlbumSortRecentlyAdded))
+		m.Router.OpenRoute(HomePage)
 	})
 	return m
 }
