@@ -106,6 +106,7 @@ func (a *AlbumsPage) Reload() {
 		a.doSearch(a.searchText)
 	} else {
 		a.grid.Reset(a.lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected)))
+		a.grid.Refresh()
 	}
 }
 
