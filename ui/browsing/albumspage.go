@@ -21,6 +21,7 @@ type AlbumsPage struct {
 	nav         func(Route)
 	grid        *widgets.AlbumGrid
 	searchGrid  *widgets.AlbumGrid
+	searcher    *widgets.Searcher
 	searchText  string
 	titleDisp   *widget.RichText
 	sortOrder   *selectWidget
@@ -70,8 +71,11 @@ func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, i
 	a.grid.OnPlayAlbum = a.onPlayAlbum
 	a.grid.OnShowArtistPage = a.onShowArtistPage
 	a.grid.OnShowAlbumPage = a.onShowAlbumPage
+	a.searcher = widgets.NewSearcher()
+	a.searcher.OnSearched = a.OnSearched
+	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
 	a.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, sortVbox),
+		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, sortVbox, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
 		nil,
 		nil,
 		nil,
