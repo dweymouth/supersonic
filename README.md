@@ -17,6 +17,7 @@ On first startup, the app will prompt you for your Subsonic server connection. T
 
 ### Build
 * ``go build .``
+* (note that the first build will take some time as it will download and build the UI library)
 
 ## Build (Mac OS)
 
@@ -31,3 +32,4 @@ On first startup, the app will prompt you for your Subsonic server connection. T
   - ``export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH``
 
 * ``go build .``
+* (note that the first build will take some time as it will download and build the UI library)
