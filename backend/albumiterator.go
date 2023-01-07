@@ -51,17 +51,17 @@ var (
 func (l *LibraryManager) AlbumsIter(sort AlbumSortOrder) AlbumIterator {
 	switch sort {
 	case AlbumSortRecentlyAdded:
-		return l.newBaseIter("newest")
+		return l.newBaseIter("newest", make(map[string]string))
 	case AlbumSortRecentlyPlayed:
-		return l.newBaseIter("recent")
+		return l.newBaseIter("recent", make(map[string]string))
 	case AlbumSortFrequentlyPlayed:
-		return l.newBaseIter("frequent")
+		return l.newBaseIter("frequent", make(map[string]string))
 	case AlbumSortRandom:
 		return l.newRandomIter()
 	case AlbumSortTitleAZ:
-		return l.newBaseIter("alphabeticalByName")
+		return l.newBaseIter("alphabeticalByName", make(map[string]string))
 	case AlbumSortArtistAZ:
-		return l.newBaseIter("alphabeticalByArtist")
+		return l.newBaseIter("alphabeticalByArtist", make(map[string]string))
 	default:
 		log.Printf("Undefined album sort order: %s", sort)
 		return nil
@@ -69,7 +69,11 @@ func (l *LibraryManager) AlbumsIter(sort AlbumSortOrder) AlbumIterator {
 }
 
 func (l *LibraryManager) StarredIter() AlbumIterator {
-	return l.newBaseIter("starred")
+	return l.newBaseIter("starred", make(map[string]string))
+}
+
+func (l *LibraryManager) GenreIter(genre string) AlbumIterator {
+	return l.newBaseIter("", map[string]string{"genre": genre})
 }
 
 func (l *LibraryManager) SearchIter(query string) AlbumIterator {
@@ -99,16 +103,18 @@ type baseIter struct {
 	pos           int
 	l             *LibraryManager
 	s             *subsonic.Client
+	opts          map[string]string
 	prefetched    []*subsonic.AlbumID3
 	prefetchedPos int
 	done          bool
 }
 
-func (l *LibraryManager) newBaseIter(listType string) *baseIter {
+func (l *LibraryManager) newBaseIter(listType string, opts map[string]string) *baseIter {
 	return &baseIter{
 		listType: listType,
 		l:        l,
 		s:        l.s.Server,
+		opts:     opts,
 	}
 }
 
@@ -128,7 +134,8 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 
 		return a
 	}
-	albums, err := r.s.GetAlbumList2(r.listType, map[string]string{"size": "20", "offset": strconv.Itoa(r.pos)})
+	r.opts["offset"] = strconv.Itoa(r.pos)
+	albums, err := r.s.GetAlbumList2(r.listType, r.opts)
 	if err != nil {
 		log.Println(err)
 		albums = nil
