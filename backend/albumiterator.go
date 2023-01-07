@@ -73,11 +73,15 @@ func (l *LibraryManager) StarredIter() AlbumIterator {
 }
 
 func (l *LibraryManager) GenreIter(genre string) AlbumIterator {
-	return l.newBaseIter("", map[string]string{"genre": genre})
+	return l.newBaseIter("byGenre", map[string]string{"genre": genre})
 }
 
 func (l *LibraryManager) SearchIter(query string) AlbumIterator {
-	return l.newSearchIter(query)
+	return l.newSearchIter(query, func(*subsonic.AlbumID3) bool { return true })
+}
+
+func (l *LibraryManager) SearchIterWithFilter(query string, filter func(*subsonic.AlbumID3) bool) AlbumIterator {
+	return l.newSearchIter(query, filter)
 }
 
 func (l *LibraryManager) CacheAlbum(a *subsonic.AlbumID3) {
@@ -172,17 +176,19 @@ type searchIter struct {
 	songOffset    int
 	l             *LibraryManager
 	s             *subsonic.Client
+	filter        func(*subsonic.AlbumID3) bool
 	prefetched    []*subsonic.AlbumID3
 	prefetchedPos int
 	albumIDset    map[string]bool
 	done          bool
 }
 
-func (l *LibraryManager) newSearchIter(query string) *searchIter {
+func (l *LibraryManager) newSearchIter(query string, filter func(*subsonic.AlbumID3) bool) *searchIter {
 	return &searchIter{
 		query:      query,
 		l:          l,
 		s:          l.s.Server,
+		filter:     filter,
 		albumIDset: make(map[string]bool),
 	}
 }
@@ -265,6 +271,9 @@ func (s *searchIter) NextN(n int, cb func(*subsonic.AlbumID3)) {
 func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 	for _, album := range al {
 		if _, have := s.albumIDset[album.ID]; have {
+			continue
+		}
+		if !s.filter(album) {
 			continue
 		}
 		s.prefetched = append(s.prefetched, album)
