@@ -199,6 +199,7 @@ func (s *searchIter) Next() *subsonic.AlbumID3 {
 		}
 		if results == nil || len(results.Album)+len(results.Artist)+len(results.Song) == 0 {
 			s.done = true
+			s.albumIDset = nil
 			return nil
 		}
 
@@ -304,6 +305,7 @@ func (r *randomIter) Next() *subsonic.AlbumID3 {
 				}
 				if len(albums) == 0 {
 					r.done = true
+					r.albumIDSet = nil
 					return nil
 				}
 				r.offset += len(albums)
@@ -320,6 +322,7 @@ func (r *randomIter) Next() *subsonic.AlbumID3 {
 			if err != nil {
 				log.Println(err)
 				r.done = true
+				r.albumIDSet = nil
 				return nil
 			}
 			var hitCount int
@@ -330,7 +333,7 @@ func (r *randomIter) Next() *subsonic.AlbumID3 {
 					r.albumIDSet[album.ID] = true
 				}
 			}
-			if successRatio := float64(hitCount) / float64(25); successRatio < 0.4 {
+			if successRatio := float64(hitCount) / float64(25); successRatio < 0.3 {
 				r.phaseTwo = true
 			}
 		}
