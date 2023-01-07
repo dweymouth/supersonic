@@ -1,6 +1,8 @@
 # supersonic
 A lightweight desktop client for Subsonic music servers. This is in early development and if you decide to use it now, expect to find a few bugs and missing features.
 
+On first startup, the app will prompt you for your Subsonic server connection. The app currently has a searchable albums grid view, an artist discography view, and individual album view with tracklist.
+
 ## Features
 * Fast, lightweight, native UI
 * High-quality gapless audio playback powered by MPV
