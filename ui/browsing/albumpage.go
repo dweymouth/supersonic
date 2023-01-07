@@ -93,11 +93,12 @@ type AlbumPageHeader struct {
 
 	albumID  string
 	artistID string
+	genre    string
 
 	cover       *canvas.Image
 	titleLabel  *widget.RichText
 	artistLabel *widgets.CustomHyperlink
-	genreLabel  *widget.Label // later custom hyperlink
+	genreLabel  *widgets.CustomHyperlink
 	miscLabel   *widget.Label
 
 	playButton *widget.Button
@@ -119,7 +120,10 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.artistLabel.OnTapped = func() {
 		page.nav(ArtistRoute(a.artistID))
 	}
-	a.genreLabel = widget.NewLabel("")
+	a.genreLabel = widgets.NewCustomHyperlink()
+	a.genreLabel.OnTapped = func() {
+		page.nav(GenreRoute(a.genre))
+	}
 	a.miscLabel = widget.NewLabel("")
 	a.playButton = widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
 		page.onPlayTrackAt(0)
@@ -144,6 +148,7 @@ func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageMana
 	a.artistID = album.ArtistID
 	a.titleLabel.Segments[0].(*widget.TextSegment).Text = album.Name
 	a.artistLabel.SetText(album.Artist)
+	a.genre = album.Genre
 	a.genreLabel.SetText(album.Genre)
 	a.miscLabel.SetText(formatMiscLabelStr(album))
 	a.Refresh()

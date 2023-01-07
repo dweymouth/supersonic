@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/go-subsonic"
 )
 
 // TODO: there is a lot of code duplication between this and albumspage. Refactor?
@@ -43,7 +44,8 @@ func NewGenrePage(genre string, lm *backend.LibraryManager, im *backend.ImageMan
 	g.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	g.grid = widgets.NewFixedAlbumGrid(nil, im.GetAlbumThumbnail, false /*showYear*/)
+	iter := g.lm.GenreIter(g.genre)
+	g.grid = widgets.NewAlbumGrid(iter, g.im.GetAlbumThumbnail, false)
 	g.grid.OnPlayAlbum = g.onPlayAlbum
 	g.grid.OnShowArtistPage = g.onShowArtistPage
 	g.grid.OnShowAlbumPage = g.onShowAlbumPage
@@ -76,7 +78,7 @@ func (g *GenrePage) Reload() {
 	if g.searchText != "" {
 		g.doSearch(g.searchText)
 	} else {
-		g.grid.Reset(nil)
+		g.grid.Reset(g.lm.GenreIter(g.genre))
 		g.grid.Refresh()
 	}
 }
@@ -96,9 +98,30 @@ func (a *GenrePage) onShowAlbumPage(albumID string) {
 }
 
 func (g *GenrePage) OnSearched(query string) {
-
+	g.searchText = query
+	if query == "" {
+		g.container.Objects[0] = g.grid
+		if g.searchGrid != nil {
+			g.searchGrid.Clear()
+		}
+		g.Refresh()
+		return
+	}
+	g.doSearch(query)
 }
 
 func (g *GenrePage) doSearch(query string) {
-
+	iter := g.lm.SearchIterWithFilter(query, func(al *subsonic.AlbumID3) bool {
+		return al.Genre == g.genre
+	})
+	if g.searchGrid == nil {
+		g.searchGrid = widgets.NewAlbumGrid(iter, g.im.GetAlbumThumbnail, false /*showYear*/)
+		g.searchGrid.OnPlayAlbum = g.onPlayAlbum
+		g.searchGrid.OnShowAlbumPage = g.onShowAlbumPage
+		g.searchGrid.OnShowArtistPage = g.onShowArtistPage
+	} else {
+		g.searchGrid.Reset(iter)
+	}
+	g.container.Objects[0] = g.searchGrid
+	g.Refresh()
 }
