@@ -116,7 +116,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	if im, ok := page.im.GetAlbumThumbnailFromCache(page.albumID); ok {
 		a.cover.Image = im
 	}
-	a.titleLabel = widget.NewRichTextWithText("Album Title")
+	a.titleLabel = widget.NewRichTextWithText("")
 	a.titleLabel.Wrapping = fyne.TextTruncate
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
