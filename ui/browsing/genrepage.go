@@ -45,7 +45,7 @@ func NewGenrePage(genre string, lm *backend.LibraryManager, im *backend.ImageMan
 		SizeName: theme.SizeNameHeadingText,
 	}
 	iter := g.lm.GenreIter(g.genre)
-	g.grid = widgets.NewAlbumGrid(iter, g.im.GetAlbumThumbnail, false)
+	g.grid = widgets.NewAlbumGrid(iter, g.im, false)
 	g.grid.OnPlayAlbum = g.onPlayAlbum
 	g.grid.OnShowArtistPage = g.onShowArtistPage
 	g.grid.OnShowAlbumPage = g.onShowAlbumPage
@@ -115,7 +115,7 @@ func (g *GenrePage) doSearch(query string) {
 		return al.Genre == g.genre
 	})
 	if g.searchGrid == nil {
-		g.searchGrid = widgets.NewAlbumGrid(iter, g.im.GetAlbumThumbnail, false /*showYear*/)
+		g.searchGrid = widgets.NewAlbumGrid(iter, g.im, false /*showYear*/)
 		g.searchGrid.OnPlayAlbum = g.onPlayAlbum
 		g.searchGrid.OnShowAlbumPage = g.onShowAlbumPage
 		g.searchGrid.OnShowArtistPage = g.onShowArtistPage

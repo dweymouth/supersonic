@@ -67,7 +67,7 @@ func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, i
 	a.sortOrder.OnChanged = a.onSortOrderChanged
 	sortVbox := container.NewVBox(layout.NewSpacer(), a.sortOrder, layout.NewSpacer())
 	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected))
-	a.grid = widgets.NewAlbumGrid(iter, im.GetAlbumThumbnail, false /*showYear*/)
+	a.grid = widgets.NewAlbumGrid(iter, im, false /*showYear*/)
 	a.grid.OnPlayAlbum = a.onPlayAlbum
 	a.grid.OnShowArtistPage = a.onShowArtistPage
 	a.grid.OnShowAlbumPage = a.onShowAlbumPage
@@ -116,7 +116,7 @@ func (a *AlbumsPage) Reload() {
 
 func (a *AlbumsPage) doSearch(query string) {
 	if a.searchGrid == nil {
-		a.searchGrid = widgets.NewAlbumGrid(a.lm.SearchIter(query), a.im.GetAlbumThumbnail, false /*showYear*/)
+		a.searchGrid = widgets.NewAlbumGrid(a.lm.SearchIter(query), a.im, false /*showYear*/)
 		a.searchGrid.OnPlayAlbum = a.onPlayAlbum
 		a.searchGrid.OnShowAlbumPage = a.onShowAlbumPage
 		a.searchGrid.OnShowArtistPage = a.onShowArtistPage

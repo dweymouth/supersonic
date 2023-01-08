@@ -51,6 +51,9 @@ func StartupApp() (*App, error) {
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player)
 	a.LibraryManager = NewLibraryManager(a.ServerManager)
 	a.ImageManager = NewImageManager(a.ServerManager, configdir.LocalCache(AppName))
+	a.LibraryManager.PreCacheCoverFn = func(albumID string) {
+		_, _ = a.ImageManager.GetAlbumThumbnail(albumID)
+	}
 
 	return a, nil
 }

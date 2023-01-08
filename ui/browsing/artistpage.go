@@ -76,7 +76,7 @@ func (a *ArtistPage) loadAsync() {
 		}
 		a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
 		a.titleDisp.Refresh()
-		ag := widgets.NewFixedAlbumGrid(artist.Album, a.im.GetAlbumThumbnail, true /*showYear*/)
+		ag := widgets.NewFixedAlbumGrid(artist.Album, a.im, true /*showYear*/)
 		ag.OnPlayAlbum = a.onPlayAlbum
 		ag.OnShowAlbumPage = a.onShowAlbumPage
 		a.container.Objects[0] = ag
