@@ -148,7 +148,7 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 
 	// TODO: remove magic number 10
 	if !ag.done && !ag.fetching && albumIdx > len(ag.albums)-10 {
-		ag.fetchMoreAlbums(10)
+		ag.fetchMoreAlbums(20)
 	}
 }
 
