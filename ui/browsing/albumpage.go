@@ -111,6 +111,11 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.ExtendBaseWidget(a)
 	a.cover = &canvas.Image{FillMode: canvas.ImageFillContain}
 	a.cover.SetMinSize(fyne.NewSize(225, 225))
+	// due to cache warming we can probably immediately set the cover
+	// and not have to set it asynchronously in the Update function
+	if im, ok := page.im.GetAlbumThumbnailFromCache(page.albumID); ok {
+		a.cover.Image = im
+	}
 	a.titleLabel = widget.NewRichTextWithText("Album Title")
 	a.titleLabel.Wrapping = fyne.TextTruncate
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
@@ -152,6 +157,11 @@ func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageMana
 	a.genreLabel.SetText(album.Genre)
 	a.miscLabel.SetText(formatMiscLabelStr(album))
 	a.Refresh()
+
+	// cover image was already loaded from cache in consructor
+	if a.albumID == album.ID && a.cover.Image != nil {
+		return
+	}
 	go func() {
 		if cover, err := im.GetAlbumThumbnail(album.ID); err == nil {
 			a.cover.Image = cover
