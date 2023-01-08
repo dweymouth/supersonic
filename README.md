@@ -4,9 +4,24 @@ A lightweight desktop client for Subsonic music servers. This is in early develo
 On first startup, the app will prompt you for your Subsonic server connection. The app currently has a searchable albums grid view, an artist discography view, and individual album view with tracklist.
 
 ## Features
-* Fast, lightweight, native UI
-* High-quality gapless audio playback powered by MPV
-* Infinite scrolling
+* [x] Fast, lightweight, native UI
+* [x] High-quality gapless audio playback powered by MPV
+* [x] Infinite scrolling
+* [x] Scrobble plays to server
+* [x] Browse, search, and play albums
+* [x] Album view with tracklist
+* [x] Browse by genre (partial; full support coming soon)
+* [x] Browse by artist (partial; full support coming soon)
+* [ ] View and edit play queue (coming soon)
+* [ ] Set/unset favorite and browse by favorites (coming soon)
+* [ ] Browse, create, and edit playlists (coming soon)
+* [ ] Shuffle and repeat playback modes (planned)
+* [ ] Set and view five-star rating (planned)
+* [ ] Browse by folders (planned)
+* [ ] Multi-server support (planned)
+* [ ] Download album or playlist (planned)
+* [ ] Cast to uPnP/DLNA devices (tentatively planned)
+
 
 ## Build (Ubuntu)
 
