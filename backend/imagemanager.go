@@ -32,6 +32,13 @@ func NewImageManager(s *ServerManager, baseCacheDir string) *ImageManager {
 	}
 }
 
+func (i *ImageManager) GetAlbumThumbnailFromCache(albumID string) (image.Image, bool) {
+	if img, err := i.thumbnailCache.Get(albumID); err == nil && img != nil {
+		return img.(image.Image), true
+	}
+	return nil, false
+}
+
 func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	// in-memory cache
 	if i.thumbnailCache.Has(albumID) {

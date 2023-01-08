@@ -10,7 +10,10 @@ import (
 	"github.com/dweymouth/go-subsonic"
 )
 
-type ImageFetcher func(string) (image.Image, error)
+type ImageFetcher interface {
+	GetAlbumThumbnailFromCache(string) (image.Image, bool)
+	GetAlbumThumbnail(string) (image.Image, error)
+}
 
 type AlbumIterator interface {
 	NextN(int, func(*subsonic.AlbumID3))
@@ -121,22 +124,27 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 		ac.ImgLoadCancel()
 		ac.ImgLoadCancel = nil
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	go func(ctx context.Context) {
-		i, err := ag.imageFetcher(album.ID)
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			if err == nil {
-				ac.Cover.SetImage(i)
-				ac.Cover.Refresh()
-			} else {
-				log.Printf("error fetching image: %s", err.Error())
+	if img, ok := ag.imageFetcher.GetAlbumThumbnailFromCache(album.ID); ok {
+		ac.Cover.SetImage(img)
+		ac.Cover.Refresh()
+	} else {
+		ctx, cancel := context.WithCancel(context.Background())
+		go func(ctx context.Context) {
+			i, err := ag.imageFetcher.GetAlbumThumbnail(album.ID)
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if err == nil {
+					ac.Cover.SetImage(i)
+					ac.Cover.Refresh()
+				} else {
+					log.Printf("error fetching image: %s", err.Error())
+				}
 			}
-		}
-	}(ctx)
-	ac.ImgLoadCancel = cancel
+		}(ctx)
+		ac.ImgLoadCancel = cancel
+	}
 
 	// TODO: remove magic number 10
 	if !ag.done && !ag.fetching && albumIdx > len(ag.albums)-10 {
