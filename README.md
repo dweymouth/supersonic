@@ -23,7 +23,7 @@ On first startup, the app will prompt you for your Subsonic server connection. T
 * [ ] Cast to uPnP/DLNA devices (tentatively planned)
 
 
-## Build (Ubuntu)
+## Build instructions (Ubuntu)
 
 ### Install dependencies
 * ``sudo snap install --classic go``
@@ -31,10 +31,10 @@ On first startup, the app will prompt you for your Subsonic server connection. T
 * ``sudo apt install gcc libegl1-mesa-dev xorg-dev``
 
 ### Build
-* ``go build .``
+* clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
 
-## Build (Mac OS)
+## Build instructions (Mac OS)
 
 ### Install dependencies
 * install go
@@ -46,5 +46,16 @@ On first startup, the app will prompt you for your Subsonic server connection. T
   - ``export C_INCLUDE_PATH=/opt/homebrew/include:$C_INCLUDE_PATH``
   - ``export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH``
 
-* ``go build .``
+* clone the repo, CD into the repo root, and run ``go build .``
+* (note that the first build will take some time as it will download and build the UI library)
+
+## Build instructions (Windows)
+
+### Install dependencies
+* install go (https://go.dev/doc/install)
+* install MSYS2 and the required packages for the Fyne toolkit (follow instructions for Windows at https://developer.fyne.io/started/)
+* install libmpv (in the MSYS2 terminal, ``pacman -S mingw-w64-x86_64-mpv``)
+
+### Build
+* in the MSYS2 terminal: clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
