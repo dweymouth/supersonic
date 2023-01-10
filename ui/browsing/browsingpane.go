@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"image/color"
+	"log"
 	"supersonic/backend"
 
 	"fyne.io/fyne/v2"
@@ -16,8 +17,13 @@ import (
 type Page interface {
 	fyne.CanvasObject
 
+	Save() SavedPage
 	Reload()
 	Route() Route
+}
+
+type SavedPage interface {
+	Restore() Page
 }
 
 type CanPlayAlbum interface {
@@ -42,7 +48,7 @@ type BrowsingPane struct {
 	forward    *widget.Button
 	back       *widget.Button
 	reload     *widget.Button
-	history    []Page
+	history    []SavedPage
 	historyIdx int
 
 	pageContainer *fyne.Container
@@ -67,8 +73,9 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 }
 
 func (b *BrowsingPane) SetPage(p Page) {
-	if b.doSetPage(p) {
-		b.addPageToHistory(p)
+	oldPage := b.curPage
+	if b.doSetPage(p) && oldPage != nil {
+		b.addPageToHistory(oldPage, true)
 	}
 }
 
@@ -99,13 +106,19 @@ func (b *BrowsingPane) onSongChange(song *subsonic.Child) {
 	}
 }
 
-func (b *BrowsingPane) addPageToHistory(p Page) {
-	// allow garbage collection of pages that will be removed from the history
-	for i := b.historyIdx; i < len(b.history); i++ {
-		b.history[i] = nil
+func (b *BrowsingPane) addPageToHistory(p Page, truncate bool) {
+	if truncate {
+		// allow garbage collection of pages that will be removed from the history
+		for i := b.historyIdx; i < len(b.history); i++ {
+			b.history[i] = nil
+		}
+		b.history = b.history[:b.historyIdx]
 	}
-	b.history = b.history[:b.historyIdx]
-	b.history = append(b.history, p)
+	if b.historyIdx < len(b.history) {
+		b.history[b.historyIdx] = p.Save()
+	} else {
+		b.history = append(b.history, p.Save())
+	}
 	b.historyIdx++
 }
 
@@ -116,16 +129,19 @@ func (b *BrowsingPane) goHome() {
 }
 
 func (b *BrowsingPane) GoBack() {
-	if b.historyIdx > 1 {
-		b.historyIdx -= 1
-		b.doSetPage(b.history[b.historyIdx-1])
+	log.Printf("goBack called! historyIdx=%d, len=%d", b.historyIdx, len(b.history))
+	if b.historyIdx > 0 {
+		b.addPageToHistory(b.curPage, false)
+		b.historyIdx -= 2
+		b.doSetPage(b.history[b.historyIdx].Restore())
 	}
 }
 
 func (b *BrowsingPane) GoForward() {
-	if b.historyIdx < len(b.history) {
-		b.historyIdx++
-		b.doSetPage(b.history[b.historyIdx-1])
+	log.Printf("goForward called! historyIdx=%d, len=%d", b.historyIdx, len(b.history))
+	if b.historyIdx < len(b.history)-1 {
+		b.addPageToHistory(b.curPage, false)
+		b.doSetPage(b.history[b.historyIdx].Restore())
 	}
 }
 

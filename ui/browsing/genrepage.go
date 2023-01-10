@@ -51,6 +51,12 @@ func NewGenrePage(genre string, lm *backend.LibraryManager, im *backend.ImageMan
 	g.grid.OnShowAlbumPage = g.onShowAlbumPage
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched
+	g.createContainer()
+
+	return g
+}
+
+func (g *GenrePage) createContainer() {
 	searchVbox := container.NewVBox(layout.NewSpacer(), g.searcher.Entry, layout.NewSpacer())
 	g.container = container.NewBorder(
 		container.NewHBox(widgets.NewHSpace(9), g.titleDisp, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
@@ -59,6 +65,26 @@ func NewGenrePage(genre string, lm *backend.LibraryManager, im *backend.ImageMan
 		nil,
 		g.grid,
 	)
+}
+
+func restoreGenrePage(saved *savedGenrePage) *GenrePage {
+	g := &GenrePage{
+		genre: saved.genre,
+		lm:    saved.lm,
+		im:    saved.im,
+		nav:   saved.nav,
+	}
+	g.ExtendBaseWidget(g)
+
+	g.titleDisp = widget.NewRichTextWithText(g.genre)
+	g.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
+		SizeName: theme.SizeNameHeadingText,
+	}
+	g.grid = widgets.NewAlbumGridFromState(saved.gridState)
+	g.searcher = widgets.NewSearcher()
+	g.searcher.OnSearched = g.OnSearched
+	g.createContainer()
+
 	return g
 }
 
@@ -80,6 +106,16 @@ func (g *GenrePage) Reload() {
 	} else {
 		g.grid.Reset(g.lm.GenreIter(g.genre))
 		g.grid.Refresh()
+	}
+}
+
+func (g *GenrePage) Save() SavedPage {
+	return &savedGenrePage{
+		genre:     g.genre,
+		lm:        g.lm,
+		im:        g.im,
+		nav:       g.nav,
+		gridState: g.grid.SaveToState(),
 	}
 }
 
@@ -124,4 +160,16 @@ func (g *GenrePage) doSearch(query string) {
 	}
 	g.container.Objects[0] = g.searchGrid
 	g.Refresh()
+}
+
+type savedGenrePage struct {
+	genre     string
+	lm        *backend.LibraryManager
+	im        *backend.ImageManager
+	nav       func(Route)
+	gridState widgets.AlbumGridState
+}
+
+func (s *savedGenrePage) Restore() Page {
+	return restoreGenrePage(s)
 }
