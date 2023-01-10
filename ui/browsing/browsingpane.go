@@ -2,7 +2,6 @@ package browsing
 
 import (
 	"image/color"
-	"log"
 	"supersonic/backend"
 
 	"fyne.io/fyne/v2"
@@ -129,7 +128,6 @@ func (b *BrowsingPane) goHome() {
 }
 
 func (b *BrowsingPane) GoBack() {
-	log.Printf("goBack called! historyIdx=%d, len=%d", b.historyIdx, len(b.history))
 	if b.historyIdx > 0 {
 		b.addPageToHistory(b.curPage, false)
 		b.historyIdx -= 2
@@ -138,7 +136,6 @@ func (b *BrowsingPane) GoBack() {
 }
 
 func (b *BrowsingPane) GoForward() {
-	log.Printf("goForward called! historyIdx=%d, len=%d", b.historyIdx, len(b.history))
 	if b.historyIdx < len(b.history)-1 {
 		b.addPageToHistory(b.curPage, false)
 		b.doSetPage(b.history[b.historyIdx].Restore())
