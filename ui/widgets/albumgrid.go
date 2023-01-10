@@ -81,11 +81,10 @@ func (ag *AlbumGrid) SaveToState() AlbumGridState {
 }
 
 func NewAlbumGridFromState(state AlbumGridState) *AlbumGrid {
-	log.Printf("restoring album grid from state: %+v", state)
 	ag := &AlbumGrid{AlbumGridState: state}
 	ag.ExtendBaseWidget(ag)
 	ag.createGridWrapList()
-	ag.Refresh()
+	ag.Refresh() // needed to initialize the widget
 	ag.grid.ScrollToOffset(state.scrollPos)
 	return ag
 }
