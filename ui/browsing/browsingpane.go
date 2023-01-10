@@ -100,6 +100,10 @@ func (b *BrowsingPane) onSongChange(song *subsonic.Child) {
 }
 
 func (b *BrowsingPane) addPageToHistory(p Page) {
+	// allow garbage collection of pages that will be removed from the history
+	for i := b.historyIdx; i < len(b.history); i++ {
+		b.history[i] = nil
+	}
 	b.history = b.history[:b.historyIdx]
 	b.history = append(b.history, p)
 	b.historyIdx++
