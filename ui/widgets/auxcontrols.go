@@ -3,6 +3,7 @@ package widgets
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -55,13 +56,43 @@ func (v *volumeSlider) MinSize() fyne.Size {
 	return fyne.NewSize(v.Width, h)
 }
 
+type tappableIcon struct {
+	widget.Icon
+
+	OnTapped func()
+}
+
+func newTappableIcon(res fyne.Resource) *tappableIcon {
+	icon := &tappableIcon{}
+	icon.ExtendBaseWidget(icon)
+	icon.SetResource(res)
+
+	return icon
+}
+
+func (t *tappableIcon) Tapped(_ *fyne.PointEvent) {
+	if t.OnTapped != nil {
+		t.OnTapped()
+	}
+}
+
+func (t *tappableIcon) TappedSecondary(_ *fyne.PointEvent) {
+}
+
+func (t *tappableIcon) Cursor() desktop.Cursor {
+	return desktop.PointerCursor
+}
+
 type VolumeControl struct {
 	widget.BaseWidget
 
-	icon   *widget.Icon
+	icon   *tappableIcon
 	slider *volumeSlider
 
 	OnVolumeChanged func(int)
+
+	muted   bool
+	lastVol int
 
 	container *fyne.Container
 }
@@ -69,8 +100,10 @@ type VolumeControl struct {
 func NewVolumeControl() *VolumeControl {
 	v := &VolumeControl{}
 	v.ExtendBaseWidget(v)
-	v.icon = widget.NewIcon(theme.VolumeUpIcon())
+	v.icon = newTappableIcon(theme.VolumeUpIcon())
+	v.icon.OnTapped = v.toggleMute
 	v.slider = NewVolumeSlider(100)
+	v.lastVol = 100
 	v.slider.Step = 1
 	v.slider.Orientation = widget.Horizontal
 	v.slider.Value = 100
@@ -81,20 +114,22 @@ func NewVolumeControl() *VolumeControl {
 
 func (v *VolumeControl) onChanged(volume float64) {
 	vol := int(volume)
-	if vol <= 0 {
-		vol = 0
-		v.icon.Resource = theme.VolumeMuteIcon()
-	} else if vol < 50 {
-		v.icon.Resource = theme.VolumeDownIcon()
-	} else {
-		if vol > 100 {
-			vol = 100
-		}
-		v.icon.Resource = theme.VolumeUpIcon()
-	}
-	v.icon.Refresh()
+	v.lastVol = vol
+	v.muted = false
+	v.updateIconForVolume(vol)
 	if v.OnVolumeChanged != nil {
 		v.OnVolumeChanged(vol)
+	}
+}
+
+func (v *VolumeControl) toggleMute() {
+	if !v.muted {
+		v.muted = true
+		v.lastVol = int(v.slider.Value)
+		v.SetVolume(0)
+	} else {
+		v.muted = false
+		v.SetVolume(v.lastVol)
 	}
 }
 
@@ -105,4 +140,20 @@ func (v *VolumeControl) CreateRenderer() fyne.WidgetRenderer {
 
 func (v *VolumeControl) SetVolume(vol int) {
 	v.slider.Value = float64(vol)
+	v.slider.Refresh()
+	v.updateIconForVolume(vol)
+	if v.OnVolumeChanged != nil {
+		v.OnVolumeChanged(vol)
+	}
+}
+
+func (v *VolumeControl) updateIconForVolume(vol int) {
+	if vol <= 0 {
+		v.icon.Resource = theme.VolumeMuteIcon()
+	} else if vol < 50 {
+		v.icon.Resource = theme.VolumeDownIcon()
+	} else {
+		v.icon.Resource = theme.VolumeUpIcon()
+	}
+	v.icon.Refresh()
 }
