@@ -25,6 +25,7 @@ Supersonic running against the Navidrome demo server<br/>
 * [ ] Browse by folders (planned)
 * [ ] Multi-server support (planned)
 * [ ] Download album or playlist (planned)
+* [ ] ReplayGain audio normalization support (planned, depending on files being ReplayGain tagged on server)
 * [ ] Cast to uPnP/DLNA devices (tentatively planned)
 
 
