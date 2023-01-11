@@ -57,6 +57,15 @@ func (a *ArtistPage) Reload() {
 	a.loadAsync()
 }
 
+func (a *ArtistPage) Save() SavedPage {
+	return &savedArtistPage{
+		artistID: a.artistID,
+		sm:       a.sm,
+		im:       a.im,
+		nav:      a.nav,
+	}
+}
+
 func (a *ArtistPage) onPlayAlbum(albumID string) {
 	if a.OnPlayAlbum != nil {
 		a.OnPlayAlbum(albumID, 0)
@@ -87,4 +96,15 @@ func (a *ArtistPage) loadAsync() {
 func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 	a.ExtendBaseWidget(a)
 	return widget.NewSimpleRenderer(a.container)
+}
+
+type savedArtistPage struct {
+	artistID string
+	sm       *backend.ServerManager
+	im       *backend.ImageManager
+	nav      func(Route)
+}
+
+func (s *savedArtistPage) Restore() Page {
+	return NewArtistPage(s.artistID, s.sm, s.im, s.nav)
 }

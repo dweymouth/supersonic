@@ -16,6 +16,7 @@ var _ fyne.Widget = (*AlbumsPage)(nil)
 type AlbumsPage struct {
 	widget.BaseWidget
 
+	title       string
 	im          *backend.ImageManager
 	lm          *backend.LibraryManager
 	nav         func(Route)
@@ -52,9 +53,10 @@ func (s *selectWidget) MinSize() fyne.Size {
 
 func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *AlbumsPage {
 	a := &AlbumsPage{
-		lm:  lm,
-		im:  im,
-		nav: nav,
+		title: title,
+		lm:    lm,
+		im:    im,
+		nav:   nav,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -65,7 +67,6 @@ func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, i
 	a.sortOrder = NewSelect(backend.AlbumSortOrders, nil)
 	a.sortOrder.Selected = sortOrder
 	a.sortOrder.OnChanged = a.onSortOrderChanged
-	sortVbox := container.NewVBox(layout.NewSpacer(), a.sortOrder, layout.NewSpacer())
 	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected))
 	a.grid = widgets.NewAlbumGrid(iter, im, false /*showYear*/)
 	a.grid.OnPlayAlbum = a.onPlayAlbum
@@ -73,7 +74,14 @@ func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, i
 	a.grid.OnShowAlbumPage = a.onShowAlbumPage
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
+	a.createContainer()
+
+	return a
+}
+
+func (a *AlbumsPage) createContainer() {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
+	sortVbox := container.NewVBox(layout.NewSpacer(), a.sortOrder, layout.NewSpacer())
 	a.container = container.NewBorder(
 		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, sortVbox, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
 		nil,
@@ -81,6 +89,29 @@ func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, i
 		nil,
 		a.grid,
 	)
+}
+
+func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
+	a := &AlbumsPage{
+		title: saved.title,
+		lm:    saved.lm,
+		im:    saved.im,
+		nav:   saved.nav,
+	}
+	a.ExtendBaseWidget(a)
+
+	a.titleDisp = widget.NewRichTextWithText(a.title)
+	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
+		SizeName: theme.SizeNameHeadingText,
+	}
+	a.sortOrder = NewSelect(backend.AlbumSortOrders, nil)
+	a.sortOrder.Selected = saved.sortOrder
+	a.sortOrder.OnChanged = a.onSortOrderChanged
+	a.grid = widgets.NewAlbumGridFromState(saved.gridState)
+	a.searcher = widgets.NewSearcher()
+	a.searcher.OnSearched = a.OnSearched
+	a.createContainer()
+
 	return a
 }
 
@@ -111,6 +142,17 @@ func (a *AlbumsPage) Reload() {
 	} else {
 		a.grid.Reset(a.lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected)))
 		a.grid.Refresh()
+	}
+}
+
+func (a *AlbumsPage) Save() SavedPage {
+	return &savedAlbumsPage{
+		title:     a.title,
+		lm:        a.lm,
+		im:        a.im,
+		nav:       a.nav,
+		sortOrder: a.sortOrder.Selected,
+		gridState: a.grid.SaveToState(),
 	}
 }
 
@@ -152,4 +194,17 @@ func (a *AlbumsPage) onSortOrderChanged(order string) {
 func (a *AlbumsPage) CreateRenderer() fyne.WidgetRenderer {
 	a.ExtendBaseWidget(a)
 	return widget.NewSimpleRenderer(a.container)
+}
+
+type savedAlbumsPage struct {
+	title     string
+	lm        *backend.LibraryManager
+	im        *backend.ImageManager
+	nav       func(Route)
+	sortOrder string
+	gridState widgets.AlbumGridState
+}
+
+func (s *savedAlbumsPage) Restore() Page {
+	return restoreAlbumsPage(s)
 }
