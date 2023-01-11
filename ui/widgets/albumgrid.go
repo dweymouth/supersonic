@@ -22,7 +22,12 @@ type AlbumIterator interface {
 type AlbumGrid struct {
 	widget.BaseWidget
 
-	grid     *widget.GridWrapList
+	AlbumGridState
+
+	grid *widget.GridWrapList
+}
+
+type AlbumGridState struct {
 	albums   []*subsonic.AlbumID3
 	iter     AlbumIterator
 	fetching bool
@@ -33,16 +38,20 @@ type AlbumGrid struct {
 	OnPlayAlbum      func(string)
 	OnShowAlbumPage  func(string)
 	OnShowArtistPage func(string)
+
+	scrollPos float32
 }
 
 var _ fyne.Widget = (*AlbumGrid)(nil)
 
 func NewFixedAlbumGrid(albums []*subsonic.AlbumID3, fetch ImageFetcher, showYear bool) *AlbumGrid {
 	ag := &AlbumGrid{
-		albums:       albums,
-		done:         true,
-		imageFetcher: fetch,
-		showYear:     showYear,
+		AlbumGridState: AlbumGridState{
+			albums:       albums,
+			done:         true,
+			imageFetcher: fetch,
+			showYear:     showYear,
+		},
 	}
 	ag.ExtendBaseWidget(ag)
 	ag.createGridWrapList()
@@ -51,8 +60,10 @@ func NewFixedAlbumGrid(albums []*subsonic.AlbumID3, fetch ImageFetcher, showYear
 
 func NewAlbumGrid(iter AlbumIterator, fetch ImageFetcher, showYear bool) *AlbumGrid {
 	ag := &AlbumGrid{
-		iter:         iter,
-		imageFetcher: fetch,
+		AlbumGridState: AlbumGridState{
+			iter:         iter,
+			imageFetcher: fetch,
+		},
 	}
 	ag.ExtendBaseWidget(ag)
 
@@ -60,6 +71,21 @@ func NewAlbumGrid(iter AlbumIterator, fetch ImageFetcher, showYear bool) *AlbumG
 
 	// fetch initial albums
 	ag.fetchMoreAlbums(36)
+	return ag
+}
+
+func (ag *AlbumGrid) SaveToState() AlbumGridState {
+	s := ag.AlbumGridState
+	s.scrollPos = ag.grid.GetScrollOffset()
+	return s
+}
+
+func NewAlbumGridFromState(state AlbumGridState) *AlbumGrid {
+	ag := &AlbumGrid{AlbumGridState: state}
+	ag.ExtendBaseWidget(ag)
+	ag.createGridWrapList()
+	ag.Refresh() // needed to initialize the widget
+	ag.grid.ScrollToOffset(state.scrollPos)
 	return ag
 }
 

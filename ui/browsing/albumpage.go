@@ -52,6 +52,15 @@ func (a *AlbumPage) SetPlayAlbumCallback(cb func(string, int)) {
 	a.OnPlayAlbum = cb
 }
 
+func (a *AlbumPage) Save() SavedPage {
+	return &savedAlbumPage{
+		albumID: a.albumID,
+		lm:      a.lm,
+		im:      a.im,
+		nav:     a.nav,
+	}
+}
+
 func (a *AlbumPage) Route() Route {
 	return AlbumRoute(a.albumID)
 }
@@ -174,4 +183,15 @@ func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageMana
 
 func formatMiscLabelStr(a *subsonic.AlbumID3) string {
 	return fmt.Sprintf("%d · %d tracks · %s", a.Year, a.SongCount, util.SecondsToTimeString(float64(a.Duration)))
+}
+
+type savedAlbumPage struct {
+	albumID string
+	lm      *backend.LibraryManager
+	im      *backend.ImageManager
+	nav     func(Route)
+}
+
+func (s *savedAlbumPage) Restore() Page {
+	return NewAlbumPage(s.albumID, s.lm, s.im, s.nav)
 }
