@@ -108,7 +108,7 @@ func NewVolumeControl() *VolumeControl {
 	v.slider.Orientation = widget.Horizontal
 	v.slider.Value = 100
 	v.slider.OnChanged = v.onChanged
-	v.container = container.NewHBox(v.icon, v.slider)
+	v.container = container.NewHBox(container.NewCenter(v.icon), v.slider)
 	return v
 }
 
