@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/20after4/configdir"
 	"github.com/bluele/gcache"
@@ -48,12 +49,10 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	}
 
 	// on disc cache
-	path := filepath.Join(i.ensureCoverCacheDir(), fmt.Sprintf("%s.jpg", albumID))
+	path := i.filePathForCover(albumID)
 	if i.ensureCoverCacheDir() != "" {
-		if _, err := os.Stat(path); err == nil {
-			// serve image from on-disc cache
-			// TODO: image may have changed on server.
-			//    first, return cached image, then fetch fresh img from server in background
+		if s, err := os.Stat(path); err == nil {
+			go i.checkRefreshLocalCover(s, albumID)
 			if f, err := os.Open(path); err == nil {
 				defer f.Close()
 				if img, _, err := image.Decode(f); err == nil {
@@ -64,12 +63,22 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 		}
 	}
 
-	// fetch from server
+	return i.fetchAndCacheCoverFromServer(albumID)
+}
+
+func (i *ImageManager) ensureCoverCacheDir() string {
+	path := path.Join(i.baseCacheDir, i.s.ServerID.String(), "covers")
+	configdir.MakePath(path)
+	return path
+}
+
+func (i *ImageManager) fetchAndCacheCoverFromServer(albumID string) (image.Image, error) {
 	img, err := i.s.Server.GetCoverArt(albumID, map[string]string{"size": "300"})
 	if err != nil {
 		return nil, err
 	}
 	if i.ensureCoverCacheDir() != "" {
+		path := i.filePathForCover(albumID)
 		if f, err := os.Create(path); err == nil {
 			defer f.Close()
 			if err := jpeg.Encode(f, img, nil /*options*/); err != nil {
@@ -81,8 +90,12 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	return img, nil
 }
 
-func (i *ImageManager) ensureCoverCacheDir() string {
-	path := path.Join(i.baseCacheDir, i.s.ServerID.String(), "covers")
-	configdir.MakePath(path)
-	return path
+func (i *ImageManager) checkRefreshLocalCover(stat os.FileInfo, albumID string) {
+	if time.Now().Sub(stat.ModTime()) > 24*time.Hour {
+		i.fetchAndCacheCoverFromServer(albumID)
+	}
+}
+
+func (i *ImageManager) filePathForCover(albumID string) string {
+	return filepath.Join(i.ensureCoverCacheDir(), fmt.Sprintf("%s.jpg", albumID))
 }
