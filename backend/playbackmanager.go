@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ScrobbleThreshold = 0.6
+	ScrobbleThreshold = 0.9
 )
 
 type PlaybackManager struct {
