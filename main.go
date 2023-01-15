@@ -37,7 +37,7 @@ func main() {
 	// This makes it much less likely to occur (not seen on dozens of startups)
 	// but is a hacky "solution"!
 	go func() {
-		time.Sleep(75 * time.Millisecond)
+		time.Sleep(250 * time.Millisecond)
 		defaultServer := myApp.Config.GetDefaultServer()
 		if defaultServer == nil {
 			mainWindow.PromptForFirstServer(func(nick, host, user, pass string) {

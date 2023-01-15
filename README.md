@@ -3,9 +3,9 @@ A lightweight desktop client for Subsonic music servers. This is in early develo
 
 On first startup, the app will prompt you for your Subsonic server connection. The app currently has a searchable albums grid view, an artist discography view, and individual album view with tracklist.
 <p align="center">
-<img src="https://raw.github.com/dweymouth/supersonic/main/screenshots/albums-view.png" scale="50%"/><br/>
+<img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/albums-view.png" scale="50%"/><br/>
 Supersonic running against the Navidrome demo server<br/>
-<img src="https://raw.github.com/dweymouth/supersonic/main/screenshots/album-view.png" scale="50%"/>
+<img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/album-view.png" scale="50%"/>
 </p>
 
 ## Features
@@ -15,8 +15,8 @@ Supersonic running against the Navidrome demo server<br/>
 * [x] Scrobble plays to server
 * [x] Browse, search, and play albums
 * [x] Album view with tracklist
-* [x] Browse by genre (partial; full support coming soon)
-* [x] Browse by artist (partial; full support coming soon)
+* [x] Browse by genre
+* [x] Browse by artist
 * [ ] View and edit play queue (coming soon)
 * [ ] Set/unset favorite and browse by favorites (coming soon)
 * [ ] Browse, create, and edit playlists (coming soon)

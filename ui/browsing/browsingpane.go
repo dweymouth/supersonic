@@ -3,6 +3,7 @@ package browsing
 import (
 	"image/color"
 	"supersonic/backend"
+	"supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -38,26 +39,22 @@ type BrowsingPane struct {
 
 	app *backend.App
 
-	// Invoked when the home button is clicked
-	OnGoHome func()
-
 	curPage Page
 
-	home       *widget.Button
 	forward    *widget.Button
 	back       *widget.Button
 	reload     *widget.Button
 	history    []SavedPage
 	historyIdx int
 
-	pageContainer *fyne.Container
-	container     *fyne.Container
+	navBtnsContainer *fyne.Container
+	pageContainer    *fyne.Container
+	container        *fyne.Container
 }
 
 func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
-	b.home = widget.NewButtonWithIcon("", theme.HomeIcon(), b.goHome)
 	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
@@ -65,8 +62,10 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.pageContainer = container.NewMax(
 		canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 24, A: 255}),
 		layout.NewSpacer())
+	b.navBtnsContainer = container.NewHBox()
 	b.container = container.NewBorder(
-		container.NewHBox(b.home, b.back, b.forward, b.reload),
+		container.New(layouts.NewLeftMiddleRightLayout(0),
+			container.NewHBox(b.back, b.forward, b.reload), b.navBtnsContainer, layout.NewSpacer()),
 		nil, nil, nil, b.pageContainer)
 	return b
 }
@@ -76,6 +75,10 @@ func (b *BrowsingPane) SetPage(p Page) {
 	if b.doSetPage(p) && oldPage != nil {
 		b.addPageToHistory(oldPage, true)
 	}
+}
+
+func (b *BrowsingPane) AddNavigationButton(iconRes fyne.Resource, action func()) {
+	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", iconRes, action))
 }
 
 func (b *BrowsingPane) doSetPage(p Page) bool {
@@ -119,12 +122,6 @@ func (b *BrowsingPane) addPageToHistory(p Page, truncate bool) {
 		b.history = append(b.history, p.Save())
 	}
 	b.historyIdx++
-}
-
-func (b *BrowsingPane) goHome() {
-	if b.OnGoHome != nil {
-		b.OnGoHome()
-	}
 }
 
 func (b *BrowsingPane) GoBack() {
