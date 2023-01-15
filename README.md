@@ -1,7 +1,7 @@
 # supersonic
 A lightweight desktop client for Subsonic music servers. This is in early development, but currently usable for searching, browsing, and playing by albums. If you decide to use it now, expect to find a few minor bugs and missing features.
 
-On first startup, the app will prompt you for your Subsonic server connection. The app currently has a searchable albums grid view, an artist discography view, and individual album view with tracklist.
+On first startup, the app will prompt you for your Subsonic server connection. The app currently has a searchable albums grid view, an artist discography view, list views of all artists and genres, and individual album view with tracklist.
 <p align="center">
 <img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/albums-view.png" scale="50%"/><br/>
 Supersonic running against the Navidrome demo server<br/>
