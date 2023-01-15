@@ -37,6 +37,7 @@ func NewArtistsPage(sm *backend.ServerManager, nav func(Route)) *ArtistsPage {
 	a.list.ShowAlbumCount = true
 	a.list.ShowTrackCount = false
 	a.buildContainer()
+	go a.loadAsync()
 	return a
 }
 
@@ -46,7 +47,31 @@ func (a *ArtistsPage) loadAsync() {
 		log.Printf("error loading artists: %v", err.Error())
 	}
 	a.list.Items = a.buildListModel(artists)
-	a.list.Refresh()
+	a.Refresh()
+}
+
+func (a *ArtistsPage) Route() Route {
+	return ArtistsRoute()
+}
+
+func (a *ArtistsPage) Reload() {
+	go a.loadAsync()
+}
+
+func (a *ArtistsPage) Save() SavedPage {
+	return &savedArtistsPage{
+		sm:  a.sm,
+		nav: a.nav,
+	}
+}
+
+type savedArtistsPage struct {
+	sm  *backend.ServerManager
+	nav func(Route)
+}
+
+func (s *savedArtistsPage) Restore() Page {
+	return NewArtistsPage(s.sm, s.nav)
 }
 
 func (a *ArtistsPage) buildListModel(artists *subsonic.ArtistsID3) []widgets.ArtistGenrePlaylistItemModel {

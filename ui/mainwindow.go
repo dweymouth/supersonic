@@ -2,6 +2,7 @@ package ui
 
 import (
 	"supersonic/backend"
+	"supersonic/res"
 	"supersonic/ui/browsing"
 	"supersonic/ui/widgets"
 
@@ -32,9 +33,6 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 	}
 
 	m.Router = browsing.NewRouter(app, m.BrowsingPane)
-	m.BrowsingPane.OnGoHome = func() {
-		m.Router.OpenRoute(HomePage)
-	}
 	m.BottomPanel = NewBottomPanel(app.Player, m.Router.OpenRoute)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager
@@ -51,6 +49,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 	app.ServerManager.OnServerConnected(func() {
 		m.Router.OpenRoute(HomePage)
 	})
+	m.addNavigationButtons()
 	return m
 }
 
@@ -62,6 +61,15 @@ func (m *MainWindow) PromptForFirstServer(cb func(string, string, string, string
 		cb(d.Nickname, d.Host, d.Username, d.Password)
 	}
 	pop.Show()
+}
+
+func (m *MainWindow) addNavigationButtons() {
+	m.BrowsingPane.AddNavigationButton(res.ResDiscInvertPng, func() {
+		m.Router.OpenRoute(browsing.AlbumsRoute(backend.AlbumSortRecentlyAdded))
+	})
+	m.BrowsingPane.AddNavigationButton(res.ResPeopleInvertPng, func() {
+		m.Router.OpenRoute(browsing.ArtistsRoute())
+	})
 }
 
 func (m *MainWindow) Show() {
