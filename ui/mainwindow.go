@@ -70,6 +70,9 @@ func (m *MainWindow) addNavigationButtons() {
 	m.BrowsingPane.AddNavigationButton(res.ResPeopleInvertPng, func() {
 		m.Router.OpenRoute(browsing.ArtistsRoute())
 	})
+	m.BrowsingPane.AddNavigationButton(res.ResTheatermasksInvertPng, func() {
+		m.Router.OpenRoute(browsing.GenresRoute())
+	})
 }
 
 func (m *MainWindow) Show() {

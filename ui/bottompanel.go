@@ -6,52 +6,14 @@ import (
 	"supersonic/backend"
 	"supersonic/player"
 	"supersonic/ui/browsing"
+	"supersonic/ui/layouts"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic"
 )
-
-type bottomPanelLayout struct {
-	left, middle, right fyne.CanvasObject
-	middleWidth         float32
-	hbox                fyne.Layout
-}
-
-func newBottomPanelLayout(midWidth float32, left, middle, right fyne.CanvasObject) *bottomPanelLayout {
-	return &bottomPanelLayout{
-		left:        left,
-		middle:      middle,
-		right:       right,
-		middleWidth: midWidth,
-		hbox:        layout.NewHBoxLayout(),
-	}
-}
-
-func (b *bottomPanelLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	hboxSize := b.hbox.MinSize(objects)
-	return fyne.Size{
-		Height: hboxSize.Height,
-		Width:  hboxSize.Width + fyne.Max(0, b.middleWidth-b.middle.MinSize().Width),
-	}
-}
-
-func (b *bottomPanelLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
-	midW := fyne.Max(b.middleWidth, b.middle.MinSize().Width)
-	lrW := (size.Width - midW - theme.Padding()*4) / 2
-	b.left.Resize(fyne.NewSize(lrW, size.Height))
-	b.left.Move(fyne.NewPos(theme.Padding(), 0))
-	b.middle.Resize(fyne.NewSize(midW, size.Height))
-	b.middle.Move(fyne.NewPos(lrW+theme.Padding()*2, 0))
-	if b.right != nil {
-		b.right.Resize(fyne.NewSize(lrW, size.Height))
-		b.right.Move(fyne.NewPos(lrW+midW+theme.Padding()*3, 0))
-	}
-}
 
 type BottomPanel struct {
 	widget.BaseWidget
@@ -106,7 +68,7 @@ func NewBottomPanel(p *player.Player, nav func(browsing.Route)) *BottomPanel {
 		_ = p.SetVolume(v)
 	}
 
-	bp.container = container.New(newBottomPanelLayout(500, bp.NowPlaying, bp.Controls, bp.AuxControls),
+	bp.container = container.New(layouts.NewLeftMiddleRightLayout(500),
 		bp.NowPlaying, bp.Controls, bp.AuxControls)
 	return bp
 }
