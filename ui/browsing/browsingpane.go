@@ -3,6 +3,7 @@ package browsing
 import (
 	"image/color"
 	"supersonic/backend"
+	"supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -63,7 +64,8 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 		layout.NewSpacer())
 	b.navBtnsContainer = container.NewHBox()
 	b.container = container.NewBorder(
-		container.NewHBox(b.back, b.forward, b.reload, layout.NewSpacer(), b.navBtnsContainer, layout.NewSpacer()),
+		container.New(layouts.NewLeftMiddleRightLayout(0),
+			container.NewHBox(b.back, b.forward, b.reload), b.navBtnsContainer, layout.NewSpacer()),
 		nil, nil, nil, b.pageContainer)
 	return b
 }
