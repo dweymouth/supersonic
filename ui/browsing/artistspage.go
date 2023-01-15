@@ -36,6 +36,9 @@ func NewArtistsPage(sm *backend.ServerManager, nav func(Route)) *ArtistsPage {
 	a.list = widgets.NewArtistGenrePlaylist(nil)
 	a.list.ShowAlbumCount = true
 	a.list.ShowTrackCount = false
+	a.list.OnNavTo = func(id string) {
+		nav(ArtistRoute(id))
+	}
 	a.buildContainer()
 	go a.loadAsync()
 	return a
