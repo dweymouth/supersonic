@@ -1,7 +1,11 @@
 package widgets
 
 import (
+	"strconv"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -28,12 +32,22 @@ type ArtistGenrePlaylistRow struct {
 
 	Item ArtistGenrePlaylistItemModel
 
+	nameLabel       *widget.Label
+	albumCountLabel *widget.Label
+	trackCountLabel *widget.Label
+
 	container *fyne.Container
 }
 
 func NewArtistGenrePlaylistRow() *ArtistGenrePlaylistRow {
-	a := &ArtistGenrePlaylistRow{}
+	a := &ArtistGenrePlaylistRow{
+		nameLabel:       widget.NewLabel(""),
+		albumCountLabel: widget.NewLabel("alCount"),
+		trackCountLabel: widget.NewLabel(""),
+	}
 	a.ExtendBaseWidget(a)
+	// layouts.NewColumnsLayout([]float32{-1, 50, 50})
+	a.container = container.New(layout.NewHBoxLayout(), a.nameLabel, a.albumCountLabel, a.trackCountLabel)
 	return a
 }
 
@@ -48,6 +62,12 @@ func NewArtistGenrePlaylist(items []ArtistGenrePlaylistItemModel) *ArtistGenrePl
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			row := item.(*ArtistGenrePlaylistRow)
 			row.Item = a.Items[id]
+			row.albumCountLabel.Hidden = a.ShowAlbumCount
+			row.trackCountLabel.Hidden = a.ShowTrackCount
+			row.nameLabel.Text = row.Item.Name
+			row.albumCountLabel.Text = strconv.Itoa(row.Item.AlbumCount)
+			row.trackCountLabel.Text = strconv.Itoa(row.Item.TrackCount)
+			row.Refresh()
 		},
 	)
 	return a
