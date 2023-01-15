@@ -30,7 +30,7 @@ type TrackRow struct {
 
 var _ fyne.DoubleTappable = (*TrackRow)(nil)
 
-func NewTrackRow() *TrackRow {
+func NewTrackRow(layout *layouts.ColumnsLayout) *TrackRow {
 	t := &TrackRow{}
 	t.ExtendBaseWidget(t)
 	t.num = widget.NewRichTextWithText("")
@@ -40,7 +40,7 @@ func NewTrackRow() *TrackRow {
 	t.artist.Wrapping = fyne.TextTruncate
 	t.dur = widget.NewRichTextWithText("")
 
-	t.container = container.New(layouts.NewColumnsLayout([]float32{35, -1, -1, 55}),
+	t.container = container.New(layout,
 		t.num, t.name, t.artist, t.dur)
 	return t
 }
@@ -82,20 +82,26 @@ type Tracklist struct {
 	OnPlayTrackAt func(int)
 
 	nowPlayingIdx int
+	colLayout     *layouts.ColumnsLayout
+	hdr           *ListHeader
 	list          *widget.List
+	container     *fyne.Container
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1}
 	t.ExtendBaseWidget(t)
+	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, 55})
+	t.hdr = NewListHeader([]string{"#", "Title", "Artist", "Time"}, t.colLayout)
 	t.list = widget.NewList(
 		func() int { return len(t.Tracks) },
-		func() fyne.CanvasObject { return NewTrackRow() },
+		func() fyne.CanvasObject { return NewTrackRow(t.colLayout) },
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
 			tr := item.(*TrackRow)
 			tr.OnDoubleTapped = func() { t.onPlayTrackAt(itemID) }
 			tr.Update(t.Tracks[itemID], itemID == t.nowPlayingIdx)
 		})
+	t.container = container.NewBorder(t.hdr, nil, nil, nil, t.list)
 	return t
 }
 
@@ -111,7 +117,7 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 }
 
 func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(t.list)
+	return widget.NewSimpleRenderer(t.container)
 }
 
 func (t *Tracklist) onPlayTrackAt(idx int) {
