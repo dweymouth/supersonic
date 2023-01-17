@@ -20,6 +20,7 @@ Slightly outdated screenshots of Supersonic running against the Navidrome demo s
 * [ ] View and edit play queue (coming soon)
 * [ ] Set/unset favorite and browse by favorites (coming soon)
 * [ ] Browse, create, and edit playlists (coming soon)
+* [ ] Artist view with biography, image, similar artists (coming soon)
 * [ ] Shuffle and repeat playback modes (planned)
 * [ ] Set and view five-star rating (planned)
 * [ ] Browse by folders (planned)
@@ -27,7 +28,9 @@ Slightly outdated screenshots of Supersonic running against the Navidrome demo s
 * [ ] Download album or playlist (planned)
 * [ ] ReplayGain audio normalization support (planned, depending on files being ReplayGain tagged on server)
 * [ ] Cast to uPnP/DLNA devices (tentatively planned)
-
+* [ ] Offline mode (eventually planned)
+* [ ] iOS/Android support (eventually planned)
+* [ ] Lyrics support (eventually planned)
 
 ## Build instructions (Ubuntu)
 
