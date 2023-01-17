@@ -18,10 +18,11 @@ type CacheItem struct {
 }
 
 // A custom cache for images with the following eviction strategy:
-//   - If there are fewer than MinSize items in the cache, none will be evicted
-//   - If a new addition would make the cache exceed MaxSize, an item will be immediately evicted
-//   - evicted item will be an expired item if possible, else the least recently used
-//   - If the size of the cache is between MaxSize and MinSize, expired items will be periodically evicted
+//  1. If there are fewer than MinSize items in the cache, none will be evicted
+//  2. If a new addition would make the cache exceed MaxSize, an item will be immediately evicted
+//     2a. in this case, evict the LRU expired item or if none expired, the LRU item
+//  3. If the size of the cache is between MaxSize and MinSize, expired items will be periodically evicted
+//     3a. in this case, again the least recently used expired items will be evicted first
 type ImageCache struct {
 	MinSize    int
 	MaxSize    int
@@ -39,6 +40,7 @@ func (i *ImageCache) Init(ctx context.Context) {
 	i.cache = make(map[string]CacheItem)
 }
 
+// holds writer lock for O(i.MaxSize) worst case
 func (i *ImageCache) AddWithTTL(key string, val image.Image, ttl time.Duration) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
@@ -87,32 +89,72 @@ func (i *ImageCache) Get(key string, resetTTL bool) (image.Image, error) {
 	return nil, ErrNotFound
 }
 
-// assuming max size is small enough that linear scan is fine
+func (i *ImageCache) GetWithNewTTL(key string, newTtl time.Duration) (image.Image, error) {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+
+	if v, ok := i.cache[key]; ok {
+		v.lastAccessed = time.Now().Unix()
+		v.expiresAt = time.Now().Add(newTtl).Unix()
+		v.ttl = newTtl
+		return v.val, nil
+	}
+	return nil, ErrNotFound
+}
+
+// must be called when rwmutex is already acquired for writing
 func (i *ImageCache) evictOne() {
-	var lruKey string
 	now := time.Now().Unix()
+	var lruKey string
 	lruTime := now
+	var lruExpiredKey string
+	lruExpiredTime := now
 	for k, v := range i.cache {
-		if v.expiresAt < now {
-			delete(i.cache, k)
-			return
+		if v.expiresAt < now && v.lastAccessed < lruExpiredTime {
+			lruExpiredTime = v.lastAccessed
+			lruExpiredKey = k
 		}
 		if v.lastAccessed < lruTime {
 			lruTime = v.lastAccessed
 			lruKey = k
 		}
 	}
-	delete(i.cache, lruKey)
+	if lruExpiredTime < now {
+		// deleting LRU expired item
+		delete(i.cache, lruExpiredKey)
+	} else {
+		// no expired items, delete LRU non-expired item
+		delete(i.cache, lruKey)
+	}
+}
+
+type expiredItem struct {
+	key          string
+	lastAccessed int64
 }
 
 // TODO
 func (i *ImageCache) EvictExpired() {
-	i.mu.Lock()
-	defer i.mu.Unlock()
+	i.mu.RLock()
+	expired := make([]expiredItem, 0, len(i.cache)-i.MinSize)
+	now := time.Now().Unix()
+	for k, v := range i.cache {
+		if v.expiresAt < now {
+			expired = append(expired, expiredItem{key: k, lastAccessed: v.lastAccessed})
+		}
+	}
+	i.mu.RUnlock()
 
 	count := len(i.cache)
 	for count > i.MinSize {
 
 	}
+
+}
+
+func heapify(arr *[]expiredItem, i int) {
+	//smallest := i
+	//lChild := 2*i + 1
+	//rChild := 2*i + 2
 
 }
