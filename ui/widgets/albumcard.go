@@ -194,6 +194,7 @@ func (a *AlbumCard) Update(al *subsonic.AlbumID3) {
 	a.year.SetText(strconv.Itoa(al.Year))
 	a.albumID = al.ID
 	a.artistID = al.ArtistID
+	a.Cover.playbtn.Hidden = true
 }
 
 func (a *AlbumCard) AlbumID() string {
