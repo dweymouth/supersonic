@@ -12,6 +12,7 @@ fyne bundle -append -prefix Res icons/musicnotes.png >> bundled.go
 fyne bundle -append -prefix Res icons/musicnotes-invert.png >> bundled.go
 fyne bundle -append -prefix Res icons/people.png >> bundled.go
 fyne bundle -append -prefix Res icons/people-invert.png >> bundled.go
+fyne bundle -append -prefix Res icons/playbutton.png >> bundled.go
 fyne bundle -append -prefix Res icons/playlist.png >> bundled.go
 fyne bundle -append -prefix Res icons/playlist-invert.png >> bundled.go
 fyne bundle -append -prefix Res icons/podcast.png >> bundled.go
