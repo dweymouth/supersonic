@@ -3,14 +3,17 @@ package widgets
 import (
 	"context"
 	"image"
+	"image/color"
 	"strconv"
 
+	"supersonic/res"
 	"supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/dweymouth/go-subsonic"
@@ -20,14 +23,25 @@ var _ fyne.Widget = (*AlbumCard)(nil)
 
 var _ fyne.Widget = (*albumCover)(nil)
 var _ fyne.Tappable = (*albumCover)(nil)
-var _ fyne.DoubleTappable = (*albumCover)(nil)
 
 type albumCover struct {
 	widget.BaseWidget
 
 	Im             *canvas.Image
+	playbtn        *canvas.Image
+	btnCircle      *btnCircle
 	OnDoubleTapped func()
 	OnTapped       func()
+}
+
+type btnCircle struct {
+	canvas.Circle
+
+	Diameter float32
+}
+
+func (b *btnCircle) MinSize() fyne.Size {
+	return fyne.NewSize(b.Diameter, b.Diameter)
 }
 
 func newAlbumCover() *albumCover {
@@ -35,28 +49,77 @@ func newAlbumCover() *albumCover {
 	a.ExtendBaseWidget(a)
 	a.Im = &canvas.Image{FillMode: canvas.ImageFillContain}
 	a.Im.SetMinSize(fyne.NewSize(200, 200))
+	a.playbtn = &canvas.Image{FillMode: canvas.ImageFillContain, Resource: res.ResPlaybuttonPng}
+	a.playbtn.SetMinSize(fyne.NewSize(60, 60))
+	a.playbtn.Hidden = true
+	// TODO:
+	a.btnCircle = &btnCircle{
+		Diameter: 63,
+		Circle: canvas.Circle{
+			FillColor:   color.Transparent,
+			StrokeColor: theme.PrimaryColor(),
+			StrokeWidth: 2,
+			Hidden:      true,
+		},
+	}
 	return a
 }
 
 func (a *albumCover) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(a.Im)
+	return widget.NewSimpleRenderer(
+		container.NewMax(a.Im, container.NewCenter(a.playbtn), container.NewCenter(a.btnCircle)),
+	)
 }
 
-func (a *albumCover) DoubleTapped(e *fyne.PointEvent) {
-	if a.OnDoubleTapped != nil {
-		a.OnDoubleTapped()
-	}
+func (a *albumCover) Cursor() desktop.Cursor {
+	return desktop.PointerCursor
 }
 
 func (a *albumCover) Tapped(e *fyne.PointEvent) {
+	if isInside(a.center(), a.playbtn.Size().Height/2, e.Position) {
+		if a.OnDoubleTapped != nil {
+			a.OnDoubleTapped()
+		}
+		return
+	}
 	if a.OnTapped != nil {
 		a.OnTapped()
 	}
 }
 
+func (a *albumCover) MouseIn(*desktop.MouseEvent) {
+	a.playbtn.Hidden = false
+	a.Refresh()
+}
+
+func (a *albumCover) MouseOut() {
+	a.playbtn.Hidden = true
+	a.Refresh()
+}
+
+// TODO: figure out why circle around play button isn't being displayed
+func (a *albumCover) MouseMoved(e *desktop.MouseEvent) {
+	if inside := isInside(a.center(), a.btnCircle.Diameter/2, e.Position); inside && !a.btnCircle.Visible() {
+		a.btnCircle.Show()
+		a.Refresh()
+	} else if !inside && a.btnCircle.Visible() {
+		a.btnCircle.Hide()
+		a.Refresh()
+	}
+}
+
+func (a *albumCover) center() fyne.Position {
+	return fyne.NewPos(a.Size().Width/2, a.Size().Height/2)
+}
+
 func (a *albumCover) SetImage(im image.Image) {
 	a.Im.Image = im
 	a.Refresh()
+}
+
+func isInside(origin fyne.Position, radius float32, point fyne.Position) bool {
+	x, y := (point.X - origin.X), (point.Y - origin.Y)
+	return x*x+y*y <= radius*radius
 }
 
 type AlbumCard struct {
@@ -83,12 +146,6 @@ type AlbumCard struct {
 	OnShowArtistPage func()
 }
 
-func (a *AlbumCard) MouseIn(*desktop.MouseEvent) {}
-
-func (a *AlbumCard) MouseOut() {}
-
-func (a *AlbumCard) MouseMoved(*desktop.MouseEvent) {}
-
 func NewAlbumCard(showYear bool) *AlbumCard {
 	a := &AlbumCard{
 		title:    NewCustomHyperlink(),
@@ -103,11 +160,13 @@ func NewAlbumCard(showYear bool) *AlbumCard {
 			a.OnPlay()
 		}
 	}
-	a.title.OnTapped = func() {
+	showAlbumFn := func() {
 		if a.OnShowAlbumPage != nil {
 			a.OnShowAlbumPage()
 		}
 	}
+	a.Cover.OnTapped = showAlbumFn
+	a.title.OnTapped = showAlbumFn
 	a.artist.OnTapped = func() {
 		if a.OnShowArtistPage != nil {
 			a.OnShowArtistPage()
