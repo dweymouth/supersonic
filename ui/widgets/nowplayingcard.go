@@ -29,6 +29,8 @@ func NewNowPlayingCard() *NowPlayingCard {
 		cover:      &canvas.Image{},
 	}
 	n.ExtendBaseWidget(n)
+	n.artistName.Hidden = true
+	n.albumName.Hidden = true
 	n.trackName.Wrapping = fyne.TextTruncate
 	n.trackName.TextStyle = fyne.TextStyle{Bold: true}
 	n.cover.SetMinSize(fyne.NewSize(100, 100))
@@ -45,7 +47,9 @@ func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 func (n *NowPlayingCard) Update(track, artist, album string, cover image.Image) {
 	n.trackName.Text = track
 	n.artistName.SetText(artist)
+	n.artistName.Hidden = artist == ""
 	n.albumName.SetText(album)
+	n.albumName.Hidden = album == ""
 	n.cover.Image = cover
 	n.c.Refresh()
 }
