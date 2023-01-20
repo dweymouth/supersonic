@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"runtime"
 	"supersonic/backend"
 	"supersonic/res"
 	"supersonic/ui/browsing"
@@ -8,13 +9,22 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic"
+)
+
+var (
+	ShortcutBack          = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: fyne.KeyModifierAlt}
+	ShortcutBackDarwin    = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: fyne.KeyModifierSuper}
+	ShortcutForward       = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: fyne.KeyModifierAlt}
+	ShortcutForwardDarwin = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: fyne.KeyModifierSuper}
 )
 
 type MainWindow struct {
 	Window fyne.Window
 
+	App          *backend.App
 	Router       browsing.Router
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
@@ -28,6 +38,7 @@ var (
 
 func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindow {
 	m := MainWindow{
+		App:          app,
 		Window:       fyneApp.NewWindow(appName),
 		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
@@ -50,6 +61,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 		m.Router.OpenRoute(HomePage)
 	})
 	m.addNavigationButtons()
+	m.addShortcuts()
 	return m
 }
 
@@ -72,6 +84,27 @@ func (m *MainWindow) addNavigationButtons() {
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResTheatermasksInvertPng, func() {
 		m.Router.OpenRoute(browsing.GenresRoute())
+	})
+}
+
+func (m *MainWindow) addShortcuts() {
+	back := &ShortcutBack
+	fwd := &ShortcutForward
+	if runtime.GOOS == "darwin" {
+		back = &ShortcutBackDarwin
+		fwd = &ShortcutForwardDarwin
+	}
+	m.Canvas().AddShortcut(back, func(_ fyne.Shortcut) {
+		m.BrowsingPane.GoBack()
+	})
+	m.Canvas().AddShortcut(fwd, func(_ fyne.Shortcut) {
+		m.BrowsingPane.GoForward()
+	})
+
+	m.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {
+		if e.Name == fyne.KeySpace {
+			m.App.Player.PlayPause()
+		}
 	})
 }
 
