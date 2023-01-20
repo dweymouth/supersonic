@@ -8,35 +8,40 @@ import (
 )
 
 type hyperlinkWrapper struct {
-	widget.BaseWidget
+	widget.Hyperlink
 
-	h        *widget.Hyperlink
 	l        *widget.Label
 	MaxWidth float32
 }
 
 func newHyperlinkWrapper() *hyperlinkWrapper {
 	h := &hyperlinkWrapper{
-		h: widget.NewHyperlink("", nil),
+		Hyperlink: widget.Hyperlink{
+			Text:     "",
+			Wrapping: fyne.TextTruncate,
+		},
 		l: widget.NewLabel(""),
 	}
-	h.h.Wrapping = fyne.TextTruncate
 	h.ExtendBaseWidget(h)
 	return h
 }
 
 func (h *hyperlinkWrapper) MinSize() fyne.Size {
 	w := fyne.Min(h.MaxWidth, h.l.MinSize().Width)
-	return fyne.NewSize(w, h.h.MinSize().Height)
+	return fyne.NewSize(w, h.Hyperlink.MinSize().Height)
 }
 
 func (h *hyperlinkWrapper) SetText(text string) {
-	h.h.SetText(text)
+	h.Text = text
 	h.l.SetText(text)
 }
 
-func (h *hyperlinkWrapper) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(h.h)
+func (h *hyperlinkWrapper) TypedKey(e *fyne.KeyEvent) {
+	if e.Name == fyne.KeySpace {
+		if h.OnTapped != nil {
+			h.OnTapped()
+		}
+	}
 }
 
 type CustomHyperlink struct {
@@ -53,7 +58,7 @@ func NewCustomHyperlink() *CustomHyperlink {
 	c := &CustomHyperlink{
 		h: newHyperlinkWrapper(),
 	}
-	c.h.h.OnTapped = func() {
+	c.h.OnTapped = func() {
 		if c.OnTapped != nil {
 			c.OnTapped()
 		}
