@@ -26,6 +26,11 @@ type SavedPage interface {
 	Restore() Page
 }
 
+// Searchable pages should implement this interface so their search bar can be focused by keyboard shortcut.
+type Searchable interface {
+	SearchWidget() fyne.Focusable
+}
+
 type CanPlayAlbum interface {
 	SetPlayAlbumCallback(func(albumID string, startingTrack int))
 }
@@ -79,6 +84,13 @@ func (b *BrowsingPane) SetPage(p Page) {
 
 func (b *BrowsingPane) AddNavigationButton(iconRes fyne.Resource, action func()) {
 	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", iconRes, action))
+}
+
+func (b *BrowsingPane) GetSearchBarIfAny() fyne.Focusable {
+	if s, ok := b.curPage.(Searchable); ok {
+		return s.SearchWidget()
+	}
+	return nil
 }
 
 func (b *BrowsingPane) doSetPage(p Page) bool {
