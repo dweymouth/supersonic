@@ -132,6 +132,12 @@ func (a *AlbumsPage) Route() Route {
 	return AlbumsRoute(backend.AlbumSortOrder(a.sortOrder.Selected))
 }
 
+var _ Searchable = (*AlbumsPage)(nil)
+
+func (a *AlbumsPage) SearchWidget() fyne.Focusable {
+	return a.searcher.Entry
+}
+
 func (a *AlbumsPage) SetPlayAlbumCallback(cb func(string, int)) {
 	a.OnPlayAlbum = cb
 }

@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"runtime"
 	"supersonic/backend"
 	"supersonic/res"
 	"supersonic/ui/browsing"
@@ -15,10 +14,9 @@ import (
 )
 
 var (
-	ShortcutBack          = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: fyne.KeyModifierAlt}
-	ShortcutBackDarwin    = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: fyne.KeyModifierSuper}
-	ShortcutForward       = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: fyne.KeyModifierAlt}
-	ShortcutForwardDarwin = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: fyne.KeyModifierSuper}
+	ShortcutBack    = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: AltModifier}
+	ShortcutForward = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: AltModifier}
+	ShortcutSearch  = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: ControlModifier}
 )
 
 type MainWindow struct {
@@ -88,17 +86,16 @@ func (m *MainWindow) addNavigationButtons() {
 }
 
 func (m *MainWindow) addShortcuts() {
-	back := &ShortcutBack
-	fwd := &ShortcutForward
-	if runtime.GOOS == "darwin" {
-		back = &ShortcutBackDarwin
-		fwd = &ShortcutForwardDarwin
-	}
-	m.Canvas().AddShortcut(back, func(_ fyne.Shortcut) {
+	m.Canvas().AddShortcut(&ShortcutBack, func(_ fyne.Shortcut) {
 		m.BrowsingPane.GoBack()
 	})
-	m.Canvas().AddShortcut(fwd, func(_ fyne.Shortcut) {
+	m.Canvas().AddShortcut(&ShortcutForward, func(_ fyne.Shortcut) {
 		m.BrowsingPane.GoForward()
+	})
+	m.Canvas().AddShortcut(&ShortcutSearch, func(_ fyne.Shortcut) {
+		if s := m.BrowsingPane.GetSearchBarIfAny(); s != nil {
+			m.Window.Canvas().Focus(s)
+		}
 	})
 
 	m.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {

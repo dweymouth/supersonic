@@ -119,6 +119,12 @@ func (g *GenrePage) Save() SavedPage {
 	}
 }
 
+var _ Searchable = (*AlbumsPage)(nil)
+
+func (g *GenrePage) SearchWidget() fyne.Focusable {
+	return g.searcher.Entry
+}
+
 func (a *GenrePage) onPlayAlbum(albumID string) {
 	if a.OnPlayAlbum != nil {
 		a.OnPlayAlbum(albumID, 0)
