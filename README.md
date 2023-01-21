@@ -4,7 +4,7 @@ A lightweight desktop client for Subsonic music servers (Navidrome, Gonic, Airso
 On first startup, the app will prompt you for your Subsonic server connection. The app currently has a searchable albums grid view, an artist discography view, list views of all artists and genres, and individual album view with tracklist.
 <p align="center">
 <img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/albums-view.png" scale="50%"/><br/>
-Slightly outdated screenshots of Supersonic running against the Navidrome [demo server](https://www.navidrome.org/demo/)<br/>
+Slightly outdated screenshots of Supersonic running against the Navidrome <a href="https://www.navidrome.org/demo">demo server</a> <br/>
 <img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/album-view.png" scale="50%"/>
 </p>
 
