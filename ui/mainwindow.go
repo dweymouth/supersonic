@@ -88,9 +88,12 @@ func (m *MainWindow) addNavigationButtons() {
 func (m *MainWindow) addShortcuts() {
 	m.Canvas().AddShortcut(&ShortcutBack, func(_ fyne.Shortcut) {
 		m.BrowsingPane.GoBack()
+		// TODO: reset focus only if something inside the page had focus
+		m.Canvas().Focus(nil)
 	})
 	m.Canvas().AddShortcut(&ShortcutForward, func(_ fyne.Shortcut) {
 		m.BrowsingPane.GoForward()
+		m.Canvas().Focus(nil)
 	})
 	m.Canvas().AddShortcut(&ShortcutSearch, func(_ fyne.Shortcut) {
 		if s := m.BrowsingPane.GetSearchBarIfAny(); s != nil {

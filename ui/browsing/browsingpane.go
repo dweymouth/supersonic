@@ -106,6 +106,7 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	if np, ok := p.(CanShowNowPlaying); ok {
 		np.OnSongChange(b.app.PlaybackManager.NowPlaying())
 	}
+	b.pageContainer.Remove(b.curPage)
 	b.pageContainer.Objects[1] = p
 	b.Refresh()
 	return true
