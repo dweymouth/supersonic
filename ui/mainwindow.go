@@ -16,6 +16,7 @@ import (
 var (
 	ShortcutBack    = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: AltModifier}
 	ShortcutForward = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: AltModifier}
+	ShortcutReload  = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: ControlModifier}
 	ShortcutSearch  = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: ControlModifier}
 )
 
@@ -97,6 +98,9 @@ func (m *MainWindow) addShortcuts() {
 	m.Canvas().AddShortcut(&ShortcutForward, func(_ fyne.Shortcut) {
 		m.BrowsingPane.GoForward()
 		m.Canvas().Focus(nil)
+	})
+	m.Canvas().AddShortcut(&ShortcutReload, func(_ fyne.Shortcut) {
+		m.BrowsingPane.Reload()
 	})
 	m.Canvas().AddShortcut(&ShortcutSearch, func(_ fyne.Shortcut) {
 		if s := m.BrowsingPane.GetSearchBarIfAny(); s != nil {
