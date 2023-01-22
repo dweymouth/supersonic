@@ -74,6 +74,9 @@ func (m *MainWindow) PromptForFirstServer(cb func(string, string, string, string
 }
 
 func (m *MainWindow) addNavigationButtons() {
+	m.BrowsingPane.AddNavigationButton(res.ResHeartFilledInvertPng, func() {
+		m.Router.OpenRoute(browsing.FavoritesRoute())
+	})
 	m.BrowsingPane.AddNavigationButton(res.ResDiscInvertPng, func() {
 		m.Router.OpenRoute(browsing.AlbumsRoute(backend.AlbumSortRecentlyAdded))
 	})
