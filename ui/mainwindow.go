@@ -42,7 +42,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
 
-	m.Router = browsing.NewRouter(app, m.BrowsingPane)
+	m.Router = browsing.NewRouter(app, m.Window, m.BrowsingPane)
 	m.BottomPanel = NewBottomPanel(app.Player, m.Router.OpenRoute)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager
