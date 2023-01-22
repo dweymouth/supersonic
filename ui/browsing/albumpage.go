@@ -20,6 +20,7 @@ type AlbumPage struct {
 	widget.BaseWidget
 
 	albumID      string
+	sm           *backend.ServerManager
 	im           *backend.ImageManager
 	lm           *backend.LibraryManager
 	nav          func(Route)
@@ -31,8 +32,8 @@ type AlbumPage struct {
 	OnPlayAlbum func(string, int)
 }
 
-func NewAlbumPage(albumID string, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *AlbumPage {
-	a := &AlbumPage{albumID: albumID, lm: lm, im: im, nav: nav}
+func NewAlbumPage(albumID string, sm *backend.ServerManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *AlbumPage {
+	a := &AlbumPage{albumID: albumID, sm: sm, lm: lm, im: im, nav: nav}
 	a.ExtendBaseWidget(a)
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
@@ -104,19 +105,22 @@ type AlbumPageHeader struct {
 	artistID string
 	genre    string
 
+	page *AlbumPage
+
 	cover       *canvas.Image
 	titleLabel  *widget.RichText
 	artistLabel *widgets.CustomHyperlink
 	genreLabel  *widgets.CustomHyperlink
 	miscLabel   *widget.Label
 
-	playButton *widget.Button
+	toggleFavButton *widgets.FavoriteButton
+	playButton      *widget.Button
 
 	container *fyne.Container
 }
 
 func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
-	a := &AlbumPageHeader{}
+	a := &AlbumPageHeader{page: page}
 	a.ExtendBaseWidget(a)
 	a.cover = &canvas.Image{FillMode: canvas.ImageFillContain}
 	a.cover.SetMinSize(fyne.NewSize(225, 225))
@@ -142,12 +146,19 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.playButton = widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
 		page.onPlayTrackAt(0)
 	})
+	a.toggleFavButton = widgets.NewFavoriteButton(a.toggleFavorited)
 
+	// Todo: there's got to be a way to make this less convoluted. Custom layout?
 	a.container = container.NewBorder(nil, nil, a.cover, nil,
-		container.NewVBox(
+		container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 			a.titleLabel,
-			container.New(&layouts.VboxCustomPadding{ExtraPad: -10}, a.artistLabel, a.genreLabel, a.miscLabel),
-			container.NewHBox(a.playButton),
+			container.NewVBox(
+				container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, a.artistLabel, a.genreLabel, a.miscLabel),
+				container.NewVBox(
+					container.NewHBox(widgets.NewHSpace(2), a.playButton),
+					container.NewHBox(widgets.NewHSpace(2), a.toggleFavButton),
+				),
+			),
 		),
 	)
 	return a
@@ -165,6 +176,7 @@ func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageMana
 	a.genre = album.Genre
 	a.genreLabel.SetText(album.Genre)
 	a.miscLabel.SetText(formatMiscLabelStr(album))
+	a.toggleFavButton.IsFavorited = !album.Starred.IsZero()
 	a.Refresh()
 
 	// cover image was already loaded from cache in consructor
@@ -181,6 +193,14 @@ func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageMana
 	}()
 }
 
+func (a *AlbumPageHeader) toggleFavorited() {
+	if a.toggleFavButton.IsFavorited {
+		a.page.sm.Server.Star(subsonic.StarParameters{AlbumIDs: []string{a.albumID}})
+	} else {
+		a.page.sm.Server.Unstar(subsonic.StarParameters{AlbumIDs: []string{a.albumID}})
+	}
+}
+
 func formatMiscLabelStr(a *subsonic.AlbumID3) string {
 	return fmt.Sprintf("%d · %d tracks · %s", a.Year, a.SongCount, util.SecondsToTimeString(float64(a.Duration)))
 }
@@ -189,9 +209,10 @@ type savedAlbumPage struct {
 	albumID string
 	lm      *backend.LibraryManager
 	im      *backend.ImageManager
+	sm      *backend.ServerManager
 	nav     func(Route)
 }
 
 func (s *savedAlbumPage) Restore() Page {
-	return NewAlbumPage(s.albumID, s.lm, s.im, s.nav)
+	return NewAlbumPage(s.albumID, s.sm, s.lm, s.im, s.nav)
 }
