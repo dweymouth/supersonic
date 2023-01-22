@@ -79,7 +79,7 @@ func (a *FavoritesPage) loadAsync() {
 			log.Printf("Failed to get favorites: %s", err.Error())
 			return
 		}
-		ag := widgets.NewFixedAlbumGrid(starred.Album, a.im, true /*showYear*/)
+		ag := widgets.NewFixedAlbumGrid(starred.Album, a.im, false /*showYear*/)
 		ag.OnPlayAlbum = a.onPlayAlbum
 		ag.OnShowAlbumPage = a.onShowAlbumPage
 		a.container.Objects[0] = ag
