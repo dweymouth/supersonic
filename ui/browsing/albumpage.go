@@ -19,21 +19,34 @@ import (
 type AlbumPage struct {
 	widget.BaseWidget
 
-	albumID      string
-	sm           *backend.ServerManager
-	im           *backend.ImageManager
-	lm           *backend.LibraryManager
-	nav          func(Route)
-	header       *AlbumPageHeader
-	tracklist    *widgets.Tracklist
-	nowPlayingID string
-	container    *fyne.Container
+	albumID       string
+	sm            *backend.ServerManager
+	im            *backend.ImageManager
+	lm            *backend.LibraryManager
+	nav           func(Route)
+	header        *AlbumPageHeader
+	tracklist     *widgets.Tracklist
+	nowPlayingID  string
+	container     *fyne.Container
+	popUpProvider PopUpProvider
 
 	OnPlayAlbum func(string, int)
 }
 
-func NewAlbumPage(albumID string, sm *backend.ServerManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *AlbumPage {
-	a := &AlbumPage{albumID: albumID, sm: sm, lm: lm, im: im, nav: nav}
+type PopUpProvider interface {
+	CreatePopUp(fyne.CanvasObject) *widget.PopUp
+	WindowSize() fyne.Size
+}
+
+func NewAlbumPage(
+	albumID string,
+	sm *backend.ServerManager,
+	lm *backend.LibraryManager,
+	im *backend.ImageManager,
+	popUpProvider PopUpProvider,
+	nav func(Route),
+) *AlbumPage {
+	a := &AlbumPage{albumID: albumID, sm: sm, lm: lm, im: im, nav: nav, popUpProvider: popUpProvider}
 	a.ExtendBaseWidget(a)
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
@@ -55,10 +68,11 @@ func (a *AlbumPage) SetPlayAlbumCallback(cb func(string, int)) {
 
 func (a *AlbumPage) Save() SavedPage {
 	return &savedAlbumPage{
-		albumID: a.albumID,
-		lm:      a.lm,
-		im:      a.im,
-		nav:     a.nav,
+		albumID:       a.albumID,
+		lm:            a.lm,
+		im:            a.im,
+		nav:           a.nav,
+		popUpProvider: a.popUpProvider,
 	}
 }
 
@@ -107,7 +121,7 @@ type AlbumPageHeader struct {
 
 	page *AlbumPage
 
-	cover       *canvas.Image
+	cover       *widgets.TappableImage
 	titleLabel  *widget.RichText
 	artistLabel *widgets.CustomHyperlink
 	genreLabel  *widgets.CustomHyperlink
@@ -122,12 +136,14 @@ type AlbumPageHeader struct {
 func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a := &AlbumPageHeader{page: page}
 	a.ExtendBaseWidget(a)
-	a.cover = &canvas.Image{FillMode: canvas.ImageFillContain}
+	a.cover = widgets.NewTappableImage()
+	a.cover.FillMode = canvas.ImageFillContain
+	a.cover.OnTapped = a.showPopUpCover
 	a.cover.SetMinSize(fyne.NewSize(225, 225))
 	// due to cache warming we can probably immediately set the cover
 	// and not have to set it asynchronously in the Update function
 	if im, ok := page.im.GetAlbumThumbnailFromCache(page.albumID); ok {
-		a.cover.Image = im
+		a.cover.Image.Image = im
 	}
 	a.titleLabel = widget.NewRichTextWithText("")
 	a.titleLabel.Wrapping = fyne.TextTruncate
@@ -180,12 +196,12 @@ func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageMana
 	a.Refresh()
 
 	// cover image was already loaded from cache in consructor
-	if a.albumID == album.ID && a.cover.Image != nil {
+	if a.albumID == album.ID && a.cover.Image.Image != nil {
 		return
 	}
 	go func() {
 		if cover, err := im.GetAlbumThumbnail(album.ID); err == nil {
-			a.cover.Image = cover
+			a.cover.Image.Image = cover
 			a.cover.Refresh()
 		} else {
 			log.Printf("error fetching cover: %v", err)
@@ -201,18 +217,33 @@ func (a *AlbumPageHeader) toggleFavorited() {
 	}
 }
 
+func (a *AlbumPageHeader) showPopUpCover() {
+	cover, err := a.page.im.GetFullSizeAlbumCover(a.albumID)
+	if err != nil {
+		log.Printf("error getting full size album cover: %s", err.Error())
+		return
+	}
+	im := canvas.NewImageFromImage(cover)
+	im.FillMode = canvas.ImageFillContain
+	pop := a.page.popUpProvider.CreatePopUp(im)
+	s := a.page.popUpProvider.WindowSize()
+	pop.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
+	pop.ShowAtPosition(fyne.NewPos(0.1*s.Width, 0.1*s.Height))
+}
+
 func formatMiscLabelStr(a *subsonic.AlbumID3) string {
 	return fmt.Sprintf("%d · %d tracks · %s", a.Year, a.SongCount, util.SecondsToTimeString(float64(a.Duration)))
 }
 
 type savedAlbumPage struct {
-	albumID string
-	lm      *backend.LibraryManager
-	im      *backend.ImageManager
-	sm      *backend.ServerManager
-	nav     func(Route)
+	albumID       string
+	lm            *backend.LibraryManager
+	im            *backend.ImageManager
+	sm            *backend.ServerManager
+	popUpProvider PopUpProvider
+	nav           func(Route)
 }
 
 func (s *savedAlbumPage) Restore() Page {
-	return NewAlbumPage(s.albumID, s.sm, s.lm, s.im, s.nav)
+	return NewAlbumPage(s.albumID, s.sm, s.lm, s.im, s.popUpProvider, s.nav)
 }

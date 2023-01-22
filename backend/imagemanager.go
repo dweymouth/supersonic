@@ -18,6 +18,9 @@ type ImageManager struct {
 	s              *ServerManager
 	baseCacheDir   string
 	thumbnailCache gcache.Cache
+
+	cachedFullSizeCover   image.Image
+	cachedFullSizeCoverID string
 }
 
 func NewImageManager(s *ServerManager, baseCacheDir string) *ImageManager {
@@ -64,6 +67,19 @@ func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
 	}
 
 	return i.fetchAndCacheCoverFromServer(albumID)
+}
+
+func (i *ImageManager) GetFullSizeAlbumCover(albumID string) (image.Image, error) {
+	if i.cachedFullSizeCoverID == albumID {
+		return i.cachedFullSizeCover, nil
+	}
+	im, err := i.s.Server.GetCoverArt(albumID, nil)
+	if err != nil {
+		return nil, err
+	}
+	i.cachedFullSizeCover = im
+	i.cachedFullSizeCoverID = albumID
+	return im, nil
 }
 
 func (i *ImageManager) ensureCoverCacheDir() string {
