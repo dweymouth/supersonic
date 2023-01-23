@@ -35,7 +35,7 @@ var (
 	HomePage = browsing.AlbumsRoute(backend.AlbumSortRecentlyAdded)
 )
 
-func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindow {
+func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne.Size) MainWindow {
 	m := MainWindow{
 		App:          app,
 		Window:       fyneApp.NewWindow(appName),
@@ -48,7 +48,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App) MainWindo
 	m.BottomPanel.ImageManager = app.ImageManager
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
 	m.Window.SetContent(m.container)
-	m.Window.Resize(fyne.NewSize(1000, 800))
+	m.Window.Resize(size)
 	app.PlaybackManager.OnSongChange(func(song *subsonic.Child) {
 		if song == nil {
 			m.Window.SetTitle(appName)

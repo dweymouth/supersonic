@@ -7,6 +7,7 @@ import (
 	"supersonic/ui"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"github.com/20after4/configdir"
 	"github.com/zalando/go-keyring"
@@ -29,7 +30,15 @@ func main() {
 
 	fyneApp := app.New()
 	fyneApp.Settings().SetTheme(&ui.MyTheme{})
-	mainWindow := ui.NewMainWindow(fyneApp, appname, myApp)
+	w := float32(myApp.Config.Application.WindowWidth)
+	if w <= 1 {
+		w = 1000
+	}
+	h := float32(myApp.Config.Application.WindowHeight)
+	if h <= 1 {
+		h = 800
+	}
+	mainWindow := ui.NewMainWindow(fyneApp, appname, myApp, fyne.NewSize(w, h))
 
 	// TODO: There is some race condition with running this initial startup
 	// task immediately before showing and running the window/Fyne main loop where
@@ -55,6 +64,11 @@ func main() {
 	}()
 
 	mainWindow.Show()
+	mainWindow.Window.SetCloseIntercept(func() {
+		myApp.Config.Application.WindowHeight = int(mainWindow.Canvas().Size().Height)
+		myApp.Config.Application.WindowWidth = int(mainWindow.Canvas().Size().Width)
+		mainWindow.Window.Close()
+	})
 	fyneApp.Run()
 	myApp.Config.WriteConfigFile(configPath())
 	myApp.Shutdown()
