@@ -41,7 +41,7 @@ func ReadConfigFile(filepath string) (*Config, error) {
 	}
 	defer f.Close()
 
-	c := &Config{}
+	c := DefaultConfig()
 	if err := toml.NewDecoder(f).Decode(c); err != nil {
 		return nil, err
 	}
