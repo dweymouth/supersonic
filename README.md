@@ -68,3 +68,5 @@ Slightly outdated screenshots of Supersonic running against the Navidrome <a hre
 ### Build
 * in the MSYS2 terminal: clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
+* **Note**: The .exe dynamically links to MSYS2 dependency dlls and must be started from the MSYS2 terminal, or all dependency DLLS must be copied to the same folder as the .exe
+* Improvements to Windows build process will be forthcoming
