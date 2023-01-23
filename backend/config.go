@@ -15,12 +15,23 @@ type ServerConfig struct {
 	Default  bool
 }
 
+type AppConfig struct {
+	WindowWidth  int
+	WindowHeight int
+}
+
 type Config struct {
-	Servers []*ServerConfig
+	Application AppConfig
+	Servers     []*ServerConfig
 }
 
 func DefaultConfig() *Config {
-	return &Config{}
+	return &Config{
+		Application: AppConfig{
+			WindowWidth:  1000,
+			WindowHeight: 800,
+		},
+	}
 }
 
 func ReadConfigFile(filepath string) (*Config, error) {
