@@ -87,6 +87,9 @@ func (m *MainWindow) addNavigationButtons() {
 	m.BrowsingPane.AddNavigationButton(res.ResTheatermasksInvertPng, func() {
 		m.Router.OpenRoute(browsing.GenresRoute())
 	})
+	m.BrowsingPane.AddNavigationButton(res.ResPlaylistInvertPng, func() {
+		m.Router.OpenRoute(browsing.PlaylistsRoute())
+	})
 }
 
 func (m *MainWindow) addShortcuts() {
