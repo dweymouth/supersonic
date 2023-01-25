@@ -51,6 +51,9 @@ func GenresRoute() Route {
 	return Route{Page: Genres}
 }
 
+func PlaylistRoute(id string) Route {
+	return Route{Page: Playlist, Arg: id}
+}
 func PlaylistsRoute() Route {
 	return Route{Page: Playlists}
 }
@@ -109,6 +112,8 @@ func (r Router) CreatePage(rte Route) Page {
 		return NewGenrePage(rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Genres:
 		return NewArtistsGenresPage(true, r.App.ServerManager, r.OpenRoute)
+	case Playlist:
+		return NewPlaylistPage(rte.Arg, r.App.ServerManager, r.App.PlaybackManager, r.OpenRoute)
 	case Playlists:
 		return NewPlaylistsPage(r.App.ServerManager, r.OpenRoute)
 	}

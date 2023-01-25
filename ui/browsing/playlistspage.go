@@ -34,8 +34,7 @@ func NewPlaylistsPage(sm *backend.ServerManager, nav func(Route)) *PlaylistsPage
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
 	a.list = NewPlaylistList()
 	a.list.OnNavTo = func(id string) {
-		log.Println("opening playlist", id)
-		//nav(PlaylistRoute(id))
+		nav(PlaylistRoute(id))
 	}
 	a.buildContainer()
 	go a.loadAsync()
