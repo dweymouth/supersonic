@@ -113,7 +113,7 @@ func NewPlaylistList() *PlaylistList {
 			row := item.(*PlaylistListRow)
 			row.ID = a.Playlists[id].ID
 			row.nameLabel.Text = a.Playlists[id].Name
-			row.descrptionLabel.Text = a.Playlists[id].Name
+			row.descrptionLabel.Text = a.Playlists[id].Comment
 			row.ownerLabel.Text = a.Playlists[id].Owner
 			row.trackCountLabel.Text = strconv.Itoa(a.Playlists[id].SongCount)
 			row.Refresh()
