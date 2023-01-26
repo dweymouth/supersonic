@@ -128,7 +128,6 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		page.onPlayTrackAt(0)
 	})
 
-	// Todo: there's got to be a way to make this less convoluted. Custom layout?
 	a.container = container.NewVBox(a.titleLabel, container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 		a.descriptionLabel,
 		a.ownerLabel,
