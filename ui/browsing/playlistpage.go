@@ -39,6 +39,7 @@ func NewPlaylistPage(
 	a.ExtendBaseWidget(a)
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
+	a.tracklist.AutoNumber = true
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
