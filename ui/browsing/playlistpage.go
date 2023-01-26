@@ -132,8 +132,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.container = container.NewVBox(a.titleLabel, container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 		a.descriptionLabel,
 		a.ownerLabel,
-		a.trackTimeLabel,
-		a.createdAtLabel),
+		a.trackTimeLabel),
 		container.NewHBox(a.playButton),
 	)
 	return a
