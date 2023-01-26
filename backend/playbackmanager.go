@@ -108,12 +108,25 @@ func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool) error {
 	if err != nil {
 		return err
 	}
+	return p.LoadTracks(album.Song, appendToQueue)
+}
+
+// Loads the specified playlist into the play queue.
+func (p *PlaybackManager) LoadPlaylist(playlistID string, appendToQueue bool) error {
+	playlist, err := p.sm.Server.GetPlaylist(playlistID)
+	if err != nil {
+		return err
+	}
+	return p.LoadTracks(playlist.Entry, appendToQueue)
+}
+
+func (p *PlaybackManager) LoadTracks(tracks []*subsonic.Child, appendToQueue bool) error {
 	if !appendToQueue {
 		p.player.Stop()
 		p.nowPlayingIdx = 0
 		p.playQueue = nil
 	}
-	for _, song := range album.Song {
+	for _, song := range tracks {
 		url, err := p.sm.Server.GetStreamURL(song.ID, map[string]string{})
 		if err != nil {
 			return err
@@ -126,6 +139,16 @@ func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool) error {
 
 func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int) error {
 	if err := p.LoadAlbum(albumID, false); err != nil {
+		return err
+	}
+	if firstTrack <= 0 {
+		return p.player.PlayFromBeginning()
+	}
+	return p.player.PlayTrackAt(firstTrack)
+}
+
+func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int) error {
+	if err := p.LoadPlaylist(playlistID, false); err != nil {
 		return err
 	}
 	if firstTrack <= 0 {
