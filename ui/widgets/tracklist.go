@@ -45,14 +45,18 @@ func NewTrackRow(layout *layouts.ColumnsLayout) *TrackRow {
 	return t
 }
 
-func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool) {
+func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	if tr.ID == t.prevTrackID && isPlaying == t.prevIsPlaying {
 		return
 	}
 	t.prevTrackID = t.trackID
 	t.prevIsPlaying = isPlaying
 	t.trackID = tr.ID
-	t.num.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Track)
+
+	if rowNum < 0 {
+		rowNum = tr.Track
+	}
+	t.num.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(rowNum)
 	t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 	t.artist.Segments[0].(*widget.TextSegment).Text = tr.Artist
 	t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
@@ -79,6 +83,7 @@ type Tracklist struct {
 	widget.BaseWidget
 
 	Tracks        []*subsonic.Child
+	AutoNumber    bool
 	OnPlayTrackAt func(int)
 
 	nowPlayingIdx int
@@ -99,7 +104,11 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
 			tr := item.(*TrackRow)
 			tr.OnDoubleTapped = func() { t.onPlayTrackAt(itemID) }
-			tr.Update(t.Tracks[itemID], itemID == t.nowPlayingIdx)
+			i := itemID + 1
+			if !t.AutoNumber {
+				i = -1 // signal that we want to use the track num.
+			}
+			tr.Update(t.Tracks[itemID], itemID == t.nowPlayingIdx, i)
 		})
 	t.container = container.NewBorder(t.hdr, nil, nil, nil, t.list)
 	return t
