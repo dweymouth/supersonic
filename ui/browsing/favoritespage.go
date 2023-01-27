@@ -106,6 +106,12 @@ func (a *FavoritesPage) Save() SavedPage {
 	}
 }
 
+var _ Searchable = (*FavoritesPage)(nil)
+
+func (a *FavoritesPage) SearchWidget() fyne.Focusable {
+	return a.searcher.Entry
+}
+
 func (a *FavoritesPage) OnSearched(query string) {
 	a.searchText = query
 	if query == "" {
