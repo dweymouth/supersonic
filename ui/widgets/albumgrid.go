@@ -11,6 +11,8 @@ import (
 	"github.com/dweymouth/go-subsonic"
 )
 
+const albumFetchBatchSize = 6
+
 type ImageFetcher interface {
 	GetAlbumThumbnailFromCache(string) (image.Image, bool)
 	GetAlbumThumbnail(string) (image.Image, error)
@@ -181,15 +183,19 @@ func (a *AlbumGrid) fetchMoreAlbums(count int) {
 	}
 	a.fetching = true
 	go func() {
-		albums := a.iter.NextN(count)
-		a.albums = append(a.albums, albums...)
-		if len(albums) < count {
-			a.done = true
+		n := 0
+		for !a.done && n < count {
+			albums := a.iter.NextN(albumFetchBatchSize)
+			a.albums = append(a.albums, albums...)
+			if len(albums) < albumFetchBatchSize {
+				a.done = true
+			}
+			n += len(albums)
+			if len(albums) > 0 {
+				a.Refresh()
+			}
 		}
 		a.fetching = false
-		if len(albums) > 0 {
-			a.Refresh()
-		}
 	}()
 }
 
