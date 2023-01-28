@@ -10,7 +10,6 @@ import (
 
 type AlbumIterator interface {
 	Next() *subsonic.AlbumID3
-	NextN(int, func(*subsonic.AlbumID3))
 }
 
 type LibraryManager struct {
@@ -164,18 +163,6 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 	return r.prefetched[0]
 }
 
-func (r *baseIter) NextN(n int, cb func(*subsonic.AlbumID3)) {
-	go func() {
-		for i := 0; i < n; i++ {
-			a := r.Next()
-			cb(a)
-			if a == nil {
-				break
-			}
-		}
-	}()
-}
-
 type searchIter struct {
 	query         string
 	artistOffset  int
@@ -261,18 +248,6 @@ func (s *searchIter) Next() *subsonic.AlbumID3 {
 	}
 
 	return nil
-}
-
-func (s *searchIter) NextN(n int, cb func(*subsonic.AlbumID3)) {
-	go func() {
-		for i := 0; i < n; i++ {
-			a := s.Next()
-			cb(a)
-			if a == nil {
-				break
-			}
-		}
-	}()
 }
 
 func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
@@ -386,14 +361,24 @@ func (r *randomIter) Next() *subsonic.AlbumID3 {
 	return nil
 }
 
-func (r *randomIter) NextN(n int, cb func(*subsonic.AlbumID3)) {
-	go func() {
-		for i := 0; i < n; i++ {
-			a := r.Next()
-			cb(a)
-			if a == nil {
-				break
-			}
+type BatchingIterator struct {
+	iter AlbumIterator
+}
+
+func NewBatchingIterator(iter AlbumIterator) *BatchingIterator {
+	return &BatchingIterator{iter}
+}
+
+func (b *BatchingIterator) NextN(n int) []*subsonic.AlbumID3 {
+	results := make([]*subsonic.AlbumID3, 0, n)
+	i := 0
+	for i < n {
+		album := b.iter.Next()
+		if album == nil {
+			break
 		}
-	}()
+		results = append(results, album)
+		i++
+	}
+	return results
 }
