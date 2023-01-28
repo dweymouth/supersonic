@@ -4,6 +4,7 @@ import (
 	"context"
 	"image"
 	"log"
+	"supersonic/backend"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -13,10 +14,6 @@ import (
 type ImageFetcher interface {
 	GetAlbumThumbnailFromCache(string) (image.Image, bool)
 	GetAlbumThumbnail(string) (image.Image, error)
-}
-
-type AlbumIterator interface {
-	NextN(int, func(*subsonic.AlbumID3))
 }
 
 type AlbumGrid struct {
@@ -29,7 +26,7 @@ type AlbumGrid struct {
 
 type AlbumGridState struct {
 	albums   []*subsonic.AlbumID3
-	iter     AlbumIterator
+	iter     *backend.BatchingIterator
 	fetching bool
 	done     bool
 	showYear bool
@@ -58,10 +55,10 @@ func NewFixedAlbumGrid(albums []*subsonic.AlbumID3, fetch ImageFetcher, showYear
 	return ag
 }
 
-func NewAlbumGrid(iter AlbumIterator, fetch ImageFetcher, showYear bool) *AlbumGrid {
+func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher, showYear bool) *AlbumGrid {
 	ag := &AlbumGrid{
 		AlbumGridState: AlbumGridState{
-			iter:         iter,
+			iter:         backend.NewBatchingIterator(iter),
 			imageFetcher: fetch,
 		},
 	}
@@ -94,11 +91,11 @@ func (ag *AlbumGrid) Clear() {
 	ag.done = true
 }
 
-func (ag *AlbumGrid) Reset(iter AlbumIterator) {
+func (ag *AlbumGrid) Reset(iter backend.AlbumIterator) {
 	ag.albums = nil
 	ag.fetching = false
 	ag.done = false
-	ag.iter = iter
+	ag.iter = backend.NewBatchingIterator(iter)
 	ag.fetchMoreAlbums(36)
 }
 
@@ -182,20 +179,18 @@ func (a *AlbumGrid) fetchMoreAlbums(count int) {
 	if a.iter == nil {
 		a.done = true
 	}
-	i := 0
 	a.fetching = true
-	a.iter.NextN(count, func(al *subsonic.AlbumID3) {
-		if al == nil {
+	go func() {
+		albums := a.iter.NextN(count)
+		a.albums = append(a.albums, albums...)
+		if len(albums) < count {
 			a.done = true
-			return
 		}
-		a.albums = append(a.albums, al)
-		i++
-		if i == count {
-			a.fetching = false
+		a.fetching = false
+		if len(albums) > 0 {
+			a.Refresh()
 		}
-		a.Refresh()
-	})
+	}()
 }
 
 func (a *AlbumGrid) CreateRenderer() fyne.WidgetRenderer {
