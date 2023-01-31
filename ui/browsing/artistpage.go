@@ -1,15 +1,20 @@
 package browsing
 
 import (
+	"image/color"
 	"log"
 	"supersonic/backend"
+	"supersonic/res"
+	"supersonic/ui/layouts"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/go-subsonic"
 )
 
 var _ fyne.Widget = (*ArtistPage)(nil)
@@ -22,7 +27,7 @@ type ArtistPage struct {
 	sm        *backend.ServerManager
 	nav       func(Route)
 	grid      *widgets.AlbumGrid
-	titleDisp *widget.RichText
+	header    *ArtistPageHeader
 	container *fyne.Container
 
 	OnPlayAlbum func(string, int)
@@ -36,11 +41,8 @@ func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.Image
 		nav:      nav,
 	}
 	a.ExtendBaseWidget(a)
-	a.titleDisp = widget.NewRichTextWithText("Artist")
-	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
-		SizeName: theme.SizeNameHeadingText,
-	}
-	a.container = container.NewBorder(a.titleDisp, nil, nil, nil, layout.NewSpacer())
+	a.header = NewArtistPageHeader()
+	a.container = container.NewBorder(a.header, nil, nil, nil, layout.NewSpacer())
 	a.loadAsync()
 	return a
 }
@@ -83,8 +85,11 @@ func (a *ArtistPage) loadAsync() {
 			log.Printf("Failed to get artist: %s", err.Error())
 			return
 		}
-		a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
-		a.titleDisp.Refresh()
+		info, err := a.sm.Server.GetArtistInfo2(a.artistID, nil)
+		if err != nil {
+			log.Printf("Failed to get artist info: %s", err.Error())
+		}
+		a.header.Update(artist, info)
 		ag := widgets.NewFixedAlbumGrid(artist.Album, a.im, true /*showYear*/)
 		ag.OnPlayAlbum = a.onPlayAlbum
 		ag.OnShowAlbumPage = a.onShowAlbumPage
@@ -107,4 +112,101 @@ type savedArtistPage struct {
 
 func (s *savedArtistPage) Restore() Page {
 	return NewArtistPage(s.artistID, s.sm, s.im, s.nav)
+}
+
+type ArtistPageHeader struct {
+	widget.BaseWidget
+
+	artistID       string
+	artistImageCtr *fyne.Container
+	titleDisp      *widget.RichText
+	biographyDisp  *widget.Label
+	similarArtists *widget.RichText
+	container      *fyne.Container
+}
+
+func NewArtistPageHeader() *ArtistPageHeader {
+	a := &ArtistPageHeader{
+		titleDisp:      widget.NewRichTextWithText(""),
+		biographyDisp:  widget.NewLabel("Artist description not available"),
+		similarArtists: widget.NewRichText(),
+	}
+	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
+		SizeName: theme.SizeNameHeadingText,
+	}
+	a.artistImageCtr = container.New(&layouts.CenterPadLayout{PadLeftRight: 10, PadTopBottom: 10},
+		NewMissingArtistImage())
+	a.biographyDisp.Wrapping = fyne.TextWrapWord
+	a.ExtendBaseWidget(a)
+	a.createContainer()
+	return a
+}
+
+func (a *ArtistPageHeader) Update(artist *subsonic.ArtistID3, info *subsonic.ArtistInfo2) {
+	if artist == nil {
+		return
+	}
+	a.artistID = artist.ID
+	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
+	if info != nil {
+		if info.Biography != "" {
+			a.biographyDisp.Text = info.Biography
+		}
+		/** TODO:
+		if len(info.SimilarArtist) > 0 {
+			segments := make([]widget.RichTextSegment, 0)
+			segments = append(segments, &widget.TextSegment{Text: "Similar artists: "})
+			for sim := info.SimilarArtist {
+				segments = append(segments, &widget.HyperlinkSegment{
+
+				})
+			}
+		}
+		*/
+		go func() {
+			if res, err := fyne.LoadResourceFromURLString(info.MediumImageUrl); err != nil {
+				img := canvas.NewImageFromResource(res)
+				img.SetMinSize(fyne.NewSize(225, 225))
+				a.artistImageCtr.RemoveAll()
+				a.artistImageCtr.Add(img)
+				a.artistImageCtr.Refresh()
+			}
+		}()
+	}
+	a.Refresh()
+}
+
+func (a *ArtistPageHeader) createContainer() {
+	a.container = container.NewBorder(nil, nil, a.artistImageCtr, nil,
+		container.NewBorder(a.titleDisp, a.similarArtists, nil, nil, a.biographyDisp))
+}
+
+func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(a.container)
+}
+
+type MissingArtistImage struct {
+	widget.BaseWidget
+	container *fyne.Container
+}
+
+func NewMissingArtistImage() *MissingArtistImage {
+	m := &MissingArtistImage{}
+	m.ExtendBaseWidget(m)
+	img := canvas.NewImageFromResource(res.ResPeopleInvertPng)
+	img.FillMode = canvas.ImageFillContain
+	img.SetMinSize(fyne.NewSize(64, 64))
+	rect := canvas.NewRectangle(color.Transparent)
+	rect.StrokeColor = color.Black
+	rect.StrokeWidth = 3
+	rect.SetMinSize(fyne.NewSize(225, 225))
+	m.container = container.NewMax(
+		container.NewCenter(img),
+		rect,
+	)
+	return m
+}
+
+func (m *MissingArtistImage) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(m.container)
 }
