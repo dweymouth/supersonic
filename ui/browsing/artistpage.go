@@ -1,6 +1,8 @@
 package browsing
 
 import (
+	"bytes"
+	"image"
 	"image/color"
 	"log"
 	"supersonic/backend"
@@ -85,16 +87,17 @@ func (a *ArtistPage) loadAsync() {
 			log.Printf("Failed to get artist: %s", err.Error())
 			return
 		}
-		info, err := a.sm.Server.GetArtistInfo2(a.artistID, nil)
-		if err != nil {
-			log.Printf("Failed to get artist info: %s", err.Error())
-		}
-		a.header.Update(artist, info)
+		a.header.Update(artist)
 		ag := widgets.NewFixedAlbumGrid(artist.Album, a.im, true /*showYear*/)
 		ag.OnPlayAlbum = a.onPlayAlbum
 		ag.OnShowAlbumPage = a.onShowAlbumPage
 		a.container.Objects[0] = ag
 		a.container.Refresh()
+		info, err := a.sm.Server.GetArtistInfo2(a.artistID, nil)
+		if err != nil {
+			log.Printf("Failed to get artist info: %s", err.Error())
+		}
+		a.header.UpdateInfo(info)
 	}()
 }
 
@@ -142,38 +145,47 @@ func NewArtistPageHeader() *ArtistPageHeader {
 	return a
 }
 
-func (a *ArtistPageHeader) Update(artist *subsonic.ArtistID3, info *subsonic.ArtistInfo2) {
+func (a *ArtistPageHeader) Update(artist *subsonic.ArtistID3) {
 	if artist == nil {
 		return
 	}
 	a.artistID = artist.ID
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
-	if info != nil {
-		if info.Biography != "" {
-			a.biographyDisp.Text = info.Biography
-		}
-		/** TODO:
-		if len(info.SimilarArtist) > 0 {
-			segments := make([]widget.RichTextSegment, 0)
-			segments = append(segments, &widget.TextSegment{Text: "Similar artists: "})
-			for sim := info.SimilarArtist {
-				segments = append(segments, &widget.HyperlinkSegment{
+	a.titleDisp.Refresh()
+}
 
-				})
-			}
-		}
-		*/
-		go func() {
-			if res, err := fyne.LoadResourceFromURLString(info.MediumImageUrl); err != nil {
-				img := canvas.NewImageFromResource(res)
-				img.SetMinSize(fyne.NewSize(225, 225))
-				a.artistImageCtr.RemoveAll()
-				a.artistImageCtr.Add(img)
-				a.artistImageCtr.Refresh()
-			}
-		}()
+func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
+	if info == nil {
+		return
 	}
-	a.Refresh()
+	if info.Biography != "" {
+		a.biographyDisp.SetText(info.Biography)
+	}
+	/** TODO:
+	if len(info.SimilarArtist) > 0 {
+		segments := make([]widget.RichTextSegment, 0)
+		segments = append(segments, &widget.TextSegment{Text: "Similar artists: "})
+		for sim := info.SimilarArtist {
+			segments = append(segments, &widget.HyperlinkSegment{
+
+			})
+		}
+	}
+	*/
+	if info.LargeImageUrl != "" {
+		if res, err := fyne.LoadResourceFromURLString(info.LargeImageUrl); err == nil {
+			im, _, err := image.Decode(bytes.NewReader(res.Content()))
+			if err != nil {
+				return
+			}
+			img := canvas.NewImageFromImage(im)
+			img.FillMode = canvas.ImageFillContain
+			img.SetMinSize(fyne.NewSize(225, 225))
+			a.artistImageCtr.RemoveAll()
+			a.artistImageCtr.Add(img)
+			a.artistImageCtr.Refresh()
+		}
+	}
 }
 
 func (a *ArtistPageHeader) createContainer() {
