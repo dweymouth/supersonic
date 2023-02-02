@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"container/heap"
 	"context"
 	"errors"
 	"image"
@@ -17,7 +18,7 @@ type CacheItem struct {
 	lastAccessed int64
 }
 
-// A custom cache for images with the following eviction strategy:
+// A custom in-memory cache for images with the following eviction strategy:
 //  1. If there are fewer than MinSize items in the cache, none will be evicted
 //  2. If a new addition would make the cache exceed MaxSize, an item will be immediately evicted
 //     2a. in this case, evict the LRU expired item or if none expired, the LRU item
@@ -36,12 +37,13 @@ var (
 	ErrNotFound = errors.New("item not found")
 )
 
-func (i *ImageCache) Init(ctx context.Context) {
+func (i *ImageCache) Init(ctx context.Context, evictionInterval time.Duration) {
 	i.cache = make(map[string]CacheItem)
+	go i.periodicallyEvict(ctx, evictionInterval)
 }
 
 // holds writer lock for O(i.MaxSize) worst case
-func (i *ImageCache) AddWithTTL(key string, val image.Image, ttl time.Duration) {
+func (i *ImageCache) SetWithTTL(key string, val image.Image, ttl time.Duration) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -54,17 +56,17 @@ func (i *ImageCache) AddWithTTL(key string, val image.Image, ttl time.Duration) 
 	}
 	if len(i.cache) == i.MaxSize {
 		i.evictOne()
-		i.cache[key] = CacheItem{
-			val:          val,
-			ttl:          ttl,
-			expiresAt:    time.Now().Add(ttl).Unix(),
-			lastAccessed: time.Now().Unix(),
-		}
+	}
+	i.cache[key] = CacheItem{
+		val:          val,
+		ttl:          ttl,
+		expiresAt:    time.Now().Add(ttl).Unix(),
+		lastAccessed: time.Now().Unix(),
 	}
 }
 
-func (i *ImageCache) Add(key string, val image.Image) {
-	i.AddWithTTL(key, val, i.DefaultTTL)
+func (i *ImageCache) Set(key string, val image.Image) {
+	i.SetWithTTL(key, val, i.DefaultTTL)
 }
 
 func (i *ImageCache) Has(key string) bool {
@@ -75,7 +77,11 @@ func (i *ImageCache) Has(key string) bool {
 	return ok
 }
 
-func (i *ImageCache) Get(key string, resetTTL bool) (image.Image, error) {
+func (i *ImageCache) Get(key string) (image.Image, error) {
+	return i.GetResetTTL(key, false)
+}
+
+func (i *ImageCache) GetResetTTL(key string, resetTTL bool) (image.Image, error) {
 	i.mu.RLock()
 	defer i.mu.RUnlock()
 
@@ -128,15 +134,56 @@ func (i *ImageCache) evictOne() {
 	}
 }
 
+func (i *ImageCache) periodicallyEvict(ctx context.Context, interval time.Duration) {
+	t := time.NewTicker(interval)
+	for {
+		select {
+		case <-ctx.Done():
+			t.Stop()
+			return
+		case <-t.C:
+			i.EvictExpired()
+		}
+	}
+}
+
 type expiredItem struct {
 	key          string
 	lastAccessed int64
 }
 
-// TODO
+type expiredHeap []expiredItem
+
+func (h expiredHeap) Len() int           { return len(h) }
+func (h expiredHeap) Less(i, j int) bool { return h[i].lastAccessed < h[j].lastAccessed }
+func (h expiredHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+func (h *expiredHeap) Push(x any) {
+	// Push and Pop use pointer receivers because they modify the slice's length,
+	// not just its contents.
+	*h = append(*h, x.(expiredItem))
+}
+
+func (h *expiredHeap) Pop() any {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
+
+// EvictExpired evicts least recently used expired items from the cache
+// until there are no more expired items or the cache contains MinSize elements
+// Holds the reader lock for O(n) time and writer lock for O(n)
 func (i *ImageCache) EvictExpired() {
 	i.mu.RLock()
-	expired := make([]expiredItem, 0, len(i.cache)-i.MinSize)
+	count := len(i.cache)
+	sliceCap := count - i.MinSize
+	if sliceCap <= 0 {
+		i.mu.RUnlock()
+		return
+	}
+	expired := make(expiredHeap, 0, sliceCap)
 	now := time.Now().Unix()
 	for k, v := range i.cache {
 		if v.expiresAt < now {
@@ -145,16 +192,21 @@ func (i *ImageCache) EvictExpired() {
 	}
 	i.mu.RUnlock()
 
-	count := len(i.cache)
-	for count > i.MinSize {
-
+	heap.Init(&expired)
+	var keysToRemove []string
+	for count > i.MinSize && len(expired) > 0 {
+		keysToRemove = append(keysToRemove, heap.Pop(&expired).(expiredItem).key)
+		count -= 1
 	}
 
-}
-
-func heapify(arr *[]expiredItem, i int) {
-	//smallest := i
-	//lChild := 2*i + 1
-	//rChild := 2*i + 2
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	for _, key := range keysToRemove {
+		// during the interim when we don't hold the lock, some expired items
+		// could have been re-set, so check expiry again
+		if item, ok := i.cache[key]; ok && item.expiresAt < now {
+			delete(i.cache, key)
+		}
+	}
 
 }
