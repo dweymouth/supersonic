@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -11,62 +12,55 @@ import (
 	"time"
 
 	"github.com/20after4/configdir"
-	"github.com/bluele/gcache"
 )
 
 type ImageManager struct {
 	s              *ServerManager
 	baseCacheDir   string
-	thumbnailCache gcache.Cache
+	thumbnailCache ImageCache
 
 	cachedFullSizeCover   image.Image
 	cachedFullSizeCoverID string
 }
 
-func NewImageManager(s *ServerManager, baseCacheDir string) *ImageManager {
-	cache := gcache.New(100).LRU().Build()
+func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string) *ImageManager {
 	if err := configdir.MakePath(baseCacheDir); err != nil {
 		log.Println("failed to create album cover cache dir")
 		baseCacheDir = ""
 	}
-	return &ImageManager{
-		s:              s,
-		baseCacheDir:   baseCacheDir,
-		thumbnailCache: cache,
+	i := &ImageManager{
+		s:            s,
+		baseCacheDir: baseCacheDir,
+		thumbnailCache: ImageCache{
+			MinSize:    24,
+			MaxSize:    150,
+			DefaultTTL: 1 * time.Minute,
+		},
 	}
+	i.thumbnailCache.Init(ctx, 2*time.Minute)
+	return i
 }
 
 func (i *ImageManager) GetAlbumThumbnailFromCache(albumID string) (image.Image, bool) {
-	if img, err := i.thumbnailCache.Get(albumID); err == nil && img != nil {
-		return img.(image.Image), true
+	if img, err := i.thumbnailCache.GetResetTTL(albumID, true); err == nil && img != nil {
+		return img, true
 	}
 	return nil, false
 }
 
 func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
+	if im, ok := i.GetAlbumThumbnailFromCache(albumID); ok {
+		return im, nil
+	}
+	return i.fetchAndCacheCoverFromDiskOrServer(albumID, i.thumbnailCache.DefaultTTL)
+}
+
+func (i *ImageManager) GetAlbumThumbnailWithTTL(albumID string, ttl time.Duration) (image.Image, error) {
 	// in-memory cache
-	if i.thumbnailCache.Has(albumID) {
-		if img, err := i.thumbnailCache.Get(albumID); err == nil {
-			return img.(image.Image), nil
-		}
+	if img, err := i.thumbnailCache.GetWithNewTTL(albumID, ttl); err == nil {
+		return img, nil
 	}
-
-	// on disc cache
-	path := i.filePathForCover(albumID)
-	if i.ensureCoverCacheDir() != "" {
-		if s, err := os.Stat(path); err == nil {
-			go i.checkRefreshLocalCover(s, albumID)
-			if f, err := os.Open(path); err == nil {
-				defer f.Close()
-				if img, _, err := image.Decode(f); err == nil {
-					i.thumbnailCache.Set(albumID, img)
-					return img, nil
-				}
-			}
-		}
-	}
-
-	return i.fetchAndCacheCoverFromServer(albumID)
+	return i.fetchAndCacheCoverFromDiskOrServer(albumID, ttl)
 }
 
 func (i *ImageManager) GetFullSizeAlbumCover(albumID string) (image.Image, error) {
@@ -88,7 +82,26 @@ func (i *ImageManager) ensureCoverCacheDir() string {
 	return path
 }
 
-func (i *ImageManager) fetchAndCacheCoverFromServer(albumID string) (image.Image, error) {
+func (i *ImageManager) fetchAndCacheCoverFromDiskOrServer(albumID string, ttl time.Duration) (image.Image, error) {
+	// on disc cache
+	path := i.filePathForCover(albumID)
+	if i.ensureCoverCacheDir() != "" {
+		if s, err := os.Stat(path); err == nil {
+			go i.checkRefreshLocalCover(s, albumID)
+			if f, err := os.Open(path); err == nil {
+				defer f.Close()
+				if img, _, err := image.Decode(f); err == nil {
+					i.thumbnailCache.SetWithTTL(albumID, img, ttl)
+					return img, nil
+				}
+			}
+		}
+	}
+
+	return i.fetchAndCacheCoverFromServer(albumID, ttl)
+}
+
+func (i *ImageManager) fetchAndCacheCoverFromServer(albumID string, ttl time.Duration) (image.Image, error) {
 	img, err := i.s.Server.GetCoverArt(albumID, map[string]string{"size": "300"})
 	if err != nil {
 		return nil, err
@@ -107,8 +120,8 @@ func (i *ImageManager) fetchAndCacheCoverFromServer(albumID string) (image.Image
 }
 
 func (i *ImageManager) checkRefreshLocalCover(stat os.FileInfo, albumID string) {
-	if time.Now().Sub(stat.ModTime()) > 24*time.Hour {
-		i.fetchAndCacheCoverFromServer(albumID)
+	if time.Since(stat.ModTime()) > 24*time.Hour {
+		i.fetchAndCacheCoverFromServer(albumID, i.thumbnailCache.DefaultTTL)
 	}
 }
 
