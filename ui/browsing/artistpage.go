@@ -5,9 +5,11 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"strings"
 	"supersonic/backend"
 	"supersonic/res"
 	"supersonic/ui/layouts"
+	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -123,7 +125,7 @@ type ArtistPageHeader struct {
 	artistID       string
 	artistImageCtr *fyne.Container
 	titleDisp      *widget.RichText
-	biographyDisp  *widget.Label
+	biographyDisp  *widget.RichText
 	similarArtists *widget.RichText
 	container      *fyne.Container
 }
@@ -131,7 +133,7 @@ type ArtistPageHeader struct {
 func NewArtistPageHeader() *ArtistPageHeader {
 	a := &ArtistPageHeader{
 		titleDisp:      widget.NewRichTextWithText(""),
-		biographyDisp:  widget.NewLabel("Artist description not available"),
+		biographyDisp:  widget.NewRichTextWithText("Artist biography not available."),
 		similarArtists: widget.NewRichText(),
 	}
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
@@ -159,7 +161,13 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 		return
 	}
 	if info.Biography != "" {
-		a.biographyDisp.SetText(info.Biography)
+		segs := util.RichTextSegsFromHTMLString(info.Biography)
+		if len(segs) > 0 {
+			if ts, ok := segs[0].(*widget.TextSegment); ok && strings.TrimSpace(ts.Text) != "" {
+				a.biographyDisp.Segments = segs
+				a.biographyDisp.Refresh()
+			}
+		}
 	}
 	/** TODO:
 	if len(info.SimilarArtist) > 0 {
@@ -208,13 +216,13 @@ func NewMissingArtistImage() *MissingArtistImage {
 	img := canvas.NewImageFromResource(res.ResPeopleInvertPng)
 	img.FillMode = canvas.ImageFillContain
 	img.SetMinSize(fyne.NewSize(64, 64))
-	rect := canvas.NewRectangle(color.Transparent)
+	rect := canvas.NewRectangle(theme.BackgroundColor())
 	rect.StrokeColor = color.Black
 	rect.StrokeWidth = 3
 	rect.SetMinSize(fyne.NewSize(225, 225))
 	m.container = container.NewMax(
-		container.NewCenter(img),
 		rect,
+		container.NewCenter(img),
 	)
 	return m
 }

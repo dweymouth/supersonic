@@ -11,6 +11,7 @@ require (
 	github.com/pelletier/go-toml v1.9.3
 	github.com/wildeyedskies/go-mpv v0.0.0-20221204042335-e8961dc66756
 	github.com/zalando/go-keyring v0.2.1
+	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
 )
 
 require (
@@ -37,7 +38,6 @@ require (
 	github.com/yuin/goldmark v1.4.0 // indirect
 	golang.org/x/image v0.0.0-20220601225756-64ec528b34cd // indirect
 	golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee // indirect
-	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
