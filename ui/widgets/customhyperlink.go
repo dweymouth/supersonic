@@ -48,7 +48,8 @@ type CustomHyperlink struct {
 	widget.BaseWidget
 	h *hyperlinkWrapper
 
-	OnTapped func()
+	OnTapped   func()
+	NoTruncate bool
 
 	container *fyne.Container
 	minSize   fyne.Size
@@ -64,6 +65,7 @@ func NewCustomHyperlink() *CustomHyperlink {
 		}
 	}
 	c.ExtendBaseWidget(c)
+	c.minSize = c.h.MinSize()
 	c.container = container.NewHBox(c.h, layout.NewSpacer())
 	return c
 }
@@ -71,7 +73,11 @@ func NewCustomHyperlink() *CustomHyperlink {
 func (c *CustomHyperlink) SetText(text string) {
 	s := widget.NewLabel(text).MinSize()
 	c.h.SetText(text)
-	c.minSize = fyne.NewSize(fyne.Min(c.Size().Width, s.Width), s.Height)
+	if c.NoTruncate {
+		c.minSize = s
+	} else {
+		c.minSize = fyne.NewSize(fyne.Min(c.Size().Width, s.Width), s.Height)
+	}
 	c.Refresh()
 }
 
@@ -82,6 +88,10 @@ func (c *CustomHyperlink) Resize(size fyne.Size) {
 
 func (c *CustomHyperlink) Refresh() {
 	c.container.Refresh()
+}
+
+func (c *CustomHyperlink) MinSize() fyne.Size {
+	return c.minSize
 }
 
 func (c *CustomHyperlink) CreateRenderer() fyne.WidgetRenderer {

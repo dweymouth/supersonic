@@ -45,7 +45,7 @@ func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.Image
 		nav:      nav,
 	}
 	a.ExtendBaseWidget(a)
-	a.header = NewArtistPageHeader()
+	a.header = NewArtistPageHeader(nav)
 	a.container = container.NewBorder(a.header, nil, nil, nil, layout.NewSpacer())
 	a.loadAsync()
 	return a
@@ -122,19 +122,21 @@ func (s *savedArtistPage) Restore() Page {
 type ArtistPageHeader struct {
 	widget.BaseWidget
 
+	nav            func(Route)
 	artistID       string
 	artistImageCtr *fyne.Container
 	titleDisp      *widget.RichText
 	biographyDisp  *widget.RichText
-	similarArtists *widget.RichText
+	similarArtists *fyne.Container
 	container      *fyne.Container
 }
 
-func NewArtistPageHeader() *ArtistPageHeader {
+func NewArtistPageHeader(nav func(Route)) *ArtistPageHeader {
 	a := &ArtistPageHeader{
+		nav:            nav,
 		titleDisp:      widget.NewRichTextWithText(""),
 		biographyDisp:  widget.NewRichTextWithText("Artist biography not available."),
-		similarArtists: widget.NewRichText(),
+		similarArtists: container.NewHBox(),
 	}
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
@@ -169,17 +171,22 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 			}
 		}
 	}
-	/** TODO:
-	if len(info.SimilarArtist) > 0 {
-		segments := make([]widget.RichTextSegment, 0)
-		segments = append(segments, &widget.TextSegment{Text: "Similar artists: "})
-		for sim := info.SimilarArtist {
-			segments = append(segments, &widget.HyperlinkSegment{
-
-			})
+	for i, art := range info.SimilarArtist {
+		if i == 0 {
+			a.similarArtists.Add(widget.NewLabel("Similar Artists:"))
 		}
+		if i == 4 {
+			break
+		}
+		h := widgets.NewCustomHyperlink()
+		h.NoTruncate = true
+		h.SetText(art.Name)
+		h.OnTapped = func(id string) func() {
+			return func() { a.nav(ArtistRoute(id)) }
+		}(art.ID)
+		a.similarArtists.Add(h)
 	}
-	*/
+	a.similarArtists.Refresh()
 	if info.LargeImageUrl != "" {
 		if res, err := fyne.LoadResourceFromURLString(info.LargeImageUrl); err == nil {
 			im, _, err := image.Decode(bytes.NewReader(res.Content()))
@@ -198,7 +205,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 
 func (a *ArtistPageHeader) createContainer() {
 	a.container = container.NewBorder(nil, nil, a.artistImageCtr, nil,
-		container.NewBorder(a.titleDisp, a.similarArtists, nil, nil, a.biographyDisp))
+		container.NewBorder(a.titleDisp, nil, nil, nil, container.NewVBox(a.biographyDisp, a.similarArtists)))
 }
 
 func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {
