@@ -88,7 +88,7 @@ func (i *ImageManager) fetchAndCacheCoverFromDiskOrServer(albumID string, ttl ti
 	path := i.filePathForCover(albumID)
 	if i.ensureCoverCacheDir() != "" {
 		if s, err := os.Stat(path); err == nil {
-			go i.checkRefreshLocalCover(s, albumID)
+			go i.checkRefreshLocalCover(s, albumID, ttl)
 			if f, err := os.Open(path); err == nil {
 				defer f.Close()
 				if img, _, err := image.Decode(f); err == nil {
@@ -116,13 +116,13 @@ func (i *ImageManager) fetchAndCacheCoverFromServer(albumID string, ttl time.Dur
 			}
 		}
 	}
-	i.thumbnailCache.Set(albumID, img)
+	i.thumbnailCache.SetWithTTL(albumID, img, ttl)
 	return img, nil
 }
 
-func (i *ImageManager) checkRefreshLocalCover(stat os.FileInfo, albumID string) {
+func (i *ImageManager) checkRefreshLocalCover(stat os.FileInfo, albumID string, ttl time.Duration) {
 	if time.Since(stat.ModTime()) > 24*time.Hour {
-		i.fetchAndCacheCoverFromServer(albumID, i.thumbnailCache.DefaultTTL)
+		i.fetchAndCacheCoverFromServer(albumID, ttl)
 	}
 }
 
