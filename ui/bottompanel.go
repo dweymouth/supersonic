@@ -8,6 +8,7 @@ import (
 	"supersonic/ui/browsing"
 	"supersonic/ui/layouts"
 	"supersonic/ui/widgets"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -89,7 +90,12 @@ func (bp *BottomPanel) onSongChange(song *subsonic.Child) {
 	} else {
 		var im image.Image
 		if bp.ImageManager != nil {
-			im, _ = bp.ImageManager.GetAlbumThumbnail(song.AlbumID)
+			// set image to expire not long after the length of the song
+			// if song is played through without much pausing, image will still
+			// be in cache for the next song if it's from the same album, or
+			// if the user navigates to the album page for the track
+			imgTTLSec := song.Duration + 30
+			im, _ = bp.ImageManager.GetAlbumThumbnailWithTTL(song.AlbumID, time.Duration(imgTTLSec)*time.Second)
 		}
 		bp.NowPlaying.Update(song.Title, song.Artist, song.Album, im)
 	}
