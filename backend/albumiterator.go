@@ -4,7 +4,6 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/bluele/gcache"
 	subsonic "github.com/dweymouth/go-subsonic"
 )
 
@@ -15,15 +14,12 @@ type AlbumIterator interface {
 type LibraryManager struct {
 	PreCacheCoverFn func(string)
 
-	s                *ServerManager
-	albumDetailCache gcache.Cache
+	s *ServerManager
 }
 
 func NewLibraryManager(s *ServerManager) *LibraryManager {
-	cache := gcache.New(250).LRU().Build()
 	return &LibraryManager{
-		s:                s,
-		albumDetailCache: cache,
+		s: s,
 	}
 }
 
@@ -85,21 +81,11 @@ func (l *LibraryManager) SearchIterWithFilter(query string, filter func(*subsoni
 	return l.newSearchIter(query, filter)
 }
 
-func (l *LibraryManager) CacheAlbum(a *subsonic.AlbumID3) {
-	l.albumDetailCache.Set(a.ID, a)
-}
-
 func (l *LibraryManager) GetAlbum(id string) (*subsonic.AlbumID3, error) {
-	if l.albumDetailCache.Has(id) {
-		if a, err := l.albumDetailCache.Get(id); err == nil {
-			return a.(*subsonic.AlbumID3), nil
-		}
-	}
 	a, err := l.s.Server.GetAlbum(id)
 	if err != nil {
 		return nil, err
 	}
-	l.albumDetailCache.Set(a.ID, a)
 	return a, nil
 }
 
