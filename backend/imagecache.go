@@ -95,6 +95,20 @@ func (i *ImageCache) GetResetTTL(key string, resetTTL bool) (image.Image, error)
 	return nil, ErrNotFound
 }
 
+// Gets the image if it exists and extends TTL to time.Now + ttl iff the image would expire before then
+func (i *ImageCache) GetExtendTTL(key string, ttl time.Duration) (image.Image, error) {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+	if v, ok := i.cache[key]; ok {
+		v.lastAccessed = time.Now().Unix()
+		if v.expiresAt < time.Now().Add(ttl).Unix() {
+			v.expiresAt = time.Now().Add(ttl).Unix()
+		}
+		return v.val, nil
+	}
+	return nil, ErrNotFound
+}
+
 func (i *ImageCache) GetWithNewTTL(key string, newTtl time.Duration) (image.Image, error) {
 	i.mu.RLock()
 	defer i.mu.RUnlock()

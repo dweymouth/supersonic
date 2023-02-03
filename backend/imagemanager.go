@@ -42,7 +42,8 @@ func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string)
 }
 
 func (i *ImageManager) GetAlbumThumbnailFromCache(albumID string) (image.Image, bool) {
-	if img, err := i.thumbnailCache.GetResetTTL(albumID, true); err == nil && img != nil {
+	img, err := i.thumbnailCache.GetExtendTTL(albumID, i.thumbnailCache.DefaultTTL)
+	if err == nil && img != nil {
 		return img, true
 	}
 	return nil, false
