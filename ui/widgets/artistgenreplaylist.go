@@ -47,10 +47,12 @@ type ArtistGenrePlaylistRow struct {
 func NewArtistGenrePlaylistRow(layout *layouts.ColumnsLayout) *ArtistGenrePlaylistRow {
 	a := &ArtistGenrePlaylistRow{
 		nameLabel:       widget.NewLabel(""),
-		albumCountLabel: widget.NewLabel("alCount"),
+		albumCountLabel: widget.NewLabel(""),
 		trackCountLabel: widget.NewLabel(""),
 	}
 	a.ExtendBaseWidget(a)
+	a.albumCountLabel.Alignment = fyne.TextAlignTrailing
+	a.trackCountLabel.Alignment = fyne.TextAlignTrailing
 	a.container = container.New(layout, a.nameLabel, a.albumCountLabel, a.trackCountLabel)
 	return a
 }
@@ -61,7 +63,7 @@ func NewArtistGenrePlaylist(items []ArtistGenrePlaylistItemModel) *ArtistGenrePl
 		columnsLayout: layouts.NewColumnsLayout([]float32{-1, 125, 125}),
 	}
 	a.ExtendBaseWidget(a)
-	a.hdr = NewListHeader([]string{"Name", "Album Count", "Track Count"}, a.columnsLayout)
+	a.hdr = NewListHeader([]ListColumn{{"Name", false}, {"Album Count", true}, {"Track Count", true}}, a.columnsLayout)
 	a.list = widget.NewList(
 		func() int { return len(a.Items) },
 		func() fyne.CanvasObject {

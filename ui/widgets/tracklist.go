@@ -34,11 +34,13 @@ func NewTrackRow(layout *layouts.ColumnsLayout) *TrackRow {
 	t := &TrackRow{}
 	t.ExtendBaseWidget(t)
 	t.num = widget.NewRichTextWithText("")
+	t.num.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.name = widget.NewRichTextWithText("")
 	t.name.Wrapping = fyne.TextTruncate
 	t.artist = widget.NewRichTextWithText("")
 	t.artist.Wrapping = fyne.TextTruncate
 	t.dur = widget.NewRichTextWithText("")
+	t.dur.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 
 	t.container = container.New(layout,
 		t.num, t.name, t.artist, t.dur)
@@ -96,8 +98,8 @@ type Tracklist struct {
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1}
 	t.ExtendBaseWidget(t)
-	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, 55})
-	t.hdr = NewListHeader([]string{"#", "Title", "Artist", "Time"}, t.colLayout)
+	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, 60})
+	t.hdr = NewListHeader([]ListColumn{{"#", true}, {"Title", false}, {"Artist", false}, {"Time", true}}, t.colLayout)
 	t.list = widget.NewList(
 		func() int { return len(t.Tracks) },
 		func() fyne.CanvasObject { return NewTrackRow(t.colLayout) },
