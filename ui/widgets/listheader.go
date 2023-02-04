@@ -10,17 +10,22 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+type ListColumn struct {
+	Text          string
+	AlignTrailing bool
+}
+
 type ListHeader struct {
 	widget.BaseWidget
 
-	columns       []string
+	columns       []ListColumn
 	columnsLayout *layouts.ColumnsLayout
 
 	columnsContainer *fyne.Container
 	container        *fyne.Container
 }
 
-func NewListHeader(cols []string, layout *layouts.ColumnsLayout) *ListHeader {
+func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader {
 	l := &ListHeader{
 		columns:          cols,
 		columnsLayout:    layout,
@@ -42,8 +47,13 @@ func (l *ListHeader) SetColumnVisible(colNum int, visible bool) {
 
 func (l *ListHeader) buildColumns() {
 	for _, c := range l.columns {
-		t := widget.NewRichTextWithText(c)
+		t := widget.NewRichTextWithText(c.Text)
 		t.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
+		al := fyne.TextAlignLeading
+		if c.AlignTrailing {
+			al = fyne.TextAlignTrailing
+		}
+		t.Segments[0].(*widget.TextSegment).Style.Alignment = al
 		l.columnsContainer.Add(t)
 	}
 }
