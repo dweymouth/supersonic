@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"supersonic/backend"
+	"supersonic/res"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
@@ -21,6 +22,7 @@ type PlaylistPage struct {
 	playlistID    string
 	sm            *backend.ServerManager
 	pm            *backend.PlaybackManager
+	im            *backend.ImageManager
 	nav           func(Route)
 	header        *PlaylistPageHeader
 	tracklist     *widgets.Tracklist
@@ -33,9 +35,10 @@ func NewPlaylistPage(
 	playlistID string,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
+	im *backend.ImageManager,
 	nav func(Route),
 ) *PlaylistPage {
-	a := &PlaylistPage{playlistID: playlistID, sm: sm, pm: pm}
+	a := &PlaylistPage{playlistID: playlistID, sm: sm, pm: pm, im: im}
 	a.ExtendBaseWidget(a)
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
@@ -57,6 +60,7 @@ func (a *PlaylistPage) Save() SavedPage {
 		playlistID: a.playlistID,
 		sm:         a.sm,
 		pm:         a.pm,
+		im:         a.im,
 		nav:        a.nav,
 	}
 }
@@ -89,9 +93,10 @@ func (a *PlaylistPage) loadAsync() {
 			log.Printf("Failed to get playlist: %s", err.Error())
 			return
 		}
-		a.header.Update(playlist)
 		a.tracklist.Tracks = playlist.Entry
 		a.tracklist.SetNowPlaying(a.nowPlayingID)
+		a.tracklist.Refresh()
+		a.header.Update(playlist)
 	}()
 }
 
@@ -99,6 +104,8 @@ type PlaylistPageHeader struct {
 	widget.BaseWidget
 
 	page *PlaylistPage
+
+	image *widgets.ImagePlaceholder
 
 	titleLabel       *widget.RichText
 	descriptionLabel *widget.Label
@@ -115,6 +122,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a := &PlaylistPageHeader{page: page}
 	a.ExtendBaseWidget(a)
 
+	a.image = widgets.NewImagePlaceholder(res.ResPlaylistInvertPng, 225)
 	a.titleLabel = widget.NewRichTextWithText("")
 	a.titleLabel.Wrapping = fyne.TextTruncate
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
@@ -128,12 +136,13 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		page.onPlayTrackAt(0)
 	})
 
-	a.container = container.NewVBox(a.titleLabel, container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
-		a.descriptionLabel,
-		a.ownerLabel,
-		a.trackTimeLabel),
-		container.NewHBox(a.playButton),
-	)
+	a.container = container.NewBorder(nil, nil, a.image, nil,
+		container.NewVBox(a.titleLabel, container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
+			a.descriptionLabel,
+			a.ownerLabel,
+			a.trackTimeLabel),
+			container.NewHBox(a.playButton),
+		))
 	return a
 }
 
@@ -147,6 +156,19 @@ func (a *PlaylistPageHeader) Update(playlist *subsonic.Playlist) {
 	a.ownerLabel.SetText(a.formatPlaylistOwnerStr(playlist))
 	a.trackTimeLabel.SetText(a.formatPlaylistTrackTimeStr(playlist))
 	a.createdAtLabel.SetText("created at TODO")
+
+	var haveCover bool
+	if playlist.CoverArt != "" {
+		if im, err := a.page.im.GetAlbumThumbnail(playlist.CoverArt); err == nil && im != nil {
+			a.image.SetImage(im)
+			haveCover = true
+		}
+	}
+	if !haveCover {
+		if im, err := a.page.im.GetAlbumThumbnail(playlist.ID); err == nil && im != nil {
+			a.image.SetImage(im)
+		}
+	}
 	a.Refresh()
 }
 
@@ -166,9 +188,10 @@ type savedPlaylistPage struct {
 	playlistID string
 	sm         *backend.ServerManager
 	pm         *backend.PlaybackManager
+	im         *backend.ImageManager
 	nav        func(Route)
 }
 
 func (s *savedPlaylistPage) Restore() Page {
-	return NewPlaylistPage(s.playlistID, s.sm, s.pm, s.nav)
+	return NewPlaylistPage(s.playlistID, s.sm, s.pm, s.im, s.nav)
 }
