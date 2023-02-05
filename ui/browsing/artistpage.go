@@ -3,7 +3,6 @@ package browsing
 import (
 	"bytes"
 	"image"
-	"image/color"
 	"log"
 	"strings"
 	"supersonic/backend"
@@ -13,7 +12,6 @@ import (
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -46,7 +44,9 @@ func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.Image
 	}
 	a.ExtendBaseWidget(a)
 	a.header = NewArtistPageHeader(nav)
-	a.container = container.NewBorder(a.header, nil, nil, nil, layout.NewSpacer())
+	a.container = container.NewBorder(
+		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
+		nil, nil, nil, layout.NewSpacer())
 	a.loadAsync()
 	return a
 }
@@ -124,7 +124,7 @@ type ArtistPageHeader struct {
 
 	nav            func(Route)
 	artistID       string
-	artistImageCtr *fyne.Container
+	artistImage    *widgets.ImagePlaceholder
 	titleDisp      *widget.RichText
 	biographyDisp  *widget.RichText
 	similarArtists *fyne.Container
@@ -141,8 +141,7 @@ func NewArtistPageHeader(nav func(Route)) *ArtistPageHeader {
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.artistImageCtr = container.New(&layouts.CenterPadLayout{PadLeftRight: 10, PadTopBottom: 10},
-		NewMissingArtistImage())
+	a.artistImage = widgets.NewImagePlaceholder(res.ResPeopleInvertPng, 225)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.ExtendBaseWidget(a)
 	a.createContainer()
@@ -193,47 +192,16 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 			if err != nil {
 				return
 			}
-			img := canvas.NewImageFromImage(im)
-			img.FillMode = canvas.ImageFillContain
-			img.SetMinSize(fyne.NewSize(225, 225))
-			a.artistImageCtr.RemoveAll()
-			a.artistImageCtr.Add(img)
-			a.artistImageCtr.Refresh()
+			a.artistImage.SetImage(im)
 		}
 	}
 }
 
 func (a *ArtistPageHeader) createContainer() {
-	a.container = container.NewBorder(nil, nil, a.artistImageCtr, nil,
+	a.container = container.NewBorder(nil, nil, a.artistImage, nil,
 		container.NewBorder(a.titleDisp, nil, nil, nil, container.NewVBox(a.biographyDisp, a.similarArtists)))
 }
 
 func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
-}
-
-type MissingArtistImage struct {
-	widget.BaseWidget
-	container *fyne.Container
-}
-
-func NewMissingArtistImage() *MissingArtistImage {
-	m := &MissingArtistImage{}
-	m.ExtendBaseWidget(m)
-	img := canvas.NewImageFromResource(res.ResPeopleInvertPng)
-	img.FillMode = canvas.ImageFillContain
-	img.SetMinSize(fyne.NewSize(64, 64))
-	rect := canvas.NewRectangle(theme.BackgroundColor())
-	rect.StrokeColor = color.Black
-	rect.StrokeWidth = 3
-	rect.SetMinSize(fyne.NewSize(225, 225))
-	m.container = container.NewMax(
-		rect,
-		container.NewCenter(img),
-	)
-	return m
-}
-
-func (m *MissingArtistImage) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(m.container)
 }
