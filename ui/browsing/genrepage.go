@@ -51,19 +51,23 @@ func NewGenrePage(genre string, lm *backend.LibraryManager, im *backend.ImageMan
 	g.grid.OnShowAlbumPage = g.onShowAlbumPage
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched
-	g.createContainer()
+	g.createContainer(false)
 
 	return g
 }
 
-func (g *GenrePage) createContainer() {
+func (g *GenrePage) createContainer(searchGrid bool) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), g.searcher.Entry, layout.NewSpacer())
+	gr := g.grid
+	if searchGrid {
+		gr = g.searchGrid
+	}
 	g.container = container.NewBorder(
 		container.NewHBox(widgets.NewHSpace(9), g.titleDisp, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
 		nil,
 		nil,
 		nil,
-		g.grid,
+		gr,
 	)
 }
 
@@ -83,7 +87,11 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g.grid = widgets.NewAlbumGridFromState(saved.gridState)
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched
-	g.createContainer()
+	g.searcher.Entry.Text = saved.searchText
+	if saved.searchText != "" {
+		g.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
+	}
+	g.createContainer(saved.searchText != "")
 
 	return g
 }
@@ -110,13 +118,18 @@ func (g *GenrePage) Reload() {
 }
 
 func (g *GenrePage) Save() SavedPage {
-	return &savedGenrePage{
-		genre:     g.genre,
-		lm:        g.lm,
-		im:        g.im,
-		nav:       g.nav,
-		gridState: g.grid.SaveToState(),
+	sg := &savedGenrePage{
+		genre:      g.genre,
+		searchText: g.searchText,
+		lm:         g.lm,
+		im:         g.im,
+		nav:        g.nav,
+		gridState:  g.grid.SaveToState(),
 	}
+	if g.searchGrid != nil {
+		sg.searchGridState = g.searchGrid.SaveToState()
+	}
+	return sg
 }
 
 var _ Searchable = (*AlbumsPage)(nil)
@@ -169,11 +182,13 @@ func (g *GenrePage) doSearch(query string) {
 }
 
 type savedGenrePage struct {
-	genre     string
-	lm        *backend.LibraryManager
-	im        *backend.ImageManager
-	nav       func(Route)
-	gridState widgets.AlbumGridState
+	genre           string
+	searchText      string
+	lm              *backend.LibraryManager
+	im              *backend.ImageManager
+	nav             func(Route)
+	gridState       widgets.AlbumGridState
+	searchGridState widgets.AlbumGridState
 }
 
 func (s *savedGenrePage) Restore() Page {

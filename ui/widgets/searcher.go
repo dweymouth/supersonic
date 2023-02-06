@@ -18,7 +18,7 @@ func NewSearcher() *Searcher {
 	s := &Searcher{
 		Entry: NewSearchEntry(),
 	}
-	s.Entry.OnTextChanged = s.onSearchTextChanged
+	s.Entry.OnChanged = s.onSearchTextChanged
 	return s
 }
 
