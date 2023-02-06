@@ -74,20 +74,24 @@ func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, i
 	a.grid.OnShowAlbumPage = a.onShowAlbumPage
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
-	a.createContainer()
+	a.createContainer(false)
 
 	return a
 }
 
-func (a *AlbumsPage) createContainer() {
+func (a *AlbumsPage) createContainer(searchgrid bool) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
 	sortVbox := container.NewVBox(layout.NewSpacer(), a.sortOrder, layout.NewSpacer())
+	g := a.grid
+	if searchgrid {
+		g = a.searchGrid
+	}
 	a.container = container.NewBorder(
 		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, sortVbox, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
 		nil,
 		nil,
 		nil,
-		a.grid,
+		g,
 	)
 }
 
@@ -110,7 +114,11 @@ func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a.grid = widgets.NewAlbumGridFromState(saved.gridState)
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
-	a.createContainer()
+	a.searcher.Entry.Text = saved.searchText
+	if saved.searchText != "" {
+		a.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
+	}
+	a.createContainer(saved.searchText != "")
 
 	return a
 }
@@ -152,14 +160,19 @@ func (a *AlbumsPage) Reload() {
 }
 
 func (a *AlbumsPage) Save() SavedPage {
-	return &savedAlbumsPage{
-		title:     a.title,
-		lm:        a.lm,
-		im:        a.im,
-		nav:       a.nav,
-		sortOrder: a.sortOrder.Selected,
-		gridState: a.grid.SaveToState(),
+	sa := &savedAlbumsPage{
+		title:      a.title,
+		lm:         a.lm,
+		im:         a.im,
+		nav:        a.nav,
+		searchText: a.searchText,
+		sortOrder:  a.sortOrder.Selected,
+		gridState:  a.grid.SaveToState(),
 	}
+	if a.searchGrid != nil {
+		sa.searchGridState = a.searchGrid.SaveToState()
+	}
+	return sa
 }
 
 func (a *AlbumsPage) doSearch(query string) {
@@ -203,12 +216,14 @@ func (a *AlbumsPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type savedAlbumsPage struct {
-	title     string
-	lm        *backend.LibraryManager
-	im        *backend.ImageManager
-	nav       func(Route)
-	sortOrder string
-	gridState widgets.AlbumGridState
+	title           string
+	searchText      string
+	lm              *backend.LibraryManager
+	im              *backend.ImageManager
+	nav             func(Route)
+	sortOrder       string
+	gridState       widgets.AlbumGridState
+	searchGridState widgets.AlbumGridState
 }
 
 func (s *savedAlbumsPage) Restore() Page {

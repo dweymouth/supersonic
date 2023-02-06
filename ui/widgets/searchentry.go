@@ -8,8 +8,7 @@ import (
 
 type SearchEntry struct {
 	widget.Entry
-	height        float32
-	OnTextChanged func(string)
+	height float32
 }
 
 func NewSearchEntry() *SearchEntry {
@@ -23,18 +22,16 @@ func NewSearchEntry() *SearchEntry {
 		sf.SetText("")
 	}
 	sf.ActionItem = c
-	sf.OnChanged = func(s string) {
-		if s == "" {
-			c.Resource = theme.SearchIcon()
-		} else {
-			c.Resource = theme.ContentClearIcon()
-		}
-		c.Refresh()
-		if sf.OnTextChanged != nil {
-			sf.OnTextChanged(s)
-		}
-	}
 	return sf
+}
+
+func (s *SearchEntry) Refresh() {
+	if s.Text == "" {
+		s.ActionItem.(*clearTextButton).Resource = theme.SearchIcon()
+	} else {
+		s.ActionItem.(*clearTextButton).Resource = theme.ContentClearIcon()
+	}
+	s.Entry.Refresh()
 }
 
 func (s *SearchEntry) MinSize() fyne.Size {
