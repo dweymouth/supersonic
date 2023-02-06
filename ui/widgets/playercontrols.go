@@ -57,8 +57,8 @@ type PlayerControls struct {
 	widget.BaseWidget
 
 	slider         *TrackPosSlider
-	curTimeLabel   *widget.Label
-	totalTimeLabel *widget.Label
+	curTimeLabel   *labelMinSize
+	totalTimeLabel *labelMinSize
 	prev           *widget.Button
 	playpause      *widget.Button
 	next           *widget.Button
@@ -69,14 +69,31 @@ type PlayerControls struct {
 
 var _ fyne.Widget = (*PlayerControls)(nil)
 
+type labelMinSize struct {
+	widget.Label
+	MinWidth float32
+}
+
+func (l *labelMinSize) MinSize() fyne.Size {
+	return fyne.NewSize(l.MinWidth, l.Label.MinSize().Height)
+}
+
+func NewLabelMinSize(text string, minWidth float32) *labelMinSize {
+	l := &labelMinSize{MinWidth: minWidth, Label: widget.Label{Text: text}}
+	l.ExtendBaseWidget(l)
+	return l
+}
+
 // NewPlayerControls sets up the seek bar, and transport buttons.
 func NewPlayerControls() *PlayerControls {
 	pc := &PlayerControls{}
 	pc.ExtendBaseWidget(pc)
 
 	pc.slider = NewTrackPosSlider()
-	pc.curTimeLabel = widget.NewLabel(util.SecondsToTimeString(0))
-	pc.totalTimeLabel = widget.NewLabel(util.SecondsToTimeString(0))
+	pc.curTimeLabel = NewLabelMinSize(util.SecondsToTimeString(0), 55)
+	pc.curTimeLabel.Alignment = fyne.TextAlignTrailing
+	pc.totalTimeLabel = NewLabelMinSize(util.SecondsToTimeString(0), 55)
+	pc.totalTimeLabel.Alignment = fyne.TextAlignTrailing
 
 	pc.slider.OnChanged = func(f float64) {
 		time := f * pc.totalTime
