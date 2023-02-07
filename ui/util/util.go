@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"image"
 	"math"
 	"strings"
 
@@ -18,6 +19,11 @@ func SecondsToTimeString(s float64) string {
 	sec -= min * 60
 
 	return fmt.Sprintf("%d:%02d", min, sec)
+}
+
+func ImageAspect(im image.Image) float32 {
+	b := im.Bounds()
+	return float32(b.Max.X-b.Min.X) / float32(b.Max.Y-b.Min.Y)
 }
 
 func RichTextSegsFromHTMLString(s string) []widget.RichTextSegment {

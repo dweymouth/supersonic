@@ -227,8 +227,20 @@ func (a *AlbumPageHeader) showPopUpCover() {
 	im.FillMode = canvas.ImageFillContain
 	pop := a.page.popUpProvider.CreatePopUp(im)
 	s := a.page.popUpProvider.WindowSize()
-	pop.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
-	pop.ShowAtPosition(fyne.NewPos(0.1*s.Width, 0.1*s.Height))
+	var popS fyne.Size
+	if asp := util.ImageAspect(cover); s.Width/s.Height > asp {
+		// window height is limiting factor
+		h := s.Height * 0.8
+		popS = fyne.NewSize(h*asp, h)
+	} else {
+		w := s.Width * 0.8
+		popS = fyne.NewSize(w, w*(1/asp))
+	}
+	pop.Resize(popS)
+	pop.ShowAtPosition(fyne.NewPos(
+		(s.Width-popS.Width)/2,
+		(s.Height-popS.Height)/2,
+	))
 }
 
 func formatMiscLabelStr(a *subsonic.AlbumID3) string {
