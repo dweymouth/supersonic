@@ -28,14 +28,9 @@ type AlbumPage struct {
 	tracklist     *widgets.Tracklist
 	nowPlayingID  string
 	container     *fyne.Container
-	popUpProvider PopUpProvider
+	popUpProvider util.PopUpProvider
 
 	OnPlayAlbum func(string, int)
-}
-
-type PopUpProvider interface {
-	CreatePopUp(fyne.CanvasObject) *widget.PopUp
-	WindowSize() fyne.Size
 }
 
 func NewAlbumPage(
@@ -43,7 +38,7 @@ func NewAlbumPage(
 	sm *backend.ServerManager,
 	lm *backend.LibraryManager,
 	im *backend.ImageManager,
-	popUpProvider PopUpProvider,
+	popUpProvider util.PopUpProvider,
 	nav func(Route),
 ) *AlbumPage {
 	a := &AlbumPage{albumID: albumID, sm: sm, lm: lm, im: im, nav: nav, popUpProvider: popUpProvider}
@@ -136,9 +131,8 @@ type AlbumPageHeader struct {
 func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a := &AlbumPageHeader{page: page}
 	a.ExtendBaseWidget(a)
-	a.cover = widgets.NewTappableImage()
+	a.cover = widgets.NewTappableImage(a.showPopUpCover)
 	a.cover.FillMode = canvas.ImageFillContain
-	a.cover.OnTapped = a.showPopUpCover
 	a.cover.SetMinSize(fyne.NewSize(225, 225))
 	// due to cache warming we can probably immediately set the cover
 	// and not have to set it asynchronously in the Update function
@@ -223,24 +217,7 @@ func (a *AlbumPageHeader) showPopUpCover() {
 		log.Printf("error getting full size album cover: %s", err.Error())
 		return
 	}
-	im := canvas.NewImageFromImage(cover)
-	im.FillMode = canvas.ImageFillContain
-	pop := a.page.popUpProvider.CreatePopUp(im)
-	s := a.page.popUpProvider.WindowSize()
-	var popS fyne.Size
-	if asp := util.ImageAspect(cover); s.Width/s.Height > asp {
-		// window height is limiting factor
-		h := s.Height * 0.8
-		popS = fyne.NewSize(h*asp, h)
-	} else {
-		w := s.Width * 0.8
-		popS = fyne.NewSize(w, w*(1/asp))
-	}
-	pop.Resize(popS)
-	pop.ShowAtPosition(fyne.NewPos(
-		(s.Width-popS.Width)/2,
-		(s.Height-popS.Height)/2,
-	))
+	util.ShowPopUpImage(cover, a.page.popUpProvider)
 }
 
 func formatMiscLabelStr(a *subsonic.AlbumID3) string {
@@ -252,7 +229,7 @@ type savedAlbumPage struct {
 	lm            *backend.LibraryManager
 	im            *backend.ImageManager
 	sm            *backend.ServerManager
-	popUpProvider PopUpProvider
+	popUpProvider util.PopUpProvider
 	nav           func(Route)
 }
 

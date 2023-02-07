@@ -15,6 +15,8 @@ type ImagePlaceholder struct {
 	widget.BaseWidget
 	container *fyne.Container
 	minSize   float32
+
+	OnTapped func()
 }
 
 func NewImagePlaceholder(centerIcon fyne.Resource, minSize float32) *ImagePlaceholder {
@@ -34,13 +36,34 @@ func NewImagePlaceholder(centerIcon fyne.Resource, minSize float32) *ImagePlaceh
 	return m
 }
 
-func (i *ImagePlaceholder) SetImage(img image.Image) {
-	cImg := canvas.NewImageFromImage(img)
-	cImg.FillMode = canvas.ImageFillContain
-	cImg.SetMinSize(fyne.NewSize(i.minSize, i.minSize))
+type CanvasImage interface {
+	fyne.CanvasObject
+
+	SetMinSize(fyne.Size)
+}
+
+func (i *ImagePlaceholder) SetImage(img image.Image, tappable bool) {
+	var cIm CanvasImage
+	if tappable {
+		cImg := NewTappableImage(i.onTapped)
+		cImg.Image.Image = img
+		cImg.FillMode = canvas.ImageFillContain
+		cIm = cImg
+	} else {
+		cImg := canvas.NewImageFromImage(img)
+		cImg.FillMode = canvas.ImageFillContain
+		cIm = cImg
+	}
+	cIm.SetMinSize(fyne.NewSize(i.minSize, i.minSize))
 	i.container.RemoveAll()
-	i.container.Add(cImg)
+	i.container.Add(cIm)
 	i.container.Refresh()
+}
+
+func (i *ImagePlaceholder) onTapped() {
+	if i.OnTapped != nil {
+		i.OnTapped()
+	}
 }
 
 func (i *ImagePlaceholder) CreateRenderer() fyne.WidgetRenderer {
