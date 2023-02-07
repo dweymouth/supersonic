@@ -43,4 +43,4 @@ require (
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.2.4 => github.com/dweymouth/fyne/v2 v2.2.5-0.20230119024415-238e09217d09
+replace fyne.io/fyne/v2 v2.2.4 => github.com/dweymouth/fyne/v2 v2.2.5-0.20230207011038-d2ef06e09a93

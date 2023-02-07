@@ -1,8 +1,10 @@
 //go:build darwin
 
-package ui
+package os
 
-import "fyne.io/fyne/v2"
+import (
+	"fyne.io/fyne/v2"
+)
 
 var (
 	ControlModifier = fyne.KeyModifierSuper
