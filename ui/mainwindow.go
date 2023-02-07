@@ -4,6 +4,7 @@ import (
 	"supersonic/backend"
 	"supersonic/res"
 	"supersonic/ui/browsing"
+	"supersonic/ui/os"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -14,10 +15,10 @@ import (
 )
 
 var (
-	ShortcutBack    = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: AltModifier}
-	ShortcutForward = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: AltModifier}
-	ShortcutReload  = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: ControlModifier}
-	ShortcutSearch  = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: ControlModifier}
+	ShortcutBack    = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: os.AltModifier}
+	ShortcutForward = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: os.AltModifier}
+	ShortcutReload  = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
+	ShortcutSearch  = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
 )
 
 type MainWindow struct {
