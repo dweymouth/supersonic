@@ -19,16 +19,15 @@ import (
 type PlaylistPage struct {
 	widget.BaseWidget
 
-	playlistID    string
-	sm            *backend.ServerManager
-	pm            *backend.PlaybackManager
-	im            *backend.ImageManager
-	nav           func(Route)
-	header        *PlaylistPageHeader
-	tracklist     *widgets.Tracklist
-	nowPlayingID  string
-	container     *fyne.Container
-	popUpProvider PopUpProvider
+	playlistID   string
+	sm           *backend.ServerManager
+	pm           *backend.PlaybackManager
+	im           *backend.ImageManager
+	nav          func(Route)
+	header       *PlaylistPageHeader
+	tracklist    *widgets.Tracklist
+	nowPlayingID string
+	container    *fyne.Container
 }
 
 func NewPlaylistPage(
@@ -160,13 +159,13 @@ func (a *PlaylistPageHeader) Update(playlist *subsonic.Playlist) {
 	var haveCover bool
 	if playlist.CoverArt != "" {
 		if im, err := a.page.im.GetAlbumThumbnail(playlist.CoverArt); err == nil && im != nil {
-			a.image.SetImage(im)
+			a.image.SetImage(im, false /*tappable*/)
 			haveCover = true
 		}
 	}
 	if !haveCover {
 		if im, err := a.page.im.GetAlbumThumbnail(playlist.ID); err == nil && im != nil {
-			a.image.SetImage(im)
+			a.image.SetImage(im, false)
 		}
 	}
 	a.Refresh()

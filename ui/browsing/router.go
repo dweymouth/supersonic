@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"supersonic/backend"
+	"supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -70,14 +71,18 @@ type Router struct {
 	App        *backend.App
 	MainWindow fyne.Window
 	Nav        NavigationHandler
+
+	pop util.PopUpProvider
 }
 
 func NewRouter(app *backend.App, mainWindow fyne.Window, nav NavigationHandler) Router {
-	return Router{
+	r := Router{
 		App:        app,
 		MainWindow: mainWindow,
 		Nav:        nav,
 	}
+	r.pop = &popUpProvider{window: r.MainWindow}
+	return r
 }
 
 type popUpProvider struct {
@@ -92,18 +97,14 @@ func (p *popUpProvider) WindowSize() fyne.Size {
 	return p.window.Canvas().Size()
 }
 
-func (r Router) pop() *popUpProvider {
-	return &popUpProvider{window: r.MainWindow}
-}
-
 func (r Router) CreatePage(rte Route) Page {
 	switch rte.Page {
 	case Album:
-		return NewAlbumPage(rte.Arg, r.App.ServerManager, r.App.LibraryManager, r.App.ImageManager, r.pop(), r.OpenRoute)
+		return NewAlbumPage(rte.Arg, r.App.ServerManager, r.App.LibraryManager, r.App.ImageManager, r.pop, r.OpenRoute)
 	case Albums:
 		return NewAlbumsPage("Albums", rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Artist:
-		return NewArtistPage(rte.Arg, r.App.ServerManager, r.App.ImageManager, r.OpenRoute)
+		return NewArtistPage(rte.Arg, r.App.ServerManager, r.App.ImageManager, r.pop, r.OpenRoute)
 	case Artists:
 		return NewArtistsGenresPage(false, r.App.ServerManager, r.OpenRoute)
 	case Favorites:

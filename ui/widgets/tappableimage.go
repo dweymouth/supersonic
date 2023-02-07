@@ -14,8 +14,8 @@ type TappableImage struct {
 	OnTapped func()
 }
 
-func NewTappableImage() *TappableImage {
-	t := &TappableImage{}
+func NewTappableImage(onTapped func()) *TappableImage {
+	t := &TappableImage{OnTapped: onTapped}
 	t.ExtendBaseWidget(t)
 	return t
 }

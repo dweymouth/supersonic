@@ -24,10 +24,12 @@ var _ fyne.Widget = (*ArtistPage)(nil)
 type ArtistPage struct {
 	widget.BaseWidget
 
-	artistID  string
-	im        *backend.ImageManager
-	sm        *backend.ServerManager
-	nav       func(Route)
+	artistID      string
+	im            *backend.ImageManager
+	sm            *backend.ServerManager
+	nav           func(Route)
+	popUpProvider util.PopUpProvider
+
 	grid      *widgets.AlbumGrid
 	header    *ArtistPageHeader
 	container *fyne.Container
@@ -35,15 +37,16 @@ type ArtistPage struct {
 	OnPlayAlbum func(string, int)
 }
 
-func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, nav func(Route)) *ArtistPage {
+func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, popUp util.PopUpProvider, nav func(Route)) *ArtistPage {
 	a := &ArtistPage{
-		artistID: artistID,
-		sm:       sm,
-		im:       im,
-		nav:      nav,
+		artistID:      artistID,
+		sm:            sm,
+		im:            im,
+		nav:           nav,
+		popUpProvider: popUp,
 	}
 	a.ExtendBaseWidget(a)
-	a.header = NewArtistPageHeader(nav)
+	a.header = NewArtistPageHeader(a, nav)
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
 		nil, nil, nil, layout.NewSpacer())
@@ -65,10 +68,11 @@ func (a *ArtistPage) Reload() {
 
 func (a *ArtistPage) Save() SavedPage {
 	return &savedArtistPage{
-		artistID: a.artistID,
-		sm:       a.sm,
-		im:       a.im,
-		nav:      a.nav,
+		artistID:      a.artistID,
+		sm:            a.sm,
+		im:            a.im,
+		nav:           a.nav,
+		popUpProvider: a.popUpProvider,
 	}
 }
 
@@ -109,14 +113,15 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type savedArtistPage struct {
-	artistID string
-	sm       *backend.ServerManager
-	im       *backend.ImageManager
-	nav      func(Route)
+	artistID      string
+	sm            *backend.ServerManager
+	im            *backend.ImageManager
+	nav           func(Route)
+	popUpProvider util.PopUpProvider
 }
 
 func (s *savedArtistPage) Restore() Page {
-	return NewArtistPage(s.artistID, s.sm, s.im, s.nav)
+	return NewArtistPage(s.artistID, s.sm, s.im, s.popUpProvider, s.nav)
 }
 
 type ArtistPageHeader struct {
@@ -124,6 +129,7 @@ type ArtistPageHeader struct {
 
 	nav            func(Route)
 	artistID       string
+	artistPage     *ArtistPage
 	artistImage    *widgets.ImagePlaceholder
 	titleDisp      *widget.RichText
 	biographyDisp  *widget.RichText
@@ -131,9 +137,10 @@ type ArtistPageHeader struct {
 	container      *fyne.Container
 }
 
-func NewArtistPageHeader(nav func(Route)) *ArtistPageHeader {
+func NewArtistPageHeader(page *ArtistPage, nav func(Route)) *ArtistPageHeader {
 	a := &ArtistPageHeader{
 		nav:            nav,
+		artistPage:     page,
 		titleDisp:      widget.NewRichTextWithText(""),
 		biographyDisp:  widget.NewRichTextWithText("Artist biography not available."),
 		similarArtists: container.NewHBox(),
@@ -192,7 +199,10 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 			if err != nil {
 				return
 			}
-			a.artistImage.SetImage(im)
+			a.artistImage.OnTapped = func() {
+				util.ShowPopUpImage(im, a.artistPage.popUpProvider)
+			}
+			a.artistImage.SetImage(im, true /*tappable*/)
 		}
 	}
 }
