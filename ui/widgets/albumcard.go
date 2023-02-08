@@ -3,7 +3,6 @@ package widgets
 import (
 	"context"
 	"image"
-	"image/color"
 	"strconv"
 
 	"supersonic/res"
@@ -13,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/dweymouth/go-subsonic"
@@ -29,19 +27,8 @@ type albumCover struct {
 
 	Im             *canvas.Image
 	playbtn        *canvas.Image
-	btnCircle      *btnCircle
 	OnDoubleTapped func()
 	OnTapped       func()
-}
-
-type btnCircle struct {
-	canvas.Circle
-
-	Diameter float32
-}
-
-func (b *btnCircle) MinSize() fyne.Size {
-	return fyne.NewSize(b.Diameter, b.Diameter)
 }
 
 func newAlbumCover() *albumCover {
@@ -52,22 +39,12 @@ func newAlbumCover() *albumCover {
 	a.playbtn = &canvas.Image{FillMode: canvas.ImageFillContain, Resource: res.ResPlaybuttonPng}
 	a.playbtn.SetMinSize(fyne.NewSize(60, 60))
 	a.playbtn.Hidden = true
-	// TODO:
-	a.btnCircle = &btnCircle{
-		Diameter: 63,
-		Circle: canvas.Circle{
-			FillColor:   color.Transparent,
-			StrokeColor: theme.PrimaryColor(),
-			StrokeWidth: 2,
-			Hidden:      true,
-		},
-	}
 	return a
 }
 
 func (a *albumCover) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(
-		container.NewMax(a.Im, container.NewCenter(a.playbtn), container.NewCenter(a.btnCircle)),
+		container.NewMax(a.Im, container.NewCenter(a.playbtn)),
 	)
 }
 
@@ -99,13 +76,12 @@ func (a *albumCover) MouseOut() {
 
 // TODO: figure out why circle around play button isn't being displayed
 func (a *albumCover) MouseMoved(e *desktop.MouseEvent) {
-	if inside := isInside(a.center(), a.btnCircle.Diameter/2, e.Position); inside && !a.btnCircle.Visible() {
-		a.btnCircle.Show()
-		a.Refresh()
-	} else if !inside && a.btnCircle.Visible() {
-		a.btnCircle.Hide()
-		a.Refresh()
+	if isInside(a.center(), a.playbtn.MinSize().Height/2, e.Position) {
+		a.playbtn.SetMinSize(fyne.NewSize(65, 65))
+	} else {
+		a.playbtn.SetMinSize(fyne.NewSize(60, 60))
 	}
+	a.Refresh()
 }
 
 func (a *albumCover) center() fyne.Position {
