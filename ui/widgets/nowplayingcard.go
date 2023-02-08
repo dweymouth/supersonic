@@ -33,10 +33,11 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.albumName.Hidden = true
 	n.trackName.Wrapping = fyne.TextTruncate
 	n.trackName.TextStyle = fyne.TextStyle{Bold: true}
-	n.cover.SetMinSize(fyne.NewSize(100, 100))
+	n.cover.SetMinSize(fyne.NewSize(85, 85))
 	n.cover.FillMode = canvas.ImageFillContain
 
-	n.c = container.NewBorder(nil, nil, n.cover, nil, container.New(&layouts.VboxCustomPadding{ExtraPad: -10}, n.trackName, n.artistName, n.albumName))
+	n.c = container.NewBorder(nil, nil, container.New(&layouts.CenterPadLayout{PadLeftRight: 3, PadTopBottom: 5}, n.cover), nil,
+		container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, n.trackName, n.artistName, n.albumName))
 	return n
 }
 
