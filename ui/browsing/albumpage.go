@@ -19,19 +19,24 @@ import (
 type AlbumPage struct {
 	widget.BaseWidget
 
-	albumID       string
-	sm            *backend.ServerManager
-	pm            *backend.PlaybackManager
-	im            *backend.ImageManager
-	lm            *backend.LibraryManager
-	nav           func(Route)
-	header        *AlbumPageHeader
-	tracklist     *widgets.Tracklist
-	nowPlayingID  string
-	container     *fyne.Container
-	popUpProvider util.PopUpProvider
+	albumPageState
+
+	header       *AlbumPageHeader
+	tracklist    *widgets.Tracklist
+	nowPlayingID string
+	container    *fyne.Container
 
 	OnPlayAlbum func(string, int)
+}
+
+type albumPageState struct {
+	albumID       string
+	lm            *backend.LibraryManager
+	pm            *backend.PlaybackManager
+	im            *backend.ImageManager
+	sm            *backend.ServerManager
+	popUpProvider util.PopUpProvider
+	nav           func(Route)
 }
 
 func NewAlbumPage(
@@ -43,7 +48,17 @@ func NewAlbumPage(
 	popUpProvider util.PopUpProvider,
 	nav func(Route),
 ) *AlbumPage {
-	a := &AlbumPage{albumID: albumID, sm: sm, pm: pm, lm: lm, im: im, nav: nav, popUpProvider: popUpProvider}
+	a := &AlbumPage{
+		albumPageState: albumPageState{
+			albumID:       albumID,
+			sm:            sm,
+			pm:            pm,
+			lm:            lm,
+			im:            im,
+			nav:           nav,
+			popUpProvider: popUpProvider,
+		},
+	}
 	a.ExtendBaseWidget(a)
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
@@ -72,14 +87,8 @@ func (a *AlbumPage) SetPlayAlbumCallback(cb func(string, int)) {
 }
 
 func (a *AlbumPage) Save() SavedPage {
-	return &savedAlbumPage{
-		albumID:       a.albumID,
-		lm:            a.lm,
-		pm:            a.pm,
-		im:            a.im,
-		nav:           a.nav,
-		popUpProvider: a.popUpProvider,
-	}
+	s := a.albumPageState
+	return &s
 }
 
 func (a *AlbumPage) Route() Route {
@@ -239,16 +248,6 @@ func formatMiscLabelStr(a *subsonic.AlbumID3) string {
 	return fmt.Sprintf("%d · %d tracks · %s", a.Year, a.SongCount, util.SecondsToTimeString(float64(a.Duration)))
 }
 
-type savedAlbumPage struct {
-	albumID       string
-	lm            *backend.LibraryManager
-	pm            *backend.PlaybackManager
-	im            *backend.ImageManager
-	sm            *backend.ServerManager
-	popUpProvider util.PopUpProvider
-	nav           func(Route)
-}
-
-func (s *savedAlbumPage) Restore() Page {
+func (s *albumPageState) Restore() Page {
 	return NewAlbumPage(s.albumID, s.sm, s.pm, s.lm, s.im, s.popUpProvider, s.nav)
 }

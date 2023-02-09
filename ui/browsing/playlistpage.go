@@ -19,15 +19,20 @@ import (
 type PlaylistPage struct {
 	widget.BaseWidget
 
-	playlistID   string
-	sm           *backend.ServerManager
-	pm           *backend.PlaybackManager
-	im           *backend.ImageManager
-	nav          func(Route)
+	playlistPageState
+
 	header       *PlaylistPageHeader
 	tracklist    *widgets.Tracklist
 	nowPlayingID string
 	container    *fyne.Container
+}
+
+type playlistPageState struct {
+	playlistID string
+	sm         *backend.ServerManager
+	pm         *backend.PlaybackManager
+	im         *backend.ImageManager
+	nav        func(Route)
 }
 
 func NewPlaylistPage(
@@ -37,7 +42,7 @@ func NewPlaylistPage(
 	im *backend.ImageManager,
 	nav func(Route),
 ) *PlaylistPage {
-	a := &PlaylistPage{playlistID: playlistID, sm: sm, pm: pm, im: im}
+	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, sm: sm, pm: pm, im: im}}
 	a.ExtendBaseWidget(a)
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
@@ -62,13 +67,8 @@ func (a *PlaylistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *PlaylistPage) Save() SavedPage {
-	return &savedPlaylistPage{
-		playlistID: a.playlistID,
-		sm:         a.sm,
-		pm:         a.pm,
-		im:         a.im,
-		nav:        a.nav,
-	}
+	p := a.playlistPageState
+	return &p
 }
 
 func (a *PlaylistPage) Route() Route {
@@ -194,14 +194,6 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *subsonic.Playlist) st
 	return fmt.Sprintf("%d tracks, %s", p.SongCount, util.SecondsToTimeString(float64(p.Duration)))
 }
 
-type savedPlaylistPage struct {
-	playlistID string
-	sm         *backend.ServerManager
-	pm         *backend.PlaybackManager
-	im         *backend.ImageManager
-	nav        func(Route)
-}
-
-func (s *savedPlaylistPage) Restore() Page {
+func (s *playlistPageState) Restore() Page {
 	return NewPlaylistPage(s.playlistID, s.sm, s.pm, s.im, s.nav)
 }
