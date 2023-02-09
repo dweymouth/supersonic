@@ -21,16 +21,19 @@ import (
 
 var _ fyne.Widget = (*ArtistPage)(nil)
 
+type artistPageState struct {
+	artistID      string
+	sm            *backend.ServerManager
+	im            *backend.ImageManager
+	nav           func(Route)
+	popUpProvider util.PopUpProvider
+}
+
 type ArtistPage struct {
 	widget.BaseWidget
 
-	artistID      string
-	im            *backend.ImageManager
-	sm            *backend.ServerManager
-	nav           func(Route)
-	popUpProvider util.PopUpProvider
+	artistPageState
 
-	grid      *widgets.AlbumGrid
 	header    *ArtistPageHeader
 	container *fyne.Container
 
@@ -38,13 +41,13 @@ type ArtistPage struct {
 }
 
 func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, popUp util.PopUpProvider, nav func(Route)) *ArtistPage {
-	a := &ArtistPage{
+	a := &ArtistPage{artistPageState: artistPageState{
 		artistID:      artistID,
 		sm:            sm,
 		im:            im,
 		nav:           nav,
 		popUpProvider: popUp,
-	}
+	}}
 	a.ExtendBaseWidget(a)
 	a.header = NewArtistPageHeader(a, nav)
 	a.container = container.NewBorder(
@@ -67,13 +70,8 @@ func (a *ArtistPage) Reload() {
 }
 
 func (a *ArtistPage) Save() SavedPage {
-	return &savedArtistPage{
-		artistID:      a.artistID,
-		sm:            a.sm,
-		im:            a.im,
-		nav:           a.nav,
-		popUpProvider: a.popUpProvider,
-	}
+	s := a.artistPageState
+	return &s
 }
 
 func (a *ArtistPage) onPlayAlbum(albumID string) {
@@ -112,15 +110,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }
 
-type savedArtistPage struct {
-	artistID      string
-	sm            *backend.ServerManager
-	im            *backend.ImageManager
-	nav           func(Route)
-	popUpProvider util.PopUpProvider
-}
-
-func (s *savedArtistPage) Restore() Page {
+func (s *artistPageState) Restore() Page {
 	return NewArtistPage(s.artistID, s.sm, s.im, s.popUpProvider, s.nav)
 }
 
