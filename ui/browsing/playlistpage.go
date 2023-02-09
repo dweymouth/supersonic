@@ -42,7 +42,14 @@ func NewPlaylistPage(
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.AutoNumber = true
+	// connect tracklist actions
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
+	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true) }
+	a.tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
+		a.pm.LoadTracks(tracks, false)
+		a.pm.PlayFromBeginning()
+	}
+
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
 		nil, nil, nil, container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, a.tracklist))
@@ -79,6 +86,10 @@ func (a *PlaylistPage) OnSongChange(song *subsonic.Child) {
 
 func (a *PlaylistPage) Reload() {
 	a.loadAsync()
+}
+
+func (a *PlaylistPage) Tapped(*fyne.PointEvent) {
+	a.tracklist.UnselectAll()
 }
 
 func (a *PlaylistPage) onPlayTrackAt(tracknum int) {

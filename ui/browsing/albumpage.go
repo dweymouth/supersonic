@@ -21,6 +21,7 @@ type AlbumPage struct {
 
 	albumID       string
 	sm            *backend.ServerManager
+	pm            *backend.PlaybackManager
 	im            *backend.ImageManager
 	lm            *backend.LibraryManager
 	nav           func(Route)
@@ -36,19 +37,28 @@ type AlbumPage struct {
 func NewAlbumPage(
 	albumID string,
 	sm *backend.ServerManager,
+	pm *backend.PlaybackManager,
 	lm *backend.LibraryManager,
 	im *backend.ImageManager,
 	popUpProvider util.PopUpProvider,
 	nav func(Route),
 ) *AlbumPage {
-	a := &AlbumPage{albumID: albumID, sm: sm, lm: lm, im: im, nav: nav, popUpProvider: popUpProvider}
+	a := &AlbumPage{albumID: albumID, sm: sm, pm: pm, lm: lm, im: im, nav: nav, popUpProvider: popUpProvider}
 	a.ExtendBaseWidget(a)
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
+	// connect tracklist actions
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
+	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true) }
+	a.tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
+		a.pm.LoadTracks(tracks, false)
+		a.pm.PlayFromBeginning()
+	}
+
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
 		nil, nil, nil, container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, a.tracklist))
+
 	a.loadAsync()
 	return a
 }
@@ -65,6 +75,7 @@ func (a *AlbumPage) Save() SavedPage {
 	return &savedAlbumPage{
 		albumID:       a.albumID,
 		lm:            a.lm,
+		pm:            a.pm,
 		im:            a.im,
 		nav:           a.nav,
 		popUpProvider: a.popUpProvider,
@@ -86,6 +97,10 @@ func (a *AlbumPage) OnSongChange(song *subsonic.Child) {
 
 func (a *AlbumPage) Reload() {
 	a.loadAsync()
+}
+
+func (a *AlbumPage) Tapped(*fyne.PointEvent) {
+	a.tracklist.UnselectAll()
 }
 
 func (a *AlbumPage) onPlayTrackAt(tracknum int) {
@@ -227,6 +242,7 @@ func formatMiscLabelStr(a *subsonic.AlbumID3) string {
 type savedAlbumPage struct {
 	albumID       string
 	lm            *backend.LibraryManager
+	pm            *backend.PlaybackManager
 	im            *backend.ImageManager
 	sm            *backend.ServerManager
 	popUpProvider util.PopUpProvider
@@ -234,5 +250,5 @@ type savedAlbumPage struct {
 }
 
 func (s *savedAlbumPage) Restore() Page {
-	return NewAlbumPage(s.albumID, s.sm, s.lm, s.im, s.popUpProvider, s.nav)
+	return NewAlbumPage(s.albumID, s.sm, s.pm, s.lm, s.im, s.popUpProvider, s.nav)
 }

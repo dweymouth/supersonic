@@ -100,7 +100,7 @@ func (p *popUpProvider) WindowSize() fyne.Size {
 func (r Router) CreatePage(rte Route) Page {
 	switch rte.Page {
 	case Album:
-		return NewAlbumPage(rte.Arg, r.App.ServerManager, r.App.LibraryManager, r.App.ImageManager, r.pop, r.OpenRoute)
+		return NewAlbumPage(rte.Arg, r.App.ServerManager, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, r.pop, r.OpenRoute)
 	case Albums:
 		return NewAlbumsPage("Albums", rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Artist:
