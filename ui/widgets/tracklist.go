@@ -19,23 +19,23 @@ import (
 type TrackRow struct {
 	widget.BaseWidget
 
-	trackID       string
-	prevTrackID   string
-	prevIsPlaying bool
-
-	tappedAt int64 // unixMillis
+	// internal state
+	trackIdx  int
+	trackID   string
+	isPlaying bool
+	tappedAt  int64 // unixMillis
 
 	num    *widget.RichText
 	name   *widget.RichText
 	artist *widget.RichText
 	dur    *widget.RichText
 
-	OnTapped       func()
-	OnDoubleTapped func()
+	OnTapped          func()
+	OnDoubleTapped    func()
+	OnTappedSecondary func(e *fyne.PointEvent, trackIdx int)
 
 	selectionRect *canvas.Rectangle
-
-	container *fyne.Container
+	container     *fyne.Container
 }
 
 func NewTrackRow(layout *layouts.ColumnsLayout) *TrackRow {
@@ -59,11 +59,10 @@ func NewTrackRow(layout *layouts.ColumnsLayout) *TrackRow {
 }
 
 func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
-	if tr.ID == t.prevTrackID && isPlaying == t.prevIsPlaying {
+	if tr.ID == t.trackID && isPlaying == t.isPlaying {
 		return
 	}
-	t.prevTrackID = t.trackID
-	t.prevIsPlaying = isPlaying
+	t.isPlaying = isPlaying
 	t.trackID = tr.ID
 
 	if rowNum < 0 {
@@ -102,38 +101,55 @@ func (t *TrackRow) Tapped(*fyne.PointEvent) {
 	}
 }
 
+func (t *TrackRow) TappedSecondary(e *fyne.PointEvent) {
+	if t.OnTappedSecondary != nil {
+		t.OnTappedSecondary(e, t.trackIdx)
+	}
+}
+
 type Tracklist struct {
 	widget.BaseWidget
 
-	Tracks        []*subsonic.Child
-	AutoNumber    bool
-	OnPlayTrackAt func(int)
-	SelectionMgr  util.ListSelectionManager
+	Tracks     []*subsonic.Child
+	AutoNumber bool
 
+	// user action callbacks
+	OnPlayTrackAt   func(int)
+	OnPlaySelection func(tracks []*subsonic.Child)
+	OnAddToQueue    func(trackIDs []*subsonic.Child)
+	OnAddToPlaylist func(trackIDs []*subsonic.Child)
+
+	selectionMgr  util.ListSelectionManager
 	nowPlayingIdx int
 	colLayout     *layouts.ColumnsLayout
 	hdr           *ListHeader
 	list          *widget.List
+	ctxMenu       *fyne.Menu
 	container     *fyne.Container
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1}
 	t.ExtendBaseWidget(t)
-	t.SelectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
+	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
 	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, 60})
 	t.hdr = NewListHeader([]ListColumn{{"#", true}, {"Title", false}, {"Artist", false}, {"Time", true}}, t.colLayout)
 	t.list = widget.NewList(
 		func() int { return len(t.Tracks) },
-		func() fyne.CanvasObject { return NewTrackRow(t.colLayout) },
+		func() fyne.CanvasObject {
+			tr := NewTrackRow(t.colLayout)
+			tr.OnTapped = func() { t.onSelectTrack(tr.trackIdx) }
+			tr.OnTappedSecondary = t.onShowContextMenu
+			tr.OnDoubleTapped = func() { t.onPlayTrackAt(tr.trackIdx) }
+			return tr
+		},
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
 			tr := item.(*TrackRow)
-			tr.OnTapped = func() { t.onSelectTrack(itemID) }
-			tr.OnDoubleTapped = func() { t.onPlayTrackAt(itemID) }
-			tr.selectionRect.Hidden = !t.SelectionMgr.IsSelected(itemID)
-			i := itemID + 1
-			if !t.AutoNumber {
-				i = -1 // signal that we want to use the track num.
+			tr.trackIdx = itemID
+			tr.selectionRect.Hidden = !t.selectionMgr.IsSelected(itemID)
+			i := -1 // signal that we want to display the actual track num.
+			if t.AutoNumber {
+				i = itemID + 1
 			}
 			tr.Update(t.Tracks[itemID], itemID == t.nowPlayingIdx, i)
 		})
@@ -152,6 +168,11 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 	t.list.Refresh()
 }
 
+func (t *Tracklist) UnselectAll() {
+	t.selectionMgr.UnselectAll()
+	t.Refresh()
+}
+
 func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.container)
 }
@@ -165,14 +186,44 @@ func (t *Tracklist) onPlayTrackAt(idx int) {
 func (t *Tracklist) onSelectTrack(idx int) {
 	if d, ok := fyne.CurrentApp().Driver().(desktop.Driver); ok {
 		if d.ActiveKeyModifiers()&os.ControlModifier != 0 {
-			t.SelectionMgr.SelectAddOrRemove(idx)
+			t.selectionMgr.SelectAddOrRemove(idx)
 		} else if (d.ActiveKeyModifiers() & fyne.KeyModifierShift) != 0 {
-			t.SelectionMgr.SelectRange(idx)
+			t.selectionMgr.SelectRange(idx)
 		} else {
-			t.SelectionMgr.Select(idx)
+			t.selectionMgr.Select(idx)
 		}
 	} else {
-		t.SelectionMgr.Select(idx)
+		t.selectionMgr.Select(idx)
 	}
 	t.list.Refresh()
+}
+
+func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
+	t.selectionMgr.Select(trackIdx)
+	t.Refresh()
+	if t.ctxMenu == nil {
+		t.ctxMenu = fyne.NewMenu("",
+			fyne.NewMenuItem("Play", func() {
+				if t.OnPlaySelection != nil {
+					t.OnPlaySelection(t.selectedTracks())
+				}
+			}),
+			fyne.NewMenuItem("Add to queue", func() {
+				if t.OnPlaySelection != nil {
+					t.OnAddToQueue(t.selectedTracks())
+				}
+			}),
+			//fyne.NewMenuItem("Add to playlist...", func() {}),
+		)
+	}
+	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
+}
+
+func (t *Tracklist) selectedTracks() []*subsonic.Child {
+	sel := t.selectionMgr.GetSelection()
+	tracks := make([]*subsonic.Child, 0, len(sel))
+	for _, idx := range sel {
+		tracks = append(tracks, t.Tracks[idx])
+	}
+	return tracks
 }

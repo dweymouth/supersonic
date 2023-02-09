@@ -157,6 +157,10 @@ func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int) error 
 	return p.player.PlayTrackAt(firstTrack)
 }
 
+func (p *PlaybackManager) PlayFromBeginning() error {
+	return p.player.PlayFromBeginning()
+}
+
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
 		return
