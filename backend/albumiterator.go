@@ -7,22 +7,6 @@ import (
 	subsonic "github.com/dweymouth/go-subsonic"
 )
 
-type AlbumIterator interface {
-	Next() *subsonic.AlbumID3
-}
-
-type LibraryManager struct {
-	PreCacheCoverFn func(string)
-
-	s *ServerManager
-}
-
-func NewLibraryManager(s *ServerManager) *LibraryManager {
-	return &LibraryManager{
-		s: s,
-	}
-}
-
 type AlbumSortOrder string
 
 const (
