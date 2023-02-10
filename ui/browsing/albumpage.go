@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"supersonic/backend"
+	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
@@ -30,13 +31,13 @@ type AlbumPage struct {
 }
 
 type albumPageState struct {
-	albumID       string
-	lm            *backend.LibraryManager
-	pm            *backend.PlaybackManager
-	im            *backend.ImageManager
-	sm            *backend.ServerManager
-	popUpProvider util.PopUpProvider
-	nav           func(Route)
+	albumID string
+	lm      *backend.LibraryManager
+	pm      *backend.PlaybackManager
+	im      *backend.ImageManager
+	sm      *backend.ServerManager
+	contr   *controller.Controller
+	nav     func(Route)
 }
 
 func NewAlbumPage(
@@ -45,18 +46,18 @@ func NewAlbumPage(
 	pm *backend.PlaybackManager,
 	lm *backend.LibraryManager,
 	im *backend.ImageManager,
-	popUpProvider util.PopUpProvider,
+	contr *controller.Controller,
 	nav func(Route),
 ) *AlbumPage {
 	a := &AlbumPage{
 		albumPageState: albumPageState{
-			albumID:       albumID,
-			sm:            sm,
-			pm:            pm,
-			lm:            lm,
-			im:            im,
-			nav:           nav,
-			popUpProvider: popUpProvider,
+			albumID: albumID,
+			sm:      sm,
+			pm:      pm,
+			lm:      lm,
+			im:      im,
+			nav:     nav,
+			contr:   contr,
 		},
 	}
 	a.ExtendBaseWidget(a)
@@ -241,7 +242,7 @@ func (a *AlbumPageHeader) showPopUpCover() {
 		log.Printf("error getting full size album cover: %s", err.Error())
 		return
 	}
-	util.ShowPopUpImage(cover, a.page.popUpProvider)
+	a.page.contr.ShowPopUpImage(cover)
 }
 
 func formatMiscLabelStr(a *subsonic.AlbumID3) string {
@@ -249,5 +250,5 @@ func formatMiscLabelStr(a *subsonic.AlbumID3) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return NewAlbumPage(s.albumID, s.sm, s.pm, s.lm, s.im, s.popUpProvider, s.nav)
+	return NewAlbumPage(s.albumID, s.sm, s.pm, s.lm, s.im, s.contr, s.nav)
 }

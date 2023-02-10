@@ -7,6 +7,7 @@ import (
 	"strings"
 	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
@@ -22,11 +23,11 @@ import (
 var _ fyne.Widget = (*ArtistPage)(nil)
 
 type artistPageState struct {
-	artistID      string
-	sm            *backend.ServerManager
-	im            *backend.ImageManager
-	nav           func(Route)
-	popUpProvider util.PopUpProvider
+	artistID string
+	sm       *backend.ServerManager
+	im       *backend.ImageManager
+	nav      func(Route)
+	contr    *controller.Controller
 }
 
 type ArtistPage struct {
@@ -40,13 +41,13 @@ type ArtistPage struct {
 	OnPlayAlbum func(string, int)
 }
 
-func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, popUp util.PopUpProvider, nav func(Route)) *ArtistPage {
+func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller, nav func(Route)) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
-		artistID:      artistID,
-		sm:            sm,
-		im:            im,
-		nav:           nav,
-		popUpProvider: popUp,
+		artistID: artistID,
+		sm:       sm,
+		im:       im,
+		nav:      nav,
+		contr:    contr,
 	}}
 	a.ExtendBaseWidget(a)
 	a.header = NewArtistPageHeader(a, nav)
@@ -111,7 +112,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return NewArtistPage(s.artistID, s.sm, s.im, s.popUpProvider, s.nav)
+	return NewArtistPage(s.artistID, s.sm, s.im, s.contr, s.nav)
 }
 
 type ArtistPageHeader struct {
@@ -190,7 +191,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 				return
 			}
 			a.artistImage.OnTapped = func() {
-				util.ShowPopUpImage(im, a.artistPage.popUpProvider)
+				a.artistPage.contr.ShowPopUpImage(im)
 			}
 			a.artistImage.SetImage(im, true /*tappable*/)
 		}
