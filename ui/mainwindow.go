@@ -4,6 +4,7 @@ import (
 	"supersonic/backend"
 	"supersonic/res"
 	"supersonic/ui/browsing"
+	"supersonic/ui/controller"
 	"supersonic/ui/os"
 	"supersonic/ui/widgets"
 
@@ -26,6 +27,7 @@ type MainWindow struct {
 
 	App          *backend.App
 	Router       browsing.Router
+	Controller   *controller.Controller
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
@@ -43,7 +45,11 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
 
-	m.Router = browsing.NewRouter(app, m.Window, m.BrowsingPane)
+	m.Controller = &controller.Controller{
+		MainWindow: m.Window,
+		App:        app,
+	}
+	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	m.BottomPanel = NewBottomPanel(app.Player, m.Router.OpenRoute)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager
