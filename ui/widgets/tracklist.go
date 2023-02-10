@@ -117,7 +117,7 @@ type Tracklist struct {
 	OnPlayTrackAt   func(int)
 	OnPlaySelection func(tracks []*subsonic.Child)
 	OnAddToQueue    func(trackIDs []*subsonic.Child)
-	OnAddToPlaylist func(trackIDs []*subsonic.Child)
+	OnAddToPlaylist func(trackIDs []string)
 
 	selectionMgr  util.ListSelectionManager
 	nowPlayingIdx int
@@ -213,7 +213,11 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 					t.OnAddToQueue(t.selectedTracks())
 				}
 			}),
-			//fyne.NewMenuItem("Add to playlist...", func() {}),
+			fyne.NewMenuItem("Add to playlist...", func() {
+				if t.OnAddToPlaylist != nil {
+					t.OnAddToPlaylist(t.selectedTrackIDs())
+				}
+			}),
 		)
 	}
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
@@ -224,6 +228,15 @@ func (t *Tracklist) selectedTracks() []*subsonic.Child {
 	tracks := make([]*subsonic.Child, 0, len(sel))
 	for _, idx := range sel {
 		tracks = append(tracks, t.Tracks[idx])
+	}
+	return tracks
+}
+
+func (t *Tracklist) selectedTrackIDs() []string {
+	sel := t.selectionMgr.GetSelection()
+	tracks := make([]string, 0, len(sel))
+	for _, idx := range sel {
+		tracks = append(tracks, t.Tracks[idx].ID)
 	}
 	return tracks
 }

@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type Controller struct {
@@ -42,7 +41,7 @@ func (m *Controller) ShowPopUpImage(img image.Image) {
 // Show dialog to prompt for playlist.
 // Depending on the results of that dialog, potentially create a new playlist
 // Add tracks to the user-specified playlist
-func (m *Controller) DoAddTracksToPlaylistWorkflow(tracks []*subsonic.Child) {
+func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	pls, err := m.App.LibraryManager.GetUserOwnedPlaylists()
 	if err != nil {
 		// TODO: surface this error to user
@@ -59,6 +58,13 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(tracks []*subsonic.Child) {
 	dlg.OnCanceled = pop.Hide
 	dlg.OnSubmit = func(playlistChoice int, newPlaylistName string) {
 		pop.Hide()
-		// call server to add tracks to playlist
+		if playlistChoice < 0 {
+			m.App.ServerManager.Server.CreatePlaylistWithTracks(
+				trackIDs, map[string]string{"name": newPlaylistName})
+		} else {
+			m.App.ServerManager.Server.UpdatePlaylistTracks(
+				pls[playlistChoice].ID, trackIDs, nil /*tracksToRemove*/)
+		}
 	}
+	pop.Show()
 }

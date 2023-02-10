@@ -70,6 +70,7 @@ func NewAlbumPage(
 		a.pm.LoadTracks(tracks, false)
 		a.pm.PlayFromBeginning()
 	}
+	a.tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
 
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
