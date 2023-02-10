@@ -32,31 +32,23 @@ func NewAddToPlaylistDialog(title string, existingPlaylistNames []string) *AddTo
 	options := []string{"New playlist..."}
 	options = append(options, existingPlaylistNames...)
 	a.playlistSelect = widget.NewSelect(options, func(_ string) {
-		if a.playlistSelect.SelectedIndex() == 0 {
-			a.newPlaylistName.Show()
-			a.newPlaylistLabel.Show()
-			if len(a.newPlaylistName.Text) == 0 {
-				a.okBtn.Disable()
-			} else {
-				a.okBtn.Enable()
-			}
-		} else {
-			a.newPlaylistName.Hide()
-			a.newPlaylistLabel.Hide()
-			a.okBtn.Enable()
-		}
+		a.onSelectionChanged()
 	})
+	a.playlistSelect.PlaceHolder = "(Choose playlist)"
 	a.newPlaylistName = widget.NewEntry()
 	a.newPlaylistName.Hidden = true
 	a.newPlaylistName.OnChanged = func(text string) {
 		if len(text) > 0 {
 			a.okBtn.Enable()
+		} else {
+			a.okBtn.Disable()
 		}
 	}
 	a.newPlaylistLabel = widget.NewLabel("Name")
 	a.newPlaylistLabel.Hidden = true
 
 	a.okBtn = widget.NewButton("OK", a.onOK)
+	a.okBtn.Disable()
 	cancelBtn := widget.NewButton("Cancel", a.onCancel)
 
 	a.container = container.NewVBox(
@@ -82,6 +74,22 @@ func (a *AddToPlaylistDialog) onOK() {
 	}
 	if a.OnSubmit != nil {
 		a.OnSubmit(playlistChoice, newPlaylistName)
+	}
+}
+
+func (a *AddToPlaylistDialog) onSelectionChanged() {
+	if a.playlistSelect.SelectedIndex() == 0 {
+		a.newPlaylistName.Show()
+		a.newPlaylistLabel.Show()
+		if len(a.newPlaylistName.Text) == 0 {
+			a.okBtn.Disable()
+		} else {
+			a.okBtn.Enable()
+		}
+	} else {
+		a.newPlaylistName.Hide()
+		a.newPlaylistLabel.Hide()
+		a.okBtn.Enable()
 	}
 }
 

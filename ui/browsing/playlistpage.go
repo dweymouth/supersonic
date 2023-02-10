@@ -5,6 +5,7 @@ import (
 	"log"
 	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
@@ -29,6 +30,7 @@ type PlaylistPage struct {
 
 type playlistPageState struct {
 	playlistID string
+	contr      *controller.Controller
 	sm         *backend.ServerManager
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
@@ -37,12 +39,13 @@ type playlistPageState struct {
 
 func NewPlaylistPage(
 	playlistID string,
+	contr *controller.Controller,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
 	nav func(Route),
 ) *PlaylistPage {
-	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, sm: sm, pm: pm, im: im}}
+	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, contr: contr, sm: sm, pm: pm, im: im}}
 	a.ExtendBaseWidget(a)
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
@@ -54,6 +57,7 @@ func NewPlaylistPage(
 		a.pm.LoadTracks(tracks, false)
 		a.pm.PlayFromBeginning()
 	}
+	a.tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
 
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
@@ -195,5 +199,5 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *subsonic.Playlist) st
 }
 
 func (s *playlistPageState) Restore() Page {
-	return NewPlaylistPage(s.playlistID, s.sm, s.pm, s.im, s.nav)
+	return NewPlaylistPage(s.playlistID, s.contr, s.sm, s.pm, s.im, s.nav)
 }
