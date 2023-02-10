@@ -1,7 +1,7 @@
 package backend
 
 import (
-	subsonic "github.com/dweymouth/go-subsonic"
+	subsonic "github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type AlbumIterator interface {

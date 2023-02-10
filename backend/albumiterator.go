@@ -4,7 +4,7 @@ import (
 	"log"
 	"strconv"
 
-	subsonic "github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type AlbumSortOrder string
