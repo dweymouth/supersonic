@@ -8,7 +8,7 @@ import (
 	"supersonic/player"
 	"time"
 
-	subsonic "github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 const (
