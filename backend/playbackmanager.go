@@ -161,6 +161,20 @@ func (p *PlaybackManager) PlayFromBeginning() error {
 	return p.player.PlayFromBeginning()
 }
 
+func (p *PlaybackManager) PlayTrackAt(idx int) error {
+	return p.player.PlayTrackAt(idx)
+}
+
+func (p *PlaybackManager) GetPlayQueue() []*subsonic.Child {
+	pq := make([]*subsonic.Child, len(p.playQueue))
+	copy(pq, p.playQueue)
+	return pq
+}
+
+func (p *PlaybackManager) RemoveTracksFromQueue(trackIdxs []int) {
+	// TODO
+}
+
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
 		return
