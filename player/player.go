@@ -238,6 +238,9 @@ func (p *Player) PlayFromBeginning() error {
 // Start playback from the specified track index in the play queue.
 func (p *Player) PlayTrackAt(idx int) error {
 	err := p.mpv.Command([]string{"playlist-play-index", strconv.Itoa(idx)})
+	if p.GetStatus().State == Paused {
+		err = p.setPaused(false)
+	}
 	if err == nil {
 		p.setState(Playing)
 	}
