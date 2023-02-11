@@ -99,6 +99,10 @@ func (a *PlaylistPage) Tapped(*fyne.PointEvent) {
 	a.tracklist.UnselectAll()
 }
 
+func (a *PlaylistPage) SelectAll() {
+	a.tracklist.SelectAll()
+}
+
 func (a *PlaylistPage) onPlayTrackAt(tracknum int) {
 	a.pm.PlayPlaylist(a.playlistID, tracknum)
 }

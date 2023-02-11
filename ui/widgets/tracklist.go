@@ -170,6 +170,11 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 	t.list.Refresh()
 }
 
+func (t *Tracklist) SelectAll() {
+	t.selectionMgr.SelectAll()
+	t.Refresh()
+}
+
 func (t *Tracklist) UnselectAll() {
 	t.selectionMgr.UnselectAll()
 	t.Refresh()

@@ -117,6 +117,9 @@ func (m *MainWindow) addShortcuts() {
 			m.Window.Canvas().Focus(s)
 		}
 	})
+	m.Canvas().AddShortcut(&fyne.ShortcutSelectAll{}, func(_ fyne.Shortcut) {
+		m.BrowsingPane.SelectAll()
+	})
 
 	m.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {
 		if e.Name == fyne.KeySpace {
