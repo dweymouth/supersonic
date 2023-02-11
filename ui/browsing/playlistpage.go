@@ -50,6 +50,9 @@ func NewPlaylistPage(
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.AutoNumber = true
+	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{
+		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist),
+	}
 	// connect tracklist actions
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
 	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true) }
@@ -112,6 +115,11 @@ func (a *PlaylistPage) loadAsync() {
 		a.tracklist.Refresh()
 		a.header.Update(playlist)
 	}()
+}
+
+func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
+	a.sm.Server.UpdatePlaylistTracks(a.playlistID, nil, a.tracklist.SelectedTrackIndexes())
+	go a.Reload()
 }
 
 type PlaylistPageHeader struct {
