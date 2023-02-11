@@ -3,7 +3,6 @@ package browsing
 import (
 	"supersonic/backend"
 	"supersonic/ui/controller"
-	"supersonic/ui/util"
 )
 
 type PageName int
@@ -17,6 +16,7 @@ const (
 	Genre
 	Genres
 	Favorites
+	NowPlaying
 	Playlist
 	Playlists
 )
@@ -61,6 +61,10 @@ func ArtistsRoute() Route {
 	return Route{Page: Artists}
 }
 
+func NowPlayingRoute() Route {
+	return Route{Page: NowPlaying}
+}
+
 type NavigationHandler interface {
 	SetPage(Page)
 }
@@ -69,8 +73,6 @@ type Router struct {
 	App        *backend.App
 	Controller controller.Controller
 	Nav        NavigationHandler
-
-	pop util.PopUpProvider
 }
 
 func NewRouter(app *backend.App, controller controller.Controller, nav NavigationHandler) Router {
@@ -98,6 +100,8 @@ func (r Router) CreatePage(rte Route) Page {
 		return NewGenrePage(rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Genres:
 		return NewArtistsGenresPage(true, r.App.ServerManager, r.OpenRoute)
+	case NowPlaying:
+		return NewNowPlayingPage(r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.OpenRoute)
 	case Playlist:
 		return NewPlaylistPage(rte.Arg, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager, r.OpenRoute)
 	case Playlists:

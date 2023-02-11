@@ -119,7 +119,8 @@ type Tracklist struct {
 	Tracks     []*subsonic.Child
 	AutoNumber bool
 	// must be set before the context menu is shown for the first time
-	AuxiliaryMenuItems []*fyne.MenuItem
+	AuxiliaryMenuItems  []*fyne.MenuItem
+	DisablePlaybackMenu bool
 
 	// user action callbacks
 	OnPlayTrackAt   func(int)
@@ -216,23 +217,27 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	t.selectionMgr.Select(trackIdx)
 	t.Refresh()
 	if t.ctxMenu == nil {
-		t.ctxMenu = fyne.NewMenu("",
-			fyne.NewMenuItem("Play", func() {
-				if t.OnPlaySelection != nil {
-					t.OnPlaySelection(t.selectedTracks())
-				}
-			}),
-			fyne.NewMenuItem("Add to queue", func() {
-				if t.OnPlaySelection != nil {
-					t.OnAddToQueue(t.selectedTracks())
-				}
-			}),
+		t.ctxMenu = fyne.NewMenu("")
+		if !t.DisablePlaybackMenu {
+			t.ctxMenu.Items = append(t.ctxMenu.Items,
+				fyne.NewMenuItem("Play", func() {
+					if t.OnPlaySelection != nil {
+						t.OnPlaySelection(t.selectedTracks())
+					}
+				}))
+			t.ctxMenu.Items = append(t.ctxMenu.Items,
+				fyne.NewMenuItem("Add to queue", func() {
+					if t.OnPlaySelection != nil {
+						t.OnAddToQueue(t.selectedTracks())
+					}
+				}))
+		}
+		t.ctxMenu.Items = append(t.ctxMenu.Items,
 			fyne.NewMenuItem("Add to playlist...", func() {
 				if t.OnAddToPlaylist != nil {
 					t.OnAddToPlaylist(t.selectedTrackIDs())
 				}
-			}),
-		)
+			}))
 		if len(t.AuxiliaryMenuItems) > 0 {
 			t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
 			t.ctxMenu.Items = append(t.ctxMenu.Items, t.AuxiliaryMenuItems...)
