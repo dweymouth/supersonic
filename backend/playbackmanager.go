@@ -180,6 +180,8 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIdxs []int) {
 	for i, tr := range p.playQueue {
 		if rmIdx < len(trackIdxs) && trackIdxs[rmIdx] == i {
 			// removing this track
+			// TODO: if we are removing the currently playing track,
+			// we need to scrobble it if it played for more than the scrobble threshold
 			rmIdx++
 			if err := p.player.RemoveTrackAt(i - rmCount); err == nil {
 				rmCount++
