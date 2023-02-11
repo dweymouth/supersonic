@@ -19,7 +19,7 @@ Slightly outdated screenshots of Supersonic running against the Navidrome <a hre
 * [x] Browse by artist
 * [x] Artist view with biography, image, similar artists, and discography
 * [x] Set/unset favorite and browse by favorites (albums only; artists+songs coming soon)
-* [x] Browse and play playlists (create and edit support coming soon)
+* [x] Create, play, and update playlists
 * [ ] View and edit play queue (coming soon)
 * [ ] Shuffle and repeat playback modes (planned)
 * [ ] Set and view five-star rating (planned)
