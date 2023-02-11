@@ -27,7 +27,7 @@ type artistPageState struct {
 	sm       *backend.ServerManager
 	im       *backend.ImageManager
 	nav      func(Route)
-	contr    *controller.Controller
+	contr    controller.Controller
 }
 
 type ArtistPage struct {
@@ -41,7 +41,7 @@ type ArtistPage struct {
 	OnPlayAlbum func(string, int)
 }
 
-func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller, nav func(Route)) *ArtistPage {
+func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, contr controller.Controller, nav func(Route)) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
 		artistID: artistID,
 		sm:       sm,

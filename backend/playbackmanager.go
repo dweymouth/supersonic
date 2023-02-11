@@ -64,6 +64,7 @@ func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player)
 		pm.checkScrobble(pm.playTimeStopwatch.Elapsed())
 		pm.playTimeStopwatch.Reset()
 		pm.stopPollTimePos()
+		pm.doUpdateTimePos()
 		for _, cb := range pm.onSongChange {
 			cb(nil)
 		}
@@ -161,9 +162,54 @@ func (p *PlaybackManager) PlayFromBeginning() error {
 	return p.player.PlayFromBeginning()
 }
 
+func (p *PlaybackManager) PlayTrackAt(idx int) error {
+	return p.player.PlayTrackAt(idx)
+}
+
+func (p *PlaybackManager) GetPlayQueue() []*subsonic.Child {
+	pq := make([]*subsonic.Child, len(p.playQueue))
+	copy(pq, p.playQueue)
+	return pq
+}
+
+// trackIdxs must be sorted
+func (p *PlaybackManager) RemoveTracksFromQueue(trackIdxs []int) {
+	newQueue := make([]*subsonic.Child, 0, len(p.playQueue)-len(trackIdxs))
+	rmCount := 0
+	rmIdx := 0
+	for i, tr := range p.playQueue {
+		if rmIdx < len(trackIdxs) && trackIdxs[rmIdx] == i {
+			// removing this track
+			// TODO: if we are removing the currently playing track,
+			// we need to scrobble it if it played for more than the scrobble threshold
+			rmIdx++
+			if err := p.player.RemoveTrackAt(i - rmCount); err == nil {
+				rmCount++
+			} else {
+				log.Printf("error removing track: %v", err.Error())
+				// did not remove this track
+				newQueue = append(newQueue, tr)
+			}
+		} else {
+			// not removing this track
+			newQueue = append(newQueue, tr)
+		}
+	}
+	p.playQueue = newQueue
+	p.nowPlayingIdx = p.player.GetStatus().PlaylistPos
+	// fire on song change callbacks in case the playing track was removed
+	// TODO: only call this if the playing track actually was removed
+	for _, cb := range p.onSongChange {
+		cb(p.NowPlaying())
+	}
+}
+
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
-	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
+	if len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
 		return
+	}
+	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
+		return // ignore spurious onTrackChange callbacks
 	}
 	song := p.playQueue[p.nowPlayingIdx]
 	if playDur.Seconds()/p.curTrackTime > ScrobbleThreshold {

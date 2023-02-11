@@ -31,8 +31,8 @@ type Searchable interface {
 	SearchWidget() fyne.Focusable
 }
 
-type CanPlayAlbum interface {
-	SetPlayAlbumCallback(func(albumID string, startingTrack int))
+type CanSelectAll interface {
+	SelectAll()
 }
 
 type CanShowNowPlaying interface {
@@ -93,16 +93,17 @@ func (b *BrowsingPane) GetSearchBarIfAny() fyne.Focusable {
 	return nil
 }
 
+func (b *BrowsingPane) SelectAll() {
+	if s, ok := b.curPage.(CanSelectAll); ok {
+		s.SelectAll()
+	}
+}
+
 func (b *BrowsingPane) doSetPage(p Page) bool {
 	if b.curPage != nil && b.curPage.Route() == p.Route() {
 		return false
 	}
 	b.curPage = p
-	if pa, ok := p.(CanPlayAlbum); ok {
-		pa.SetPlayAlbumCallback(func(albumID string, firstTrack int) {
-			_ = b.app.PlaybackManager.PlayAlbum(albumID, firstTrack)
-		})
-	}
 	if np, ok := p.(CanShowNowPlaying); ok {
 		np.OnSongChange(b.app.PlaybackManager.NowPlaying())
 	}

@@ -13,21 +13,22 @@ Slightly outdated screenshots of Supersonic running against the Navidrome <a hre
 * [x] High-quality gapless audio playback powered by MPV
 * [x] Infinite scrolling
 * [x] Scrobble plays to server
-* [x] Browse, search, and play albums
-* [x] Album view with tracklist
-* [x] Browse by genre
-* [x] Browse by artist
+* [x] Browse by albums, artists, genres, playlists
+* [x] Album and playlist views with tracklist and cover image
 * [x] Artist view with biography, image, similar artists, and discography
-* [x] Set/unset favorite and browse by favorites (albums only; artists+songs coming soon)
 * [x] Create, play, and update playlists
-* [ ] View and edit play queue (coming soon)
+* [x] Set/unset favorite and browse by favorites (albums only; artists+songs coming soon)
+* [x] View and edit play queue (add and remove tracks; reorder support coming soon)
+* [ ] Configure additional columns in tracklist view (play count, bit rate, etc) (planned)
 * [ ] Shuffle and repeat playback modes (planned)
 * [ ] Set and view five-star rating (planned)
+* [ ] Set filters in albums browsing view (planned)
 * [ ] Browse by folders (planned)
 * [ ] Multi-server support (planned)
 * [ ] Download album or playlist (planned)
 * [ ] ReplayGain audio normalization support (planned, depending on files being ReplayGain tagged on server)
-* [ ] Cast to uPnP/DLNA devices (tentatively planned)
+* [ ] Cast to uPnP/DLNA devices (likely planned)
+* [ ] Built-in multi-band equalizer (eventully planned)
 * [ ] Offline mode (eventually planned)
 * [ ] iOS/Android support (eventually planned)
 * [ ] Lyrics support (eventually planned)

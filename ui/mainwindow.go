@@ -27,7 +27,7 @@ type MainWindow struct {
 
 	App          *backend.App
 	Router       browsing.Router
-	Controller   *controller.Controller
+	Controller   controller.Controller
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
@@ -45,7 +45,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
 
-	m.Controller = &controller.Controller{
+	m.Controller = controller.Controller{
 		MainWindow: m.Window,
 		App:        app,
 	}
@@ -82,6 +82,9 @@ func (m *MainWindow) PromptForFirstServer(cb func(string, string, string, string
 }
 
 func (m *MainWindow) addNavigationButtons() {
+	m.BrowsingPane.AddNavigationButton(res.ResHeadphonesInvertPng, func() {
+		m.Router.OpenRoute(browsing.NowPlayingRoute())
+	})
 	m.BrowsingPane.AddNavigationButton(res.ResHeartFilledInvertPng, func() {
 		m.Router.OpenRoute(browsing.FavoritesRoute())
 	})
@@ -116,6 +119,9 @@ func (m *MainWindow) addShortcuts() {
 		if s := m.BrowsingPane.GetSearchBarIfAny(); s != nil {
 			m.Window.Canvas().Focus(s)
 		}
+	})
+	m.Canvas().AddShortcut(&fyne.ShortcutSelectAll{}, func(_ fyne.Shortcut) {
+		m.BrowsingPane.SelectAll()
 	})
 
 	m.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {

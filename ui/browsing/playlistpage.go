@@ -30,7 +30,7 @@ type PlaylistPage struct {
 
 type playlistPageState struct {
 	playlistID string
-	contr      *controller.Controller
+	contr      controller.Controller
 	sm         *backend.ServerManager
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
@@ -39,7 +39,7 @@ type playlistPageState struct {
 
 func NewPlaylistPage(
 	playlistID string,
-	contr *controller.Controller,
+	contr controller.Controller,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
@@ -79,7 +79,7 @@ func (a *PlaylistPage) Save() SavedPage {
 }
 
 func (a *PlaylistPage) Route() Route {
-	return AlbumRoute(a.playlistID)
+	return PlaylistRoute(a.playlistID)
 }
 
 func (a *PlaylistPage) OnSongChange(song *subsonic.Child) {
@@ -97,6 +97,10 @@ func (a *PlaylistPage) Reload() {
 
 func (a *PlaylistPage) Tapped(*fyne.PointEvent) {
 	a.tracklist.UnselectAll()
+}
+
+func (a *PlaylistPage) SelectAll() {
+	a.tracklist.SelectAll()
 }
 
 func (a *PlaylistPage) onPlayTrackAt(tracknum int) {
@@ -119,6 +123,7 @@ func (a *PlaylistPage) loadAsync() {
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
 	a.sm.Server.UpdatePlaylistTracks(a.playlistID, nil, a.tracklist.SelectedTrackIndexes())
+	a.tracklist.UnselectAll()
 	go a.Reload()
 }
 
