@@ -112,6 +112,8 @@ type Tracklist struct {
 
 	Tracks     []*subsonic.Child
 	AutoNumber bool
+	// must be set before the context menu is shown for the first time
+	AuxiliaryMenuItems []*fyne.MenuItem
 
 	// user action callbacks
 	OnPlayTrackAt   func(int)
@@ -219,6 +221,10 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 				}
 			}),
 		)
+		if len(t.AuxiliaryMenuItems) > 0 {
+			t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
+			t.ctxMenu.Items = append(t.ctxMenu.Items, t.AuxiliaryMenuItems...)
+		}
 	}
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
 }
@@ -239,4 +245,8 @@ func (t *Tracklist) selectedTrackIDs() []string {
 		tracks = append(tracks, t.Tracks[idx].ID)
 	}
 	return tracks
+}
+
+func (t *Tracklist) SelectedTrackIndexes() []int {
+	return t.selectionMgr.GetSelection()
 }
