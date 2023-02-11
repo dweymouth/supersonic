@@ -5,6 +5,7 @@ import (
 	"log"
 	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
@@ -13,36 +14,54 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type PlaylistPage struct {
 	widget.BaseWidget
 
-	playlistID   string
-	sm           *backend.ServerManager
-	pm           *backend.PlaybackManager
-	im           *backend.ImageManager
-	nav          func(Route)
+	playlistPageState
+
 	header       *PlaylistPageHeader
 	tracklist    *widgets.Tracklist
 	nowPlayingID string
 	container    *fyne.Container
 }
 
+type playlistPageState struct {
+	playlistID string
+	contr      *controller.Controller
+	sm         *backend.ServerManager
+	pm         *backend.PlaybackManager
+	im         *backend.ImageManager
+	nav        func(Route)
+}
+
 func NewPlaylistPage(
 	playlistID string,
+	contr *controller.Controller,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
 	nav func(Route),
 ) *PlaylistPage {
-	a := &PlaylistPage{playlistID: playlistID, sm: sm, pm: pm, im: im}
+	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, contr: contr, sm: sm, pm: pm, im: im}}
 	a.ExtendBaseWidget(a)
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.AutoNumber = true
+	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{
+		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist),
+	}
+	// connect tracklist actions
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
+	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true) }
+	a.tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
+		a.pm.LoadTracks(tracks, false)
+		a.pm.PlayFromBeginning()
+	}
+	a.tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
+
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
 		nil, nil, nil, container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, a.tracklist))
@@ -55,13 +74,8 @@ func (a *PlaylistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *PlaylistPage) Save() SavedPage {
-	return &savedPlaylistPage{
-		playlistID: a.playlistID,
-		sm:         a.sm,
-		pm:         a.pm,
-		im:         a.im,
-		nav:        a.nav,
-	}
+	p := a.playlistPageState
+	return &p
 }
 
 func (a *PlaylistPage) Route() Route {
@@ -81,6 +95,10 @@ func (a *PlaylistPage) Reload() {
 	a.loadAsync()
 }
 
+func (a *PlaylistPage) Tapped(*fyne.PointEvent) {
+	a.tracklist.UnselectAll()
+}
+
 func (a *PlaylistPage) onPlayTrackAt(tracknum int) {
 	a.pm.PlayPlaylist(a.playlistID, tracknum)
 }
@@ -97,6 +115,11 @@ func (a *PlaylistPage) loadAsync() {
 		a.tracklist.Refresh()
 		a.header.Update(playlist)
 	}()
+}
+
+func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
+	a.sm.Server.UpdatePlaylistTracks(a.playlistID, nil, a.tracklist.SelectedTrackIndexes())
+	go a.Reload()
 }
 
 type PlaylistPageHeader struct {
@@ -183,14 +206,6 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *subsonic.Playlist) st
 	return fmt.Sprintf("%d tracks, %s", p.SongCount, util.SecondsToTimeString(float64(p.Duration)))
 }
 
-type savedPlaylistPage struct {
-	playlistID string
-	sm         *backend.ServerManager
-	pm         *backend.PlaybackManager
-	im         *backend.ImageManager
-	nav        func(Route)
-}
-
-func (s *savedPlaylistPage) Restore() Page {
-	return NewPlaylistPage(s.playlistID, s.sm, s.pm, s.im, s.nav)
+func (s *playlistPageState) Restore() Page {
+	return NewPlaylistPage(s.playlistID, s.contr, s.sm, s.pm, s.im, s.nav)
 }

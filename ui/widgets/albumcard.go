@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 var _ fyne.Widget = (*AlbumCard)(nil)

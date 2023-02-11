@@ -5,7 +5,7 @@ go 1.19
 require (
 	fyne.io/fyne/v2 v2.2.4
 	github.com/20after4/configdir v0.1.1
-	github.com/dweymouth/go-subsonic v0.0.0-20221214005741-bd8048fa1863
+	github.com/dweymouth/go-subsonic v0.0.0-20230210044542-537b9238299b
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml v1.9.3
 	github.com/wildeyedskies/go-mpv v0.0.0-20221204042335-e8961dc66756
@@ -43,4 +43,4 @@ require (
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.2.4 => github.com/dweymouth/fyne/v2 v2.2.5-0.20230119024415-238e09217d09
+replace fyne.io/fyne/v2 v2.2.4 => github.com/dweymouth/fyne/v2 v2.2.5-0.20230207011038-d2ef06e09a93

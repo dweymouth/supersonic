@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type FavoritesPage struct {

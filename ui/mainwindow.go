@@ -4,20 +4,22 @@ import (
 	"supersonic/backend"
 	"supersonic/res"
 	"supersonic/ui/browsing"
+	"supersonic/ui/controller"
+	"supersonic/ui/os"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 var (
-	ShortcutBack    = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: AltModifier}
-	ShortcutForward = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: AltModifier}
-	ShortcutReload  = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: ControlModifier}
-	ShortcutSearch  = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: ControlModifier}
+	ShortcutBack    = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: os.AltModifier}
+	ShortcutForward = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: os.AltModifier}
+	ShortcutReload  = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
+	ShortcutSearch  = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
 )
 
 type MainWindow struct {
@@ -25,6 +27,7 @@ type MainWindow struct {
 
 	App          *backend.App
 	Router       browsing.Router
+	Controller   *controller.Controller
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
@@ -42,7 +45,11 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
 
-	m.Router = browsing.NewRouter(app, m.Window, m.BrowsingPane)
+	m.Controller = &controller.Controller{
+		MainWindow: m.Window,
+		App:        app,
+	}
+	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	m.BottomPanel = NewBottomPanel(app.Player, m.Router.OpenRoute)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager

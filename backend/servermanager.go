@@ -3,7 +3,7 @@ package backend
 import (
 	"net/http"
 
-	subsonic "github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/google/uuid"
 )
 

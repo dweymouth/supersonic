@@ -8,7 +8,7 @@ import (
 	"supersonic/player"
 	"time"
 
-	subsonic "github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 const (
@@ -155,6 +155,10 @@ func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int) error 
 		return p.player.PlayFromBeginning()
 	}
 	return p.player.PlayTrackAt(firstTrack)
+}
+
+func (p *PlaybackManager) PlayFromBeginning() error {
+	return p.player.PlayFromBeginning()
 }
 
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
