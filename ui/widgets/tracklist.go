@@ -34,12 +34,13 @@ type TrackRow struct {
 	OnDoubleTapped    func()
 	OnTappedSecondary func(e *fyne.PointEvent, trackIdx int)
 
+	playingIcon   fyne.CanvasObject
 	selectionRect *canvas.Rectangle
 	container     *fyne.Container
 }
 
-func NewTrackRow(layout *layouts.ColumnsLayout) *TrackRow {
-	t := &TrackRow{}
+func NewTrackRow(layout *layouts.ColumnsLayout, playingIcon fyne.CanvasObject) *TrackRow {
+	t := &TrackRow{playingIcon: playingIcon}
 	t.ExtendBaseWidget(t)
 	t.num = widget.NewRichTextWithText("")
 	t.num.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
@@ -73,10 +74,15 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	t.artist.Segments[0].(*widget.TextSegment).Text = tr.Artist
 	t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
 
-	t.num.Segments[0].(*widget.TextSegment).Style.TextStyle = fyne.TextStyle{Bold: isPlaying}
-	t.name.Segments[0].(*widget.TextSegment).Style.TextStyle = fyne.TextStyle{Bold: isPlaying, Italic: isPlaying}
-	t.artist.Segments[0].(*widget.TextSegment).Style.TextStyle = fyne.TextStyle{Bold: isPlaying, Italic: isPlaying}
+	t.name.Segments[0].(*widget.TextSegment).Style.TextStyle = fyne.TextStyle{Bold: isPlaying}
+	t.artist.Segments[0].(*widget.TextSegment).Style.TextStyle = fyne.TextStyle{Bold: isPlaying}
 	t.dur.Segments[0].(*widget.TextSegment).Style.TextStyle = fyne.TextStyle{Bold: isPlaying}
+
+	if isPlaying {
+		t.container.Objects[1].(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
+	} else {
+		t.container.Objects[1].(*fyne.Container).Objects[0] = t.num
+	}
 
 	t.Refresh()
 }
@@ -136,10 +142,11 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
 	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, 60})
 	t.hdr = NewListHeader([]ListColumn{{"#", true}, {"Title", false}, {"Artist", false}, {"Time", true}}, t.colLayout)
+	playingIcon := container.NewCenter(container.NewHBox(NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
 	t.list = widget.NewList(
 		func() int { return len(t.Tracks) },
 		func() fyne.CanvasObject {
-			tr := NewTrackRow(t.colLayout)
+			tr := NewTrackRow(t.colLayout, playingIcon)
 			tr.OnTapped = func() { t.onSelectTrack(tr.trackIdx) }
 			tr.OnTappedSecondary = t.onShowContextMenu
 			tr.OnDoubleTapped = func() { t.onPlayTrackAt(tr.trackIdx) }
