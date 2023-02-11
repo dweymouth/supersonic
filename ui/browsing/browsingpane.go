@@ -31,6 +31,10 @@ type Searchable interface {
 	SearchWidget() fyne.Focusable
 }
 
+type CanSelectAll interface {
+	SelectAll()
+}
+
 type CanShowNowPlaying interface {
 	OnSongChange(song *subsonic.Child)
 }
@@ -87,6 +91,12 @@ func (b *BrowsingPane) GetSearchBarIfAny() fyne.Focusable {
 		return s.SearchWidget()
 	}
 	return nil
+}
+
+func (b *BrowsingPane) SelectAll() {
+	if s, ok := b.curPage.(CanSelectAll); ok {
+		s.SelectAll()
+	}
 }
 
 func (b *BrowsingPane) doSetPage(p Page) bool {
