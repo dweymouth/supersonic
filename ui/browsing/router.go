@@ -67,13 +67,13 @@ type NavigationHandler interface {
 
 type Router struct {
 	App        *backend.App
-	Controller *controller.Controller
+	Controller controller.Controller
 	Nav        NavigationHandler
 
 	pop util.PopUpProvider
 }
 
-func NewRouter(app *backend.App, controller *controller.Controller, nav NavigationHandler) Router {
+func NewRouter(app *backend.App, controller controller.Controller, nav NavigationHandler) Router {
 	r := Router{
 		App:        app,
 		Controller: controller,

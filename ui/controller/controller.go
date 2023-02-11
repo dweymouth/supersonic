@@ -17,7 +17,7 @@ type Controller struct {
 	App        *backend.App
 }
 
-func (m *Controller) ShowPopUpImage(img image.Image) {
+func (m Controller) ShowPopUpImage(img image.Image) {
 	im := canvas.NewImageFromImage(img)
 	im.FillMode = canvas.ImageFillContain
 	pop := widget.NewPopUp(im, m.MainWindow.Canvas())
@@ -41,7 +41,7 @@ func (m *Controller) ShowPopUpImage(img image.Image) {
 // Show dialog to prompt for playlist.
 // Depending on the results of that dialog, potentially create a new playlist
 // Add tracks to the user-specified playlist
-func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
+func (m Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	pls, err := m.App.LibraryManager.GetUserOwnedPlaylists()
 	if err != nil {
 		// TODO: surface this error to user
