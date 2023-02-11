@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/net/html"
 )
@@ -31,27 +30,6 @@ func ImageAspect(im image.Image) float32 {
 type PopUpProvider interface {
 	CreatePopUp(fyne.CanvasObject) *widget.PopUp
 	WindowSize() fyne.Size
-}
-
-func ShowPopUpImage(img image.Image, popUpProvider PopUpProvider) {
-	im := canvas.NewImageFromImage(img)
-	im.FillMode = canvas.ImageFillContain
-	pop := popUpProvider.CreatePopUp(im)
-	s := popUpProvider.WindowSize()
-	var popS fyne.Size
-	if asp := ImageAspect(img); s.Width/s.Height > asp {
-		// window height is limiting factor
-		h := s.Height * 0.8
-		popS = fyne.NewSize(h*asp, h)
-	} else {
-		w := s.Width * 0.8
-		popS = fyne.NewSize(w, w*(1/asp))
-	}
-	pop.Resize(popS)
-	pop.ShowAtPosition(fyne.NewPos(
-		(s.Width-popS.Width)/2,
-		(s.Height-popS.Height)/2,
-	))
 }
 
 func RichTextSegsFromHTMLString(s string) []widget.RichTextSegment {

@@ -2,10 +2,8 @@ package browsing
 
 import (
 	"supersonic/backend"
+	"supersonic/ui/controller"
 	"supersonic/ui/util"
-
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/widget"
 )
 
 type PageName int
@@ -69,42 +67,29 @@ type NavigationHandler interface {
 
 type Router struct {
 	App        *backend.App
-	MainWindow fyne.Window
+	Controller *controller.Controller
 	Nav        NavigationHandler
 
 	pop util.PopUpProvider
 }
 
-func NewRouter(app *backend.App, mainWindow fyne.Window, nav NavigationHandler) Router {
+func NewRouter(app *backend.App, controller *controller.Controller, nav NavigationHandler) Router {
 	r := Router{
 		App:        app,
-		MainWindow: mainWindow,
+		Controller: controller,
 		Nav:        nav,
 	}
-	r.pop = &popUpProvider{window: r.MainWindow}
 	return r
-}
-
-type popUpProvider struct {
-	window fyne.Window
-}
-
-func (p *popUpProvider) CreatePopUp(obj fyne.CanvasObject) *widget.PopUp {
-	return widget.NewPopUp(obj, p.window.Canvas())
-}
-
-func (p *popUpProvider) WindowSize() fyne.Size {
-	return p.window.Canvas().Size()
 }
 
 func (r Router) CreatePage(rte Route) Page {
 	switch rte.Page {
 	case Album:
-		return NewAlbumPage(rte.Arg, r.App.ServerManager, r.App.LibraryManager, r.App.ImageManager, r.pop, r.OpenRoute)
+		return NewAlbumPage(rte.Arg, r.App.ServerManager, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, r.Controller, r.OpenRoute)
 	case Albums:
 		return NewAlbumsPage("Albums", rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Artist:
-		return NewArtistPage(rte.Arg, r.App.ServerManager, r.App.ImageManager, r.pop, r.OpenRoute)
+		return NewArtistPage(rte.Arg, r.App.ServerManager, r.App.ImageManager, r.Controller, r.OpenRoute)
 	case Artists:
 		return NewArtistsGenresPage(false, r.App.ServerManager, r.OpenRoute)
 	case Favorites:
@@ -114,7 +99,7 @@ func (r Router) CreatePage(rte Route) Page {
 	case Genres:
 		return NewArtistsGenresPage(true, r.App.ServerManager, r.OpenRoute)
 	case Playlist:
-		return NewPlaylistPage(rte.Arg, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager, r.OpenRoute)
+		return NewPlaylistPage(rte.Arg, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager, r.OpenRoute)
 	case Playlists:
 		return NewPlaylistsPage(r.App.ServerManager, r.OpenRoute)
 	}

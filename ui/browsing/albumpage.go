@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"supersonic/backend"
+	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
@@ -13,42 +14,68 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type AlbumPage struct {
 	widget.BaseWidget
 
-	albumID       string
-	sm            *backend.ServerManager
-	im            *backend.ImageManager
-	lm            *backend.LibraryManager
-	nav           func(Route)
-	header        *AlbumPageHeader
-	tracklist     *widgets.Tracklist
-	nowPlayingID  string
-	container     *fyne.Container
-	popUpProvider util.PopUpProvider
+	albumPageState
+
+	header       *AlbumPageHeader
+	tracklist    *widgets.Tracklist
+	nowPlayingID string
+	container    *fyne.Container
 
 	OnPlayAlbum func(string, int)
+}
+
+type albumPageState struct {
+	albumID string
+	lm      *backend.LibraryManager
+	pm      *backend.PlaybackManager
+	im      *backend.ImageManager
+	sm      *backend.ServerManager
+	contr   *controller.Controller
+	nav     func(Route)
 }
 
 func NewAlbumPage(
 	albumID string,
 	sm *backend.ServerManager,
+	pm *backend.PlaybackManager,
 	lm *backend.LibraryManager,
 	im *backend.ImageManager,
-	popUpProvider util.PopUpProvider,
+	contr *controller.Controller,
 	nav func(Route),
 ) *AlbumPage {
-	a := &AlbumPage{albumID: albumID, sm: sm, lm: lm, im: im, nav: nav, popUpProvider: popUpProvider}
+	a := &AlbumPage{
+		albumPageState: albumPageState{
+			albumID: albumID,
+			sm:      sm,
+			pm:      pm,
+			lm:      lm,
+			im:      im,
+			nav:     nav,
+			contr:   contr,
+		},
+	}
 	a.ExtendBaseWidget(a)
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
+	// connect tracklist actions
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
+	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true) }
+	a.tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
+		a.pm.LoadTracks(tracks, false)
+		a.pm.PlayFromBeginning()
+	}
+	a.tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
+
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
 		nil, nil, nil, container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, a.tracklist))
+
 	a.loadAsync()
 	return a
 }
@@ -62,13 +89,8 @@ func (a *AlbumPage) SetPlayAlbumCallback(cb func(string, int)) {
 }
 
 func (a *AlbumPage) Save() SavedPage {
-	return &savedAlbumPage{
-		albumID:       a.albumID,
-		lm:            a.lm,
-		im:            a.im,
-		nav:           a.nav,
-		popUpProvider: a.popUpProvider,
-	}
+	s := a.albumPageState
+	return &s
 }
 
 func (a *AlbumPage) Route() Route {
@@ -86,6 +108,10 @@ func (a *AlbumPage) OnSongChange(song *subsonic.Child) {
 
 func (a *AlbumPage) Reload() {
 	a.loadAsync()
+}
+
+func (a *AlbumPage) Tapped(*fyne.PointEvent) {
+	a.tracklist.UnselectAll()
 }
 
 func (a *AlbumPage) onPlayTrackAt(tracknum int) {
@@ -217,22 +243,13 @@ func (a *AlbumPageHeader) showPopUpCover() {
 		log.Printf("error getting full size album cover: %s", err.Error())
 		return
 	}
-	util.ShowPopUpImage(cover, a.page.popUpProvider)
+	a.page.contr.ShowPopUpImage(cover)
 }
 
 func formatMiscLabelStr(a *subsonic.AlbumID3) string {
 	return fmt.Sprintf("%d · %d tracks · %s", a.Year, a.SongCount, util.SecondsToTimeString(float64(a.Duration)))
 }
 
-type savedAlbumPage struct {
-	albumID       string
-	lm            *backend.LibraryManager
-	im            *backend.ImageManager
-	sm            *backend.ServerManager
-	popUpProvider util.PopUpProvider
-	nav           func(Route)
-}
-
-func (s *savedAlbumPage) Restore() Page {
-	return NewAlbumPage(s.albumID, s.sm, s.lm, s.im, s.popUpProvider, s.nav)
+func (s *albumPageState) Restore() Page {
+	return NewAlbumPage(s.albumID, s.sm, s.pm, s.lm, s.im, s.contr, s.nav)
 }

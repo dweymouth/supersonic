@@ -7,6 +7,7 @@ import (
 	"strings"
 	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
@@ -16,35 +17,38 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 var _ fyne.Widget = (*ArtistPage)(nil)
 
+type artistPageState struct {
+	artistID string
+	sm       *backend.ServerManager
+	im       *backend.ImageManager
+	nav      func(Route)
+	contr    *controller.Controller
+}
+
 type ArtistPage struct {
 	widget.BaseWidget
 
-	artistID      string
-	im            *backend.ImageManager
-	sm            *backend.ServerManager
-	nav           func(Route)
-	popUpProvider util.PopUpProvider
+	artistPageState
 
-	grid      *widgets.AlbumGrid
 	header    *ArtistPageHeader
 	container *fyne.Container
 
 	OnPlayAlbum func(string, int)
 }
 
-func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, popUp util.PopUpProvider, nav func(Route)) *ArtistPage {
-	a := &ArtistPage{
-		artistID:      artistID,
-		sm:            sm,
-		im:            im,
-		nav:           nav,
-		popUpProvider: popUp,
-	}
+func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller, nav func(Route)) *ArtistPage {
+	a := &ArtistPage{artistPageState: artistPageState{
+		artistID: artistID,
+		sm:       sm,
+		im:       im,
+		nav:      nav,
+		contr:    contr,
+	}}
 	a.ExtendBaseWidget(a)
 	a.header = NewArtistPageHeader(a, nav)
 	a.container = container.NewBorder(
@@ -67,13 +71,8 @@ func (a *ArtistPage) Reload() {
 }
 
 func (a *ArtistPage) Save() SavedPage {
-	return &savedArtistPage{
-		artistID:      a.artistID,
-		sm:            a.sm,
-		im:            a.im,
-		nav:           a.nav,
-		popUpProvider: a.popUpProvider,
-	}
+	s := a.artistPageState
+	return &s
 }
 
 func (a *ArtistPage) onPlayAlbum(albumID string) {
@@ -112,16 +111,8 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }
 
-type savedArtistPage struct {
-	artistID      string
-	sm            *backend.ServerManager
-	im            *backend.ImageManager
-	nav           func(Route)
-	popUpProvider util.PopUpProvider
-}
-
-func (s *savedArtistPage) Restore() Page {
-	return NewArtistPage(s.artistID, s.sm, s.im, s.popUpProvider, s.nav)
+func (s *artistPageState) Restore() Page {
+	return NewArtistPage(s.artistID, s.sm, s.im, s.contr, s.nav)
 }
 
 type ArtistPageHeader struct {
@@ -200,7 +191,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 				return
 			}
 			a.artistImage.OnTapped = func() {
-				util.ShowPopUpImage(im, a.artistPage.popUpProvider)
+				a.artistPage.contr.ShowPopUpImage(im)
 			}
 			a.artistImage.SetImage(im, true /*tappable*/)
 		}
