@@ -27,7 +27,7 @@ type MainWindow struct {
 
 	App          *backend.App
 	Router       browsing.Router
-	Controller   *controller.Controller
+	Controller   controller.Controller
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
@@ -45,7 +45,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
 
-	m.Controller = &controller.Controller{
+	m.Controller = controller.Controller{
 		MainWindow: m.Window,
 		App:        app,
 	}
