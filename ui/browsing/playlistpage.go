@@ -79,7 +79,7 @@ func (a *PlaylistPage) Save() SavedPage {
 }
 
 func (a *PlaylistPage) Route() Route {
-	return AlbumRoute(a.playlistID)
+	return PlaylistRoute(a.playlistID)
 }
 
 func (a *PlaylistPage) OnSongChange(song *subsonic.Child) {
