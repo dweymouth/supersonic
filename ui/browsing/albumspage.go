@@ -16,18 +16,18 @@ var _ fyne.Widget = (*AlbumsPage)(nil)
 type AlbumsPage struct {
 	widget.BaseWidget
 
-	title       string
-	im          *backend.ImageManager
-	lm          *backend.LibraryManager
-	nav         func(Route)
-	grid        *widgets.AlbumGrid
-	searchGrid  *widgets.AlbumGrid
-	searcher    *widgets.Searcher
-	searchText  string
-	titleDisp   *widget.RichText
-	sortOrder   *selectWidget
-	container   *fyne.Container
-	OnPlayAlbum func(string, int)
+	title      string
+	pm         *backend.PlaybackManager
+	im         *backend.ImageManager
+	lm         *backend.LibraryManager
+	nav        func(Route)
+	grid       *widgets.AlbumGrid
+	searchGrid *widgets.AlbumGrid
+	searcher   *widgets.Searcher
+	searchText string
+	titleDisp  *widget.RichText
+	sortOrder  *selectWidget
+	container  *fyne.Container
 }
 
 type selectWidget struct {
@@ -51,9 +51,10 @@ func (s *selectWidget) MinSize() fyne.Size {
 	return fyne.NewSize(170, s.height)
 }
 
-func NewAlbumsPage(title string, sortOrder string, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *AlbumsPage {
+func NewAlbumsPage(title string, sortOrder string, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *AlbumsPage {
 	a := &AlbumsPage{
 		title: title,
+		pm:    pm,
 		lm:    lm,
 		im:    im,
 		nav:   nav,
@@ -98,6 +99,7 @@ func (a *AlbumsPage) createContainer(searchgrid bool) {
 func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a := &AlbumsPage{
 		title: saved.title,
+		pm:    saved.pm,
 		lm:    saved.lm,
 		im:    saved.im,
 		nav:   saved.nav,
@@ -146,10 +148,6 @@ func (a *AlbumsPage) SearchWidget() fyne.Focusable {
 	return a.searcher.Entry
 }
 
-func (a *AlbumsPage) SetPlayAlbumCallback(cb func(string, int)) {
-	a.OnPlayAlbum = cb
-}
-
 func (a *AlbumsPage) Reload() {
 	if a.searchText != "" {
 		a.doSearch(a.searchText)
@@ -162,6 +160,7 @@ func (a *AlbumsPage) Reload() {
 func (a *AlbumsPage) Save() SavedPage {
 	sa := &savedAlbumsPage{
 		title:      a.title,
+		pm:         a.pm,
 		lm:         a.lm,
 		im:         a.im,
 		nav:        a.nav,
@@ -189,9 +188,7 @@ func (a *AlbumsPage) doSearch(query string) {
 }
 
 func (a *AlbumsPage) onPlayAlbum(albumID string) {
-	if a.OnPlayAlbum != nil {
-		a.OnPlayAlbum(albumID, 0)
-	}
+	a.pm.PlayAlbum(albumID, 0)
 }
 
 func (a *AlbumsPage) onShowArtistPage(artistID string) {
@@ -218,6 +215,7 @@ func (a *AlbumsPage) CreateRenderer() fyne.WidgetRenderer {
 type savedAlbumsPage struct {
 	title           string
 	searchText      string
+	pm              *backend.PlaybackManager
 	lm              *backend.LibraryManager
 	im              *backend.ImageManager
 	nav             func(Route)

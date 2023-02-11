@@ -16,6 +16,7 @@ import (
 type FavoritesPage struct {
 	widget.BaseWidget
 
+	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
 	sm         *backend.ServerManager
 	lm         *backend.LibraryManager
@@ -26,12 +27,11 @@ type FavoritesPage struct {
 	searchText string
 	titleDisp  *widget.RichText
 	container  *fyne.Container
-
-	OnPlayAlbum func(string, int)
 }
 
-func NewFavoritesPage(sm *backend.ServerManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *FavoritesPage {
+func NewFavoritesPage(sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *FavoritesPage {
 	a := &FavoritesPage{
+		pm:  pm,
 		lm:  lm,
 		sm:  sm,
 		im:  im,
@@ -66,6 +66,7 @@ func (a *FavoritesPage) createContainer() {
 
 func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	a := &FavoritesPage{
+		pm:  saved.pm,
 		lm:  saved.lm,
 		sm:  saved.sm,
 		im:  saved.im,
@@ -88,16 +89,13 @@ func (a *FavoritesPage) Route() Route {
 	return FavoritesRoute()
 }
 
-func (a *FavoritesPage) SetPlayAlbumCallback(cb func(string, int)) {
-	a.OnPlayAlbum = cb
-}
-
 func (a *FavoritesPage) Reload() {
 	a.grid.Reset(a.lm.StarredIter())
 }
 
 func (a *FavoritesPage) Save() SavedPage {
 	return &savedFavoritesPage{
+		pm:        a.pm,
 		sm:        a.sm,
 		im:        a.im,
 		lm:        a.lm,
@@ -142,9 +140,7 @@ func (a *FavoritesPage) doSearch(query string) {
 }
 
 func (a *FavoritesPage) onPlayAlbum(albumID string) {
-	if a.OnPlayAlbum != nil {
-		a.OnPlayAlbum(albumID, 0)
-	}
+	a.pm.PlayAlbum(albumID, 0)
 }
 
 func (a *FavoritesPage) onShowAlbumPage(albumID string) {
@@ -161,6 +157,7 @@ func (a *FavoritesPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type savedFavoritesPage struct {
+	pm        *backend.PlaybackManager
 	sm        *backend.ServerManager
 	im        *backend.ImageManager
 	lm        *backend.LibraryManager

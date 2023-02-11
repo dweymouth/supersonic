@@ -131,6 +131,14 @@ func (p *Player) PlayFile(url string) error {
 	return err
 }
 
+// Removes the item at the given index from the internal playqueue.
+func (p *Player) RemoveTrackAt(idx int) error {
+	if p.mpv == nil {
+		return ErrUnitialized
+	}
+	return p.mpv.Command([]string{"playlist-remove", strconv.Itoa(idx)})
+}
+
 // Stops playback and clears the play queue.
 func (p *Player) Stop() error {
 	if p.mpv == nil {
@@ -230,6 +238,9 @@ func (p *Player) PlayFromBeginning() error {
 // Start playback from the specified track index in the play queue.
 func (p *Player) PlayTrackAt(idx int) error {
 	err := p.mpv.Command([]string{"playlist-play-index", strconv.Itoa(idx)})
+	if p.GetStatus().State == Paused {
+		err = p.setPaused(false)
+	}
 	if err == nil {
 		p.setState(Playing)
 	}
