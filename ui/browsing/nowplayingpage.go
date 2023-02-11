@@ -43,6 +43,9 @@ func NewNowPlayingPage(
 	a.tracklist.DisablePlaybackMenu = true
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
 	a.tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
+	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{
+		fyne.NewMenuItem("Remove from queue", a.onRemoveSelectedFromQueue),
+	}
 	a.title = widget.NewRichTextWithText("Now Playing")
 	a.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
 	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
@@ -87,6 +90,12 @@ func (a *NowPlayingPage) Reload() {
 
 func (a *NowPlayingPage) onPlayTrackAt(tracknum int) {
 	_ = a.pm.PlayTrackAt(tracknum)
+}
+
+func (a *NowPlayingPage) onRemoveSelectedFromQueue() {
+	a.pm.RemoveTracksFromQueue(a.tracklist.SelectedTrackIndexes())
+	a.tracklist.UnselectAll()
+	go a.Reload()
 }
 
 func (a *NowPlayingPage) loadAsync() {
