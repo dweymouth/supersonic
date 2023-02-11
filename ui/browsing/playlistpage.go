@@ -119,6 +119,7 @@ func (a *PlaylistPage) loadAsync() {
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
 	a.sm.Server.UpdatePlaylistTracks(a.playlistID, nil, a.tracklist.SelectedTrackIndexes())
+	a.tracklist.UnselectAll()
 	go a.Reload()
 }
 
