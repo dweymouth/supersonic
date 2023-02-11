@@ -31,10 +31,6 @@ type Searchable interface {
 	SearchWidget() fyne.Focusable
 }
 
-type CanPlayAlbum interface {
-	SetPlayAlbumCallback(func(albumID string, startingTrack int))
-}
-
 type CanShowNowPlaying interface {
 	OnSongChange(song *subsonic.Child)
 }
@@ -98,11 +94,6 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 		return false
 	}
 	b.curPage = p
-	if pa, ok := p.(CanPlayAlbum); ok {
-		pa.SetPlayAlbumCallback(func(albumID string, firstTrack int) {
-			_ = b.app.PlaybackManager.PlayAlbum(albumID, firstTrack)
-		})
-	}
 	if np, ok := p.(CanShowNowPlaying); ok {
 		np.OnSongChange(b.app.PlaybackManager.NowPlaying())
 	}

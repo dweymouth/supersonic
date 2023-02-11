@@ -26,8 +26,6 @@ type AlbumPage struct {
 	tracklist    *widgets.Tracklist
 	nowPlayingID string
 	container    *fyne.Container
-
-	OnPlayAlbum func(string, int)
 }
 
 type albumPageState struct {
@@ -84,10 +82,6 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }
 
-func (a *AlbumPage) SetPlayAlbumCallback(cb func(string, int)) {
-	a.OnPlayAlbum = cb
-}
-
 func (a *AlbumPage) Save() SavedPage {
 	s := a.albumPageState
 	return &s
@@ -115,9 +109,7 @@ func (a *AlbumPage) Tapped(*fyne.PointEvent) {
 }
 
 func (a *AlbumPage) onPlayTrackAt(tracknum int) {
-	if a.OnPlayAlbum != nil {
-		a.OnPlayAlbum(a.albumID, tracknum)
-	}
+	a.pm.PlayAlbum(a.albumID, tracknum)
 }
 
 func (a *AlbumPage) loadAsync() {

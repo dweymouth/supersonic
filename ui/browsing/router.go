@@ -87,7 +87,7 @@ func (r Router) CreatePage(rte Route) Page {
 	case Album:
 		return NewAlbumPage(rte.Arg, r.App.ServerManager, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, r.Controller, r.OpenRoute)
 	case Albums:
-		return NewAlbumsPage("Albums", rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
+		return NewAlbumsPage("Albums", rte.Arg, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Artist:
 		return NewArtistPage(rte.Arg, r.App.ServerManager, r.App.ImageManager, r.Controller, r.OpenRoute)
 	case Artists:
