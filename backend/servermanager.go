@@ -5,6 +5,7 @@ import (
 
 	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/google/uuid"
+	"github.com/zalando/go-keyring"
 )
 
 type ServerManager struct {
@@ -38,4 +39,12 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 
 func (s *ServerManager) OnServerConnected(cb func()) {
 	s.onServerConnected = append(s.onServerConnected, cb)
+}
+
+func (s *ServerManager) GetServerPassword(server *ServerConfig) (string, error) {
+	return keyring.Get(AppName, server.ID.String())
+}
+
+func (s *ServerManager) SetServerPassword(server *ServerConfig, password string) error {
+	return keyring.Set(AppName, server.ID.String(), password)
 }
