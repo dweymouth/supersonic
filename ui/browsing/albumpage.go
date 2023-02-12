@@ -61,6 +61,8 @@ func NewAlbumPage(
 	a.ExtendBaseWidget(a)
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
+	a.tracklist.SetVisibleColumns([]widgets.TracklistColumn{
+		widgets.ColumnArtist, widgets.ColumnTime, widgets.ColumnPlays})
 	// connect tracklist actions
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
 	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true) }

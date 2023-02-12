@@ -46,6 +46,9 @@ func (c *ColumnsLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 
 	var x float32
 	for i := 0; i < len(objects); i++ {
+		if !objects[i].Visible() {
+			continue
+		}
 		w := objects[i].MinSize().Width
 		if i < len(c.ColumnWidths) && c.ColumnWidths[i] > w {
 			w = c.ColumnWidths[i]
