@@ -78,6 +78,10 @@ func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player)
 		pm.startPollTimePos()
 	})
 
+	s.OnLogout(func() {
+		pm.StopAndClearPlayQueue()
+	})
+
 	return pm
 }
 
@@ -202,6 +206,12 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIdxs []int) {
 	for _, cb := range p.onSongChange {
 		cb(p.NowPlaying())
 	}
+}
+
+// Stop playback and clear the play queue.
+func (p *PlaybackManager) StopAndClearPlayQueue() {
+	p.player.Stop()
+	p.player.ClearPlayQueue()
 }
 
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {

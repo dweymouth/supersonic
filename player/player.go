@@ -159,6 +159,14 @@ func (p *Player) Stop() error {
 	return err
 }
 
+// Clears the play queue, except for the currently playing file.
+func (p *Player) ClearPlayQueue() error {
+	if p.mpv == nil {
+		return ErrUnitialized
+	}
+	return p.mpv.Command([]string{"playlist-clear"})
+}
+
 // Seeks within the currently playing track.
 // See MPV seek command documentation for more details.
 func (p *Player) Seek(target string, mode SeekMode) error {
