@@ -76,14 +76,35 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 }
 
 func (b *BrowsingPane) SetPage(p Page) {
+	if p == nil {
+		b.doSetPage(&blankPage{})
+		return
+	}
 	oldPage := b.curPage
 	if b.doSetPage(p) && oldPage != nil {
 		b.addPageToHistory(oldPage, true)
 	}
 }
 
+func (b *BrowsingPane) ClearHistory() {
+	b.history = nil
+	b.historyIdx = 0
+}
+
 func (b *BrowsingPane) AddNavigationButton(iconRes fyne.Resource, action func()) {
 	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", iconRes, action))
+}
+
+func (b *BrowsingPane) DisableNavigationButtons() {
+	for _, obj := range b.navBtnsContainer.Objects {
+		obj.(*widget.Button).Disable()
+	}
+}
+
+func (b *BrowsingPane) EnableNavigationButtons() {
+	for _, obj := range b.navBtnsContainer.Objects {
+		obj.(*widget.Button).Enable()
+	}
 }
 
 func (b *BrowsingPane) GetSearchBarIfAny() fyne.Focusable {
@@ -162,3 +183,17 @@ func (b *BrowsingPane) Reload() {
 func (b *BrowsingPane) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(b.container)
 }
+
+type blankPage struct {
+	layout.Spacer
+}
+
+var _ Page = (*blankPage)(nil)
+
+func (p *blankPage) Reload() {}
+
+func (p *blankPage) Route() Route { return Route{Page: Blank} }
+
+func (p *blankPage) Save() SavedPage { return p }
+
+func (p *blankPage) Restore() Page { return p }

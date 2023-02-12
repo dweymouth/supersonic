@@ -64,7 +64,14 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 		m.Window.SetTitle(song.Title)
 	})
 	app.ServerManager.OnServerConnected(func() {
+		m.BrowsingPane.EnableNavigationButtons()
 		m.Router.OpenRoute(HomePage)
+	})
+	app.ServerManager.OnLogout(func() {
+		m.BrowsingPane.DisableNavigationButtons()
+		m.BrowsingPane.SetPage(nil)
+		m.BrowsingPane.ClearHistory()
+		// TODO: show prompt for login
 	})
 	m.addNavigationButtons()
 	m.addShortcuts()
