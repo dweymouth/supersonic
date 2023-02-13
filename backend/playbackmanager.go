@@ -212,6 +212,8 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIdxs []int) {
 func (p *PlaybackManager) StopAndClearPlayQueue() {
 	p.player.Stop()
 	p.player.ClearPlayQueue()
+	p.doUpdateTimePos()
+	p.playQueue = nil
 }
 
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
