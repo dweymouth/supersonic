@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"github.com/20after4/configdir"
-	"github.com/zalando/go-keyring"
 )
 
 const (
@@ -49,17 +48,9 @@ func main() {
 		time.Sleep(250 * time.Millisecond)
 		defaultServer := myApp.Config.GetDefaultServer()
 		if defaultServer == nil {
-			mainWindow.PromptForFirstServer(func(nick, host, user, pass string) {
-				server := myApp.Config.AddServer(nick, host, user)
-				err := keyring.Set(appname, server.ID.String(), pass)
-				if err != nil {
-					log.Printf("error setting keyring credentials: %v", err)
-					// TODO: handle?
-				}
-				setupServer(myApp, server)
-			})
+			mainWindow.Controller.PromptForFirstServer()
 		} else {
-			setupServer(myApp, defaultServer)
+			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
 	}()
 
@@ -70,18 +61,8 @@ func main() {
 		mainWindow.Window.Close()
 	})
 	fyneApp.Run()
+
+	// shutdown tasks
 	myApp.Config.WriteConfigFile(configPath())
 	myApp.Shutdown()
-
-}
-
-func setupServer(app *backend.App, server *backend.ServerConfig) {
-	pass, err := keyring.Get(appname, server.ID.String())
-	if err != nil {
-		log.Printf("error getting password from keyring: %v", err)
-	}
-	if err := app.ServerManager.ConnectToServer(server, pass); err != nil {
-		log.Printf("error connecting to server: %v", err)
-		// TODO: surface error to user
-	}
 }

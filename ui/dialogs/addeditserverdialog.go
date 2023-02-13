@@ -1,6 +1,8 @@
-package widgets
+package dialogs
 
 import (
+	"supersonic/backend"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
@@ -8,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type AddServerForm struct {
+type AddEditServerDialog struct {
 	widget.BaseWidget
 
 	Nickname string
@@ -20,11 +22,17 @@ type AddServerForm struct {
 	container *fyne.Container
 }
 
-var _ fyne.Widget = (*AddServerForm)(nil)
+var _ fyne.Widget = (*AddEditServerDialog)(nil)
 
-func NewAddServerForm(title string) *AddServerForm {
-	a := &AddServerForm{}
+func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *AddEditServerDialog {
+	a := &AddEditServerDialog{}
 	a.ExtendBaseWidget(a)
+	if prefillServer != nil {
+		a.Nickname = prefillServer.Nickname
+		a.Host = prefillServer.Hostname
+		a.Username = prefillServer.Username
+	}
+
 	titleLabel := widget.NewLabel(title)
 	titleLabel.TextStyle.Bold = true
 	nickField := widget.NewEntryWithData(binding.BindString(&a.Nickname))
@@ -59,11 +67,11 @@ func NewAddServerForm(title string) *AddServerForm {
 	return a
 }
 
-func (a *AddServerForm) MinSize() fyne.Size {
+func (a *AddEditServerDialog) MinSize() fyne.Size {
 	a.ExtendBaseWidget(a)
 	return fyne.NewSize(300, a.container.MinSize().Height)
 }
 
-func (a *AddServerForm) CreateRenderer() fyne.WidgetRenderer {
+func (a *AddEditServerDialog) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }

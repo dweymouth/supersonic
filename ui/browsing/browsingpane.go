@@ -52,6 +52,8 @@ type BrowsingPane struct {
 	history    []SavedPage
 	historyIdx int
 
+	settingsBtn      *widget.Button
+	settingsMenu     *fyne.Menu
 	navBtnsContainer *fyne.Container
 	pageContainer    *fyne.Container
 	container        *fyne.Container
@@ -65,25 +67,60 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.pageContainer = container.NewMax(
+		// TODO: get this color into the theme
 		canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 24, A: 255}),
 		layout.NewSpacer())
+	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
+		p := widget.NewPopUpMenu(b.settingsMenu,
+			fyne.CurrentApp().Driver().CanvasForObject(b.settingsBtn))
+		p.ShowAtPosition(fyne.NewPos(b.Size().Width-p.MinSize().Width-theme.Padding()/2,
+			b.navBtnsContainer.MinSize().Height+theme.Padding()))
+	})
+	b.settingsMenu = fyne.NewMenu("")
 	b.navBtnsContainer = container.NewHBox()
 	b.container = container.NewBorder(
 		container.New(layouts.NewLeftMiddleRightLayout(0),
-			container.NewHBox(b.back, b.forward, b.reload), b.navBtnsContainer, layout.NewSpacer()),
+			container.NewHBox(b.back, b.forward, b.reload), b.navBtnsContainer,
+			container.NewHBox(layout.NewSpacer(), b.settingsBtn)),
 		nil, nil, nil, b.pageContainer)
 	return b
 }
 
 func (b *BrowsingPane) SetPage(p Page) {
+	if p == nil {
+		b.doSetPage(&blankPage{})
+		return
+	}
 	oldPage := b.curPage
 	if b.doSetPage(p) && oldPage != nil {
 		b.addPageToHistory(oldPage, true)
 	}
 }
 
+func (b *BrowsingPane) ClearHistory() {
+	b.history = nil
+	b.historyIdx = 0
+}
+
+func (b *BrowsingPane) AddSettingsMenuItem(label string, action func()) {
+	b.settingsMenu.Items = append(b.settingsMenu.Items,
+		fyne.NewMenuItem(label, action))
+}
+
 func (b *BrowsingPane) AddNavigationButton(iconRes fyne.Resource, action func()) {
 	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", iconRes, action))
+}
+
+func (b *BrowsingPane) DisableNavigationButtons() {
+	for _, obj := range b.navBtnsContainer.Objects {
+		obj.(*widget.Button).Disable()
+	}
+}
+
+func (b *BrowsingPane) EnableNavigationButtons() {
+	for _, obj := range b.navBtnsContainer.Objects {
+		obj.(*widget.Button).Enable()
+	}
 }
 
 func (b *BrowsingPane) GetSearchBarIfAny() fyne.Focusable {
@@ -162,3 +199,17 @@ func (b *BrowsingPane) Reload() {
 func (b *BrowsingPane) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(b.container)
 }
+
+type blankPage struct {
+	layout.Spacer
+}
+
+var _ Page = (*blankPage)(nil)
+
+func (p *blankPage) Reload() {}
+
+func (p *blankPage) Route() Route { return Route{Page: Blank} }
+
+func (p *blankPage) Save() SavedPage { return p }
+
+func (p *blankPage) Restore() Page { return p }
