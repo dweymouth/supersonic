@@ -49,6 +49,8 @@ func NewPlaylistPage(
 	a.ExtendBaseWidget(a)
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
+	a.tracklist.SetVisibleColumns([]widgets.TracklistColumn{
+		widgets.ColumnArtist, widgets.ColumnAlbum, widgets.ColumnTime, widgets.ColumnPlays})
 	a.tracklist.AutoNumber = true
 	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{
 		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist),

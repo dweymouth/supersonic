@@ -6,12 +6,10 @@ import (
 	"supersonic/ui/browsing"
 	"supersonic/ui/controller"
 	"supersonic/ui/os"
-	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
@@ -64,21 +62,19 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 		m.Window.SetTitle(song.Title)
 	})
 	app.ServerManager.OnServerConnected(func() {
+		m.BrowsingPane.EnableNavigationButtons()
 		m.Router.OpenRoute(HomePage)
 	})
+	app.ServerManager.OnLogout(func() {
+		m.BrowsingPane.DisableNavigationButtons()
+		m.BrowsingPane.SetPage(nil)
+		m.BrowsingPane.ClearHistory()
+		m.Controller.PromptForLogin()
+	})
+	m.BrowsingPane.AddSettingsMenuItem("Log Out", app.ServerManager.Logout)
 	m.addNavigationButtons()
 	m.addShortcuts()
 	return m
-}
-
-func (m *MainWindow) PromptForFirstServer(cb func(string, string, string, string)) {
-	d := widgets.NewAddServerForm("Connect to Server")
-	pop := widget.NewModalPopUp(d, m.Canvas())
-	d.OnSubmit = func() {
-		pop.Hide()
-		cb(d.Nickname, d.Host, d.Username, d.Password)
-	}
-	pop.Show()
 }
 
 func (m *MainWindow) addNavigationButtons() {
