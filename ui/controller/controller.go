@@ -88,26 +88,20 @@ func (c Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	pass, err := c.App.ServerManager.GetServerPassword(server)
 	if err != nil {
 		log.Printf("error getting password from keyring: %v", err)
-		c.promptForLogin(func(server *backend.ServerConfig, password string) {
-			if err := c.App.ServerManager.SetServerPassword(server, password); err != nil {
-				log.Printf("error setting keyring credentials: %v", err)
-				// TODO: handle?
-			}
-			c.tryConnectToServer(server, password)
-		})
+		c.PromptForLogin()
 	} else {
 		c.tryConnectToServer(server, pass)
 	}
 }
 
-func (m Controller) promptForLogin(cb func(server *backend.ServerConfig, password string)) {
+func (m Controller) PromptForLogin() {
 	// TODO: this will need to be rewritten a bit when we support multi servers
 	// need to make sure the intended server is first in the list passed to NewLoginDialog
 	d := dialogs.NewLoginDialog(m.App.Config.Servers)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func(server *backend.ServerConfig, password string) {
 		pop.Hide()
-		cb(server, password)
+		m.trySetPasswordAndConnectToServer(server, password)
 	}
 	d.OnEditServer = func(server *backend.ServerConfig) {
 		pop.Hide()
@@ -118,11 +112,19 @@ func (m Controller) promptForLogin(cb func(server *backend.ServerConfig, passwor
 			server.Hostname = editD.Host
 			server.Nickname = editD.Nickname
 			server.Username = editD.Username
-			cb(server, editD.Password)
+			m.trySetPasswordAndConnectToServer(server, editD.Password)
 		}
 		editPop.Show()
 	}
 	pop.Show()
+}
+
+func (c Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) {
+	if err := c.App.ServerManager.SetServerPassword(server, password); err != nil {
+		log.Printf("error setting keyring credentials: %v", err)
+		// TODO: handle?
+	}
+	c.tryConnectToServer(server, password)
 }
 
 func (c Controller) tryConnectToServer(server *backend.ServerConfig, password string) {
