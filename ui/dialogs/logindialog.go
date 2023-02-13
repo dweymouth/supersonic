@@ -6,13 +6,15 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 type LoginDialog struct {
 	widget.BaseWidget
 
-	OnSubmit func(server *backend.ServerConfig, password string)
+	OnSubmit     func(server *backend.ServerConfig, password string)
+	OnEditServer func(server *backend.ServerConfig)
 
 	servers      []*backend.ServerConfig
 	serverSelect *widget.Select
@@ -34,6 +36,7 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 	}
 	l.serverSelect = widget.NewSelect(serverNames, func(_ string) {})
 	l.serverSelect.SetSelectedIndex(0)
+	editBtn := widget.NewButtonWithIcon("", theme.DocumentCreateIcon(), l.onEditServer)
 	l.passField = widget.NewPasswordEntry()
 	okBtn := widget.NewButton("OK", l.onSubmit)
 
@@ -41,7 +44,7 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel("Server"),
-			l.serverSelect,
+			container.NewBorder(nil, nil, nil, editBtn, l.serverSelect),
 			widget.NewLabel("Password"),
 			l.passField),
 		widget.NewSeparator(),
@@ -62,5 +65,11 @@ func (l *LoginDialog) MinSize() fyne.Size {
 func (l *LoginDialog) onSubmit() {
 	if l.OnSubmit != nil {
 		l.OnSubmit(l.servers[l.serverSelect.SelectedIndex()], l.passField.Text)
+	}
+}
+
+func (l *LoginDialog) onEditServer() {
+	if l.OnEditServer != nil {
+		l.OnEditServer(l.servers[l.serverSelect.SelectedIndex()])
 	}
 }

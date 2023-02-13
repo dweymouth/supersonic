@@ -48,16 +48,9 @@ func main() {
 		time.Sleep(250 * time.Millisecond)
 		defaultServer := myApp.Config.GetDefaultServer()
 		if defaultServer == nil {
-			mainWindow.PromptForFirstServer(func(nick, host, user, pass string) {
-				server := myApp.Config.AddServer(nick, host, user)
-				if err := myApp.ServerManager.SetServerPassword(server, pass); err != nil {
-					log.Printf("error setting keyring credentials: %v", err)
-					// TODO: handle?
-				}
-				setupServer(myApp, server)
-			})
+			mainWindow.Controller.PromptForFirstServer()
 		} else {
-			setupServer(myApp, defaultServer)
+			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
 	}()
 
@@ -72,15 +65,4 @@ func main() {
 	// shutdown tasks
 	myApp.Config.WriteConfigFile(configPath())
 	myApp.Shutdown()
-}
-
-func setupServer(app *backend.App, server *backend.ServerConfig) {
-	pass, err := app.ServerManager.GetServerPassword(server)
-	if err != nil {
-		log.Printf("error getting password from keyring: %v", err)
-	}
-	if err := app.ServerManager.ConnectToServer(server, pass); err != nil {
-		log.Printf("error connecting to server: %v", err)
-		// TODO: surface error to user
-	}
 }
