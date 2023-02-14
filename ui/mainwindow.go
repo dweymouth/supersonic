@@ -69,7 +69,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 		m.BrowsingPane.DisableNavigationButtons()
 		m.BrowsingPane.SetPage(nil)
 		m.BrowsingPane.ClearHistory()
-		m.Controller.PromptForLogin()
+		m.Controller.PromptForLoginAndConnect()
 	})
 	m.BrowsingPane.AddSettingsMenuItem("Log Out", app.ServerManager.Logout)
 	m.addNavigationButtons()

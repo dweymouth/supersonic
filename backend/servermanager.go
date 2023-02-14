@@ -1,7 +1,9 @@
 package backend
 
 import (
+	"errors"
 	"net/http"
+	"time"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/google/uuid"
@@ -16,18 +18,15 @@ type ServerManager struct {
 	onLogout          []func()
 }
 
+var ErrUnreachable = errors.New("server is unreachable")
+
 func NewServerManager() *ServerManager {
 	return &ServerManager{}
 }
 
 func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) error {
-	cli := &subsonic.Client{
-		Client:     &http.Client{},
-		BaseUrl:    conf.Hostname,
-		User:       conf.Username,
-		ClientName: "supersonic",
-	}
-	if err := cli.Authenticate(password); err != nil {
+	cli, err := s.testConnectionAndCreateClient(conf.Hostname, conf.Username, password)
+	if err != nil {
 		return err
 	}
 	s.Server = cli
@@ -36,6 +35,37 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 		cb()
 	}
 	return nil
+}
+
+func (s *ServerManager) TestConnectionAndAuth(hostname, username, password string) error {
+	err := ErrUnreachable
+	done := make(chan bool)
+	go func() {
+		_, err = s.testConnectionAndCreateClient(hostname, username, password)
+		close(done)
+	}()
+	select {
+	case <-time.After(200 * time.Millisecond):
+		return err
+	case <-done:
+		return err
+	}
+}
+
+func (s *ServerManager) testConnectionAndCreateClient(hostname, username, password string) (*subsonic.Client, error) {
+	cli := &subsonic.Client{
+		Client:     &http.Client{},
+		BaseUrl:    hostname,
+		User:       username,
+		ClientName: "supersonic",
+	}
+	if !cli.Ping() {
+		return nil, ErrUnreachable
+	}
+	if err := cli.Authenticate(password); err != nil {
+		return nil, err
+	}
+	return cli, nil
 }
 
 func (s *ServerManager) Logout() {

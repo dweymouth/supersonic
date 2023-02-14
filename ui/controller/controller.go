@@ -42,13 +42,16 @@ func (m Controller) PromptForFirstServer() {
 	d := dialogs.NewAddEditServerDialog("Connect to Server", nil)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func() {
-		pop.Hide()
-		server := m.App.Config.AddServer(d.Nickname, d.Host, d.Username)
-		if err := m.App.ServerManager.SetServerPassword(server, d.Password); err != nil {
-			log.Printf("error setting keyring credentials: %v", err)
-			// TODO: handle?
+		if m.testConnectionAndUpdateDialogError(d) {
+			// connection is good
+			pop.Hide()
+			server := m.App.Config.AddServer(d.Nickname, d.Host, d.Username)
+			if err := m.App.ServerManager.SetServerPassword(server, d.Password); err != nil {
+				log.Printf("error setting keyring credentials: %v", err)
+				// TODO: handle?
+			}
+			m.DoConnectToServerWorkflow(server)
 		}
-		m.DoConnectToServerWorkflow(server)
 	}
 	pop.Show()
 }
@@ -88,13 +91,13 @@ func (c Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	pass, err := c.App.ServerManager.GetServerPassword(server)
 	if err != nil {
 		log.Printf("error getting password from keyring: %v", err)
-		c.PromptForLogin()
+		c.PromptForLoginAndConnect()
 	} else {
 		c.tryConnectToServer(server, pass)
 	}
 }
 
-func (m Controller) PromptForLogin() {
+func (m Controller) PromptForLoginAndConnect() {
 	// TODO: this will need to be rewritten a bit when we support multi servers
 	// need to make sure the intended server is first in the list passed to NewLoginDialog
 	d := dialogs.NewLoginDialog(m.App.Config.Servers)
@@ -108,28 +111,46 @@ func (m Controller) PromptForLogin() {
 		editD := dialogs.NewAddEditServerDialog("Edit server", server)
 		editPop := widget.NewModalPopUp(editD, m.MainWindow.Canvas())
 		editD.OnSubmit = func() {
-			editPop.Hide()
-			server.Hostname = editD.Host
-			server.Nickname = editD.Nickname
-			server.Username = editD.Username
-			m.trySetPasswordAndConnectToServer(server, editD.Password)
+			if m.testConnectionAndUpdateDialogError(editD) {
+				// connection is good
+				editPop.Hide()
+				server.Hostname = editD.Host
+				server.Nickname = editD.Nickname
+				server.Username = editD.Username
+				m.trySetPasswordAndConnectToServer(server, editD.Password)
+			}
 		}
 		editPop.Show()
 	}
 	pop.Show()
 }
 
-func (c Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) {
+func (c Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {
 	if err := c.App.ServerManager.SetServerPassword(server, password); err != nil {
 		log.Printf("error setting keyring credentials: %v", err)
-		// TODO: handle?
+		// TODO: how best to handle this unexpected codepath
+		// fall back to prompting for password on each run of the app?
+		return err
 	}
-	c.tryConnectToServer(server, password)
+	return c.tryConnectToServer(server, password)
 }
 
-func (c Controller) tryConnectToServer(server *backend.ServerConfig, password string) {
+func (c Controller) tryConnectToServer(server *backend.ServerConfig, password string) error {
 	if err := c.App.ServerManager.ConnectToServer(server, password); err != nil {
 		log.Printf("error connecting to server: %v", err)
-		// TODO: surface error to user
+		return err
 	}
+	return nil
+}
+
+func (c Controller) testConnectionAndUpdateDialogError(dlg *dialogs.AddEditServerDialog) bool {
+	err := c.App.ServerManager.TestConnectionAndAuth(dlg.Host, dlg.Username, dlg.Password)
+	if err == backend.ErrUnreachable {
+		dlg.SetErrorText("Could not reach server (wrong hostname?)")
+		return false
+	} else if err != nil {
+		dlg.SetErrorText("Authentication failed (wrong username/password)")
+		return false
+	}
+	return true
 }

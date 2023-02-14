@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -19,7 +20,8 @@ type AddEditServerDialog struct {
 	Password string
 	OnSubmit func()
 
-	container *fyne.Container
+	errPromptText *widget.RichText
+	container     *fyne.Container
 }
 
 var _ fyne.Widget = (*AddEditServerDialog)(nil)
@@ -47,6 +49,9 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 			a.OnSubmit()
 		}
 	})
+	a.errPromptText = widget.NewRichTextWithText("")
+	a.errPromptText.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameError
+	a.errPromptText.Hidden = true
 
 	a.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
@@ -62,14 +67,26 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 		),
 		widget.NewSeparator(),
 		container.NewHBox(
+			a.errPromptText,
 			layout.NewSpacer(),
-			submit))
+			submit),
+	)
 	return a
+}
+
+func (a *AddEditServerDialog) SetErrorText(text string) {
+	a.errPromptText.Segments[0].(*widget.TextSegment).Text = text
+	if text != "" {
+		a.errPromptText.Show()
+	} else {
+		a.errPromptText.Hide()
+	}
+	a.errPromptText.Refresh()
 }
 
 func (a *AddEditServerDialog) MinSize() fyne.Size {
 	a.ExtendBaseWidget(a)
-	return fyne.NewSize(300, a.container.MinSize().Height)
+	return fyne.NewSize(450, a.container.MinSize().Height)
 }
 
 func (a *AddEditServerDialog) CreateRenderer() fyne.WidgetRenderer {
