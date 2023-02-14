@@ -105,6 +105,19 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 	t.list.Refresh()
 }
 
+func (t *Tracklist) IncrementPlayCount(track *subsonic.Child) {
+	if track == nil {
+		return
+	}
+	for _, tr := range t.Tracks {
+		if tr.ID == track.ID {
+			tr.PlayCount += 1
+			t.Refresh()
+			return
+		}
+	}
+}
+
 func (t *Tracklist) SelectAll() {
 	t.selectionMgr.SelectAll()
 	t.Refresh()
@@ -229,6 +242,7 @@ type TrackRow struct {
 	trackIdx  int
 	trackID   string
 	isPlaying bool
+	playCount int64
 	tappedAt  int64 // unixMillis
 
 	num     *widget.RichText
@@ -275,7 +289,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 }
 
 func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
-	if tr.ID == t.trackID && isPlaying == t.isPlaying {
+	if tr.ID == t.trackID && isPlaying == t.isPlaying && tr.PlayCount == t.playCount {
 		return
 	}
 	t.isPlaying = isPlaying
