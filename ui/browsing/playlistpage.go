@@ -84,13 +84,14 @@ func (a *PlaylistPage) Route() Route {
 	return PlaylistRoute(a.playlistID)
 }
 
-func (a *PlaylistPage) OnSongChange(song *subsonic.Child) {
+func (a *PlaylistPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
 	if song == nil {
 		a.nowPlayingID = ""
 	} else {
 		a.nowPlayingID = song.ID
 	}
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
+	a.tracklist.IncrementPlayCount(lastScrobbledIfAny)
 }
 
 func (a *PlaylistPage) Reload() {

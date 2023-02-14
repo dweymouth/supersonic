@@ -25,9 +25,13 @@ type PlaybackManager struct {
 	playTimeStopwatch util.Stopwatch
 	curTrackTime      float64
 
-	playQueue        []*subsonic.Child
-	nowPlayingIdx    int64
-	onSongChange     []func(*subsonic.Child)
+	playQueue     []*subsonic.Child
+	nowPlayingIdx int64
+
+	// to pass to onSongChange listeners; clear once listeners have been called
+	lastScrobbled *subsonic.Child
+
+	onSongChange     []func(nowPlaying *subsonic.Child, justScrobbledIfAny *subsonic.Child)
 	onPlayTimeUpdate []func(float64, float64)
 }
 
@@ -51,9 +55,7 @@ func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player)
 		}
 		pm.nowPlayingIdx = tracknum
 		pm.curTrackTime = float64(pm.playQueue[pm.nowPlayingIdx].Duration)
-		for _, cb := range pm.onSongChange {
-			cb(pm.NowPlaying())
-		}
+		pm.invokeOnSongChangeCallbacks()
 		pm.doUpdateTimePos()
 	})
 	p.OnSeek(func() {
@@ -65,9 +67,7 @@ func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player)
 		pm.playTimeStopwatch.Reset()
 		pm.stopPollTimePos()
 		pm.doUpdateTimePos()
-		for _, cb := range pm.onSongChange {
-			cb(nil)
-		}
+		pm.invokeOnSongChangeCallbacks()
 	})
 	p.OnPaused(func() {
 		pm.playTimeStopwatch.Stop()
@@ -98,7 +98,7 @@ func (p *PlaybackManager) NowPlaying() *subsonic.Child {
 }
 
 // Sets a callback that is notified whenever a new song begins playing.
-func (p *PlaybackManager) OnSongChange(cb func(*subsonic.Child)) {
+func (p *PlaybackManager) OnSongChange(cb func(nowPlaying *subsonic.Child, justScrobbledIfAny *subsonic.Child)) {
 	p.onSongChange = append(p.onSongChange, cb)
 }
 
@@ -203,9 +203,7 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIdxs []int) {
 	p.nowPlayingIdx = p.player.GetStatus().PlaylistPos
 	// fire on song change callbacks in case the playing track was removed
 	// TODO: only call this if the playing track actually was removed
-	for _, cb := range p.onSongChange {
-		cb(p.NowPlaying())
-	}
+	p.invokeOnSongChangeCallbacks()
 }
 
 // Stop playback and clear the play queue.
@@ -226,8 +224,16 @@ func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 	song := p.playQueue[p.nowPlayingIdx]
 	if playDur.Seconds()/p.curTrackTime > ScrobbleThreshold {
 		log.Printf("Scrobbling %q", song.Title)
+		p.lastScrobbled = song
 		p.sm.Server.Scrobble(song.ID, map[string]string{"time": strconv.FormatInt(time.Now().Unix()*1000, 10)})
 	}
+}
+
+func (p *PlaybackManager) invokeOnSongChangeCallbacks() {
+	for _, cb := range p.onSongChange {
+		cb(p.NowPlaying(), p.lastScrobbled)
+	}
+	p.lastScrobbled = nil
 }
 
 func (p *PlaybackManager) startPollTimePos() {
