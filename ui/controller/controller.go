@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -93,7 +94,13 @@ func (c Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 		log.Printf("error getting password from keyring: %v", err)
 		c.PromptForLoginAndConnect()
 	} else {
-		c.tryConnectToServer(server, pass)
+		if err := c.tryConnectToServer(server, pass); err != nil {
+			dlg := dialog.NewError(err, c.MainWindow)
+			dlg.SetOnClosed(func() {
+				c.PromptForLoginAndConnect()
+			})
+			dlg.Show()
+		}
 	}
 }
 
@@ -143,6 +150,9 @@ func (c Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfi
 }
 
 func (c Controller) tryConnectToServer(server *backend.ServerConfig, password string) error {
+	if err := c.App.ServerManager.TestConnectionAndAuth(server.Hostname, server.Username, password); err != nil {
+		return err
+	}
 	if err := c.App.ServerManager.ConnectToServer(server, password); err != nil {
 		log.Printf("error connecting to server: %v", err)
 		return err
