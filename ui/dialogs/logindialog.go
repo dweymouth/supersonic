@@ -16,9 +16,10 @@ type LoginDialog struct {
 	OnSubmit     func(server *backend.ServerConfig, password string)
 	OnEditServer func(server *backend.ServerConfig)
 
-	servers      []*backend.ServerConfig
-	serverSelect *widget.Select
-	passField    *widget.Entry
+	servers       []*backend.ServerConfig
+	serverSelect  *widget.Select
+	passField     *widget.Entry
+	errPromptText *widget.RichText
 
 	container *fyne.Container
 }
@@ -40,6 +41,10 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 	l.passField = widget.NewPasswordEntry()
 	okBtn := widget.NewButton("OK", l.onSubmit)
 
+	l.errPromptText = widget.NewRichTextWithText("")
+	l.errPromptText.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameError
+	l.errPromptText.Hidden = true
+
 	l.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
 		container.New(layout.NewFormLayout(),
@@ -48,9 +53,19 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 			widget.NewLabel("Password"),
 			l.passField),
 		widget.NewSeparator(),
-		container.NewHBox(layout.NewSpacer(), okBtn),
+		container.NewHBox(l.errPromptText, layout.NewSpacer(), okBtn),
 	)
 	return l
+}
+
+func (l *LoginDialog) SetErrorText(text string) {
+	l.errPromptText.Segments[0].(*widget.TextSegment).Text = text
+	if text != "" {
+		l.errPromptText.Show()
+	} else {
+		l.errPromptText.Hide()
+	}
+	l.errPromptText.Refresh()
 }
 
 func (l *LoginDialog) CreateRenderer() fyne.WidgetRenderer {

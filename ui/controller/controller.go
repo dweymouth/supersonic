@@ -103,8 +103,15 @@ func (m Controller) PromptForLoginAndConnect() {
 	d := dialogs.NewLoginDialog(m.App.Config.Servers)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func(server *backend.ServerConfig, password string) {
-		pop.Hide()
-		m.trySetPasswordAndConnectToServer(server, password)
+		err := m.App.ServerManager.TestConnectionAndAuth(server.Hostname, server.Username, password)
+		if err == backend.ErrUnreachable {
+			d.SetErrorText("Server unreachable")
+		} else if err != nil {
+			d.SetErrorText("Authentication failed")
+		} else {
+			pop.Hide()
+			m.trySetPasswordAndConnectToServer(server, password)
+		}
 	}
 	d.OnEditServer = func(server *backend.ServerConfig) {
 		pop.Hide()
