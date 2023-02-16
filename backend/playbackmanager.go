@@ -108,42 +108,46 @@ func (p *PlaybackManager) OnPlayTimeUpdate(cb func(float64, float64)) {
 }
 
 // Loads the specified album into the play queue.
-func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool) error {
+func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool, shuffle bool) error {
 	album, err := p.sm.Server.GetAlbum(albumID)
 	if err != nil {
 		return err
 	}
-	return p.LoadTracks(album.Song, appendToQueue)
+	return p.LoadTracks(album.Song, appendToQueue, shuffle)
 }
 
 // Loads the specified playlist into the play queue.
-func (p *PlaybackManager) LoadPlaylist(playlistID string, appendToQueue bool) error {
+func (p *PlaybackManager) LoadPlaylist(playlistID string, appendToQueue bool, shuffle bool) error {
 	playlist, err := p.sm.Server.GetPlaylist(playlistID)
 	if err != nil {
 		return err
 	}
-	return p.LoadTracks(playlist.Entry, appendToQueue)
+	return p.LoadTracks(playlist.Entry, appendToQueue, shuffle)
 }
 
-func (p *PlaybackManager) LoadTracks(tracks []*subsonic.Child, appendToQueue bool) error {
+func (p *PlaybackManager) LoadTracks(tracks []*subsonic.Child, appendToQueue, shuffle bool) error {
 	if !appendToQueue {
 		p.player.Stop()
 		p.nowPlayingIdx = 0
 		p.playQueue = nil
 	}
-	for _, song := range tracks {
-		url, err := p.sm.Server.GetStreamURL(song.ID, map[string]string{})
+	nums := util.Range(len(tracks))
+	if shuffle {
+		util.ShuffleSlice(nums)
+	}
+	for _, i := range nums {
+		url, err := p.sm.Server.GetStreamURL(tracks[i].ID, map[string]string{})
 		if err != nil {
 			return err
 		}
 		p.player.AppendFile(url.String())
-		p.playQueue = append(p.playQueue, song)
+		p.playQueue = append(p.playQueue, tracks[i])
 	}
 	return nil
 }
 
 func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int) error {
-	if err := p.LoadAlbum(albumID, false); err != nil {
+	if err := p.LoadAlbum(albumID, false, false); err != nil {
 		return err
 	}
 	if firstTrack <= 0 {
@@ -153,7 +157,7 @@ func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int) error {
 }
 
 func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int) error {
-	if err := p.LoadPlaylist(playlistID, false); err != nil {
+	if err := p.LoadPlaylist(playlistID, false, false); err != nil {
 		return err
 	}
 	if firstTrack <= 0 {
