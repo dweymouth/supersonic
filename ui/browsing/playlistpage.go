@@ -57,9 +57,9 @@ func NewPlaylistPage(
 	}
 	// connect tracklist actions
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
-	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true) }
+	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true, false) }
 	a.tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
-		a.pm.LoadTracks(tracks, false)
+		a.pm.LoadTracks(tracks, false, false)
 		a.pm.PlayFromBeginning()
 	}
 	a.tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
@@ -143,8 +143,6 @@ type PlaylistPageHeader struct {
 	ownerLabel       *widget.Label
 	trackTimeLabel   *widget.Label
 
-	playButton *widget.Button
-
 	container *fyne.Container
 }
 
@@ -162,8 +160,13 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.ownerLabel = widget.NewLabel("")
 	a.createdAtLabel = widget.NewLabel("")
 	a.trackTimeLabel = widget.NewLabel("")
-	a.playButton = widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
+	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
 		page.onPlayTrackAt(0)
+	})
+	// TODO: find way to pad shuffle svg rather than using a space in the label string
+	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", res.ResShuffleInvertSvg, func() {
+		page.pm.LoadPlaylist(page.playlistID, false /*append*/, true /*shuffle*/)
+		page.pm.PlayFromBeginning()
 	})
 
 	a.container = container.NewBorder(nil, nil, a.image, nil,
@@ -171,7 +174,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 			a.descriptionLabel,
 			a.ownerLabel,
 			a.trackTimeLabel),
-			container.NewHBox(a.playButton),
+			container.NewHBox(playButton, shuffleBtn),
 		))
 	return a
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"supersonic/backend"
+	"supersonic/res"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
@@ -65,9 +66,9 @@ func NewAlbumPage(
 		widgets.ColumnArtist, widgets.ColumnTime, widgets.ColumnPlays})
 	// connect tracklist actions
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
-	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true) }
+	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true, false) }
 	a.tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
-		a.pm.LoadTracks(tracks, false)
+		a.pm.LoadTracks(tracks, false, false)
 		a.pm.PlayFromBeginning()
 	}
 	a.tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
@@ -148,7 +149,6 @@ type AlbumPageHeader struct {
 	miscLabel   *widget.Label
 
 	toggleFavButton *widgets.FavoriteButton
-	playButton      *widget.Button
 
 	container *fyne.Container
 }
@@ -178,8 +178,12 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		page.nav(GenreRoute(a.genre))
 	}
 	a.miscLabel = widget.NewLabel("")
-	a.playButton = widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
+	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
 		page.onPlayTrackAt(0)
+	})
+	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", res.ResShuffleInvertSvg, func() {
+		page.pm.LoadAlbum(page.albumID, false, true)
+		page.pm.PlayFromBeginning()
 	})
 	a.toggleFavButton = widgets.NewFavoriteButton(a.toggleFavorited)
 
@@ -190,7 +194,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 			container.NewVBox(
 				container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, a.artistLabel, a.genreLabel, a.miscLabel),
 				container.NewVBox(
-					container.NewHBox(widgets.NewHSpace(2), a.playButton),
+					container.NewHBox(widgets.NewHSpace(2), playButton, shuffleBtn),
 					container.NewHBox(widgets.NewHSpace(2), a.toggleFavButton),
 				),
 			),
