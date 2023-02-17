@@ -188,7 +188,7 @@ func (a *AlbumsPage) doSearch(query string) {
 }
 
 func (a *AlbumsPage) onPlayAlbum(albumID string) {
-	a.pm.PlayAlbum(albumID, 0)
+	go a.pm.PlayAlbum(albumID, 0)
 }
 
 func (a *AlbumsPage) onShowArtistPage(artistID string) {
