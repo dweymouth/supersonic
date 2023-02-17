@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"runtime"
 	"strconv"
 	"supersonic/ui/layouts"
 	"supersonic/ui/os"
@@ -146,11 +147,24 @@ func (t *Tracklist) onPlayTrackAt(idx int) {
 	}
 }
 
-func (t *Tracklist) onSelectTrack(idx int) {
+// Workaround for https://github.com/dweymouth/supersonic/issues/45
+// On Linux, tracklist selection will always operate in ctrl+click mode
+// as this allows multi-select without getting 'stuck' in shift mode
+func (t *Tracklist) modifiers() (fyne.KeyModifier, bool) {
+	if runtime.GOOS == "linux" {
+		return os.ControlModifier, true
+	}
 	if d, ok := fyne.CurrentApp().Driver().(desktop.Driver); ok {
-		if d.ActiveKeyModifiers()&os.ControlModifier != 0 {
+		return d.ActiveKeyModifiers(), true
+	}
+	return 0, false
+}
+
+func (t *Tracklist) onSelectTrack(idx int) {
+	if mod, ok := t.modifiers(); ok {
+		if mod&os.ControlModifier != 0 {
 			t.selectionMgr.SelectAddOrRemove(idx)
-		} else if (d.ActiveKeyModifiers() & fyne.KeyModifierShift) != 0 {
+		} else if mod&fyne.KeyModifierShift != 0 {
 			t.selectionMgr.SelectRange(idx)
 		} else {
 			t.selectionMgr.Select(idx)
