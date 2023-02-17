@@ -18,6 +18,7 @@ type GenrePage struct {
 
 	genre      string
 	im         *backend.ImageManager
+	pm         *backend.PlaybackManager
 	lm         *backend.LibraryManager
 	nav        func(Route)
 	grid       *widgets.AlbumGrid
@@ -31,9 +32,10 @@ type GenrePage struct {
 	container *fyne.Container
 }
 
-func NewGenrePage(genre string, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *GenrePage {
+func NewGenrePage(genre string, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *GenrePage {
 	g := &GenrePage{
 		genre: genre,
+		pm:    pm,
 		lm:    lm,
 		im:    im,
 		nav:   nav,
@@ -74,6 +76,7 @@ func (g *GenrePage) createContainer(searchGrid bool) {
 func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g := &GenrePage{
 		genre: saved.genre,
+		pm:    saved.pm,
 		lm:    saved.lm,
 		im:    saved.im,
 		nav:   saved.nav,
@@ -121,6 +124,7 @@ func (g *GenrePage) Save() SavedPage {
 	sg := &savedGenrePage{
 		genre:      g.genre,
 		searchText: g.searchText,
+		pm:         g.pm,
 		lm:         g.lm,
 		im:         g.im,
 		nav:        g.nav,
@@ -139,9 +143,7 @@ func (g *GenrePage) SearchWidget() fyne.Focusable {
 }
 
 func (a *GenrePage) onPlayAlbum(albumID string) {
-	if a.OnPlayAlbum != nil {
-		a.OnPlayAlbum(albumID, 0)
-	}
+	go a.pm.PlayAlbum(albumID, 0)
 }
 
 func (a *GenrePage) onShowArtistPage(artistID string) {
@@ -184,6 +186,7 @@ func (g *GenrePage) doSearch(query string) {
 type savedGenrePage struct {
 	genre           string
 	searchText      string
+	pm              *backend.PlaybackManager
 	lm              *backend.LibraryManager
 	im              *backend.ImageManager
 	nav             func(Route)

@@ -67,7 +67,7 @@ func NewPlaylistPage(
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
 		nil, nil, nil, container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, a.tracklist))
-	a.loadAsync()
+	go a.load()
 	return a
 }
 
@@ -95,7 +95,7 @@ func (a *PlaylistPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *su
 }
 
 func (a *PlaylistPage) Reload() {
-	a.loadAsync()
+	go a.load()
 }
 
 func (a *PlaylistPage) Tapped(*fyne.PointEvent) {
@@ -107,21 +107,21 @@ func (a *PlaylistPage) SelectAll() {
 }
 
 func (a *PlaylistPage) onPlayTrackAt(tracknum int) {
-	a.pm.PlayPlaylist(a.playlistID, tracknum)
+	a.pm.LoadTracks(a.tracklist.Tracks, false, false)
+	a.pm.PlayTrackAt(tracknum)
 }
 
-func (a *PlaylistPage) loadAsync() {
-	go func() {
-		playlist, err := a.sm.Server.GetPlaylist(a.playlistID)
-		if err != nil {
-			log.Printf("Failed to get playlist: %s", err.Error())
-			return
-		}
-		a.tracklist.Tracks = playlist.Entry
-		a.tracklist.SetNowPlaying(a.nowPlayingID)
-		a.tracklist.Refresh()
-		a.header.Update(playlist)
-	}()
+// should be called asynchronously
+func (a *PlaylistPage) load() {
+	playlist, err := a.sm.Server.GetPlaylist(a.playlistID)
+	if err != nil {
+		log.Printf("Failed to get playlist: %s", err.Error())
+		return
+	}
+	a.tracklist.Tracks = playlist.Entry
+	a.tracklist.SetNowPlaying(a.nowPlayingID)
+	a.tracklist.Refresh()
+	a.header.Update(playlist)
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {

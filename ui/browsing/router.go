@@ -97,7 +97,7 @@ func (r Router) CreatePage(rte Route) Page {
 	case Favorites:
 		return NewFavoritesPage(r.App.ServerManager, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Genre:
-		return NewGenrePage(rte.Arg, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
+		return NewGenrePage(rte.Arg, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Genres:
 		return NewArtistsGenresPage(true, r.App.ServerManager, r.OpenRoute)
 	case NowPlaying:
