@@ -182,10 +182,10 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		page.onPlayTrackAt(0)
 	})
 	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", res.ResShuffleInvertSvg, func() {
-		page.pm.LoadAlbum(page.albumID, false, true)
+		page.pm.LoadTracks(page.tracklist.Tracks, false, true)
 		page.pm.PlayFromBeginning()
 	})
-	a.toggleFavButton = widgets.NewFavoriteButton(a.toggleFavorited)
+	a.toggleFavButton = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 
 	// Todo: there's got to be a way to make this less convoluted. Custom layout?
 	a.container = container.NewBorder(nil, nil, a.cover, nil,
