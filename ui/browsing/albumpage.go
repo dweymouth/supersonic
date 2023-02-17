@@ -77,7 +77,7 @@ func NewAlbumPage(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
 		nil, nil, nil, container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, a.tracklist))
 
-	a.loadAsync()
+	go a.load()
 	return a
 }
 
@@ -105,7 +105,7 @@ func (a *AlbumPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subso
 }
 
 func (a *AlbumPage) Reload() {
-	a.loadAsync()
+	go a.load()
 }
 
 func (a *AlbumPage) Tapped(*fyne.PointEvent) {
@@ -117,20 +117,20 @@ func (a *AlbumPage) SelectAll() {
 }
 
 func (a *AlbumPage) onPlayTrackAt(tracknum int) {
-	a.pm.PlayAlbum(a.albumID, tracknum)
+	a.pm.LoadTracks(a.tracklist.Tracks, false, false)
+	a.pm.PlayTrackAt(tracknum)
 }
 
-func (a *AlbumPage) loadAsync() {
-	go func() {
-		album, err := a.lm.GetAlbum(a.albumID)
-		if err != nil {
-			log.Printf("Failed to get album: %s", err.Error())
-			return
-		}
-		a.header.Update(album, a.im)
-		a.tracklist.Tracks = album.Song
-		a.tracklist.SetNowPlaying(a.nowPlayingID)
-	}()
+// should be called asynchronously
+func (a *AlbumPage) load() {
+	album, err := a.lm.GetAlbum(a.albumID)
+	if err != nil {
+		log.Printf("Failed to get album: %s", err.Error())
+		return
+	}
+	a.header.Update(album, a.im)
+	a.tracklist.Tracks = album.Song
+	a.tracklist.SetNowPlaying(a.nowPlayingID)
 }
 
 type AlbumPageHeader struct {
@@ -156,7 +156,7 @@ type AlbumPageHeader struct {
 func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a := &AlbumPageHeader{page: page}
 	a.ExtendBaseWidget(a)
-	a.cover = widgets.NewTappableImage(a.showPopUpCover)
+	a.cover = widgets.NewTappableImage(func() { go a.showPopUpCover() })
 	a.cover.FillMode = canvas.ImageFillContain
 	a.cover.SetMinSize(fyne.NewSize(225, 225))
 	// due to cache warming we can probably immediately set the cover

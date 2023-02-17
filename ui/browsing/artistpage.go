@@ -54,7 +54,7 @@ func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.Image
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
 		nil, nil, nil, layout.NewSpacer())
-	a.loadAsync()
+	go a.load()
 	return a
 }
 
@@ -67,7 +67,7 @@ func (a *ArtistPage) SetPlayAlbumCallback(cb func(string, int)) {
 }
 
 func (a *ArtistPage) Reload() {
-	a.loadAsync()
+	go a.load()
 }
 
 func (a *ArtistPage) Save() SavedPage {
@@ -85,25 +85,24 @@ func (a *ArtistPage) onShowAlbumPage(albumID string) {
 	a.nav(AlbumRoute(albumID))
 }
 
-func (a *ArtistPage) loadAsync() {
-	go func() {
-		artist, err := a.sm.Server.GetArtist(a.artistID)
-		if err != nil {
-			log.Printf("Failed to get artist: %s", err.Error())
-			return
-		}
-		a.header.Update(artist)
-		ag := widgets.NewFixedAlbumGrid(artist.Album, a.im, true /*showYear*/)
-		ag.OnPlayAlbum = a.onPlayAlbum
-		ag.OnShowAlbumPage = a.onShowAlbumPage
-		a.container.Objects[0] = ag
-		a.container.Refresh()
-		info, err := a.sm.Server.GetArtistInfo2(a.artistID, nil)
-		if err != nil {
-			log.Printf("Failed to get artist info: %s", err.Error())
-		}
-		a.header.UpdateInfo(info)
-	}()
+// should be called asynchronously
+func (a *ArtistPage) load() {
+	artist, err := a.sm.Server.GetArtist(a.artistID)
+	if err != nil {
+		log.Printf("Failed to get artist: %s", err.Error())
+		return
+	}
+	a.header.Update(artist)
+	ag := widgets.NewFixedAlbumGrid(artist.Album, a.im, true /*showYear*/)
+	ag.OnPlayAlbum = a.onPlayAlbum
+	ag.OnShowAlbumPage = a.onShowAlbumPage
+	a.container.Objects[0] = ag
+	a.container.Refresh()
+	info, err := a.sm.Server.GetArtistInfo2(a.artistID, nil)
+	if err != nil {
+		log.Printf("Failed to get artist info: %s", err.Error())
+	}
+	a.header.UpdateInfo(info)
 }
 
 func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {

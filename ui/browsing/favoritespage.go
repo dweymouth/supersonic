@@ -140,7 +140,7 @@ func (a *FavoritesPage) doSearch(query string) {
 }
 
 func (a *FavoritesPage) onPlayAlbum(albumID string) {
-	a.pm.PlayAlbum(albumID, 0)
+	go a.pm.PlayAlbum(albumID, 0)
 }
 
 func (a *FavoritesPage) onShowAlbumPage(albumID string) {
