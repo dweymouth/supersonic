@@ -51,11 +51,12 @@ func NewArtistsGenresPage(isGenresPage bool, sm *backend.ServerManager, nav func
 		}
 	}
 	a.buildContainer()
-	go a.loadAsync()
+	go a.load()
 	return a
 }
 
-func (a *ArtistsGenresPage) loadAsync() {
+// should be called asynchronously
+func (a *ArtistsGenresPage) load() {
 	if a.isGenresPage {
 		genres, err := a.sm.Server.GetGenres()
 		if err != nil {
@@ -80,7 +81,7 @@ func (a *ArtistsGenresPage) Route() Route {
 }
 
 func (a *ArtistsGenresPage) Reload() {
-	go a.loadAsync()
+	go a.load()
 }
 
 func (a *ArtistsGenresPage) Save() SavedPage {

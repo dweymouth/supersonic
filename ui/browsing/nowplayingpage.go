@@ -52,7 +52,7 @@ func NewNowPlayingPage(
 	a.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
 	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 		container.NewBorder(a.title, nil, nil, nil, a.tracklist))
-	a.loadAsync()
+	a.load()
 	return a
 }
 
@@ -88,7 +88,7 @@ func (a *NowPlayingPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *
 }
 
 func (a *NowPlayingPage) Reload() {
-	a.loadAsync()
+	a.load()
 }
 
 func (a *NowPlayingPage) onPlayTrackAt(tracknum int) {
@@ -98,15 +98,14 @@ func (a *NowPlayingPage) onPlayTrackAt(tracknum int) {
 func (a *NowPlayingPage) onRemoveSelectedFromQueue() {
 	a.pm.RemoveTracksFromQueue(a.tracklist.SelectedTrackIndexes())
 	a.tracklist.UnselectAll()
-	go a.Reload()
+	a.Reload()
 }
 
-func (a *NowPlayingPage) loadAsync() {
-	go func() {
-		queue := a.pm.GetPlayQueue()
-		a.tracklist.Tracks = queue
-		a.tracklist.SetNowPlaying(a.nowPlayingID)
-	}()
+// does not make calls to server - can safely be run in UI callbacks
+func (a *NowPlayingPage) load() {
+	queue := a.pm.GetPlayQueue()
+	a.tracklist.Tracks = queue
+	a.tracklist.SetNowPlaying(a.nowPlayingID)
 }
 
 func (s *nowPlayingPageState) Restore() Page {
