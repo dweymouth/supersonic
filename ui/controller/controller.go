@@ -6,6 +6,7 @@ import (
 	"supersonic/backend"
 	"supersonic/ui/dialogs"
 	"supersonic/ui/util"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -43,16 +44,20 @@ func (m Controller) PromptForFirstServer() {
 	d := dialogs.NewAddEditServerDialog("Connect to Server", nil)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func() {
-		if m.testConnectionAndUpdateDialogError(d) {
-			// connection is good
-			pop.Hide()
-			server := m.App.Config.AddServer(d.Nickname, d.Host, d.Username)
-			if err := m.App.ServerManager.SetServerPassword(server, d.Password); err != nil {
-				log.Printf("error setting keyring credentials: %v", err)
-				// TODO: handle?
+		d.DisableSubmit()
+		go func() {
+			if m.testConnectionAndUpdateDialogText(d) {
+				// connection is good
+				pop.Hide()
+				server := m.App.Config.AddServer(d.Nickname, d.Host, d.Username)
+				if err := m.App.ServerManager.SetServerPassword(server, d.Password); err != nil {
+					log.Printf("error setting keyring credentials: %v", err)
+					// TODO: handle?
+				}
+				m.DoConnectToServerWorkflow(server)
 			}
-			m.DoConnectToServerWorkflow(server)
-		}
+			d.EnableSubmit()
+		}()
 	}
 	pop.Show()
 }
@@ -110,29 +115,38 @@ func (m Controller) PromptForLoginAndConnect() {
 	d := dialogs.NewLoginDialog(m.App.Config.Servers)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func(server *backend.ServerConfig, password string) {
-		err := m.App.ServerManager.TestConnectionAndAuth(server.Hostname, server.Username, password)
-		if err == backend.ErrUnreachable {
-			d.SetErrorText("Server unreachable")
-		} else if err != nil {
-			d.SetErrorText("Authentication failed")
-		} else {
-			pop.Hide()
-			m.trySetPasswordAndConnectToServer(server, password)
-		}
+		d.DisableSubmit()
+		d.SetInfoText("Testing connection...")
+		go func() {
+			err := m.App.ServerManager.TestConnectionAndAuth(server.Hostname, server.Username, password, 5*time.Second)
+			if err == backend.ErrUnreachable {
+				d.SetErrorText("Server unreachable")
+			} else if err != nil {
+				d.SetErrorText("Authentication failed")
+			} else {
+				pop.Hide()
+				m.trySetPasswordAndConnectToServer(server, password)
+			}
+			d.EnableSubmit()
+		}()
 	}
 	d.OnEditServer = func(server *backend.ServerConfig) {
 		pop.Hide()
 		editD := dialogs.NewAddEditServerDialog("Edit server", server)
 		editPop := widget.NewModalPopUp(editD, m.MainWindow.Canvas())
 		editD.OnSubmit = func() {
-			if m.testConnectionAndUpdateDialogError(editD) {
-				// connection is good
-				editPop.Hide()
-				server.Hostname = editD.Host
-				server.Nickname = editD.Nickname
-				server.Username = editD.Username
-				m.trySetPasswordAndConnectToServer(server, editD.Password)
-			}
+			d.DisableSubmit()
+			go func() {
+				if m.testConnectionAndUpdateDialogText(editD) {
+					// connection is good
+					editPop.Hide()
+					server.Hostname = editD.Host
+					server.Nickname = editD.Nickname
+					server.Username = editD.Username
+					m.trySetPasswordAndConnectToServer(server, editD.Password)
+				}
+				d.EnableSubmit()
+			}()
 		}
 		editPop.Show()
 	}
@@ -150,7 +164,7 @@ func (c Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfi
 }
 
 func (c Controller) tryConnectToServer(server *backend.ServerConfig, password string) error {
-	if err := c.App.ServerManager.TestConnectionAndAuth(server.Hostname, server.Username, password); err != nil {
+	if err := c.App.ServerManager.TestConnectionAndAuth(server.Hostname, server.Username, password, 10*time.Second); err != nil {
 		return err
 	}
 	if err := c.App.ServerManager.ConnectToServer(server, password); err != nil {
@@ -160,8 +174,9 @@ func (c Controller) tryConnectToServer(server *backend.ServerConfig, password st
 	return nil
 }
 
-func (c Controller) testConnectionAndUpdateDialogError(dlg *dialogs.AddEditServerDialog) bool {
-	err := c.App.ServerManager.TestConnectionAndAuth(dlg.Host, dlg.Username, dlg.Password)
+func (c Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
+	dlg.SetInfoText("Testing connection...")
+	err := c.App.ServerManager.TestConnectionAndAuth(dlg.Host, dlg.Username, dlg.Password, 5*time.Second)
 	if err == backend.ErrUnreachable {
 		dlg.SetErrorText("Could not reach server (wrong hostname?)")
 		return false

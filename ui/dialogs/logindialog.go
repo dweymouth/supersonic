@@ -16,10 +16,11 @@ type LoginDialog struct {
 	OnSubmit     func(server *backend.ServerConfig, password string)
 	OnEditServer func(server *backend.ServerConfig)
 
-	servers       []*backend.ServerConfig
-	serverSelect  *widget.Select
-	passField     *widget.Entry
-	errPromptText *widget.RichText
+	servers      []*backend.ServerConfig
+	serverSelect *widget.Select
+	passField    *widget.Entry
+	promptText   *widget.RichText
+	submitBtn    *widget.Button
 
 	container *fyne.Container
 }
@@ -39,11 +40,11 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 	l.serverSelect.SetSelectedIndex(0)
 	editBtn := widget.NewButtonWithIcon("", theme.DocumentCreateIcon(), l.onEditServer)
 	l.passField = widget.NewPasswordEntry()
-	okBtn := widget.NewButton("OK", l.onSubmit)
+	l.submitBtn = widget.NewButton("OK", l.onSubmit)
 
-	l.errPromptText = widget.NewRichTextWithText("")
-	l.errPromptText.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameError
-	l.errPromptText.Hidden = true
+	l.promptText = widget.NewRichTextWithText("")
+	l.promptText.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameError
+	l.promptText.Hidden = true
 
 	l.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
@@ -53,19 +54,39 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 			widget.NewLabel("Password"),
 			l.passField),
 		widget.NewSeparator(),
-		container.NewHBox(l.errPromptText, layout.NewSpacer(), okBtn),
+		container.NewHBox(l.promptText, layout.NewSpacer(), l.submitBtn),
 	)
 	return l
 }
 
+func (l *LoginDialog) SetInfoText(text string) {
+	l.doSetPromptText(text, theme.ColorNameForeground)
+}
+
 func (l *LoginDialog) SetErrorText(text string) {
-	l.errPromptText.Segments[0].(*widget.TextSegment).Text = text
+	l.doSetPromptText(text, theme.ColorNameError)
+}
+
+func (l *LoginDialog) EnableSubmit() {
+	l.submitBtn.Enable()
+	l.submitBtn.Refresh()
+}
+
+func (l *LoginDialog) DisableSubmit() {
+	l.submitBtn.Disable()
+	l.submitBtn.Refresh()
+}
+
+func (l *LoginDialog) doSetPromptText(text string, color fyne.ThemeColorName) {
+	ts := l.promptText.Segments[0].(*widget.TextSegment)
+	ts.Text = text
+	ts.Style.ColorName = color
 	if text != "" {
-		l.errPromptText.Show()
+		l.promptText.Show()
 	} else {
-		l.errPromptText.Hide()
+		l.promptText.Hide()
 	}
-	l.errPromptText.Refresh()
+	l.promptText.Refresh()
 }
 
 func (l *LoginDialog) CreateRenderer() fyne.WidgetRenderer {

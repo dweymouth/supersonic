@@ -37,15 +37,17 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 	return nil
 }
 
-func (s *ServerManager) TestConnectionAndAuth(hostname, username, password string) error {
+func (s *ServerManager) TestConnectionAndAuth(hostname, username, password string, timeout time.Duration) error {
 	err := ErrUnreachable
 	done := make(chan bool)
 	go func() {
 		_, err = s.testConnectionAndCreateClient(hostname, username, password)
 		close(done)
 	}()
+	t := time.NewTimer(timeout)
+	defer t.Stop()
 	select {
-	case <-time.After(200 * time.Millisecond):
+	case <-t.C:
 		return err
 	case <-done:
 		return err

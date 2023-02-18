@@ -20,8 +20,9 @@ type AddEditServerDialog struct {
 	Password string
 	OnSubmit func()
 
-	errPromptText *widget.RichText
-	container     *fyne.Container
+	submitBtn  *widget.Button
+	promptText *widget.RichText
+	container  *fyne.Container
 }
 
 var _ fyne.Widget = (*AddEditServerDialog)(nil)
@@ -43,15 +44,14 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 	hostField.SetPlaceHolder("http://localhost:4533")
 	userField := widget.NewEntryWithData(binding.BindString(&a.Username))
 	passField := widget.NewPasswordEntry()
-	submit := widget.NewButton("Enter", func() {
+	a.submitBtn = widget.NewButton("Enter", func() {
 		a.Password = passField.Text
 		if a.OnSubmit != nil {
 			a.OnSubmit()
 		}
 	})
-	a.errPromptText = widget.NewRichTextWithText("")
-	a.errPromptText.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameError
-	a.errPromptText.Hidden = true
+	a.promptText = widget.NewRichTextWithText("")
+	a.promptText.Hidden = true
 
 	a.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
@@ -67,21 +67,41 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 		),
 		widget.NewSeparator(),
 		container.NewHBox(
-			a.errPromptText,
+			a.promptText,
 			layout.NewSpacer(),
-			submit),
+			a.submitBtn),
 	)
 	return a
 }
 
+func (a *AddEditServerDialog) SetInfoText(text string) {
+	a.doSetPromptText(text, theme.ColorNameForeground)
+}
+
 func (a *AddEditServerDialog) SetErrorText(text string) {
-	a.errPromptText.Segments[0].(*widget.TextSegment).Text = text
+	a.doSetPromptText(text, theme.ColorNameError)
+}
+
+func (a *AddEditServerDialog) EnableSubmit() {
+	a.submitBtn.Enable()
+	a.submitBtn.Refresh()
+}
+
+func (a *AddEditServerDialog) DisableSubmit() {
+	a.submitBtn.Disable()
+	a.submitBtn.Refresh()
+}
+
+func (a *AddEditServerDialog) doSetPromptText(text string, color fyne.ThemeColorName) {
+	ts := a.promptText.Segments[0].(*widget.TextSegment)
+	ts.Text = text
+	ts.Style.ColorName = color
 	if text != "" {
-		a.errPromptText.Show()
+		a.promptText.Show()
 	} else {
-		a.errPromptText.Hide()
+		a.promptText.Hide()
 	}
-	a.errPromptText.Refresh()
+	a.promptText.Refresh()
 }
 
 func (a *AddEditServerDialog) MinSize() fyne.Size {
