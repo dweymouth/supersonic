@@ -8,7 +8,6 @@ require (
 	github.com/dweymouth/go-subsonic v0.0.0-20230210044542-537b9238299b
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml v1.9.3
-	github.com/wildeyedskies/go-mpv v0.0.0-20221204042335-e8961dc66756
 	github.com/zalando/go-keyring v0.2.1
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
 )

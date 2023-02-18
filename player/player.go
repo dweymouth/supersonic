@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-
-	"github.com/wildeyedskies/go-mpv/mpv"
 )
 
 // Error returned by many Player functions if called before the player has not been initialized.
@@ -43,7 +41,8 @@ const (
 // Player encapsulates the mpv instance and provides functions
 // to control it and to check its status.
 type Player struct {
-	mpv            *mpv.Mpv
+	mpv            libmpv
+	initialized    bool
 	vol            int
 	status         Status
 	seeking        bool
@@ -79,8 +78,11 @@ func NewWithClientName(c string) *Player {
 // Initializes the Player and makes it ready for playback.
 // Most Player functions will return ErrUnitialized if called before Init.
 func (p *Player) Init() error {
-	if p.mpv == nil {
-		m := mpv.Create()
+	if !p.initialized {
+		m, err := CreateMPV()
+		if err != nil {
+			return err
+		}
 		m.SetOptionString("idle", "yes")
 		m.SetOptionString("video", "no")
 		m.SetOptionString("audio-display", "no")
@@ -92,7 +94,7 @@ func (p *Player) Init() error {
 		if p.vol < 0 {
 			p.vol = 100
 		}
-		m.SetOption("volume", mpv.FORMAT_INT64, p.vol)
+		m.SetOption("volume", MPVFormatInt64, p.vol)
 
 		if p.clientName != "" {
 			m.SetOptionString("audio-client-name", p.clientName)
@@ -106,6 +108,7 @@ func (p *Player) Init() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	go p.eventHandler(ctx)
 	p.bgCancel = cancel
+	p.initialized = true
 	return nil
 }
 
@@ -113,7 +116,7 @@ func (p *Player) Init() error {
 // Note that the Player API does not provide methods to read
 // the play queue. Clients are expected to maintain their own play queue model.
 func (p *Player) AppendFile(url string) error {
-	if p.mpv == nil {
+	if !p.initialized {
 		return ErrUnitialized
 	}
 	return p.mpv.Command([]string{"loadfile", url, "append"})
@@ -121,7 +124,7 @@ func (p *Player) AppendFile(url string) error {
 
 // Plays the specified file, clearing the previous play queue, if any.
 func (p *Player) PlayFile(url string) error {
-	if p.mpv == nil {
+	if !p.initialized {
 		return ErrUnitialized
 	}
 	err := p.mpv.Command([]string{"loadfile", url, "replace"})
@@ -133,7 +136,7 @@ func (p *Player) PlayFile(url string) error {
 
 // Removes the item at the given index from the internal playqueue.
 func (p *Player) RemoveTrackAt(idx int) error {
-	if p.mpv == nil {
+	if !p.initialized {
 		return ErrUnitialized
 	}
 	return p.mpv.Command([]string{"playlist-remove", strconv.Itoa(idx)})
@@ -141,7 +144,7 @@ func (p *Player) RemoveTrackAt(idx int) error {
 
 // Stops playback and clears the play queue.
 func (p *Player) Stop() error {
-	if p.mpv == nil {
+	if !p.initialized {
 		return ErrUnitialized
 	}
 	var err error
@@ -161,7 +164,7 @@ func (p *Player) Stop() error {
 
 // Clears the play queue, except for the currently playing file.
 func (p *Player) ClearPlayQueue() error {
-	if p.mpv == nil {
+	if !p.initialized {
 		return ErrUnitialized
 	}
 	return p.mpv.Command([]string{"playlist-clear"})
@@ -170,7 +173,7 @@ func (p *Player) ClearPlayQueue() error {
 // Seeks within the currently playing track.
 // See MPV seek command documentation for more details.
 func (p *Player) Seek(target string, mode SeekMode) error {
-	if p.mpv == nil {
+	if !p.initialized {
 		return ErrUnitialized
 	}
 	p.seeking = true
@@ -184,7 +187,7 @@ func (p *Player) Seek(target string, mode SeekMode) error {
 //
 // Else seeks to the beginning of the previous track.
 func (p *Player) SeekBackOrPrevious() error {
-	if p.mpv == nil {
+	if !p.initialized {
 		return ErrUnitialized
 	}
 
@@ -199,7 +202,7 @@ func (p *Player) SeekBackOrPrevious() error {
 
 // Seeks to the next track in the play queue, if any.
 func (p *Player) SeekNext() error {
-	if p.mpv == nil {
+	if !p.initialized {
 		return ErrUnitialized
 	}
 	return p.mpv.Command([]string{"playlist-next"})
@@ -214,8 +217,8 @@ func (p *Player) SetVolume(vol int) error {
 	} else if vol < 0 {
 		vol = 0
 	}
-	if p.mpv != nil {
-		err := p.mpv.SetProperty("volume", mpv.FORMAT_INT64, vol)
+	if p.initialized {
+		err := p.mpv.SetProperty("volume", MPVFormatInt64, vol)
 		if err == nil {
 			p.vol = vol
 		}
@@ -231,7 +234,7 @@ func (p *Player) GetVolume() int {
 }
 
 func (p *Player) setPaused(paused bool) error {
-	return p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, paused)
+	return p.mpv.SetProperty("pause", MPVFormatFlag, paused)
 }
 
 // Start playback from the first track in the play queue.
@@ -258,7 +261,7 @@ func (p *Player) PlayTrackAt(idx int) error {
 // Begins playback if there is anything in the play queue and player is stopped or paused.
 // If player is playing, pauses playback.
 func (p *Player) PlayPause() error {
-	if p.mpv == nil {
+	if !p.initialized {
 		return ErrUnitialized
 	}
 
@@ -293,12 +296,12 @@ func (p *Player) PlayPause() error {
 
 // Get the current status of the player.
 func (p *Player) GetStatus() Status {
-	if p.mpv == nil {
+	if !p.initialized {
 		return p.status
 	}
 
-	pos, _ := p.mpv.GetProperty("playback-time", mpv.FORMAT_DOUBLE)
-	dur, _ := p.mpv.GetProperty("duration", mpv.FORMAT_DOUBLE)
+	pos, _ := p.mpv.GetProperty("playback-time", MPVFormatDouble)
+	dur, _ := p.mpv.GetProperty("duration", MPVFormatDouble)
 	if pos != nil {
 		p.status.TimePos = pos.(float64)
 	}
@@ -312,7 +315,7 @@ func (p *Player) GetStatus() Status {
 }
 
 func (p *Player) getInt64Property(propName string) (int64, error) {
-	playpos, err := p.mpv.GetProperty(propName, mpv.FORMAT_INT64)
+	playpos, err := p.mpv.GetProperty(propName, MPVFormatInt64)
 	if err != nil {
 		return -1, err
 	}
@@ -359,10 +362,10 @@ func (p *Player) Destroy() {
 	if p.bgCancel != nil {
 		p.bgCancel()
 	}
-	if p.mpv != nil {
+	if p.initialized {
 		p.mpv.Command([]string{"stop"})
 		p.mpv.TerminateDestroy()
-		p.mpv = nil
+		p.initialized = false
 	}
 }
 
@@ -405,19 +408,19 @@ func (p *Player) eventHandler(ctx context.Context) {
 			return
 		default:
 			e := p.mpv.WaitEvent(1 /*timeout seconds*/)
-			if e.Event_Id != mpv.EVENT_NONE {
+			if e.ID != MPVEventNone {
 				//log.Printf("mpv event: %+v\n", e)
 			}
-			switch e.Event_Id {
-			case mpv.EVENT_PLAYBACK_RESTART:
+			switch e.ID {
+			case MPVEventPlaybackRestart:
 				if p.seeking {
 					p.seeking = false
 				}
-			case mpv.EVENT_SEEK:
+			case MPVEventSeek:
 				for _, cb := range p.onSeek {
 					cb()
 				}
-			case mpv.EVENT_FILE_LOADED:
+			case MPVEventFileLoaded:
 				if p.status.State == Paused {
 					// seek while paused switches to a new file
 					// mpv does not fire seek event in this case
@@ -433,7 +436,7 @@ func (p *Player) eventHandler(ctx context.Context) {
 						}
 					}
 				}
-			case mpv.EVENT_IDLE:
+			case MPVEventIdle:
 				p.status.Duration = 0
 				p.status.TimePos = 0
 				p.setState(Stopped)
