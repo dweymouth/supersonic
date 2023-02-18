@@ -46,7 +46,7 @@ func NewFavoritesPage(sm *backend.ServerManager, pm *backend.PlaybackManager, lm
 	a.grid.OnShowArtistPage = a.onShowArtistPage
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
-	a.createContainer()
+	a.createContainer(false)
 	return a
 }
 
@@ -57,11 +57,15 @@ func (a *FavoritesPage) createTitle() {
 	}
 }
 
-func (a *FavoritesPage) createContainer() {
+func (a *FavoritesPage) createContainer(searchGrid bool) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
+	gr := a.grid
+	if searchGrid {
+		gr = a.searchGrid
+	}
 	a.container = container.NewBorder(
 		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
-		nil, nil, nil, a.grid)
+		nil, nil, nil, gr)
 }
 
 func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
@@ -80,7 +84,11 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	a.grid.OnShowArtistPage = a.onShowArtistPage
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
-	a.createContainer()
+	a.searcher.Entry.Text = saved.searchText
+	if saved.searchText != "" {
+		a.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
+	}
+	a.createContainer(saved.searchText != "")
 
 	return a
 }
@@ -90,18 +98,27 @@ func (a *FavoritesPage) Route() Route {
 }
 
 func (a *FavoritesPage) Reload() {
-	a.grid.Reset(a.lm.StarredIter())
+	if a.searchText != "" {
+		a.doSearch(a.searchText)
+	} else {
+		a.grid.Reset(a.lm.StarredIter())
+	}
 }
 
 func (a *FavoritesPage) Save() SavedPage {
-	return &savedFavoritesPage{
-		pm:        a.pm,
-		sm:        a.sm,
-		im:        a.im,
-		lm:        a.lm,
-		nav:       a.nav,
-		gridState: a.grid.SaveToState(),
+	sf := &savedFavoritesPage{
+		pm:         a.pm,
+		sm:         a.sm,
+		im:         a.im,
+		lm:         a.lm,
+		nav:        a.nav,
+		searchText: a.searchText,
+		gridState:  a.grid.SaveToState(),
 	}
+	if a.searchGrid != nil {
+		sf.searchGridState = a.searchGrid.SaveToState()
+	}
+	return sf
 }
 
 var _ Searchable = (*FavoritesPage)(nil)
@@ -157,12 +174,14 @@ func (a *FavoritesPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type savedFavoritesPage struct {
-	pm        *backend.PlaybackManager
-	sm        *backend.ServerManager
-	im        *backend.ImageManager
-	lm        *backend.LibraryManager
-	gridState widgets.AlbumGridState
-	nav       func(Route)
+	pm              *backend.PlaybackManager
+	sm              *backend.ServerManager
+	im              *backend.ImageManager
+	lm              *backend.LibraryManager
+	gridState       widgets.AlbumGridState
+	searchGridState widgets.AlbumGridState
+	searchText      string
+	nav             func(Route)
 }
 
 func (s *savedFavoritesPage) Restore() Page {
