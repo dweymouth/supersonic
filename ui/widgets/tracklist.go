@@ -22,6 +22,7 @@ const (
 	ColumnArtist  = "Artist"
 	ColumnAlbum   = "Album"
 	ColumnTime    = "Time"
+	ColumnYear    = "Year"
 	ColumnPlays   = "Plays"
 	ColumnBitrate = "Bitrate"
 )
@@ -53,11 +54,11 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
-	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 7)}
+	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 8)}
 
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
-	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 65, 75})
+	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 60, 65, 75})
 	t.buildHeader()
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	playingIcon := container.NewCenter(container.NewHBox(NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
@@ -86,13 +87,14 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 
 func (t *Tracklist) buildHeader() {
 	t.hdr = NewListHeader([]ListColumn{
-		{"#", true, false},
-		{"Title", false, false},
-		{"Artist", false, true},
-		{"Album", false, true},
-		{"Time", true, true},
-		{"Plays", true, true},
-		{"Bitrate", true, true}},
+		{Text: "#", AlignTrailing: true, CanToggleVisible: false},
+		{Text: "Title", AlignTrailing: false, CanToggleVisible: false},
+		{Text: "Artist", AlignTrailing: false, CanToggleVisible: true},
+		{Text: "Album", AlignTrailing: false, CanToggleVisible: true},
+		{Text: "Time", AlignTrailing: true, CanToggleVisible: true},
+		{Text: "Year", AlignTrailing: true, CanToggleVisible: true},
+		{Text: "Plays", AlignTrailing: true, CanToggleVisible: true},
+		{Text: "Bitrate", AlignTrailing: true, CanToggleVisible: true}},
 		t.colLayout)
 }
 
@@ -264,10 +266,12 @@ func ColNumber(colName string) int {
 		return 3
 	case ColumnTime:
 		return 4
-	case ColumnPlays:
+	case ColumnYear:
 		return 5
-	case ColumnBitrate:
+	case ColumnPlays:
 		return 6
+	case ColumnBitrate:
+		return 7
 	default:
 		log.Printf("error: Tracklist: invalid column name %s", colName)
 		return -100
@@ -284,8 +288,10 @@ func colName(i int) string {
 	case 4:
 		return ColumnTime
 	case 5:
-		return ColumnPlays
+		return ColumnYear
 	case 6:
+		return ColumnPlays
+	case 7:
 		return ColumnBitrate
 	default:
 		return ""
@@ -308,6 +314,7 @@ type TrackRow struct {
 	artist  *widget.RichText
 	album   *widget.RichText
 	dur     *widget.RichText
+	year    *widget.RichText
 	bitrate *widget.RichText
 	plays   *widget.RichText
 
@@ -333,6 +340,8 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.album.Wrapping = fyne.TextTruncate
 	t.dur = widget.NewRichTextWithText("")
 	t.dur.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
+	t.year = widget.NewRichTextWithText("")
+	t.year.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.plays = widget.NewRichTextWithText("")
 	t.plays.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.bitrate = widget.NewRichTextWithText("")
@@ -342,7 +351,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.selectionRect.Hidden = true
 	t.container = container.NewMax(t.selectionRect,
 		container.New(tracklist.colLayout,
-			t.num, t.name, t.artist, t.album, t.dur, t.plays, t.bitrate))
+			t.num, t.name, t.artist, t.album, t.dur, t.year, t.plays, t.bitrate))
 	return t
 }
 
@@ -360,6 +369,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.artist.Segments[0].(*widget.TextSegment).Text = tr.Artist
 		t.album.Segments[0].(*widget.TextSegment).Text = tr.Album
 		t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
+		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
 		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
 		t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
 
@@ -367,6 +377,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.artist.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.album.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.dur.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+		t.year.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.plays.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.bitrate.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 
@@ -380,6 +391,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	t.artist.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnArtist)]
 	t.album.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnAlbum)]
 	t.dur.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnTime)]
+	t.year.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnYear)]
 	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
 	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]
 
