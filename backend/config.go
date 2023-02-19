@@ -20,9 +20,24 @@ type AppConfig struct {
 	WindowHeight int
 }
 
+type AlbumPageConfig struct {
+	TracklistColumns []string
+}
+
+type NowPlayingPageConfig struct {
+	TracklistColumns []string
+}
+
+type PlaylistPageConfig struct {
+	TracklistColumns []string
+}
+
 type Config struct {
-	Application AppConfig
-	Servers     []*ServerConfig
+	Application    AppConfig
+	Servers        []*ServerConfig
+	AlbumPage      AlbumPageConfig
+	NowPlayingPage NowPlayingPageConfig
+	PlaylistPage   PlaylistPageConfig
 }
 
 func DefaultConfig() *Config {
@@ -30,6 +45,15 @@ func DefaultConfig() *Config {
 		Application: AppConfig{
 			WindowWidth:  1000,
 			WindowHeight: 800,
+		},
+		AlbumPage: AlbumPageConfig{
+			TracklistColumns: []string{"Artist", "Time", "Plays"},
+		},
+		NowPlayingPage: NowPlayingPageConfig{
+			TracklistColumns: []string{"Artist", "Album", "Time"},
+		},
+		PlaylistPage: PlaylistPageConfig{
+			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 		},
 	}
 }

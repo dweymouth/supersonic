@@ -63,7 +63,8 @@ func NewArtistGenrePlaylist(items []ArtistGenrePlaylistItemModel) *ArtistGenrePl
 		columnsLayout: layouts.NewColumnsLayout([]float32{-1, 125, 125}),
 	}
 	a.ExtendBaseWidget(a)
-	a.hdr = NewListHeader([]ListColumn{{"Name", false}, {"Album Count", true}, {"Track Count", true}}, a.columnsLayout)
+	a.hdr = NewListHeader([]ListColumn{
+		{"Name", false, false}, {"Album Count", true, false}, {"Track Count", true, false}}, a.columnsLayout)
 	a.list = widget.NewList(
 		func() int { return len(a.Items) },
 		func() fyne.CanvasObject {

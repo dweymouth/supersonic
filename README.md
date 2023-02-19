@@ -17,9 +17,9 @@ Slightly outdated screenshots of Supersonic running against the Navidrome <a hre
 * [x] Album and playlist views with tracklist and cover image
 * [x] Artist view with biography, image, similar artists, and discography
 * [x] Create, play, and update playlists
+* [x] Configure visible tracklist columns
 * [x] Set/unset favorite and browse by favorites (albums only; artists+songs coming soon)
 * [x] View and edit play queue (add and remove tracks; reorder support coming soon)
-* [ ] Configure additional columns in tracklist view (play count, bit rate, etc) (planned)
 * [ ] Shuffle and repeat playback modes (planned)
 * [ ] Set and view five-star rating (planned)
 * [ ] Set filters in albums browsing view (planned)

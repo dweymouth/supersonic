@@ -87,7 +87,7 @@ func NewRouter(app *backend.App, controller controller.Controller, nav Navigatio
 func (r Router) CreatePage(rte Route) Page {
 	switch rte.Page {
 	case Album:
-		return NewAlbumPage(rte.Arg, r.App.ServerManager, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, r.Controller, r.OpenRoute)
+		return NewAlbumPage(rte.Arg, &r.App.Config.AlbumPage, r.App.ServerManager, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, r.Controller, r.OpenRoute)
 	case Albums:
 		return NewAlbumsPage("Albums", rte.Arg, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, r.OpenRoute)
 	case Artist:
@@ -101,9 +101,9 @@ func (r Router) CreatePage(rte Route) Page {
 	case Genres:
 		return NewArtistsGenresPage(true, r.App.ServerManager, r.OpenRoute)
 	case NowPlaying:
-		return NewNowPlayingPage(r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.OpenRoute)
+		return NewNowPlayingPage(r.Controller, &r.App.Config.NowPlayingPage, r.App.ServerManager, r.App.PlaybackManager, r.OpenRoute)
 	case Playlist:
-		return NewPlaylistPage(rte.Arg, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager, r.OpenRoute)
+		return NewPlaylistPage(rte.Arg, &r.App.Config.PlaylistPage, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager, r.OpenRoute)
 	case Playlists:
 		return NewPlaylistsPage(r.App.ServerManager, r.OpenRoute)
 	}

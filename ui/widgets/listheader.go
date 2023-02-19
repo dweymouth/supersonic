@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"log"
 	"supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
@@ -11,18 +12,23 @@ import (
 )
 
 type ListColumn struct {
-	Text          string
-	AlignTrailing bool
+	Text             string
+	AlignTrailing    bool
+	CanToggleVisible bool
 }
 
 type ListHeader struct {
 	widget.BaseWidget
 
+	OnColumnVisibilityChanged func(int, bool)
+
 	columns       []ListColumn
+	columnVisible []bool
 	columnsLayout *layouts.ColumnsLayout
 
 	columnsContainer *fyne.Container
 	container        *fyne.Container
+	popUpMenu        *fyne.Container
 }
 
 func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader {
@@ -31,6 +37,10 @@ func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader
 		columnsLayout:    layout,
 		columnsContainer: container.New(layout),
 	}
+	l.columnVisible = make([]bool, len(cols))
+	for i, _ := range l.columnVisible {
+		l.columnVisible[i] = true
+	}
 	l.container = container.NewMax(canvas.NewRectangle(theme.BackgroundColor()), l.columnsContainer)
 	l.ExtendBaseWidget(l)
 	l.buildColumns()
@@ -38,11 +48,16 @@ func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader
 }
 
 func (l *ListHeader) SetColumnVisible(colNum int, visible bool) {
+	if colNum >= len(l.columns) {
+		log.Println("error: ListHeader.SetColumnVisible: column index out of range")
+		return
+	}
 	if visible {
 		l.columnsContainer.Objects[colNum].Show()
 	} else {
 		l.columnsContainer.Objects[colNum].Hide()
 	}
+	l.columnVisible[colNum] = visible
 }
 
 func (l *ListHeader) buildColumns() {
@@ -60,4 +75,41 @@ func (l *ListHeader) buildColumns() {
 
 func (l *ListHeader) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(l.container)
+}
+
+func (l *ListHeader) TappedSecondary(e *fyne.PointEvent) {
+	l.setupPopUpMenu()
+	if len(l.popUpMenu.Objects) == 0 {
+		return
+	}
+	pop := widget.NewPopUp(l.popUpMenu, fyne.CurrentApp().Driver().CanvasForObject(l))
+	pop.ShowAtPosition(e.AbsolutePosition)
+}
+
+func (l *ListHeader) setupPopUpMenu() {
+	if l.popUpMenu == nil {
+		l.popUpMenu = container.New(&layouts.VboxCustomPadding{ExtraPad: -10})
+		for i, c := range l.columns {
+			if c.CanToggleVisible {
+				l.popUpMenu.Add(widget.NewCheck(c.Text, l.createOnChangedCallbk(i)))
+			}
+		}
+	}
+	objIdx := 0
+	for i, col := range l.columns {
+		if col.CanToggleVisible {
+			l.popUpMenu.Objects[objIdx].(*widget.Check).Checked = l.columnVisible[i]
+			objIdx++
+		}
+	}
+}
+
+func (l *ListHeader) createOnChangedCallbk(colNum int) func(bool) {
+	return func(val bool) {
+		l.columnVisible[colNum] = val
+		l.SetColumnVisible(colNum, val)
+		if l.OnColumnVisibilityChanged != nil {
+			l.OnColumnVisibilityChanged(colNum, val)
+		}
+	}
 }

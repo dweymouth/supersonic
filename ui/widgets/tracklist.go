@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"log"
 	"runtime"
 	"strconv"
 	"supersonic/ui/layouts"
@@ -17,14 +18,12 @@ import (
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
-type TracklistColumn string
-
 const (
-	ColumnArtist  TracklistColumn = "Artist"
-	ColumnAlbum   TracklistColumn = "Album"
-	ColumnTime    TracklistColumn = "Time"
-	ColumnPlays   TracklistColumn = "Plays"
-	ColumnBitrate TracklistColumn = "Bitrate"
+	ColumnArtist  = "Artist"
+	ColumnAlbum   = "Album"
+	ColumnTime    = "Time"
+	ColumnPlays   = "Plays"
+	ColumnBitrate = "Bitrate"
 )
 
 type Tracklist struct {
@@ -54,14 +53,13 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
-	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 5)}
+	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 7)}
 
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
 	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 65, 75})
-	t.hdr = NewListHeader([]ListColumn{
-		{"#", true}, {"Title", false}, {"Artist", false}, {"Album", false}, {"Time", true}, {"Plays", true}, {"Bitrate", true}},
-		t.colLayout)
+	t.buildHeader()
+	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	playingIcon := container.NewCenter(container.NewHBox(NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
 	t.list = widget.NewList(
 		func() int { return len(t.Tracks) },
@@ -86,13 +84,48 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	return t
 }
 
-func (t *Tracklist) SetVisibleColumns(cols []TracklistColumn) {
-	for i := range t.visibleColumns {
+func (t *Tracklist) buildHeader() {
+	t.hdr = NewListHeader([]ListColumn{
+		{"#", true, false},
+		{"Title", false, false},
+		{"Artist", false, true},
+		{"Album", false, true},
+		{"Time", true, true},
+		{"Plays", true, true},
+		{"Bitrate", true, true}},
+		t.colLayout)
+}
+
+func (t *Tracklist) SetVisibleColumns(cols []string) {
+	t.visibleColumns[0] = true
+	t.visibleColumns[1] = true
+	for i := 2; i < len(t.visibleColumns); i++ {
 		t.visibleColumns[i] = false
+		t.hdr.SetColumnVisible(i, false)
 	}
 	for _, col := range cols {
-		t.visibleColumns[col.ColNumber()] = true
+		t.visibleColumns[ColNumber(col)] = true
+		t.hdr.SetColumnVisible(ColNumber(col), true)
 	}
+}
+
+func (t *Tracklist) VisibleColumns() []string {
+	var cols []string
+	for i := 2; i < len(t.visibleColumns); i++ {
+		if t.visibleColumns[i] {
+			cols = append(cols, string(colName(i)))
+		}
+	}
+	return cols
+}
+
+func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
+	if colNum >= len(t.visibleColumns) {
+		log.Printf("error: Tracklist.SetColumnVisible: column index %d out of range", colNum)
+		return
+	}
+	t.visibleColumns[colNum] = vis
+	t.Refresh()
 }
 
 func (t *Tracklist) SetNowPlaying(trackID string) {
@@ -127,14 +160,6 @@ func (t *Tracklist) SelectAll() {
 func (t *Tracklist) UnselectAll() {
 	t.selectionMgr.UnselectAll()
 	t.Refresh()
-}
-
-func (t *Tracklist) Refresh() {
-	for i, tf := range t.visibleColumns {
-		// first 2 columns are built-in and always visible
-		t.hdr.SetColumnVisible(i+2, tf)
-	}
-	t.BaseWidget.Refresh()
 }
 
 func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
@@ -230,21 +255,40 @@ func (t *Tracklist) SelectedTrackIndexes() []int {
 	return t.selectionMgr.GetSelection()
 }
 
-func (c TracklistColumn) ColNumber() int {
+func ColNumber(colName string) int {
 	// built-in columns # and Title are always visible
-	switch c {
+	switch colName {
 	case ColumnArtist:
-		return 0
-	case ColumnAlbum:
-		return 1
-	case ColumnTime:
 		return 2
-	case ColumnPlays:
+	case ColumnAlbum:
 		return 3
-	case ColumnBitrate:
+	case ColumnTime:
 		return 4
+	case ColumnPlays:
+		return 5
+	case ColumnBitrate:
+		return 6
 	default:
+		log.Printf("error: Tracklist: invalid column name %s", colName)
 		return -100
+	}
+}
+
+func colName(i int) string {
+	// built-in columns # and Title are always visible
+	switch i {
+	case 2:
+		return ColumnArtist
+	case 3:
+		return ColumnAlbum
+	case 4:
+		return ColumnTime
+	case 5:
+		return ColumnPlays
+	case 6:
+		return ColumnBitrate
+	default:
+		return ""
 	}
 }
 
@@ -303,41 +347,41 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 }
 
 func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
-	if tr.ID == t.trackID && isPlaying == t.isPlaying && tr.PlayCount == t.playCount {
-		return
+	if tr.ID != t.trackID || isPlaying != t.isPlaying || tr.PlayCount != t.playCount {
+		t.isPlaying = isPlaying
+		t.trackID = tr.ID
+		t.playCount = tr.PlayCount
+
+		if rowNum < 0 {
+			rowNum = tr.Track
+		}
+		t.num.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(rowNum)
+		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
+		t.artist.Segments[0].(*widget.TextSegment).Text = tr.Artist
+		t.album.Segments[0].(*widget.TextSegment).Text = tr.Album
+		t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
+		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
+		t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
+
+		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+		t.artist.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+		t.album.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+		t.dur.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+		t.plays.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+		t.bitrate.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+
+		if isPlaying {
+			t.container.Objects[1].(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
+		} else {
+			t.container.Objects[1].(*fyne.Container).Objects[0] = t.num
+		}
 	}
-	t.isPlaying = isPlaying
-	t.trackID = tr.ID
 
-	if rowNum < 0 {
-		rowNum = tr.Track
-	}
-	t.num.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(rowNum)
-	t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
-	t.artist.Segments[0].(*widget.TextSegment).Text = tr.Artist
-	t.album.Segments[0].(*widget.TextSegment).Text = tr.Album
-	t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
-	t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
-	t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
-
-	t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-	t.artist.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-	t.album.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-	t.dur.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-	t.plays.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-	t.bitrate.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-
-	t.artist.Hidden = !t.tracklist.visibleColumns[ColumnArtist.ColNumber()]
-	t.album.Hidden = !t.tracklist.visibleColumns[ColumnAlbum.ColNumber()]
-	t.dur.Hidden = !t.tracklist.visibleColumns[ColumnTime.ColNumber()]
-	t.plays.Hidden = !t.tracklist.visibleColumns[ColumnPlays.ColNumber()]
-	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColumnBitrate.ColNumber()]
-
-	if isPlaying {
-		t.container.Objects[1].(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
-	} else {
-		t.container.Objects[1].(*fyne.Container).Objects[0] = t.num
-	}
+	t.artist.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnArtist)]
+	t.album.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnAlbum)]
+	t.dur.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnTime)]
+	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
+	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]
 
 	t.Refresh()
 }

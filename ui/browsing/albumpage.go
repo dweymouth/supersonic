@@ -31,6 +31,7 @@ type AlbumPage struct {
 
 type albumPageState struct {
 	albumID string
+	cfg     *backend.AlbumPageConfig
 	lm      *backend.LibraryManager
 	pm      *backend.PlaybackManager
 	im      *backend.ImageManager
@@ -41,6 +42,7 @@ type albumPageState struct {
 
 func NewAlbumPage(
 	albumID string,
+	cfg *backend.AlbumPageConfig,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	lm *backend.LibraryManager,
@@ -51,6 +53,7 @@ func NewAlbumPage(
 	a := &AlbumPage{
 		albumPageState: albumPageState{
 			albumID: albumID,
+			cfg:     cfg,
 			sm:      sm,
 			pm:      pm,
 			lm:      lm,
@@ -62,8 +65,7 @@ func NewAlbumPage(
 	a.ExtendBaseWidget(a)
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
-	a.tracklist.SetVisibleColumns([]widgets.TracklistColumn{
-		widgets.ColumnArtist, widgets.ColumnTime, widgets.ColumnPlays})
+	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 	// connect tracklist actions
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
 	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true, false) }
@@ -86,6 +88,10 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *AlbumPage) Save() SavedPage {
+	// TODO: find a better place to update the tracklist columns preference
+	// If user changes columns but doesn't navigate to another page,
+	// we won't be persisting the change
+	a.cfg.TracklistColumns = a.tracklist.VisibleColumns()
 	s := a.albumPageState
 	return &s
 }
@@ -254,5 +260,5 @@ func formatMiscLabelStr(a *subsonic.AlbumID3) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return NewAlbumPage(s.albumID, s.sm, s.pm, s.lm, s.im, s.contr, s.nav)
+	return NewAlbumPage(s.albumID, s.cfg, s.sm, s.pm, s.lm, s.im, s.contr, s.nav)
 }
