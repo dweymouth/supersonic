@@ -17,9 +17,9 @@ type AuxControls struct {
 	container *fyne.Container
 }
 
-func NewAuxControls() *AuxControls {
+func NewAuxControls(initialVolume int) *AuxControls {
 	a := &AuxControls{
-		VolumeControl: NewVolumeControl(),
+		VolumeControl: NewVolumeControl(initialVolume),
 	}
 	a.container = container.NewHBox(layout.NewSpacer(), a.VolumeControl)
 	return a
@@ -97,16 +97,16 @@ type VolumeControl struct {
 	container *fyne.Container
 }
 
-func NewVolumeControl() *VolumeControl {
+func NewVolumeControl(initialVol int) *VolumeControl {
 	v := &VolumeControl{}
 	v.ExtendBaseWidget(v)
 	v.icon = newTappableIcon(theme.VolumeUpIcon())
 	v.icon.OnTapped = v.toggleMute
 	v.slider = NewVolumeSlider(100)
-	v.lastVol = 100
+	v.lastVol = initialVol
 	v.slider.Step = 1
 	v.slider.Orientation = widget.Horizontal
-	v.slider.Value = 100
+	v.slider.Value = float64(v.lastVol)
 	v.slider.OnChanged = v.onChanged
 	v.container = container.NewHBox(container.NewCenter(v.icon), v.slider)
 	return v

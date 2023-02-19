@@ -63,6 +63,5 @@ func main() {
 	fyneApp.Run()
 
 	// shutdown tasks
-	myApp.Config.WriteConfigFile(configPath())
 	myApp.Shutdown()
 }

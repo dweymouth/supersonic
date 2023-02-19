@@ -64,7 +64,7 @@ func NewBottomPanel(p *player.Player, nav func(browsing.Route)) *BottomPanel {
 		p.Seek(fmt.Sprintf("%d", int(f*100)), player.SeekAbsolutePercent)
 	})
 
-	bp.AuxControls = widgets.NewAuxControls()
+	bp.AuxControls = widgets.NewAuxControls(p.GetVolume())
 	bp.AuxControls.VolumeControl.OnVolumeChanged = func(v int) {
 		_ = p.SetVolume(v)
 	}

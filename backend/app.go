@@ -46,6 +46,8 @@ func StartupApp() (*App, error) {
 	if err := a.initMPV(); err != nil {
 		return nil, err
 	}
+	a.Config.LocalPlayback.Volume = clamp(a.Config.LocalPlayback.Volume, 0, 100)
+	a.Player.SetVolume(a.Config.LocalPlayback.Volume)
 
 	a.ServerManager = NewServerManager()
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player)
@@ -91,10 +93,21 @@ func (a *App) LoginToDefaultServer() error {
 
 func (a *App) Shutdown() {
 	a.Player.Stop()
+	a.Config.LocalPlayback.Volume = a.Player.GetVolume()
 	a.cancel()
 	a.Player.Destroy()
+	a.Config.WriteConfigFile(configPath())
 }
 
 func configPath() string {
 	return path.Join(configdir.LocalConfig(AppName), configFile)
+}
+
+func clamp(i, min, max int) int {
+	if i < min {
+		i = min
+	} else if i > max {
+		i = max
+	}
+	return i
 }

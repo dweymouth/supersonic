@@ -32,12 +32,17 @@ type PlaylistPageConfig struct {
 	TracklistColumns []string
 }
 
+type LocalPlaybackConfig struct {
+	Volume int
+}
+
 type Config struct {
 	Application    AppConfig
 	Servers        []*ServerConfig
 	AlbumPage      AlbumPageConfig
 	NowPlayingPage NowPlayingPageConfig
 	PlaylistPage   PlaylistPageConfig
+	LocalPlayback  LocalPlaybackConfig
 }
 
 func DefaultConfig() *Config {
@@ -54,6 +59,9 @@ func DefaultConfig() *Config {
 		},
 		PlaylistPage: PlaylistPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
+		},
+		LocalPlayback: LocalPlaybackConfig{
+			Volume: 100,
 		},
 	}
 }
