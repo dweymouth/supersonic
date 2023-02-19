@@ -113,18 +113,3 @@ func (l *ListHeader) createOnChangedCallbk(colNum int) func(bool) {
 		}
 	}
 }
-
-type colVisibleToggle struct {
-	widget.Check
-}
-
-func newColVisibleToggle(colNum int, colName string, visibilities []bool, onChanged func(bool)) *colVisibleToggle {
-	c := &colVisibleToggle{
-		Check: widget.Check{
-			Text:      colName,
-			OnChanged: onChanged,
-		},
-	}
-	c.ExtendBaseWidget(c)
-	return c
-}
