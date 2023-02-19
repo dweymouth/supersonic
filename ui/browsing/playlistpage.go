@@ -30,6 +30,7 @@ type PlaylistPage struct {
 
 type playlistPageState struct {
 	playlistID string
+	conf       *backend.PlaylistPageConfig
 	contr      controller.Controller
 	sm         *backend.ServerManager
 	pm         *backend.PlaybackManager
@@ -39,18 +40,18 @@ type playlistPageState struct {
 
 func NewPlaylistPage(
 	playlistID string,
+	conf *backend.PlaylistPageConfig,
 	contr controller.Controller,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
 	nav func(Route),
 ) *PlaylistPage {
-	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, contr: contr, sm: sm, pm: pm, im: im}}
+	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, conf: conf, contr: contr, sm: sm, pm: pm, im: im}}
 	a.ExtendBaseWidget(a)
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
-	a.tracklist.SetVisibleColumns([]string{
-		widgets.ColumnArtist, widgets.ColumnAlbum, widgets.ColumnTime, widgets.ColumnPlays})
+	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	a.tracklist.AutoNumber = true
 	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{
 		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist),
@@ -76,6 +77,7 @@ func (a *PlaylistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *PlaylistPage) Save() SavedPage {
+	a.conf.TracklistColumns = a.tracklist.VisibleColumns()
 	p := a.playlistPageState
 	return &p
 }
@@ -218,5 +220,5 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *subsonic.Playlist) st
 }
 
 func (s *playlistPageState) Restore() Page {
-	return NewPlaylistPage(s.playlistID, s.contr, s.sm, s.pm, s.im, s.nav)
+	return NewPlaylistPage(s.playlistID, s.conf, s.contr, s.sm, s.pm, s.im, s.nav)
 }

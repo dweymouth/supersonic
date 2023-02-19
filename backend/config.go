@@ -24,10 +24,20 @@ type AlbumPageConfig struct {
 	TracklistColumns []string
 }
 
+type NowPlayingPageConfig struct {
+	TracklistColumns []string
+}
+
+type PlaylistPageConfig struct {
+	TracklistColumns []string
+}
+
 type Config struct {
-	Application AppConfig
-	Servers     []*ServerConfig
-	AlbumPage   AlbumPageConfig
+	Application    AppConfig
+	Servers        []*ServerConfig
+	AlbumPage      AlbumPageConfig
+	NowPlayingPage NowPlayingPageConfig
+	PlaylistPage   PlaylistPageConfig
 }
 
 func DefaultConfig() *Config {
@@ -38,6 +48,12 @@ func DefaultConfig() *Config {
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays"},
+		},
+		NowPlayingPage: NowPlayingPageConfig{
+			TracklistColumns: []string{"Artist", "Album", "Time"},
+		},
+		PlaylistPage: PlaylistPageConfig{
+			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 		},
 	}
 }

@@ -25,6 +25,7 @@ type NowPlayingPage struct {
 
 type nowPlayingPageState struct {
 	contr controller.Controller
+	conf  *backend.NowPlayingPageConfig
 	sm    *backend.ServerManager
 	pm    *backend.PlaybackManager
 	nav   func(Route)
@@ -32,15 +33,15 @@ type nowPlayingPageState struct {
 
 func NewNowPlayingPage(
 	contr controller.Controller,
+	conf *backend.NowPlayingPageConfig,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	nav func(Route),
 ) *NowPlayingPage {
-	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{contr: contr, sm: sm, pm: pm, nav: nav}}
+	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{contr: contr, conf: conf, sm: sm, pm: pm, nav: nav}}
 	a.ExtendBaseWidget(a)
 	a.tracklist = widgets.NewTracklist(nil)
-	a.tracklist.SetVisibleColumns([]string{
-		widgets.ColumnArtist, widgets.ColumnAlbum, widgets.ColumnTime})
+	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	a.tracklist.AutoNumber = true
 	a.tracklist.DisablePlaybackMenu = true
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
@@ -61,6 +62,7 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *NowPlayingPage) Save() SavedPage {
+	a.conf.TracklistColumns = a.tracklist.VisibleColumns()
 	nps := a.nowPlayingPageState
 	return &nps
 }
@@ -109,5 +111,5 @@ func (a *NowPlayingPage) load() {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage(s.contr, s.sm, s.pm, s.nav)
+	return NewNowPlayingPage(s.contr, s.conf, s.sm, s.pm, s.nav)
 }
