@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"path"
+	"supersonic/backend/util"
 	"supersonic/player"
 
 	"github.com/20after4/configdir"
@@ -62,10 +64,16 @@ func StartupApp() (*App, error) {
 
 func (a *App) readConfig() {
 	configdir.MakePath(configdir.LocalConfig(AppName))
-	cfg, err := ReadConfigFile(configPath())
+	cfgPath := configPath()
+	cfg, err := ReadConfigFile(cfgPath)
 	if err != nil {
 		log.Printf("Error reading app config file: %v", err)
 		cfg = DefaultConfig()
+		if _, err := os.Stat(cfgPath); err == nil {
+			backupCfgName := fmt.Sprintf("%s.bak", configFile)
+			log.Printf("Config file may be malformed: copying to %s", backupCfgName)
+			_ = util.CopyFile(cfgPath, path.Join(configdir.LocalConfig(AppName), backupCfgName))
+		}
 	}
 	a.Config = cfg
 }
