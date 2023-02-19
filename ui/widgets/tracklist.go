@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"log"
 	"runtime"
 	"strconv"
 	"supersonic/ui/layouts"
@@ -59,9 +60,11 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
 	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 65, 75})
-	t.hdr = NewListHeader([]ListColumn{
-		{"#", true}, {"Title", false}, {"Artist", false}, {"Album", false}, {"Time", true}, {"Plays", true}, {"Bitrate", true}},
-		t.colLayout)
+	t.buildHeader()
+	t.hdr.OnColumnVisibilityChanged = func(col int, vis bool) {
+		// first 2 columns are builtin and always visible
+		t.SetColumnVisible(col-2, vis)
+	}
 	playingIcon := container.NewCenter(container.NewHBox(NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
 	t.list = widget.NewList(
 		func() int { return len(t.Tracks) },
@@ -86,6 +89,18 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	return t
 }
 
+func (t *Tracklist) buildHeader() {
+	t.hdr = NewListHeader([]ListColumn{
+		{"#", true, false},
+		{"Title", false, false},
+		{"Artist", false, true},
+		{"Album", false, true},
+		{"Time", true, true},
+		{"Plays", true, true},
+		{"Bitrate", true, true}},
+		t.colLayout)
+}
+
 func (t *Tracklist) SetVisibleColumns(cols []TracklistColumn) {
 	for i := range t.visibleColumns {
 		t.visibleColumns[i] = false
@@ -93,6 +108,15 @@ func (t *Tracklist) SetVisibleColumns(cols []TracklistColumn) {
 	for _, col := range cols {
 		t.visibleColumns[col.ColNumber()] = true
 	}
+}
+
+func (t *Tracklist) SetColumnVisible(colNum int, vis bool) {
+	if colNum >= len(t.visibleColumns) {
+		log.Printf("error: Tracklist.SetColumnVisible: column index %d out of range", colNum)
+		return
+	}
+	t.visibleColumns[colNum] = vis
+	t.Refresh()
 }
 
 func (t *Tracklist) SetNowPlaying(trackID string) {

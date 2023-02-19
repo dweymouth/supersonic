@@ -99,8 +99,7 @@ func NewPlaylistList() *PlaylistList {
 	a := &PlaylistList{
 		columnsLayout: layouts.NewColumnsLayout([]float32{-1, -1, 200, 125}),
 	}
-	a.header = widgets.NewListHeader(
-		[]widgets.ListColumn{{"Name", false}, {"Description", false}, {"Owner", false}, {"Track Count", true}}, a.columnsLayout)
+	a.buildHeader()
 	a.list = widget.NewList(
 		func() int {
 			return len(a.Playlists)
@@ -123,6 +122,15 @@ func NewPlaylistList() *PlaylistList {
 	a.container = container.NewBorder(a.header, nil, nil, nil, a.list)
 	a.ExtendBaseWidget(a)
 	return a
+}
+
+func (p *PlaylistList) buildHeader() {
+	p.header = widgets.NewListHeader([]widgets.ListColumn{
+		{"Name", false, false},
+		{"Description", false, false},
+		{"Owner", false, false},
+		{"Track Count", true, false}}, p.columnsLayout)
+
 }
 
 func (p *PlaylistList) CreateRenderer() fyne.WidgetRenderer {
