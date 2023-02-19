@@ -39,7 +39,7 @@ func NewNowPlayingPage(
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{contr: contr, sm: sm, pm: pm, nav: nav}}
 	a.ExtendBaseWidget(a)
 	a.tracklist = widgets.NewTracklist(nil)
-	a.tracklist.SetVisibleColumns([]widgets.TracklistColumn{
+	a.tracklist.SetVisibleColumns([]string{
 		widgets.ColumnArtist, widgets.ColumnAlbum, widgets.ColumnTime})
 	a.tracklist.AutoNumber = true
 	a.tracklist.DisablePlaybackMenu = true

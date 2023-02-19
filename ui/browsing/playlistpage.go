@@ -49,7 +49,7 @@ func NewPlaylistPage(
 	a.ExtendBaseWidget(a)
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
-	a.tracklist.SetVisibleColumns([]widgets.TracklistColumn{
+	a.tracklist.SetVisibleColumns([]string{
 		widgets.ColumnArtist, widgets.ColumnAlbum, widgets.ColumnTime, widgets.ColumnPlays})
 	a.tracklist.AutoNumber = true
 	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{

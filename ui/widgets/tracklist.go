@@ -18,14 +18,12 @@ import (
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
-type TracklistColumn string
-
 const (
-	ColumnArtist  TracklistColumn = "Artist"
-	ColumnAlbum   TracklistColumn = "Album"
-	ColumnTime    TracklistColumn = "Time"
-	ColumnPlays   TracklistColumn = "Plays"
-	ColumnBitrate TracklistColumn = "Bitrate"
+	ColumnArtist  = "Artist"
+	ColumnAlbum   = "Album"
+	ColumnTime    = "Time"
+	ColumnPlays   = "Plays"
+	ColumnBitrate = "Bitrate"
 )
 
 type Tracklist struct {
@@ -98,7 +96,7 @@ func (t *Tracklist) buildHeader() {
 		t.colLayout)
 }
 
-func (t *Tracklist) SetVisibleColumns(cols []TracklistColumn) {
+func (t *Tracklist) SetVisibleColumns(cols []string) {
 	t.visibleColumns[0] = true
 	t.visibleColumns[1] = true
 	for i := 2; i < len(t.visibleColumns); i++ {
@@ -106,9 +104,19 @@ func (t *Tracklist) SetVisibleColumns(cols []TracklistColumn) {
 		t.hdr.SetColumnVisible(i, false)
 	}
 	for _, col := range cols {
-		t.visibleColumns[col.ColNumber()] = true
-		t.hdr.SetColumnVisible(col.ColNumber(), true)
+		t.visibleColumns[ColNumber(col)] = true
+		t.hdr.SetColumnVisible(ColNumber(col), true)
 	}
+}
+
+func (t *Tracklist) VisibleColumns() []string {
+	var cols []string
+	for i := 2; i < len(t.visibleColumns); i++ {
+		if t.visibleColumns[i] {
+			cols = append(cols, string(colName(i)))
+		}
+	}
+	return cols
 }
 
 func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
@@ -247,9 +255,9 @@ func (t *Tracklist) SelectedTrackIndexes() []int {
 	return t.selectionMgr.GetSelection()
 }
 
-func (c TracklistColumn) ColNumber() int {
+func ColNumber(colName string) int {
 	// built-in columns # and Title are always visible
-	switch c {
+	switch colName {
 	case ColumnArtist:
 		return 2
 	case ColumnAlbum:
@@ -261,7 +269,26 @@ func (c TracklistColumn) ColNumber() int {
 	case ColumnBitrate:
 		return 6
 	default:
+		log.Printf("error: Tracklist: invalid column name %s", colName)
 		return -100
+	}
+}
+
+func colName(i int) string {
+	// built-in columns # and Title are always visible
+	switch i {
+	case 2:
+		return ColumnArtist
+	case 3:
+		return ColumnAlbum
+	case 4:
+		return ColumnTime
+	case 5:
+		return ColumnPlays
+	case 6:
+		return ColumnBitrate
+	default:
+		return ""
 	}
 }
 
@@ -350,11 +377,11 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		}
 	}
 
-	t.artist.Hidden = !t.tracklist.visibleColumns[ColumnArtist.ColNumber()]
-	t.album.Hidden = !t.tracklist.visibleColumns[ColumnAlbum.ColNumber()]
-	t.dur.Hidden = !t.tracklist.visibleColumns[ColumnTime.ColNumber()]
-	t.plays.Hidden = !t.tracklist.visibleColumns[ColumnPlays.ColNumber()]
-	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColumnBitrate.ColNumber()]
+	t.artist.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnArtist)]
+	t.album.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnAlbum)]
+	t.dur.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnTime)]
+	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
+	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]
 
 	t.Refresh()
 }

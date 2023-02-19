@@ -20,9 +20,14 @@ type AppConfig struct {
 	WindowHeight int
 }
 
+type AlbumPageConfig struct {
+	TracklistColumns []string
+}
+
 type Config struct {
 	Application AppConfig
 	Servers     []*ServerConfig
+	AlbumPage   AlbumPageConfig
 }
 
 func DefaultConfig() *Config {
@@ -30,6 +35,9 @@ func DefaultConfig() *Config {
 		Application: AppConfig{
 			WindowWidth:  1000,
 			WindowHeight: 800,
+		},
+		AlbumPage: AlbumPageConfig{
+			TracklistColumns: []string{"Artist", "Time", "Plays"},
 		},
 	}
 }
