@@ -106,8 +106,12 @@ func (t *Tracklist) SetVisibleColumns(cols []string) {
 		t.hdr.SetColumnVisible(i, false)
 	}
 	for _, col := range cols {
-		t.visibleColumns[ColNumber(col)] = true
-		t.hdr.SetColumnVisible(ColNumber(col), true)
+		if num := ColNumber(col); num < 0 {
+			log.Printf("Unknown tracklist column %q", col)
+		} else {
+			t.visibleColumns[num] = true
+			t.hdr.SetColumnVisible(num, true)
+		}
 	}
 }
 
