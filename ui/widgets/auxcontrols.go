@@ -3,7 +3,6 @@ package widgets
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -56,37 +55,10 @@ func (v *volumeSlider) MinSize() fyne.Size {
 	return fyne.NewSize(v.Width, h)
 }
 
-type tappableIcon struct {
-	widget.Icon
-
-	OnTapped func()
-}
-
-func newTappableIcon(res fyne.Resource) *tappableIcon {
-	icon := &tappableIcon{}
-	icon.ExtendBaseWidget(icon)
-	icon.SetResource(res)
-
-	return icon
-}
-
-func (t *tappableIcon) Tapped(_ *fyne.PointEvent) {
-	if t.OnTapped != nil {
-		t.OnTapped()
-	}
-}
-
-func (t *tappableIcon) TappedSecondary(_ *fyne.PointEvent) {
-}
-
-func (t *tappableIcon) Cursor() desktop.Cursor {
-	return desktop.PointerCursor
-}
-
 type VolumeControl struct {
 	widget.BaseWidget
 
-	icon   *tappableIcon
+	icon   *TappableIcon
 	slider *volumeSlider
 
 	OnVolumeChanged func(int)
@@ -100,7 +72,7 @@ type VolumeControl struct {
 func NewVolumeControl(initialVol int) *VolumeControl {
 	v := &VolumeControl{}
 	v.ExtendBaseWidget(v)
-	v.icon = newTappableIcon(theme.VolumeUpIcon())
+	v.icon = NewTappbaleIcon(theme.VolumeUpIcon())
 	v.icon.OnTapped = v.toggleMute
 	v.slider = NewVolumeSlider(100)
 	v.lastVol = initialVol
