@@ -20,18 +20,21 @@ import (
 type FavoritesPage struct {
 	widget.BaseWidget
 
-	contr         controller.Controller
-	pm            *backend.PlaybackManager
-	im            *backend.ImageManager
-	sm            *backend.ServerManager
-	lm            *backend.LibraryManager
-	nav           func(Route)
+	contr controller.Controller
+	pm    *backend.PlaybackManager
+	im    *backend.ImageManager
+	sm    *backend.ServerManager
+	lm    *backend.LibraryManager
+	nav   func(Route)
+
+	searchText   string
+	nowPlayingID string
+
 	grid          *widgets.AlbumGrid
 	searchGrid    *widgets.AlbumGrid
 	artistListCtr *fyne.Container
 	tracklistCtr  *fyne.Container
 	searcher      *widgets.Searcher
-	searchText    string
 	titleDisp     *widget.RichText
 	toggleBtns    *widgets.ToggleButtonGroup
 	container     *fyne.Container
@@ -161,6 +164,18 @@ func (a *FavoritesPage) OnSearched(query string) {
 	a.doSearchAlbums(query)
 }
 
+var _ CanShowNowPlaying = (*FavoritesPage)(nil)
+
+func (a *FavoritesPage) OnSongChange(song *subsonic.Child) {
+	a.nowPlayingID = ""
+	if song != nil {
+		a.nowPlayingID = song.ID
+	}
+	if a.tracklistCtr != nil {
+		a.tracklistCtr.Objects[0].(*widgets.Tracklist).SetNowPlaying(a.nowPlayingID)
+	}
+}
+
 func (a *FavoritesPage) doSearchAlbums(query string) {
 	iter := a.lm.SearchIterWithFilter(query, func(al *subsonic.AlbumID3) bool {
 		return al.Starred.After(time.Time{})
@@ -230,8 +245,10 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 				return
 			}
 			tracklist := widgets.NewTracklist(s.Song)
+			tracklist.AutoNumber = true
 			// TODO: get visible columns from config
 			tracklist.SetVisibleColumns([]string{"Artist", "Album", "Plays"})
+			tracklist.SetNowPlaying(a.nowPlayingID)
 			a.contr.ConnectTracklistActions(tracklist)
 			a.tracklistCtr = container.New(
 				&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},

@@ -323,6 +323,7 @@ type TrackRow struct {
 	// internal state
 	tracklist  *Tracklist
 	trackIdx   int
+	trackNum   int
 	trackID    string
 	isPlaying  bool
 	isFavorite bool
@@ -380,24 +381,40 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 }
 
 func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
-	if tr.ID != t.trackID || isPlaying != t.isPlaying || tr.PlayCount != t.playCount {
-		t.isPlaying = isPlaying
+	// Update info that can change if this row is bound to
+	// a new track (*subsonic.Child)
+	if tr.ID != t.trackID {
 		t.trackID = tr.ID
 		t.playCount = tr.PlayCount
 
-		if rowNum < 0 {
-			rowNum = tr.Track
-		}
-		t.num.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(rowNum)
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 		t.artist.Segments[0].(*widget.TextSegment).Text = tr.Artist
 		t.album.Segments[0].(*widget.TextSegment).Text = tr.Album
 		t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
 		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
-
 		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
 		t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
+	}
 
+	// Update track num if needed
+	// (which can change based on bound *subsonic.Child or tracklist.AutoNumber)
+	if t.trackNum != rowNum {
+		if rowNum < 0 {
+			rowNum = tr.Track
+		}
+		t.trackNum = rowNum
+		t.num.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(rowNum)
+	}
+
+	// Update play count if needed
+	if tr.PlayCount != t.playCount {
+		t.playCount = tr.PlayCount
+		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
+	}
+
+	// Render whether track is playing or not
+	if isPlaying != t.isPlaying {
+		t.isPlaying = isPlaying
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.artist.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.album.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
@@ -413,6 +430,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		}
 	}
 
+	// Render favorite column
 	if tr.Starred.IsZero() && t.isFavorite {
 		t.isFavorite = false
 		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartOutlineInvertPng
@@ -421,6 +439,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartFilledInvertPng
 	}
 
+	// Show only columns configured to be visible
 	t.artist.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnArtist)]
 	t.album.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnAlbum)]
 	t.dur.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnTime)]
