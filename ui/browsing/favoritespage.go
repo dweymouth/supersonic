@@ -27,8 +27,9 @@ type FavoritesPage struct {
 	lm    *backend.LibraryManager
 	nav   func(Route)
 
-	searchText   string
-	nowPlayingID string
+	searchText        string
+	nowPlayingID      string
+	pendingViewSwitch bool
 
 	grid          *widgets.AlbumGrid
 	searchGrid    *widgets.AlbumGrid
@@ -205,10 +206,14 @@ func (a *FavoritesPage) onShowFavoriteAlbums() {
 func (a *FavoritesPage) onShowFavoriteArtists() {
 	a.searcher.Entry.Hide() // disable search on artists for now
 	if a.artistListCtr == nil {
+		if a.pendingViewSwitch {
+			return
+		}
+		a.pendingViewSwitch = true
 		go func() {
 			s, err := a.sm.Server.GetStarred2(nil)
 			if err != nil {
-				log.Println("error getting starred items: %s", err.Error())
+				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
 			model := make([]widgets.ArtistGenrePlaylistItemModel, 0)
@@ -228,6 +233,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				artistList)
 			a.container.Objects[0] = a.artistListCtr
 			a.Refresh()
+			a.pendingViewSwitch = false
 		}()
 	} else {
 		a.container.Objects[0] = a.artistListCtr
@@ -238,6 +244,10 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 func (a *FavoritesPage) onShowFavoriteSongs() {
 	a.searcher.Entry.Hide() // disable search on songs for now
 	if a.tracklistCtr == nil {
+		if a.pendingViewSwitch {
+			return
+		}
+		a.pendingViewSwitch = true
 		go func() {
 			s, err := a.sm.Server.GetStarred2(nil)
 			if err != nil {
@@ -255,6 +265,7 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 				tracklist)
 			a.container.Objects[0] = a.tracklistCtr
 			a.Refresh()
+			a.pendingViewSwitch = false
 		}()
 	} else {
 		a.container.Objects[0] = a.tracklistCtr
