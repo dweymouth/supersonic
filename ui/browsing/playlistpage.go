@@ -57,13 +57,7 @@ func NewPlaylistPage(
 		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist),
 	}
 	// connect tracklist actions
-	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
-	a.tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true, false) }
-	a.tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
-		a.pm.LoadTracks(tracks, false, false)
-		a.pm.PlayFromBeginning()
-	}
-	a.tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
+	a.contr.ConnectTracklistActions(a.tracklist)
 
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
@@ -106,11 +100,6 @@ func (a *PlaylistPage) Tapped(*fyne.PointEvent) {
 
 func (a *PlaylistPage) SelectAll() {
 	a.tracklist.SelectAll()
-}
-
-func (a *PlaylistPage) onPlayTrackAt(tracknum int) {
-	a.pm.LoadTracks(a.tracklist.Tracks, false, false)
-	a.pm.PlayTrackAt(tracknum)
 }
 
 // should be called asynchronously
@@ -163,7 +152,8 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.createdAtLabel = widget.NewLabel("")
 	a.trackTimeLabel = widget.NewLabel("")
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
-		page.onPlayTrackAt(0)
+		page.pm.LoadTracks(page.tracklist.Tracks, false, false)
+		page.pm.PlayFromBeginning()
 	})
 	// TODO: find way to pad shuffle svg rather than using a space in the label string
 	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", res.ResShuffleInvertSvg, func() {

@@ -226,23 +226,13 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 		go func() {
 			s, err := a.sm.Server.GetStarred2(nil)
 			if err != nil {
-				log.Println("error getting starred items: %s", err.Error())
+				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
 			tracklist := widgets.NewTracklist(s.Song)
 			// TODO: get visible columns from config
 			tracklist.SetVisibleColumns([]string{"Artist", "Album", "Plays"})
-			// connect tracklist actions
-			tracklist.OnPlayTrackAt = func(idx int) {
-				a.pm.LoadTracks(tracklist.Tracks, false, false)
-				a.pm.PlayTrackAt(idx)
-			}
-			tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true, false) }
-			tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
-				a.pm.LoadTracks(tracks, false, false)
-				a.pm.PlayFromBeginning()
-			}
-			tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
+			a.contr.ConnectTracklistActions(tracklist)
 			a.tracklistCtr = container.New(
 				&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 				tracklist)
