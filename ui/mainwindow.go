@@ -18,6 +18,16 @@ var (
 	ShortcutForward = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: os.AltModifier}
 	ShortcutReload  = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
 	ShortcutSearch  = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
+
+	ShortcutNavOne   = desktop.CustomShortcut{KeyName: fyne.Key1, Modifier: os.ControlModifier}
+	ShortcutNavTwo   = desktop.CustomShortcut{KeyName: fyne.Key2, Modifier: os.ControlModifier}
+	ShortcutNavThree = desktop.CustomShortcut{KeyName: fyne.Key3, Modifier: os.ControlModifier}
+	ShortcutNavFour  = desktop.CustomShortcut{KeyName: fyne.Key4, Modifier: os.ControlModifier}
+	ShortcutNavFive  = desktop.CustomShortcut{KeyName: fyne.Key5, Modifier: os.ControlModifier}
+	ShortcutNavSix   = desktop.CustomShortcut{KeyName: fyne.Key6, Modifier: os.ControlModifier}
+
+	NavShortcuts = []desktop.CustomShortcut{ShortcutNavOne, ShortcutNavTwo, ShortcutNavThree,
+		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix}
 )
 
 type MainWindow struct {
@@ -119,6 +129,14 @@ func (m *MainWindow) addShortcuts() {
 	m.Canvas().AddShortcut(&fyne.ShortcutSelectAll{}, func(_ fyne.Shortcut) {
 		m.BrowsingPane.SelectAll()
 	})
+
+	for i, ns := range NavShortcuts {
+		m.Canvas().AddShortcut(&ns, func(i int) func(fyne.Shortcut) {
+			return func(fyne.Shortcut) {
+				m.BrowsingPane.ActivateNavigationButton(i)
+			}
+		}(i))
+	}
 
 	m.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {
 		if e.Name == fyne.KeySpace {
