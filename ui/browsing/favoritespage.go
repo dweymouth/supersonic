@@ -4,6 +4,8 @@ import (
 	"log"
 	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/ui/controller"
+	"supersonic/ui/layouts"
 	"supersonic/ui/widgets"
 	"time"
 
@@ -18,27 +20,31 @@ import (
 type FavoritesPage struct {
 	widget.BaseWidget
 
-	pm         *backend.PlaybackManager
-	im         *backend.ImageManager
-	sm         *backend.ServerManager
-	lm         *backend.LibraryManager
-	nav        func(Route)
-	grid       *widgets.AlbumGrid
-	searchGrid *widgets.AlbumGrid
-	searcher   *widgets.Searcher
-	searchText string
-	titleDisp  *widget.RichText
-	toggleBtns *widgets.ToggleButtonGroup
-	container  *fyne.Container
+	contr         controller.Controller
+	pm            *backend.PlaybackManager
+	im            *backend.ImageManager
+	sm            *backend.ServerManager
+	lm            *backend.LibraryManager
+	nav           func(Route)
+	grid          *widgets.AlbumGrid
+	searchGrid    *widgets.AlbumGrid
+	artistListCtr *fyne.Container
+	tracklistCtr  *fyne.Container
+	searcher      *widgets.Searcher
+	searchText    string
+	titleDisp     *widget.RichText
+	toggleBtns    *widgets.ToggleButtonGroup
+	container     *fyne.Container
 }
 
-func NewFavoritesPage(sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *FavoritesPage {
+func NewFavoritesPage(contr controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *FavoritesPage {
 	a := &FavoritesPage{
-		pm:  pm,
-		lm:  lm,
-		sm:  sm,
-		im:  im,
-		nav: nav,
+		contr: contr,
+		pm:    pm,
+		lm:    lm,
+		sm:    sm,
+		im:    im,
+		nav:   nav,
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(0, "")
@@ -54,15 +60,9 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int, searchText string) {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.toggleBtns = widgets.NewToggleButtonGroup(activeBtnIdx,
-		widget.NewButtonWithIcon("", res.ResDiscInvertPng, func() {
-			log.Println("albums activated")
-		}),
-		widget.NewButtonWithIcon("", res.ResPeopleInvertPng, func() {
-			log.Println("artists activated")
-		}),
-		widget.NewButtonWithIcon("", res.ResMusicnotesInvertPng, func() {
-			log.Println("songs activated")
-		}))
+		widget.NewButtonWithIcon("", res.ResDiscInvertPng, a.onShowFavoriteAlbums),
+		widget.NewButtonWithIcon("", res.ResPeopleInvertPng, a.onShowFavoriteArtists),
+		widget.NewButtonWithIcon("", res.ResMusicnotesInvertPng, a.onShowFavoriteSongs))
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
 	a.searcher.Entry.Text = searchText
@@ -87,11 +87,12 @@ func (a *FavoritesPage) createContainer(searchGrid bool) {
 
 func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	a := &FavoritesPage{
-		pm:  saved.pm,
-		lm:  saved.lm,
-		sm:  saved.sm,
-		im:  saved.im,
-		nav: saved.nav,
+		contr: saved.contr,
+		pm:    saved.pm,
+		lm:    saved.lm,
+		sm:    saved.sm,
+		im:    saved.im,
+		nav:   saved.nav,
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(saved.activeToggleBtn, saved.searchText)
@@ -102,6 +103,11 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 		a.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
 	}
 	a.createContainer(saved.searchText != "")
+	if saved.activeToggleBtn == 1 {
+		a.onShowFavoriteArtists()
+	} else if saved.activeToggleBtn == 2 {
+		a.onShowFavoriteSongs()
+	}
 
 	return a
 }
@@ -112,7 +118,7 @@ func (a *FavoritesPage) Route() Route {
 
 func (a *FavoritesPage) Reload() {
 	if a.searchText != "" {
-		a.doSearch(a.searchText)
+		a.doSearchAlbums(a.searchText)
 	} else {
 		a.grid.Reset(a.lm.StarredIter())
 	}
@@ -120,6 +126,7 @@ func (a *FavoritesPage) Reload() {
 
 func (a *FavoritesPage) Save() SavedPage {
 	sf := &savedFavoritesPage{
+		contr:           a.contr,
 		pm:              a.pm,
 		sm:              a.sm,
 		im:              a.im,
@@ -151,10 +158,10 @@ func (a *FavoritesPage) OnSearched(query string) {
 		a.Refresh()
 		return
 	}
-	a.doSearch(query)
+	a.doSearchAlbums(query)
 }
 
-func (a *FavoritesPage) doSearch(query string) {
+func (a *FavoritesPage) doSearchAlbums(query string) {
 	iter := a.lm.SearchIterWithFilter(query, func(al *subsonic.AlbumID3) bool {
 		return al.Starred.After(time.Time{})
 	})
@@ -168,6 +175,84 @@ func (a *FavoritesPage) doSearch(query string) {
 	}
 	a.container.Objects[0] = a.searchGrid
 	a.Refresh()
+}
+
+func (a *FavoritesPage) onShowFavoriteAlbums() {
+	a.searcher.Entry.Show()
+	if a.searchText == "" {
+		a.container.Objects[0] = a.grid
+	} else {
+		a.container.Objects[0] = a.searchGrid
+	}
+	a.Refresh()
+}
+
+func (a *FavoritesPage) onShowFavoriteArtists() {
+	a.searcher.Entry.Hide() // disable search on artists for now
+	if a.artistListCtr == nil {
+		go func() {
+			s, err := a.sm.Server.GetStarred2(nil)
+			if err != nil {
+				log.Println("error getting starred items: %s", err.Error())
+				return
+			}
+			model := make([]widgets.ArtistGenrePlaylistItemModel, 0)
+			for _, ar := range s.Artist {
+				model = append(model, widgets.ArtistGenrePlaylistItemModel{
+					Name:       ar.Name,
+					AlbumCount: ar.AlbumCount,
+				})
+			}
+			artistList := widgets.NewArtistGenrePlaylist(model)
+			artistList.ShowAlbumCount = true
+			artistList.OnNavTo = func(artistID string) {
+				a.nav(ArtistRoute(artistID))
+			}
+			a.artistListCtr = container.New(
+				&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
+				artistList)
+			a.container.Objects[0] = a.artistListCtr
+			a.Refresh()
+		}()
+	} else {
+		a.container.Objects[0] = a.artistListCtr
+		a.Refresh()
+	}
+}
+
+func (a *FavoritesPage) onShowFavoriteSongs() {
+	a.searcher.Entry.Hide() // disable search on songs for now
+	if a.tracklistCtr == nil {
+		go func() {
+			s, err := a.sm.Server.GetStarred2(nil)
+			if err != nil {
+				log.Println("error getting starred items: %s", err.Error())
+				return
+			}
+			tracklist := widgets.NewTracklist(s.Song)
+			// TODO: get visible columns from config
+			tracklist.SetVisibleColumns([]string{"Artist", "Album", "Plays"})
+			// connect tracklist actions
+			tracklist.OnPlayTrackAt = func(idx int) {
+				a.pm.LoadTracks(tracklist.Tracks, false, false)
+				a.pm.PlayTrackAt(idx)
+			}
+			tracklist.OnAddToQueue = func(tracks []*subsonic.Child) { a.pm.LoadTracks(tracks, true, false) }
+			tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
+				a.pm.LoadTracks(tracks, false, false)
+				a.pm.PlayFromBeginning()
+			}
+			tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
+			a.tracklistCtr = container.New(
+				&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
+				tracklist)
+			a.container.Objects[0] = a.tracklistCtr
+			a.Refresh()
+		}()
+	} else {
+		a.container.Objects[0] = a.tracklistCtr
+		a.Refresh()
+	}
 }
 
 func (a *FavoritesPage) onPlayAlbum(albumID string) {
@@ -188,6 +273,7 @@ func (a *FavoritesPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type savedFavoritesPage struct {
+	contr           controller.Controller
 	pm              *backend.PlaybackManager
 	sm              *backend.ServerManager
 	im              *backend.ImageManager
