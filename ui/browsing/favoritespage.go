@@ -1,7 +1,9 @@
 package browsing
 
 import (
+	"log"
 	"supersonic/backend"
+	"supersonic/res"
 	"supersonic/ui/widgets"
 	"time"
 
@@ -26,6 +28,7 @@ type FavoritesPage struct {
 	searcher   *widgets.Searcher
 	searchText string
 	titleDisp  *widget.RichText
+	toggleBtns *widgets.ToggleButtonGroup
 	container  *fyne.Container
 }
 
@@ -46,6 +49,7 @@ func NewFavoritesPage(sm *backend.ServerManager, pm *backend.PlaybackManager, lm
 	a.grid.OnShowArtistPage = a.onShowArtistPage
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
+	a.createToggleButtons(0)
 	a.createContainer(false)
 	return a
 }
@@ -57,6 +61,19 @@ func (a *FavoritesPage) createTitle() {
 	}
 }
 
+func (a *FavoritesPage) createToggleButtons(activeBtnIdx int) {
+	a.toggleBtns = widgets.NewToggleButtonGroup(activeBtnIdx,
+		widget.NewButtonWithIcon("", res.ResDiscInvertPng, func() {
+			log.Println("albums activated")
+		}),
+		widget.NewButtonWithIcon("", res.ResPeopleInvertPng, func() {
+			log.Println("artists activated")
+		}),
+		widget.NewButtonWithIcon("", res.ResMusicnotesInvertPng, func() {
+			log.Println("songs activated")
+		}))
+}
+
 func (a *FavoritesPage) createContainer(searchGrid bool) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
 	gr := a.grid
@@ -64,7 +81,7 @@ func (a *FavoritesPage) createContainer(searchGrid bool) {
 		gr = a.searchGrid
 	}
 	a.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
+		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
 		nil, nil, nil, gr)
 }
 
@@ -88,6 +105,7 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	if saved.searchText != "" {
 		a.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
 	}
+	a.createToggleButtons(saved.activeToggleBtn)
 	a.createContainer(saved.searchText != "")
 
 	return a
@@ -107,13 +125,14 @@ func (a *FavoritesPage) Reload() {
 
 func (a *FavoritesPage) Save() SavedPage {
 	sf := &savedFavoritesPage{
-		pm:         a.pm,
-		sm:         a.sm,
-		im:         a.im,
-		lm:         a.lm,
-		nav:        a.nav,
-		searchText: a.searchText,
-		gridState:  a.grid.SaveToState(),
+		pm:              a.pm,
+		sm:              a.sm,
+		im:              a.im,
+		lm:              a.lm,
+		nav:             a.nav,
+		searchText:      a.searchText,
+		gridState:       a.grid.SaveToState(),
+		activeToggleBtn: a.toggleBtns.ActivatedButtonIndex(),
 	}
 	if a.searchGrid != nil {
 		sf.searchGridState = a.searchGrid.SaveToState()
@@ -181,6 +200,7 @@ type savedFavoritesPage struct {
 	gridState       widgets.AlbumGridState
 	searchGridState widgets.AlbumGridState
 	searchText      string
+	activeToggleBtn int
 	nav             func(Route)
 }
 
