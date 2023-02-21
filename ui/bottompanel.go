@@ -84,7 +84,7 @@ func (bp *BottomPanel) SetPlaybackManager(pm *backend.PlaybackManager) {
 	})
 }
 
-func (bp *BottomPanel) onSongChange(song *subsonic.Child, _ *subsonic.Child) {
+func (bp *BottomPanel) onSongChange(song *subsonic.Child) {
 	if song == nil {
 		bp.NowPlaying.Update("", "", "", nil)
 	} else {

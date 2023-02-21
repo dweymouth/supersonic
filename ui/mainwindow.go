@@ -64,7 +64,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
 	m.Window.SetContent(m.container)
 	m.Window.Resize(size)
-	app.PlaybackManager.OnSongChange(func(song *subsonic.Child, _ *subsonic.Child) {
+	app.PlaybackManager.OnSongChange(func(song *subsonic.Child) {
 		if song == nil {
 			m.Window.SetTitle(appName)
 			return

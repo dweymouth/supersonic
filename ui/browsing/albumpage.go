@@ -100,14 +100,15 @@ func (a *AlbumPage) Route() Route {
 	return AlbumRoute(a.albumID)
 }
 
-func (a *AlbumPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
+var _ CanShowNowPlaying = (*AlbumPage)(nil)
+
+func (a *AlbumPage) OnSongChange(song *subsonic.Child) {
 	if song == nil {
 		a.nowPlayingID = ""
 	} else {
 		a.nowPlayingID = song.ID
 	}
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.tracklist.IncrementPlayCount(lastScrobbledIfAny)
 }
 
 func (a *AlbumPage) Reload() {
