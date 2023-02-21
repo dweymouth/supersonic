@@ -41,27 +41,18 @@ func NewFavoritesPage(sm *backend.ServerManager, pm *backend.PlaybackManager, lm
 		nav: nav,
 	}
 	a.ExtendBaseWidget(a)
-	a.createTitle()
-	iter := lm.StarredIter()
-	a.grid = widgets.NewAlbumGrid(iter, im, false)
-	a.grid.OnPlayAlbum = a.onPlayAlbum
-	a.grid.OnShowAlbumPage = a.onShowAlbumPage
-	a.grid.OnShowArtistPage = a.onShowArtistPage
-	a.searcher = widgets.NewSearcher()
-	a.searcher.OnSearched = a.OnSearched
-	a.createToggleButtons(0)
+	a.createHeader(0, "")
+	a.grid = widgets.NewAlbumGrid(a.lm.StarredIter(), a.im, false)
+	a.connectGridActions()
 	a.createContainer(false)
 	return a
 }
 
-func (a *FavoritesPage) createTitle() {
+func (a *FavoritesPage) createHeader(activeBtnIdx int, searchText string) {
 	a.titleDisp = widget.NewRichTextWithText("Favorites")
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-}
-
-func (a *FavoritesPage) createToggleButtons(activeBtnIdx int) {
 	a.toggleBtns = widgets.NewToggleButtonGroup(activeBtnIdx,
 		widget.NewButtonWithIcon("", res.ResDiscInvertPng, func() {
 			log.Println("albums activated")
@@ -72,6 +63,15 @@ func (a *FavoritesPage) createToggleButtons(activeBtnIdx int) {
 		widget.NewButtonWithIcon("", res.ResMusicnotesInvertPng, func() {
 			log.Println("songs activated")
 		}))
+	a.searcher = widgets.NewSearcher()
+	a.searcher.OnSearched = a.OnSearched
+	a.searcher.Entry.Text = searchText
+}
+
+func (a *FavoritesPage) connectGridActions() {
+	a.grid.OnPlayAlbum = a.onPlayAlbum
+	a.grid.OnShowAlbumPage = a.onShowAlbumPage
+	a.grid.OnShowArtistPage = a.onShowArtistPage
 }
 
 func (a *FavoritesPage) createContainer(searchGrid bool) {
@@ -94,18 +94,13 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 		nav: saved.nav,
 	}
 	a.ExtendBaseWidget(a)
-	a.createTitle()
+	a.createHeader(saved.activeToggleBtn, saved.searchText)
 	a.grid = widgets.NewAlbumGridFromState(saved.gridState)
-	a.grid.OnPlayAlbum = a.onPlayAlbum
-	a.grid.OnShowAlbumPage = a.onShowAlbumPage
-	a.grid.OnShowArtistPage = a.onShowArtistPage
-	a.searcher = widgets.NewSearcher()
-	a.searcher.OnSearched = a.OnSearched
-	a.searcher.Entry.Text = saved.searchText
+	a.connectGridActions()
+
 	if saved.searchText != "" {
 		a.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
 	}
-	a.createToggleButtons(saved.activeToggleBtn)
 	a.createContainer(saved.searchText != "")
 
 	return a
