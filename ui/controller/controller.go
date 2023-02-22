@@ -55,6 +55,14 @@ func (m Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 		m.App.PlaybackManager.LoadTracks(tracks, false, false)
 		m.App.PlaybackManager.PlayFromBeginning()
 	}
+	tracklist.OnSetFavorite = func(trackIDs []string, fav bool) {
+		s := m.App.ServerManager.Server
+		if fav {
+			go s.Star(subsonic.StarParameters{SongIDs: trackIDs})
+		} else {
+			go s.Unstar(subsonic.StarParameters{SongIDs: trackIDs})
+		}
+	}
 }
 
 func (m Controller) PromptForFirstServer() {

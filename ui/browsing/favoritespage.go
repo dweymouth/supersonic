@@ -121,10 +121,39 @@ func (a *FavoritesPage) Route() Route {
 }
 
 func (a *FavoritesPage) Reload() {
+	// reload favorite albums view
 	if a.searchText != "" {
 		a.doSearchAlbums(a.searchText)
 	} else {
 		a.grid.Reset(a.lm.StarredIter())
+	}
+	if a.tracklistCtr != nil || a.artistListCtr != nil {
+		go func() {
+			// re-fetch starred info from server
+			starred, err := a.sm.Server.GetStarred2(nil)
+			if err != nil {
+				log.Printf("error getting starred items: %s", err.Error())
+				return
+			}
+			if a.tracklistCtr != nil {
+				// refresh favorite songs view
+				tr := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+				tr.Tracks = starred.Song
+				if a.toggleBtns.ActivatedButtonIndex() == 2 {
+					// favorite songs view is visible
+					tr.Refresh()
+				}
+			}
+			if a.artistListCtr != nil {
+				// refresh favorite artists view
+				al := a.artistListCtr.Objects[0].(*widgets.ArtistGenrePlaylist)
+				al.Items = buildArtistListModel(starred.Artist)
+				if a.toggleBtns.ActivatedButtonIndex() == 1 {
+					// favorite artists view is visible
+					al.Refresh()
+				}
+			}
+		}()
 	}
 }
 
@@ -167,7 +196,7 @@ func (a *FavoritesPage) OnSearched(query string) {
 
 var _ CanShowNowPlaying = (*FavoritesPage)(nil)
 
-func (a *FavoritesPage) OnSongChange(song *subsonic.Child) {
+func (a *FavoritesPage) OnSongChange(song *subsonic.Child, _ *subsonic.Child) {
 	a.nowPlayingID = ""
 	if song != nil {
 		a.nowPlayingID = song.ID
@@ -216,13 +245,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
-			model := make([]widgets.ArtistGenrePlaylistItemModel, 0)
-			for _, ar := range s.Artist {
-				model = append(model, widgets.ArtistGenrePlaylistItemModel{
-					Name:       ar.Name,
-					AlbumCount: ar.AlbumCount,
-				})
-			}
+			model := buildArtistListModel(s.Artist)
 			artistList := widgets.NewArtistGenrePlaylist(model)
 			artistList.ShowAlbumCount = true
 			artistList.OnNavTo = func(artistID string) {
@@ -239,6 +262,18 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 		a.container.Objects[0] = a.artistListCtr
 		a.Refresh()
 	}
+}
+
+func buildArtistListModel(artists []*subsonic.ArtistID3) []widgets.ArtistGenrePlaylistItemModel {
+	model := make([]widgets.ArtistGenrePlaylistItemModel, 0)
+	for _, ar := range artists {
+		model = append(model, widgets.ArtistGenrePlaylistItemModel{
+			ID:         ar.ID,
+			Name:       ar.Name,
+			AlbumCount: ar.AlbumCount,
+		})
+	}
+	return model
 }
 
 func (a *FavoritesPage) onShowFavoriteSongs() {

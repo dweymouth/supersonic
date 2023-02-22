@@ -147,7 +147,7 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 			break
 		}
 	}
-	t.list.Refresh()
+	t.Refresh()
 }
 
 func (t *Tracklist) IncrementPlayCount(track *subsonic.Child) {
@@ -385,7 +385,6 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	// a new track (*subsonic.Child)
 	if tr.ID != t.trackID {
 		t.trackID = tr.ID
-		t.playCount = tr.PlayCount
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 		t.artist.Segments[0].(*widget.TextSegment).Text = tr.Artist
@@ -431,10 +430,16 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	}
 
 	// Render favorite column
-	if tr.Starred.IsZero() && t.isFavorite {
+	// TODO: right now the only way for the favorite status to change while the tracklist is visible
+	// is by the user clicking on the heart icon in the favorites column
+	// If this changes in the future (e.g. context menu entry on tracklist), then we will
+	// need better state management/onChanged notif so we know to re-render the column
+	// (maybe update the Starred field directly on the track struct and issue a Refresh call -
+	// like we do to update the now playing value when scrobbles happen)
+	if tr.Starred.IsZero() {
 		t.isFavorite = false
 		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartOutlineInvertPng
-	} else if !t.isFavorite {
+	} else {
 		t.isFavorite = true
 		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartFilledInvertPng
 	}
@@ -455,10 +460,12 @@ func (t *TrackRow) toggleFavorited() {
 	if t.isFavorite {
 		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartOutlineInvertPng
 		t.favorite.Refresh()
+		t.isFavorite = false
 		t.tracklist.onSetFavorite(t.trackID, false)
 	} else {
 		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartFilledInvertPng
 		t.favorite.Refresh()
+		t.isFavorite = true
 		t.tracklist.onSetFavorite(t.trackID, true)
 	}
 }
