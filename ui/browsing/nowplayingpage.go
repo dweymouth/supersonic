@@ -79,15 +79,14 @@ func (a *NowPlayingPage) SelectAll() {
 	a.tracklist.SelectAll()
 }
 
-var _ CanShowNowPlaying = (*NowPlayingPage)(nil)
-
-func (a *NowPlayingPage) OnSongChange(song *subsonic.Child) {
+func (a *NowPlayingPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
 	if song == nil {
 		a.nowPlayingID = ""
 	} else {
 		a.nowPlayingID = song.ID
 	}
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
+	a.tracklist.IncrementPlayCount(lastScrobbledIfAny)
 }
 
 func (a *NowPlayingPage) Reload() {

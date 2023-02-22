@@ -36,7 +36,7 @@ type CanSelectAll interface {
 }
 
 type CanShowNowPlaying interface {
-	OnSongChange(song *subsonic.Child)
+	OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child)
 }
 
 type BrowsingPane struct {
@@ -150,7 +150,7 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	b.curPage = p
 	if np, ok := p.(CanShowNowPlaying); ok {
 		// inform page of currently playing track
-		np.OnSongChange(b.app.PlaybackManager.NowPlaying())
+		np.OnSongChange(b.app.PlaybackManager.NowPlaying(), nil)
 	}
 	b.pageContainer.Remove(b.curPage)
 	b.pageContainer.Objects[1] = p
@@ -158,12 +158,12 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	return true
 }
 
-func (b *BrowsingPane) onSongChange(song *subsonic.Child) {
+func (b *BrowsingPane) onSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
 	if b.curPage == nil {
 		return
 	}
 	if p, ok := b.curPage.(CanShowNowPlaying); ok {
-		p.OnSongChange(song)
+		p.OnSongChange(song, lastScrobbledIfAny)
 	}
 }
 

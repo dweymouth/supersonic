@@ -145,6 +145,19 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 	t.list.Refresh()
 }
 
+func (t *Tracklist) IncrementPlayCount(track *subsonic.Child) {
+	if track == nil {
+		return
+	}
+	for _, tr := range t.Tracks {
+		if tr.ID == track.ID {
+			tr.PlayCount += 1
+			t.Refresh()
+			return
+		}
+	}
+}
+
 func (t *Tracklist) SelectAll() {
 	t.selectionMgr.SelectAll()
 	t.Refresh()
@@ -347,7 +360,8 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 }
 
 func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
-	if tr.ID != t.trackID {
+	if tr.ID != t.trackID || isPlaying != t.isPlaying || tr.PlayCount != t.playCount {
+		t.isPlaying = isPlaying
 		t.trackID = tr.ID
 		t.playCount = tr.PlayCount
 
@@ -362,15 +376,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
 		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
 		t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
-	}
 
-	if tr.PlayCount != t.playCount {
-		t.playCount = tr.PlayCount
-		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
-	}
-
-	if isPlaying != t.isPlaying {
-		t.isPlaying = isPlaying
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.artist.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.album.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
@@ -378,6 +384,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.year.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.plays.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.bitrate.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+
 		if isPlaying {
 			t.container.Objects[1].(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
 		} else {
