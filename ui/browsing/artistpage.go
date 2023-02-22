@@ -124,6 +124,7 @@ type ArtistPageHeader struct {
 	titleDisp      *widget.RichText
 	biographyDisp  *widget.RichText
 	similarArtists *fyne.Container
+	favoriteBtn    *widgets.FavoriteButton
 	container      *fyne.Container
 }
 
@@ -139,6 +140,7 @@ func NewArtistPageHeader(page *ArtistPage, nav func(Route)) *ArtistPageHeader {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.artistImage = widgets.NewImagePlaceholder(res.ResPeopleInvertPng, 225)
+	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.ExtendBaseWidget(a)
 	a.createContainer()
@@ -149,6 +151,7 @@ func (a *ArtistPageHeader) Update(artist *subsonic.ArtistID3) {
 	if artist == nil {
 		return
 	}
+	a.favoriteBtn.IsFavorited = !artist.Starred.IsZero()
 	a.artistID = artist.ID
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
 	a.titleDisp.Refresh()
@@ -197,9 +200,20 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 	}
 }
 
+func (a *ArtistPageHeader) toggleFavorited() {
+	if a.favoriteBtn.IsFavorited {
+		a.artistPage.sm.Server.Star(subsonic.StarParameters{ArtistIDs: []string{a.artistID}})
+	} else {
+		a.artistPage.sm.Server.Unstar(subsonic.StarParameters{ArtistIDs: []string{a.artistID}})
+	}
+}
+
 func (a *ArtistPageHeader) createContainer() {
 	a.container = container.NewBorder(nil, nil, a.artistImage, nil,
-		container.NewBorder(a.titleDisp, nil, nil, nil, container.NewVBox(a.biographyDisp, a.similarArtists)))
+		container.NewVBox(
+			container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
+				a.titleDisp, a.biographyDisp, a.similarArtists),
+			container.NewHBox(widgets.NewHSpace(2), a.favoriteBtn)))
 }
 
 func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {
