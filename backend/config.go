@@ -24,6 +24,11 @@ type AlbumPageConfig struct {
 	TracklistColumns []string
 }
 
+type FavoritesPageConfig struct {
+	InitialView      string
+	TracklistColumns []string
+}
+
 type NowPlayingPageConfig struct {
 	TracklistColumns []string
 }
@@ -40,6 +45,7 @@ type Config struct {
 	Application    AppConfig
 	Servers        []*ServerConfig
 	AlbumPage      AlbumPageConfig
+	FavoritesPage  FavoritesPageConfig
 	NowPlayingPage NowPlayingPageConfig
 	PlaylistPage   PlaylistPageConfig
 	LocalPlayback  LocalPlaybackConfig
@@ -52,10 +58,14 @@ func DefaultConfig() *Config {
 			WindowHeight: 800,
 		},
 		AlbumPage: AlbumPageConfig{
-			TracklistColumns: []string{"Artist", "Time", "Plays"},
+			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite"},
+		},
+		FavoritesPage: FavoritesPageConfig{
+			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
+			InitialView:      "Albums",
 		},
 		NowPlayingPage: NowPlayingPageConfig{
-			TracklistColumns: []string{"Artist", "Album", "Time"},
+			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 		},
 		PlaylistPage: PlaylistPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},

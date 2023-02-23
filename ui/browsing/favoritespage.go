@@ -20,6 +20,7 @@ import (
 type FavoritesPage struct {
 	widget.BaseWidget
 
+	cfg   *backend.FavoritesPageConfig
 	contr controller.Controller
 	pm    *backend.PlaybackManager
 	im    *backend.ImageManager
@@ -41,8 +42,9 @@ type FavoritesPage struct {
 	container     *fyne.Container
 }
 
-func NewFavoritesPage(contr controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *FavoritesPage {
+func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *FavoritesPage {
 	a := &FavoritesPage{
+		cfg:   cfg,
 		contr: contr,
 		pm:    pm,
 		lm:    lm,
@@ -55,6 +57,13 @@ func NewFavoritesPage(contr controller.Controller, sm *backend.ServerManager, pm
 	a.grid = widgets.NewAlbumGrid(a.lm.StarredIter(), a.im, false)
 	a.connectGridActions()
 	a.createContainer(false)
+	if cfg.InitialView == "Artists" {
+		a.toggleBtns.SetActivatedButton(1)
+		a.onShowFavoriteArtists()
+	} else if cfg.InitialView == "Songs" {
+		a.toggleBtns.SetActivatedButton(2)
+		a.onShowFavoriteSongs()
+	}
 	return a
 }
 
@@ -91,6 +100,7 @@ func (a *FavoritesPage) createContainer(searchGrid bool) {
 
 func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	a := &FavoritesPage{
+		cfg:   saved.cfg,
 		contr: saved.contr,
 		pm:    saved.pm,
 		lm:    saved.lm,
@@ -158,7 +168,12 @@ func (a *FavoritesPage) Reload() {
 }
 
 func (a *FavoritesPage) Save() SavedPage {
+	if a.tracklistCtr != nil {
+		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		a.cfg.TracklistColumns = tl.VisibleColumns()
+	}
 	sf := &savedFavoritesPage{
+		cfg:             a.cfg,
 		contr:           a.contr,
 		pm:              a.pm,
 		sm:              a.sm,
@@ -223,6 +238,7 @@ func (a *FavoritesPage) doSearchAlbums(query string) {
 }
 
 func (a *FavoritesPage) onShowFavoriteAlbums() {
+	a.cfg.InitialView = "Albums" // save setting
 	a.searcher.Entry.Show()
 	if a.searchText == "" {
 		a.container.Objects[0] = a.grid
@@ -233,7 +249,8 @@ func (a *FavoritesPage) onShowFavoriteAlbums() {
 }
 
 func (a *FavoritesPage) onShowFavoriteArtists() {
-	a.searcher.Entry.Hide() // disable search on artists for now
+	a.cfg.InitialView = "Artists" // save setting
+	a.searcher.Entry.Hide()       // disable search on artists for now
 	if a.artistListCtr == nil {
 		if a.pendingViewSwitch {
 			return
@@ -277,7 +294,8 @@ func buildArtistListModel(artists []*subsonic.ArtistID3) []widgets.ArtistGenrePl
 }
 
 func (a *FavoritesPage) onShowFavoriteSongs() {
-	a.searcher.Entry.Hide() // disable search on songs for now
+	a.cfg.InitialView = "Songs" // save setting
+	a.searcher.Entry.Hide()     // disable search on songs for now
 	if a.tracklistCtr == nil {
 		if a.pendingViewSwitch {
 			return
@@ -291,8 +309,7 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			}
 			tracklist := widgets.NewTracklist(s.Song)
 			tracklist.AutoNumber = true
-			// TODO: get visible columns from config
-			tracklist.SetVisibleColumns([]string{"Artist", "Album", "Plays"})
+			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 			tracklist.SetNowPlaying(a.nowPlayingID)
 			a.contr.ConnectTracklistActions(tracklist)
 			a.tracklistCtr = container.New(
@@ -326,6 +343,7 @@ func (a *FavoritesPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type savedFavoritesPage struct {
+	cfg             *backend.FavoritesPageConfig
 	contr           controller.Controller
 	pm              *backend.PlaybackManager
 	sm              *backend.ServerManager
