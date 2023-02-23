@@ -62,6 +62,9 @@ func (m Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 		} else {
 			go s.Unstar(subsonic.StarParameters{SongIDs: trackIDs})
 		}
+		for _, id := range trackIDs {
+			m.App.PlaybackManager.OnTrackFavoriteStatusChanged(id, fav)
+		}
 	}
 }
 

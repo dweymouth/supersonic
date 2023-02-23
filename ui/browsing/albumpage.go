@@ -5,6 +5,7 @@ import (
 	"log"
 	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
@@ -100,7 +101,7 @@ func (a *AlbumPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subso
 		a.nowPlayingID = song.ID
 	}
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.tracklist.IncrementPlayCount(lastScrobbledIfAny)
+	a.tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
 }
 
 func (a *AlbumPage) Reload() {

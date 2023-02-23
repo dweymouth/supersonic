@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"supersonic/backend/util"
 	"supersonic/player"
+	"supersonic/sharedutil"
 	"time"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
@@ -141,7 +142,11 @@ func (p *PlaybackManager) LoadTracks(tracks []*subsonic.Child, appendToQueue, sh
 			return err
 		}
 		p.player.AppendFile(url.String())
-		p.playQueue = append(p.playQueue, tracks[i])
+		// ensure a deep copy of the track info so that we can maintain our own state
+		// (tracking play count increases, favorite, and rating) without messing up
+		// other views' track models
+		tr := *tracks[i]
+		p.playQueue = append(p.playQueue, &tr)
 	}
 	return nil
 }
@@ -176,8 +181,22 @@ func (p *PlaybackManager) PlayTrackAt(idx int) error {
 
 func (p *PlaybackManager) GetPlayQueue() []*subsonic.Child {
 	pq := make([]*subsonic.Child, len(p.playQueue))
-	copy(pq, p.playQueue)
+	for i, tr := range p.playQueue {
+		copy := *tr
+		pq[i] = &copy
+	}
 	return pq
+}
+
+// Any time the user changes the favorite status of a track elsewhere in the app,
+// this should be called to ensure the in-memory track model is updated.
+func (p *PlaybackManager) OnTrackFavoriteStatusChanged(id string, fav bool) {
+	tr := sharedutil.FindTrackByID(id, p.playQueue)
+	if fav {
+		tr.Starred = time.Now()
+	} else {
+		tr.Starred = time.Time{}
+	}
 }
 
 // trackIdxs must be sorted
@@ -228,6 +247,7 @@ func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 	song := p.playQueue[p.nowPlayingIdx]
 	if playDur.Seconds()/p.curTrackTime > ScrobbleThreshold {
 		log.Printf("Scrobbling %q", song.Title)
+		song.PlayCount += 1
 		p.lastScrobbled = song
 		p.sm.Server.Scrobble(song.ID, map[string]string{"time": strconv.FormatInt(time.Now().Unix()*1000, 10)})
 	}

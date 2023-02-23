@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"strconv"
 	"supersonic/res"
+	"supersonic/sharedutil"
 	"supersonic/ui/layouts"
 	"supersonic/ui/os"
 	"supersonic/ui/util"
@@ -150,16 +151,10 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 	t.Refresh()
 }
 
-func (t *Tracklist) IncrementPlayCount(track *subsonic.Child) {
-	if track == nil {
-		return
-	}
-	for _, tr := range t.Tracks {
-		if tr.ID == track.ID {
-			tr.PlayCount += 1
-			t.Refresh()
-			return
-		}
+func (t *Tracklist) IncrementPlayCount(trackID string) {
+	if tr := sharedutil.FindTrackByID(trackID, t.Tracks); tr != nil {
+		tr.PlayCount += 1
+		t.Refresh()
 	}
 }
 
@@ -245,6 +240,14 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 }
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
+	// update our own track model
+	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	if fav {
+		tr.Starred = time.Now()
+	} else {
+		tr.Starred = time.Time{}
+	}
+	// notify listener
 	if t.OnSetFavorite != nil {
 		t.OnSetFavorite([]string{trackID}, fav)
 	}
