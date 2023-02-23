@@ -191,11 +191,12 @@ func (p *PlaybackManager) GetPlayQueue() []*subsonic.Child {
 // Any time the user changes the favorite status of a track elsewhere in the app,
 // this should be called to ensure the in-memory track model is updated.
 func (p *PlaybackManager) OnTrackFavoriteStatusChanged(id string, fav bool) {
-	tr := sharedutil.FindTrackByID(id, p.playQueue)
-	if fav {
-		tr.Starred = time.Now()
-	} else {
-		tr.Starred = time.Time{}
+	if tr := sharedutil.FindTrackByID(id, p.playQueue); tr != nil {
+		if fav {
+			tr.Starred = time.Now()
+		} else {
+			tr.Starred = time.Time{}
+		}
 	}
 }
 
