@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"supersonic/backend"
+	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/widgets"
@@ -44,8 +45,9 @@ func NewNowPlayingPage(
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	a.tracklist.AutoNumber = true
 	a.tracklist.DisablePlaybackMenu = true
+	contr.ConnectTracklistActions(a.tracklist)
+	// override the default OnPlayTrackAt handler b/c we don't need to re-load the tracks into the queue
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
-	a.tracklist.OnAddToPlaylist = a.contr.DoAddTracksToPlaylistWorkflow
 	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{
 		fyne.NewMenuItem("Remove from queue", a.onRemoveSelectedFromQueue),
 	}
@@ -86,7 +88,7 @@ func (a *NowPlayingPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *
 		a.nowPlayingID = song.ID
 	}
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.tracklist.IncrementPlayCount(lastScrobbledIfAny)
+	a.tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
 }
 
 func (a *NowPlayingPage) Reload() {

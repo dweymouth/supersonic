@@ -6,12 +6,14 @@ import (
 	"supersonic/backend"
 	"supersonic/ui/dialogs"
 	"supersonic/ui/util"
+	"supersonic/ui/widgets"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type Controller struct {
@@ -38,6 +40,32 @@ func (m Controller) ShowPopUpImage(img image.Image) {
 		(s.Width-popS.Width)/2,
 		(s.Height-popS.Height)/2,
 	))
+}
+
+func (m Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
+	tracklist.OnAddToPlaylist = m.DoAddTracksToPlaylistWorkflow
+	tracklist.OnAddToQueue = func(tracks []*subsonic.Child) {
+		m.App.PlaybackManager.LoadTracks(tracks, true, false)
+	}
+	tracklist.OnPlayTrackAt = func(idx int) {
+		m.App.PlaybackManager.LoadTracks(tracklist.Tracks, false, false)
+		m.App.PlaybackManager.PlayTrackAt(idx)
+	}
+	tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
+		m.App.PlaybackManager.LoadTracks(tracks, false, false)
+		m.App.PlaybackManager.PlayFromBeginning()
+	}
+	tracklist.OnSetFavorite = func(trackIDs []string, fav bool) {
+		s := m.App.ServerManager.Server
+		if fav {
+			go s.Star(subsonic.StarParameters{SongIDs: trackIDs})
+		} else {
+			go s.Unstar(subsonic.StarParameters{SongIDs: trackIDs})
+		}
+		for _, id := range trackIDs {
+			m.App.PlaybackManager.OnTrackFavoriteStatusChanged(id, fav)
+		}
+	}
 }
 
 func (m Controller) PromptForFirstServer() {

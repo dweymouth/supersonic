@@ -4,6 +4,8 @@ import (
 	"log"
 	"runtime"
 	"strconv"
+	"supersonic/res"
+	"supersonic/sharedutil"
 	"supersonic/ui/layouts"
 	"supersonic/ui/os"
 	"supersonic/ui/util"
@@ -19,12 +21,13 @@ import (
 )
 
 const (
-	ColumnArtist  = "Artist"
-	ColumnAlbum   = "Album"
-	ColumnTime    = "Time"
-	ColumnYear    = "Year"
-	ColumnPlays   = "Plays"
-	ColumnBitrate = "Bitrate"
+	ColumnArtist   = "Artist"
+	ColumnAlbum    = "Album"
+	ColumnTime     = "Time"
+	ColumnYear     = "Year"
+	ColumnFavorite = "Favorite"
+	ColumnPlays    = "Plays"
+	ColumnBitrate  = "Bitrate"
 )
 
 type Tracklist struct {
@@ -41,6 +44,7 @@ type Tracklist struct {
 	OnPlaySelection func(tracks []*subsonic.Child)
 	OnAddToQueue    func(trackIDs []*subsonic.Child)
 	OnAddToPlaylist func(trackIDs []string)
+	OnSetFavorite   func(trackIDs []string, fav bool)
 
 	visibleColumns []bool
 
@@ -54,11 +58,12 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
-	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 8)}
+	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 9)}
 
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
-	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 60, 65, 75})
+	// #, Title, Artist, Album, Time, Year, Favorite, Plays, Bitrate
+	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 60, 47, 65, 75})
 	t.buildHeader()
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	playingIcon := container.NewCenter(container.NewHBox(NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
@@ -93,6 +98,7 @@ func (t *Tracklist) buildHeader() {
 		{Text: "Album", AlignTrailing: false, CanToggleVisible: true},
 		{Text: "Time", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "Year", AlignTrailing: true, CanToggleVisible: true},
+		{Text: "Fav.", AlignTrailing: false, CanToggleVisible: true},
 		{Text: "Plays", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "Bitrate", AlignTrailing: true, CanToggleVisible: true}},
 		t.colLayout)
@@ -142,19 +148,13 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 			break
 		}
 	}
-	t.list.Refresh()
+	t.Refresh()
 }
 
-func (t *Tracklist) IncrementPlayCount(track *subsonic.Child) {
-	if track == nil {
-		return
-	}
-	for _, tr := range t.Tracks {
-		if tr.ID == track.ID {
-			tr.PlayCount += 1
-			t.Refresh()
-			return
-		}
+func (t *Tracklist) IncrementPlayCount(trackID string) {
+	if tr := sharedutil.FindTrackByID(trackID, t.Tracks); tr != nil {
+		tr.PlayCount += 1
+		t.Refresh()
 	}
 }
 
@@ -239,6 +239,20 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
 }
 
+func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
+	// update our own track model
+	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	if fav {
+		tr.Starred = time.Now()
+	} else {
+		tr.Starred = time.Time{}
+	}
+	// notify listener
+	if t.OnSetFavorite != nil {
+		t.OnSetFavorite([]string{trackID}, fav)
+	}
+}
+
 func (t *Tracklist) selectedTracks() []*subsonic.Child {
 	sel := t.selectionMgr.GetSelection()
 	tracks := make([]*subsonic.Child, 0, len(sel))
@@ -272,10 +286,12 @@ func ColNumber(colName string) int {
 		return 4
 	case ColumnYear:
 		return 5
-	case ColumnPlays:
+	case ColumnFavorite:
 		return 6
-	case ColumnBitrate:
+	case ColumnPlays:
 		return 7
+	case ColumnBitrate:
+		return 8
 	default:
 		log.Printf("error: Tracklist: invalid column name %s", colName)
 		return -100
@@ -294,8 +310,10 @@ func colName(i int) string {
 	case 5:
 		return ColumnYear
 	case 6:
-		return ColumnPlays
+		return ColumnFavorite
 	case 7:
+		return ColumnPlays
+	case 8:
 		return ColumnBitrate
 	default:
 		return ""
@@ -306,21 +324,24 @@ type TrackRow struct {
 	widget.BaseWidget
 
 	// internal state
-	tracklist *Tracklist
-	trackIdx  int
-	trackID   string
-	isPlaying bool
-	playCount int64
-	tappedAt  int64 // unixMillis
+	tracklist  *Tracklist
+	trackIdx   int
+	trackNum   int
+	trackID    string
+	isPlaying  bool
+	isFavorite bool
+	playCount  int64
+	tappedAt   int64 // unixMillis
 
-	num     *widget.RichText
-	name    *widget.RichText
-	artist  *widget.RichText
-	album   *widget.RichText
-	dur     *widget.RichText
-	year    *widget.RichText
-	bitrate *widget.RichText
-	plays   *widget.RichText
+	num      *widget.RichText
+	name     *widget.RichText
+	artist   *widget.RichText
+	album    *widget.RichText
+	dur      *widget.RichText
+	year     *widget.RichText
+	favorite *fyne.Container
+	bitrate  *widget.RichText
+	plays    *widget.RichText
 
 	OnTapped          func()
 	OnDoubleTapped    func()
@@ -346,6 +367,9 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.dur.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.year = widget.NewRichTextWithText("")
 	t.year.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
+	favorite := NewTappbaleIcon(res.ResHeartOutlineInvertPng)
+	favorite.OnTapped = t.toggleFavorited
+	t.favorite = container.NewCenter(favorite)
 	t.plays = widget.NewRichTextWithText("")
 	t.plays.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.bitrate = widget.NewRichTextWithText("")
@@ -355,20 +379,16 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.selectionRect.Hidden = true
 	t.container = container.NewMax(t.selectionRect,
 		container.New(tracklist.colLayout,
-			t.num, t.name, t.artist, t.album, t.dur, t.year, t.plays, t.bitrate))
+			t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.plays, t.bitrate))
 	return t
 }
 
 func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
-	if tr.ID != t.trackID || isPlaying != t.isPlaying || tr.PlayCount != t.playCount {
-		t.isPlaying = isPlaying
+	// Update info that can change if this row is bound to
+	// a new track (*subsonic.Child)
+	if tr.ID != t.trackID {
 		t.trackID = tr.ID
-		t.playCount = tr.PlayCount
 
-		if rowNum < 0 {
-			rowNum = tr.Track
-		}
-		t.num.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(rowNum)
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 		t.artist.Segments[0].(*widget.TextSegment).Text = tr.Artist
 		t.album.Segments[0].(*widget.TextSegment).Text = tr.Album
@@ -376,7 +396,27 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
 		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
 		t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
+	}
 
+	// Update track num if needed
+	// (which can change based on bound *subsonic.Child or tracklist.AutoNumber)
+	if t.trackNum != rowNum {
+		if rowNum < 0 {
+			rowNum = tr.Track
+		}
+		t.trackNum = rowNum
+		t.num.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(rowNum)
+	}
+
+	// Update play count if needed
+	if tr.PlayCount != t.playCount {
+		t.playCount = tr.PlayCount
+		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
+	}
+
+	// Render whether track is playing or not
+	if isPlaying != t.isPlaying {
+		t.isPlaying = isPlaying
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.artist.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.album.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
@@ -392,14 +432,45 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		}
 	}
 
+	// Render favorite column
+	// TODO: right now the only way for the favorite status to change while the tracklist is visible
+	// is by the user clicking on the heart icon in the favorites column
+	// If this changes in the future (e.g. context menu entry on tracklist), then we will
+	// need better state management/onChanged notif so we know to re-render the column
+	// (maybe update the Starred field directly on the track struct and issue a Refresh call -
+	// like we do to update the now playing value when scrobbles happen)
+	if tr.Starred.IsZero() {
+		t.isFavorite = false
+		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartOutlineInvertPng
+	} else {
+		t.isFavorite = true
+		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartFilledInvertPng
+	}
+
+	// Show only columns configured to be visible
 	t.artist.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnArtist)]
 	t.album.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnAlbum)]
 	t.dur.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnTime)]
 	t.year.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnYear)]
+	t.favorite.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnFavorite)]
 	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
 	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]
 
 	t.Refresh()
+}
+
+func (t *TrackRow) toggleFavorited() {
+	if t.isFavorite {
+		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartOutlineInvertPng
+		t.favorite.Refresh()
+		t.isFavorite = false
+		t.tracklist.onSetFavorite(t.trackID, false)
+	} else {
+		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartFilledInvertPng
+		t.favorite.Refresh()
+		t.isFavorite = true
+		t.tracklist.onSetFavorite(t.trackID, true)
+	}
 }
 
 func (t *TrackRow) CreateRenderer() fyne.WidgetRenderer {
