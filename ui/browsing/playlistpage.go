@@ -36,7 +36,6 @@ type playlistPageState struct {
 	sm         *backend.ServerManager
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
-	nav        func(Route)
 }
 
 func NewPlaylistPage(
@@ -46,7 +45,6 @@ func NewPlaylistPage(
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
-	nav func(Route),
 ) *PlaylistPage {
 	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, conf: conf, contr: contr, sm: sm, pm: pm, im: im}}
 	a.ExtendBaseWidget(a)
@@ -77,8 +75,8 @@ func (a *PlaylistPage) Save() SavedPage {
 	return &p
 }
 
-func (a *PlaylistPage) Route() Route {
-	return PlaylistRoute(a.playlistID)
+func (a *PlaylistPage) Route() controller.Route {
+	return controller.PlaylistRoute(a.playlistID)
 }
 
 func (a *PlaylistPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
@@ -211,5 +209,5 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *subsonic.Playlist) st
 }
 
 func (s *playlistPageState) Restore() Page {
-	return NewPlaylistPage(s.playlistID, s.conf, s.contr, s.sm, s.pm, s.im, s.nav)
+	return NewPlaylistPage(s.playlistID, s.conf, s.contr, s.sm, s.pm, s.im)
 }

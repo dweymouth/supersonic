@@ -29,7 +29,6 @@ type nowPlayingPageState struct {
 	conf  *backend.NowPlayingPageConfig
 	sm    *backend.ServerManager
 	pm    *backend.PlaybackManager
-	nav   func(Route)
 }
 
 func NewNowPlayingPage(
@@ -37,9 +36,8 @@ func NewNowPlayingPage(
 	conf *backend.NowPlayingPageConfig,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
-	nav func(Route),
 ) *NowPlayingPage {
-	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{contr: contr, conf: conf, sm: sm, pm: pm, nav: nav}}
+	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{contr: contr, conf: conf, sm: sm, pm: pm}}
 	a.ExtendBaseWidget(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
@@ -69,8 +67,8 @@ func (a *NowPlayingPage) Save() SavedPage {
 	return &nps
 }
 
-func (a *NowPlayingPage) Route() Route {
-	return NowPlayingRoute()
+func (a *NowPlayingPage) Route() controller.Route {
+	return controller.NowPlayingRoute()
 }
 
 func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
@@ -113,5 +111,5 @@ func (a *NowPlayingPage) load() {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage(s.contr, s.conf, s.sm, s.pm, s.nav)
+	return NewNowPlayingPage(s.contr, s.conf, s.sm, s.pm)
 }

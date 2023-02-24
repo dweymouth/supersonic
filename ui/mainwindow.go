@@ -35,7 +35,7 @@ type MainWindow struct {
 
 	App          *backend.App
 	Router       browsing.Router
-	Controller   controller.Controller
+	Controller   *controller.Controller
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
@@ -43,7 +43,7 @@ type MainWindow struct {
 }
 
 var (
-	HomePage = browsing.AlbumsRoute(backend.AlbumSortRecentlyAdded)
+	HomePage = controller.AlbumsRoute(backend.AlbumSortRecentlyAdded)
 )
 
 func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne.Size) MainWindow {
@@ -53,12 +53,13 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
 
-	m.Controller = controller.Controller{
+	m.Controller = &controller.Controller{
 		MainWindow: m.Window,
 		App:        app,
 	}
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
-	m.BottomPanel = NewBottomPanel(app.Player, m.Router.OpenRoute)
+	m.Controller.NavHandler = m.Router.NavigateTo
+	m.BottomPanel = NewBottomPanel(app.Player, m.Router.NavigateTo)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
@@ -73,7 +74,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 	})
 	app.ServerManager.OnServerConnected(func() {
 		m.BrowsingPane.EnableNavigationButtons()
-		m.Router.OpenRoute(HomePage)
+		m.Router.NavigateTo(HomePage)
 	})
 	app.ServerManager.OnLogout(func() {
 		m.BrowsingPane.DisableNavigationButtons()
@@ -89,22 +90,22 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 
 func (m *MainWindow) addNavigationButtons() {
 	m.BrowsingPane.AddNavigationButton(res.ResHeadphonesInvertPng, func() {
-		m.Router.OpenRoute(browsing.NowPlayingRoute())
+		m.Router.NavigateTo(controller.NowPlayingRoute())
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResHeartFilledInvertPng, func() {
-		m.Router.OpenRoute(browsing.FavoritesRoute())
+		m.Router.NavigateTo(controller.FavoritesRoute())
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResDiscInvertPng, func() {
-		m.Router.OpenRoute(browsing.AlbumsRoute(backend.AlbumSortRecentlyAdded))
+		m.Router.NavigateTo(controller.AlbumsRoute(backend.AlbumSortRecentlyAdded))
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResPeopleInvertPng, func() {
-		m.Router.OpenRoute(browsing.ArtistsRoute())
+		m.Router.NavigateTo(controller.ArtistsRoute())
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResTheatermasksInvertPng, func() {
-		m.Router.OpenRoute(browsing.GenresRoute())
+		m.Router.NavigateTo(controller.GenresRoute())
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResPlaylistInvertPng, func() {
-		m.Router.OpenRoute(browsing.PlaylistsRoute())
+		m.Router.NavigateTo(controller.PlaylistsRoute())
 	})
 }
 

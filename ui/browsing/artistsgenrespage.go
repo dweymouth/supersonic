@@ -3,6 +3,7 @@ package browsing
 import (
 	"log"
 	"supersonic/backend"
+	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/widgets"
 	"time"
@@ -20,22 +21,22 @@ type ArtistsGenresPage struct {
 	widget.BaseWidget
 
 	isGenresPage bool
+	contr        controller.Controller
 	sm           *backend.ServerManager
-	nav          func(Route)
 	titleDisp    *widget.RichText
 	container    *fyne.Container
 	list         *widgets.ArtistGenrePlaylist
 }
 
-func NewArtistsGenresPage(isGenresPage bool, sm *backend.ServerManager, nav func(Route)) *ArtistsGenresPage {
+func NewArtistsGenresPage(isGenresPage bool, contr controller.Controller, sm *backend.ServerManager) *ArtistsGenresPage {
 	title := "Artists"
 	if isGenresPage {
 		title = "Genres"
 	}
 	a := &ArtistsGenresPage{
 		isGenresPage: isGenresPage,
+		contr:        contr,
 		sm:           sm,
-		nav:          nav,
 		titleDisp:    widget.NewRichTextWithText(title),
 	}
 	a.ExtendBaseWidget(a)
@@ -45,9 +46,9 @@ func NewArtistsGenresPage(isGenresPage bool, sm *backend.ServerManager, nav func
 	a.list.ShowTrackCount = isGenresPage
 	a.list.OnNavTo = func(id string) {
 		if a.isGenresPage {
-			nav(GenreRoute(id))
+			a.contr.NavigateTo(controller.GenreRoute(id))
 		} else {
-			nav(ArtistRoute(id))
+			a.contr.NavigateTo(controller.ArtistRoute(id))
 		}
 	}
 	a.buildContainer()
@@ -73,11 +74,11 @@ func (a *ArtistsGenresPage) load() {
 	a.Refresh()
 }
 
-func (a *ArtistsGenresPage) Route() Route {
+func (a *ArtistsGenresPage) Route() controller.Route {
 	if a.isGenresPage {
-		return GenresRoute()
+		return controller.GenresRoute()
 	}
-	return ArtistsRoute()
+	return controller.ArtistsRoute()
 }
 
 func (a *ArtistsGenresPage) Reload() {
@@ -87,19 +88,19 @@ func (a *ArtistsGenresPage) Reload() {
 func (a *ArtistsGenresPage) Save() SavedPage {
 	return &savedArtistsGenresPage{
 		isGenresPage: a.isGenresPage,
+		contr:        a.contr,
 		sm:           a.sm,
-		nav:          a.nav,
 	}
 }
 
 type savedArtistsGenresPage struct {
 	isGenresPage bool
+	contr        controller.Controller
 	sm           *backend.ServerManager
-	nav          func(Route)
 }
 
 func (s *savedArtistsGenresPage) Restore() Page {
-	return NewArtistsGenresPage(s.isGenresPage, s.sm, s.nav)
+	return NewArtistsGenresPage(s.isGenresPage, s.contr, s.sm)
 }
 
 func (a *ArtistsGenresPage) buildArtistListModel(artists *subsonic.ArtistsID3) []widgets.ArtistGenrePlaylistItemModel {

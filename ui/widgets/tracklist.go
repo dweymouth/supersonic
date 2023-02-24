@@ -46,6 +46,9 @@ type Tracklist struct {
 	OnAddToPlaylist func(trackIDs []string)
 	OnSetFavorite   func(trackIDs []string, fav bool)
 
+	OnShowArtistPage func(artistID string)
+	OnShowAlbumPage  func(albumID string)
+
 	visibleColumns []bool
 
 	selectionMgr  util.ListSelectionManager
@@ -253,6 +256,18 @@ func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	}
 }
 
+func (t *Tracklist) onArtistTapped(artistID string) {
+	if t.OnShowArtistPage != nil {
+		t.OnShowArtistPage(artistID)
+	}
+}
+
+func (t *Tracklist) onAlbumTapped(albumID string) {
+	if t.OnShowAlbumPage != nil {
+		t.OnShowAlbumPage(albumID)
+	}
+}
+
 func (t *Tracklist) selectedTracks() []*subsonic.Child {
 	sel := t.selectionMgr.GetSelection()
 	tracks := make([]*subsonic.Child, 0, len(sel))
@@ -328,6 +343,8 @@ type TrackRow struct {
 	trackIdx   int
 	trackNum   int
 	trackID    string
+	artistID   string
+	albumID    string
 	isPlaying  bool
 	isFavorite bool
 	playCount  int64
@@ -335,8 +352,8 @@ type TrackRow struct {
 
 	num      *widget.RichText
 	name     *widget.RichText
-	artist   *widget.RichText
-	album    *widget.RichText
+	artist   *CustomHyperlink
+	album    *CustomHyperlink
 	dur      *widget.RichText
 	year     *widget.RichText
 	favorite *fyne.Container
@@ -359,10 +376,10 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.num.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.name = widget.NewRichTextWithText("")
 	t.name.Wrapping = fyne.TextTruncate
-	t.artist = widget.NewRichTextWithText("")
-	t.artist.Wrapping = fyne.TextTruncate
-	t.album = widget.NewRichTextWithText("")
-	t.album.Wrapping = fyne.TextTruncate
+	t.artist = NewCustomHyperlink()
+	t.artist.OnTapped = func() { tracklist.onArtistTapped(t.artistID) }
+	t.album = NewCustomHyperlink()
+	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
 	t.dur = widget.NewRichTextWithText("")
 	t.dur.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.year = widget.NewRichTextWithText("")
@@ -388,10 +405,12 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	// a new track (*subsonic.Child)
 	if tr.ID != t.trackID {
 		t.trackID = tr.ID
+		t.artistID = tr.ArtistID
+		t.albumID = tr.AlbumID
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
-		t.artist.Segments[0].(*widget.TextSegment).Text = tr.Artist
-		t.album.Segments[0].(*widget.TextSegment).Text = tr.Album
+		t.artist.SetText(tr.Artist)
+		t.album.SetText(tr.Album)
 		t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
 		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
 		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
@@ -418,8 +437,6 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	if isPlaying != t.isPlaying {
 		t.isPlaying = isPlaying
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-		t.artist.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-		t.album.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.dur.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.year.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.plays.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying

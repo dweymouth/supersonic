@@ -26,7 +26,6 @@ type FavoritesPage struct {
 	im    *backend.ImageManager
 	sm    *backend.ServerManager
 	lm    *backend.LibraryManager
-	nav   func(Route)
 
 	searchText        string
 	nowPlayingID      string
@@ -42,7 +41,7 @@ type FavoritesPage struct {
 	container     *fyne.Container
 }
 
-func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *FavoritesPage {
+func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *FavoritesPage {
 	a := &FavoritesPage{
 		cfg:   cfg,
 		contr: contr,
@@ -50,7 +49,6 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr controller.Control
 		lm:    lm,
 		sm:    sm,
 		im:    im,
-		nav:   nav,
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(0, "")
@@ -106,7 +104,6 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 		lm:    saved.lm,
 		sm:    saved.sm,
 		im:    saved.im,
-		nav:   saved.nav,
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(saved.activeToggleBtn, saved.searchText)
@@ -126,8 +123,8 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	return a
 }
 
-func (a *FavoritesPage) Route() Route {
-	return FavoritesRoute()
+func (a *FavoritesPage) Route() controller.Route {
+	return controller.FavoritesRoute()
 }
 
 func (a *FavoritesPage) Reload() {
@@ -179,7 +176,6 @@ func (a *FavoritesPage) Save() SavedPage {
 		sm:              a.sm,
 		im:              a.im,
 		lm:              a.lm,
-		nav:             a.nav,
 		searchText:      a.searchText,
 		gridState:       a.grid.SaveToState(),
 		activeToggleBtn: a.toggleBtns.ActivatedButtonIndex(),
@@ -266,7 +262,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 			artistList := widgets.NewArtistGenrePlaylist(model)
 			artistList.ShowAlbumCount = true
 			artistList.OnNavTo = func(artistID string) {
-				a.nav(ArtistRoute(artistID))
+				a.contr.NavigateTo(controller.ArtistRoute(artistID))
 			}
 			a.artistListCtr = container.New(
 				&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
@@ -330,11 +326,11 @@ func (a *FavoritesPage) onPlayAlbum(albumID string) {
 }
 
 func (a *FavoritesPage) onShowAlbumPage(albumID string) {
-	a.nav(AlbumRoute(albumID))
+	a.contr.NavigateTo(controller.AlbumRoute(albumID))
 }
 
 func (a *FavoritesPage) onShowArtistPage(artistID string) {
-	a.nav(ArtistRoute(artistID))
+	a.contr.NavigateTo(controller.ArtistRoute(artistID))
 }
 
 func (a *FavoritesPage) CreateRenderer() fyne.WidgetRenderer {
@@ -353,7 +349,6 @@ type savedFavoritesPage struct {
 	searchGridState widgets.AlbumGridState
 	searchText      string
 	activeToggleBtn int
-	nav             func(Route)
 }
 
 func (s *savedFavoritesPage) Restore() Page {

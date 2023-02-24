@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"supersonic/backend"
+	"supersonic/ui/controller"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -17,10 +18,10 @@ type AlbumsPage struct {
 	widget.BaseWidget
 
 	title      string
+	contr      controller.Controller
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
 	lm         *backend.LibraryManager
-	nav        func(Route)
 	grid       *widgets.AlbumGrid
 	searchGrid *widgets.AlbumGrid
 	searcher   *widgets.Searcher
@@ -51,13 +52,13 @@ func (s *selectWidget) MinSize() fyne.Size {
 	return fyne.NewSize(170, s.height)
 }
 
-func NewAlbumsPage(title string, sortOrder string, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *AlbumsPage {
+func NewAlbumsPage(title string, sortOrder string, contr controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *AlbumsPage {
 	a := &AlbumsPage{
 		title: title,
+		contr: contr,
 		pm:    pm,
 		lm:    lm,
 		im:    im,
-		nav:   nav,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -99,10 +100,10 @@ func (a *AlbumsPage) createContainer(searchgrid bool) {
 func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a := &AlbumsPage{
 		title: saved.title,
+		contr: saved.contr,
 		pm:    saved.pm,
 		lm:    saved.lm,
 		im:    saved.im,
-		nav:   saved.nav,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -138,8 +139,8 @@ func (a *AlbumsPage) OnSearched(query string) {
 	a.doSearch(query)
 }
 
-func (a *AlbumsPage) Route() Route {
-	return AlbumsRoute(backend.AlbumSortOrder(a.sortOrder.Selected))
+func (a *AlbumsPage) Route() controller.Route {
+	return controller.AlbumsRoute(backend.AlbumSortOrder(a.sortOrder.Selected))
 }
 
 var _ Searchable = (*AlbumsPage)(nil)
@@ -160,10 +161,10 @@ func (a *AlbumsPage) Reload() {
 func (a *AlbumsPage) Save() SavedPage {
 	sa := &savedAlbumsPage{
 		title:      a.title,
+		contr:      a.contr,
 		pm:         a.pm,
 		lm:         a.lm,
 		im:         a.im,
-		nav:        a.nav,
 		searchText: a.searchText,
 		sortOrder:  a.sortOrder.Selected,
 		gridState:  a.grid.SaveToState(),
@@ -192,11 +193,11 @@ func (a *AlbumsPage) onPlayAlbum(albumID string) {
 }
 
 func (a *AlbumsPage) onShowArtistPage(artistID string) {
-	a.nav(ArtistRoute(artistID))
+	a.contr.NavigateTo(controller.ArtistRoute(artistID))
 }
 
 func (a *AlbumsPage) onShowAlbumPage(albumID string) {
-	a.nav(AlbumRoute(albumID))
+	a.contr.NavigateTo(controller.AlbumRoute(albumID))
 }
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
@@ -215,10 +216,10 @@ func (a *AlbumsPage) CreateRenderer() fyne.WidgetRenderer {
 type savedAlbumsPage struct {
 	title           string
 	searchText      string
+	contr           controller.Controller
 	pm              *backend.PlaybackManager
 	lm              *backend.LibraryManager
 	im              *backend.ImageManager
-	nav             func(Route)
 	sortOrder       string
 	gridState       widgets.AlbumGridState
 	searchGridState widgets.AlbumGridState

@@ -16,9 +16,16 @@ import (
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
+type NavigationHandler func(Route)
+
 type Controller struct {
 	MainWindow fyne.Window
 	App        *backend.App
+	NavHandler NavigationHandler
+}
+
+func (m Controller) NavigateTo(route Route) {
+	m.NavHandler(route)
 }
 
 func (m Controller) ShowPopUpImage(img image.Image) {
@@ -65,6 +72,12 @@ func (m Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 		for _, id := range trackIDs {
 			m.App.PlaybackManager.OnTrackFavoriteStatusChanged(id, fav)
 		}
+	}
+	tracklist.OnShowAlbumPage = func(albumID string) {
+		m.NavigateTo(AlbumRoute(albumID))
+	}
+	tracklist.OnShowArtistPage = func(artistID string) {
+		m.NavigateTo(ArtistRoute(artistID))
 	}
 }
 

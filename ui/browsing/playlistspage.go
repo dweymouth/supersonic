@@ -4,6 +4,7 @@ import (
 	"log"
 	"strconv"
 	"supersonic/backend"
+	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/widgets"
 
@@ -17,24 +18,24 @@ import (
 type PlaylistsPage struct {
 	widget.BaseWidget
 
+	contr     controller.Controller
 	sm        *backend.ServerManager
-	nav       func(Route)
 	titleDisp *widget.RichText
 	container *fyne.Container
 	list      *PlaylistList
 }
 
-func NewPlaylistsPage(sm *backend.ServerManager, nav func(Route)) *PlaylistsPage {
+func NewPlaylistsPage(contr controller.Controller, sm *backend.ServerManager) *PlaylistsPage {
 	a := &PlaylistsPage{
 		sm:        sm,
-		nav:       nav,
+		contr:     contr,
 		titleDisp: widget.NewRichTextWithText("Playlists"),
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
 	a.list = NewPlaylistList()
 	a.list.OnNavTo = func(id string) {
-		nav(PlaylistRoute(id))
+		a.contr.NavigateTo(controller.PlaylistRoute(id))
 	}
 	a.buildContainer()
 	go a.loadAsync()
@@ -50,8 +51,8 @@ func (a *PlaylistsPage) loadAsync() {
 	a.list.Refresh()
 }
 
-func (a *PlaylistsPage) Route() Route {
-	return PlaylistsRoute()
+func (a *PlaylistsPage) Route() controller.Route {
+	return controller.PlaylistsRoute()
 }
 
 func (a *PlaylistsPage) Reload() {
@@ -60,18 +61,18 @@ func (a *PlaylistsPage) Reload() {
 
 func (a *PlaylistsPage) Save() SavedPage {
 	return &savedPlaylistsPage{
-		sm:  a.sm,
-		nav: a.nav,
+		contr: a.contr,
+		sm:    a.sm,
 	}
 }
 
 type savedPlaylistsPage struct {
-	sm  *backend.ServerManager
-	nav func(Route)
+	contr controller.Controller
+	sm    *backend.ServerManager
 }
 
 func (s *savedPlaylistsPage) Restore() Page {
-	return NewPlaylistsPage(s.sm, s.nav)
+	return NewPlaylistsPage(s.contr, s.sm)
 }
 
 func (a *PlaylistsPage) buildContainer() {

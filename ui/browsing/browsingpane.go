@@ -3,6 +3,7 @@ package browsing
 import (
 	"image/color"
 	"supersonic/backend"
+	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
@@ -19,7 +20,7 @@ type Page interface {
 
 	Save() SavedPage
 	Reload()
-	Route() Route
+	Route() controller.Route
 }
 
 type SavedPage interface {
@@ -216,7 +217,7 @@ var _ Page = (*blankPage)(nil)
 
 func (p *blankPage) Reload() {}
 
-func (p *blankPage) Route() Route { return Route{Page: Blank} }
+func (p *blankPage) Route() controller.Route { return controller.Route{Page: controller.Blank} }
 
 func (p *blankPage) Save() SavedPage { return p }
 

@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"supersonic/backend"
+	"supersonic/ui/controller"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -17,10 +18,10 @@ type GenrePage struct {
 	widget.BaseWidget
 
 	genre      string
+	contr      controller.Controller
 	im         *backend.ImageManager
 	pm         *backend.PlaybackManager
 	lm         *backend.LibraryManager
-	nav        func(Route)
 	grid       *widgets.AlbumGrid
 	searchGrid *widgets.AlbumGrid
 	searcher   *widgets.Searcher
@@ -32,13 +33,13 @@ type GenrePage struct {
 	container *fyne.Container
 }
 
-func NewGenrePage(genre string, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager, nav func(Route)) *GenrePage {
+func NewGenrePage(genre string, contr controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *GenrePage {
 	g := &GenrePage{
 		genre: genre,
+		contr: contr,
 		pm:    pm,
 		lm:    lm,
 		im:    im,
-		nav:   nav,
 	}
 	g.ExtendBaseWidget(g)
 
@@ -76,10 +77,10 @@ func (g *GenrePage) createContainer(searchGrid bool) {
 func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g := &GenrePage{
 		genre: saved.genre,
+		contr: saved.contr,
 		pm:    saved.pm,
 		lm:    saved.lm,
 		im:    saved.im,
-		nav:   saved.nav,
 	}
 	g.ExtendBaseWidget(g)
 
@@ -103,8 +104,8 @@ func (g *GenrePage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.container)
 }
 
-func (a *GenrePage) Route() Route {
-	return GenreRoute(a.genre)
+func (a *GenrePage) Route() controller.Route {
+	return controller.GenreRoute(a.genre)
 }
 
 func (a *GenrePage) SetPlayAlbumCallback(cb func(string, int)) {
@@ -124,10 +125,10 @@ func (g *GenrePage) Save() SavedPage {
 	sg := &savedGenrePage{
 		genre:      g.genre,
 		searchText: g.searchText,
+		contr:      g.contr,
 		pm:         g.pm,
 		lm:         g.lm,
 		im:         g.im,
-		nav:        g.nav,
 		gridState:  g.grid.SaveToState(),
 	}
 	if g.searchGrid != nil {
@@ -147,11 +148,11 @@ func (a *GenrePage) onPlayAlbum(albumID string) {
 }
 
 func (a *GenrePage) onShowArtistPage(artistID string) {
-	a.nav(ArtistRoute(artistID))
+	a.contr.NavigateTo(controller.ArtistRoute(artistID))
 }
 
 func (a *GenrePage) onShowAlbumPage(albumID string) {
-	a.nav(AlbumRoute(albumID))
+	a.contr.NavigateTo(controller.AlbumRoute(albumID))
 }
 
 func (g *GenrePage) OnSearched(query string) {
@@ -186,10 +187,10 @@ func (g *GenrePage) doSearch(query string) {
 type savedGenrePage struct {
 	genre           string
 	searchText      string
+	contr           controller.Controller
 	pm              *backend.PlaybackManager
 	lm              *backend.LibraryManager
 	im              *backend.ImageManager
-	nav             func(Route)
 	gridState       widgets.AlbumGridState
 	searchGridState widgets.AlbumGridState
 }

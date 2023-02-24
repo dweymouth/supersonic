@@ -38,7 +38,6 @@ type albumPageState struct {
 	im      *backend.ImageManager
 	sm      *backend.ServerManager
 	contr   controller.Controller
-	nav     func(Route)
 }
 
 func NewAlbumPage(
@@ -49,7 +48,6 @@ func NewAlbumPage(
 	lm *backend.LibraryManager,
 	im *backend.ImageManager,
 	contr controller.Controller,
-	nav func(Route),
 ) *AlbumPage {
 	a := &AlbumPage{
 		albumPageState: albumPageState{
@@ -59,7 +57,6 @@ func NewAlbumPage(
 			pm:      pm,
 			lm:      lm,
 			im:      im,
-			nav:     nav,
 			contr:   contr,
 		},
 	}
@@ -90,8 +87,8 @@ func (a *AlbumPage) Save() SavedPage {
 	return &s
 }
 
-func (a *AlbumPage) Route() Route {
-	return AlbumRoute(a.albumID)
+func (a *AlbumPage) Route() controller.Route {
+	return controller.AlbumRoute(a.albumID)
 }
 
 func (a *AlbumPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
@@ -166,11 +163,11 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	}
 	a.artistLabel = widgets.NewCustomHyperlink()
 	a.artistLabel.OnTapped = func() {
-		page.nav(ArtistRoute(a.artistID))
+		page.contr.NavigateTo(controller.ArtistRoute(a.artistID))
 	}
 	a.genreLabel = widgets.NewCustomHyperlink()
 	a.genreLabel.OnTapped = func() {
-		page.nav(GenreRoute(a.genre))
+		page.contr.NavigateTo(controller.GenreRoute(a.genre))
 	}
 	a.miscLabel = widget.NewLabel("")
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
@@ -249,5 +246,5 @@ func formatMiscLabelStr(a *subsonic.AlbumID3) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return NewAlbumPage(s.albumID, s.cfg, s.sm, s.pm, s.lm, s.im, s.contr, s.nav)
+	return NewAlbumPage(s.albumID, s.cfg, s.sm, s.pm, s.lm, s.im, s.contr)
 }

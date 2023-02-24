@@ -26,7 +26,6 @@ type artistPageState struct {
 	artistID string
 	sm       *backend.ServerManager
 	im       *backend.ImageManager
-	nav      func(Route)
 	contr    controller.Controller
 }
 
@@ -41,16 +40,15 @@ type ArtistPage struct {
 	OnPlayAlbum func(string, int)
 }
 
-func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, contr controller.Controller, nav func(Route)) *ArtistPage {
+func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, contr controller.Controller) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
 		artistID: artistID,
 		sm:       sm,
 		im:       im,
-		nav:      nav,
 		contr:    contr,
 	}}
 	a.ExtendBaseWidget(a)
-	a.header = NewArtistPageHeader(a, nav)
+	a.header = NewArtistPageHeader(a)
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
 		nil, nil, nil, layout.NewSpacer())
@@ -58,8 +56,8 @@ func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.Image
 	return a
 }
 
-func (a *ArtistPage) Route() Route {
-	return ArtistRoute(a.artistID)
+func (a *ArtistPage) Route() controller.Route {
+	return controller.ArtistRoute(a.artistID)
 }
 
 func (a *ArtistPage) SetPlayAlbumCallback(cb func(string, int)) {
@@ -82,7 +80,7 @@ func (a *ArtistPage) onPlayAlbum(albumID string) {
 }
 
 func (a *ArtistPage) onShowAlbumPage(albumID string) {
-	a.nav(AlbumRoute(albumID))
+	a.contr.NavigateTo(controller.AlbumRoute(albumID))
 }
 
 // should be called asynchronously
@@ -111,13 +109,12 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return NewArtistPage(s.artistID, s.sm, s.im, s.contr, s.nav)
+	return NewArtistPage(s.artistID, s.sm, s.im, s.contr)
 }
 
 type ArtistPageHeader struct {
 	widget.BaseWidget
 
-	nav            func(Route)
 	artistID       string
 	artistPage     *ArtistPage
 	artistImage    *widgets.ImagePlaceholder
@@ -128,9 +125,8 @@ type ArtistPageHeader struct {
 	container      *fyne.Container
 }
 
-func NewArtistPageHeader(page *ArtistPage, nav func(Route)) *ArtistPageHeader {
+func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a := &ArtistPageHeader{
-		nav:            nav,
 		artistPage:     page,
 		titleDisp:      widget.NewRichTextWithText(""),
 		biographyDisp:  widget.NewRichTextWithText("Artist biography not available."),
@@ -181,7 +177,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 		h.NoTruncate = true
 		h.SetText(art.Name)
 		h.OnTapped = func(id string) func() {
-			return func() { a.nav(ArtistRoute(id)) }
+			return func() { a.artistPage.contr.NavigateTo(controller.ArtistRoute(id)) }
 		}(art.ID)
 		a.similarArtists.Add(h)
 	}
