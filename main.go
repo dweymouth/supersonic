@@ -5,6 +5,7 @@ import (
 	"path"
 	"supersonic/backend"
 	"supersonic/ui"
+	"supersonic/ui/theme"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -28,7 +29,7 @@ func main() {
 	}
 
 	fyneApp := app.New()
-	fyneApp.Settings().SetTheme(&ui.MyTheme{})
+	fyneApp.Settings().SetTheme(&theme.MyTheme{})
 	w := float32(myApp.Config.Application.WindowWidth)
 	if w <= 1 {
 		w = 1000

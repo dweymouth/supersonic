@@ -36,7 +36,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.cover.SetMinSize(fyne.NewSize(85, 85))
 	n.cover.FillMode = canvas.ImageFillContain
 
-	n.c = container.NewBorder(nil, nil, container.New(&layouts.CenterPadLayout{PadLeftRight: 3, PadTopBottom: 5}, n.cover), nil,
+	n.c = container.NewBorder(nil, nil, n.cover, nil,
 		container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, n.trackName, n.artistName, n.albumName))
 	return n
 }

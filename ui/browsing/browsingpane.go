@@ -1,10 +1,10 @@
 package browsing
 
 import (
-	"image/color"
 	"supersonic/backend"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
+	myTheme "supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -69,7 +69,9 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.pageContainer = container.NewMax(
 		// TODO: get this color into the theme
-		canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 40, A: 255}),
+		canvas.NewRectangle(fyne.CurrentApp().Settings().Theme().Color(
+			myTheme.ColorNamePageBackground, theme.VariantDark,
+		)),
 		layout.NewSpacer())
 	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 		p := widget.NewPopUpMenu(b.settingsMenu,
