@@ -54,13 +54,14 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr controller.Control
 	a.createHeader(0, "")
 	a.grid = widgets.NewAlbumGrid(a.lm.StarredIter(), a.im, false)
 	a.connectGridActions()
-	a.createContainer(false)
 	if cfg.InitialView == "Artists" {
 		a.toggleBtns.SetActivatedButton(1)
 		a.onShowFavoriteArtists()
 	} else if cfg.InitialView == "Songs" {
 		a.toggleBtns.SetActivatedButton(2)
 		a.onShowFavoriteSongs()
+	} else { // Albums view
+		a.createContainer(a.grid)
 	}
 	return a
 }
@@ -85,15 +86,11 @@ func (a *FavoritesPage) connectGridActions() {
 	a.grid.OnShowArtistPage = a.onShowArtistPage
 }
 
-func (a *FavoritesPage) createContainer(searchGrid bool) {
+func (a *FavoritesPage) createContainer(initialView fyne.CanvasObject) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
-	gr := a.grid
-	if searchGrid {
-		gr = a.searchGrid
-	}
 	a.container = container.NewBorder(
 		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
-		nil, nil, nil, gr)
+		nil, nil, nil, initialView)
 }
 
 func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
@@ -113,11 +110,15 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	if saved.searchText != "" {
 		a.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
 	}
-	a.createContainer(saved.searchText != "")
+
 	if saved.activeToggleBtn == 1 {
 		a.onShowFavoriteArtists()
 	} else if saved.activeToggleBtn == 2 {
 		a.onShowFavoriteSongs()
+	} else if saved.searchText != "" {
+		a.createContainer(a.searchGrid)
+	} else {
+		a.createContainer(a.grid)
 	}
 
 	return a
@@ -252,6 +253,9 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 			return
 		}
 		a.pendingViewSwitch = true
+		if a.container == nil {
+			a.createContainer(layout.NewSpacer())
+		}
 		go func() {
 			s, err := a.sm.Server.GetStarred2(nil)
 			if err != nil {
@@ -297,6 +301,9 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			return
 		}
 		a.pendingViewSwitch = true
+		if a.container == nil {
+			a.createContainer(layout.NewSpacer())
+		}
 		go func() {
 			s, err := a.sm.Server.GetStarred2(nil)
 			if err != nil {
