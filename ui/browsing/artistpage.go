@@ -24,6 +24,7 @@ var _ fyne.Widget = (*ArtistPage)(nil)
 
 type artistPageState struct {
 	artistID string
+	pm       *backend.PlaybackManager
 	sm       *backend.ServerManager
 	im       *backend.ImageManager
 	contr    controller.Controller
@@ -34,15 +35,16 @@ type ArtistPage struct {
 
 	artistPageState
 
+	artistInfo *subsonic.ArtistID3
+
 	header    *ArtistPageHeader
 	container *fyne.Container
-
-	OnPlayAlbum func(string, int)
 }
 
-func NewArtistPage(artistID string, sm *backend.ServerManager, im *backend.ImageManager, contr controller.Controller) *ArtistPage {
+func NewArtistPage(artistID string, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr controller.Controller) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
 		artistID: artistID,
+		pm:       pm,
 		sm:       sm,
 		im:       im,
 		contr:    contr,
@@ -60,10 +62,6 @@ func (a *ArtistPage) Route() controller.Route {
 	return controller.ArtistRoute(a.artistID)
 }
 
-func (a *ArtistPage) SetPlayAlbumCallback(cb func(string, int)) {
-	a.OnPlayAlbum = cb
-}
-
 func (a *ArtistPage) Reload() {
 	go a.load()
 }
@@ -74,8 +72,15 @@ func (a *ArtistPage) Save() SavedPage {
 }
 
 func (a *ArtistPage) onPlayAlbum(albumID string) {
-	if a.OnPlayAlbum != nil {
-		a.OnPlayAlbum(albumID, 0)
+	a.pm.PlayAlbum(albumID, 0)
+}
+
+func (a *ArtistPage) playAllTracks() {
+	if a.artistInfo != nil { // page loaded
+		for i, album := range a.artistInfo.Album {
+			a.pm.LoadAlbum(album.ID, i > 0 /*append*/, false /*shuffle*/)
+		}
+		a.pm.PlayFromBeginning()
 	}
 }
 
@@ -90,6 +95,7 @@ func (a *ArtistPage) load() {
 		log.Printf("Failed to get artist: %s", err.Error())
 		return
 	}
+	a.artistInfo = artist
 	a.header.Update(artist)
 	ag := widgets.NewFixedAlbumGrid(artist.Album, a.im, true /*showYear*/)
 	ag.OnPlayAlbum = a.onPlayAlbum
@@ -109,7 +115,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return NewArtistPage(s.artistID, s.sm, s.im, s.contr)
+	return NewArtistPage(s.artistID, s.pm, s.sm, s.im, s.contr)
 }
 
 type ArtistPageHeader struct {
@@ -122,6 +128,7 @@ type ArtistPageHeader struct {
 	biographyDisp  *widget.RichText
 	similarArtists *fyne.Container
 	favoriteBtn    *widgets.FavoriteButton
+	playBtn        *widget.Button
 	container      *fyne.Container
 }
 
@@ -137,6 +144,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	}
 	a.artistImage = widgets.NewImagePlaceholder(res.ResPeopleInvertPng, 225)
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
+	a.playBtn = widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), page.playAllTracks)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.ExtendBaseWidget(a)
 	a.createContainer()
@@ -209,7 +217,7 @@ func (a *ArtistPageHeader) createContainer() {
 		container.NewVBox(
 			container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 				a.titleDisp, a.biographyDisp, a.similarArtists),
-			container.NewHBox(widgets.NewHSpace(2), a.favoriteBtn)))
+			container.NewHBox(widgets.NewHSpace(2), a.favoriteBtn, a.playBtn)))
 }
 
 func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {
