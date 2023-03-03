@@ -24,6 +24,10 @@ type AlbumPageConfig struct {
 	TracklistColumns []string
 }
 
+type AlbumsPageConfig struct {
+	SortOrder string
+}
+
 type FavoritesPageConfig struct {
 	InitialView      string
 	TracklistColumns []string
@@ -45,6 +49,7 @@ type Config struct {
 	Application    AppConfig
 	Servers        []*ServerConfig
 	AlbumPage      AlbumPageConfig
+	AlbumsPage     AlbumsPageConfig
 	FavoritesPage  FavoritesPageConfig
 	NowPlayingPage NowPlayingPageConfig
 	PlaylistPage   PlaylistPageConfig
@@ -59,6 +64,9 @@ func DefaultConfig() *Config {
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite"},
+		},
+		AlbumsPage: AlbumsPageConfig{
+			SortOrder: string(AlbumSortRecentlyAdded),
 		},
 		FavoritesPage: FavoritesPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},

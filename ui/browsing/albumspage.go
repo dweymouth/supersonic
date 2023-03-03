@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"supersonic/backend"
+	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/widgets"
 
@@ -17,7 +18,7 @@ var _ fyne.Widget = (*AlbumsPage)(nil)
 type AlbumsPage struct {
 	widget.BaseWidget
 
-	title      string
+	cfg        *backend.AlbumsPageConfig
 	contr      controller.Controller
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
@@ -52,9 +53,9 @@ func (s *selectWidget) MinSize() fyne.Size {
 	return fyne.NewSize(170, s.height)
 }
 
-func NewAlbumsPage(title string, sortOrder string, contr controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *AlbumsPage {
+func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *AlbumsPage {
 	a := &AlbumsPage{
-		title: title,
+		cfg:   cfg,
 		contr: contr,
 		pm:    pm,
 		lm:    lm,
@@ -62,13 +63,15 @@ func NewAlbumsPage(title string, sortOrder string, contr controller.Controller, 
 	}
 	a.ExtendBaseWidget(a)
 
-	a.titleDisp = widget.NewRichTextWithText(title)
+	a.titleDisp = widget.NewRichTextWithText("Albums")
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.sortOrder = NewSelect(backend.AlbumSortOrders, nil)
-	a.sortOrder.Selected = sortOrder
-	a.sortOrder.OnChanged = a.onSortOrderChanged
+	a.sortOrder = NewSelect(backend.AlbumSortOrders, a.onSortOrderChanged)
+	if !sharedutil.StringSliceContains(backend.AlbumSortOrders, cfg.SortOrder) {
+		cfg.SortOrder = string(backend.AlbumSortRecentlyAdded)
+	}
+	a.sortOrder.Selected = cfg.SortOrder
 	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected))
 	a.grid = widgets.NewAlbumGrid(iter, im, false /*showYear*/)
 	a.grid.OnPlayAlbum = a.onPlayAlbum
@@ -99,7 +102,7 @@ func (a *AlbumsPage) createContainer(searchgrid bool) {
 
 func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a := &AlbumsPage{
-		title: saved.title,
+		cfg:   saved.cfg,
 		contr: saved.contr,
 		pm:    saved.pm,
 		lm:    saved.lm,
@@ -107,7 +110,7 @@ func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.titleDisp = widget.NewRichTextWithText(a.title)
+	a.titleDisp = widget.NewRichTextWithText("Albums")
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
@@ -140,7 +143,7 @@ func (a *AlbumsPage) OnSearched(query string) {
 }
 
 func (a *AlbumsPage) Route() controller.Route {
-	return controller.AlbumsRoute(backend.AlbumSortOrder(a.sortOrder.Selected))
+	return controller.AlbumsRoute()
 }
 
 var _ Searchable = (*AlbumsPage)(nil)
@@ -160,7 +163,7 @@ func (a *AlbumsPage) Reload() {
 
 func (a *AlbumsPage) Save() SavedPage {
 	sa := &savedAlbumsPage{
-		title:      a.title,
+		cfg:        a.cfg,
 		contr:      a.contr,
 		pm:         a.pm,
 		lm:         a.lm,
@@ -201,6 +204,7 @@ func (a *AlbumsPage) onShowAlbumPage(albumID string) {
 }
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
+	a.cfg.SortOrder = a.sortOrder.Selected
 	a.grid.Reset(a.lm.AlbumsIter(backend.AlbumSortOrder(order)))
 	if a.searchText == "" {
 		a.container.Objects[0] = a.grid
@@ -214,8 +218,8 @@ func (a *AlbumsPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type savedAlbumsPage struct {
-	title           string
 	searchText      string
+	cfg             *backend.AlbumsPageConfig
 	contr           controller.Controller
 	pm              *backend.PlaybackManager
 	lm              *backend.LibraryManager

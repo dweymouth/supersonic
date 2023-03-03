@@ -29,7 +29,7 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	case controller.Album:
 		return NewAlbumPage(rte.Arg, &r.App.Config.AlbumPage, r.App.ServerManager, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager, *r.Controller)
 	case controller.Albums:
-		return NewAlbumsPage("Albums", rte.Arg, *r.Controller, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager)
+		return NewAlbumsPage(&r.App.Config.AlbumsPage, *r.Controller, r.App.PlaybackManager, r.App.LibraryManager, r.App.ImageManager)
 	case controller.Artist:
 		return NewArtistPage(rte.Arg, r.App.PlaybackManager, r.App.ServerManager, r.App.ImageManager, *r.Controller)
 	case controller.Artists:

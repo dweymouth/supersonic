@@ -1,7 +1,5 @@
 package controller
 
-import "supersonic/backend"
-
 type PageName int
 
 const (
@@ -23,8 +21,8 @@ type Route struct {
 	Arg  string
 }
 
-func AlbumsRoute(sortOrder backend.AlbumSortOrder) Route {
-	return Route{Page: Albums, Arg: string(sortOrder)}
+func AlbumsRoute() Route {
+	return Route{Page: Albums}
 }
 
 func ArtistRoute(artistID string) Route {

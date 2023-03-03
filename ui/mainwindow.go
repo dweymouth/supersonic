@@ -43,7 +43,7 @@ type MainWindow struct {
 }
 
 var (
-	HomePage = controller.AlbumsRoute(backend.AlbumSortRecentlyAdded)
+	HomePage = controller.AlbumsRoute()
 )
 
 func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne.Size) MainWindow {
@@ -97,7 +97,7 @@ func (m *MainWindow) addNavigationButtons() {
 		m.Router.NavigateTo(controller.FavoritesRoute())
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResDiscInvertPng, func() {
-		m.Router.NavigateTo(controller.AlbumsRoute(backend.AlbumSortRecentlyAdded))
+		m.Router.NavigateTo(controller.AlbumsRoute())
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResPeopleInvertPng, func() {
 		m.Router.NavigateTo(controller.ArtistsRoute())
