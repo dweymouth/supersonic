@@ -42,6 +42,7 @@ func (m Controller) ShowPopUpImage(img image.Image) {
 		w := s.Width * 0.8
 		popS = fyne.NewSize(w, w*(1/asp))
 	}
+	util.ClosePopUpOnEscape(pop)
 	pop.Resize(popS)
 	pop.ShowAtPosition(fyne.NewPos(
 		(s.Width-popS.Width)/2,
@@ -120,6 +121,7 @@ func (m Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 
 	dlg := dialogs.NewAddToPlaylistDialog("Add to Playlist", plNames)
 	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
+	util.ClosePopUpOnEscape(pop)
 	dlg.OnCanceled = pop.Hide
 	dlg.OnSubmit = func(playlistChoice int, newPlaylistName string) {
 		pop.Hide()

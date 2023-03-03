@@ -27,11 +27,6 @@ func ImageAspect(im image.Image) float32 {
 	return float32(b.Max.X-b.Min.X) / float32(b.Max.Y-b.Min.Y)
 }
 
-type PopUpProvider interface {
-	CreatePopUp(fyne.CanvasObject) *widget.PopUp
-	WindowSize() fyne.Size
-}
-
 func RichTextSegsFromHTMLString(s string) []widget.RichTextSegment {
 	tokr := html.NewTokenizer(strings.NewReader(s))
 	var segs []widget.RichTextSegment
@@ -58,4 +53,12 @@ func RichTextSegsFromHTMLString(s string) []widget.RichTextSegment {
 	}
 
 	return segs
+}
+
+func ClosePopUpOnEscape(pop *widget.PopUp) {
+	pop.Canvas.SetOnTypedKey(func(e *fyne.KeyEvent) {
+		if e.Name == fyne.KeyEscape {
+			pop.Hide()
+		}
+	})
 }
