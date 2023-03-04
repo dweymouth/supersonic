@@ -68,7 +68,6 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.pageContainer = container.NewMax(
-		// TODO: get this color into the theme
 		canvas.NewRectangle(fyne.CurrentApp().Settings().Theme().Color(
 			myTheme.ColorNamePageBackground, theme.VariantDark,
 		)),
