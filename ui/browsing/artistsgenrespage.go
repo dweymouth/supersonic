@@ -134,7 +134,9 @@ func (a *ArtistsGenresPage) buildGenresListModel(genres []*subsonic.Genre) []wid
 
 func (a *ArtistsGenresPage) buildContainer() {
 	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
-		container.NewBorder(a.titleDisp, nil, nil, nil, a.list))
+		container.NewBorder(
+			container.New(&layouts.MaxPadLayout{PadLeft: -5}, a.titleDisp),
+			nil, nil, nil, a.list))
 }
 
 func (a *ArtistsGenresPage) CreateRenderer() fyne.WidgetRenderer {
