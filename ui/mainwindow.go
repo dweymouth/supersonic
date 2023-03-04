@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"supersonic/backend"
 	"supersonic/res"
 	"supersonic/ui/browsing"
@@ -70,7 +71,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 			m.Window.SetTitle(appName)
 			return
 		}
-		m.Window.SetTitle(song.Title)
+		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", song.Title, song.Artist, appName))
 	})
 	app.ServerManager.OnServerConnected(func() {
 		m.BrowsingPane.EnableNavigationButtons()
