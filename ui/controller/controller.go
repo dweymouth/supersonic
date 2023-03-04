@@ -19,16 +19,23 @@ import (
 type NavigationHandler func(Route)
 
 type Controller struct {
+	// if not nil, this popup should be hidden when escape is pressed
+	EscapablePopUp *widget.PopUp
+
 	MainWindow fyne.Window
 	App        *backend.App
 	NavHandler NavigationHandler
 }
 
-func (m Controller) NavigateTo(route Route) {
+func (m *Controller) NavigateTo(route Route) {
 	m.NavHandler(route)
 }
 
-func (m Controller) ShowPopUpImage(img image.Image) {
+func (m *Controller) ClosePopUpOnEscape(pop *widget.PopUp) {
+	m.EscapablePopUp = pop
+}
+
+func (m *Controller) ShowPopUpImage(img image.Image) {
 	im := canvas.NewImageFromImage(img)
 	im.FillMode = canvas.ImageFillContain
 	pop := widget.NewPopUp(im, m.MainWindow.Canvas())
@@ -42,7 +49,7 @@ func (m Controller) ShowPopUpImage(img image.Image) {
 		w := s.Width * 0.8
 		popS = fyne.NewSize(w, w*(1/asp))
 	}
-	util.ClosePopUpOnEscape(pop)
+	m.ClosePopUpOnEscape(pop)
 	pop.Resize(popS)
 	pop.ShowAtPosition(fyne.NewPos(
 		(s.Width-popS.Width)/2,
@@ -50,7 +57,7 @@ func (m Controller) ShowPopUpImage(img image.Image) {
 	))
 }
 
-func (m Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
+func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 	tracklist.OnAddToPlaylist = m.DoAddTracksToPlaylistWorkflow
 	tracklist.OnAddToQueue = func(tracks []*subsonic.Child) {
 		m.App.PlaybackManager.LoadTracks(tracks, true, false)
@@ -82,7 +89,7 @@ func (m Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 	}
 }
 
-func (m Controller) PromptForFirstServer() {
+func (m *Controller) PromptForFirstServer() {
 	d := dialogs.NewAddEditServerDialog("Connect to Server", nil)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func() {
@@ -107,7 +114,7 @@ func (m Controller) PromptForFirstServer() {
 // Show dialog to prompt for playlist.
 // Depending on the results of that dialog, potentially create a new playlist
 // Add tracks to the user-specified playlist
-func (m Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
+func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	pls, err := m.App.LibraryManager.GetUserOwnedPlaylists()
 	if err != nil {
 		// TODO: surface this error to user
@@ -121,7 +128,7 @@ func (m Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 
 	dlg := dialogs.NewAddToPlaylistDialog("Add to Playlist", plNames)
 	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
-	util.ClosePopUpOnEscape(pop)
+	m.ClosePopUpOnEscape(pop)
 	dlg.OnCanceled = pop.Hide
 	dlg.OnSubmit = func(playlistChoice int, newPlaylistName string) {
 		pop.Hide()
@@ -136,7 +143,7 @@ func (m Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	pop.Show()
 }
 
-func (c Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
+func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	pass, err := c.App.ServerManager.GetServerPassword(server)
 	if err != nil {
 		log.Printf("error getting password from keyring: %v", err)
@@ -152,7 +159,7 @@ func (c Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	}
 }
 
-func (m Controller) PromptForLoginAndConnect() {
+func (m *Controller) PromptForLoginAndConnect() {
 	// TODO: this will need to be rewritten a bit when we support multi servers
 	// need to make sure the intended server is first in the list passed to NewLoginDialog
 	d := dialogs.NewLoginDialog(m.App.Config.Servers)
@@ -196,7 +203,7 @@ func (m Controller) PromptForLoginAndConnect() {
 	pop.Show()
 }
 
-func (c Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {
+func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {
 	if err := c.App.ServerManager.SetServerPassword(server, password); err != nil {
 		log.Printf("error setting keyring credentials: %v", err)
 		// TODO: how best to handle this unexpected codepath
@@ -206,7 +213,7 @@ func (c Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfi
 	return c.tryConnectToServer(server, password)
 }
 
-func (c Controller) tryConnectToServer(server *backend.ServerConfig, password string) error {
+func (c *Controller) tryConnectToServer(server *backend.ServerConfig, password string) error {
 	if err := c.App.ServerManager.TestConnectionAndAuth(server.Hostname, server.Username, password, 10*time.Second); err != nil {
 		return err
 	}
@@ -217,7 +224,7 @@ func (c Controller) tryConnectToServer(server *backend.ServerConfig, password st
 	return nil
 }
 
-func (c Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
+func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
 	dlg.SetInfoText("Testing connection...")
 	err := c.App.ServerManager.TestConnectionAndAuth(dlg.Host, dlg.Username, dlg.Password, 5*time.Second)
 	if err == backend.ErrUnreachable {

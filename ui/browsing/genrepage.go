@@ -18,7 +18,7 @@ type GenrePage struct {
 	widget.BaseWidget
 
 	genre      string
-	contr      controller.Controller
+	contr      *controller.Controller
 	im         *backend.ImageManager
 	pm         *backend.PlaybackManager
 	lm         *backend.LibraryManager
@@ -33,7 +33,7 @@ type GenrePage struct {
 	container *fyne.Container
 }
 
-func NewGenrePage(genre string, contr controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *GenrePage {
+func NewGenrePage(genre string, contr *controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *GenrePage {
 	g := &GenrePage{
 		genre: genre,
 		contr: contr,
@@ -187,7 +187,7 @@ func (g *GenrePage) doSearch(query string) {
 type savedGenrePage struct {
 	genre           string
 	searchText      string
-	contr           controller.Controller
+	contr           *controller.Controller
 	pm              *backend.PlaybackManager
 	lm              *backend.LibraryManager
 	im              *backend.ImageManager

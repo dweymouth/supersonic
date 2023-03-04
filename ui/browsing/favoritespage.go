@@ -21,7 +21,7 @@ type FavoritesPage struct {
 	widget.BaseWidget
 
 	cfg   *backend.FavoritesPageConfig
-	contr controller.Controller
+	contr *controller.Controller
 	pm    *backend.PlaybackManager
 	im    *backend.ImageManager
 	sm    *backend.ServerManager
@@ -41,7 +41,7 @@ type FavoritesPage struct {
 	container     *fyne.Container
 }
 
-func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *FavoritesPage {
+func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *FavoritesPage {
 	a := &FavoritesPage{
 		cfg:   cfg,
 		contr: contr,
@@ -347,7 +347,7 @@ func (a *FavoritesPage) CreateRenderer() fyne.WidgetRenderer {
 
 type savedFavoritesPage struct {
 	cfg             *backend.FavoritesPageConfig
-	contr           controller.Controller
+	contr           *controller.Controller
 	pm              *backend.PlaybackManager
 	sm              *backend.ServerManager
 	im              *backend.ImageManager

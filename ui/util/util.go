@@ -6,7 +6,6 @@ import (
 	"math"
 	"strings"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/net/html"
 )
@@ -53,12 +52,4 @@ func RichTextSegsFromHTMLString(s string) []widget.RichTextSegment {
 	}
 
 	return segs
-}
-
-func ClosePopUpOnEscape(pop *widget.PopUp) {
-	pop.Canvas.SetOnTypedKey(func(e *fyne.KeyEvent) {
-		if e.Name == fyne.KeyEscape {
-			pop.Hide()
-		}
-	})
 }

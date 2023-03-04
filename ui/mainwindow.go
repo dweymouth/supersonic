@@ -141,7 +141,13 @@ func (m *MainWindow) addShortcuts() {
 	}
 
 	m.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {
-		if e.Name == fyne.KeySpace {
+		switch e.Name {
+		case fyne.KeyEscape:
+			if m.Controller.EscapablePopUp != nil {
+				m.Controller.EscapablePopUp.Hide()
+				m.Controller.EscapablePopUp = nil
+			}
+		case fyne.KeySpace:
 			m.App.Player.PlayPause()
 		}
 	})

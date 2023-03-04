@@ -37,7 +37,7 @@ type albumPageState struct {
 	pm      *backend.PlaybackManager
 	im      *backend.ImageManager
 	sm      *backend.ServerManager
-	contr   controller.Controller
+	contr   *controller.Controller
 }
 
 func NewAlbumPage(
@@ -47,7 +47,7 @@ func NewAlbumPage(
 	pm *backend.PlaybackManager,
 	lm *backend.LibraryManager,
 	im *backend.ImageManager,
-	contr controller.Controller,
+	contr *controller.Controller,
 ) *AlbumPage {
 	a := &AlbumPage{
 		albumPageState: albumPageState{

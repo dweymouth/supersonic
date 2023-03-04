@@ -25,14 +25,14 @@ type NowPlayingPage struct {
 }
 
 type nowPlayingPageState struct {
-	contr controller.Controller
+	contr *controller.Controller
 	conf  *backend.NowPlayingPageConfig
 	sm    *backend.ServerManager
 	pm    *backend.PlaybackManager
 }
 
 func NewNowPlayingPage(
-	contr controller.Controller,
+	contr *controller.Controller,
 	conf *backend.NowPlayingPageConfig,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,

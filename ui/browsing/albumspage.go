@@ -19,7 +19,7 @@ type AlbumsPage struct {
 	widget.BaseWidget
 
 	cfg        *backend.AlbumsPageConfig
-	contr      controller.Controller
+	contr      *controller.Controller
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
 	lm         *backend.LibraryManager
@@ -53,7 +53,7 @@ func (s *selectWidget) MinSize() fyne.Size {
 	return fyne.NewSize(170, s.height)
 }
 
-func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *AlbumsPage {
+func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *AlbumsPage {
 	a := &AlbumsPage{
 		cfg:   cfg,
 		contr: contr,
@@ -220,7 +220,7 @@ func (a *AlbumsPage) CreateRenderer() fyne.WidgetRenderer {
 type savedAlbumsPage struct {
 	searchText      string
 	cfg             *backend.AlbumsPageConfig
-	contr           controller.Controller
+	contr           *controller.Controller
 	pm              *backend.PlaybackManager
 	lm              *backend.LibraryManager
 	im              *backend.ImageManager

@@ -21,14 +21,14 @@ type ArtistsGenresPage struct {
 	widget.BaseWidget
 
 	isGenresPage bool
-	contr        controller.Controller
+	contr        *controller.Controller
 	sm           *backend.ServerManager
 	titleDisp    *widget.RichText
 	container    *fyne.Container
 	list         *widgets.ArtistGenrePlaylist
 }
 
-func NewArtistsGenresPage(isGenresPage bool, contr controller.Controller, sm *backend.ServerManager) *ArtistsGenresPage {
+func NewArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *backend.ServerManager) *ArtistsGenresPage {
 	title := "Artists"
 	if isGenresPage {
 		title = "Genres"
@@ -95,7 +95,7 @@ func (a *ArtistsGenresPage) Save() SavedPage {
 
 type savedArtistsGenresPage struct {
 	isGenresPage bool
-	contr        controller.Controller
+	contr        *controller.Controller
 	sm           *backend.ServerManager
 }
 

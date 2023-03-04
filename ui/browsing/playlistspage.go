@@ -18,14 +18,14 @@ import (
 type PlaylistsPage struct {
 	widget.BaseWidget
 
-	contr     controller.Controller
+	contr     *controller.Controller
 	sm        *backend.ServerManager
 	titleDisp *widget.RichText
 	container *fyne.Container
 	list      *PlaylistList
 }
 
-func NewPlaylistsPage(contr controller.Controller, sm *backend.ServerManager) *PlaylistsPage {
+func NewPlaylistsPage(contr *controller.Controller, sm *backend.ServerManager) *PlaylistsPage {
 	a := &PlaylistsPage{
 		sm:        sm,
 		contr:     contr,
@@ -67,7 +67,7 @@ func (a *PlaylistsPage) Save() SavedPage {
 }
 
 type savedPlaylistsPage struct {
-	contr controller.Controller
+	contr *controller.Controller
 	sm    *backend.ServerManager
 }
 

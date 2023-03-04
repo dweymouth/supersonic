@@ -32,7 +32,7 @@ type PlaylistPage struct {
 type playlistPageState struct {
 	playlistID string
 	conf       *backend.PlaylistPageConfig
-	contr      controller.Controller
+	contr      *controller.Controller
 	sm         *backend.ServerManager
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
@@ -41,7 +41,7 @@ type playlistPageState struct {
 func NewPlaylistPage(
 	playlistID string,
 	conf *backend.PlaylistPageConfig,
-	contr controller.Controller,
+	contr *controller.Controller,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,

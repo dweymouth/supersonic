@@ -27,7 +27,7 @@ type artistPageState struct {
 	pm       *backend.PlaybackManager
 	sm       *backend.ServerManager
 	im       *backend.ImageManager
-	contr    controller.Controller
+	contr    *controller.Controller
 }
 
 type ArtistPage struct {
@@ -41,7 +41,7 @@ type ArtistPage struct {
 	container *fyne.Container
 }
 
-func NewArtistPage(artistID string, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr controller.Controller) *ArtistPage {
+func NewArtistPage(artistID string, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
 		artistID: artistID,
 		pm:       pm,
