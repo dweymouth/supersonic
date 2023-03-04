@@ -20,7 +20,8 @@ type ListColumn struct {
 type ListHeader struct {
 	widget.BaseWidget
 
-	OnColumnVisibilityChanged func(int, bool)
+	OnColumnVisibilityChanged   func(int, bool)
+	OnColumnVisibilityMenuShown func(*widget.PopUp)
 
 	columns       []ListColumn
 	columnVisible []bool
@@ -84,6 +85,9 @@ func (l *ListHeader) TappedSecondary(e *fyne.PointEvent) {
 	}
 	pop := widget.NewPopUp(l.popUpMenu, fyne.CurrentApp().Driver().CanvasForObject(l))
 	pop.ShowAtPosition(e.AbsolutePosition)
+	if l.OnColumnVisibilityMenuShown != nil {
+		l.OnColumnVisibilityMenuShown(pop)
+	}
 }
 
 func (l *ListHeader) setupPopUpMenu() {

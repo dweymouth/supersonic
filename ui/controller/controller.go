@@ -87,6 +87,9 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 	tracklist.OnShowArtistPage = func(artistID string) {
 		m.NavigateTo(ArtistRoute(artistID))
 	}
+	tracklist.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
+		m.ClosePopUpOnEscape(pop)
+	}
 }
 
 func (m *Controller) PromptForFirstServer() {

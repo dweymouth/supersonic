@@ -49,6 +49,8 @@ type Tracklist struct {
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
 
+	OnColumnVisibilityMenuShown func(*widget.PopUp)
+
 	visibleColumns []bool
 
 	selectionMgr  util.ListSelectionManager
@@ -69,6 +71,11 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 60, 47, 65, 75})
 	t.buildHeader()
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
+	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
+		if t.OnColumnVisibilityMenuShown != nil {
+			t.OnColumnVisibilityMenuShown(pop)
+		}
+	}
 	playingIcon := container.NewCenter(container.NewHBox(NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
 	t.list = widget.NewList(
 		func() int { return len(t.Tracks) },
