@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
@@ -89,7 +88,7 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
 			tr := item.(*TrackRow)
 			tr.trackIdx = itemID
-			tr.selectionRect.Hidden = !t.selectionMgr.IsSelected(itemID)
+			tr.Selected = t.selectionMgr.IsSelected(itemID)
 			i := -1 // signal that we want to display the actual track num.
 			if t.AutoNumber {
 				i = itemID + 1
@@ -343,7 +342,7 @@ func colName(i int) string {
 }
 
 type TrackRow struct {
-	widget.BaseWidget
+	ListRowBase
 
 	// internal state
 	tracklist  *Tracklist
@@ -355,7 +354,6 @@ type TrackRow struct {
 	isPlaying  bool
 	isFavorite bool
 	playCount  int64
-	tappedAt   int64 // unixMillis
 
 	num      *widget.RichText
 	name     *widget.RichText
@@ -367,13 +365,9 @@ type TrackRow struct {
 	bitrate  *widget.RichText
 	plays    *widget.RichText
 
-	OnTapped          func()
-	OnDoubleTapped    func()
 	OnTappedSecondary func(e *fyne.PointEvent, trackIdx int)
 
-	playingIcon   fyne.CanvasObject
-	selectionRect *canvas.Rectangle
-	container     *fyne.Container
+	playingIcon fyne.CanvasObject
 }
 
 func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow {
@@ -399,11 +393,8 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.bitrate = widget.NewRichTextWithText("")
 	t.bitrate.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 
-	t.selectionRect = canvas.NewRectangle(theme.SelectionColor())
-	t.selectionRect.Hidden = true
-	t.container = container.NewMax(t.selectionRect,
-		container.New(tracklist.colLayout,
-			t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.plays, t.bitrate))
+	t.Content = container.New(tracklist.colLayout,
+		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.plays, t.bitrate)
 	return t
 }
 
@@ -411,6 +402,10 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	// Update info that can change if this row is bound to
 	// a new track (*subsonic.Child)
 	if tr.ID != t.trackID {
+		if t.Focused {
+			fyne.CurrentApp().Driver().CanvasForObject(t).Focus(nil)
+			t.Focused = false
+		}
 		t.trackID = tr.ID
 		t.artistID = tr.ArtistID
 		t.albumID = tr.AlbumID
@@ -450,9 +445,9 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.bitrate.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 
 		if isPlaying {
-			t.container.Objects[1].(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
+			t.Content.(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
 		} else {
-			t.container.Objects[1].(*fyne.Container).Objects[0] = t.num
+			t.Content.(*fyne.Container).Objects[0] = t.num
 		}
 	}
 
@@ -494,26 +489,6 @@ func (t *TrackRow) toggleFavorited() {
 		t.favorite.Refresh()
 		t.isFavorite = true
 		t.tracklist.onSetFavorite(t.trackID, true)
-	}
-}
-
-func (t *TrackRow) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(t.container)
-}
-
-// We implement our own double tapping so that the Tapped behavior
-// can be triggered instantly.
-func (t *TrackRow) Tapped(*fyne.PointEvent) {
-	prevTap := t.tappedAt
-	t.tappedAt = time.Now().UnixMilli()
-	if t.tappedAt-prevTap < 300 {
-		if t.OnDoubleTapped != nil {
-			t.OnDoubleTapped()
-		}
-	} else {
-		if t.OnTapped != nil {
-			t.OnTapped()
-		}
 	}
 }
 

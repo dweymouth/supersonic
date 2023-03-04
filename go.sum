@@ -75,8 +75,8 @@ github.com/danieljoos/wincred v1.1.0/go.mod h1:XYlo+eRTsVA9aHGp7NGjFkPla4m+DCL7h
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230217050145-ca8ffa6896d6 h1:iqaXkEOMiYtKXYuMUd1JTXoNTIIGfv+Bc1bAzNmsN/c=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230217050145-ca8ffa6896d6/go.mod h1:dl/M+f0r5lJRhy+gdPbmYy97tbu3SWF/RF6/9KXMs+s=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230304215136-47240a9a5b0a h1:DzABPDAu62cN2rn5JJ1mfqrXACzVHxVx2d1z2C+0020=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230304215136-47240a9a5b0a/go.mod h1:dl/M+f0r5lJRhy+gdPbmYy97tbu3SWF/RF6/9KXMs+s=
 github.com/dweymouth/go-subsonic v0.0.0-20230210044542-537b9238299b h1:8JbTKYDdQg6JKu7ZDbEaVbXxutc3pRF58yNvTVMBHec=
 github.com/dweymouth/go-subsonic v0.0.0-20230210044542-537b9238299b/go.mod h1:fUez6NFiEJiQTZizZ1BThZr5GJXAbigzGYjEPNm4tdI=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
