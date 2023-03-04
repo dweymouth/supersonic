@@ -66,7 +66,7 @@ func (g *GenrePage) createContainer(searchGrid bool) {
 		gr = g.searchGrid
 	}
 	g.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(9), g.titleDisp, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
+		container.NewHBox(widgets.NewHSpace(6), g.titleDisp, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
 		nil,
 		nil,
 		nil,

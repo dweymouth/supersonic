@@ -76,15 +76,16 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 		p := widget.NewPopUpMenu(b.settingsMenu,
 			fyne.CurrentApp().Driver().CanvasForObject(b.settingsBtn))
-		p.ShowAtPosition(fyne.NewPos(b.Size().Width-p.MinSize().Width-theme.Padding()/2,
+		p.ShowAtPosition(fyne.NewPos(b.Size().Width-p.MinSize().Width+4,
 			b.navBtnsContainer.MinSize().Height+theme.Padding()))
 	})
 	b.settingsMenu = fyne.NewMenu("")
 	b.navBtnsContainer = container.NewHBox()
-	b.container = container.NewBorder(
+	b.container = container.NewBorder(container.New(
+		&layouts.MaxPadLayout{PadLeft: -5, PadRight: -5},
 		container.New(layouts.NewLeftMiddleRightLayout(0),
 			container.NewHBox(b.back, b.forward, b.reload), b.navBtnsContainer,
-			container.NewHBox(layout.NewSpacer(), b.settingsBtn)),
+			container.NewHBox(layout.NewSpacer(), b.settingsBtn))),
 		nil, nil, nil, b.pageContainer)
 	return b
 }

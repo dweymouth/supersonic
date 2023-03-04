@@ -92,7 +92,7 @@ func (a *AlbumsPage) createContainer(searchgrid bool) {
 		g = a.searchGrid
 	}
 	a.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, sortVbox, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
+		container.NewHBox(widgets.NewHSpace(6), a.titleDisp, sortVbox, layout.NewSpacer(), searchVbox, widgets.NewHSpace(12)),
 		nil,
 		nil,
 		nil,
