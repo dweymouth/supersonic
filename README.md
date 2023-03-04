@@ -1,12 +1,14 @@
-# supersonic
+# Supersonic
 A lightweight desktop client for Subsonic music servers (Navidrome, Gonic, Airsonic, etc). This is in early development, but currently usable for searching, browsing, and playing by albums. If you decide to use it now, expect to find a few minor bugs and missing features.
 
 On first startup, the app will prompt you for your Subsonic server connection. The app currently has a searchable albums grid view, an artist discography view, list views of all artists and genres, and individual album view with tracklist.
-<p align="center">
-<img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/albums-view.png" scale="50%"/><br/>
-Slightly outdated screenshots of Supersonic running against the Navidrome <a href="https://www.navidrome.org/demo">demo server</a> <br/>
-<img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/album-view.png" scale="50%"/>
-</p>
+
+## Screenshots
+
+<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png" width="49.5%"/></a>
+<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/AlbumView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/AlbumView.png" width="49.5%"/></a>
+<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png" width="49.5%"/></a>
+<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/FavoriteSongsView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/FavoriteSongsView.png" width="49.5%"/></a>
 
 ## Features
 * [x] Fast, lightweight, native UI
