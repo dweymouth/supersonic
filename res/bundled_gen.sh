@@ -26,3 +26,7 @@ fyne bundle -append -prefix Res icons/freepik/theatermasks.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/theatermasks-invert.png >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/shuffle.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/shuffle-invert.svg >> bundled.go
+
+fyne bundle -append -prefix Res ../LICENSE >> bundled.go
+fyne bundle -append -prefix Res licenses/BSDLICENSE >> bundled.go
+fyne bundle -append -prefix Res licenses/MITLICENSE >> bundled.go

@@ -47,7 +47,7 @@ var (
 	HomePage = controller.AlbumsRoute()
 )
 
-func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne.Size) MainWindow {
+func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.App, size fyne.Size) MainWindow {
 	m := MainWindow{
 		App:          app,
 		Window:       fyneApp.NewWindow(appName),
@@ -55,6 +55,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 	}
 
 	m.Controller = &controller.Controller{
+		AppVersion: appVersion,
 		MainWindow: m.Window,
 		App:        app,
 	}
@@ -84,6 +85,7 @@ func NewMainWindow(fyneApp fyne.App, appName string, app *backend.App, size fyne
 		m.Controller.PromptForLoginAndConnect()
 	})
 	m.BrowsingPane.AddSettingsMenuItem("Log Out", app.ServerManager.Logout)
+	m.BrowsingPane.AddSettingsMenuItem("About...", m.Controller.ShowAboutDialog)
 	m.addNavigationButtons()
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()

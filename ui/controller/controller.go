@@ -22,6 +22,7 @@ type Controller struct {
 	// if not nil, this popup should be hidden when escape is pressed
 	EscapablePopUp *widget.PopUp
 
+	AppVersion string
 	MainWindow fyne.Window
 	App        *backend.App
 	NavHandler NavigationHandler
@@ -203,6 +204,14 @@ func (m *Controller) PromptForLoginAndConnect() {
 		}
 		editPop.Show()
 	}
+	pop.Show()
+}
+
+func (c *Controller) ShowAboutDialog() {
+	dlg := dialogs.NewAboutDialog(c.AppVersion)
+	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
+	dlg.OnDismiss = pop.Hide
+	c.ClosePopUpOnEscape(pop)
 	pop.Show()
 }
 
