@@ -33,6 +33,12 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 * [ ] iOS/Android support (eventually planned)
 * [ ] Lyrics support (eventually planned)
 
+## Installation
+
+Download the latest release for your operating system. If you prefer to build from source, or there is no release build currently offered for your OS/architecture (Apple silicon Macs), then see below.
+
+**If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
+
 ## Build instructions (Ubuntu)
 
 ### Install dependencies
@@ -43,6 +49,7 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 ### Build
 * clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
+* run ``make package_linux`` to generate an installable .tar.xz bundle
 
 ## Build instructions (Mac OS)
 
@@ -58,6 +65,7 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 
 * clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
+* run ``make package_macos`` to generate the .app bundle
 
 ## Build instructions (Windows)
 
