@@ -1,6 +1,7 @@
 #!/bin/sh
 
-fyne bundle -package res -prefix Res icons/freepik/disc.png > bundled.go
+fyne bundle -package res -prefix Res appicon-250.png > bundled.go
+fyne bundle -append -prefix Res icons/freepik/disc.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/disc-invert.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/headphones.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/headphones-invert.png >> bundled.go
@@ -25,3 +26,7 @@ fyne bundle -append -prefix Res icons/freepik/theatermasks.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/theatermasks-invert.png >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/shuffle.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/shuffle-invert.svg >> bundled.go
+
+fyne bundle -append -prefix Res ../LICENSE >> bundled.go
+fyne bundle -append -prefix Res licenses/BSDLICENSE >> bundled.go
+fyne bundle -append -prefix Res licenses/MITLICENSE >> bundled.go

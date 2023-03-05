@@ -1,7 +1,5 @@
 # Supersonic
-A lightweight desktop client for Subsonic music servers (Navidrome, Gonic, Airsonic, etc). This is in early development, but currently usable for searching, browsing, and playing by albums. If you decide to use it now, expect to find a few minor bugs and missing features.
-
-On first startup, the app will prompt you for your Subsonic server connection. The app currently has a searchable albums grid view, an artist discography view, list views of all artists and genres, and individual album view with tracklist.
+A lightweight cross-platform desktop client for Subsonic music servers (Navidrome, Gonic, Airsonic, etc).
 
 ## Screenshots
 
@@ -35,6 +33,12 @@ On first startup, the app will prompt you for your Subsonic server connection. T
 * [ ] iOS/Android support (eventually planned)
 * [ ] Lyrics support (eventually planned)
 
+## Installation
+
+Download the latest release for your operating system. If you prefer to build from source, or there is no release build currently offered for your OS/architecture (Apple silicon Macs), then see below.
+
+**If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
+
 ## Build instructions (Ubuntu)
 
 ### Install dependencies
@@ -45,6 +49,7 @@ On first startup, the app will prompt you for your Subsonic server connection. T
 ### Build
 * clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
+* run ``make package_linux`` to generate an installable .tar.xz bundle
 
 ## Build instructions (Mac OS)
 
@@ -60,6 +65,7 @@ On first startup, the app will prompt you for your Subsonic server connection. T
 
 * clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
+* run ``make package_macos`` to generate the .app bundle
 
 ## Build instructions (Windows)
 

@@ -1,0 +1,108 @@
+package dialogs
+
+import (
+	"fmt"
+	"net/url"
+	"supersonic/res"
+	"supersonic/ui/layouts"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+)
+
+type AboutDialog struct {
+	widget.BaseWidget
+
+	OnDismiss func()
+
+	content fyne.CanvasObject
+}
+
+func NewAboutDialog(version string) *AboutDialog {
+	a := &AboutDialog{}
+	a.ExtendBaseWidget(a)
+
+	a.content = container.NewVBox(
+		container.NewAppTabs(
+			container.NewTabItem("Supersonic", a.buildMainTabContainer(version)),
+			container.NewTabItem("Credits", a.buildCreditsContainer()),
+			container.NewTabItem("GPL v3", container.NewScroll(a.licenseLabel(res.ResLICENSE))),
+			container.NewTabItem("BSD-3-Clause", container.NewScroll(a.licenseLabel(res.ResBSDLICENSE))),
+			container.NewTabItem("MIT", container.NewScroll(a.licenseLabel(res.ResMITLICENSE))),
+		),
+		widget.NewSeparator(),
+		container.NewHBox(
+			layout.NewSpacer(),
+			widget.NewButton("Close", func() {
+				if a.OnDismiss != nil {
+					a.OnDismiss()
+				}
+			}),
+		),
+	)
+	return a
+}
+
+func (a *AboutDialog) MinSize() fyne.Size {
+	return fyne.NewSize(420, a.BaseWidget.MinSize().Height)
+}
+
+func (a *AboutDialog) buildMainTabContainer(version string) *fyne.Container {
+	iconImage := canvas.NewImageFromResource(res.ResAppicon250Png)
+	iconImage.FillMode = canvas.ImageFillContain
+	iconImage.SetMinSize(fyne.NewSize(64, 64))
+	title := widget.NewRichTextWithText("Supersonic")
+	title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
+	title.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText
+	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
+	versionLbl := newCenterAlignLabel(fmt.Sprintf("version %s", version))
+	copyright := newCenterAlignLabel("Copyright © 2022–2023 Drew Weymouth and contributors")
+	license := widget.NewRichTextWithText("GNU General Public License version 3 (GPL v3)")
+	ts := license.Segments[0].(*widget.TextSegment)
+	ts.Style.TextStyle.Bold = true
+	ts.Style.Alignment = fyne.TextAlignCenter
+	ghUrl, _ := url.Parse("https://github.com/dweymouth/supersonic")
+	github := container.NewCenter(widget.NewHyperlink("Github page", ghUrl))
+
+	return container.New(&layouts.CenterPadLayout{PadTopBottom: 10},
+		container.NewVBox(iconImage,
+			container.New(&layouts.VboxCustomPadding{ExtraPad: -10}, title, versionLbl, copyright, license, github)))
+}
+
+func (a *AboutDialog) licenseLabel(res *fyne.StaticResource) *widget.Label {
+	str := string(res.StaticContent)
+	lbl := widget.NewLabel(str)
+	lbl.Wrapping = fyne.TextWrapWord
+	return lbl
+}
+
+func (a *AboutDialog) buildCreditsContainer() fyne.CanvasObject {
+	fyneURL, _ := url.Parse("https://fyne.io")
+	goSubsonicURL, _ := url.Parse("https://github.com/delucks/go-subsonic")
+	goTomlURL, _ := url.Parse("https://github.com/pelletier/go-toml")
+	freepikURL, _ := url.Parse("https://www.flaticon.com/authors/freepik")
+	appIconCredit := widget.NewLabel("The Supersonic app icon is a derivative of a work created by Piotr Siedlecki and placed in the public domain.")
+	appIconCredit.Wrapping = fyne.TextWrapWord
+	return container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
+		widget.NewLabel("Major frameworks and modules used in this application include:"),
+		container.NewHBox(widget.NewHyperlink("Fyne toolkit", fyneURL), widget.NewLabel("BSD 3-Clause License")),
+		container.NewHBox(widget.NewHyperlink("go-subsonic", goSubsonicURL), widget.NewLabel("GPL v3 License")),
+		container.NewHBox(widget.NewHyperlink("go-toml", goTomlURL), widget.NewLabel("MIT License")),
+		appIconCredit,
+		container.NewHBox(widget.NewLabel("Additional icons by:"), widget.NewHyperlink("Freepik on flaticon.com", freepikURL)),
+	)
+}
+
+func (a *AboutDialog) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(a.content)
+}
+
+func newCenterAlignLabel(text string) *widget.Label {
+	lbl := widget.NewLabel(text)
+	lbl.Alignment = fyne.TextAlignCenter
+	return lbl
+}

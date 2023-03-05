@@ -16,6 +16,7 @@ import (
 const (
 	appname     = "supersonic"
 	displayName = "Supersonic"
+	appVersion  = "0.0.1-alpha1"
 	configFile  = "config.toml"
 )
 
@@ -39,7 +40,7 @@ func main() {
 	if h <= 1 {
 		h = 800
 	}
-	mainWindow := ui.NewMainWindow(fyneApp, displayName, myApp, fyne.NewSize(w, h))
+	mainWindow := ui.NewMainWindow(fyneApp, displayName, appVersion, myApp, fyne.NewSize(w, h))
 
 	// TODO: There is some race condition with running this initial startup
 	// task immediately before showing and running the window/Fyne main loop where
