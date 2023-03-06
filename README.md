@@ -35,7 +35,7 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 
 ## Installation
 
-Download the latest release for your operating system. If you prefer to build from source, or there is no release build currently offered for your OS/architecture (Apple silicon Macs), then see below.
+Download the latest release for your operating system. If you prefer to build from source, **or there is no release build currently offered for your OS/architecture (Apple silicon Macs)**, then see below.
 
 **If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
 
@@ -57,6 +57,7 @@ Download the latest release for your operating system. If you prefer to build fr
 * install go
 * install Xcode command-line tools (``xcode-select --install``)
 * install libmpv (``brew install mpv``)
+* install dylibbundler (``brew install dylibbundler``) - needed only for building the .app bundle
 
 ### Build
 * Make sure header and library include paths include the dir in which homebrew installs headers/dylibs (may differ dep. on OS/Homebrew version)
