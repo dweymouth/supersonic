@@ -43,6 +43,7 @@ Download the latest release for your operating system. If you prefer to build fr
 
 ### Install dependencies
 * ``sudo snap install --classic go``, and make sure the Go bin directory is in your `$PATH`
+* install the ``fyne`` packaging tool ``go install fyne.io/fyne/v2/cmd/fyne@latest``
 * ``sudo apt install libmpv-dev``
 * ``sudo apt install gcc libegl1-mesa-dev xorg-dev``
 
@@ -55,6 +56,7 @@ Download the latest release for your operating system. If you prefer to build fr
 
 ### Install dependencies
 * install go, and make sure the Go bin directory is in your `$PATH`
+* install the ``fyne`` packaging tool ``go install fyne.io/fyne/v2/cmd/fyne@latest``
 * install Xcode command-line tools (``xcode-select --install``)
 * install libmpv (``brew install mpv``)
 * install dylibbundler (``brew install dylibbundler``) - needed only for building the .app bundle
