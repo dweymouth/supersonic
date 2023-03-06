@@ -42,7 +42,7 @@ Download the latest release for your operating system. If you prefer to build fr
 ## Build instructions (Ubuntu)
 
 ### Install dependencies
-* ``sudo snap install --classic go``
+* ``sudo snap install --classic go``, and make sure the Go bin directory is in your `$PATH`
 * ``sudo apt install libmpv-dev``
 * ``sudo apt install gcc libegl1-mesa-dev xorg-dev``
 
@@ -54,7 +54,7 @@ Download the latest release for your operating system. If you prefer to build fr
 ## Build instructions (Mac OS)
 
 ### Install dependencies
-* install go
+* install go, and make sure the Go bin directory is in your `$PATH`
 * install Xcode command-line tools (``xcode-select --install``)
 * install libmpv (``brew install mpv``)
 * install dylibbundler (``brew install dylibbundler``) - needed only for building the .app bundle
