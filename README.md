@@ -37,7 +37,7 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 
 Download the latest release for your operating system. If you prefer to build from source, **or there is no release build currently offered for your OS/architecture (Apple silicon Macs)**, then see below.
 
-**If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
+**If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv-dev` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
 
 ## Build instructions (Ubuntu)
 
