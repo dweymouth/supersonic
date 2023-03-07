@@ -179,6 +179,19 @@ func (p *PlaybackManager) PlayTrackAt(idx int) error {
 	return p.player.PlayTrackAt(idx)
 }
 
+func (p *PlaybackManager) PlayRandomSongs(genreName string) {
+	params := map[string]string{"size": "100"}
+	if genreName != "" {
+		params["genre"] = genreName
+	}
+	if songs, err := p.sm.Server.GetRandomSongs(params); err != nil {
+		log.Printf("error getting random songs: %s", err.Error())
+	} else {
+		p.LoadTracks(songs, false, false)
+		p.PlayFromBeginning()
+	}
+}
+
 func (p *PlaybackManager) GetPlayQueue() []*subsonic.Child {
 	pq := make([]*subsonic.Child, len(p.playQueue))
 	for i, tr := range p.playQueue {

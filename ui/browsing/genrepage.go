@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"supersonic/backend"
+	"supersonic/res"
 	"supersonic/ui/controller"
 	"supersonic/ui/widgets"
 
@@ -27,6 +28,7 @@ type GenrePage struct {
 	searcher   *widgets.Searcher
 	searchText string
 	titleDisp  *widget.RichText
+	playRandom *widget.Button
 
 	OnPlayAlbum func(string, int)
 
@@ -47,6 +49,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 	g.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
+	g.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, g.playRandomSongs)
 	iter := g.lm.GenreIter(g.genre)
 	g.grid = widgets.NewAlbumGrid(iter, g.im, false)
 	g.grid.OnPlayAlbum = g.onPlayAlbum
@@ -65,8 +68,9 @@ func (g *GenrePage) createContainer(searchGrid bool) {
 	if searchGrid {
 		gr = g.searchGrid
 	}
+	playRandomVbox := container.NewVBox(layout.NewSpacer(), g.playRandom, layout.NewSpacer())
 	g.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(6), g.titleDisp, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
+		container.NewHBox(widgets.NewHSpace(6), g.titleDisp, playRandomVbox, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
 		nil,
 		nil,
 		nil,
@@ -88,6 +92,7 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
+	g.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, g.playRandomSongs)
 	g.grid = widgets.NewAlbumGridFromState(saved.gridState)
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched
@@ -106,10 +111,6 @@ func (g *GenrePage) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *GenrePage) Route() controller.Route {
 	return controller.GenreRoute(a.genre)
-}
-
-func (a *GenrePage) SetPlayAlbumCallback(cb func(string, int)) {
-	a.OnPlayAlbum = cb
 }
 
 func (g *GenrePage) Reload() {
@@ -182,6 +183,10 @@ func (g *GenrePage) doSearch(query string) {
 	}
 	g.container.Objects[0] = g.searchGrid
 	g.Refresh()
+}
+
+func (g *GenrePage) playRandomSongs() {
+	go g.pm.PlayRandomSongs(g.genre)
 }
 
 type savedGenrePage struct {
