@@ -174,6 +174,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 			}
 		}
 	}
+	a.similarArtists.RemoveAll()
 	for i, art := range info.SimilarArtist {
 		if i == 0 {
 			a.similarArtists.Add(widget.NewLabel("Similar Artists:"))
