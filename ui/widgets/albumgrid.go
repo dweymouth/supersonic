@@ -27,11 +27,12 @@ type AlbumGrid struct {
 }
 
 type AlbumGridState struct {
-	albums   []*subsonic.AlbumID3
-	iter     *backend.BatchingIterator
-	fetching bool
-	done     bool
-	showYear bool
+	albums       []*subsonic.AlbumID3
+	iter         *backend.BatchingIterator
+	highestShown int
+	fetching     bool
+	done         bool
+	showYear     bool
 
 	imageFetcher     ImageFetcher
 	OnPlayAlbum      func(string)
@@ -136,6 +137,9 @@ func (ag *AlbumGrid) createGridWrapList() {
 }
 
 func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
+	if albumIdx > ag.highestShown {
+		ag.highestShown = albumIdx
+	}
 	album := ag.albums[albumIdx]
 	if ac.PrevAlbumID == album.ID {
 		// nothing to do
@@ -171,28 +175,33 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 		ac.ImgLoadCancel = cancel
 	}
 
-	// TODO: remove magic number 10
+	// if user has scrolled near the bottom, fetch more
 	if !ag.done && !ag.fetching && albumIdx > len(ag.albums)-10 {
 		ag.fetchMoreAlbums(20)
 	}
 }
 
+// fetches at least count more albums
 func (a *AlbumGrid) fetchMoreAlbums(count int) {
 	if a.iter == nil {
 		a.done = true
 	}
 	a.fetching = true
 	go func() {
-		n := 0
-		for !a.done && n < count {
-			albums := a.iter.NextN(albumFetchBatchSize)
-			a.albums = append(a.albums, albums...)
-			if len(albums) < albumFetchBatchSize {
-				a.done = true
-			}
-			n += len(albums)
-			if len(albums) > 0 {
-				a.Refresh()
+		// keep repeating the fetch task as long as the user
+		// has scrolled near the bottom
+		for !a.done && a.highestShown >= len(a.albums)-10 {
+			n := 0
+			for !a.done && n < count {
+				albums := a.iter.NextN(albumFetchBatchSize)
+				a.albums = append(a.albums, albums...)
+				if len(albums) < albumFetchBatchSize {
+					a.done = true
+				}
+				n += len(albums)
+				if len(albums) > 0 {
+					a.Refresh()
+				}
 			}
 		}
 		a.fetching = false
