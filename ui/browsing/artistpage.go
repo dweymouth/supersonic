@@ -24,11 +24,13 @@ import (
 var _ fyne.Widget = (*ArtistPage)(nil)
 
 type artistPageState struct {
-	artistID string
-	pm       *backend.PlaybackManager
-	sm       *backend.ServerManager
-	im       *backend.ImageManager
-	contr    *controller.Controller
+	artistID   string
+	activeView int
+
+	pm    *backend.PlaybackManager
+	sm    *backend.ServerManager
+	im    *backend.ImageManager
+	contr *controller.Controller
 }
 
 type ArtistPage struct {
@@ -46,16 +48,22 @@ type ArtistPage struct {
 }
 
 func NewArtistPage(artistID string, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
+	return newArtistPage(artistID, pm, sm, im, contr, 0)
+}
+
+func newArtistPage(artistID string, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller, activeView int) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
-		artistID: artistID,
-		pm:       pm,
-		sm:       sm,
-		im:       im,
-		contr:    contr,
+		artistID:   artistID,
+		pm:         pm,
+		sm:         sm,
+		im:         im,
+		contr:      contr,
+		activeView: activeView,
 	}}
 	a.ExtendBaseWidget(a)
 	a.header = NewArtistPageHeader(a)
 	viewToggle := widgets.NewToggleText(0, []string{"Discography", "Top Tracks"})
+	viewToggle.SetActivatedLabel(a.activeView)
 	viewToggle.OnChanged = a.onViewChange
 	//line := canvas.NewLine(theme.TextColor())
 	viewToggleRow := container.NewBorder(nil, nil,
@@ -120,7 +128,11 @@ func (a *ArtistPage) load() {
 	}
 	a.artistInfo = artist
 	a.header.Update(artist)
-	a.showAlbumGrid()
+	if a.activeView == 0 {
+		a.showAlbumGrid()
+	} else {
+		a.showTopTracks()
+	}
 	info, err := a.sm.Server.GetArtistInfo2(a.artistID, nil)
 	if err != nil {
 		log.Printf("Failed to get artist info: %s", err.Error())
@@ -166,6 +178,7 @@ func (a *ArtistPage) onViewChange(num int) {
 		// so call it asynchronously
 		go a.showTopTracks()
 	}
+	a.activeView = num
 }
 
 func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
@@ -174,7 +187,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return NewArtistPage(s.artistID, s.pm, s.sm, s.im, s.contr)
+	return newArtistPage(s.artistID, s.pm, s.sm, s.im, s.contr, s.activeView)
 }
 
 type ArtistPageHeader struct {

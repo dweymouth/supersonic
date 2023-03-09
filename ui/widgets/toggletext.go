@@ -32,6 +32,20 @@ func NewToggleText(activeLblIdx int, labels []string) *ToggleText {
 	return t
 }
 
+func (t *ToggleText) SetActivatedLabel(idx int) {
+	changed := t.activeLabelIdx != idx
+	// update old label to hyperlink
+	hl := widget.NewHyperlink(t.labels[t.activeLabelIdx], nil)
+	hl.OnTapped = t.buildOnTapped(t.activeLabelIdx)
+	t.container.Objects[t.activeLabelIdx] = hl
+	// update activated label to bold text
+	t.container.Objects[idx] = t.newBoldRichText(t.labels[idx])
+	t.activeLabelIdx = idx
+	if changed {
+		t.Refresh()
+	}
+}
+
 func (t *ToggleText) buildOnTapped(i int) func() {
 	return func() {
 		t.onActivated(i)
@@ -46,18 +60,9 @@ func (t *ToggleText) newBoldRichText(text string) *widget.RichText {
 }
 
 func (t *ToggleText) onActivated(idx int) {
-	if idx == t.activeLabelIdx {
-		return
-	}
-	// update old label to hyperlink
-	hl := widget.NewHyperlink(t.labels[t.activeLabelIdx], nil)
-	hl.OnTapped = t.buildOnTapped(t.activeLabelIdx)
-	t.container.Objects[t.activeLabelIdx] = hl
-	// update activated label to bold text
-	t.container.Objects[idx] = t.newBoldRichText(t.labels[idx])
-	t.activeLabelIdx = idx
-	t.Refresh()
-	if t.OnChanged != nil {
+	changed := t.activeLabelIdx != idx
+	t.SetActivatedLabel(idx)
+	if changed && t.OnChanged != nil {
 		t.OnChanged(t.activeLabelIdx)
 	}
 }
