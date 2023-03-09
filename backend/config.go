@@ -8,11 +8,12 @@ import (
 )
 
 type ServerConfig struct {
-	ID       uuid.UUID
-	Nickname string
-	Hostname string
-	Username string
-	Default  bool
+	ID         uuid.UUID
+	Nickname   string
+	Hostname   string
+	Username   string
+	LegacyAuth bool
+	Default    bool
 }
 
 type AppConfig struct {
@@ -124,12 +125,13 @@ func (c *Config) SetDefaultServer(serverID uuid.UUID) {
 	}
 }
 
-func (c *Config) AddServer(nickname, hostname, username string) *ServerConfig {
+func (c *Config) AddServer(nickname, hostname, username string, legacyAuth bool) *ServerConfig {
 	s := &ServerConfig{
-		ID:       uuid.New(),
-		Nickname: nickname,
-		Hostname: hostname,
-		Username: username,
+		ID:         uuid.New(),
+		Nickname:   nickname,
+		Hostname:   hostname,
+		Username:   username,
+		LegacyAuth: legacyAuth,
 	}
 	c.Servers = append(c.Servers, s)
 	return s
