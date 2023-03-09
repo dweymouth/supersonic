@@ -27,6 +27,7 @@ type artistPageState struct {
 	artistID   string
 	activeView int
 
+	cfg   *backend.ArtistPageConfig
 	pm    *backend.PlaybackManager
 	sm    *backend.ServerManager
 	im    *backend.ImageManager
@@ -47,13 +48,18 @@ type ArtistPage struct {
 	container    *fyne.Container
 }
 
-func NewArtistPage(artistID string, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
-	return newArtistPage(artistID, pm, sm, im, contr, 0)
+func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
+	activeView := 0
+	if cfg.InitialView == "Top Tracks" {
+		activeView = 1
+	}
+	return newArtistPage(artistID, cfg, pm, sm, im, contr, activeView)
 }
 
-func newArtistPage(artistID string, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller, activeView int) *ArtistPage {
+func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller, activeView int) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
 		artistID:   artistID,
+		cfg:        cfg,
 		pm:         pm,
 		sm:         sm,
 		im:         im,
@@ -87,6 +93,13 @@ func (a *ArtistPage) Reload() {
 }
 
 func (a *ArtistPage) Save() SavedPage {
+	// TODO: find a better place to update the tracklist columns preference
+	// If user changes columns but doesn't navigate to another page,
+	// we won't be persisting the change
+	if a.tracklistCtr != nil {
+		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		a.cfg.TracklistColumns = tl.VisibleColumns()
+	}
 	s := a.artistPageState
 	return &s
 }
@@ -159,7 +172,7 @@ func (a *ArtistPage) showTopTracks() {
 		}
 		tl := widgets.NewTracklist(ts)
 		tl.AutoNumber = true
-		tl.SetVisibleColumns([]string{"Album", "Time", "Year", "Plays"})
+		tl.SetVisibleColumns(a.cfg.TracklistColumns)
 		tl.SetNowPlaying(a.nowPlayingID)
 		a.contr.ConnectTracklistActions(tl)
 		a.tracklistCtr = container.New(
@@ -179,6 +192,11 @@ func (a *ArtistPage) onViewChange(num int) {
 		go a.showTopTracks()
 	}
 	a.activeView = num
+	if num == 1 {
+		a.cfg.InitialView = "Top Tracks"
+	} else {
+		a.cfg.InitialView = "Discography"
+	}
 }
 
 func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
@@ -187,7 +205,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return newArtistPage(s.artistID, s.pm, s.sm, s.im, s.contr, s.activeView)
+	return newArtistPage(s.artistID, s.cfg, s.pm, s.sm, s.im, s.contr, s.activeView)
 }
 
 type ArtistPageHeader struct {
