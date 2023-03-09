@@ -14,11 +14,12 @@ import (
 type AddEditServerDialog struct {
 	widget.BaseWidget
 
-	Nickname string
-	Host     string
-	Username string
-	Password string
-	OnSubmit func()
+	Nickname   string
+	Host       string
+	Username   string
+	Password   string
+	LegacyAuth bool
+	OnSubmit   func()
 
 	submitBtn  *widget.Button
 	promptText *widget.RichText
@@ -34,6 +35,7 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 		a.Nickname = prefillServer.Nickname
 		a.Host = prefillServer.Hostname
 		a.Username = prefillServer.Username
+		a.LegacyAuth = prefillServer.LegacyAuth
 	}
 
 	titleLabel := widget.NewLabel(title)
@@ -53,6 +55,8 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 	a.promptText = widget.NewRichTextWithText("")
 	a.promptText.Hidden = true
 
+	legacyAuthCheck := widget.NewCheckWithData("Use legacy authentication", binding.BindBool(&a.LegacyAuth))
+
 	a.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
 		container.New(layout.NewFormLayout(),
@@ -65,6 +69,7 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 			widget.NewLabel("Password"),
 			passField,
 		),
+		container.NewHBox(layout.NewSpacer(), legacyAuthCheck),
 		widget.NewSeparator(),
 		container.NewHBox(
 			a.promptText,
