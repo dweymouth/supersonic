@@ -156,6 +156,7 @@ func (a *ArtistPageHeader) Update(artist *subsonic.ArtistID3) {
 		return
 	}
 	a.favoriteBtn.IsFavorited = !artist.Starred.IsZero()
+	a.favoriteBtn.Refresh()
 	a.artistID = artist.ID
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
 	a.titleDisp.Refresh()
