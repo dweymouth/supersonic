@@ -84,6 +84,20 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.P
 	return a
 }
 
+func (a *ArtistPage) Tapped(*fyne.PointEvent) {
+	if a.tracklistCtr != nil {
+		a.tracklistCtr.Objects[0].(*widgets.Tracklist).UnselectAll()
+	}
+}
+
+var _ CanSelectAll = (*ArtistPage)(nil)
+
+func (a *ArtistPage) SelectAll() {
+	if a.activeView == 1 && a.tracklistCtr != nil {
+		a.tracklistCtr.Objects[0].(*widgets.Tracklist).SelectAll()
+	}
+}
+
 func (a *ArtistPage) Route() controller.Route {
 	return controller.ArtistRoute(a.artistID)
 }
