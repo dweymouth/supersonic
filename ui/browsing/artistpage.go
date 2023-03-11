@@ -84,6 +84,10 @@ func (a *ArtistPage) playAllTracks() {
 	}
 }
 
+func (a *ArtistPage) playArtistRadio() {
+	go a.pm.PlaySimilarSongs(a.artistID)
+}
+
 func (a *ArtistPage) onShowAlbumPage(albumID string) {
 	a.contr.NavigateTo(controller.AlbumRoute(albumID))
 }
@@ -129,6 +133,7 @@ type ArtistPageHeader struct {
 	similarArtists *fyne.Container
 	favoriteBtn    *widgets.FavoriteButton
 	playBtn        *widget.Button
+	playRadioBtn   *widget.Button
 	container      *fyne.Container
 }
 
@@ -144,7 +149,8 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	}
 	a.artistImage = widgets.NewImagePlaceholder(res.ResPeopleInvertPng, 225)
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
-	a.playBtn = widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), page.playAllTracks)
+	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), page.playAllTracks)
+	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", res.ResShuffleInvertSvg, page.playArtistRadio)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.ExtendBaseWidget(a)
 	a.createContainer()
@@ -219,7 +225,7 @@ func (a *ArtistPageHeader) createContainer() {
 		container.NewVBox(
 			container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 				a.titleDisp, a.biographyDisp, a.similarArtists),
-			container.NewHBox(widgets.NewHSpace(2), a.favoriteBtn, a.playBtn)))
+			container.NewHBox(widgets.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn)))
 }
 
 func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {

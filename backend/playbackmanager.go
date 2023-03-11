@@ -192,6 +192,16 @@ func (p *PlaybackManager) PlayRandomSongs(genreName string) {
 	}
 }
 
+func (p *PlaybackManager) PlaySimilarSongs(id string) {
+	params := map[string]string{"size": "100"}
+	if songs, err := p.sm.Server.GetSimilarSongs2(id, params); err != nil {
+		log.Printf("error getting similar songs: %s", err.Error())
+	} else {
+		p.LoadTracks(songs, false, false)
+		p.PlayFromBeginning()
+	}
+}
+
 func (p *PlaybackManager) GetPlayQueue() []*subsonic.Child {
 	pq := make([]*subsonic.Child, len(p.playQueue))
 	for i, tr := range p.playQueue {
