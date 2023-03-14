@@ -4,6 +4,7 @@ import (
 	"supersonic/backend"
 	"supersonic/res"
 	"supersonic/ui/controller"
+	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -70,7 +71,7 @@ func (g *GenrePage) createContainer(searchGrid bool) {
 	}
 	playRandomVbox := container.NewVBox(layout.NewSpacer(), g.playRandom, layout.NewSpacer())
 	g.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(6), g.titleDisp, playRandomVbox, layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
+		container.NewHBox(util.NewHSpace(6), g.titleDisp, playRandomVbox, layout.NewSpacer(), searchVbox, util.NewHSpace(15)),
 		nil,
 		nil,
 		nil,

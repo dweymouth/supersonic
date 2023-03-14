@@ -75,7 +75,7 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 			t.OnColumnVisibilityMenuShown(pop)
 		}
 	}
-	playingIcon := container.NewCenter(container.NewHBox(NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
+	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
 	t.list = widget.NewList(
 		func() int { return len(t.Tracks) },
 		func() fyne.CanvasObject {

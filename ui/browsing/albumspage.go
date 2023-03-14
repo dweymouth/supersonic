@@ -4,6 +4,7 @@ import (
 	"supersonic/backend"
 	"supersonic/sharedutil"
 	"supersonic/ui/controller"
+	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -92,7 +93,7 @@ func (a *AlbumsPage) createContainer(searchgrid bool) {
 		g = a.searchGrid
 	}
 	a.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(6), a.titleDisp, sortVbox, layout.NewSpacer(), searchVbox, widgets.NewHSpace(12)),
+		container.NewHBox(util.NewHSpace(6), a.titleDisp, sortVbox, layout.NewSpacer(), searchVbox, util.NewHSpace(12)),
 		nil,
 		nil,
 		nil,

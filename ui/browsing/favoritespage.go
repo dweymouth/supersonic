@@ -6,6 +6,7 @@ import (
 	"supersonic/res"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
+	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 	"time"
 
@@ -89,7 +90,7 @@ func (a *FavoritesPage) connectGridActions() {
 func (a *FavoritesPage) createContainer(initialView fyne.CanvasObject) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
 	a.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
+		container.NewHBox(util.NewHSpace(9), a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), searchVbox, util.NewHSpace(15)),
 		nil, nil, nil, initialView)
 }
 
