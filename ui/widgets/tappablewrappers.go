@@ -7,6 +7,35 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// TappableIcon is a tappable wrapper of widget.Icon
+type TappableIcon struct {
+	widget.Icon
+
+	OnTapped func()
+}
+
+func NewTappbaleIcon(res fyne.Resource) *TappableIcon {
+	icon := &TappableIcon{}
+	icon.ExtendBaseWidget(icon)
+	icon.SetResource(res)
+
+	return icon
+}
+
+func (t *TappableIcon) Tapped(_ *fyne.PointEvent) {
+	if t.OnTapped != nil {
+		t.OnTapped()
+	}
+}
+
+func (t *TappableIcon) TappedSecondary(_ *fyne.PointEvent) {
+}
+
+func (t *TappableIcon) Cursor() desktop.Cursor {
+	return desktop.PointerCursor
+}
+
+// TappableImage is a tappable wrapper of canvas.Image
 type TappableImage struct {
 	widget.BaseWidget
 	canvas.Image
