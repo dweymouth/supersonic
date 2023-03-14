@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type ArtistGenrePlaylistItemModel struct {
+type ArtistGenreListItemModel struct {
 	ID         string
 	Name       string
 	AlbumCount int
@@ -17,10 +17,10 @@ type ArtistGenrePlaylistItemModel struct {
 	Favorite   bool
 }
 
-type ArtistGenrePlaylist struct {
+type ArtistGenreList struct {
 	widget.BaseWidget
 
-	Items          []ArtistGenrePlaylistItemModel
+	Items          []ArtistGenreListItemModel
 	ShowAlbumCount bool
 	ShowTrackCount bool
 	OnNavTo        func(string)
@@ -31,10 +31,10 @@ type ArtistGenrePlaylist struct {
 	container     *fyne.Container
 }
 
-type ArtistGenrePlaylistRow struct {
+type ArtistGenreListRow struct {
 	widget.BaseWidget
 
-	Item     ArtistGenrePlaylistItemModel
+	Item     ArtistGenreListItemModel
 	OnTapped func()
 
 	nameLabel       *widget.Label
@@ -44,8 +44,8 @@ type ArtistGenrePlaylistRow struct {
 	container *fyne.Container
 }
 
-func NewArtistGenrePlaylistRow(layout *layouts.ColumnsLayout) *ArtistGenrePlaylistRow {
-	a := &ArtistGenrePlaylistRow{
+func NewArtistGenreListRow(layout *layouts.ColumnsLayout) *ArtistGenreListRow {
+	a := &ArtistGenreListRow{
 		nameLabel:       widget.NewLabel(""),
 		albumCountLabel: widget.NewLabel(""),
 		trackCountLabel: widget.NewLabel(""),
@@ -57,8 +57,8 @@ func NewArtistGenrePlaylistRow(layout *layouts.ColumnsLayout) *ArtistGenrePlayli
 	return a
 }
 
-func NewArtistGenrePlaylist(items []ArtistGenrePlaylistItemModel) *ArtistGenrePlaylist {
-	a := &ArtistGenrePlaylist{
+func NewArtistGenreList(items []ArtistGenreListItemModel) *ArtistGenreList {
+	a := &ArtistGenreList{
 		Items:         items,
 		columnsLayout: layouts.NewColumnsLayout([]float32{-1, 125, 125}),
 	}
@@ -68,12 +68,12 @@ func NewArtistGenrePlaylist(items []ArtistGenrePlaylistItemModel) *ArtistGenrePl
 	a.list = widget.NewList(
 		func() int { return len(a.Items) },
 		func() fyne.CanvasObject {
-			r := NewArtistGenrePlaylistRow(a.columnsLayout)
+			r := NewArtistGenreListRow(a.columnsLayout)
 			r.OnTapped = func() { a.onRowDoubleTapped(r.Item) }
 			return r
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
-			row := item.(*ArtistGenrePlaylistRow)
+			row := item.(*ArtistGenreListRow)
 			row.Item = a.Items[id]
 			row.albumCountLabel.Hidden = !a.ShowAlbumCount
 			row.trackCountLabel.Hidden = !a.ShowTrackCount
@@ -87,28 +87,28 @@ func NewArtistGenrePlaylist(items []ArtistGenrePlaylistItemModel) *ArtistGenrePl
 	return a
 }
 
-func (a *ArtistGenrePlaylist) Refresh() {
+func (a *ArtistGenreList) Refresh() {
 	a.hdr.SetColumnVisible(1, a.ShowAlbumCount)
 	a.hdr.SetColumnVisible(2, a.ShowTrackCount)
 	a.BaseWidget.Refresh()
 }
 
-func (a *ArtistGenrePlaylist) onRowDoubleTapped(item ArtistGenrePlaylistItemModel) {
+func (a *ArtistGenreList) onRowDoubleTapped(item ArtistGenreListItemModel) {
 	if a.OnNavTo != nil {
 		a.OnNavTo(item.ID)
 	}
 }
 
-func (a *ArtistGenrePlaylistRow) Tapped(*fyne.PointEvent) {
+func (a *ArtistGenreListRow) Tapped(*fyne.PointEvent) {
 	if a.OnTapped != nil {
 		a.OnTapped()
 	}
 }
 
-func (a *ArtistGenrePlaylist) CreateRenderer() fyne.WidgetRenderer {
+func (a *ArtistGenreList) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }
 
-func (a *ArtistGenrePlaylistRow) CreateRenderer() fyne.WidgetRenderer {
+func (a *ArtistGenreListRow) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }

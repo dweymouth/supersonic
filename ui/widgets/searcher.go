@@ -9,6 +9,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// Searcher is a search entry widget that will issue a search command
+// (aka call OnSearched) when a short span of time has elapsed since
+// the user typed into the widget.
 type Searcher struct {
 	Entry      *SearchEntry
 	OnSearched func(string)

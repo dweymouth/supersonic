@@ -32,10 +32,19 @@ const (
 type Tracklist struct {
 	widget.BaseWidget
 
-	Tracks     []*subsonic.Child
+	// Tracks is the set of tracks displayed by the widget.
+	Tracks []*subsonic.Child
+
+	// AutoNumber sets whether to auto-number the tracks 1..N in display order,
+	// or to use the number from the track's metadata
 	AutoNumber bool
+
+	// AuxiliaryMenuItems sets additional menu items appended to the context menu
 	// must be set before the context menu is shown for the first time
-	AuxiliaryMenuItems  []*fyne.MenuItem
+	AuxiliaryMenuItems []*fyne.MenuItem
+
+	// DisablePlaybackMenu sets whether to disable playback options in
+	// the tracklist context menu.
 	DisablePlaybackMenu bool
 
 	// user action callbacks

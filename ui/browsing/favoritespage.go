@@ -155,7 +155,7 @@ func (a *FavoritesPage) Reload() {
 			}
 			if a.artistListCtr != nil {
 				// refresh favorite artists view
-				al := a.artistListCtr.Objects[0].(*widgets.ArtistGenrePlaylist)
+				al := a.artistListCtr.Objects[0].(*widgets.ArtistGenreList)
 				al.Items = buildArtistListModel(starred.Artist)
 				if a.toggleBtns.ActivatedButtonIndex() == 1 {
 					// favorite artists view is visible
@@ -264,7 +264,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				return
 			}
 			model := buildArtistListModel(s.Artist)
-			artistList := widgets.NewArtistGenrePlaylist(model)
+			artistList := widgets.NewArtistGenreList(model)
 			artistList.ShowAlbumCount = true
 			artistList.OnNavTo = func(artistID string) {
 				a.contr.NavigateTo(controller.ArtistRoute(artistID))
@@ -282,10 +282,10 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 	}
 }
 
-func buildArtistListModel(artists []*subsonic.ArtistID3) []widgets.ArtistGenrePlaylistItemModel {
-	model := make([]widgets.ArtistGenrePlaylistItemModel, 0)
+func buildArtistListModel(artists []*subsonic.ArtistID3) []widgets.ArtistGenreListItemModel {
+	model := make([]widgets.ArtistGenreListItemModel, 0)
 	for _, ar := range artists {
-		model = append(model, widgets.ArtistGenrePlaylistItemModel{
+		model = append(model, widgets.ArtistGenreListItemModel{
 			ID:         ar.ID,
 			Name:       ar.Name,
 			AlbumCount: ar.AlbumCount,

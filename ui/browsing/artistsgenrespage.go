@@ -25,7 +25,7 @@ type ArtistsGenresPage struct {
 	sm           *backend.ServerManager
 	titleDisp    *widget.RichText
 	container    *fyne.Container
-	list         *widgets.ArtistGenrePlaylist
+	list         *widgets.ArtistGenreList
 }
 
 func NewArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *backend.ServerManager) *ArtistsGenresPage {
@@ -41,7 +41,7 @@ func NewArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *b
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
-	a.list = widgets.NewArtistGenrePlaylist(nil)
+	a.list = widgets.NewArtistGenreList(nil)
 	a.list.ShowAlbumCount = true
 	a.list.ShowTrackCount = isGenresPage
 	a.list.OnNavTo = func(id string) {
@@ -103,11 +103,11 @@ func (s *savedArtistsGenresPage) Restore() Page {
 	return NewArtistsGenresPage(s.isGenresPage, s.contr, s.sm)
 }
 
-func (a *ArtistsGenresPage) buildArtistListModel(artists *subsonic.ArtistsID3) []widgets.ArtistGenrePlaylistItemModel {
-	model := make([]widgets.ArtistGenrePlaylistItemModel, 0)
+func (a *ArtistsGenresPage) buildArtistListModel(artists *subsonic.ArtistsID3) []widgets.ArtistGenreListItemModel {
+	model := make([]widgets.ArtistGenreListItemModel, 0)
 	for _, idx := range artists.Index {
 		for _, artist := range idx.Artist {
-			model = append(model, widgets.ArtistGenrePlaylistItemModel{
+			model = append(model, widgets.ArtistGenreListItemModel{
 				ID:         artist.ID,
 				Name:       artist.Name,
 				AlbumCount: artist.AlbumCount,
@@ -118,10 +118,10 @@ func (a *ArtistsGenresPage) buildArtistListModel(artists *subsonic.ArtistsID3) [
 	return model
 }
 
-func (a *ArtistsGenresPage) buildGenresListModel(genres []*subsonic.Genre) []widgets.ArtistGenrePlaylistItemModel {
-	model := make([]widgets.ArtistGenrePlaylistItemModel, 0)
+func (a *ArtistsGenresPage) buildGenresListModel(genres []*subsonic.Genre) []widgets.ArtistGenreListItemModel {
+	model := make([]widgets.ArtistGenreListItemModel, 0)
 	for _, genre := range genres {
-		model = append(model, widgets.ArtistGenrePlaylistItemModel{
+		model = append(model, widgets.ArtistGenreListItemModel{
 			ID:         genre.Name,
 			Name:       genre.Name,
 			AlbumCount: genre.AlbumCount,
