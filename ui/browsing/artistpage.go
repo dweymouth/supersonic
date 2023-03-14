@@ -73,7 +73,7 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.P
 	viewToggle.OnChanged = a.onViewChange
 	//line := canvas.NewLine(theme.TextColor())
 	viewToggleRow := container.NewBorder(nil, nil,
-		container.NewHBox(&widgets.HSpace{Width: 5}, viewToggle), nil,
+		container.NewHBox(util.NewHSpace(5), viewToggle), nil,
 		layout.NewSpacer(),
 	)
 	a.container = container.NewBorder(
@@ -329,7 +329,7 @@ func (a *ArtistPageHeader) createContainer() {
 		container.NewVBox(
 			container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 				a.titleDisp, a.biographyDisp, a.similarArtists),
-			container.NewHBox(widgets.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn)))
+			container.NewHBox(util.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn)))
 }
 
 func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {

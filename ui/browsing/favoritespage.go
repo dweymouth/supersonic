@@ -6,6 +6,7 @@ import (
 	"supersonic/res"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
+	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 	"time"
 
@@ -89,7 +90,7 @@ func (a *FavoritesPage) connectGridActions() {
 func (a *FavoritesPage) createContainer(initialView fyne.CanvasObject) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
 	a.container = container.NewBorder(
-		container.NewHBox(widgets.NewHSpace(9), a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), searchVbox, widgets.NewHSpace(15)),
+		container.NewHBox(util.NewHSpace(9), a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), searchVbox, util.NewHSpace(15)),
 		nil, nil, nil, initialView)
 }
 
@@ -154,7 +155,7 @@ func (a *FavoritesPage) Reload() {
 			}
 			if a.artistListCtr != nil {
 				// refresh favorite artists view
-				al := a.artistListCtr.Objects[0].(*widgets.ArtistGenrePlaylist)
+				al := a.artistListCtr.Objects[0].(*widgets.ArtistGenreList)
 				al.Items = buildArtistListModel(starred.Artist)
 				if a.toggleBtns.ActivatedButtonIndex() == 1 {
 					// favorite artists view is visible
@@ -263,7 +264,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				return
 			}
 			model := buildArtistListModel(s.Artist)
-			artistList := widgets.NewArtistGenrePlaylist(model)
+			artistList := widgets.NewArtistGenreList(model)
 			artistList.ShowAlbumCount = true
 			artistList.OnNavTo = func(artistID string) {
 				a.contr.NavigateTo(controller.ArtistRoute(artistID))
@@ -281,10 +282,10 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 	}
 }
 
-func buildArtistListModel(artists []*subsonic.ArtistID3) []widgets.ArtistGenrePlaylistItemModel {
-	model := make([]widgets.ArtistGenrePlaylistItemModel, 0)
+func buildArtistListModel(artists []*subsonic.ArtistID3) []widgets.ArtistGenreListItemModel {
+	model := make([]widgets.ArtistGenreListItemModel, 0)
 	for _, ar := range artists {
-		model = append(model, widgets.ArtistGenrePlaylistItemModel{
+		model = append(model, widgets.ArtistGenreListItemModel{
 			ID:         ar.ID,
 			Name:       ar.Name,
 			AlbumCount: ar.AlbumCount,

@@ -186,8 +186,8 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 			container.NewVBox(
 				container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, a.artistLabel, a.genreLabel, a.miscLabel),
 				container.NewVBox(
-					container.NewHBox(widgets.NewHSpace(2), playButton, shuffleBtn),
-					container.NewHBox(widgets.NewHSpace(2), a.toggleFavButton),
+					container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn),
+					container.NewHBox(util.NewHSpace(2), a.toggleFavButton),
 				),
 			),
 		),
