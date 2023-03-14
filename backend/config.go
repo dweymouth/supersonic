@@ -29,6 +29,11 @@ type AlbumsPageConfig struct {
 	SortOrder string
 }
 
+type ArtistPageConfig struct {
+	InitialView      string
+	TracklistColumns []string
+}
+
 type FavoritesPageConfig struct {
 	InitialView      string
 	TracklistColumns []string
@@ -51,6 +56,7 @@ type Config struct {
 	Servers        []*ServerConfig
 	AlbumPage      AlbumPageConfig
 	AlbumsPage     AlbumsPageConfig
+	ArtistPage     ArtistPageConfig
 	FavoritesPage  FavoritesPageConfig
 	NowPlayingPage NowPlayingPageConfig
 	PlaylistPage   PlaylistPageConfig
@@ -68,6 +74,10 @@ func DefaultConfig() *Config {
 		},
 		AlbumsPage: AlbumsPageConfig{
 			SortOrder: string(AlbumSortRecentlyAdded),
+		},
+		ArtistPage: ArtistPageConfig{
+			InitialView:      "Discography",
+			TracklistColumns: []string{"Album", "Time", "Plays", "Favorite"},
 		},
 		FavoritesPage: FavoritesPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},

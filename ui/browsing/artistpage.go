@@ -7,6 +7,7 @@ import (
 	"strings"
 	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/util"
@@ -23,11 +24,14 @@ import (
 var _ fyne.Widget = (*ArtistPage)(nil)
 
 type artistPageState struct {
-	artistID string
-	pm       *backend.PlaybackManager
-	sm       *backend.ServerManager
-	im       *backend.ImageManager
-	contr    *controller.Controller
+	artistID   string
+	activeView int
+
+	cfg   *backend.ArtistPageConfig
+	pm    *backend.PlaybackManager
+	sm    *backend.ServerManager
+	im    *backend.ImageManager
+	contr *controller.Controller
 }
 
 type ArtistPage struct {
@@ -37,25 +41,61 @@ type ArtistPage struct {
 
 	artistInfo *subsonic.ArtistID3
 
-	header    *ArtistPageHeader
-	container *fyne.Container
+	albumGrid    *widgets.AlbumGrid
+	tracklistCtr *fyne.Container
+	nowPlayingID string
+	header       *ArtistPageHeader
+	container    *fyne.Container
 }
 
-func NewArtistPage(artistID string, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
+func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
+	activeView := 0
+	if cfg.InitialView == "Top Tracks" {
+		activeView = 1
+	}
+	return newArtistPage(artistID, cfg, pm, sm, im, contr, activeView)
+}
+
+func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller, activeView int) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
-		artistID: artistID,
-		pm:       pm,
-		sm:       sm,
-		im:       im,
-		contr:    contr,
+		artistID:   artistID,
+		cfg:        cfg,
+		pm:         pm,
+		sm:         sm,
+		im:         im,
+		contr:      contr,
+		activeView: activeView,
 	}}
 	a.ExtendBaseWidget(a)
 	a.header = NewArtistPageHeader(a)
+	viewToggle := widgets.NewToggleText(0, []string{"Discography", "Top Tracks"})
+	viewToggle.SetActivatedLabel(a.activeView)
+	viewToggle.OnChanged = a.onViewChange
+	//line := canvas.NewLine(theme.TextColor())
+	viewToggleRow := container.NewBorder(nil, nil,
+		container.NewHBox(&widgets.HSpace{Width: 5}, viewToggle), nil,
+		layout.NewSpacer(),
+	)
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
-		nil, nil, nil, layout.NewSpacer())
+		nil, nil, nil,
+		container.NewBorder(viewToggleRow, nil, nil, nil, layout.NewSpacer()))
 	go a.load()
 	return a
+}
+
+func (a *ArtistPage) Tapped(*fyne.PointEvent) {
+	if a.tracklistCtr != nil {
+		a.tracklistCtr.Objects[0].(*widgets.Tracklist).UnselectAll()
+	}
+}
+
+var _ CanSelectAll = (*ArtistPage)(nil)
+
+func (a *ArtistPage) SelectAll() {
+	if a.activeView == 1 && a.tracklistCtr != nil {
+		a.tracklistCtr.Objects[0].(*widgets.Tracklist).SelectAll()
+	}
 }
 
 func (a *ArtistPage) Route() controller.Route {
@@ -67,8 +107,26 @@ func (a *ArtistPage) Reload() {
 }
 
 func (a *ArtistPage) Save() SavedPage {
+	// TODO: find a better place to update the tracklist columns preference
+	// If user changes columns but doesn't navigate to another page,
+	// we won't be persisting the change
+	if a.tracklistCtr != nil {
+		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		a.cfg.TracklistColumns = tl.VisibleColumns()
+	}
 	s := a.artistPageState
 	return &s
+}
+
+var _ CanShowNowPlaying = (*ArtistPage)(nil)
+
+func (a *ArtistPage) OnSongChange(track *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
+	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(track)
+	if a.tracklistCtr != nil {
+		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		tl.SetNowPlaying(a.nowPlayingID)
+		tl.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
+	}
 }
 
 func (a *ArtistPage) onPlayAlbum(albumID string) {
@@ -101,16 +159,62 @@ func (a *ArtistPage) load() {
 	}
 	a.artistInfo = artist
 	a.header.Update(artist)
-	ag := widgets.NewFixedAlbumGrid(artist.Album, a.im, true /*showYear*/)
-	ag.OnPlayAlbum = a.onPlayAlbum
-	ag.OnShowAlbumPage = a.onShowAlbumPage
-	a.container.Objects[0] = ag
-	a.container.Refresh()
+	if a.activeView == 0 {
+		a.showAlbumGrid()
+	} else {
+		a.showTopTracks()
+	}
 	info, err := a.sm.Server.GetArtistInfo2(a.artistID, nil)
 	if err != nil {
 		log.Printf("Failed to get artist info: %s", err.Error())
 	}
 	a.header.UpdateInfo(info)
+}
+
+func (a *ArtistPage) showAlbumGrid() {
+	if a.albumGrid == nil {
+		a.albumGrid = widgets.NewFixedAlbumGrid(a.artistInfo.Album, a.im, true /*showYear*/)
+		a.albumGrid.OnPlayAlbum = a.onPlayAlbum
+		a.albumGrid.OnShowAlbumPage = a.onShowAlbumPage
+	}
+	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
+	a.container.Objects[0].Refresh()
+}
+
+func (a *ArtistPage) showTopTracks() {
+	if a.tracklistCtr == nil {
+		ts, err := a.sm.Server.GetTopSongs(a.artistInfo.Name, map[string]string{"count": "20"})
+		if err != nil {
+			log.Printf("error getting top songs: %s", err.Error())
+			return
+		}
+		tl := widgets.NewTracklist(ts)
+		tl.AutoNumber = true
+		tl.SetVisibleColumns(a.cfg.TracklistColumns)
+		tl.SetNowPlaying(a.nowPlayingID)
+		a.contr.ConnectTracklistActions(tl)
+		a.tracklistCtr = container.New(
+			&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 10},
+			tl)
+	}
+	a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
+	a.container.Objects[0].Refresh()
+}
+
+func (a *ArtistPage) onViewChange(num int) {
+	if num == 0 {
+		a.showAlbumGrid()
+	} else {
+		// needs to request info from server if first time,
+		// so call it asynchronously
+		go a.showTopTracks()
+	}
+	a.activeView = num
+	if num == 1 {
+		a.cfg.InitialView = "Top Tracks"
+	} else {
+		a.cfg.InitialView = "Discography"
+	}
 }
 
 func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
@@ -119,7 +223,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return NewArtistPage(s.artistID, s.pm, s.sm, s.im, s.contr)
+	return newArtistPage(s.artistID, s.cfg, s.pm, s.sm, s.im, s.contr, s.activeView)
 }
 
 type ArtistPageHeader struct {
