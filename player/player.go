@@ -38,12 +38,30 @@ const (
 	SeekRelativePercent
 )
 
+// One of "no", "track", or "album"
+type ReplayGainMode string
+
+const (
+	ReplayGainNone  ReplayGainMode = "no"
+	ReplayGainTrack ReplayGainMode = "track"
+	ReplayGainAlbum ReplayGainMode = "album"
+)
+
+// Replay Gain options (argument to SetReplayGainOptions).
+type ReplayGainOptions struct {
+	Mode         ReplayGainMode
+	FallbackGain float64
+	PreampGain   float64
+}
+
 // Player encapsulates the mpv instance and provides functions
 // to control it and to check its status.
 type Player struct {
 	mpv            libmpv
 	initialized    bool
 	vol            int
+	replayGainOpts ReplayGainOptions
+	haveRGainOpts  bool
 	status         Status
 	seeking        bool
 	curPlaylistPos int64
@@ -98,6 +116,9 @@ func (p *Player) Init(audioExclusive bool) error {
 
 		if audioExclusive {
 			m.SetOptionString("audio-exclusive", "yes")
+		}
+		if p.haveRGainOpts {
+			p.SetReplayGainOptions(p.replayGainOpts)
 		}
 
 		if p.clientName != "" {
@@ -229,6 +250,26 @@ func (p *Player) SetVolume(vol int) error {
 		return err
 	}
 	p.vol = vol
+	return nil
+}
+
+// Sets the ReplayGain options of the player.
+// Unlike most Player functions, SetReplayGainOptions can be called
+// before Init, to set the initial volume of the player on startup.
+func (p *Player) SetReplayGainOptions(options ReplayGainOptions) error {
+	p.replayGainOpts = options
+	p.haveRGainOpts = true
+	if p.initialized {
+		if err := p.mpv.SetPropertyString("replaygain", string(options.Mode)); err != nil {
+			return err
+		}
+		if err := p.mpv.SetProperty("replaygain-preamp", MPVFormatDouble, options.PreampGain); err != nil {
+			return err
+		}
+		if err := p.mpv.SetProperty("replaygain-fallback", MPVFormatDouble, options.FallbackGain); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
