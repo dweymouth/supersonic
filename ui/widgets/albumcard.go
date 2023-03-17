@@ -89,7 +89,14 @@ func (a *albumCover) center() fyne.Position {
 }
 
 func (a *albumCover) SetImage(im image.Image) {
+	a.Im.Resource = nil
 	a.Im.Image = im
+	a.Refresh()
+}
+
+func (a *albumCover) SetImageResource(res *fyne.StaticResource) {
+	a.Im.Image = nil
+	a.Im.Resource = res
 	a.Refresh()
 }
 

@@ -5,6 +5,7 @@ import (
 	"image"
 	"log"
 	"supersonic/backend"
+	"supersonic/res"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -148,7 +149,6 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 	}
 	ac.Update(album)
 	ac.PrevAlbumID = album.ID
-	// TODO: set image to a placeholder before spinning off async fetch
 	// cancel any previous image fetch
 	if ac.ImgLoadCancel != nil {
 		ac.ImgLoadCancel()
@@ -156,9 +156,11 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 	}
 	if img, ok := ag.imageFetcher.GetAlbumThumbnailFromCache(album.ID); ok {
 		ac.Cover.SetImage(img)
-		ac.Cover.Refresh()
 	} else {
+		ac.Cover.SetImageResource(res.ResAlbumplaceholderPng)
+		// asynchronously fetch cover image
 		ctx, cancel := context.WithCancel(context.Background())
+		ac.ImgLoadCancel = cancel
 		go func(ctx context.Context) {
 			i, err := ag.imageFetcher.GetAlbumThumbnail(album.ID)
 			select {
@@ -167,13 +169,11 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 			default:
 				if err == nil {
 					ac.Cover.SetImage(i)
-					ac.Cover.Refresh()
 				} else {
 					log.Printf("error fetching image: %s", err.Error())
 				}
 			}
 		}(ctx)
-		ac.ImgLoadCancel = cancel
 	}
 
 	// if user has scrolled near the bottom, fetch more
