@@ -98,6 +98,7 @@ func (ag *AlbumGrid) Reset(iter backend.AlbumIterator) {
 	ag.albums = nil
 	ag.fetching = false
 	ag.done = false
+	ag.highestShown = 0
 	ag.iter = backend.NewBatchingIterator(iter)
 	ag.fetchMoreAlbums(36)
 }

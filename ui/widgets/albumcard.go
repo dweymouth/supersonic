@@ -34,7 +34,7 @@ type albumCover struct {
 func newAlbumCover() *albumCover {
 	a := &albumCover{}
 	a.ExtendBaseWidget(a)
-	a.Im = &canvas.Image{FillMode: canvas.ImageFillContain}
+	a.Im = &canvas.Image{FillMode: canvas.ImageFillContain, ScaleMode: canvas.ImageScaleFastest}
 	a.Im.SetMinSize(fyne.NewSize(200, 200))
 	a.playbtn = &canvas.Image{FillMode: canvas.ImageFillContain, Resource: res.ResPlaybuttonPng}
 	a.playbtn.SetMinSize(fyne.NewSize(60, 60))
