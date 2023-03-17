@@ -12,6 +12,7 @@
 - [#66](https://github.com/dweymouth/supersonic/issues/66) Refreshing artist page duplicates list of similar artists 
 - [#37](https://github.com/dweymouth/supersonic/issues/37) Infinite scrolling album views stop loading if you scroll with scrollbar immediately to bottom
 - [#78](https://github.com/dweymouth/supersonic/issues/78) Favorite button on Artist page always shows unfavorited initially
+- [#64](https://github.com/dweymouth/supersonic/issues/64) Improve scrolling smoothness in album grid view
 
 ## [0.0.1-alpha1] - 2023-03-05
 
