@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased]
+## [0.0.1-alpha2] - 2023-03-17
 
 ### Added
 - [#73](https://github.com/dweymouth/supersonic/issues/73) Added "Play Random" button to genre page to play random songs
