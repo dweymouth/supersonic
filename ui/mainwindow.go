@@ -60,7 +60,11 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 		App:        app,
 	}
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
+	// inject controller dependencies
 	m.Controller.NavHandler = m.Router.NavigateTo
+	m.Controller.ReloadFunc = m.BrowsingPane.Reload
+	m.Controller.CurPageFunc = m.BrowsingPane.CurPage
+
 	m.BottomPanel = NewBottomPanel(app.Player, m.Router.NavigateTo)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)
 	m.BottomPanel.ImageManager = app.ImageManager

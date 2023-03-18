@@ -123,10 +123,11 @@ func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
 type PlaylistPageHeader struct {
 	widget.BaseWidget
 
-	page *PlaylistPage
+	page         *PlaylistPage
+	playlistInfo *subsonic.Playlist
+	image        *widgets.ImagePlaceholder
 
-	image *widgets.ImagePlaceholder
-
+	editButton       *widget.Button
 	titleLabel       *widget.RichText
 	descriptionLabel *widget.Label
 	createdAtLabel   *widget.Label
@@ -150,6 +151,12 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.ownerLabel = widget.NewLabel("")
 	a.createdAtLabel = widget.NewLabel("")
 	a.trackTimeLabel = widget.NewLabel("")
+	a.editButton = widget.NewButtonWithIcon("Edit", theme.DocumentCreateIcon(), func() {
+		if a.playlistInfo != nil {
+			page.contr.DoEditPlaylistWorkflow(a.playlistInfo)
+		}
+	})
+	a.editButton.Hidden = true
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
 		page.pm.LoadTracks(page.tracklist.Tracks, false, false)
 		page.pm.PlayFromBeginning()
@@ -165,7 +172,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 			a.descriptionLabel,
 			a.ownerLabel,
 			a.trackTimeLabel),
-			container.NewHBox(playButton, shuffleBtn),
+			container.NewHBox(a.editButton, playButton, shuffleBtn),
 		))
 	return a
 }
@@ -175,6 +182,8 @@ func (a *PlaylistPageHeader) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *PlaylistPageHeader) Update(playlist *subsonic.Playlist) {
+	a.playlistInfo = playlist
+	a.editButton.Hidden = playlist.Owner != a.page.sm.Server.User
 	a.titleLabel.Segments[0].(*widget.TextSegment).Text = playlist.Name
 	a.descriptionLabel.SetText(playlist.Comment)
 	a.ownerLabel.SetText(a.formatPlaylistOwnerStr(playlist))

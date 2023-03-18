@@ -3,6 +3,7 @@ package controller
 import (
 	"image"
 	"log"
+	"strconv"
 	"supersonic/backend"
 	"supersonic/ui/dialogs"
 	"supersonic/ui/util"
@@ -12,20 +13,27 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type NavigationHandler func(Route)
 
+type ReloadFunc func()
+
+type CurPageFunc func() Route
+
 type Controller struct {
 	// if not nil, this popup should be hidden when escape is pressed
 	EscapablePopUp *widget.PopUp
 
-	AppVersion string
-	MainWindow fyne.Window
-	App        *backend.App
-	NavHandler NavigationHandler
+	AppVersion  string
+	MainWindow  fyne.Window
+	App         *backend.App
+	NavHandler  NavigationHandler
+	CurPageFunc CurPageFunc
+	ReloadFunc  ReloadFunc
 }
 
 func (m *Controller) NavigateTo(route Route) {
@@ -143,6 +151,48 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 			m.App.ServerManager.Server.UpdatePlaylistTracks(
 				pls[playlistChoice].ID, trackIDs, nil /*tracksToRemove*/)
 		}
+	}
+	pop.Show()
+}
+
+func (m *Controller) DoEditPlaylistWorkflow(playlist *subsonic.Playlist) {
+	dlg := dialogs.NewEditPlaylistDialog(playlist)
+	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
+	m.ClosePopUpOnEscape(pop)
+	dlg.OnCanceled = pop.Hide
+	dlg.OnDeletePlaylist = func() {
+		pop.Hide()
+		dialog.ShowCustomConfirm("Confirm Delete Playlist", "OK", "Cancel", layout.NewSpacer(), /*custom content*/
+			func(ok bool) {
+				if !ok {
+					pop.Show()
+				} else {
+					go func() {
+						if err := m.App.ServerManager.Server.DeletePlaylist(playlist.ID); err != nil {
+							log.Printf("error deleting playlist: %s", err.Error())
+						} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
+							// navigate to playlists page if user is still on the page of the deleted playlist
+							m.NavigateTo(PlaylistsRoute())
+						}
+					}()
+				}
+			}, m.MainWindow)
+	}
+	dlg.OnUpdateMetadata = func() {
+		pop.Hide()
+		go func() {
+			err := m.App.ServerManager.Server.UpdatePlaylist(playlist.ID, map[string]string{
+				"name":    dlg.Name,
+				"comment": dlg.Description,
+				"public":  strconv.FormatBool(dlg.IsPublic),
+			})
+			if err != nil {
+				log.Printf("error updating playlist: %s", err.Error())
+			} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
+				// if user is on playlist page, reload to get the updates
+				m.ReloadFunc()
+			}
+		}()
 	}
 	pop.Show()
 }

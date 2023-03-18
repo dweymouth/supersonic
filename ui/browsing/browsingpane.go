@@ -209,6 +209,10 @@ func (b *BrowsingPane) Reload() {
 	}
 }
 
+func (b *BrowsingPane) CurPage() controller.Route {
+	return b.curPage.Route()
+}
+
 func (b *BrowsingPane) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(b.container)
 }
