@@ -12,6 +12,7 @@
 - [60b7b93](https://github.com/dweymouth/supersonic/commit/60b7b93ee27f22781dbcddc8bd429d0ede8514fb) Add support for deleting playlists and editing playlist metadata
 
 ### Fixed
+- [#62](https://github.com/dweymouth/supersonic/issues/62) Set a placeholder image if an album cover is not available
 - [#66](https://github.com/dweymouth/supersonic/issues/66) Refreshing artist page duplicates list of similar artists 
 - [#37](https://github.com/dweymouth/supersonic/issues/37) Infinite scrolling album views stop loading if you scroll with scrollbar immediately to bottom
 - [#78](https://github.com/dweymouth/supersonic/issues/78) Favorite button on Artist page always shows unfavorited initially
