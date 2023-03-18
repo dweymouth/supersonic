@@ -239,11 +239,7 @@ func (p *Player) setPaused(paused bool) error {
 
 // Start playback from the first track in the play queue.
 func (p *Player) PlayFromBeginning() error {
-	err := p.mpv.Command([]string{"playlist-play-index", "0"})
-	if err == nil {
-		p.setState(Playing)
-	}
-	return err
+	return p.PlayTrackAt(0)
 }
 
 // Start playback from the specified track index in the play queue.
@@ -378,13 +374,6 @@ func (p *Player) setState(s State) {
 				cb()
 			}
 		}()
-		if p.status.State == Stopped {
-			defer func() {
-				for _, cb := range p.onTrackChange {
-					cb(p.curPlaylistPos)
-				}
-			}()
-		}
 	case s == Paused && p.status.State != Paused:
 		defer func() {
 			for _, cb := range p.onPaused {
@@ -429,11 +418,9 @@ func (p *Player) eventHandler(ctx context.Context) {
 					}
 				}
 				if pos, err := p.getInt64Property("playlist-pos"); err == nil {
-					if p.curPlaylistPos != pos {
-						p.curPlaylistPos = pos
-						for _, cb := range p.onTrackChange {
-							cb(pos)
-						}
+					p.curPlaylistPos = pos
+					for _, cb := range p.onTrackChange {
+						cb(pos)
 					}
 				}
 			case MPVEventIdle:

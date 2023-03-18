@@ -42,9 +42,6 @@ func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player)
 		sm:     s,
 		player: p,
 	}
-	// TODO: we get some spurious OnTrackChange callbacks from the player,
-	// especially when loading/playing a new album,
-	// but for now they're pretty much harmless. Investigate later.
 	p.OnTrackChange(func(tracknum int64) {
 		if tracknum >= int64(len(pm.playQueue)) {
 			return
@@ -266,7 +263,7 @@ func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 		return
 	}
 	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
-		return // ignore spurious onTrackChange callbacks
+		return
 	}
 	song := p.playQueue[p.nowPlayingIdx]
 	if playDur.Seconds()/p.curTrackTime > ScrobbleThreshold {
