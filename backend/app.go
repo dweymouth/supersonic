@@ -80,7 +80,7 @@ func (a *App) readConfig() {
 
 func (a *App) initMPV() error {
 	p := player.NewWithClientName(AppName)
-	if err := p.Init(); err != nil {
+	if err := p.Init(a.Config.LocalPlayback.AudioExclusive); err != nil {
 		return fmt.Errorf("failed to initialize mpv player: %s", err.Error())
 	}
 	a.Player = p

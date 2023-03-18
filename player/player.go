@@ -77,7 +77,7 @@ func NewWithClientName(c string) *Player {
 
 // Initializes the Player and makes it ready for playback.
 // Most Player functions will return ErrUnitialized if called before Init.
-func (p *Player) Init() error {
+func (p *Player) Init(audioExclusive bool) error {
 	if !p.initialized {
 		m, err := CreateMPV()
 		if err != nil {
@@ -95,6 +95,10 @@ func (p *Player) Init() error {
 			p.vol = 100
 		}
 		m.SetOption("volume", MPVFormatInt64, p.vol)
+
+		if audioExclusive {
+			m.SetOptionString("audio-exclusive", "yes")
+		}
 
 		if p.clientName != "" {
 			m.SetOptionString("audio-client-name", p.clientName)

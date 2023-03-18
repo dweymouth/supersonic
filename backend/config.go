@@ -48,7 +48,8 @@ type PlaylistPageConfig struct {
 }
 
 type LocalPlaybackConfig struct {
-	Volume int
+	AudioExclusive bool
+	Volume         int
 }
 
 type Config struct {
@@ -90,7 +91,8 @@ func DefaultConfig() *Config {
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 		},
 		LocalPlayback: LocalPlaybackConfig{
-			Volume: 100,
+			AudioExclusive: false,
+			Volume:         100,
 		},
 	}
 }
