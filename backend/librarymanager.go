@@ -8,6 +8,10 @@ type AlbumIterator interface {
 	Next() *subsonic.AlbumID3
 }
 
+type TrackIterator interface {
+	Next() *subsonic.Child
+}
+
 type LibraryManager struct {
 	PreCacheCoverFn func(coverID string)
 
