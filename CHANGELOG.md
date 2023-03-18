@@ -7,6 +7,9 @@
 - [#60](https://github.com/dweymouth/supersonic/issues/60) Add Top Tracks view to artist page
 - [#82](https://github.com/dweymouth/supersonic/issues/82) Added "Play Artist Radio" feature
 - [#79](https://github.com/dweymouth/supersonic/issues/79) Support legacy unsalted password auth
+- [#48](https://github.com/dweymouth/supersonic/issues/48) Send "Now Playing" scrobble to server when beginning new track
+- [#76](https://github.com/dweymouth/supersonic/issues/76) Added "Audio Exclusive" playback mode
+- [60b7b93](https://github.com/dweymouth/supersonic/commit/60b7b93ee27f22781dbcddc8bd429d0ede8514fb) Add support for deleting playlists and editing playlist metadata
 
 ### Fixed
 - [#66](https://github.com/dweymouth/supersonic/issues/66) Refreshing artist page duplicates list of similar artists 
