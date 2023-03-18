@@ -55,6 +55,7 @@ func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player)
 		pm.curTrackTime = float64(pm.playQueue[pm.nowPlayingIdx].Duration)
 		pm.invokeOnSongChangeCallbacks()
 		pm.doUpdateTimePos()
+		pm.sendNowPlayingScrobble()
 	})
 	p.OnSeek(func() {
 		pm.doUpdateTimePos()
@@ -258,6 +259,7 @@ func (p *PlaybackManager) StopAndClearPlayQueue() {
 	p.playQueue = nil
 }
 
+// call BEFORE updating p.nowPlayingIdx
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 	if len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
 		return
@@ -270,8 +272,19 @@ func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 		log.Printf("Scrobbling %q", song.Title)
 		song.PlayCount += 1
 		p.lastScrobbled = song
-		p.sm.Server.Scrobble(song.ID, map[string]string{"time": strconv.FormatInt(time.Now().Unix()*1000, 10)})
+		go p.sm.Server.Scrobble(song.ID, map[string]string{"time": strconv.FormatInt(time.Now().Unix()*1000, 10)})
 	}
+}
+
+func (p *PlaybackManager) sendNowPlayingScrobble() {
+	if len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
+		return
+	}
+	song := p.playQueue[p.nowPlayingIdx]
+	go p.sm.Server.Scrobble(song.ID, map[string]string{
+		"time":       strconv.FormatInt(time.Now().Unix()*1000, 10),
+		"submission": "false",
+	})
 }
 
 func (p *PlaybackManager) invokeOnSongChangeCallbacks() {
