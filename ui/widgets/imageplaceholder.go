@@ -14,6 +14,7 @@ import (
 type ImagePlaceholder struct {
 	widget.BaseWidget
 	container *fyne.Container
+	haveImage bool
 	minSize   float32
 
 	OnTapped func()
@@ -42,6 +43,10 @@ type CanvasImage interface {
 	SetMinSize(fyne.Size)
 }
 
+func (i *ImagePlaceholder) HaveImage() bool {
+	return i.haveImage
+}
+
 func (i *ImagePlaceholder) SetImage(img image.Image, tappable bool) {
 	var cIm CanvasImage
 	if tappable {
@@ -58,6 +63,7 @@ func (i *ImagePlaceholder) SetImage(img image.Image, tappable bool) {
 	i.container.RemoveAll()
 	i.container.Add(cIm)
 	i.container.Refresh()
+	i.haveImage = true
 }
 
 func (i *ImagePlaceholder) onTapped() {

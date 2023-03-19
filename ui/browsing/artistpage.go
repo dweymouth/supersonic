@@ -1,8 +1,6 @@
 package browsing
 
 import (
-	"bytes"
-	"image"
 	"log"
 	"strings"
 	"supersonic/backend"
@@ -68,6 +66,9 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.P
 	}}
 	a.ExtendBaseWidget(a)
 	a.header = NewArtistPageHeader(a)
+	if img, ok := im.GetCachedArtistImage(artistID); ok {
+		a.header.artistImage.SetImage(img, true /*tappable*/)
+	}
 	viewToggle := widgets.NewToggleText(0, []string{"Discography", "Top Tracks"})
 	viewToggle.SetActivatedLabel(a.activeView)
 	viewToggle.OnChanged = a.onViewChange
@@ -276,6 +277,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 	if info == nil {
 		return
 	}
+
 	if info.Biography != "" {
 		segs := util.RichTextSegsFromHTMLString(info.Biography)
 		if len(segs) > 0 {
@@ -285,6 +287,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 			}
 		}
 	}
+
 	a.similarArtists.RemoveAll()
 	for i, art := range info.SimilarArtist {
 		if i == 0 {
@@ -302,16 +305,15 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 		a.similarArtists.Add(h)
 	}
 	a.similarArtists.Refresh()
+
 	if info.LargeImageUrl != "" {
-		if res, err := fyne.LoadResourceFromURLString(info.LargeImageUrl); err == nil {
-			im, _, err := image.Decode(bytes.NewReader(res.Content()))
-			if err != nil {
-				return
+		if a.artistImage.HaveImage() {
+			_ = a.artistPage.im.RefreshCachedArtistImageIfExpired(a.artistID, info.LargeImageUrl)
+		} else {
+			im, err := a.artistPage.im.FetchAndCacheArtistImage(a.artistID, info.LargeImageUrl)
+			if err == nil {
+				a.artistImage.SetImage(im, true /*tappable*/)
 			}
-			a.artistImage.OnTapped = func() {
-				a.artistPage.contr.ShowPopUpImage(im)
-			}
-			a.artistImage.SetImage(im, true /*tappable*/)
 		}
 	}
 }

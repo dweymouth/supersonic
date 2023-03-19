@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"image"
@@ -11,8 +12,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"github.com/20after4/configdir"
 )
+
+const CachedImageValidTime = 24 * time.Hour
 
 type ImageManager struct {
 	s              *ServerManager
@@ -77,10 +81,49 @@ func (i *ImageManager) GetFullSizeAlbumCover(albumID string) (image.Image, error
 	return im, nil
 }
 
+func (i *ImageManager) GetCachedArtistImage(artistID string) (image.Image, bool) {
+	return i.loadLocalImage(i.filePathForArtistImage(artistID))
+}
+
+func (i *ImageManager) FetchAndCacheArtistImage(artistID string, imgURL string) (image.Image, error) {
+	im, err := i.fetchRemoteArtistImage(imgURL)
+	if err != nil {
+		return nil, err
+	}
+	_ = i.writeJpeg(im, i.filePathForArtistImage(artistID))
+	return im, nil
+}
+
+func (i *ImageManager) RefreshCachedArtistImageIfExpired(artistID string, imgURL string) error {
+	stat, err := os.Stat(i.filePathForArtistImage(artistID))
+	if err == nil && time.Since(stat.ModTime()) > CachedImageValidTime {
+		_, err = i.FetchAndCacheArtistImage(artistID, imgURL)
+	}
+	return err
+}
+
 func (i *ImageManager) ensureCoverCacheDir() string {
 	path := path.Join(i.baseCacheDir, i.s.ServerID.String(), "covers")
 	configdir.MakePath(path)
 	return path
+}
+
+func (i *ImageManager) ensureArtistCoverCacheDir() string {
+	path := path.Join(i.baseCacheDir, i.s.ServerID.String(), "artistimages")
+	configdir.MakePath(path)
+	return path
+}
+
+func (i *ImageManager) fetchRemoteArtistImage(url string) (image.Image, error) {
+	res, err := fyne.LoadResourceFromURLString(url)
+	if err == nil {
+		im, _, err := image.Decode(bytes.NewReader(res.Content()))
+		if err == nil {
+			return im, nil
+		}
+		return nil, err
+	}
+	return nil, err
 }
 
 func (i *ImageManager) fetchAndCacheCoverFromDiskOrServer(albumID string, ttl time.Duration) (image.Image, error) {
@@ -89,12 +132,9 @@ func (i *ImageManager) fetchAndCacheCoverFromDiskOrServer(albumID string, ttl ti
 	if i.ensureCoverCacheDir() != "" {
 		if s, err := os.Stat(path); err == nil {
 			go i.checkRefreshLocalCover(s, albumID, ttl)
-			if f, err := os.Open(path); err == nil {
-				defer f.Close()
-				if img, _, err := image.Decode(f); err == nil {
-					i.thumbnailCache.SetWithTTL(albumID, img, ttl)
-					return img, nil
-				}
+			if img, ok := i.loadLocalImage(path); ok {
+				i.thumbnailCache.SetWithTTL(albumID, img, ttl)
+				return img, nil
 			}
 		}
 	}
@@ -109,23 +149,44 @@ func (i *ImageManager) fetchAndCacheCoverFromServer(albumID string, ttl time.Dur
 	}
 	if i.ensureCoverCacheDir() != "" {
 		path := i.filePathForCover(albumID)
-		if f, err := os.Create(path); err == nil {
-			defer f.Close()
-			if err := jpeg.Encode(f, img, nil /*options*/); err != nil {
-				log.Printf("failed to cache image: %s", err.Error())
-			}
-		}
+		_ = i.writeJpeg(img, path)
 	}
 	i.thumbnailCache.SetWithTTL(albumID, img, ttl)
 	return img, nil
 }
 
 func (i *ImageManager) checkRefreshLocalCover(stat os.FileInfo, albumID string, ttl time.Duration) {
-	if time.Since(stat.ModTime()) > 24*time.Hour {
+	if time.Since(stat.ModTime()) > CachedImageValidTime {
 		i.fetchAndCacheCoverFromServer(albumID, ttl)
 	}
 }
 
 func (i *ImageManager) filePathForCover(albumID string) string {
 	return filepath.Join(i.ensureCoverCacheDir(), fmt.Sprintf("%s.jpg", albumID))
+}
+
+func (i *ImageManager) filePathForArtistImage(id string) string {
+	return filepath.Join(i.ensureArtistCoverCacheDir(), fmt.Sprintf("%s.jpg", id))
+}
+
+func (i *ImageManager) writeJpeg(img image.Image, path string) error {
+	f, err := os.Create(path)
+	if err == nil {
+		defer f.Close()
+		if err := jpeg.Encode(f, img, nil /*options*/); err != nil {
+			log.Printf("failed to cache image: %s", err.Error())
+			return err
+		}
+	}
+	return err
+}
+
+func (i *ImageManager) loadLocalImage(path string) (image.Image, bool) {
+	if f, err := os.Open(path); err == nil {
+		defer f.Close()
+		if img, _, err := image.Decode(f); err == nil {
+			return img, true
+		}
+	}
+	return nil, false
 }
