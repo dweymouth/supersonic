@@ -37,6 +37,10 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 
 Download the latest release for your operating system. If you prefer to build from source, **or there is no release build currently offered for your OS/architecture (Apple silicon Macs)**, then see below.
 
+**Mac OS (Intel)**: Unfortunately the release build mistakenly did not bundle all dependencies. (See issue [#87](https://github.com/dweymouth/supersonic/issues/87)) You must have python 3.10 (a dependency of one of the mpv dependencies) installed via homebrew. If the app still does not run due to an unsatisfied dependency, installing mpv via brew will ensure all dependencies are present.
+
+- `brew install python@3.10` (install brew at https://brew.sh if not alreay on your system)
+
 **If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv-dev` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
 
 ## Build instructions (Ubuntu)
