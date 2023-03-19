@@ -1,6 +1,8 @@
 # Supersonic
 A lightweight cross-platform desktop client for Subsonic music servers (Navidrome, Gonic, Airsonic, etc).
 
+[Jump to installation instructions](https://github.com/dweymouth/supersonic#installation)
+
 ## Screenshots
 
 <a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png" width="49.5%"/></a>
@@ -39,7 +41,7 @@ Download the latest release for your operating system. If you prefer to build fr
 
 **Mac OS (Intel)**: Unfortunately the release build mistakenly did not bundle all dependencies. (See issue [#87](https://github.com/dweymouth/supersonic/issues/87)) You must have python 3.10 (a dependency of one of the mpv dependencies) installed via homebrew. If the app still does not run due to an unsatisfied dependency, installing mpv via brew will ensure all dependencies are present.
 
-- `brew install python@3.10` (install brew at https://brew.sh if not alreay on your system)
+- `brew install python@3.10` (install brew at https://brew.sh if not already on your system)
 
 **If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv-dev` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
 
