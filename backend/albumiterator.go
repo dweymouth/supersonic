@@ -126,7 +126,7 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 	r.prefetchedPos = 1
 	if r.l.PreCacheCoverFn != nil {
 		for _, album := range albums {
-			go r.l.PreCacheCoverFn(album.ID)
+			go r.l.PreCacheCoverFn(album.CoverArt)
 		}
 	}
 
@@ -230,7 +230,7 @@ func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 		}
 		s.prefetched = append(s.prefetched, album)
 		if s.l.PreCacheCoverFn != nil {
-			go s.l.PreCacheCoverFn(album.ID)
+			go s.l.PreCacheCoverFn(album.CoverArt)
 		}
 		s.albumIDset[album.ID] = true
 	}
@@ -284,7 +284,7 @@ func (r *randomIter) Next() *subsonic.AlbumID3 {
 					if _, ok := r.albumIDSet[album.ID]; !ok {
 						r.prefetched = append(r.prefetched, album)
 						if r.l.PreCacheCoverFn != nil {
-							go r.l.PreCacheCoverFn(album.ID)
+							go r.l.PreCacheCoverFn(album.CoverArt)
 						}
 						r.albumIDSet[album.ID] = true
 					}
@@ -305,7 +305,7 @@ func (r *randomIter) Next() *subsonic.AlbumID3 {
 					hitCount++
 					r.prefetched = append(r.prefetched, album)
 					if r.l.PreCacheCoverFn != nil {
-						go r.l.PreCacheCoverFn(album.ID)
+						go r.l.PreCacheCoverFn(album.CoverArt)
 					}
 					r.albumIDSet[album.ID] = true
 				}

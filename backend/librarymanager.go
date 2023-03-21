@@ -9,7 +9,7 @@ type AlbumIterator interface {
 }
 
 type LibraryManager struct {
-	PreCacheCoverFn func(string)
+	PreCacheCoverFn func(coverID string)
 
 	s *ServerManager
 }

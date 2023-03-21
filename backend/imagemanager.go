@@ -45,39 +45,39 @@ func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string)
 	return i
 }
 
-func (i *ImageManager) GetAlbumThumbnailFromCache(albumID string) (image.Image, bool) {
-	img, err := i.thumbnailCache.GetExtendTTL(albumID, i.thumbnailCache.DefaultTTL)
+func (i *ImageManager) GetAlbumThumbnailFromCache(coverID string) (image.Image, bool) {
+	img, err := i.thumbnailCache.GetExtendTTL(coverID, i.thumbnailCache.DefaultTTL)
 	if err == nil && img != nil {
 		return img, true
 	}
 	return nil, false
 }
 
-func (i *ImageManager) GetAlbumThumbnail(albumID string) (image.Image, error) {
-	if im, ok := i.GetAlbumThumbnailFromCache(albumID); ok {
+func (i *ImageManager) GetAlbumThumbnail(coverID string) (image.Image, error) {
+	if im, ok := i.GetAlbumThumbnailFromCache(coverID); ok {
 		return im, nil
 	}
-	return i.fetchAndCacheCoverFromDiskOrServer(albumID, i.thumbnailCache.DefaultTTL)
+	return i.fetchAndCacheCoverFromDiskOrServer(coverID, i.thumbnailCache.DefaultTTL)
 }
 
-func (i *ImageManager) GetAlbumThumbnailWithTTL(albumID string, ttl time.Duration) (image.Image, error) {
+func (i *ImageManager) GetAlbumThumbnailWithTTL(coverID string, ttl time.Duration) (image.Image, error) {
 	// in-memory cache
-	if img, err := i.thumbnailCache.GetWithNewTTL(albumID, ttl); err == nil {
+	if img, err := i.thumbnailCache.GetWithNewTTL(coverID, ttl); err == nil {
 		return img, nil
 	}
-	return i.fetchAndCacheCoverFromDiskOrServer(albumID, ttl)
+	return i.fetchAndCacheCoverFromDiskOrServer(coverID, ttl)
 }
 
-func (i *ImageManager) GetFullSizeAlbumCover(albumID string) (image.Image, error) {
-	if i.cachedFullSizeCoverID == albumID {
+func (i *ImageManager) GetFullSizeAlbumCover(coverID string) (image.Image, error) {
+	if i.cachedFullSizeCoverID == coverID {
 		return i.cachedFullSizeCover, nil
 	}
-	im, err := i.s.Server.GetCoverArt(albumID, nil)
+	im, err := i.s.Server.GetCoverArt(coverID, nil)
 	if err != nil {
 		return nil, err
 	}
 	i.cachedFullSizeCover = im
-	i.cachedFullSizeCoverID = albumID
+	i.cachedFullSizeCoverID = coverID
 	return im, nil
 }
 
@@ -126,43 +126,43 @@ func (i *ImageManager) fetchRemoteArtistImage(url string) (image.Image, error) {
 	return nil, err
 }
 
-func (i *ImageManager) fetchAndCacheCoverFromDiskOrServer(albumID string, ttl time.Duration) (image.Image, error) {
+func (i *ImageManager) fetchAndCacheCoverFromDiskOrServer(coverID string, ttl time.Duration) (image.Image, error) {
 	// on disc cache
-	path := i.filePathForCover(albumID)
+	path := i.filePathForCover(coverID)
 	if i.ensureCoverCacheDir() != "" {
 		if s, err := os.Stat(path); err == nil {
-			go i.checkRefreshLocalCover(s, albumID, ttl)
+			go i.checkRefreshLocalCover(s, coverID, ttl)
 			if img, ok := i.loadLocalImage(path); ok {
-				i.thumbnailCache.SetWithTTL(albumID, img, ttl)
+				i.thumbnailCache.SetWithTTL(coverID, img, ttl)
 				return img, nil
 			}
 		}
 	}
 
-	return i.fetchAndCacheCoverFromServer(albumID, ttl)
+	return i.fetchAndCacheCoverFromServer(coverID, ttl)
 }
 
-func (i *ImageManager) fetchAndCacheCoverFromServer(albumID string, ttl time.Duration) (image.Image, error) {
-	img, err := i.s.Server.GetCoverArt(albumID, map[string]string{"size": "300"})
+func (i *ImageManager) fetchAndCacheCoverFromServer(coverID string, ttl time.Duration) (image.Image, error) {
+	img, err := i.s.Server.GetCoverArt(coverID, map[string]string{"size": "300"})
 	if err != nil {
 		return nil, err
 	}
 	if i.ensureCoverCacheDir() != "" {
-		path := i.filePathForCover(albumID)
+		path := i.filePathForCover(coverID)
 		_ = i.writeJpeg(img, path)
 	}
-	i.thumbnailCache.SetWithTTL(albumID, img, ttl)
+	i.thumbnailCache.SetWithTTL(coverID, img, ttl)
 	return img, nil
 }
 
-func (i *ImageManager) checkRefreshLocalCover(stat os.FileInfo, albumID string, ttl time.Duration) {
+func (i *ImageManager) checkRefreshLocalCover(stat os.FileInfo, coverID string, ttl time.Duration) {
 	if time.Since(stat.ModTime()) > CachedImageValidTime {
-		i.fetchAndCacheCoverFromServer(albumID, ttl)
+		i.fetchAndCacheCoverFromServer(coverID, ttl)
 	}
 }
 
-func (i *ImageManager) filePathForCover(albumID string) string {
-	return filepath.Join(i.ensureCoverCacheDir(), fmt.Sprintf("%s.jpg", albumID))
+func (i *ImageManager) filePathForCover(coverID string) string {
+	return filepath.Join(i.ensureCoverCacheDir(), fmt.Sprintf("%s.jpg", coverID))
 }
 
 func (i *ImageManager) filePathForArtistImage(id string) string {

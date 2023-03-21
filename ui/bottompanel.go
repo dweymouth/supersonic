@@ -95,7 +95,7 @@ func (bp *BottomPanel) onSongChange(song *subsonic.Child, _ *subsonic.Child) {
 			// be in cache for the next song if it's from the same album, or
 			// if the user navigates to the album page for the track
 			imgTTLSec := song.Duration + 30
-			im, _ = bp.ImageManager.GetAlbumThumbnailWithTTL(song.AlbumID, time.Duration(imgTTLSec)*time.Second)
+			im, _ = bp.ImageManager.GetAlbumThumbnailWithTTL(song.CoverArt, time.Duration(imgTTLSec)*time.Second)
 		}
 		bp.NowPlaying.Update(song.Title, song.Artist, song.Album, im)
 	}

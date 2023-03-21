@@ -154,7 +154,7 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 		ac.ImgLoadCancel()
 		ac.ImgLoadCancel = nil
 	}
-	if img, ok := ag.imageFetcher.GetAlbumThumbnailFromCache(album.ID); ok {
+	if img, ok := ag.imageFetcher.GetAlbumThumbnailFromCache(album.CoverArt); ok {
 		ac.Cover.SetImage(img)
 	} else {
 		ac.Cover.SetImageResource(res.ResAlbumplaceholderPng)
@@ -162,7 +162,7 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 		ctx, cancel := context.WithCancel(context.Background())
 		ac.ImgLoadCancel = cancel
 		go func(ctx context.Context) {
-			i, err := ag.imageFetcher.GetAlbumThumbnail(album.ID)
+			i, err := ag.imageFetcher.GetAlbumThumbnail(album.CoverArt)
 			select {
 			case <-ctx.Done():
 				return

@@ -129,6 +129,7 @@ type AlbumPageHeader struct {
 	widget.BaseWidget
 
 	albumID  string
+	coverID  string
 	artistID string
 	genre    string
 
@@ -151,11 +152,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.cover = widgets.NewTappableImage(func() { go a.showPopUpCover() })
 	a.cover.FillMode = canvas.ImageFillContain
 	a.cover.SetMinSize(fyne.NewSize(225, 225))
-	// due to cache warming we can probably immediately set the cover
-	// and not have to set it asynchronously in the Update function
-	if im, ok := page.im.GetAlbumThumbnailFromCache(page.albumID); ok {
-		a.cover.Image.Image = im
-	}
+
 	a.titleLabel = widget.NewRichTextWithText("")
 	a.titleLabel.Wrapping = fyne.TextTruncate
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
@@ -201,6 +198,7 @@ func (a *AlbumPageHeader) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageManager) {
 	a.albumID = album.ID
+	a.coverID = album.CoverArt
 	a.artistID = album.ArtistID
 	a.titleLabel.Segments[0].(*widget.TextSegment).Text = album.Name
 	a.artistLabel.SetText(album.Artist)
@@ -210,12 +208,8 @@ func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageMana
 	a.toggleFavButton.IsFavorited = !album.Starred.IsZero()
 	a.Refresh()
 
-	// cover image was already loaded from cache in consructor
-	if a.albumID == album.ID && a.cover.Image.Image != nil {
-		return
-	}
 	go func() {
-		if cover, err := im.GetAlbumThumbnail(album.ID); err == nil {
+		if cover, err := im.GetAlbumThumbnail(album.CoverArt); err == nil {
 			a.cover.Image.Image = cover
 			a.cover.Refresh()
 		} else {
@@ -233,7 +227,7 @@ func (a *AlbumPageHeader) toggleFavorited() {
 }
 
 func (a *AlbumPageHeader) showPopUpCover() {
-	cover, err := a.page.im.GetFullSizeAlbumCover(a.albumID)
+	cover, err := a.page.im.GetFullSizeAlbumCover(a.coverID)
 	if err != nil {
 		log.Printf("error getting full size album cover: %s", err.Error())
 		return
