@@ -1,7 +1,12 @@
 # Change Log
 
 ## Unreleased
+
+### Added
 - [#39](https://github.com/dweymouth/supersonic/issues/39) Add caching of artist images
+
+### Fixed
+- [#90](https://github.com/dweymouth/supersonic/issues/90) Wrong covers get loaded for albums if server has different IDs for album and cover art
 
 ## [0.0.1-alpha2] - 2023-03-17
 
