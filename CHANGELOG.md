@@ -8,7 +8,7 @@
 ### Fixed
 - [#90](https://github.com/dweymouth/supersonic/issues/90) Wrong covers get loaded for albums if server has different IDs for album and cover art
 - [#88](https://github.com/dweymouth/supersonic/issues/88) Incorrect icon size for Mac OS
- [#87](https://github.com/dweymouth/supersonic/issues/87) Fix dependency bundling for Mac OS
+- [#87](https://github.com/dweymouth/supersonic/issues/87) Fix dependency bundling for Mac OS
 
 ## [0.0.1-alpha2] - 2023-03-17
 
