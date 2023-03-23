@@ -15,10 +15,8 @@ import (
 )
 
 var (
-	ShortcutBack    = desktop.CustomShortcut{KeyName: fyne.KeyLeft, Modifier: os.AltModifier}
-	ShortcutForward = desktop.CustomShortcut{KeyName: fyne.KeyRight, Modifier: os.AltModifier}
-	ShortcutReload  = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
-	ShortcutSearch  = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
+	ShortcutReload = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
+	ShortcutSearch = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
 
 	ShortcutNavOne   = desktop.CustomShortcut{KeyName: fyne.Key1, Modifier: os.ControlModifier}
 	ShortcutNavTwo   = desktop.CustomShortcut{KeyName: fyne.Key2, Modifier: os.ControlModifier}
@@ -118,15 +116,20 @@ func (m *MainWindow) addNavigationButtons() {
 }
 
 func (m *MainWindow) addShortcuts() {
-	m.Canvas().AddShortcut(&ShortcutBack, func(_ fyne.Shortcut) {
-		m.BrowsingPane.GoBack()
-		// TODO: reset focus only if something inside the page had focus
-		m.Canvas().Focus(nil)
-	})
-	m.Canvas().AddShortcut(&ShortcutForward, func(_ fyne.Shortcut) {
-		m.BrowsingPane.GoForward()
-		m.Canvas().Focus(nil)
-	})
+	for _, sh := range os.BackShortcuts {
+		m.Canvas().AddShortcut(&sh, func(_ fyne.Shortcut) {
+			m.BrowsingPane.GoBack()
+			// TODO: reset focus only if something inside the page had focus
+			m.Canvas().Focus(nil)
+		})
+	}
+	for _, sh := range os.ForwardShortcuts {
+		m.Canvas().AddShortcut(&sh, func(_ fyne.Shortcut) {
+			m.BrowsingPane.GoForward()
+			m.Canvas().Focus(nil)
+		})
+	}
+
 	m.Canvas().AddShortcut(&ShortcutReload, func(_ fyne.Shortcut) {
 		m.BrowsingPane.Reload()
 	})
