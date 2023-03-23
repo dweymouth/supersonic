@@ -2,7 +2,10 @@
 
 package os
 
-import "fyne.io/fyne/v2"
+import (
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
+)
 
 const (
 	ControlModifier = fyne.KeyModifierControl
