@@ -22,6 +22,8 @@ func NewTappbaleIcon(res fyne.Resource) *TappableIcon {
 	return icon
 }
 
+var _ fyne.Tappable = (*TappableIcon)(nil)
+
 func (t *TappableIcon) Tapped(_ *fyne.PointEvent) {
 	if t.OnTapped != nil {
 		t.OnTapped()
@@ -30,6 +32,14 @@ func (t *TappableIcon) Tapped(_ *fyne.PointEvent) {
 
 func (t *TappableIcon) TappedSecondary(_ *fyne.PointEvent) {
 }
+
+var _ desktop.Hoverable = (*TappableIcon)(nil)
+
+func (t *TappableIcon) MouseIn(*desktop.MouseEvent) {}
+
+func (t *TappableIcon) MouseOut() {}
+
+func (t *TappableIcon) MouseMoved(*desktop.MouseEvent) {}
 
 func (t *TappableIcon) Cursor() desktop.Cursor {
 	return desktop.PointerCursor
