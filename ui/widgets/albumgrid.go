@@ -6,6 +6,7 @@ import (
 	"log"
 	"supersonic/backend"
 	"supersonic/res"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -29,6 +30,7 @@ type AlbumGrid struct {
 
 type AlbumGridState struct {
 	albums       []*subsonic.AlbumID3
+	albumsMutex  sync.RWMutex
 	iter         *backend.BatchingIterator
 	highestShown int
 	fetching     bool
@@ -91,12 +93,16 @@ func NewAlbumGridFromState(state AlbumGridState) *AlbumGrid {
 }
 
 func (ag *AlbumGrid) Clear() {
+	ag.albumsMutex.Lock()
+	defer ag.albumsMutex.Unlock()
 	ag.albums = nil
 	ag.done = true
 }
 
 func (ag *AlbumGrid) Reset(iter backend.AlbumIterator) {
+	ag.albumsMutex.Lock()
 	ag.albums = nil
+	ag.albumsMutex.Unlock()
 	ag.fetching = false
 	ag.done = false
 	ag.highestShown = 0
@@ -107,7 +113,7 @@ func (ag *AlbumGrid) Reset(iter backend.AlbumIterator) {
 func (ag *AlbumGrid) createGridWrapList() {
 	g := widget.NewGridWrapList(
 		func() int {
-			return len(ag.albums)
+			return ag.lenAlbums()
 		},
 		// create func
 		func() fyne.CanvasObject {
@@ -142,7 +148,9 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 	if albumIdx > ag.highestShown {
 		ag.highestShown = albumIdx
 	}
+	ag.albumsMutex.RLock()
 	album := ag.albums[albumIdx]
+	ag.albumsMutex.RUnlock()
 	if ac.PrevAlbumID == album.ID {
 		// nothing to do
 		return
@@ -177,9 +185,15 @@ func (ag *AlbumGrid) doUpdateAlbumCard(albumIdx int, ac *AlbumCard) {
 	}
 
 	// if user has scrolled near the bottom, fetch more
-	if !ag.done && !ag.fetching && albumIdx > len(ag.albums)-10 {
+	if !ag.done && !ag.fetching && albumIdx > ag.lenAlbums()-10 {
 		ag.fetchMoreAlbums(20)
 	}
+}
+
+func (a *AlbumGrid) lenAlbums() int {
+	a.albumsMutex.RLock()
+	defer a.albumsMutex.RUnlock()
+	return len(a.albums)
 }
 
 // fetches at least count more albums
@@ -191,11 +205,13 @@ func (a *AlbumGrid) fetchMoreAlbums(count int) {
 	go func() {
 		// keep repeating the fetch task as long as the user
 		// has scrolled near the bottom
-		for !a.done && a.highestShown >= len(a.albums)-10 {
+		for !a.done && a.highestShown >= a.lenAlbums()-10 {
 			n := 0
 			for !a.done && n < count {
 				albums := a.iter.NextN(albumFetchBatchSize)
+				a.albumsMutex.Lock()
 				a.albums = append(a.albums, albums...)
+				a.albumsMutex.Unlock()
 				if len(albums) < albumFetchBatchSize {
 					a.done = true
 				}
