@@ -12,10 +12,6 @@ import (
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
-const (
-	ScrobbleThreshold = 0.9
-)
-
 type PlaybackManager struct {
 	ctx           context.Context
 	cancelPollPos context.CancelFunc
@@ -31,16 +27,25 @@ type PlaybackManager struct {
 
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *subsonic.Child
+	scrobbleCfg   *ScrobbleConfig
 
 	onSongChange     []func(nowPlaying *subsonic.Child, justScrobbledIfAny *subsonic.Child)
 	onPlayTimeUpdate []func(float64, float64)
 }
 
-func NewPlaybackManager(ctx context.Context, s *ServerManager, p *player.Player) *PlaybackManager {
+func NewPlaybackManager(
+	ctx context.Context,
+	s *ServerManager,
+	p *player.Player,
+	scrobbleCfg *ScrobbleConfig,
+) *PlaybackManager {
+	// clamp to 99% to avoid any possible rounding issues
+	scrobbleCfg.ThresholdPercent = clamp(scrobbleCfg.ThresholdPercent, 0, 99)
 	pm := &PlaybackManager{
-		ctx:    ctx,
-		sm:     s,
-		player: p,
+		ctx:         ctx,
+		sm:          s,
+		player:      p,
+		scrobbleCfg: scrobbleCfg,
 	}
 	p.OnTrackChange(func(tracknum int64) {
 		if tracknum >= int64(len(pm.playQueue)) {
@@ -261,14 +266,17 @@ func (p *PlaybackManager) StopAndClearPlayQueue() {
 
 // call BEFORE updating p.nowPlayingIdx
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
-	if len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
+	if !p.scrobbleCfg.Enabled || len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
 		return
 	}
 	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
 		return
 	}
-	song := p.playQueue[p.nowPlayingIdx]
-	if playDur.Seconds()/p.curTrackTime > ScrobbleThreshold {
+	pcnt := playDur.Seconds() / p.curTrackTime * 100
+	timeThresholdMet := p.scrobbleCfg.ThresholdTimeSeconds >= 0 &&
+		playDur.Seconds() >= float64(p.scrobbleCfg.ThresholdTimeSeconds)
+	if timeThresholdMet || pcnt >= float64(p.scrobbleCfg.ThresholdPercent) {
+		song := p.playQueue[p.nowPlayingIdx]
 		log.Printf("Scrobbling %q", song.Title)
 		song.PlayCount += 1
 		p.lastScrobbled = song
@@ -277,7 +285,7 @@ func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 }
 
 func (p *PlaybackManager) sendNowPlayingScrobble() {
-	if len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
+	if !p.scrobbleCfg.Enabled || len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
 		return
 	}
 	song := p.playQueue[p.nowPlayingIdx]

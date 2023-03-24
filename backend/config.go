@@ -52,6 +52,12 @@ type LocalPlaybackConfig struct {
 	Volume         int
 }
 
+type ScrobbleConfig struct {
+	Enabled              bool
+	ThresholdTimeSeconds int
+	ThresholdPercent     int
+}
+
 type Config struct {
 	Application    AppConfig
 	Servers        []*ServerConfig
@@ -62,6 +68,7 @@ type Config struct {
 	NowPlayingPage NowPlayingPageConfig
 	PlaylistPage   PlaylistPageConfig
 	LocalPlayback  LocalPlaybackConfig
+	Scrobbling     ScrobbleConfig
 }
 
 func DefaultConfig() *Config {
@@ -93,6 +100,11 @@ func DefaultConfig() *Config {
 		LocalPlayback: LocalPlaybackConfig{
 			AudioExclusive: false,
 			Volume:         100,
+		},
+		Scrobbling: ScrobbleConfig{
+			Enabled:              true,
+			ThresholdTimeSeconds: 240,
+			ThresholdPercent:     50,
 		},
 	}
 }

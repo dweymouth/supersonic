@@ -52,7 +52,7 @@ func StartupApp() (*App, error) {
 	a.Player.SetVolume(a.Config.LocalPlayback.Volume)
 
 	a.ServerManager = NewServerManager()
-	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player)
+	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player, &a.Config.Scrobbling)
 	a.LibraryManager = NewLibraryManager(a.ServerManager)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, configdir.LocalCache(AppName))
 	a.LibraryManager.PreCacheCoverFn = func(coverID string) {
