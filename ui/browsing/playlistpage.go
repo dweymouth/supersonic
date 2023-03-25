@@ -53,6 +53,10 @@ func NewPlaylistPage(
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	a.tracklist.AutoNumber = true
 	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{
+		fyne.NewMenuItem("Move to top", a.onMoveSelectedToTop),
+		fyne.NewMenuItem("Move up", a.onMoveSelectedUp),
+		fyne.NewMenuItem("Move down", a.onMoveSelectedDown),
+		fyne.NewMenuItem("Move to bottom", a.onMoveSelectedToBottom),
 		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist),
 	}
 	// connect tracklist actions
@@ -112,6 +116,41 @@ func (a *PlaylistPage) load() {
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 	a.tracklist.Refresh()
 	a.header.Update(playlist)
+}
+
+func (a *PlaylistPage) onMoveSelectedToTop() {
+	a.doSetNewTrackOrder(sharedutil.MoveToTop)
+}
+
+func (a *PlaylistPage) onMoveSelectedUp() {
+	a.doSetNewTrackOrder(sharedutil.MoveUp)
+}
+
+func (a *PlaylistPage) onMoveSelectedDown() {
+	a.doSetNewTrackOrder(sharedutil.MoveDown)
+}
+
+func (a *PlaylistPage) onMoveSelectedToBottom() {
+	a.doSetNewTrackOrder(sharedutil.MoveToBottom)
+}
+
+func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
+	idxs := a.tracklist.SelectedTrackIndexes()
+	newTracks := sharedutil.ReorderTracks(a.tracklist.Tracks, idxs, op)
+	ids := make([]string, len(newTracks))
+	for i, tr := range newTracks {
+		ids[i] = tr.ID
+	}
+	err := a.sm.Server.CreatePlaylistWithTracks(ids, map[string]string{
+		"playlistId": a.playlistID,
+	})
+	if err != nil {
+		log.Printf("error updating playlist: %s", err.Error())
+	} else {
+		a.tracklist.Tracks = newTracks
+		a.tracklist.UnselectAll()
+		a.tracklist.Refresh()
+	}
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {

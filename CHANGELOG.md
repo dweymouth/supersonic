@@ -5,6 +5,8 @@
 ### Added
 - [#39](https://github.com/dweymouth/supersonic/issues/39) Add caching of artist images
 - [#94](https://github.com/dweymouth/supersonic/issues/94) Add Cmd+[ Cmd+] back/forward shortcuts for Mac (alongside existing Cmd+Left/Right)
+- [#96](https://github.com/dweymouth/supersonic/issues/96) Make scrobbling thresholds configurable
+- [#21](https://github.com/dweymouth/supersonic/issues/21) Add ability to reorder tracks within a playlist (via context menu)
 
 ### Fixed
 - [#90](https://github.com/dweymouth/supersonic/issues/90) Wrong covers get loaded for albums if server has different IDs for album and cover art
