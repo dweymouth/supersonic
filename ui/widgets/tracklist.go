@@ -9,6 +9,7 @@ import (
 	"supersonic/ui/layouts"
 	"supersonic/ui/os"
 	"supersonic/ui/util"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -35,6 +36,8 @@ type Tracklist struct {
 	widget.BaseWidget
 
 	// Tracks is the set of tracks displayed by the widget.
+	// Direct access to this is not thread-safe but OK for
+	// views that only load tracks into the widget once at page load.
 	Tracks []*subsonic.Child
 
 	// AutoNumber sets whether to auto-number the tracks 1..N in display order,
@@ -67,6 +70,7 @@ type Tracklist struct {
 
 	visibleColumns []bool
 
+	tracksMutex   sync.RWMutex
 	selectionMgr  util.ListSelectionManager
 	nowPlayingIdx int
 	colLayout     *layouts.ColumnsLayout
@@ -80,7 +84,7 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 11)}
 
 	t.ExtendBaseWidget(t)
-	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
+	t.selectionMgr = util.NewListSelectionManager(t.lenTracks)
 	// #, Title, Artist, Album, Time, Year, Favorite, Plays, Bitrate, Size, Path
 	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 47, 65, 75, 70, -1})
 	t.buildHeader()
@@ -92,7 +96,7 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	}
 	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
 	t.list = widget.NewList(
-		func() int { return len(t.Tracks) },
+		t.lenTracks,
 		func() fyne.CanvasObject {
 			tr := NewTrackRow(t, playingIcon)
 			tr.OnTapped = func() { t.onSelectTrack(tr.trackIdx) }
@@ -108,7 +112,7 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 			if t.AutoNumber {
 				i = itemID + 1
 			}
-			tr.Update(t.Tracks[itemID], itemID == t.nowPlayingIdx, i)
+			tr.Update(t.TrackAt(itemID), itemID == t.nowPlayingIdx, i)
 		})
 	t.container = container.NewBorder(t.hdr, nil, nil, nil, t.list)
 	return t
@@ -128,6 +132,16 @@ func (t *Tracklist) buildHeader() {
 		{Text: "Size", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "File Path", AlignTrailing: false, CanToggleVisible: true}},
 		t.colLayout)
+}
+
+// Gets the track at the given index. Thread-safe.
+func (t *Tracklist) TrackAt(idx int) *subsonic.Child {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	if idx >= len(t.Tracks) {
+		return nil
+	}
+	return t.Tracks[idx]
 }
 
 func (t *Tracklist) SetVisibleColumns(cols []string) {
@@ -168,17 +182,22 @@ func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
 
 func (t *Tracklist) SetNowPlaying(trackID string) {
 	t.nowPlayingIdx = -1
+	t.tracksMutex.RLock()
 	for i, tr := range t.Tracks {
 		if tr.ID == trackID {
 			t.nowPlayingIdx = i
 			break
 		}
 	}
+	t.tracksMutex.RUnlock()
 	t.list.Refresh()
 }
 
 func (t *Tracklist) IncrementPlayCount(trackID string) {
-	if tr := sharedutil.FindTrackByID(trackID, t.Tracks); tr != nil {
+	t.tracksMutex.RLock()
+	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	t.tracksMutex.RUnlock()
+	if tr != nil {
 		tr.PlayCount += 1
 		t.list.Refresh()
 	}
@@ -255,7 +274,9 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	// update our own track model
+	t.tracksMutex.RLock()
 	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	t.tracksMutex.RUnlock()
 	if fav {
 		tr.Starred = time.Now()
 	} else {
@@ -282,6 +303,8 @@ func (t *Tracklist) onAlbumTapped(albumID string) {
 func (t *Tracklist) selectedTracks() []*subsonic.Child {
 	sel := t.selectionMgr.GetSelection()
 	tracks := make([]*subsonic.Child, 0, len(sel))
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
 	for _, idx := range sel {
 		tracks = append(tracks, t.Tracks[idx])
 	}
@@ -291,6 +314,8 @@ func (t *Tracklist) selectedTracks() []*subsonic.Child {
 func (t *Tracklist) selectedTrackIDs() []string {
 	sel := t.selectionMgr.GetSelection()
 	tracks := make([]string, 0, len(sel))
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
 	for _, idx := range sel {
 		tracks = append(tracks, t.Tracks[idx].ID)
 	}
@@ -299,6 +324,12 @@ func (t *Tracklist) selectedTrackIDs() []string {
 
 func (t *Tracklist) SelectedTrackIndexes() []int {
 	return t.selectionMgr.GetSelection()
+}
+
+func (t *Tracklist) lenTracks() int {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	return len(t.Tracks)
 }
 
 func ColNumber(colName string) int {
