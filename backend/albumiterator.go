@@ -16,6 +16,8 @@ const (
 	AlbumSortRandom           AlbumSortOrder = "Random"
 	AlbumSortTitleAZ          AlbumSortOrder = "Title (A-Z)"
 	AlbumSortArtistAZ         AlbumSortOrder = "Artist (A-Z)"
+	AlbumSortYearAscending    AlbumSortOrder = "Year (ascending)"
+	AlbumSortYearDescending   AlbumSortOrder = "Year (descending)"
 )
 
 var (
@@ -26,6 +28,8 @@ var (
 		string(AlbumSortRandom),
 		string(AlbumSortTitleAZ),
 		string(AlbumSortArtistAZ),
+		string(AlbumSortYearAscending),
+		string(AlbumSortYearDescending),
 	}
 )
 
@@ -43,6 +47,10 @@ func (l *LibraryManager) AlbumsIter(sort AlbumSortOrder) AlbumIterator {
 		return l.newBaseIter("alphabeticalByName", make(map[string]string))
 	case AlbumSortArtistAZ:
 		return l.newBaseIter("alphabeticalByArtist", make(map[string]string))
+	case AlbumSortYearAscending:
+		return l.newBaseIter("byYear", map[string]string{"fromYear": "0", "toYear": "3000"})
+	case AlbumSortYearDescending:
+		return l.newBaseIter("byYear", map[string]string{"fromYear": "3000", "toYear": "0"})
 	default:
 		log.Printf("Undefined album sort order: %s", sort)
 		return nil
