@@ -11,8 +11,7 @@ build:
 package_macos:
 	fyne package -os darwin -name $(app_name) -icon $(icon_path_mac)
 	dylibbundler -od -b -x ./Supersonic.app/Contents/MacOS/supersonic -d ./Supersonic.app/Contents/Frameworks/ -p @executable_path/../Frameworks/
-	install_name_tool -change "/usr/local/opt/python@3.11/Frameworks/Python.framework/Versions/3.11/Python" "@executable_path/../Frameworks/Python" "./Supersonic.app/Contents/Frameworks/libvapoursynth-script.0.dylib"
-	cp /usr/local/opt/python@3.11/Frameworks/Python.framework/Versions/3.11/Python ./Supersonic.app/Contents/Frameworks
+	./copy_python_dep_osx.sh
 	codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "./Supersonic.app/Contents/MacOS/supersonic"
 
 package_windows:
