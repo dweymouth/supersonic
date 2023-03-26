@@ -7,11 +7,14 @@
 - [#94](https://github.com/dweymouth/supersonic/issues/94) Add Cmd+[ Cmd+] back/forward shortcuts for Mac (alongside existing Cmd+Left/Right)
 - [#96](https://github.com/dweymouth/supersonic/issues/96) Make scrobbling thresholds configurable
 - [#21](https://github.com/dweymouth/supersonic/issues/21) Add ability to reorder tracks within a playlist (via context menu)
+- [#99](https://github.com/dweymouth/supersonic/issues/99) Add Year (asc + desc) sort orders to album page
 
 ### Fixed
 - [#90](https://github.com/dweymouth/supersonic/issues/90) Wrong covers get loaded for albums if server has different IDs for album and cover art
 - [#88](https://github.com/dweymouth/supersonic/issues/88) Incorrect icon size for Mac OS
 - [#87](https://github.com/dweymouth/supersonic/issues/87) Fix dependency bundling for Mac OS
+- [f34d432](https://github.com/dweymouth/supersonic/commit/f34d4329b175e7d1a33a006bec951c2c64e6e978) Don't show tracklist row hover indicator when favorite toggle is hovered
+- [98fb148](https://github.com/dweymouth/supersonic/commit/98fb1483e6ba329effb8995a879572138947aee7) Migrate to Fyne 2.3.3 (modest memory improvements, fixes seek slider "wobble", fixes possible issues on M2 Macs)
 
 ## [0.0.1-alpha2] - 2023-03-17
 
