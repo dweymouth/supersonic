@@ -23,11 +23,10 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 * [x] Set/unset favorite and browse by favorite albums, artists, and songs
 * [x] View and edit play queue (add and remove tracks; reorder support coming soon)
 * [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs)
-* [ ] Set and view five-star rating (planned)
 * [ ] Set filters in albums browsing view (planned)
 * [ ] Browse by folders (planned)
 * [ ] Multi-server support (planned)
-* [ ] Download album or playlist (planned)
+* [ ] Download songs, albums or playlists (planned)
 * [ ] ReplayGain audio normalization support (planned, depending on files being ReplayGain tagged on server)
 * [ ] Cast to uPnP/DLNA devices (likely planned)
 * [ ] Built-in multi-band equalizer (eventully planned)
