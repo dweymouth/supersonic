@@ -40,17 +40,39 @@ var _ fyne.Theme = (*MyTheme)(nil)
 func (m *MyTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	switch name {
 	case ColorNamePageBackground:
-		return color.RGBA{R: 15, G: 15, B: 15, A: 255}
+		if variant == theme.VariantDark {
+			return color.RGBA{R: 15, G: 15, B: 15, A: 255}
+		}
+		return color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	case theme.ColorNameBackground:
-		return color.RGBA{R: 30, G: 30, B: 30, A: 255}
+		if variant == theme.VariantDark {
+			return color.RGBA{R: 35, G: 35, B: 35, A: 255}
+		}
+		return color.RGBA{R: 240, G: 240, B: 240, A: 255}
 	case theme.ColorNameScrollBar:
-		return theme.DarkTheme().Color(theme.ColorNameForeground, variant)
+		if variant == theme.VariantDark {
+			return theme.DarkTheme().Color(theme.ColorNameForeground, variant)
+		}
+		return theme.LightTheme().Color(theme.ColorNameForeground, variant)
 	case theme.ColorNameButton:
-		return color.RGBA{R: 20, G: 20, B: 20, A: 50}
+		if variant == theme.VariantDark {
+			return color.RGBA{R: 20, G: 20, B: 20, A: 50}
+		}
+		return color.RGBA{R: 200, G: 200, B: 200, A: 240}
 	case theme.ColorNameInputBackground:
-		return color.RGBA{R: 20, G: 20, B: 20, A: 50}
+		if variant == theme.VariantDark {
+			return color.RGBA{R: 20, G: 20, B: 20, A: 50}
+		}
+	case theme.ColorNameForeground:
+		if variant == theme.VariantLight {
+			return color.RGBA{R: 10, G: 10, B: 10, A: 255}
+		}
+	case theme.ColorNamePrimary:
+		if variant == theme.VariantLight {
+			return color.RGBA{R: 25, G: 25, B: 250, A: 255}
+		}
 	}
-	return theme.DarkTheme().Color(name, variant)
+	return theme.DefaultTheme().Color(name, variant)
 }
 
 func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {

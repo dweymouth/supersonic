@@ -69,7 +69,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.pageContainer = container.NewMax(
 		canvas.NewRectangle(fyne.CurrentApp().Settings().Theme().Color(
-			myTheme.ColorNamePageBackground, theme.VariantDark,
+			myTheme.ColorNamePageBackground, fyne.CurrentApp().Settings().ThemeVariant(),
 		)),
 		layout.NewSpacer())
 	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
