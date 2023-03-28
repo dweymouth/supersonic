@@ -61,3 +61,21 @@ func (t *ThemedRectangle) Refresh() {
 func (t *ThemedRectangle) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.rect)
 }
+
+type ThemedTappableIcon struct {
+	TappableIcon
+
+	IconName fyne.ThemeIconName
+}
+
+func NewThemedTappableIcon(iconName fyne.ThemeIconName) *ThemedTappableIcon {
+	t := &ThemedTappableIcon{IconName: iconName}
+	t.ExtendBaseWidget(t)
+	return t
+}
+
+func (t *ThemedTappableIcon) Refresh() {
+	icon := fyne.CurrentApp().Settings().Theme().Icon(t.IconName)
+	t.TappableIcon.Icon.Resource = icon
+	t.TappableIcon.Refresh()
+}

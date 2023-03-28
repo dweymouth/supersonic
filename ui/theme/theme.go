@@ -58,7 +58,7 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		if variant == theme.VariantDark {
 			return color.RGBA{R: 35, G: 35, B: 35, A: 255}
 		}
-		return color.RGBA{R: 225, G: 225, B: 225, A: 255}
+		return color.RGBA{R: 225, G: 223, B: 225, A: 255}
 	case theme.ColorNameScrollBar:
 		if variant == theme.VariantDark {
 			return theme.DarkTheme().Color(theme.ColorNameForeground, variant)

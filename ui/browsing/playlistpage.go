@@ -8,6 +8,7 @@ import (
 	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
+	myTheme "supersonic/ui/theme"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
@@ -205,7 +206,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		page.pm.PlayFromBeginning()
 	})
 	// TODO: find way to pad shuffle svg rather than using a space in the label string
-	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", res.ResShuffleInvertSvg, func() {
+	shuffleBtn := widgets.NewThemedIconButton(myTheme.IconNameShuffle, " Shuffle", func() {
 		page.pm.LoadTracks(page.tracklist.Tracks, false /*append*/, true /*shuffle*/)
 		page.pm.PlayFromBeginning()
 	})
