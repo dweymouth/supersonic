@@ -23,6 +23,37 @@ func SecondsToTimeString(s float64) string {
 	return fmt.Sprintf("%d:%02d", min, sec)
 }
 
+func BytesToSizeString(bytes int64) string {
+	var num float64
+	var suffix string
+	switch b := float64(bytes); {
+	case b > 1000000000:
+		suffix = "GB"
+		num = b / 1000000000
+	case b > 1000000:
+		suffix = "MB"
+		num = b / 1000000
+	case b > 1000:
+		suffix = "KB"
+		num = b / 1000
+	default:
+		suffix = "B"
+		num = b
+	}
+	return fmt.Sprintf(fmtStringForThreeSigFigs(num)+" %s", num, suffix)
+}
+
+func fmtStringForThreeSigFigs(num float64) string {
+	switch {
+	case num >= 100:
+		return "%0.0f"
+	case num >= 10:
+		return "%0.1f"
+	default:
+		return "%0.2f"
+	}
+}
+
 func ImageAspect(im image.Image) float32 {
 	b := im.Bounds()
 	return float32(b.Max.X-b.Min.X) / float32(b.Max.Y-b.Min.Y)

@@ -27,6 +27,7 @@ const (
 	ColumnFavorite = "Favorite"
 	ColumnPlays    = "Plays"
 	ColumnBitrate  = "Bitrate"
+	ColumnSize     = "Size"
 )
 
 type Tracklist struct {
@@ -71,12 +72,12 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
-	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 9)}
+	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 10)}
 
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
-	// #, Title, Artist, Album, Time, Year, Favorite, Plays, Bitrate
-	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 60, 47, 65, 75})
+	// #, Title, Artist, Album, Time, Year, Favorite, Plays, Bitrate, Size
+	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 60, 47, 65, 75, 70})
 	t.buildHeader()
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
@@ -118,7 +119,8 @@ func (t *Tracklist) buildHeader() {
 		{Text: "Year", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "Fav.", AlignTrailing: false, CanToggleVisible: true},
 		{Text: "Plays", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Bitrate", AlignTrailing: true, CanToggleVisible: true}},
+		{Text: "Bitrate", AlignTrailing: true, CanToggleVisible: true},
+		{Text: "Size", AlignTrailing: true, CanToggleVisible: true}},
 		t.colLayout)
 }
 
@@ -322,6 +324,8 @@ func ColNumber(colName string) int {
 		return 7
 	case ColumnBitrate:
 		return 8
+	case ColumnSize:
+		return 9
 	default:
 		log.Printf("error: Tracklist: invalid column name %s", colName)
 		return -100
@@ -345,6 +349,8 @@ func colName(i int) string {
 		return ColumnPlays
 	case 8:
 		return ColumnBitrate
+	case 9:
+		return ColumnSize
 	default:
 		return ""
 	}
@@ -373,6 +379,7 @@ type TrackRow struct {
 	favorite *fyne.Container
 	bitrate  *widget.RichText
 	plays    *widget.RichText
+	size     *widget.RichText
 
 	OnTappedSecondary func(e *fyne.PointEvent, trackIdx int)
 
@@ -401,9 +408,11 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.plays.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.bitrate = widget.NewRichTextWithText("")
 	t.bitrate.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
+	t.size = widget.NewRichTextWithText("")
+	t.size.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 
 	t.Content = container.New(tracklist.colLayout,
-		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.plays, t.bitrate)
+		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.plays, t.bitrate, t.size)
 	return t
 }
 
@@ -426,6 +435,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
 		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
 		t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
+		t.size.Segments[0].(*widget.TextSegment).Text = util.BytesToSizeString(tr.Size)
 	}
 
 	// Update track num if needed
@@ -452,6 +462,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.year.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.plays.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.bitrate.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+		t.size.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 
 		if isPlaying {
 			t.Content.(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
@@ -483,6 +494,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	t.favorite.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnFavorite)]
 	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
 	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]
+	t.size.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnSize)]
 
 	t.Refresh()
 }
