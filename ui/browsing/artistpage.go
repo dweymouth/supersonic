@@ -253,6 +253,11 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.artistImage = widgets.NewImagePlaceholder(res.ResPeopleInvertPng, 225)
+	a.artistImage.OnTapped = func() {
+		if im := a.artistImage.Image(); im != nil {
+			a.artistPage.contr.ShowPopUpImage(im)
+		}
+	}
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), page.playAllTracks)
 	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", res.ResShuffleInvertSvg, page.playArtistRadio)
