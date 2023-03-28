@@ -3,10 +3,10 @@ package ui
 import (
 	"fmt"
 	"supersonic/backend"
-	"supersonic/res"
 	"supersonic/ui/browsing"
 	"supersonic/ui/controller"
 	"supersonic/ui/os"
+	"supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -178,22 +178,22 @@ func (m *MainWindow) ShowNewVersionDialog(appName, versionTag string) {
 }
 
 func (m *MainWindow) addNavigationButtons() {
-	m.BrowsingPane.AddNavigationButton(res.ResHeadphonesInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.IconNameNowPlaying, func() {
 		m.Router.NavigateTo(controller.NowPlayingRoute(""))
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResHeartFilledInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.IconNameFavorite, func() {
 		m.Router.NavigateTo(controller.FavoritesRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResDiscInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.IconNameAlbum, func() {
 		m.Router.NavigateTo(controller.AlbumsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResPeopleInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.IconNameArtist, func() {
 		m.Router.NavigateTo(controller.ArtistsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResTheatermasksInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.IconNameGenre, func() {
 		m.Router.NavigateTo(controller.GenresRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResPlaylistInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.IconNamePlaylist, func() {
 		m.Router.NavigateTo(controller.PlaylistsRoute())
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResMusicnotesInvertPng, func() {

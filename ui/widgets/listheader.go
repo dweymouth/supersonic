@@ -5,7 +5,6 @@ import (
 	"supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -42,7 +41,7 @@ func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader
 	for i, _ := range l.columnVisible {
 		l.columnVisible[i] = true
 	}
-	l.container = container.NewMax(canvas.NewRectangle(theme.BackgroundColor()), l.columnsContainer)
+	l.container = container.NewMax(NewThemedRectangle(theme.ColorNameBackground), l.columnsContainer)
 	l.ExtendBaseWidget(l)
 	l.buildColumns()
 	return l
