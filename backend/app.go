@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	AppName    = "supersonic"
-	configFile = "config.toml"
+	AppName          = "supersonic"
+	configFile       = "config.toml"
+	LatestReleaseURL = "https://github.com/dweymouth/supersonic/releases/latest"
 )
 
 var (
