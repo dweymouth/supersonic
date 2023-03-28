@@ -155,7 +155,7 @@ func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
 		return
 	}
 	t.visibleColumns[colNum] = vis
-	t.Refresh()
+	t.list.Refresh()
 }
 
 func (t *Tracklist) SetNowPlaying(trackID string) {
@@ -166,24 +166,24 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 			break
 		}
 	}
-	t.Refresh()
+	t.list.Refresh()
 }
 
 func (t *Tracklist) IncrementPlayCount(trackID string) {
 	if tr := sharedutil.FindTrackByID(trackID, t.Tracks); tr != nil {
 		tr.PlayCount += 1
-		t.Refresh()
+		t.list.Refresh()
 	}
 }
 
 func (t *Tracklist) SelectAll() {
 	t.selectionMgr.SelectAll()
-	t.Refresh()
+	t.list.Refresh()
 }
 
 func (t *Tracklist) UnselectAll() {
 	t.selectionMgr.UnselectAll()
-	t.Refresh()
+	t.list.Refresh()
 }
 
 func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
@@ -226,7 +226,7 @@ func (t *Tracklist) onSelectTrack(idx int) {
 
 func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	t.selectionMgr.Select(trackIdx)
-	t.Refresh()
+	t.list.Refresh()
 	if t.ctxMenu == nil {
 		t.ctxMenu = fyne.NewMenu("")
 		if !t.DisablePlaybackMenu {
