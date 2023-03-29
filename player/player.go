@@ -77,7 +77,7 @@ func NewWithClientName(c string) *Player {
 
 // Initializes the Player and makes it ready for playback.
 // Most Player functions will return ErrUnitialized if called before Init.
-func (p *Player) Init(audioExclusive bool) error {
+func (p *Player) Init(audioExclusive bool, maxCacheMB int) error {
 	if !p.initialized {
 		m, err := CreateMPV()
 		if err != nil {
@@ -90,6 +90,9 @@ func (p *Player) Init(audioExclusive bool) error {
 		m.SetOptionString("prefetch-playlist", "yes")
 		m.SetOptionString("force-seekable", "yes")
 		m.SetOptionString("terminal", "no")
+
+		// limit in-memory cache size
+		m.SetOptionString("demuxer-max-bytes", fmt.Sprintf("%dMiB", maxCacheMB))
 
 		if p.vol < 0 {
 			p.vol = 100

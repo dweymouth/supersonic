@@ -48,8 +48,9 @@ type PlaylistPageConfig struct {
 }
 
 type LocalPlaybackConfig struct {
-	AudioExclusive bool
-	Volume         int
+	AudioExclusive      bool
+	InMemoryCacheSizeMB int
+	Volume              int
 }
 
 type ScrobbleConfig struct {
@@ -98,8 +99,9 @@ func DefaultConfig() *Config {
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 		},
 		LocalPlayback: LocalPlaybackConfig{
-			AudioExclusive: false,
-			Volume:         100,
+			AudioExclusive:      false,
+			InMemoryCacheSizeMB: 30,
+			Volume:              100,
 		},
 		Scrobbling: ScrobbleConfig{
 			Enabled:              true,
