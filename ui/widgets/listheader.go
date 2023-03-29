@@ -59,6 +59,7 @@ func (l *ListHeader) SetColumnVisible(colNum int, visible bool) {
 		l.columnsContainer.Objects[colNum].Hide()
 	}
 	l.columnVisible[colNum] = visible
+	l.columnsContainer.Refresh()
 }
 
 func (l *ListHeader) buildColumns() {
