@@ -104,6 +104,14 @@ func (m libmpv) SetProperty(name string, format MPVFormat, value any) error {
 	return toMPVError(C.mpv_set_property(m.handle, cname, C.mpv_format(format), p))
 }
 
+func (m libmpv) SetPropertyString(name, value string) error {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	cvalue := C.CString(value)
+	defer C.free(unsafe.Pointer(cvalue))
+	return toMPVError(C.mpv_set_property_string(m.handle, cname, cvalue))
+}
+
 func (m libmpv) GetProperty(name string, format MPVFormat) (any, error) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))

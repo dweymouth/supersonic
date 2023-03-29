@@ -9,6 +9,7 @@ import (
 	"path"
 	"supersonic/backend/util"
 	"supersonic/player"
+	"supersonic/sharedutil"
 
 	"github.com/20after4/configdir"
 	"github.com/zalando/go-keyring"
@@ -50,6 +51,16 @@ func StartupApp() (*App, error) {
 	}
 	a.Config.LocalPlayback.Volume = clamp(a.Config.LocalPlayback.Volume, 0, 100)
 	a.Player.SetVolume(a.Config.LocalPlayback.Volume)
+
+	rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack}
+	if !sharedutil.StringSliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
+		a.Config.ReplayGain.Mode = ReplayGainNone
+	}
+	a.Player.SetReplayGainOptions(player.ReplayGainOptions{
+		Mode:            player.ReplayGainMode(a.Config.ReplayGain.Mode),
+		PreventClipping: a.Config.ReplayGain.PreventClipping,
+		PreampGain:      a.Config.ReplayGain.PreampGainDB,
+	})
 
 	a.ServerManager = NewServerManager()
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player, &a.Config.Scrobbling)

@@ -59,6 +59,12 @@ type ScrobbleConfig struct {
 	ThresholdPercent     int
 }
 
+type ReplayGainConfig struct {
+	Mode            string
+	PreampGainDB    float64
+	PreventClipping bool
+}
+
 type Config struct {
 	Application    AppConfig
 	Servers        []*ServerConfig
@@ -70,6 +76,7 @@ type Config struct {
 	PlaylistPage   PlaylistPageConfig
 	LocalPlayback  LocalPlaybackConfig
 	Scrobbling     ScrobbleConfig
+	ReplayGain     ReplayGainConfig
 }
 
 func DefaultConfig() *Config {
@@ -107,6 +114,11 @@ func DefaultConfig() *Config {
 			Enabled:              true,
 			ThresholdTimeSeconds: 240,
 			ThresholdPercent:     50,
+		},
+		ReplayGain: ReplayGainConfig{
+			Mode:            ReplayGainNone,
+			PreampGainDB:    0.0,
+			PreventClipping: true,
 		},
 	}
 }

@@ -12,6 +12,12 @@ import (
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
+const (
+	ReplayGainNone  = string(player.ReplayGainNone)
+	ReplayGainAlbum = string(player.ReplayGainAlbum)
+	ReplayGainTrack = string(player.ReplayGainTrack)
+)
+
 type PlaybackManager struct {
 	ctx           context.Context
 	cancelPollPos context.CancelFunc
