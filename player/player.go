@@ -49,9 +49,10 @@ const (
 
 // Replay Gain options (argument to SetReplayGainOptions).
 type ReplayGainOptions struct {
-	Mode         ReplayGainMode
-	FallbackGain float64
-	PreampGain   float64
+	Mode            ReplayGainMode
+	PreampGain      float64
+	PreventClipping bool
+	// Fallback gain intentionally omitted
 }
 
 // Player encapsulates the mpv instance and provides functions
@@ -266,7 +267,11 @@ func (p *Player) SetReplayGainOptions(options ReplayGainOptions) error {
 		if err := p.mpv.SetProperty("replaygain-preamp", MPVFormatDouble, options.PreampGain); err != nil {
 			return err
 		}
-		if err := p.mpv.SetProperty("replaygain-fallback", MPVFormatDouble, options.FallbackGain); err != nil {
+		clip := "no"
+		if options.PreventClipping {
+			clip = "yes"
+		}
+		if err := p.mpv.SetPropertyString("replaygain-clip", clip); err != nil {
 			return err
 		}
 	}
