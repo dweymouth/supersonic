@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/sharedutil"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
@@ -25,12 +27,12 @@ const (
 	IconNameShuffle     fyne.ThemeIconName = "Shuffle"
 )
 
-type VariantMode int
+type AppearanceMode string
 
 const (
-	VariantModeAuto VariantMode = iota
-	VariantModeDark
-	VariantModeLight
+	AppearanceLight AppearanceMode = "Light"
+	AppearanceDark  AppearanceMode = "Dark"
+	AppearanceAuto  AppearanceMode = "Auto"
 )
 
 var (
@@ -41,7 +43,7 @@ var (
 type MyTheme struct {
 	NormalFont  string
 	BoldFont    string
-	VariantMode VariantMode
+	Config *backend.ThemeConfig
 }
 
 var _ fyne.Theme = (*MyTheme)(nil)
@@ -133,6 +135,7 @@ func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 	}
 }
 
+<<<<<<< HEAD
 func (m *MyTheme) Font(style fyne.TextStyle) fyne.Resource {
 	switch style {
 	case fyne.TextStyle{}:
@@ -170,9 +173,16 @@ func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
 }
 
 func (m *MyTheme) getVariant() fyne.ThemeVariant {
-	if m.VariantMode == VariantModeDark {
+	v := "Dark" // default if config has invalid or missing setting
+	if sharedutil.StringSliceContains(
+		[]string{string(AppearanceLight), string(AppearanceDark), string(AppearanceAuto)},
+		m.Config.Appearance) {
+		v = m.Config.Appearance
+	}
+
+	if AppearanceMode(v) == AppearanceDark {
 		return theme.VariantDark
-	} else if m.VariantMode == VariantModeLight {
+	} else if AppearanceMode(v) == AppearanceLight {
 		return theme.VariantLight
 	}
 	return fyne.CurrentApp().Settings().ThemeVariant()

@@ -30,6 +30,7 @@ func main() {
 	fyneApp.Settings().SetTheme(&theme.MyTheme{
 		NormalFont: myApp.Config.Application.FontNormalTTF,
 		BoldFont:   myApp.Config.Application.FontBoldTTF,
+		Config:     &myApp.Config.Theme,
 	})
 	w := float32(myApp.Config.Application.WindowWidth)
 	if w <= 1 {
