@@ -2,11 +2,8 @@ package util
 
 import (
 	"io"
-	"log"
 	"math/rand"
-	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -39,19 +36,4 @@ func CopyFile(srcPath, dstPath string) error {
 
 	_, err = io.Copy(fout, fin)
 	return err
-}
-
-func LatestVersionTag(latestReleaseURL string) string {
-	resp, err := http.Head(latestReleaseURL)
-	if err != nil {
-		log.Printf("failed to check for newest version: %s", err.Error())
-		return ""
-	}
-	url := resp.Request.URL.String()
-	url = strings.TrimSuffix(url, "/")
-	idx := strings.LastIndex(url, "/")
-	if idx >= len(url)-1 {
-		return ""
-	}
-	return url[idx+1:]
 }

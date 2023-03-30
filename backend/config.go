@@ -17,8 +17,9 @@ type ServerConfig struct {
 }
 
 type AppConfig struct {
-	WindowWidth  int
-	WindowHeight int
+	WindowWidth        int
+	WindowHeight       int
+	LastCheckedVersion string
 }
 
 type AlbumPageConfig struct {
@@ -79,11 +80,12 @@ type Config struct {
 	ReplayGain     ReplayGainConfig
 }
 
-func DefaultConfig() *Config {
+func DefaultConfig(appVersionTag string) *Config {
 	return &Config{
 		Application: AppConfig{
-			WindowWidth:  1000,
-			WindowHeight: 800,
+			WindowWidth:        1000,
+			WindowHeight:       800,
+			LastCheckedVersion: appVersionTag,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite"},
@@ -123,14 +125,14 @@ func DefaultConfig() *Config {
 	}
 }
 
-func ReadConfigFile(filepath string) (*Config, error) {
+func ReadConfigFile(filepath, appVersionTag string) (*Config, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	c := DefaultConfig()
+	c := DefaultConfig(appVersionTag)
 	if err := toml.NewDecoder(f).Decode(c); err != nil {
 		return nil, err
 	}

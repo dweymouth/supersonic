@@ -14,10 +14,12 @@ import (
 )
 
 const (
-	appname     = "supersonic"
-	displayName = "Supersonic"
-	appVersion  = "0.0.1-alpha2"
-	configFile  = "config.toml"
+	appname          = "supersonic"
+	displayName      = "Supersonic"
+	appVersion       = "0.0.1-alpha2"
+	appVersionTag    = "v" + appVersion
+	configFile       = "config.toml"
+	latestReleaseURL = "https://github.com/dweymouth/supersonic/releases/latest"
 )
 
 func configPath() string {
@@ -25,7 +27,7 @@ func configPath() string {
 }
 
 func main() {
-	myApp, err := backend.StartupApp()
+	myApp, err := backend.StartupApp(appname, appVersionTag, latestReleaseURL)
 	if err != nil {
 		log.Fatalf("fatal startup error: %v", err.Error())
 	}

@@ -14,14 +14,15 @@ type ServerManager struct {
 	ServerID uuid.UUID
 	Server   *subsonic.Client
 
+	appName           string
 	onServerConnected []func()
 	onLogout          []func()
 }
 
 var ErrUnreachable = errors.New("server is unreachable")
 
-func NewServerManager() *ServerManager {
-	return &ServerManager{}
+func NewServerManager(appName string) *ServerManager {
+	return &ServerManager{appName: appName}
 }
 
 func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) error {
@@ -75,7 +76,7 @@ func (s *ServerManager) testConnectionAndCreateClient(hostname, username, passwo
 
 func (s *ServerManager) Logout() {
 	if s.Server != nil {
-		keyring.Delete(AppName, s.ServerID.String())
+		keyring.Delete(s.appName, s.ServerID.String())
 		for _, cb := range s.onLogout {
 			cb()
 		}
@@ -93,9 +94,9 @@ func (s *ServerManager) OnLogout(cb func()) {
 }
 
 func (s *ServerManager) GetServerPassword(server *ServerConfig) (string, error) {
-	return keyring.Get(AppName, server.ID.String())
+	return keyring.Get(s.appName, server.ID.String())
 }
 
 func (s *ServerManager) SetServerPassword(server *ServerConfig, password string) error {
-	return keyring.Set(AppName, server.ID.String(), password)
+	return keyring.Set(s.appName, server.ID.String(), password)
 }
