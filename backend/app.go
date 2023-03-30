@@ -16,10 +16,6 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
-const (
-	configFile = "config.toml"
-)
-
 var (
 	ErrNoServers = errors.New("no servers set up")
 )
@@ -35,12 +31,13 @@ type App struct {
 
 	appName       string
 	appVersionTag string
+	configFile    string
 	bgrndCtx      context.Context
 	cancel        context.CancelFunc
 }
 
-func StartupApp(appName, appVersionTag, latestReleaseURL string) (*App, error) {
-	a := &App{appName: appName, appVersionTag: appVersionTag}
+func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*App, error) {
+	a := &App{appName: appName, appVersionTag: appVersionTag, configFile: configFile}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 
 	log.Printf("Starting %s...", appName)
@@ -87,7 +84,7 @@ func (a *App) readConfig() {
 		log.Printf("Error reading app config file: %v", err)
 		cfg = DefaultConfig(a.appVersionTag)
 		if _, err := os.Stat(cfgPath); err == nil {
-			backupCfgName := fmt.Sprintf("%s.bak", configFile)
+			backupCfgName := fmt.Sprintf("%s.bak", a.configFile)
 			log.Printf("Config file may be malformed: copying to %s", backupCfgName)
 			_ = util.CopyFile(cfgPath, path.Join(configdir.LocalConfig(a.appName), backupCfgName))
 		}
@@ -127,7 +124,7 @@ func (a *App) Shutdown() {
 }
 
 func (a *App) configPath() string {
-	return path.Join(configdir.LocalConfig(a.appName), configFile)
+	return path.Join(configdir.LocalConfig(a.appName), a.configFile)
 }
 
 func clamp(i, min, max int) int {
