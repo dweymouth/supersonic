@@ -36,6 +36,10 @@ type App struct {
 	cancel        context.CancelFunc
 }
 
+func (a *App) VersionTag() string {
+	return a.appVersionTag
+}
+
 func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*App, error) {
 	a := &App{appName: appName, appVersionTag: appVersionTag, configFile: configFile}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())

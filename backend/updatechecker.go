@@ -4,14 +4,15 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
 
 type UpdateChecker struct {
-	OnUpdatedVersionFound func(releaseURL string)
+	OnUpdatedVersionFound func()
 
-	foundUpdate      bool
+	versionTagFound  string
 	latestReleaseURL string
 	appVersionTag    string
 	lastCheckedTag   *string
@@ -41,17 +42,21 @@ func (u *UpdateChecker) Start(ctx context.Context, interval time.Duration) {
 	}()
 }
 
-func (u *UpdateChecker) UpdateAvailable() bool {
-	return u.foundUpdate
+func (u *UpdateChecker) VersionTagFound() string {
+	return u.versionTagFound
+}
+
+func (u *UpdateChecker) LatestReleaseURL() *url.URL {
+	url, _ := url.Parse(u.latestReleaseURL)
+	return url
 }
 
 func (u *UpdateChecker) checkForUpdate() {
 	t := u.latestVersionTag()
 	if t != "" && t != *u.lastCheckedTag {
-		u.foundUpdate = true
-		*u.lastCheckedTag = t
+		u.versionTagFound = t
 		if u.OnUpdatedVersionFound != nil {
-			u.OnUpdatedVersionFound(u.latestReleaseURL)
+			u.OnUpdatedVersionFound()
 		}
 	}
 }

@@ -25,15 +25,16 @@ type ReloadFunc func()
 type CurPageFunc func() Route
 
 type Controller struct {
-	// if not nil, this popup should be hidden when escape is pressed
-	EscapablePopUp *widget.PopUp
-
 	AppVersion  string
 	MainWindow  fyne.Window
 	App         *backend.App
 	NavHandler  NavigationHandler
 	CurPageFunc CurPageFunc
 	ReloadFunc  ReloadFunc
+
+	escapablePopUp   *widget.PopUp
+	haveModal        bool
+	runOnModalClosed func()
 }
 
 func (m *Controller) NavigateTo(route Route) {
@@ -41,7 +42,26 @@ func (m *Controller) NavigateTo(route Route) {
 }
 
 func (m *Controller) ClosePopUpOnEscape(pop *widget.PopUp) {
-	m.EscapablePopUp = pop
+	m.escapablePopUp = pop
+}
+
+func (m *Controller) CloseEscapablePopUp() {
+	if m.escapablePopUp != nil {
+		m.escapablePopUp.Hide()
+		m.escapablePopUp = nil
+		m.doModalClosed()
+	}
+}
+
+// If there is currently no modal popup managed by the Controller visible,
+// then run f (which should create and show a modal dialog) immediately.
+// else run f when the current modal dialog workflow has ended.
+func (m *Controller) QueueShowModalFunc(f func()) {
+	if m.haveModal {
+		m.runOnModalClosed = f
+	} else {
+		f()
+	}
 }
 
 func (m *Controller) ShowPopUpImage(img image.Image) {
@@ -110,6 +130,7 @@ func (m *Controller) PromptForFirstServer() {
 			if m.testConnectionAndUpdateDialogText(d) {
 				// connection is good
 				pop.Hide()
+				m.doModalClosed()
 				server := m.App.Config.AddServer(d.Nickname, d.Host, d.Username, d.LegacyAuth)
 				if err := m.App.ServerManager.SetServerPassword(server, d.Password); err != nil {
 					log.Printf("error setting keyring credentials: %v", err)
@@ -120,6 +141,7 @@ func (m *Controller) PromptForFirstServer() {
 			d.EnableSubmit()
 		}()
 	}
+	m.haveModal = true
 	pop.Show()
 }
 
@@ -144,6 +166,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	dlg.OnCanceled = pop.Hide
 	dlg.OnSubmit = func(playlistChoice int, newPlaylistName string) {
 		pop.Hide()
+		m.doModalClosed()
 		if playlistChoice < 0 {
 			m.App.ServerManager.Server.CreatePlaylistWithTracks(
 				trackIDs, map[string]string{"name": newPlaylistName})
@@ -152,6 +175,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 				pls[playlistChoice].ID, trackIDs, nil /*tracksToRemove*/)
 		}
 	}
+	m.haveModal = true
 	pop.Show()
 }
 
@@ -159,7 +183,10 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *subsonic.Playlist) {
 	dlg := dialogs.NewEditPlaylistDialog(playlist)
 	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
 	m.ClosePopUpOnEscape(pop)
-	dlg.OnCanceled = pop.Hide
+	dlg.OnCanceled = func() {
+		pop.Hide()
+		m.doModalClosed()
+	}
 	dlg.OnDeletePlaylist = func() {
 		pop.Hide()
 		dialog.ShowCustomConfirm("Confirm Delete Playlist", "OK", "Cancel", layout.NewSpacer(), /*custom content*/
@@ -167,6 +194,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *subsonic.Playlist) {
 				if !ok {
 					pop.Show()
 				} else {
+					m.doModalClosed()
 					go func() {
 						if err := m.App.ServerManager.Server.DeletePlaylist(playlist.ID); err != nil {
 							log.Printf("error deleting playlist: %s", err.Error())
@@ -180,6 +208,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *subsonic.Playlist) {
 	}
 	dlg.OnUpdateMetadata = func() {
 		pop.Hide()
+		m.doModalClosed()
 		go func() {
 			err := m.App.ServerManager.Server.UpdatePlaylist(playlist.ID, map[string]string{
 				"name":    dlg.Name,
@@ -194,6 +223,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *subsonic.Playlist) {
 			}
 		}()
 	}
+	m.haveModal = true
 	pop.Show()
 }
 
@@ -208,6 +238,7 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 			dlg.SetOnClosed(func() {
 				c.PromptForLoginAndConnect()
 			})
+			c.haveModal = true
 			dlg.Show()
 		}
 	}
@@ -230,6 +261,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 			} else {
 				pop.Hide()
 				m.trySetPasswordAndConnectToServer(server, password)
+				m.doModalClosed()
 			}
 			d.EnableSubmit()
 		}()
@@ -249,20 +281,26 @@ func (m *Controller) PromptForLoginAndConnect() {
 					server.Username = editD.Username
 					server.LegacyAuth = editD.LegacyAuth
 					m.trySetPasswordAndConnectToServer(server, editD.Password)
+					m.doModalClosed()
 				}
 				d.EnableSubmit()
 			}()
 		}
 		editPop.Show()
 	}
+	m.haveModal = true
 	pop.Show()
 }
 
 func (c *Controller) ShowAboutDialog() {
 	dlg := dialogs.NewAboutDialog(c.AppVersion)
 	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
-	dlg.OnDismiss = pop.Hide
+	dlg.OnDismiss = func() {
+		pop.Hide()
+		c.doModalClosed()
+	}
 	c.ClosePopUpOnEscape(pop)
+	c.haveModal = true
 	pop.Show()
 }
 
@@ -298,4 +336,12 @@ func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServe
 		return false
 	}
 	return true
+}
+
+func (c *Controller) doModalClosed() {
+	c.haveModal = false
+	if c.runOnModalClosed != nil {
+		c.runOnModalClosed()
+		c.runOnModalClosed = nil
+	}
 }
