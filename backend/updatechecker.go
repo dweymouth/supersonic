@@ -32,6 +32,7 @@ func (u *UpdateChecker) Start(ctx context.Context, interval time.Duration) {
 		for {
 			select {
 			case <-ctx.Done():
+				t.Stop()
 				return
 			case <-t.C:
 				u.checkForUpdate()
