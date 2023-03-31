@@ -98,13 +98,15 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	})
 	m.BrowsingPane.AddSettingsMenuItem("Log Out", app.ServerManager.Logout)
 	m.BrowsingPane.AddSettingsMenuItem("Check for Updates", func() {
-		if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
-			m.ShowNewVersionDialog(appName, t)
-		} else {
-			dialog.ShowInformation("No new version found",
-				"You are running the latest version of "+appName,
-				m.Window)
-		}
+		go func() {
+			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
+				m.ShowNewVersionDialog(appName, t)
+			} else {
+				dialog.ShowInformation("No new version found",
+					"You are running the latest version of "+appName,
+					m.Window)
+			}
+		}()
 	})
 	m.BrowsingPane.AddSettingsMenuItem("About...", m.Controller.ShowAboutDialog)
 	m.addNavigationButtons()
