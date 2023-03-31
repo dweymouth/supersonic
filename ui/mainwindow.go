@@ -10,7 +10,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
@@ -79,6 +81,14 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	app.ServerManager.OnServerConnected(func() {
 		m.BrowsingPane.EnableNavigationButtons()
 		m.Router.NavigateTo(HomePage)
+		// check if found new version on startup
+		if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
+			m.ShowNewVersionDialog(appName, t)
+		}
+		// register callback for the ongoing periodic update check
+		m.App.UpdateChecker.OnUpdatedVersionFound = func() {
+			m.ShowNewVersionDialog(appName, m.App.UpdateChecker.VersionTagFound())
+		}
 	})
 	app.ServerManager.OnLogout(func() {
 		m.BrowsingPane.DisableNavigationButtons()
@@ -87,11 +97,37 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 		m.Controller.PromptForLoginAndConnect()
 	})
 	m.BrowsingPane.AddSettingsMenuItem("Log Out", app.ServerManager.Logout)
+	m.BrowsingPane.AddSettingsMenuItem("Check for Updates", func() {
+		go func() {
+			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
+				m.ShowNewVersionDialog(appName, t)
+			} else {
+				dialog.ShowInformation("No new version found",
+					"You are running the latest version of "+appName,
+					m.Window)
+			}
+		}()
+	})
 	m.BrowsingPane.AddSettingsMenuItem("About...", m.Controller.ShowAboutDialog)
 	m.addNavigationButtons()
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()
 	return m
+}
+
+func (m *MainWindow) ShowNewVersionDialog(appName, versionTag string) {
+	contentStr := fmt.Sprintf("A new version of %s (%s) is available",
+		appName, versionTag)
+	m.Controller.QueueShowModalFunc(func() {
+		dialog.ShowCustomConfirm("A new version is available",
+			"Go to release page", "Skip this version",
+			widget.NewLabel(contentStr), func(show bool) {
+				if show {
+					fyne.CurrentApp().OpenURL(m.App.UpdateChecker.LatestReleaseURL())
+				}
+				m.App.Config.Application.LastCheckedVersion = versionTag
+			}, m.Window)
+	})
 }
 
 func (m *MainWindow) addNavigationButtons() {
@@ -153,10 +189,7 @@ func (m *MainWindow) addShortcuts() {
 	m.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {
 		switch e.Name {
 		case fyne.KeyEscape:
-			if m.Controller.EscapablePopUp != nil {
-				m.Controller.EscapablePopUp.Hide()
-				m.Controller.EscapablePopUp = nil
-			}
+			m.Controller.CloseEscapablePopUp()
 		case fyne.KeySpace:
 			m.App.Player.PlayPause()
 		}

@@ -9,6 +9,7 @@
 - [#21](https://github.com/dweymouth/supersonic/issues/21) Add ability to reorder tracks within a playlist (via context menu)
 - [#99](https://github.com/dweymouth/supersonic/issues/99) Add Year (asc + desc) sort orders to album page
 - [#102](https://github.com/dweymouth/supersonic/issues/102) Add ReplayGain support (requires files to be tagged on server and transcoding to preserve tags)
+- [#106](https://github.com/dweymouth/supersonic/issues/106) Automatically check for updates
 
 ### Fixed
 - [#90](https://github.com/dweymouth/supersonic/issues/90) Wrong covers get loaded for albums if server has different IDs for album and cover art

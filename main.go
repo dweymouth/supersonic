@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"path"
 	"supersonic/backend"
 	"supersonic/ui"
 	"supersonic/ui/theme"
@@ -10,22 +9,19 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"github.com/20after4/configdir"
 )
 
 const (
-	appname     = "supersonic"
-	displayName = "Supersonic"
-	appVersion  = "0.0.1-alpha2"
-	configFile  = "config.toml"
+	appname          = "supersonic"
+	displayName      = "Supersonic"
+	appVersion       = "0.0.1-alpha2"
+	appVersionTag    = "v" + appVersion
+	configFile       = "config.toml"
+	latestReleaseURL = "https://github.com/dweymouth/supersonic/releases/latest"
 )
 
-func configPath() string {
-	return path.Join(configdir.LocalConfig(appname), configFile)
-}
-
 func main() {
-	myApp, err := backend.StartupApp()
+	myApp, err := backend.StartupApp(appname, appVersionTag, configFile, latestReleaseURL)
 	if err != nil {
 		log.Fatalf("fatal startup error: %v", err.Error())
 	}
