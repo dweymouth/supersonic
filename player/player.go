@@ -63,6 +63,7 @@ type Player struct {
 	vol            int
 	replayGainOpts ReplayGainOptions
 	haveRGainOpts  bool
+	audioExclusive bool
 	status         Status
 	seeking        bool
 	curPlaylistPos int64
@@ -96,7 +97,7 @@ func NewWithClientName(c string) *Player {
 
 // Initializes the Player and makes it ready for playback.
 // Most Player functions will return ErrUnitialized if called before Init.
-func (p *Player) Init(audioExclusive bool, maxCacheMB int) error {
+func (p *Player) Init(maxCacheMB int) error {
 	if !p.initialized {
 		m, err := CreateMPV()
 		if err != nil {
@@ -118,9 +119,7 @@ func (p *Player) Init(audioExclusive bool, maxCacheMB int) error {
 		}
 		m.SetOption("volume", MPVFormatInt64, p.vol)
 
-		if audioExclusive {
-			m.SetOptionString("audio-exclusive", "yes")
-		}
+		p.SetAudioExclusive(p.audioExclusive)
 		if p.haveRGainOpts {
 			p.SetReplayGainOptions(p.replayGainOpts)
 		}
@@ -259,7 +258,7 @@ func (p *Player) SetVolume(vol int) error {
 
 // Sets the ReplayGain options of the player.
 // Unlike most Player functions, SetReplayGainOptions can be called
-// before Init, to set the initial volume of the player on startup.
+// before Init, to set the initial replaygain options of the player on startup.
 func (p *Player) SetReplayGainOptions(options ReplayGainOptions) error {
 	p.replayGainOpts = options
 	p.haveRGainOpts = true
@@ -279,6 +278,20 @@ func (p *Player) SetReplayGainOptions(options ReplayGainOptions) error {
 		}
 	}
 	return nil
+}
+
+// Sets the audio exclusive option of the player.
+// Unlike most Player functions, SetAudioExclusive can be called
+// before Init, to set the initial option of the player on startup.
+func (p *Player) SetAudioExclusive(tf bool) {
+	p.audioExclusive = tf
+	if p.initialized {
+		val := "no"
+		if tf {
+			val = "yes"
+		}
+		p.mpv.SetOptionString("audio-exclusive", val)
+	}
 }
 
 // Gets the current volume of the player.

@@ -10,7 +10,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
@@ -60,6 +59,9 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 		}
 	}
 	percentEntry.Text = strconv.Itoa(s.config.Scrobbling.ThresholdPercent)
+	if !s.config.Scrobbling.Enabled {
+		percentEntry.Disable()
+	}
 
 	durationEntry := widgets.NewTextRestrictedEntry(twoDigitValidator)
 	durationEntry.SetMinCharWidth(2)
@@ -71,6 +73,9 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 	if secs := s.config.Scrobbling.ThresholdTimeSeconds; secs >= 0 {
 		val := int(math.Round(float64(secs) / 60.))
 		durationEntry.Text = strconv.Itoa(val)
+	}
+	if !s.config.Scrobbling.Enabled {
+		durationEntry.Disable()
 	}
 
 	lastScrobbleText := durationEntry.Text
@@ -91,9 +96,12 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 		}
 	})
 	durationEnabled.Checked = s.config.Scrobbling.ThresholdTimeSeconds >= 0
+	if !s.config.Scrobbling.Enabled {
+		durationEnabled.Disable()
+	}
 
-	scrobbleEnabled := widget.NewCheckWithData("Send playback statistics to server", binding.BindBool(&s.config.Scrobbling.Enabled))
-	scrobbleEnabled.OnChanged = func(checked bool) {
+	scrobbleEnabled := widget.NewCheck("Send playback statistics to server", func(checked bool) {
+		s.config.Scrobbling.Enabled = checked
 		if !checked {
 			percentEntry.Disable()
 			durationEnabled.Disable()
@@ -105,7 +113,8 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 				durationEntry.Enable()
 			}
 		}
-	}
+	})
+	scrobbleEnabled.Checked = s.config.Scrobbling.Enabled
 
 	return container.NewTabItem("General", container.NewVBox(
 		widget.NewRichText(&widget.TextSegment{Text: "Scrobbling", Style: boldStyle}),
@@ -167,11 +176,17 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 	}
 	preampGain.Text = strconv.Itoa(int(initVal))
 
-	preventClipping := widget.NewCheckWithData("", binding.BindBool(&s.config.ReplayGain.PreventClipping))
-	preventClipping.OnChanged = func(_ bool) { s.onReplayGainSettingsChanged() }
+	preventClipping := widget.NewCheck("", func(checked bool) {
+		s.config.ReplayGain.PreventClipping = checked
+		s.onReplayGainSettingsChanged()
+	})
+	preventClipping.Checked = s.config.ReplayGain.PreventClipping
 
-	audioExclusive := widget.NewCheckWithData("Audio exclusive mode", binding.BindBool(&s.config.LocalPlayback.AudioExclusive))
-	audioExclusive.OnChanged = func(_ bool) { s.onAudioExclusiveSettingsChanged() }
+	audioExclusive := widget.NewCheck("Audio exclusive mode", func(checked bool) {
+		s.config.LocalPlayback.AudioExclusive = checked
+		s.onAudioExclusiveSettingsChanged()
+	})
+	audioExclusive.Checked = s.config.LocalPlayback.AudioExclusive
 
 	return container.NewTabItem("Playback", container.NewVBox(
 		widget.NewRichText(&widget.TextSegment{Text: "ReplayGain", Style: boldStyle}),

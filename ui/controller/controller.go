@@ -306,6 +306,12 @@ func (c *Controller) ShowAboutDialog() {
 
 func (c *Controller) ShowSettingsDialog() {
 	dlg := dialogs.NewSettingsDialog(c.App.Config)
+	dlg.OnReplayGainSettingsChanged = func() {
+		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
+	}
+	dlg.OnAudioExclusiveSettingChanged = func() {
+		c.App.Player.SetAudioExclusive(c.App.Config.LocalPlayback.AudioExclusive)
+	}
 	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
 	dlg.OnDismiss = func() {
 		pop.Hide()
