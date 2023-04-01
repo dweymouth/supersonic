@@ -68,6 +68,7 @@ func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*A
 		PreventClipping: a.Config.ReplayGain.PreventClipping,
 		PreampGain:      a.Config.ReplayGain.PreampGainDB,
 	})
+	a.Player.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
 
 	a.ServerManager = NewServerManager(appName)
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player, &a.Config.Scrobbling)
@@ -100,7 +101,7 @@ func (a *App) initMPV() error {
 	p := player.NewWithClientName(a.appName)
 	c := a.Config.LocalPlayback
 	c.InMemoryCacheSizeMB = clamp(c.InMemoryCacheSizeMB, 10, 500)
-	if err := p.Init(c.AudioExclusive, c.InMemoryCacheSizeMB); err != nil {
+	if err := p.Init(c.InMemoryCacheSizeMB); err != nil {
 		return fmt.Errorf("failed to initialize mpv player: %s", err.Error())
 	}
 	a.Player = p

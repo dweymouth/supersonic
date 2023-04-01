@@ -270,6 +270,14 @@ func (p *PlaybackManager) StopAndClearPlayQueue() {
 	p.playQueue = nil
 }
 
+func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
+	p.player.SetReplayGainOptions(player.ReplayGainOptions{
+		Mode:            player.ReplayGainMode(config.Mode),
+		PreventClipping: config.PreventClipping,
+		PreampGain:      config.PreampGainDB,
+	})
+}
+
 // call BEFORE updating p.nowPlayingIdx
 func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 	if !p.scrobbleCfg.Enabled || len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {

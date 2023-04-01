@@ -304,6 +304,24 @@ func (c *Controller) ShowAboutDialog() {
 	pop.Show()
 }
 
+func (c *Controller) ShowSettingsDialog() {
+	dlg := dialogs.NewSettingsDialog(c.App.Config)
+	dlg.OnReplayGainSettingsChanged = func() {
+		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
+	}
+	dlg.OnAudioExclusiveSettingChanged = func() {
+		c.App.Player.SetAudioExclusive(c.App.Config.LocalPlayback.AudioExclusive)
+	}
+	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
+	dlg.OnDismiss = func() {
+		pop.Hide()
+		c.doModalClosed()
+	}
+	c.ClosePopUpOnEscape(pop)
+	c.haveModal = true
+	pop.Show()
+}
+
 func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {
 	if err := c.App.ServerManager.SetServerPassword(server, password); err != nil {
 		log.Printf("error setting keyring credentials: %v", err)
