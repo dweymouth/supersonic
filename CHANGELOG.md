@@ -10,12 +10,16 @@
 - [#99](https://github.com/dweymouth/supersonic/issues/99) Add Year (asc + desc) sort orders to album page
 - [#102](https://github.com/dweymouth/supersonic/issues/102) Add ReplayGain support (requires files to be tagged on server and transcoding to preserve tags)
 - [#106](https://github.com/dweymouth/supersonic/issues/106) Automatically check for updates
+- [#12](https://github.com/dweymouth/supersonic/issues/12) Add settings dialog
+- [d67dfa0](https://github.com/dweymouth/supersonic/commit/d67dfa07b35aff9e3aff7ca091180d8104a64db4) Add file size column to tracklist view
+- [0a11df8](https://github.com/dweymouth/supersonic/commit/0a11df8c07efd0ff4fd540bc0a5bc64946f4d61c) Limit the size of MPV's in-memory audio cache
 
 ### Fixed
 - [#90](https://github.com/dweymouth/supersonic/issues/90) Wrong covers get loaded for albums if server has different IDs for album and cover art
 - [#88](https://github.com/dweymouth/supersonic/issues/88) Incorrect icon size for Mac OS
 - [#87](https://github.com/dweymouth/supersonic/issues/87) Fix dependency bundling for Mac OS
 - [#45](https://github.com/dweymouth/supersonic/issues/45) Tracklist multi-select on Linux now works properly (Ctrl+click, Shift+click)
+- [#109](https://github.com/dweymouth/supersonic/issues/109) Memory leak in image rendering
 - [f34d432](https://github.com/dweymouth/supersonic/commit/f34d4329b175e7d1a33a006bec951c2c64e6e978) Don't show tracklist row hover indicator when favorite toggle is hovered
 - [98fb148](https://github.com/dweymouth/supersonic/commit/98fb1483e6ba329effb8995a879572138947aee7) Migrate to Fyne 2.3.3 (modest memory improvements, fixes seek slider "wobble", fixes possible issues on M2 Macs)
 

@@ -12,9 +12,10 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 
 ## Features
 * [x] Fast, lightweight, native UI
-* [x] High-quality gapless audio playback powered by MPV
+* [x] High-quality gapless audio playback powered by MPV, with optional audio exclusive mode
+* [x] ReplayGain support (depends on files being tagged on server)
 * [x] Infinite scrolling
-* [x] Scrobble plays to server
+* [x] Scrobble plays to server, with configurable criteria
 * [x] Browse by albums, artists, genres, playlists
 * [x] Album and playlist views with tracklist and cover image
 * [x] Artist view with biography, image, similar artists, and discography
@@ -27,7 +28,6 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 * [ ] Browse by folders (planned)
 * [ ] Multi-server support (planned)
 * [ ] Download songs, albums or playlists (planned)
-* [ ] ReplayGain audio normalization support (planned, depending on files being ReplayGain tagged on server)
 * [ ] Cast to uPnP/DLNA devices (likely planned)
 * [ ] Built-in multi-band equalizer (eventully planned)
 * [ ] Offline mode (eventually planned)
@@ -57,10 +57,12 @@ Download the latest [release](https://github.com/dweymouth/supersonic/releases) 
 
 ### Install dependencies
 * install go, and make sure the Go bin directory is in your `$PATH`
+  - ``brew install go``
+  - ``export PATH="/Users/<yourname>/go/bin:$PATH"``
 * install the ``fyne`` packaging tool ``go install fyne.io/fyne/v2/cmd/fyne@latest``
 * install Xcode command-line tools (``xcode-select --install``)
 * install libmpv (``brew install mpv``)
-* install dylibbundler (``brew install dylibbundler``) - needed only for building the .app bundle
+* install dylibbundler (``brew install dylibbundler``) - needed only the bundledeps step, see below
 
 ### Build
 * Make sure header and library include paths include the dir in which homebrew installs headers/dylibs (may differ dep. on OS/Homebrew version)
@@ -70,6 +72,8 @@ Download the latest [release](https://github.com/dweymouth/supersonic/releases) 
 * clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
 * run ``make package_macos`` to generate the .app bundle
+* At this point, the Supersonic.app bundle can be copied to Applications and it will run on your machine, but it depends on the brew installation of mpv
+* To copy the dependencies into the app bundle, and make it truly portable, run ``make bundledeps_macos``
 
 ## Build instructions (Windows)
 
