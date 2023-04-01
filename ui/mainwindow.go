@@ -108,6 +108,7 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 			}
 		}()
 	})
+	m.BrowsingPane.AddSettingsMenuItem("Settings...", m.Controller.ShowSettingsDialog)
 	m.BrowsingPane.AddSettingsMenuItem("About...", m.Controller.ShowAboutDialog)
 	m.addNavigationButtons()
 	m.BrowsingPane.DisableNavigationButtons()
