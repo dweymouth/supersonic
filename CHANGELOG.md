@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## [0.1.0-beta] - 2023-04-01
 
 ### Added
 - [#39](https://github.com/dweymouth/supersonic/issues/39) Add caching of artist images
