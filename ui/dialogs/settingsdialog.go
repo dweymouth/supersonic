@@ -74,7 +74,7 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 		val := int(math.Round(float64(secs) / 60.))
 		durationEntry.Text = strconv.Itoa(val)
 	}
-	if !s.config.Scrobbling.Enabled {
+	if !s.config.Scrobbling.Enabled || s.config.Scrobbling.ThresholdTimeSeconds < 0 {
 		durationEntry.Disable()
 	}
 
