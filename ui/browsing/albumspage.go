@@ -35,7 +35,6 @@ type AlbumsPage struct {
 
 type selectWidget struct {
 	widget.Select
-	height float32
 }
 
 func NewSelect(options []string, onChanged func(string)) *selectWidget {
@@ -45,13 +44,12 @@ func NewSelect(options []string, onChanged func(string)) *selectWidget {
 			OnChanged: onChanged,
 		},
 	}
-	s.height = widget.NewSelect(nil, nil).MinSize().Height
 	s.ExtendBaseWidget(s)
 	return s
 }
 
 func (s *selectWidget) MinSize() fyne.Size {
-	return fyne.NewSize(170, s.height)
+	return fyne.NewSize(170, s.Select.MinSize().Height)
 }
 
 func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *AlbumsPage {

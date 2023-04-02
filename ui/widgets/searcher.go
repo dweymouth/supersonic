@@ -71,20 +71,15 @@ func (s *Searcher) sendSearch(text string) {
 
 type SearchEntry struct {
 	widget.Entry
-	height float32
 }
 
 func NewSearchEntry() *SearchEntry {
 	sf := &SearchEntry{}
 	sf.ExtendBaseWidget(sf)
-	// this is a bit hacky
-	sf.height = widget.NewEntry().MinSize().Height
 	sf.PlaceHolder = "Search"
-	c := NewClearTextButton()
-	c.OnTapped = func() {
+	sf.ActionItem = NewClearTextButton(func() {
 		sf.SetText("")
-	}
-	sf.ActionItem = c
+	})
 	return sf
 }
 
@@ -98,7 +93,7 @@ func (s *SearchEntry) Refresh() {
 }
 
 func (s *SearchEntry) MinSize() fyne.Size {
-	return fyne.NewSize(200, s.height)
+	return fyne.NewSize(200, s.Entry.MinSize().Height)
 }
 
 var _ fyne.Tappable = (*clearTextButton)(nil)
@@ -109,8 +104,8 @@ type clearTextButton struct {
 	OnTapped func()
 }
 
-func NewClearTextButton() *clearTextButton {
-	c := &clearTextButton{}
+func NewClearTextButton(onTapped func()) *clearTextButton {
+	c := &clearTextButton{OnTapped: onTapped}
 	c.ExtendBaseWidget(c)
 	c.Resource = theme.SearchIcon()
 	return c
