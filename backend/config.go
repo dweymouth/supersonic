@@ -20,6 +20,8 @@ type AppConfig struct {
 	WindowWidth        int
 	WindowHeight       int
 	LastCheckedVersion string
+	EnableSystemTray   bool
+	CloseToSystemTray  bool
 }
 
 type AlbumPageConfig struct {
@@ -87,6 +89,8 @@ func DefaultConfig(appVersionTag string) *Config {
 			WindowWidth:        1000,
 			WindowHeight:       800,
 			LastCheckedVersion: appVersionTag,
+			EnableSystemTray:   true,
+			CloseToSystemTray:  false,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite"},

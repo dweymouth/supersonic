@@ -40,7 +40,8 @@ type MainWindow struct {
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
-	container *fyne.Container
+	haveSystemTray bool
+	container      *fyne.Container
 }
 
 var (
@@ -54,6 +55,9 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 		BrowsingPane: browsing.NewBrowsingPane(app),
 	}
 
+	if app.Config.Application.EnableSystemTray {
+		m.SetupSystemTrayMenu(appName, fyneApp)
+	}
 	m.Controller = &controller.Controller{
 		AppVersion: appVersion,
 		MainWindow: m.Window,
@@ -121,6 +125,32 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()
 	return m
+}
+
+func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
+	if desk, ok := fyneApp.(desktop.App); ok {
+		menu := fyne.NewMenu(appName,
+			fyne.NewMenuItem("Play/Pause", func() {
+				m.App.Player.PlayPause()
+			}),
+			fyne.NewMenuItem("Previous", func() {
+				m.App.Player.SeekBackOrPrevious()
+			}),
+			fyne.NewMenuItem("Next", func() {
+				m.App.Player.SeekNext()
+			}),
+			fyne.NewMenuItemSeparator(),
+			fyne.NewMenuItem("Show", func() {
+				m.Show()
+			}))
+		desk.SetSystemTrayMenu(menu)
+		desk.SetSystemTrayIcon(res.ResAppicon250Png)
+		m.haveSystemTray = true
+	}
+}
+
+func (m *MainWindow) HaveSystemTray() bool {
+	return m.haveSystemTray
 }
 
 func (m *MainWindow) ShowNewVersionDialog(appName, versionTag string) {

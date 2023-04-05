@@ -57,10 +57,15 @@ func main() {
 	mainWindow.Window.SetCloseIntercept(func() {
 		myApp.Config.Application.WindowHeight = int(mainWindow.Canvas().Size().Height)
 		myApp.Config.Application.WindowWidth = int(mainWindow.Canvas().Size().Width)
-		mainWindow.Window.Close()
+		if myApp.Config.Application.CloseToSystemTray &&
+			mainWindow.HaveSystemTray() {
+			mainWindow.Window.Hide()
+		} else {
+			fyneApp.Quit()
+		}
 	})
 	fyneApp.Run()
 
-	// shutdown tasks
+	log.Println("Running shutdown tasks...")
 	myApp.Shutdown()
 }
