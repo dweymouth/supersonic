@@ -56,22 +56,9 @@ func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*A
 	if err := a.initMPV(); err != nil {
 		return nil, err
 	}
-
-	a.Config.LocalPlayback.Volume = clamp(a.Config.LocalPlayback.Volume, 0, 100)
-	a.Player.SetVolume(a.Config.LocalPlayback.Volume)
-
-	a.Player.SetAudioDevice(a.Config.LocalPlayback.AudioDeviceName)
-
-	rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack}
-	if !sharedutil.StringSliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
-		a.Config.ReplayGain.Mode = ReplayGainNone
+	if err := a.setupMPV(); err != nil {
+		return nil, err
 	}
-	a.Player.SetReplayGainOptions(player.ReplayGainOptions{
-		Mode:            player.ReplayGainMode(a.Config.ReplayGain.Mode),
-		PreventClipping: a.Config.ReplayGain.PreventClipping,
-		PreampGain:      a.Config.ReplayGain.PreampGainDB,
-	})
-	a.Player.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
 
 	a.ServerManager = NewServerManager(appName)
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player, &a.Config.Scrobbling)
@@ -108,6 +95,46 @@ func (a *App) initMPV() error {
 		return fmt.Errorf("failed to initialize mpv player: %s", err.Error())
 	}
 	a.Player = p
+	return nil
+}
+
+func (a *App) setupMPV() error {
+	a.Config.LocalPlayback.Volume = clamp(a.Config.LocalPlayback.Volume, 0, 100)
+	a.Player.SetVolume(a.Config.LocalPlayback.Volume)
+
+	devs, err := a.Player.ListAudioDevices()
+	if err != nil {
+		return err
+	}
+
+	desiredDevice := a.Config.LocalPlayback.AudioDeviceName
+	var desiredDeviceAvailable bool
+	for _, dev := range devs {
+		if dev.Name == desiredDevice {
+			desiredDeviceAvailable = true
+			break
+		}
+	}
+	if !desiredDeviceAvailable {
+		// The audio device the user has configured is not available.
+		// Use the default (autoselect) device but leave the setting unchanged,
+		// in case the device is later available on a subsequent run of the app
+		// (e.g. a USB audio device that is currently unplugged)
+		desiredDevice = "auto"
+	}
+	a.Player.SetAudioDevice(desiredDevice)
+
+	rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack}
+	if !sharedutil.StringSliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
+		a.Config.ReplayGain.Mode = ReplayGainNone
+	}
+	a.Player.SetReplayGainOptions(player.ReplayGainOptions{
+		Mode:            player.ReplayGainMode(a.Config.ReplayGain.Mode),
+		PreventClipping: a.Config.ReplayGain.PreventClipping,
+		PreampGain:      a.Config.ReplayGain.PreampGainDB,
+	})
+	a.Player.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
+
 	return nil
 }
 
