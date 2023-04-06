@@ -57,6 +57,18 @@ type ReplayGainOptions struct {
 	// Fallback gain intentionally omitted
 }
 
+// Information about a specific audio device.
+// Returned by ListAudioDevices.
+type AudioDevice struct {
+	// The name of the audio device.
+	// This is the string to pass to SetAudioDevice.
+	Name string
+
+	// The description of the audio device.
+	// This is the friendly string that should be used in UIs.
+	Description string
+}
+
 // Player encapsulates the mpv instance and provides functions
 // to control it and to check its status.
 type Player struct {
@@ -374,6 +386,24 @@ func (p *Player) GetStatus() Status {
 		p.status.PlaylistPos = playpos
 	}
 	return p.status
+}
+
+// List available audio devices.
+func (p *Player) ListAudioDevices() ([]AudioDevice, error) {
+	n, err := p.mpv.GetProperty("audio-device-list", mpv.FORMAT_NODE)
+	if err != nil {
+		return nil, err
+	}
+	nodeArr := n.(*mpv.Node).Data.([]*mpv.Node)
+
+	devices := make([]AudioDevice, len(nodeArr))
+	for i, node := range nodeArr {
+		dev := node.Data.(map[string]*mpv.Node)
+		name := dev["name"].Data.(string)
+		desc := dev["description"].Data.(string)
+		devices[i] = AudioDevice{Name: name, Description: desc}
+	}
+	return devices, nil
 }
 
 func (p *Player) getInt64Property(propName string) (int64, error) {
