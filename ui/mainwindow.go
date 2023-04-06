@@ -83,11 +83,18 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 		m.Router.NavigateTo(HomePage)
 		// check if found new version on startup
 		if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
-			m.ShowNewVersionDialog(appName, t)
+			if t != app.VersionTag() {
+				m.ShowNewVersionDialog(appName, t)
+			}
+			m.App.Config.Application.LastCheckedVersion = t
 		}
 		// register callback for the ongoing periodic update check
 		m.App.UpdateChecker.OnUpdatedVersionFound = func() {
-			m.ShowNewVersionDialog(appName, m.App.UpdateChecker.VersionTagFound())
+			t := m.App.UpdateChecker.VersionTagFound()
+			if t != app.VersionTag() {
+				m.ShowNewVersionDialog(appName, t)
+			}
+			m.App.Config.Application.LastCheckedVersion = t
 		}
 	})
 	app.ServerManager.OnLogout(func() {

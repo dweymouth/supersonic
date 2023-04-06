@@ -6,6 +6,9 @@
 - [#107](https://github.com/dweymouth/supersonic/issues/107) Add playback settings dropdown to choose output audio device
 - [#119](https://github.com/dweymouth/supersonic/issues/119) Add file path column to tracklist view
 
+### Fixes
+- **todo-commithash** Don't show update available prompt if the found version is the same as the running app version
+
 ## [0.1.0-beta] - 2023-04-01
 
 ### Added
