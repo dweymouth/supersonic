@@ -406,6 +406,10 @@ func (p *Player) ListAudioDevices() ([]AudioDevice, error) {
 	return devices, nil
 }
 
+func (p *Player) SetAudioDevice(deviceName string) error {
+	return p.mpv.SetPropertyString("audio-device", deviceName)
+}
+
 func (p *Player) getInt64Property(propName string) (int64, error) {
 	playpos, err := p.mpv.GetProperty(propName, mpv.FORMAT_INT64)
 	if err != nil {

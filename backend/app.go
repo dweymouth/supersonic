@@ -56,8 +56,11 @@ func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*A
 	if err := a.initMPV(); err != nil {
 		return nil, err
 	}
+
 	a.Config.LocalPlayback.Volume = clamp(a.Config.LocalPlayback.Volume, 0, 100)
 	a.Player.SetVolume(a.Config.LocalPlayback.Volume)
+
+	a.Player.SetAudioDevice(a.Config.LocalPlayback.AudioDeviceName)
 
 	rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack}
 	if !sharedutil.StringSliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
