@@ -1,5 +1,10 @@
 # Change Log
 
+## Unreleased
+
+### Added
+- [#107](https://github.com/dweymouth/supersonic/issues/107) Add playback settings dropdown to choose output audio device
+
 ## [0.1.0-beta] - 2023-04-01
 
 ### Added
