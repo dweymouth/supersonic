@@ -27,6 +27,7 @@ const (
 	ColumnPlays    = "Plays"
 	ColumnBitrate  = "Bitrate"
 	ColumnSize     = "Size"
+	ColumnPath     = "Path"
 )
 
 type Tracklist struct {
@@ -71,12 +72,12 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
-	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 10)}
+	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 11)}
 
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
-	// #, Title, Artist, Album, Time, Year, Favorite, Plays, Bitrate, Size
-	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 60, 47, 65, 75, 70})
+	// #, Title, Artist, Album, Time, Year, Favorite, Plays, Bitrate, Size, Path
+	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 60, 47, 65, 75, 70, -1})
 	t.buildHeader()
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
@@ -119,7 +120,8 @@ func (t *Tracklist) buildHeader() {
 		{Text: "Fav.", AlignTrailing: false, CanToggleVisible: true},
 		{Text: "Plays", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "Bitrate", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Size", AlignTrailing: true, CanToggleVisible: true}},
+		{Text: "Size", AlignTrailing: true, CanToggleVisible: true},
+		{Text: "File Path", AlignTrailing: false, CanToggleVisible: true}},
 		t.colLayout)
 }
 
@@ -313,6 +315,8 @@ func ColNumber(colName string) int {
 		return 8
 	case ColumnSize:
 		return 9
+	case ColumnPath:
+		return 10
 	default:
 		log.Printf("error: Tracklist: invalid column name %s", colName)
 		return -100
@@ -338,6 +342,8 @@ func colName(i int) string {
 		return ColumnBitrate
 	case 9:
 		return ColumnSize
+	case 10:
+		return ColumnPath
 	default:
 		return ""
 	}
@@ -367,6 +373,7 @@ type TrackRow struct {
 	bitrate  *widget.RichText
 	plays    *widget.RichText
 	size     *widget.RichText
+	path     *widget.RichText
 
 	OnTappedSecondary func(e *fyne.PointEvent, trackIdx int)
 
@@ -397,9 +404,11 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.bitrate.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.size = widget.NewRichTextWithText("")
 	t.size.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
+	t.path = widget.NewRichTextWithText("")
+	t.path.Wrapping = fyne.TextTruncate
 
 	t.Content = container.New(tracklist.colLayout,
-		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.plays, t.bitrate, t.size)
+		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.plays, t.bitrate, t.size, t.path)
 	return t
 }
 
@@ -423,6 +432,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
 		t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
 		t.size.Segments[0].(*widget.TextSegment).Text = util.BytesToSizeString(tr.Size)
+		t.path.Segments[0].(*widget.TextSegment).Text = tr.Path
 	}
 
 	// Update track num if needed
@@ -450,6 +460,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 		t.plays.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.bitrate.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.size.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+		t.path.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 
 		if isPlaying {
 			t.Content.(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
@@ -482,6 +493,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
 	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]
 	t.size.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnSize)]
+	t.path.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPath)]
 
 	t.Refresh()
 }

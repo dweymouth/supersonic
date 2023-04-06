@@ -4,6 +4,7 @@
 
 ### Added
 - [#107](https://github.com/dweymouth/supersonic/issues/107) Add playback settings dropdown to choose output audio device
+- [#119](https://github.com/dweymouth/supersonic/issues/119) Add file path column to tracklist view
 
 ## [0.1.0-beta] - 2023-04-01
 
