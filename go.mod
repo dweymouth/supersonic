@@ -5,6 +5,7 @@ go 1.19
 require (
 	fyne.io/fyne/v2 v2.3.3
 	github.com/20after4/configdir v0.1.1
+	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
 	github.com/dweymouth/go-subsonic v0.0.0-20230210044542-537b9238299b
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml v1.9.3

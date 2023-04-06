@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+
+	"github.com/dweymouth/go-mpv"
 )
 
 // Error returned by many Player functions if called before the player has not been initialized.
@@ -55,10 +57,22 @@ type ReplayGainOptions struct {
 	// Fallback gain intentionally omitted
 }
 
+// Information about a specific audio device.
+// Returned by ListAudioDevices.
+type AudioDevice struct {
+	// The name of the audio device.
+	// This is the string to pass to SetAudioDevice.
+	Name string
+
+	// The description of the audio device.
+	// This is the friendly string that should be used in UIs.
+	Description string
+}
+
 // Player encapsulates the mpv instance and provides functions
 // to control it and to check its status.
 type Player struct {
-	mpv            libmpv
+	mpv            *mpv.Mpv
 	initialized    bool
 	vol            int
 	replayGainOpts ReplayGainOptions
@@ -99,10 +113,8 @@ func NewWithClientName(c string) *Player {
 // Most Player functions will return ErrUnitialized if called before Init.
 func (p *Player) Init(maxCacheMB int) error {
 	if !p.initialized {
-		m, err := CreateMPV()
-		if err != nil {
-			return err
-		}
+		m := mpv.Create()
+
 		m.SetOptionString("idle", "yes")
 		m.SetOptionString("video", "no")
 		m.SetOptionString("audio-display", "no")
@@ -117,7 +129,7 @@ func (p *Player) Init(maxCacheMB int) error {
 		if p.vol < 0 {
 			p.vol = 100
 		}
-		m.SetOption("volume", MPVFormatInt64, p.vol)
+		m.SetOption("volume", mpv.FORMAT_INT64, p.vol)
 
 		p.SetAudioExclusive(p.audioExclusive)
 		if p.haveRGainOpts {
@@ -246,7 +258,7 @@ func (p *Player) SetVolume(vol int) error {
 		vol = 0
 	}
 	if p.initialized {
-		err := p.mpv.SetProperty("volume", MPVFormatInt64, vol)
+		err := p.mpv.SetProperty("volume", mpv.FORMAT_INT64, vol)
 		if err == nil {
 			p.vol = vol
 		}
@@ -266,7 +278,7 @@ func (p *Player) SetReplayGainOptions(options ReplayGainOptions) error {
 		if err := p.mpv.SetPropertyString("replaygain", string(options.Mode)); err != nil {
 			return err
 		}
-		if err := p.mpv.SetProperty("replaygain-preamp", MPVFormatDouble, options.PreampGain); err != nil {
+		if err := p.mpv.SetProperty("replaygain-preamp", mpv.FORMAT_DOUBLE, options.PreampGain); err != nil {
 			return err
 		}
 		clip := "no"
@@ -300,7 +312,7 @@ func (p *Player) GetVolume() int {
 }
 
 func (p *Player) setPaused(paused bool) error {
-	return p.mpv.SetProperty("pause", MPVFormatFlag, paused)
+	return p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, paused)
 }
 
 // Start playback from the first track in the play queue.
@@ -362,8 +374,8 @@ func (p *Player) GetStatus() Status {
 		return p.status
 	}
 
-	pos, _ := p.mpv.GetProperty("playback-time", MPVFormatDouble)
-	dur, _ := p.mpv.GetProperty("duration", MPVFormatDouble)
+	pos, _ := p.mpv.GetProperty("playback-time", mpv.FORMAT_DOUBLE)
+	dur, _ := p.mpv.GetProperty("duration", mpv.FORMAT_DOUBLE)
 	if pos != nil {
 		p.status.TimePos = pos.(float64)
 	}
@@ -376,8 +388,30 @@ func (p *Player) GetStatus() Status {
 	return p.status
 }
 
+// List available audio devices.
+func (p *Player) ListAudioDevices() ([]AudioDevice, error) {
+	n, err := p.mpv.GetProperty("audio-device-list", mpv.FORMAT_NODE)
+	if err != nil {
+		return nil, err
+	}
+	nodeArr := n.(*mpv.Node).Data.([]*mpv.Node)
+
+	devices := make([]AudioDevice, len(nodeArr))
+	for i, node := range nodeArr {
+		dev := node.Data.(map[string]*mpv.Node)
+		name := dev["name"].Data.(string)
+		desc := dev["description"].Data.(string)
+		devices[i] = AudioDevice{Name: name, Description: desc}
+	}
+	return devices, nil
+}
+
+func (p *Player) SetAudioDevice(deviceName string) error {
+	return p.mpv.SetPropertyString("audio-device", deviceName)
+}
+
 func (p *Player) getInt64Property(propName string) (int64, error) {
-	playpos, err := p.mpv.GetProperty(propName, MPVFormatInt64)
+	playpos, err := p.mpv.GetProperty(propName, mpv.FORMAT_INT64)
 	if err != nil {
 		return -1, err
 	}
@@ -463,19 +497,19 @@ func (p *Player) eventHandler(ctx context.Context) {
 			return
 		default:
 			e := p.mpv.WaitEvent(1 /*timeout seconds*/)
-			if e.ID != MPVEventNone {
+			if e.Event_Id != mpv.EVENT_NONE {
 				//log.Printf("mpv event: %+v\n", e)
 			}
-			switch e.ID {
-			case MPVEventPlaybackRestart:
+			switch e.Event_Id {
+			case mpv.EVENT_PLAYBACK_RESTART:
 				if p.seeking {
 					p.seeking = false
 				}
-			case MPVEventSeek:
+			case mpv.EVENT_SEEK:
 				for _, cb := range p.onSeek {
 					cb()
 				}
-			case MPVEventFileLoaded:
+			case mpv.EVENT_FILE_LOADED:
 				if p.status.State == Paused {
 					// seek while paused switches to a new file
 					// mpv does not fire seek event in this case
@@ -489,7 +523,7 @@ func (p *Player) eventHandler(ctx context.Context) {
 						cb(pos)
 					}
 				}
-			case MPVEventIdle:
+			case mpv.EVENT_IDLE:
 				p.status.Duration = 0
 				p.status.TimePos = 0
 				p.setState(Stopped)

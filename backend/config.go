@@ -49,6 +49,7 @@ type PlaylistPageConfig struct {
 }
 
 type LocalPlaybackConfig struct {
+	AudioDeviceName     string
 	AudioExclusive      bool
 	InMemoryCacheSizeMB int
 	Volume              int
@@ -108,6 +109,8 @@ func DefaultConfig(appVersionTag string) *Config {
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 		},
 		LocalPlayback: LocalPlaybackConfig{
+			// "auto" is the name to pass to MPV for autoselecting the output device
+			AudioDeviceName:     "auto",
 			AudioExclusive:      false,
 			InMemoryCacheSizeMB: 30,
 			Volume:              100,

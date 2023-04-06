@@ -4,7 +4,9 @@ import (
 	"math"
 	"strconv"
 	"supersonic/backend"
+	"supersonic/player"
 	"supersonic/ui/layouts"
+	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 	"unicode"
 
@@ -21,15 +23,18 @@ type SettingsDialog struct {
 
 	OnReplayGainSettingsChanged    func()
 	OnAudioExclusiveSettingChanged func()
+	OnAudioDeviceSettingChanged    func()
 	OnDismiss                      func()
 
-	config *backend.Config
+	config       *backend.Config
+	audioDevices []player.AudioDevice
 
 	content fyne.CanvasObject
 }
 
-func NewSettingsDialog(config *backend.Config) *SettingsDialog {
-	s := &SettingsDialog{config: config}
+// TODO: having this depend on the player package for the AudioDevice type is kinda gross. Refactor.
+func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDevice) *SettingsDialog {
+	s := &SettingsDialog{config: config, audioDevices: audioDeviceList}
 	s.ExtendBaseWidget(s)
 
 	tabs := container.NewAppTabs(
@@ -133,6 +138,24 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 }
 
 func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
+	deviceList := make([]string, len(s.audioDevices))
+	var selIndex int
+	for i, dev := range s.audioDevices {
+		deviceList[i] = dev.Description
+		if dev.Name == s.config.LocalPlayback.AudioDeviceName {
+			selIndex = i
+		}
+	}
+	deviceSelect := widget.NewSelect(deviceList, nil)
+	deviceSelect.SetSelectedIndex(selIndex)
+	deviceSelect.OnChanged = func(_ string) {
+		dev := s.audioDevices[deviceSelect.SelectedIndex()]
+		s.config.LocalPlayback.AudioDeviceName = dev.Name
+		if s.OnAudioDeviceSettingChanged != nil {
+			s.OnAudioDeviceSettingChanged()
+		}
+	}
+
 	replayGainSelect := widget.NewSelect([]string{"None", "Album", "Track"}, nil)
 	replayGainSelect.OnChanged = func(_ string) {
 		switch replayGainSelect.SelectedIndex() {
@@ -189,14 +212,18 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 	audioExclusive.Checked = s.config.LocalPlayback.AudioExclusive
 
 	return container.NewTabItem("Playback", container.NewVBox(
+		container.New(&layouts.MaxPadLayout{PadTop: 5},
+			container.New(layout.NewFormLayout(),
+				widget.NewLabel("Audio device"), container.NewBorder(nil, nil, nil, util.NewHSpace(70), deviceSelect),
+				layout.NewSpacer(), container.NewHBox(audioExclusive, layout.NewSpacer()),
+			)),
+		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15}, widget.NewSeparator()),
 		widget.NewRichText(&widget.TextSegment{Text: "ReplayGain", Style: boldStyle}),
 		container.New(layout.NewFormLayout(),
-			widget.NewLabel("ReplayGain mode"), replayGainSelect,
+			widget.NewLabel("ReplayGain mode"), container.NewGridWithColumns(2, replayGainSelect),
 			widget.NewLabel("ReplayGain preamp"), container.NewHBox(preampGain, widget.NewLabel("dB")),
 			widget.NewLabel("Prevent clipping"), container.NewHBox(preventClipping, layout.NewSpacer()),
 		),
-		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15}, widget.NewSeparator()),
-		container.NewHBox(audioExclusive, layout.NewSpacer()),
 	))
 }
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"supersonic/backend"
+	"supersonic/player"
 	"supersonic/ui/dialogs"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
@@ -305,12 +306,21 @@ func (c *Controller) ShowAboutDialog() {
 }
 
 func (c *Controller) ShowSettingsDialog() {
-	dlg := dialogs.NewSettingsDialog(c.App.Config)
+	devs, err := c.App.Player.ListAudioDevices()
+	if err != nil {
+		log.Printf("error listing audio devices: %v", err)
+		devs = []player.AudioDevice{{Name: "auto", Description: "Autoselect device"}}
+	}
+
+	dlg := dialogs.NewSettingsDialog(c.App.Config, devs)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
 	}
 	dlg.OnAudioExclusiveSettingChanged = func() {
 		c.App.Player.SetAudioExclusive(c.App.Config.LocalPlayback.AudioExclusive)
+	}
+	dlg.OnAudioDeviceSettingChanged = func() {
+		c.App.Player.SetAudioDevice(c.App.Config.LocalPlayback.AudioDeviceName)
 	}
 	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
 	dlg.OnDismiss = func() {
