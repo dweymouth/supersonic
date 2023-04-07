@@ -151,7 +151,8 @@ func (a *App) LoginToDefaultServer(string) error {
 }
 
 func (a *App) Shutdown() {
-	a.Player.Stop()
+	a.PlaybackManager.DisableCallbacks()
+	a.Player.Stop() // will trigger scrobble check
 	a.Config.LocalPlayback.Volume = a.Player.GetVolume()
 	a.cancel()
 	a.Player.Destroy()
