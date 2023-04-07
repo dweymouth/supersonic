@@ -27,6 +27,7 @@ type PlaybackManager struct {
 
 	playTimeStopwatch util.Stopwatch
 	curTrackTime      float64
+	callbacksDisabled bool
 
 	playQueue     []*subsonic.Child
 	nowPlayingIdx int64
@@ -97,6 +98,12 @@ func NewPlaybackManager(
 
 func (p *PlaybackManager) IsSeeking() bool {
 	return p.player.IsSeeking()
+}
+
+// Should only be called before quitting.
+// Disables playback state callbacks being sent
+func (p *PlaybackManager) DisableCallbacks() {
+	p.callbacksDisabled = true
 }
 
 // Gets the curently playing song, if any.
@@ -310,6 +317,9 @@ func (p *PlaybackManager) sendNowPlayingScrobble() {
 }
 
 func (p *PlaybackManager) invokeOnSongChangeCallbacks() {
+	if p.callbacksDisabled {
+		return
+	}
 	for _, cb := range p.onSongChange {
 		cb(p.NowPlaying(), p.lastScrobbled)
 	}
@@ -337,6 +347,9 @@ func (p *PlaybackManager) startPollTimePos() {
 }
 
 func (p *PlaybackManager) doUpdateTimePos() {
+	if p.callbacksDisabled {
+		return
+	}
 	s := p.player.GetStatus()
 	for _, cb := range p.onPlayTimeUpdate {
 		cb(s.TimePos, s.Duration)
