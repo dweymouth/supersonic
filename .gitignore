@@ -26,3 +26,6 @@ vendor/
 go.work
 
 # End of https://www.toptal.com/developers/gitignore/api/go
+
+# Allow dylibs for pre-build mpv library components
+!res/libs/mac_x64/mpv/*
