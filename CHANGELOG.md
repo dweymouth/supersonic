@@ -5,6 +5,7 @@
 ### Added
 - [#107](https://github.com/dweymouth/supersonic/issues/107) Add playback settings dropdown to choose output audio device
 - [#119](https://github.com/dweymouth/supersonic/issues/119) Add file path column to tracklist view
+- [#117](https://github.com/dweymouth/supersonic/issues/117) Add (optional) system tray menu and close to tray support
 
 ### Fixes
 - **todo-commithash** Don't show update available prompt if the found version is the same as the running app version
