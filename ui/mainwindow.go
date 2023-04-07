@@ -131,18 +131,18 @@ func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
 	if desk, ok := fyneApp.(desktop.App); ok {
 		menu := fyne.NewMenu(appName,
 			fyne.NewMenuItem("Play/Pause", func() {
-				m.App.Player.PlayPause()
+				_ = m.App.Player.PlayPause()
 			}),
 			fyne.NewMenuItem("Previous", func() {
-				m.App.Player.SeekBackOrPrevious()
+				_ = m.App.Player.SeekBackOrPrevious()
 			}),
 			fyne.NewMenuItem("Next", func() {
-				m.App.Player.SeekNext()
+				_ = m.App.Player.SeekNext()
 			}),
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem("Show", func() {
-				m.Show()
-			}))
+			fyne.NewMenuItem("Show", m.Window.Show),
+			fyne.NewMenuItem("Hide", m.Window.Hide),
+		)
 		desk.SetSystemTrayMenu(menu)
 		desk.SetSystemTrayIcon(res.ResAppicon250Png)
 		m.haveSystemTray = true
