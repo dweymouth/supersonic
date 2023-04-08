@@ -10,6 +10,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// Shows the current album art, track name, artist name, and album name
+// for the currently playing track. Placed into the left side of the BottomPanel.
 type NowPlayingCard struct {
 	widget.BaseWidget
 

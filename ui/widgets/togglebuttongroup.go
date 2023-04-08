@@ -8,6 +8,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// Lays out multiple buttons horizontally with no padding,
+// and uses button.Importance to highlight exactly one which is "active".
+// Similar to a segmented control in other UI toolkits.
 type ToggleButtonGroup struct {
 	widget.BaseWidget
 

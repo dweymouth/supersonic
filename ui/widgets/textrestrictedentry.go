@@ -8,6 +8,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// A widget.Entry that allows restrictions on the text
+// that can be typed into it, based on a charAllowed callback.
 type TextRestrictedEntry struct {
 	widget.Entry
 

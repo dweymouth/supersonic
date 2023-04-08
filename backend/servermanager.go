@@ -85,10 +85,12 @@ func (s *ServerManager) Logout() {
 	}
 }
 
+// Sets a callback that is invoked when a server is connected to.
 func (s *ServerManager) OnServerConnected(cb func()) {
 	s.onServerConnected = append(s.onServerConnected, cb)
 }
 
+// Sets a callback that is invoked when the user logs out of a server.
 func (s *ServerManager) OnLogout(cb func()) {
 	s.onLogout = append(s.onLogout, cb)
 }

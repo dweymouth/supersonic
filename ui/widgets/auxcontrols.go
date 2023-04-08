@@ -8,6 +8,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// The "aux" controls for playback, positioned to the right
+// of the BottomPanel. Currently only volume control.
 type AuxControls struct {
 	widget.BaseWidget
 

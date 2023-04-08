@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+// A component to check for updates from the
+// Github releases/latest URL.
 type UpdateChecker struct {
 	OnUpdatedVersionFound func()
 
@@ -26,6 +28,8 @@ func NewUpdateChecker(appVersionTag, latestReleaseURL string, lastCheckedTag *st
 	}
 }
 
+// Start automatically polling for updates in the background.
+// Quits when the given ctx's Done channel returns a value.
 func (u *UpdateChecker) Start(ctx context.Context, interval time.Duration) {
 	go func() {
 		u.checkForUpdate() // check once at startup

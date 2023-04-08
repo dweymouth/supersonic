@@ -18,6 +18,9 @@ const (
 	ReplayGainTrack = string(player.ReplayGainTrack)
 )
 
+// A high-level Subsonic-aware playback backend.
+// Manages loading tracks into the Player queue,
+// sending callbacks on play time updates and track changes.
 type PlaybackManager struct {
 	ctx           context.Context
 	cancelPollPos context.CancelFunc

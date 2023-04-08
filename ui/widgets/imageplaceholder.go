@@ -11,6 +11,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// A widget that can display an image or else
+// a placeholder with a rectangular border frame
+// and an icon positioned in the center of the frame.
 type ImagePlaceholder struct {
 	widget.BaseWidget
 	container *fyne.Container

@@ -14,6 +14,7 @@ var _ fyne.Tappable = (*ListRowBase)(nil)
 var _ fyne.Widget = (*ListRowBase)(nil)
 var _ fyne.Focusable = (*ListRowBase)(nil)
 
+// Base type used for all list rows in widgets such as Tracklist, etc.
 type ListRowBase struct {
 	widget.BaseWidget
 

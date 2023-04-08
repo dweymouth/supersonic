@@ -6,6 +6,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// Similar to widgets.ToggleButtonGroup, but using text.
+// The "active" label is bolded non-interactive text,
+// while all the others are hyperlinks.
 type ToggleText struct {
 	widget.BaseWidget
 
