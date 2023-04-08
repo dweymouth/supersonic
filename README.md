@@ -72,6 +72,7 @@ Download the latest [release](https://github.com/dweymouth/supersonic/releases) 
 * clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
 * run ``make package_macos`` to generate the .app bundle
+* **If** you are on Mac OS **High Sierra** through **Catalina**, run ``make bundledeps_macos_highsierra`` and you are done! Otherwise, continue reaading.
 * At this point, the Supersonic.app bundle can be copied to Applications and it will run on your machine, but it depends on the brew installation of mpv
 * To copy the dependencies into the app bundle, and make it truly portable, run ``make bundledeps_macos``
 
