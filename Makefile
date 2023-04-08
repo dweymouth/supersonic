@@ -16,6 +16,14 @@ bundledeps_macos:
 	./copy_python_dep_osx.sh
 	codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "./Supersonic.app/Contents/MacOS/supersonic"
 
+bundledeps_macos_highsierra:
+	mkdir ./Supersonic.app/Contents/Frameworks
+	cp -R res/libs/mac_x64/mpv/* ./Supersonic.app/Contents/Frameworks
+	install_name_tool -change "/usr/local/opt/mpv/lib/libmpv.2.dll" "@executable_path/../Frameworks/libmpv.2.dylib" "./Supersonic.app/Contents/MacOS/supersonic"
+
+zip_macos:
+	zip --symlinks -r Supersonic.zip Supersonic.app/
+
 package_windows:
 	fyne package -os windows -name $(app_name) -icon $(icon_path)
 
