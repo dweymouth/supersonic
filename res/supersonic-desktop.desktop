@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Supersonic
+Comment=A lightweight cross-platform desktop client for Subsonic music servers
+Path=/usr/bin
+Exec=supersonic-desktop
+Terminal=false
+Icon=supersonic-desktop
