@@ -6,12 +6,12 @@
 - [#107](https://github.com/dweymouth/supersonic/issues/107) Add playback settings dropdown to choose output audio device
 - [#119](https://github.com/dweymouth/supersonic/issues/119) Add file path column to tracklist view
 - [#117](https://github.com/dweymouth/supersonic/issues/117) Add (optional) system tray menu and close to tray support
+- [#55](https://github.com/dweymouth/supersonic/issues/55) Show disc number and disc count for multi-disc albums
 
 ### Fixes
 - **todo-commithash** Don't show update available prompt if the found version is the same as the running app version
 - [#120](https://github.com/dweymouth/supersonic/issues/120),[#87](https://github.com/dweymouth/supersonic/issues/87) Update Mac build process to support OS versions back to High Sierra (thanks @whorfin!)
 - [#125](https://github.com/dweymouth/supersonic/issues/125) Navigating back twice to an albums page with search result clears search state
-- [#55](https://github.com/dweymouth/supersonic/issues/55) Show disc number and disc count for multi-disc albums
 
 ## [0.1.0-beta] - 2023-04-01
 
