@@ -120,7 +120,8 @@ func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
 	a.searcher.Entry.Text = saved.searchText
-	if saved.searchText != "" {
+	a.searchText = saved.searchText
+	if a.searchText != "" {
 		a.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
 	}
 	a.createContainer(saved.searchText != "")

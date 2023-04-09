@@ -98,7 +98,8 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched
 	g.searcher.Entry.Text = saved.searchText
-	if saved.searchText != "" {
+	g.searchText = saved.searchText
+	if g.searchText != "" {
 		g.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
 	}
 	g.createContainer(saved.searchText != "")
