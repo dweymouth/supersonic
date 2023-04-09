@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"supersonic/res"
@@ -40,6 +41,10 @@ type Tracklist struct {
 	// or to use the number from the track's metadata
 	AutoNumber bool
 
+	// ShowDiscNumber sets whether to display the disc number as part of the '#' column,
+	// (with format %d.%02d). Only applies if AutoNumber==false.
+	ShowDiscNumber bool
+
 	// AuxiliaryMenuItems sets additional menu items appended to the context menu
 	// must be set before the context menu is shown for the first time
 	AuxiliaryMenuItems []*fyne.MenuItem
@@ -77,7 +82,7 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
 	// #, Title, Artist, Album, Time, Year, Favorite, Plays, Bitrate, Size, Path
-	t.colLayout = layouts.NewColumnsLayout([]float32{35, -1, -1, -1, 60, 60, 47, 65, 75, 70, -1})
+	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 47, 65, 75, 70, -1})
 	t.buildHeader()
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
@@ -438,11 +443,21 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	// Update track num if needed
 	// (which can change based on bound *subsonic.Child or tracklist.AutoNumber)
 	if t.trackNum != rowNum {
+		discNum := -1
+		var str string
 		if rowNum < 0 {
 			rowNum = tr.Track
+			if t.tracklist.ShowDiscNumber {
+				discNum = tr.DiscNumber
+			}
 		}
 		t.trackNum = rowNum
-		t.num.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(rowNum)
+		if discNum >= 0 {
+			str = fmt.Sprintf("%d.%02d", discNum, rowNum)
+		} else {
+			str = strconv.Itoa(rowNum)
+		}
+		t.num.Segments[0].(*widget.TextSegment).Text = str
 	}
 
 	// Update play count if needed

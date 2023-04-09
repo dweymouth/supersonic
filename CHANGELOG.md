@@ -11,6 +11,7 @@
 - **todo-commithash** Don't show update available prompt if the found version is the same as the running app version
 - [#120](https://github.com/dweymouth/supersonic/issues/120),[#87](https://github.com/dweymouth/supersonic/issues/87) Update Mac build process to support OS versions back to High Sierra (thanks @whorfin!)
 - [#125](https://github.com/dweymouth/supersonic/issues/125) Navigating back twice to an albums page with search result clears search state
+- [#55](https://github.com/dweymouth/supersonic/issues/55) Show disc number and disc count for multi-disc albums
 
 ## [0.1.0-beta] - 2023-04-01
 
