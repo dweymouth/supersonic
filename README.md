@@ -5,6 +5,8 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 
 ## Screenshots
 
+Screenshots of Supersonic running against the Navidrome [demo server](https://www.navidrome.org/demo/)
+
 <a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png" width="49.5%"/></a>
 <a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/AlbumView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/AlbumView.png" width="49.5%"/></a>
 <a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png" width="49.5%"/></a>
@@ -19,6 +21,7 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 * [x] Browse by albums, artists, genres, playlists
 * [x] Album and playlist views with tracklist and cover image
 * [x] Artist view with biography, image, similar artists, and discography
+* [x] Play "artist radio" (mix of songs from given artist and similar artists, depends on your server's support)
 * [x] Create, play, and update playlists
 * [x] Configure visible tracklist columns
 * [x] Set/unset favorite and browse by favorite albums, artists, and songs
@@ -31,12 +34,12 @@ A lightweight cross-platform desktop client for Subsonic music servers (Navidrom
 * [ ] Cast to uPnP/DLNA devices (likely planned)
 * [ ] Built-in multi-band equalizer (eventully planned)
 * [ ] Offline mode (eventually planned)
-* [ ] iOS/Android support (eventually planned)
 * [ ] Lyrics support (eventually planned)
+* [ ] iOS/Android support (maybe eventually planned)
 
 ## Installation
 
-Download the latest [release](https://github.com/dweymouth/supersonic/releases) for your operating system. If you prefer to build from source, **or there is no release build currently offered for your OS/architecture (Apple silicon Macs)**, then see the build instructions for your platform below.
+If you are running Windows, Mac OS (Intel), or a Debian-based Linux distro, download the latest [release](https://github.com/dweymouth/supersonic/releases) for your operating system. If you prefer to build from source, **or there is no release build currently offered for your OS/architecture (Apple silicon Macs)**, then see the build instructions for your platform below.
 
 **If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv-dev` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
 
