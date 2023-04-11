@@ -2,7 +2,9 @@ package browsing
 
 import (
 	"log"
+	"strings"
 	"supersonic/backend"
+	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/widgets"
@@ -10,6 +12,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/go-subsonic/subsonic"
@@ -23,12 +26,19 @@ type ArtistsGenresPage struct {
 	isGenresPage bool
 	contr        *controller.Controller
 	sm           *backend.ServerManager
-	titleDisp    *widget.RichText
-	container    *fyne.Container
+	model        []widgets.ArtistGenreListItemModel
 	list         *widgets.ArtistGenreList
+
+	titleDisp *widget.RichText
+	container *fyne.Container
+	searcher  *widgets.Searcher
 }
 
 func NewArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *backend.ServerManager) *ArtistsGenresPage {
+	return newArtistsGenresPage(isGenresPage, contr, sm, "")
+}
+
+func newArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *backend.ServerManager, searchText string) *ArtistsGenresPage {
 	title := "Artists"
 	if isGenresPage {
 		title = "Genres"
@@ -51,27 +61,49 @@ func NewArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *b
 			a.contr.NavigateTo(controller.ArtistRoute(id))
 		}
 	}
+	a.searcher = widgets.NewSearcher()
+	a.searcher.OnSearched = a.onSearched
+	a.searcher.Entry.Text = searchText
 	a.buildContainer()
-	go a.load()
+	go a.load(searchText != "")
 	return a
 }
 
 // should be called asynchronously
-func (a *ArtistsGenresPage) load() {
+func (a *ArtistsGenresPage) load(searchOnLoad bool) {
 	if a.isGenresPage {
 		genres, err := a.sm.Server.GetGenres()
 		if err != nil {
 			log.Printf("error loading genres: %v", err.Error())
 		}
-		a.list.Items = a.buildGenresListModel(genres)
+		a.model = a.buildGenresListModel(genres)
 	} else {
 		artists, err := a.sm.Server.GetArtists(nil)
 		if err != nil {
 			log.Printf("error loading artists: %v", err.Error())
 		}
-		a.list.Items = a.buildArtistListModel(artists)
+		a.model = a.buildArtistListModel(artists)
 	}
-	a.Refresh()
+	if searchOnLoad {
+		a.onSearched(a.searcher.Entry.Text)
+	} else {
+		a.list.Items = a.model
+		a.list.Refresh()
+	}
+}
+
+func (a *ArtistsGenresPage) onSearched(query string) {
+	// since the artists and genres lists are returned in full non-paginated, we will do our own
+	// simple search based on the artist/genre name, rather than calling a server API
+	if query == "" {
+		a.list.Items = a.model
+	} else {
+		result := sharedutil.FilterSlice(a.model, func(x widgets.ArtistGenreListItemModel) bool {
+			return strings.Contains(strings.ToLower(x.Name), strings.ToLower(query))
+		})
+		a.list.Items = result
+	}
+	a.list.Refresh()
 }
 
 func (a *ArtistsGenresPage) Route() controller.Route {
@@ -82,7 +114,7 @@ func (a *ArtistsGenresPage) Route() controller.Route {
 }
 
 func (a *ArtistsGenresPage) Reload() {
-	go a.load()
+	go a.load(false)
 }
 
 func (a *ArtistsGenresPage) Save() SavedPage {
@@ -90,6 +122,7 @@ func (a *ArtistsGenresPage) Save() SavedPage {
 		isGenresPage: a.isGenresPage,
 		contr:        a.contr,
 		sm:           a.sm,
+		searchText:   a.searcher.Entry.Text,
 	}
 }
 
@@ -97,10 +130,11 @@ type savedArtistsGenresPage struct {
 	isGenresPage bool
 	contr        *controller.Controller
 	sm           *backend.ServerManager
+	searchText   string
 }
 
 func (s *savedArtistsGenresPage) Restore() Page {
-	return NewArtistsGenresPage(s.isGenresPage, s.contr, s.sm)
+	return newArtistsGenresPage(s.isGenresPage, s.contr, s.sm, s.searchText)
 }
 
 func (a *ArtistsGenresPage) buildArtistListModel(artists *subsonic.ArtistsID3) []widgets.ArtistGenreListItemModel {
@@ -133,9 +167,11 @@ func (a *ArtistsGenresPage) buildGenresListModel(genres []*subsonic.Genre) []wid
 }
 
 func (a *ArtistsGenresPage) buildContainer() {
+	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
 	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 		container.NewBorder(
-			container.New(&layouts.MaxPadLayout{PadLeft: -5}, a.titleDisp),
+			container.New(&layouts.MaxPadLayout{PadLeft: -5},
+				container.NewHBox(a.titleDisp, layout.NewSpacer(), searchVbox)),
 			nil, nil, nil, a.list))
 }
 

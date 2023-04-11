@@ -25,6 +25,16 @@ func IntSliceContains(slice []int, i int) bool {
 	return false
 }
 
+func FilterSlice[T any](ss []T, test func(T) bool) []T {
+	result := make([]T, 0)
+	for _, s := range ss {
+		if test(s) {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
 func FindTrackByID(id string, tracks []*subsonic.Child) *subsonic.Child {
 	for _, tr := range tracks {
 		if id == tr.ID {
