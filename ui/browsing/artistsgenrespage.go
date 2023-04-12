@@ -106,6 +106,12 @@ func (a *ArtistsGenresPage) onSearched(query string) {
 	a.list.Refresh()
 }
 
+var _ Searchable = (*ArtistsGenresPage)(nil)
+
+func (a *ArtistsGenresPage) SearchWidget() fyne.Focusable {
+	return a.searcher.Entry
+}
+
 func (a *ArtistsGenresPage) Route() controller.Route {
 	if a.isGenresPage {
 		return controller.GenresRoute()

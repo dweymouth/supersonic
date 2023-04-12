@@ -86,6 +86,12 @@ func (a *PlaylistsPage) onSearched(query string) {
 	a.list.Refresh()
 }
 
+var _ Searchable = (*PlaylistsPage)(nil)
+
+func (a *PlaylistsPage) SearchWidget() fyne.Focusable {
+	return a.searcher.Entry
+}
+
 func (a *PlaylistsPage) Route() controller.Route {
 	return controller.PlaylistsRoute()
 }
