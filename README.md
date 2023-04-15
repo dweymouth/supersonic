@@ -64,7 +64,7 @@ Supersonic is available in the AUR and can be built either manually with `makepk
 * Make sure you have the base-devel package group installed on your system
   - ``sudo pacman -S --needed base-devel``
 * Clone the AUR repository and navigate into the cloned directory
-  - ``git clone https://aur.archlinux.org/packages/supersonic-desktop.git && cd supersonic-desktop``
+  - ``git clone https://aur.archlinux.org/supersonic-desktop.git && cd supersonic-desktop``
 * Build the package with makepkg
   - ``makepkg -si``
 
