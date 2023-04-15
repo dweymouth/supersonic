@@ -2,6 +2,14 @@ package layouts
 
 import "fyne.io/fyne/v2"
 
+// ColumnsLayout lays out a number of items into columns.
+// There are two types of columns: fixed-width and variable width.
+// A fixed width column is any with a non-negative width and will
+// be laid out with that width. A variable width column is created
+// by using any negative number as its width. Variable width columns
+// are all laid out with the same width, splitting the "leftover" space
+// equally between themselves after accounting for the fixed-width columns.
+// Hidden items are not shown and take up 0 space.
 type ColumnsLayout struct {
 	ColumnWidths []float32
 }

@@ -6,6 +6,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 )
 
+// Lays out up to 3 objects such that the middle object, Objects[1],
+// is centered in the available space and takes up a fixed width.
+// The left, and right (if non-nil), split the leftover space equally.
 type LeftMiddleRightLayout struct {
 	middleWidth float32
 	hbox        fyne.Layout

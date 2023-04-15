@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/dweymouth/go-mpv"
@@ -156,6 +157,7 @@ func (p *Player) Init(maxCacheMB int) error {
 // Note that the Player API does not provide methods to read
 // the play queue. Clients are expected to maintain their own play queue model.
 func (p *Player) AppendFile(url string) error {
+	log.Printf("Adding playback URL: %s", url)
 	if !p.initialized {
 		return ErrUnitialized
 	}
@@ -164,6 +166,7 @@ func (p *Player) AppendFile(url string) error {
 
 // Plays the specified file, clearing the previous play queue, if any.
 func (p *Player) PlayFile(url string) error {
+	log.Printf("Adding playback URL: %s", url)
 	if !p.initialized {
 		return ErrUnitialized
 	}

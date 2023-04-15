@@ -121,6 +121,7 @@ func (a *AlbumPage) load() {
 		return
 	}
 	a.header.Update(album, a.im)
+	a.tracklist.ShowDiscNumber = album.Song[0].DiscNumber != album.Song[len(album.Song)-1].DiscNumber
 	a.tracklist.Tracks = album.Song
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 }
@@ -236,7 +237,11 @@ func (a *AlbumPageHeader) showPopUpCover() {
 }
 
 func formatMiscLabelStr(a *subsonic.AlbumID3) string {
-	return fmt.Sprintf("%d · %d tracks · %s", a.Year, a.SongCount, util.SecondsToTimeString(float64(a.Duration)))
+	var discs string
+	if discCount := a.Song[len(a.Song)-1].DiscNumber; discCount > 1 {
+		discs = fmt.Sprintf("%d discs · ", discCount)
+	}
+	return fmt.Sprintf("%d · %d tracks · %s%s", a.Year, a.SongCount, discs, util.SecondsToTimeString(float64(a.Duration)))
 }
 
 func (s *albumPageState) Restore() Page {
