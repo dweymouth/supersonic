@@ -56,6 +56,22 @@ If you are running Windows, Mac OS (Intel), or a Debian-based Linux distro, down
 * (note that the first build will take some time as it will download and build the UI library)
 * run ``make package_linux`` to generate an installable .tar.xz bundle
 
+## Build instructions (Arch Linux)
+
+Supersonic is available in the AUR and can be built either manually with `makepkg` or with an AUR helper like [yay](https://github.com/Jguer/yay).
+
+### Build manually
+* Make sure you have the base-devel package group installed on your system
+  - ``sudo pacman -S --needed base-devel``
+* Clone the AUR repository and navigate into the cloned directory
+  - ``git clone https://aur.archlinux.org/supersonic-desktop.git && cd supersonic-desktop``
+* Build the package with makepkg
+  - ``makepkg -si``
+
+### Build with an AUR helper
+* Invoke your favorite AUR helper to automatically build the package
+  - ``yay -S supersonic-desktop``
+
 ## Build instructions (Mac OS)
 
 ### Install dependencies
