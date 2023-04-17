@@ -58,7 +58,7 @@ If you are running Windows, Mac OS (Intel), or a Debian-based Linux distro, down
 
 ## Build instructions (Arch Linux)
 
-Supersonic is available in the AUR and can be built either manually with `makepkg` or with an AUR helper like [yay](https://github.com/Jguer/yay).
+Supersonic is available in the AUR and can be built either manually with `makepkg` or with an AUR helper like [yay](https://github.com/Jguer/yay). (Please contact package maintainer @dusnm for any issues with the AUR package.)
 
 ### Build manually
 * Make sure you have the base-devel package group installed on your system
