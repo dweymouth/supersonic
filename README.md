@@ -39,6 +39,8 @@ Screenshots of Supersonic running against the Navidrome [demo server](https://ww
 
 ## Installation
 
+On Linux, Supersonic is [available as a Flatpak](https://flathub.org/apps/details/io.github.dweymouth.supersonic)! (Thank you @anarcat!) If you prefer to directly install the release build, or build from source, read below.
+
 If you are running Windows, Mac OS (Intel), or a Debian-based Linux distro, download the latest [release](https://github.com/dweymouth/supersonic/releases) for your operating system. If you prefer to build from source, **or there is no release build currently offered for your OS/architecture (Apple silicon Macs)**, then see the build instructions for your platform below.
 
 **If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv-dev` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
