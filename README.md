@@ -1,3 +1,6 @@
+<img src="res/appicon-128.png" alt="Supersonic logo" title="Supersonic" align="left" height="60px"/>
+<a href='https://flathub.org/apps/details/io.github.dweymouth.supersonic'><img height="55px" align="right" alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a></div>
+  
 # Supersonic
 A lightweight cross-platform desktop client for Subsonic music servers (Navidrome, Gonic, Airsonic, etc).
 
