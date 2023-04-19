@@ -132,7 +132,13 @@ func (m *Controller) PromptForFirstServer() {
 				// connection is good
 				pop.Hide()
 				m.doModalClosed()
-				server := m.App.Config.AddServer(d.Nickname, d.Host, d.Username, d.LegacyAuth)
+				conn := backend.ServerConnection{
+					Hostname:    d.Host,
+					AltHostname: d.AltHost,
+					Username:    d.Username,
+					LegacyAuth:  d.LegacyAuth,
+				}
+				server := m.App.Config.AddServer(d.Nickname, conn)
 				if err := m.App.ServerManager.SetServerPassword(server, d.Password); err != nil {
 					log.Printf("error setting keyring credentials: %v", err)
 					// TODO: handle?
@@ -254,7 +260,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 		d.DisableSubmit()
 		d.SetInfoText("Testing connection...")
 		go func() {
-			err := m.App.ServerManager.TestConnectionAndAuth(server.Hostname, server.Username, password, server.LegacyAuth, 5*time.Second)
+			err := m.App.ServerManager.TestConnectionAndAuth(server.ServerConnection, password, 5*time.Second)
 			if err == backend.ErrUnreachable {
 				d.SetErrorText("Server unreachable")
 			} else if err != nil {
@@ -278,6 +284,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 					// connection is good
 					editPop.Hide()
 					server.Hostname = editD.Host
+					server.AltHostname = editD.AltHost
 					server.Nickname = editD.Nickname
 					server.Username = editD.Username
 					server.LegacyAuth = editD.LegacyAuth
@@ -343,7 +350,7 @@ func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConf
 }
 
 func (c *Controller) tryConnectToServer(server *backend.ServerConfig, password string) error {
-	if err := c.App.ServerManager.TestConnectionAndAuth(server.Hostname, server.Username, password, server.LegacyAuth, 10*time.Second); err != nil {
+	if err := c.App.ServerManager.TestConnectionAndAuth(server.ServerConnection, password, 10*time.Second); err != nil {
 		return err
 	}
 	if err := c.App.ServerManager.ConnectToServer(server, password); err != nil {
@@ -355,7 +362,13 @@ func (c *Controller) tryConnectToServer(server *backend.ServerConfig, password s
 
 func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
 	dlg.SetInfoText("Testing connection...")
-	err := c.App.ServerManager.TestConnectionAndAuth(dlg.Host, dlg.Username, dlg.Password, dlg.LegacyAuth, 5*time.Second)
+	conn := backend.ServerConnection{
+		Hostname:    dlg.Host,
+		AltHostname: dlg.AltHost,
+		Username:    dlg.Username,
+		LegacyAuth:  dlg.LegacyAuth,
+	}
+	err := c.App.ServerManager.TestConnectionAndAuth(conn, dlg.Password, 5*time.Second)
 	if err == backend.ErrUnreachable {
 		dlg.SetErrorText("Could not reach server (wrong hostname?)")
 		return false

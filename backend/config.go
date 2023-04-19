@@ -7,13 +7,18 @@ import (
 	"github.com/pelletier/go-toml"
 )
 
+type ServerConnection struct {
+	Hostname    string
+	AltHostname string
+	Username    string
+	LegacyAuth  bool
+}
+
 type ServerConfig struct {
-	ID         uuid.UUID
-	Nickname   string
-	Hostname   string
-	Username   string
-	LegacyAuth bool
-	Default    bool
+	ServerConnection
+	ID       uuid.UUID
+	Nickname string
+	Default  bool
 }
 
 type AppConfig struct {
@@ -172,13 +177,11 @@ func (c *Config) SetDefaultServer(serverID uuid.UUID) {
 	}
 }
 
-func (c *Config) AddServer(nickname, hostname, username string, legacyAuth bool) *ServerConfig {
+func (c *Config) AddServer(nickname string, connection ServerConnection) *ServerConfig {
 	s := &ServerConfig{
-		ID:         uuid.New(),
-		Nickname:   nickname,
-		Hostname:   hostname,
-		Username:   username,
-		LegacyAuth: legacyAuth,
+		ID:               uuid.New(),
+		Nickname:         nickname,
+		ServerConnection: connection,
 	}
 	c.Servers = append(c.Servers, s)
 	return s

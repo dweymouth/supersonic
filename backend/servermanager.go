@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -26,7 +27,7 @@ func NewServerManager(appName string) *ServerManager {
 }
 
 func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) error {
-	cli, err := s.testConnectionAndCreateClient(conf.Hostname, conf.Username, password, conf.LegacyAuth)
+	cli, err := s.testConnectionAndCreateClient(conf.ServerConnection, password)
 	if err != nil {
 		return err
 	}
@@ -39,12 +40,12 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 }
 
 func (s *ServerManager) TestConnectionAndAuth(
-	hostname, username, password string, legacyAuth bool, timeout time.Duration,
+	connection ServerConnection, password string, timeout time.Duration,
 ) error {
 	err := ErrUnreachable
 	done := make(chan bool)
 	go func() {
-		_, err = s.testConnectionAndCreateClient(hostname, username, password, legacyAuth)
+		_, err = s.testConnectionAndCreateClient(connection, password)
 		close(done)
 	}()
 	t := time.NewTimer(timeout)
@@ -57,21 +58,55 @@ func (s *ServerManager) TestConnectionAndAuth(
 	}
 }
 
-func (s *ServerManager) testConnectionAndCreateClient(hostname, username, password string, legacyAuth bool) (*subsonic.Client, error) {
-	cli := &subsonic.Client{
-		Client:       &http.Client{},
-		BaseUrl:      hostname,
-		User:         username,
-		PasswordAuth: legacyAuth,
-		ClientName:   "supersonic",
-	}
-	if !cli.Ping() {
-		return nil, ErrUnreachable
+func (s *ServerManager) testConnectionAndCreateClient(connection ServerConnection, password string) (*subsonic.Client, error) {
+	cli, err := s.connect(connection, password)
+	if err != nil {
+		return nil, err
 	}
 	if err := cli.Authenticate(password); err != nil {
 		return nil, err
 	}
 	return cli, nil
+}
+
+func (s *ServerManager) connect(connection ServerConnection, password string) (*subsonic.Client, error) {
+	cli := &subsonic.Client{
+		Client:       &http.Client{},
+		BaseUrl:      connection.Hostname,
+		User:         connection.Username,
+		PasswordAuth: connection.LegacyAuth,
+		ClientName:   "supersonic",
+	}
+	altCli := &subsonic.Client{
+		Client:       &http.Client{},
+		BaseUrl:      connection.AltHostname,
+		User:         connection.Username,
+		PasswordAuth: connection.LegacyAuth,
+		ClientName:   "supersonic",
+	}
+	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
+	pingFunc := func(delay time.Duration, cli *subsonic.Client, val bool) {
+		<-time.After(delay)
+		if cli.Ping() {
+			pingChan <- val
+		}
+	}
+	go pingFunc(0, cli, false)
+	if connection.AltHostname != "" {
+		go pingFunc(333*time.Millisecond, altCli, true) // give primary hostname ping a head start
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		return nil, ErrUnreachable
+	case altPing := <-pingChan:
+		if altPing {
+			return altCli, nil
+		}
+		return cli, nil
+	}
 }
 
 func (s *ServerManager) Logout() {

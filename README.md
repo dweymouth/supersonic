@@ -13,11 +13,11 @@ Screenshots of Supersonic running against the Navidrome [demo server](https://ww
 <a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/FavoriteSongsView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/FavoriteSongsView.png" width="49.5%"/></a>
 
 ## Features
-* [x] Fast, lightweight, native UI
+* [x] Fast, lightweight, native UI with infinite scrolling
 * [x] High-quality gapless audio playback powered by MPV, with optional audio exclusive mode
 * [x] ReplayGain support (depends on files being tagged on server)
-* [x] Infinite scrolling
 * [x] Scrobble plays to server, with configurable criteria
+* [x] Primary and alternate server hostnames, e.g. for internal and external URLs
 * [x] Browse by albums, artists, genres, playlists
 * [x] Album and playlist views with tracklist and cover image
 * [x] Artist view with biography, image, similar artists, and discography

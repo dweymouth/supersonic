@@ -8,6 +8,7 @@
 - [#117](https://github.com/dweymouth/supersonic/issues/117) Add (optional) system tray menu and close to tray support
 - [#55](https://github.com/dweymouth/supersonic/issues/55) Show disc number and disc count for multi-disc albums
 - [#115](https://github.com/dweymouth/supersonic/issues/115) Add search bar to artist, genres, and playlists pages
+- [#104](https://github.com/dweymouth/supersonic/issues/104) Add alternate (e.g. external) hostname to server connection config
 
 ### Fixes
 - **todo-commithash** Don't show update available prompt if the found version is the same as the running app version

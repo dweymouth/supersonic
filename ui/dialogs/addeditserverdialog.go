@@ -16,6 +16,7 @@ type AddEditServerDialog struct {
 
 	Nickname   string
 	Host       string
+	AltHost    string
 	Username   string
 	Password   string
 	LegacyAuth bool
@@ -34,6 +35,7 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 	if prefillServer != nil {
 		a.Nickname = prefillServer.Nickname
 		a.Host = prefillServer.Hostname
+		a.AltHost = prefillServer.AltHostname
 		a.Username = prefillServer.Username
 		a.LegacyAuth = prefillServer.LegacyAuth
 	}
@@ -44,6 +46,8 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 	nickField.SetPlaceHolder("My Server")
 	hostField := widget.NewEntryWithData(binding.BindString(&a.Host))
 	hostField.SetPlaceHolder("http://localhost:4533")
+	altHostField := widget.NewEntryWithData(binding.BindString(&a.AltHost))
+	altHostField.SetPlaceHolder("(optional) https://my-external-domain.net/music")
 	userField := widget.NewEntryWithData(binding.BindString(&a.Username))
 	passField := widget.NewPasswordEntry()
 	a.submitBtn = widget.NewButton("Enter", func() {
@@ -64,6 +68,8 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 			nickField,
 			widget.NewLabel("Hostname"),
 			hostField,
+			widget.NewLabel("Alt. Hostname"),
+			altHostField,
 			widget.NewLabel("Username"),
 			userField,
 			widget.NewLabel("Password"),
@@ -111,7 +117,7 @@ func (a *AddEditServerDialog) doSetPromptText(text string, color fyne.ThemeColor
 
 func (a *AddEditServerDialog) MinSize() fyne.Size {
 	a.ExtendBaseWidget(a)
-	return fyne.NewSize(450, a.container.MinSize().Height)
+	return fyne.NewSize(475, a.container.MinSize().Height)
 }
 
 func (a *AddEditServerDialog) CreateRenderer() fyne.WidgetRenderer {
