@@ -1,5 +1,6 @@
 <img src="res/appicon-128.png" alt="Supersonic logo" title="Supersonic" align="left" height="60px"/>
-<a href='https://flathub.org/apps/details/io.github.dweymouth.supersonic'><img height="55px" align="right" alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a></div>
+<a href='https://flathub.org/apps/details/io.github.dweymouth.supersonic'><img height="50px" align="right" alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a></div>
+<a href='https://ko-fi.com/dweymouth' target='_blank'><img height='40' align='right' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com'/>  
   
 # Supersonic
 A lightweight cross-platform desktop client for Subsonic music servers (Navidrome, Gonic, Airsonic, etc).
