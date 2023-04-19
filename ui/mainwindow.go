@@ -144,7 +144,7 @@ func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
 			fyne.NewMenuItem("Hide", m.Window.Hide),
 		)
 		desk.SetSystemTrayMenu(menu)
-		desk.SetSystemTrayIcon(res.ResAppicon250Png)
+		desk.SetSystemTrayIcon(res.ResAppicon256Png)
 		m.haveSystemTray = true
 	}
 }

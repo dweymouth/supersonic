@@ -52,7 +52,7 @@ func (a *AboutDialog) MinSize() fyne.Size {
 }
 
 func (a *AboutDialog) buildMainTabContainer(version string) *fyne.Container {
-	iconImage := canvas.NewImageFromResource(res.ResAppicon250Png)
+	iconImage := canvas.NewImageFromResource(res.ResAppicon256Png)
 	iconImage.FillMode = canvas.ImageFillContain
 	iconImage.SetMinSize(fyne.NewSize(64, 64))
 	title := widget.NewRichTextWithText("Supersonic")

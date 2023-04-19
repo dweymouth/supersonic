@@ -1,4 +1,4 @@
-icon_path = ./res/appicon-500.png
+icon_path = ./res/appicon-512.png
 icon_path_mac = ./res/appicon-macos.png
 app_name = Supersonic
 
