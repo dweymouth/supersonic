@@ -51,6 +51,14 @@ func TrackIDOrEmptyStr(track *subsonic.Child) string {
 	return track.ID
 }
 
+func TracksToIDs(tracks []*subsonic.Child) []string {
+	ret := make([]string, len(tracks))
+	for i, tr := range tracks {
+		ret[i] = tr.ID
+	}
+	return ret
+}
+
 type TrackReorderOp int
 
 const (

@@ -175,6 +175,23 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		page.pm.LoadTracks(page.tracklist.Tracks, false, true)
 		page.pm.PlayFromBeginning()
 	})
+	var pop *widget.PopUpMenu
+	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
+	menuBtn.OnTapped = func() {
+		if pop == nil {
+			menu := fyne.NewMenu("",
+				fyne.NewMenuItem("Add to queue", func() {
+					a.page.pm.LoadAlbum(a.albumID, true /*append*/, false /*shuffle*/)
+				}),
+				fyne.NewMenuItem("Add to playlist...", func() {
+					a.page.contr.DoAddTracksToPlaylistWorkflow(
+						sharedutil.TracksToIDs(a.page.tracklist.Tracks))
+				}))
+			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
+		}
+		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)
+		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+menuBtn.Size().Height))
+	}
 	a.toggleFavButton = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 
 	// Todo: there's got to be a way to make this less convoluted. Custom layout?
@@ -184,7 +201,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 			container.NewVBox(
 				container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, a.artistLabel, a.genreLabel, a.miscLabel),
 				container.NewVBox(
-					container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn),
+					container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn, menuBtn),
 					container.NewHBox(util.NewHSpace(2), a.toggleFavButton),
 				),
 			),
