@@ -142,12 +142,9 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 }
 
 type searchIter struct {
-	query         string
-	artistOffset  int
-	albumOffset   int
-	songOffset    int
+	searchIterBase
+
 	l             *LibraryManager
-	s             *subsonic.Client
 	filter        func(*subsonic.AlbumID3) bool
 	prefetched    []*subsonic.AlbumID3
 	prefetchedPos int
@@ -157,9 +154,11 @@ type searchIter struct {
 
 func (l *LibraryManager) newSearchIter(query string, filter func(*subsonic.AlbumID3) bool) *searchIter {
 	return &searchIter{
-		query:      query,
+		searchIterBase: searchIterBase{
+			query: query,
+			s:     l.s.Server,
+		},
 		l:          l,
-		s:          l.s.Server,
 		filter:     filter,
 		albumIDset: make(map[string]bool),
 	}
@@ -172,17 +171,8 @@ func (s *searchIter) Next() *subsonic.AlbumID3 {
 
 	// prefetch more search results from server
 	if s.prefetched == nil {
-		searchOpts := map[string]string{
-			"artistOffset": strconv.Itoa(s.artistOffset),
-			"albumOffset":  strconv.Itoa(s.albumOffset),
-			"songOffset":   strconv.Itoa(s.songOffset),
-		}
-		results, err := s.s.Search3(s.query, searchOpts)
-		if err != nil {
-			log.Println(err)
-			results = nil
-		}
-		if results == nil || len(results.Album)+len(results.Artist)+len(results.Song) == 0 {
+		results := s.searchIterBase.fetchResults()
+		if results == nil {
 			s.done = true
 			s.albumIDset = nil
 			return nil
