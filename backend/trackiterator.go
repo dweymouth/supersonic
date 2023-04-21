@@ -76,32 +76,29 @@ func (s *searchTracksIterator) Next() *subsonic.Child {
 	}
 
 	// prefetch more search results from server
-	if s.prefetched == nil {
+	if len(s.prefetched) == 0 {
 		results := s.searchIterBase.fetchResults()
-		if results == nil {
-			s.done = true
-			s.trackIDset = nil
-			return nil
-		}
 
-		// add results from songs search
-		s.addNewTracks(results.Song)
-		s.songOffset += len(results.Song)
+		if results != nil {
+			// add results from songs search
+			s.addNewTracks(results.Song)
+			s.songOffset += len(results.Song)
 
-		// add results from artists search
-		for _, artist := range results.Artist {
-			artist, err := s.s.GetArtist(artist.ID)
-			if err != nil {
-				log.Printf("error fetching artist: %s", err.Error())
-			} else {
-				s.addNewTracksFromAlbums(artist.Album)
+			// add results from artists search
+			for _, artist := range results.Artist {
+				artist, err := s.s.GetArtist(artist.ID)
+				if err != nil {
+					log.Printf("error fetching artist: %s", err.Error())
+				} else {
+					s.addNewTracksFromAlbums(artist.Album)
+				}
 			}
-		}
-		s.artistOffset += len(results.Artist)
+			s.artistOffset += len(results.Artist)
 
-		// add results from albums search
-		s.addNewTracksFromAlbums(results.Album)
-		s.albumOffset += len(results.Album)
+			// add results from albums search
+			s.addNewTracksFromAlbums(results.Album)
+			s.albumOffset += len(results.Album)
+		}
 	}
 
 	// return from prefetched results
@@ -109,13 +106,16 @@ func (s *searchTracksIterator) Next() *subsonic.Child {
 		tr := s.prefetched[s.prefetchedPos]
 		s.prefetchedPos++
 		if s.prefetchedPos == len(s.prefetched) {
-			s.prefetched = nil
+			s.prefetched = s.prefetched[:0]
 			s.prefetchedPos = 0
 		}
-
 		return tr
 	}
 
+	// no more results
+	s.done = true
+	s.prefetched = nil
+	s.trackIDset = nil
 	return nil
 }
 
