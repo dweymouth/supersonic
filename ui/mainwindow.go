@@ -26,9 +26,10 @@ var (
 	ShortcutNavFour  = desktop.CustomShortcut{KeyName: fyne.Key4, Modifier: os.ControlModifier}
 	ShortcutNavFive  = desktop.CustomShortcut{KeyName: fyne.Key5, Modifier: os.ControlModifier}
 	ShortcutNavSix   = desktop.CustomShortcut{KeyName: fyne.Key6, Modifier: os.ControlModifier}
+	ShortcutNavSeven = desktop.CustomShortcut{KeyName: fyne.Key7, Modifier: os.ControlModifier}
 
 	NavShortcuts = []desktop.CustomShortcut{ShortcutNavOne, ShortcutNavTwo, ShortcutNavThree,
-		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix}
+		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix, ShortcutNavSeven}
 )
 
 type MainWindow struct {
@@ -186,6 +187,9 @@ func (m *MainWindow) addNavigationButtons() {
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResPlaylistInvertPng, func() {
 		m.Router.NavigateTo(controller.PlaylistsRoute())
+	})
+	m.BrowsingPane.AddNavigationButton(res.ResMusicnotesInvertPng, func() {
+		m.Router.NavigateTo(controller.TracksRoute())
 	})
 }
 

@@ -55,6 +55,10 @@ type PlaylistPageConfig struct {
 	TracklistColumns []string
 }
 
+type TracksPageConfig struct {
+	TracklistColumns []string
+}
+
 type LocalPlaybackConfig struct {
 	AudioDeviceName     string
 	AudioExclusive      bool
@@ -83,6 +87,7 @@ type Config struct {
 	FavoritesPage  FavoritesPageConfig
 	NowPlayingPage NowPlayingPageConfig
 	PlaylistPage   PlaylistPageConfig
+	TracksPage     TracksPageConfig
 	LocalPlayback  LocalPlaybackConfig
 	Scrobbling     ScrobbleConfig
 	ReplayGain     ReplayGainConfig
@@ -115,6 +120,9 @@ func DefaultConfig(appVersionTag string) *Config {
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 		},
 		PlaylistPage: PlaylistPageConfig{
+			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
+		},
+		TracksPage: TracksPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 		},
 		LocalPlayback: LocalPlaybackConfig{
