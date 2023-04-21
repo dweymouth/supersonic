@@ -78,7 +78,7 @@ func (s *searchTracksIterator) Next() *subsonic.Child {
 	// prefetch more search results from server
 	if s.prefetched == nil {
 		results := s.searchIterBase.fetchResults()
-		if results == nil || len(results.Album)+len(results.Artist)+len(results.Song) == 0 {
+		if results == nil {
 			s.done = true
 			s.trackIDset = nil
 			return nil

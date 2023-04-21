@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"log"
 	"supersonic/backend"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
@@ -44,7 +43,6 @@ func (t *TracklistLoader) onTrackShown(tracknum int) {
 func (t *TracklistLoader) loadMoreTracks(num int) {
 	// repeat fetch task as long as user has scrolled near bottom
 	for !t.done && t.highestShown >= t.len-25 {
-		log.Println("fetching more tracks")
 		if t.trackBuffer == nil {
 			t.trackBuffer = make([]*subsonic.Child, 0, num)
 		}
@@ -53,15 +51,16 @@ func (t *TracklistLoader) loadMoreTracks(num int) {
 			tr := t.iter.Next()
 			if tr == nil {
 				t.done = true
-				t.trackBuffer = nil
 				break
 			}
 			t.trackBuffer = append(t.trackBuffer, tr)
 		}
 		t.tracklist.AppendTracks(t.trackBuffer)
 		t.tracklist.Refresh()
-		log.Printf("appended %d tracks", len(t.trackBuffer))
 		t.len += len(t.trackBuffer)
+	}
+	if t.done {
+		t.trackBuffer = nil
 	}
 	t.fetching = false
 }
