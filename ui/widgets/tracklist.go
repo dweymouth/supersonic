@@ -67,6 +67,7 @@ type Tracklist struct {
 	OnShowAlbumPage  func(albumID string)
 
 	OnColumnVisibilityMenuShown func(*widget.PopUp)
+	OnTrackShown                func(tracknum int)
 
 	visibleColumns []bool
 
@@ -113,6 +114,9 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 				i = itemID + 1
 			}
 			tr.Update(t.TrackAt(itemID), itemID == t.nowPlayingIdx, i)
+			if t.OnTrackShown != nil {
+				t.OnTrackShown(itemID)
+			}
 		})
 	t.container = container.NewBorder(t.hdr, nil, nil, nil, t.list)
 	return t
@@ -201,6 +205,20 @@ func (t *Tracklist) IncrementPlayCount(trackID string) {
 		tr.PlayCount += 1
 		t.list.Refresh()
 	}
+}
+
+// Remove all tracks from the tracklist. Thread-safe.
+func (t *Tracklist) Clear() {
+	t.tracksMutex.Lock()
+	defer t.tracksMutex.Unlock()
+	t.Tracks = nil
+}
+
+// Append more tracks to the tracklist. Thread-safe.
+func (t *Tracklist) AppendTracks(trs []*subsonic.Child) {
+	t.tracksMutex.Lock()
+	defer t.tracksMutex.Unlock()
+	t.Tracks = append(t.Tracks, trs...)
 }
 
 func (t *Tracklist) SelectAll() {
