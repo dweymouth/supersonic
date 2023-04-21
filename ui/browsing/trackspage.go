@@ -5,6 +5,7 @@ import (
 	"supersonic/res"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
+	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -18,17 +19,21 @@ type TracksPage struct {
 
 	tracksPageState
 
-	title      *widget.RichText
-	tracklist  *widgets.Tracklist
-	loader     widgets.TracklistLoader
-	playRandom *widget.Button
-	container  *fyne.Container
+	title           *widget.RichText
+	searcher        *widgets.Searcher
+	tracklist       *widgets.Tracklist
+	loader          widgets.TracklistLoader
+	searchTracklist *widgets.Tracklist
+	searchLoader    widgets.TracklistLoader
+	playRandom      *widget.Button
+	container       *fyne.Container
 }
 
 type tracksPageState struct {
-	contr *controller.Controller
-	conf  *backend.TracksPageConfig
-	lm    *backend.LibraryManager
+	searchText string
+	contr      *controller.Controller
+	conf       *backend.TracksPageConfig
+	lm         *backend.LibraryManager
 }
 
 func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, lm *backend.LibraryManager) *TracksPage {
@@ -41,6 +46,8 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	t.title = widget.NewRichTextWithText("All Tracks")
 	t.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
 	t.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, t.playRandomSongs)
+	t.searcher = widgets.NewSearcher()
+	t.searcher.OnSearched = t.OnSearched
 	t.createContainer()
 	t.Reload()
 	return t
@@ -48,7 +55,8 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 
 func (t *TracksPage) createContainer() {
 	playRandomVbox := container.NewVBox(layout.NewSpacer(), t.playRandom, layout.NewSpacer())
-	topRow := container.NewHBox(t.title, playRandomVbox, layout.NewSpacer()) //searchVbox, util.NewHSpace(15))
+	searchVbox := container.NewVBox(layout.NewSpacer(), t.searcher.Entry, layout.NewSpacer())
+	topRow := container.NewHBox(t.title, playRandomVbox, layout.NewSpacer(), searchVbox, util.NewHSpace(5))
 	t.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 		container.NewBorder(topRow, nil, nil, nil, t.tracklist))
 }
@@ -64,6 +72,34 @@ func (t *TracksPage) Reload() {
 	t.loader = widgets.NewTracklistLoader(t.tracklist, iter)
 }
 
+func (t *TracksPage) OnSearched(query string) {
+	t.searchText = query
+	if query == "" {
+		t.container.Objects[0].(*fyne.Container).Objects[0] = t.tracklist
+		if t.searchTracklist != nil {
+			t.searchTracklist.Clear()
+		}
+		t.Refresh()
+		return
+	}
+	t.doSearch(query)
+}
+
+func (t *TracksPage) doSearch(query string) {
+	if t.searchTracklist == nil {
+		t.searchTracklist = widgets.NewTracklist(nil)
+		t.searchTracklist.AutoNumber = true
+		t.searchTracklist.SetVisibleColumns(t.conf.TracklistColumns)
+		t.contr.ConnectTracklistActions(t.searchTracklist)
+	} else {
+		t.searchTracklist.Clear()
+	}
+	iter := t.lm.SearchTracksIterator(query)
+	t.searchLoader = widgets.NewTracklistLoader(t.searchTracklist, iter)
+	t.container.Objects[0].(*fyne.Container).Objects[0] = t.searchTracklist
+	t.Refresh()
+}
+
 func (t *TracksPage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.container)
 }
@@ -74,7 +110,13 @@ func (t *TracksPage) Save() SavedPage {
 }
 
 func (s *tracksPageState) Restore() Page {
-	return NewTracksPage(s.contr, s.conf, s.lm)
+	t := NewTracksPage(s.contr, s.conf, s.lm)
+	t.searchText = s.searchText
+	if t.searchText != "" {
+		t.searcher.Entry.Text = t.searchText
+		t.doSearch(t.searchText)
+	}
+	return t
 }
 
 func (t *TracksPage) playRandomSongs() {

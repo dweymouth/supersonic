@@ -14,10 +14,13 @@ func (l *LibraryManager) AllTracksIterator() TrackIterator {
 }
 
 func (l *LibraryManager) SearchTracksIterator(query string) TrackIterator {
-	return &searchTracksIterator{searchIterBase: searchIterBase{
-		s:     l.s.Server,
-		query: query,
-	}}
+	return &searchTracksIterator{
+		searchIterBase: searchIterBase{
+			s:     l.s.Server,
+			query: query,
+		},
+		trackIDset: make(map[string]bool),
+	}
 }
 
 type allTracksIterator struct {
