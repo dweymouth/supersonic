@@ -3,6 +3,7 @@ package browsing
 import (
 	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	"supersonic/ui/widgets"
@@ -11,12 +12,15 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type TracksPage struct {
 	widget.BaseWidget
 
 	tracksPageState
+
+	nowPlayingID string
 
 	title           *widget.RichText
 	searcher        *widgets.Searcher
@@ -71,6 +75,19 @@ func (t *TracksPage) Reload() {
 	t.loader = widgets.NewTracklistLoader(t.tracklist, iter)
 }
 
+func (t *TracksPage) OnSongChange(track *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
+	t.nowPlayingID = sharedutil.TrackIDOrEmptyStr(track)
+	t.tracklist.SetNowPlaying(t.nowPlayingID)
+	if t.searchTracklist != nil {
+		t.searchTracklist.SetNowPlaying(t.nowPlayingID)
+	}
+	playedID := sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny)
+	t.tracklist.IncrementPlayCount(playedID)
+	if t.searchTracklist != nil {
+		t.searchTracklist.IncrementPlayCount(playedID)
+	}
+}
+
 func (t *TracksPage) OnSearched(query string) {
 	t.searchText = query
 	if query == "" {
@@ -89,6 +106,7 @@ func (t *TracksPage) doSearch(query string) {
 		t.searchTracklist = widgets.NewTracklist(nil)
 		t.searchTracklist.AutoNumber = true
 		t.searchTracklist.SetVisibleColumns(t.conf.TracklistColumns)
+		t.searchTracklist.SetNowPlaying(t.nowPlayingID)
 		t.contr.ConnectTracklistActions(t.searchTracklist)
 	} else {
 		t.searchTracklist.Clear()

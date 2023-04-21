@@ -71,18 +71,18 @@ type Tracklist struct {
 
 	visibleColumns []bool
 
-	tracksMutex   sync.RWMutex
-	selectionMgr  util.ListSelectionManager
-	nowPlayingIdx int
-	colLayout     *layouts.ColumnsLayout
-	hdr           *ListHeader
-	list          *widget.List
-	ctxMenu       *fyne.Menu
-	container     *fyne.Container
+	tracksMutex  sync.RWMutex
+	selectionMgr util.ListSelectionManager
+	nowPlayingID string
+	colLayout    *layouts.ColumnsLayout
+	hdr          *ListHeader
+	list         *widget.List
+	ctxMenu      *fyne.Menu
+	container    *fyne.Container
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
-	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 11)}
+	t := &Tracklist{Tracks: tracks, visibleColumns: make([]bool, 11)}
 
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(t.lenTracks)
@@ -113,7 +113,7 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 			if t.AutoNumber {
 				i = itemID + 1
 			}
-			tr.Update(t.TrackAt(itemID), itemID == t.nowPlayingIdx, i)
+			tr.Update(t.TrackAt(itemID), i)
 			if t.OnTrackShown != nil {
 				t.OnTrackShown(itemID)
 			}
@@ -185,15 +185,7 @@ func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
 }
 
 func (t *Tracklist) SetNowPlaying(trackID string) {
-	t.nowPlayingIdx = -1
-	t.tracksMutex.RLock()
-	for i, tr := range t.Tracks {
-		if tr.ID == trackID {
-			t.nowPlayingIdx = i
-			break
-		}
-	}
-	t.tracksMutex.RUnlock()
+	t.nowPlayingID = trackID
 	t.list.Refresh()
 }
 
@@ -466,7 +458,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	return t
 }
 
-func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
+func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
 	// Update info that can change if this row is bound to
 	// a new track (*subsonic.Child)
 	if tr.ID != t.trackID {
@@ -516,7 +508,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	}
 
 	// Render whether track is playing or not
-	if isPlaying != t.isPlaying {
+	if isPlaying := t.tracklist.nowPlayingID == tr.ID; isPlaying != t.isPlaying {
 		t.isPlaying = isPlaying
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.dur.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
