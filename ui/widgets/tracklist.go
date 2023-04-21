@@ -9,6 +9,7 @@ import (
 	"supersonic/ui/layouts"
 	"supersonic/ui/os"
 	"supersonic/ui/util"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -35,6 +36,8 @@ type Tracklist struct {
 	widget.BaseWidget
 
 	// Tracks is the set of tracks displayed by the widget.
+	// Direct access to this is not thread-safe but OK for
+	// views that only load tracks into the widget once at page load.
 	Tracks []*subsonic.Child
 
 	// AutoNumber sets whether to auto-number the tracks 1..N in display order,
@@ -64,23 +67,25 @@ type Tracklist struct {
 	OnShowAlbumPage  func(albumID string)
 
 	OnColumnVisibilityMenuShown func(*widget.PopUp)
+	OnTrackShown                func(tracknum int)
 
 	visibleColumns []bool
 
-	selectionMgr  util.ListSelectionManager
-	nowPlayingIdx int
-	colLayout     *layouts.ColumnsLayout
-	hdr           *ListHeader
-	list          *widget.List
-	ctxMenu       *fyne.Menu
-	container     *fyne.Container
+	tracksMutex  sync.RWMutex
+	selectionMgr util.ListSelectionManager
+	nowPlayingID string
+	colLayout    *layouts.ColumnsLayout
+	hdr          *ListHeader
+	list         *widget.List
+	ctxMenu      *fyne.Menu
+	container    *fyne.Container
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
-	t := &Tracklist{Tracks: tracks, nowPlayingIdx: -1, visibleColumns: make([]bool, 11)}
+	t := &Tracklist{Tracks: tracks, visibleColumns: make([]bool, 11)}
 
 	t.ExtendBaseWidget(t)
-	t.selectionMgr = util.NewListSelectionManager(func() int { return len(t.Tracks) })
+	t.selectionMgr = util.NewListSelectionManager(t.lenTracks)
 	// #, Title, Artist, Album, Time, Year, Favorite, Plays, Bitrate, Size, Path
 	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 47, 65, 75, 70, -1})
 	t.buildHeader()
@@ -92,7 +97,7 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 	}
 	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
 	t.list = widget.NewList(
-		func() int { return len(t.Tracks) },
+		t.lenTracks,
 		func() fyne.CanvasObject {
 			tr := NewTrackRow(t, playingIcon)
 			tr.OnTapped = func() { t.onSelectTrack(tr.trackIdx) }
@@ -108,7 +113,10 @@ func NewTracklist(tracks []*subsonic.Child) *Tracklist {
 			if t.AutoNumber {
 				i = itemID + 1
 			}
-			tr.Update(t.Tracks[itemID], itemID == t.nowPlayingIdx, i)
+			tr.Update(t.TrackAt(itemID), i)
+			if t.OnTrackShown != nil {
+				t.OnTrackShown(itemID)
+			}
 		})
 	t.container = container.NewBorder(t.hdr, nil, nil, nil, t.list)
 	return t
@@ -128,6 +136,16 @@ func (t *Tracklist) buildHeader() {
 		{Text: "Size", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "File Path", AlignTrailing: false, CanToggleVisible: true}},
 		t.colLayout)
+}
+
+// Gets the track at the given index. Thread-safe.
+func (t *Tracklist) TrackAt(idx int) *subsonic.Child {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	if idx >= len(t.Tracks) {
+		return nil
+	}
+	return t.Tracks[idx]
 }
 
 func (t *Tracklist) SetVisibleColumns(cols []string) {
@@ -167,21 +185,32 @@ func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
 }
 
 func (t *Tracklist) SetNowPlaying(trackID string) {
-	t.nowPlayingIdx = -1
-	for i, tr := range t.Tracks {
-		if tr.ID == trackID {
-			t.nowPlayingIdx = i
-			break
-		}
-	}
+	t.nowPlayingID = trackID
 	t.list.Refresh()
 }
 
 func (t *Tracklist) IncrementPlayCount(trackID string) {
-	if tr := sharedutil.FindTrackByID(trackID, t.Tracks); tr != nil {
+	t.tracksMutex.RLock()
+	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	t.tracksMutex.RUnlock()
+	if tr != nil {
 		tr.PlayCount += 1
 		t.list.Refresh()
 	}
+}
+
+// Remove all tracks from the tracklist. Thread-safe.
+func (t *Tracklist) Clear() {
+	t.tracksMutex.Lock()
+	defer t.tracksMutex.Unlock()
+	t.Tracks = nil
+}
+
+// Append more tracks to the tracklist. Thread-safe.
+func (t *Tracklist) AppendTracks(trs []*subsonic.Child) {
+	t.tracksMutex.Lock()
+	defer t.tracksMutex.Unlock()
+	t.Tracks = append(t.Tracks, trs...)
 }
 
 func (t *Tracklist) SelectAll() {
@@ -255,7 +284,9 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	// update our own track model
+	t.tracksMutex.RLock()
 	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	t.tracksMutex.RUnlock()
 	if fav {
 		tr.Starred = time.Now()
 	} else {
@@ -282,6 +313,8 @@ func (t *Tracklist) onAlbumTapped(albumID string) {
 func (t *Tracklist) selectedTracks() []*subsonic.Child {
 	sel := t.selectionMgr.GetSelection()
 	tracks := make([]*subsonic.Child, 0, len(sel))
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
 	for _, idx := range sel {
 		tracks = append(tracks, t.Tracks[idx])
 	}
@@ -291,6 +324,8 @@ func (t *Tracklist) selectedTracks() []*subsonic.Child {
 func (t *Tracklist) selectedTrackIDs() []string {
 	sel := t.selectionMgr.GetSelection()
 	tracks := make([]string, 0, len(sel))
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
 	for _, idx := range sel {
 		tracks = append(tracks, t.Tracks[idx].ID)
 	}
@@ -299,6 +334,12 @@ func (t *Tracklist) selectedTrackIDs() []string {
 
 func (t *Tracklist) SelectedTrackIndexes() []int {
 	return t.selectionMgr.GetSelection()
+}
+
+func (t *Tracklist) lenTracks() int {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	return len(t.Tracks)
 }
 
 func ColNumber(colName string) int {
@@ -417,7 +458,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	return t
 }
 
-func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
+func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
 	// Update info that can change if this row is bound to
 	// a new track (*subsonic.Child)
 	if tr.ID != t.trackID {
@@ -467,7 +508,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, isPlaying bool, rowNum int) {
 	}
 
 	// Render whether track is playing or not
-	if isPlaying != t.isPlaying {
+	if isPlaying := t.tracklist.nowPlayingID == tr.ID; isPlaying != t.isPlaying {
 		t.isPlaying = isPlaying
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 		t.dur.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying

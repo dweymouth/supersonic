@@ -14,6 +14,7 @@ const (
 	NowPlaying
 	Playlist
 	Playlists
+	Tracks
 )
 
 type Route struct {
@@ -50,6 +51,10 @@ func PlaylistRoute(id string) Route {
 }
 func PlaylistsRoute() Route {
 	return Route{Page: Playlists}
+}
+
+func TracksRoute() Route {
+	return Route{Page: Tracks}
 }
 
 func ArtistsRoute() Route {
