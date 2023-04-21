@@ -10,6 +10,7 @@
 - [#115](https://github.com/dweymouth/supersonic/issues/115) Add search bar to artist, genres, and playlists pages
 - [#104](https://github.com/dweymouth/supersonic/issues/104) Add alternate (e.g. external) hostname to server connection config
 - [#136](https://github.com/dweymouth/supersonic/issues/136) Add "..." button to album page with menu to add album to queue or playlist
+- [#70](https://github.com/dweymouth/supersonic/issues/70) Add searchable "All Tracks" page, with button to play random tracks
 
 ### Fixes
 - **todo-commithash** Don't show update available prompt if the found version is the same as the running app version
