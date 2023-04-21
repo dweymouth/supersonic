@@ -201,6 +201,7 @@ func (t *Tracklist) IncrementPlayCount(trackID string) {
 
 // Remove all tracks from the tracklist. Thread-safe.
 func (t *Tracklist) Clear() {
+	t.selectionMgr.UnselectAll()
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
 	t.Tracks = nil

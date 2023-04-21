@@ -88,6 +88,12 @@ func (t *TracksPage) OnSongChange(track *subsonic.Child, lastScrobbledIfAny *sub
 	}
 }
 
+var _ Searchable = (*TracksPage)(nil)
+
+func (t *TracksPage) SearchWidget() fyne.Focusable {
+	return t.searcher.Entry
+}
+
 func (t *TracksPage) OnSearched(query string) {
 	t.searchText = query
 	if query == "" {
