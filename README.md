@@ -45,7 +45,9 @@ Screenshots of Supersonic running against the Navidrome [demo server](https://ww
 
 On Linux, Supersonic is [available as a Flatpak](https://flathub.org/apps/details/io.github.dweymouth.supersonic)! (Thank you @anarcat!) If you prefer to directly install the release build, or build from source, read below.
 
-If you are running Windows, Mac OS (Intel), or a Debian-based Linux distro, download the latest [release](https://github.com/dweymouth/supersonic/releases) for your operating system. If you prefer to build from source, **or there is no release build currently offered for your OS/architecture (Apple silicon Macs)**, then see the build instructions for your platform below.
+If you are running Windows, Mac OS, or a Debian-based Linux distro, download the latest [release](https://github.com/dweymouth/supersonic/releases) for your operating system. If you prefer to build from source, or are not running one of these OSes, then see the build instructions for your platform below.
+
+**Apple Silicon (M1/M2) Macs:** There is currently only an x64 release build offered, but it should run with no issues on M1/M2 macs using Rosetta. You will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `sudo xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
 
 **If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv1` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
 
