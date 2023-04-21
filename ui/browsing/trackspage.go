@@ -5,7 +5,6 @@ import (
 	"supersonic/res"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
-	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -56,7 +55,7 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 func (t *TracksPage) createContainer() {
 	playRandomVbox := container.NewVBox(layout.NewSpacer(), t.playRandom, layout.NewSpacer())
 	searchVbox := container.NewVBox(layout.NewSpacer(), t.searcher.Entry, layout.NewSpacer())
-	topRow := container.NewHBox(t.title, playRandomVbox, layout.NewSpacer(), searchVbox, util.NewHSpace(5))
+	topRow := container.NewHBox(t.title, playRandomVbox, layout.NewSpacer(), searchVbox)
 	t.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 		container.NewBorder(topRow, nil, nil, nil, t.tracklist))
 }
