@@ -66,11 +66,17 @@ func (a *AboutDialog) buildMainTabContainer(version string) *fyne.Container {
 	ts.Style.TextStyle.Bold = true
 	ts.Style.Alignment = fyne.TextAlignCenter
 	ghUrl, _ := url.Parse("https://github.com/dweymouth/supersonic")
-	github := container.NewCenter(widget.NewHyperlink("Github page", ghUrl))
+	kofiUrl, _ := url.Parse("https://ko-fi.com/dweymouth")
+	githubKofi := container.NewCenter(
+		container.New(&layouts.HboxCustomPadding{DisableThemePad: true, ExtraPad: -10},
+			widget.NewHyperlink("Github page", ghUrl),
+			widget.NewLabel("·"),
+			widget.NewHyperlink("Support the project", kofiUrl)),
+	)
 
 	return container.New(&layouts.CenterPadLayout{PadTopBottom: 10},
 		container.NewVBox(iconImage,
-			container.New(&layouts.VboxCustomPadding{ExtraPad: -10}, title, versionLbl, copyright, license, github)))
+			container.New(&layouts.VboxCustomPadding{ExtraPad: -10}, title, versionLbl, copyright, license, githubKofi)))
 }
 
 func (a *AboutDialog) licenseLabel(res *fyne.StaticResource) *widget.Label {
