@@ -20,11 +20,11 @@
       Features:
     </p>
     <ul>
-      <li>Fast, lightweight, native UI</li>
+      <li>Fast, lightweight, native UI, with infinite scrolling</li>
       <li>High-quality gapless audio playback powered by MPV, with optional  audio exclusive mode</li>
       <li>ReplayGain support (depends on files being tagged on server)</li>
-      <li>Infinite scrolling</li>
       <li>Scrobble plays to server, with configurable criteria</li>
+      <li>Primary and alternate server hostnames, e.g. for internal and external URLs</li>
       <li>Browse by albums, artists, genres, playlists</li>
       <li>Album and playlist views with tracklist and cover image</li>
       <li>Artist view with biography, image, similar artists, and discography</li>
@@ -57,59 +57,36 @@
   </screenshots>
 
  <releases>
-  <release date="2023-04-01" version="0.1.0-beta">
+  <release date="2023-04-22" version="0.1.0">
    <description>
      <p>
-       Beta release of Supersonic!
+       Version 0.1.0 release of Supersonic!
      </p>
-     <p>
-       Lots of fixes and new features in this release, including
-       ReplayGain support and a brand new settings dialog, and much
-       improved memory utilization!
-     </p>
-     <p>
-       Supersonic is free and always will be, but if you are enjoying
-       it and want to support the project, donations are always
-       appreciated! And if you're a developer, contributions are
-       welcome!
-     </p>
-     <p>
-       Edit: there is a minor bug in this release - if you've already
-       been running Supersonic off of the fresh code in the main
-       branch, when launching this version for the first time the
-       update checker may inform you of a "new" version, which is just
-       this release. Just select "Skip this version" and it will go
-       away until the next release! :)
-     </p>
+
      <p>
        Added
      </p>
 
      <ul>
-       <li>#39 Add caching of artist images</li>
-       <li>#94 Add Cmd+[ Cmd+] back/forward shortcuts for Mac (alongside existing Cmd+Left/Right)</li>
-       <li>#96 Make scrobbling thresholds configurable</li>
-       <li>#21 Add ability to reorder tracks within a playlist (via context menu)</li>
-       <li>#99 Add Year (asc + desc) sort orders to album page</li>
-       <li>#102 Add ReplayGain support (requires files to be tagged on server and transcoding to preserve tags)</li>
-       <li>#106 Automatically check for updates</li>
-       <li>#12 Add settings dialog</li>
-       <li>d67dfa0 Add file size column to tracklist view</li>
-       <li>0a11df8 Limit the size of MPV's in-memory audio cache</li>
+       <li>Add playback settings dropdown to choose output audio device</li>
+       <li>Add file path column to tracklist view</li>
+       <li>Add (optional) system tray menu and close to tray support</li>
+       <li>Show disc number and disc count for multi-disc albums</li>
+       <li>Add search bar to artist, genres, and playlists pages</li>
+       <li>Add alternate (e.g. external) hostname to server connection config</li>
+       <li>Add "..." button to album page with menu to add album to queue or playlist</li>
+       <li>Add searchable "All Tracks" page, with button to play random tracks</li>
+       <li>Add experimental support for setting custom application font</li>
      </ul>
      <p>
        Fixed
      </p>
 
      <ul>
-       <li>#90 Wrong covers get loaded for albums if server has different IDs for album and cover art</li>
-       <li>#88 Incorrect icon size for Mac OS</li>
-       <li>#87 Fix dependency bundling for Mac OS</li>
-       <li>#45 Tracklist multi-select on Linux now works properly (Ctrl+click, Shift+click)</li>
-       <li>#109 Memory leak in image rendering</li>
-       <li>f34d432 Don't show tracklist row hover indicator when favorite toggle is hovered</li>
-       <li>98fb148 Migrate to Fyne 2.3.3 (modest memory improvements, fixes seek slider "wobble", fixes possible issues on M2 Macs)</li>
-     </ul>
+       <li>Don't show update available prompt if the found version is the same as the running app version</li>
+       <li>Update Mac build process to support OS versions back to High Sierra (thanks @whorfin!)</li>
+       <li>Navigating back twice to an albums page with search result clears search state</li>
+    </ul>
    </description>
   </release>
  </releases>
