@@ -64,6 +64,9 @@ func NewAlbumPage(
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
+	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
+		a.cfg.TracklistColumns = cols
+	}
 	a.contr.ConnectTracklistActions(a.tracklist)
 
 	a.container = container.NewBorder(
@@ -79,10 +82,6 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *AlbumPage) Save() SavedPage {
-	// TODO: find a better place to update the tracklist columns preference
-	// If user changes columns but doesn't navigate to another page,
-	// we won't be persisting the change
-	a.cfg.TracklistColumns = a.tracklist.VisibleColumns()
 	s := a.albumPageState
 	return &s
 }

@@ -51,6 +51,9 @@ func NewPlaylistPage(
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
+	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
+		conf.TracklistColumns = cols
+	}
 	a.tracklist.AutoNumber = true
 	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{
 		fyne.NewMenuItem("Move to top", a.onMoveSelectedToTop),
@@ -74,7 +77,6 @@ func (a *PlaylistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *PlaylistPage) Save() SavedPage {
-	a.conf.TracklistColumns = a.tracklist.VisibleColumns()
 	p := a.playlistPageState
 	return &p
 }

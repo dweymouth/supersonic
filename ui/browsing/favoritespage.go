@@ -167,10 +167,6 @@ func (a *FavoritesPage) Reload() {
 }
 
 func (a *FavoritesPage) Save() SavedPage {
-	if a.tracklistCtr != nil {
-		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
-		a.cfg.TracklistColumns = tl.VisibleColumns()
-	}
 	sf := &savedFavoritesPage{
 		cfg:             a.cfg,
 		contr:           a.contr,
@@ -314,6 +310,9 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			tracklist := widgets.NewTracklist(s.Song)
 			tracklist.AutoNumber = true
 			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
+			tracklist.OnVisibleColumnsChanged = func(cols []string) {
+				a.cfg.TracklistColumns = cols
+			}
 			tracklist.SetNowPlaying(a.nowPlayingID)
 			a.contr.ConnectTracklistActions(tracklist)
 			a.tracklistCtr = container.New(

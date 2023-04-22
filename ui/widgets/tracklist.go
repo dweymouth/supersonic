@@ -67,6 +67,7 @@ type Tracklist struct {
 	OnShowAlbumPage  func(albumID string)
 
 	OnColumnVisibilityMenuShown func(*widget.PopUp)
+	OnVisibleColumnsChanged     func([]string)
 	OnTrackShown                func(tracknum int)
 
 	visibleColumns []bool
@@ -182,6 +183,9 @@ func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
 	}
 	t.visibleColumns[colNum] = vis
 	t.list.Refresh()
+	if t.OnVisibleColumnsChanged != nil {
+		t.OnVisibleColumnsChanged(t.VisibleColumns())
+	}
 }
 
 func (t *Tracklist) SetNowPlaying(trackID string) {

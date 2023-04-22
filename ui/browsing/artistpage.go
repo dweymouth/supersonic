@@ -108,13 +108,6 @@ func (a *ArtistPage) Reload() {
 }
 
 func (a *ArtistPage) Save() SavedPage {
-	// TODO: find a better place to update the tracklist columns preference
-	// If user changes columns but doesn't navigate to another page,
-	// we won't be persisting the change
-	if a.tracklistCtr != nil {
-		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
-		a.cfg.TracklistColumns = tl.VisibleColumns()
-	}
 	s := a.artistPageState
 	return &s
 }
@@ -192,6 +185,9 @@ func (a *ArtistPage) showTopTracks() {
 		tl := widgets.NewTracklist(ts)
 		tl.AutoNumber = true
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
+		tl.OnVisibleColumnsChanged = func(cols []string) {
+			a.cfg.TracklistColumns = cols
+		}
 		tl.SetNowPlaying(a.nowPlayingID)
 		a.contr.ConnectTracklistActions(tl)
 		a.tracklistCtr = container.New(

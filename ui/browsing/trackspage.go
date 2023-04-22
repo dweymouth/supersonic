@@ -42,10 +42,18 @@ type tracksPageState struct {
 func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, lm *backend.LibraryManager) *TracksPage {
 	t := &TracksPage{tracksPageState: tracksPageState{contr: contr, conf: conf, lm: lm}}
 	t.ExtendBaseWidget(t)
+
 	t.tracklist = widgets.NewTracklist(nil)
 	t.tracklist.AutoNumber = true
 	t.tracklist.SetVisibleColumns(conf.TracklistColumns)
+	t.tracklist.OnVisibleColumnsChanged = func(cols []string) {
+		t.conf.TracklistColumns = cols
+		if t.searchTracklist != nil {
+			t.searchTracklist.SetVisibleColumns(cols)
+		}
+	}
 	contr.ConnectTracklistActions(t.tracklist)
+
 	t.title = widget.NewRichTextWithText("All Tracks")
 	t.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
 	t.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, t.playRandomSongs)
@@ -113,6 +121,10 @@ func (t *TracksPage) doSearch(query string) {
 		t.searchTracklist.AutoNumber = true
 		t.searchTracklist.SetVisibleColumns(t.conf.TracklistColumns)
 		t.searchTracklist.SetNowPlaying(t.nowPlayingID)
+		t.searchTracklist.OnVisibleColumnsChanged = func(cols []string) {
+			t.conf.TracklistColumns = cols
+			t.tracklist.SetVisibleColumns(cols)
+		}
 		t.contr.ConnectTracklistActions(t.searchTracklist)
 	} else {
 		t.searchTracklist.Clear()

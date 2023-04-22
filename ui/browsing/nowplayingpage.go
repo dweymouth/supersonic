@@ -41,6 +41,9 @@ func NewNowPlayingPage(
 	a.ExtendBaseWidget(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
+	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
+		a.conf.TracklistColumns = cols
+	}
 	a.tracklist.AutoNumber = true
 	a.tracklist.DisablePlaybackMenu = true
 	contr.ConnectTracklistActions(a.tracklist)
@@ -62,7 +65,6 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *NowPlayingPage) Save() SavedPage {
-	a.conf.TracklistColumns = a.tracklist.VisibleColumns()
 	nps := a.nowPlayingPageState
 	return &nps
 }
