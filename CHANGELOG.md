@@ -11,9 +11,10 @@
 - [#104](https://github.com/dweymouth/supersonic/issues/104) Add alternate (e.g. external) hostname to server connection config
 - [#136](https://github.com/dweymouth/supersonic/issues/136) Add "..." button to album page with menu to add album to queue or playlist
 - [#70](https://github.com/dweymouth/supersonic/issues/70) Add searchable "All Tracks" page, with button to play random tracks
+- [#63](https://github.com/dweymouth/supersonic/issues/63) Add experimental support for setting custom application font
 
 ### Fixes
-- **todo-commithash** Don't show update available prompt if the found version is the same as the running app version
+- [198110d](https://github.com/dweymouth/supersonic/commit/198110d1dc412c8ce5c7ec4e4cd2f4206899f0b5) Don't show update available prompt if the found version is the same as the running app version
 - [#120](https://github.com/dweymouth/supersonic/issues/120),[#87](https://github.com/dweymouth/supersonic/issues/87) Update Mac build process to support OS versions back to High Sierra (thanks @whorfin!)
 - [#125](https://github.com/dweymouth/supersonic/issues/125) Navigating back twice to an albums page with search result clears search state
 
