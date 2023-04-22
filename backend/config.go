@@ -27,6 +27,10 @@ type AppConfig struct {
 	LastCheckedVersion string
 	EnableSystemTray   bool
 	CloseToSystemTray  bool
+
+	// Experimental - may be removed in future
+	FontNormalTTF string
+	FontBoldTTF   string
 }
 
 type AlbumPageConfig struct {

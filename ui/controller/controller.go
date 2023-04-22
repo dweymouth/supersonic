@@ -319,7 +319,7 @@ func (c *Controller) ShowSettingsDialog() {
 		devs = []player.AudioDevice{{Name: "auto", Description: "Autoselect device"}}
 	}
 
-	dlg := dialogs.NewSettingsDialog(c.App.Config, devs)
+	dlg := dialogs.NewSettingsDialog(c.App.Config, devs, c.MainWindow)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
 	}

@@ -1,8 +1,11 @@
 package dialogs
 
 import (
+	"errors"
 	"math"
+	"os"
 	"strconv"
+	"strings"
 	"supersonic/backend"
 	"supersonic/player"
 	"supersonic/ui/layouts"
@@ -13,7 +16,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -36,13 +41,14 @@ type SettingsDialog struct {
 }
 
 // TODO: having this depend on the player package for the AudioDevice type is kinda gross. Refactor.
-func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDevice) *SettingsDialog {
+func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDevice, window fyne.Window) *SettingsDialog {
 	s := &SettingsDialog{config: config, audioDevices: audioDeviceList}
 	s.ExtendBaseWidget(s)
 
 	tabs := container.NewAppTabs(
 		s.createGeneralTab(),
 		s.createPlaybackTab(),
+		s.createExperimentalTab(window),
 	)
 	s.promptText = widget.NewRichTextWithText("")
 	s.content = container.NewVBox(tabs, widget.NewSeparator(),
@@ -256,6 +262,73 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 			widget.NewLabel("Prevent clipping"), container.NewHBox(preventClipping, layout.NewSpacer()),
 		),
 	))
+}
+
+func (s *SettingsDialog) createExperimentalTab(window fyne.Window) *container.TabItem {
+	warningLabel := widget.NewLabel("WARNING: these settings are experimental and may " +
+		"make the application buggy or increase system resource use. " +
+		"They may be removed in future versions.")
+	warningLabel.Wrapping = fyne.TextWrapWord
+
+	normalFontEntry := widget.NewEntry()
+	normalFontEntry.SetPlaceHolder("path to .ttf or empty to use default")
+	normalFontEntry.Text = s.config.Application.FontNormalTTF
+	normalFontEntry.Validator = s.ttfPathValidator
+	normalFontEntry.OnChanged = func(path string) {
+		if normalFontEntry.Validate() == nil {
+			s.setRestartRequired()
+			s.config.Application.FontNormalTTF = path
+		}
+	}
+	normalFontBrowse := widget.NewButtonWithIcon("", theme.FolderOpenIcon(), func() {
+		s.doChooseTTFFile(window, normalFontEntry)
+	})
+
+	boldFontEntry := widget.NewEntry()
+	boldFontEntry.SetPlaceHolder("path to .ttf or empty to use default")
+	boldFontEntry.Text = s.config.Application.FontBoldTTF
+	boldFontEntry.Validator = s.ttfPathValidator
+	boldFontEntry.OnChanged = func(path string) {
+		if boldFontEntry.Validate() == nil {
+			s.setRestartRequired()
+			s.config.Application.FontBoldTTF = path
+		}
+	}
+	boldFontBrowse := widget.NewButtonWithIcon("", theme.FolderOpenIcon(), func() {
+		s.doChooseTTFFile(window, boldFontEntry)
+	})
+
+	return container.NewTabItem("Experimental", container.NewVBox(
+		warningLabel,
+		s.newSectionSeparator(),
+		widget.NewRichText(&widget.TextSegment{Text: "Application Font", Style: boldStyle}),
+		container.New(layout.NewFormLayout(),
+			widget.NewLabel("Normal font"), container.NewBorder(nil, nil, nil, normalFontBrowse, normalFontEntry),
+			widget.NewLabel("Bold font"), container.NewBorder(nil, nil, nil, boldFontBrowse, boldFontEntry),
+		),
+	))
+}
+
+func (s *SettingsDialog) doChooseTTFFile(window fyne.Window, entry *widget.Entry) {
+	callback := func(urirc fyne.URIReadCloser, err error) {
+		if err == nil && urirc != nil {
+			entry.SetText(urirc.URI().Path())
+		}
+	}
+	dlg := dialog.NewFileOpen(callback, window)
+	dlg.SetFilter(&storage.ExtensionFileFilter{Extensions: []string{".ttf"}})
+	dlg.Show()
+}
+
+func (s *SettingsDialog) ttfPathValidator(path string) error {
+	if path == "" {
+		return nil
+	}
+	if !strings.HasSuffix(path, ".ttf") {
+		return errors.New("only .ttf fonts supported")
+	}
+	_, err := os.Stat(path)
+	return err
 }
 
 func (s *SettingsDialog) setRestartRequired() {
