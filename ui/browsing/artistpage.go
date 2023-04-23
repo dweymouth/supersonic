@@ -167,6 +167,11 @@ func (a *ArtistPage) load() {
 
 func (a *ArtistPage) showAlbumGrid() {
 	if a.albumGrid == nil {
+		if a.artistInfo == nil {
+			// page not loaded yet or invalid artist
+			a.activeView = 0 // if page still loading, will show discography view first
+			return
+		}
 		a.albumGrid = widgets.NewFixedAlbumGrid(a.artistInfo.Album, a.im, true /*showYear*/)
 		a.albumGrid.OnPlayAlbum = a.onPlayAlbum
 		a.albumGrid.OnShowAlbumPage = a.onShowAlbumPage
@@ -177,6 +182,11 @@ func (a *ArtistPage) showAlbumGrid() {
 
 func (a *ArtistPage) showTopTracks() {
 	if a.tracklistCtr == nil {
+		if a.artistInfo == nil {
+			// page not loaded yet or invalid artist
+			a.activeView = 1 // if page still loading, will show tracks view first
+			return
+		}
 		ts, err := a.sm.Server.GetTopSongs(a.artistInfo.Name, map[string]string{"count": "20"})
 		if err != nil {
 			log.Printf("error getting top songs: %s", err.Error())
