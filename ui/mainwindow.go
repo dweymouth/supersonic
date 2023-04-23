@@ -17,8 +17,9 @@ import (
 )
 
 var (
-	ShortcutReload = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
-	ShortcutSearch = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
+	ShortcutReload      = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
+	ShortcutSearch      = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
+	ShortcutCloseWindow = desktop.CustomShortcut{KeyName: fyne.KeyW, Modifier: os.ControlModifier}
 
 	ShortcutNavOne   = desktop.CustomShortcut{KeyName: fyne.Key1, Modifier: os.ControlModifier}
 	ShortcutNavTwo   = desktop.CustomShortcut{KeyName: fyne.Key2, Modifier: os.ControlModifier}
@@ -218,6 +219,11 @@ func (m *MainWindow) addShortcuts() {
 	})
 	m.Canvas().AddShortcut(&fyne.ShortcutSelectAll{}, func(_ fyne.Shortcut) {
 		m.BrowsingPane.SelectAll()
+	})
+	m.Canvas().AddShortcut(&ShortcutCloseWindow, func(_ fyne.Shortcut) {
+		if m.App.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
+			m.Window.Hide()
+		}
 	})
 
 	for i, ns := range NavShortcuts {
