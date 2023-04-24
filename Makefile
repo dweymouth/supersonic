@@ -19,7 +19,7 @@ bundledeps_macos:
 bundledeps_macos_highsierra:
 	mkdir ./Supersonic.app/Contents/Frameworks
 	cp -R res/libs/mac_x64/mpv/* ./Supersonic.app/Contents/Frameworks
-	install_name_tool -change "/usr/local/opt/mpv/lib/libmpv.2.dll" "@executable_path/../Frameworks/libmpv.2.dylib" "./Supersonic.app/Contents/MacOS/supersonic"
+	install_name_tool -change "/usr/local/opt/mpv/lib/libmpv.2.dylib" "@executable_path/../Frameworks/libmpv.2.dylib" "./Supersonic.app/Contents/MacOS/supersonic"
 
 zip_macos:
 	zip --symlinks -r Supersonic.zip Supersonic.app/
