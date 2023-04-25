@@ -477,6 +477,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 		t.artist.SetText(tr.Artist)
+		t.artist.Disabled = tr.ArtistID == ""
 		t.album.SetText(tr.Album)
 		t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
 		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
