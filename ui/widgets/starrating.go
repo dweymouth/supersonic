@@ -18,10 +18,6 @@ var (
 	themedResStarOutline = theme.NewThemedResource(res.ResStarOutlineSvg)
 )
 
-const (
-	starRatingBetweenStarPad = 1
-)
-
 type StarRating struct {
 	widget.BaseWidget
 
@@ -44,7 +40,6 @@ func NewStarRating() *StarRating {
 func (s *StarRating) createContainer() {
 	s.container = container.New(&layouts.HboxCustomPadding{
 		DisableThemePad: true,
-		ExtraPad:        starRatingBetweenStarPad,
 	})
 	var im *canvas.Image
 	for i := 0; i < 5; i++ {
@@ -119,7 +114,7 @@ func (s *StarRating) Refresh() {
 }
 
 func (s *StarRating) MinSize() fyne.Size {
-	return fyne.NewSize(s.StarSize*5+starRatingBetweenStarPad*4, s.StarSize)
+	return fyne.NewSize(s.StarSize*5, s.StarSize)
 }
 
 func (s *StarRating) CreateRenderer() fyne.WidgetRenderer {
