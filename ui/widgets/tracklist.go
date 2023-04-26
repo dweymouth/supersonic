@@ -26,6 +26,7 @@ const (
 	ColumnTime     = "Time"
 	ColumnYear     = "Year"
 	ColumnFavorite = "Favorite"
+	ColumnRating   = "Rating"
 	ColumnPlays    = "Plays"
 	ColumnBitrate  = "Bitrate"
 	ColumnSize     = "Size"
@@ -62,6 +63,7 @@ type Tracklist struct {
 	OnAddToQueue    func(trackIDs []*subsonic.Child)
 	OnAddToPlaylist func(trackIDs []string)
 	OnSetFavorite   func(trackIDs []string, fav bool)
+	OnSetRating     func(trackIDs []string, rating int)
 
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
@@ -83,12 +85,12 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*subsonic.Child) *Tracklist {
-	t := &Tracklist{Tracks: tracks, visibleColumns: make([]bool, 11)}
+	t := &Tracklist{Tracks: tracks, visibleColumns: make([]bool, 12)}
 
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(t.lenTracks)
-	// #, Title, Artist, Album, Time, Year, Favorite, Plays, Bitrate, Size, Path
-	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 47, 65, 75, 70, -1})
+	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Bitrate, Size, Path
+	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 47, 95, 65, 75, 70, -1})
 	t.buildHeader()
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
@@ -132,6 +134,7 @@ func (t *Tracklist) buildHeader() {
 		{Text: "Time", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "Year", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "Fav.", AlignTrailing: false, CanToggleVisible: true},
+		{Text: "Rating", AlignTrailing: false, CanToggleVisible: true},
 		{Text: "Plays", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "Bitrate", AlignTrailing: true, CanToggleVisible: true},
 		{Text: "Size", AlignTrailing: true, CanToggleVisible: true},
@@ -303,6 +306,18 @@ func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	}
 }
 
+func (t *Tracklist) onSetRating(trackID string, rating int) {
+	// update our own track model
+	t.tracksMutex.RLock()
+	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	t.tracksMutex.RUnlock()
+	tr.UserRating = rating
+	// notify listener
+	if t.OnSetRating != nil {
+		t.OnSetRating([]string{trackID}, rating)
+	}
+}
+
 func (t *Tracklist) onArtistTapped(artistID string) {
 	if t.OnShowArtistPage != nil {
 		t.OnShowArtistPage(artistID)
@@ -360,14 +375,16 @@ func ColNumber(colName string) int {
 		return 5
 	case ColumnFavorite:
 		return 6
-	case ColumnPlays:
+	case ColumnRating:
 		return 7
-	case ColumnBitrate:
+	case ColumnPlays:
 		return 8
-	case ColumnSize:
+	case ColumnBitrate:
 		return 9
-	case ColumnPath:
+	case ColumnSize:
 		return 10
+	case ColumnPath:
+		return 11
 	default:
 		log.Printf("error: Tracklist: invalid column name %s", colName)
 		return -100
@@ -388,12 +405,14 @@ func colName(i int) string {
 	case 6:
 		return ColumnFavorite
 	case 7:
-		return ColumnPlays
+		return ColumnRating
 	case 8:
-		return ColumnBitrate
+		return ColumnPlays
 	case 9:
-		return ColumnSize
+		return ColumnBitrate
 	case 10:
+		return ColumnSize
+	case 11:
 		return ColumnPath
 	default:
 		return ""
@@ -421,6 +440,7 @@ type TrackRow struct {
 	dur      *widget.RichText
 	year     *widget.RichText
 	favorite *fyne.Container
+	rating   *StarRating
 	bitrate  *widget.RichText
 	plays    *widget.RichText
 	size     *widget.RichText
@@ -449,6 +469,9 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	favorite := NewTappbaleIcon(res.ResHeartOutlineInvertPng)
 	favorite.OnTapped = t.toggleFavorited
 	t.favorite = container.NewCenter(favorite)
+	t.rating = NewStarRating()
+	t.rating.StarSize = 16
+	t.rating.OnRatingChanged = t.setTrackRating
 	t.plays = widget.NewRichTextWithText("")
 	t.plays.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
 	t.bitrate = widget.NewRichTextWithText("")
@@ -459,7 +482,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.path.Wrapping = fyne.TextTruncate
 
 	t.Content = container.New(tracklist.colLayout,
-		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.plays, t.bitrate, t.size, t.path)
+		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.rating, t.plays, t.bitrate, t.size, t.path)
 	return t
 }
 
@@ -546,12 +569,15 @@ func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
 		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartFilledInvertPng
 	}
 
+	t.rating.Rating = tr.UserRating
+
 	// Show only columns configured to be visible
 	t.artist.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnArtist)]
 	t.album.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnAlbum)]
 	t.dur.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnTime)]
 	t.year.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnYear)]
 	t.favorite.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnFavorite)]
+	t.rating.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnRating)]
 	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
 	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]
 	t.size.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnSize)]
@@ -572,6 +598,10 @@ func (t *TrackRow) toggleFavorited() {
 		t.isFavorite = true
 		t.tracklist.onSetFavorite(t.trackID, true)
 	}
+}
+
+func (t *TrackRow) setTrackRating(rating int) {
+	t.tracklist.onSetRating(t.trackID, rating)
 }
 
 func (t *TrackRow) TappedSecondary(e *fyne.PointEvent) {

@@ -242,6 +242,14 @@ func (p *PlaybackManager) OnTrackFavoriteStatusChanged(id string, fav bool) {
 	}
 }
 
+// Any time the user changes the rating of a track elsewhere in the app,
+// this should be called to ensure the in-memory track model is updated.
+func (p *PlaybackManager) OnTrackRatingChanged(id string, rating int) {
+	if tr := sharedutil.FindTrackByID(id, p.playQueue); tr != nil {
+		tr.UserRating = rating
+	}
+}
+
 // trackIdxs must be sorted
 func (p *PlaybackManager) RemoveTracksFromQueue(trackIdxs []int) {
 	newQueue := make([]*subsonic.Child, 0, len(p.playQueue)-len(trackIdxs))

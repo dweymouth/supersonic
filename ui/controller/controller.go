@@ -9,6 +9,7 @@ import (
 	"supersonic/ui/dialogs"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -109,6 +110,27 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 		}
 		for _, id := range trackIDs {
 			m.App.PlaybackManager.OnTrackFavoriteStatusChanged(id, fav)
+		}
+	}
+	tracklist.OnSetRating = func(trackIDs []string, rating int) {
+		go func() {
+			// Subsonic doesn't allow bulk setting ratings.
+			// To not overwhelm the server with requests, set rating for
+			// only 5 tracks at a time concurrently
+			for i := 0; i < len(trackIDs); i += 5 {
+				var wg sync.WaitGroup
+				for j := i; j < i+5 && j < len(trackIDs); j++ {
+					wg.Add(1)
+					go func(idx int) {
+						m.App.ServerManager.Server.SetRating(trackIDs[idx], rating)
+						wg.Done()
+					}(j)
+				}
+				wg.Wait()
+			}
+		}()
+		for _, id := range trackIDs {
+			m.App.PlaybackManager.OnTrackRatingChanged(id, rating)
 		}
 	}
 	tracklist.OnShowAlbumPage = func(albumID string) {
