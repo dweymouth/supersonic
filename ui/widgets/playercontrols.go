@@ -96,8 +96,10 @@ func NewPlayerControls() *PlayerControls {
 	pc.totalTimeLabel.Alignment = fyne.TextAlignTrailing
 
 	pc.slider.OnChanged = func(f float64) {
-		time := f * pc.totalTime
-		pc.curTimeLabel.SetText(util.SecondsToTimeString(time))
+		if pc.slider.IsDragging() {
+			time := f * pc.totalTime
+			pc.curTimeLabel.SetText(util.SecondsToTimeString(time))
+		}
 	}
 
 	pc.prev = widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {})
@@ -138,8 +140,6 @@ func (pc *PlayerControls) SetPlaying(playing bool) {
 }
 
 func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
-	// TODO: there is a bug with very long tracks (~20min) where the
-	// curtime label will bounce back and forth +- 1sec (rounding issue?)
 	pc.totalTime = totalTime
 	v := 0.0
 	if totalTime > 0 {
