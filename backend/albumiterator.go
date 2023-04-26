@@ -185,20 +185,25 @@ func (s *searchIter) Next() *subsonic.AlbumID3 {
 		// add results from artists search
 		for _, artist := range results.Artist {
 			artist, err := s.s.GetArtist(artist.ID)
-			if err != nil {
+			if err != nil || artist == nil {
 				log.Printf("error fetching artist: %s", err.Error())
+			} else {
+				s.addNewAlbums(artist.Album)
 			}
-			s.addNewAlbums(artist.Album)
 		}
 		s.artistOffset += len(results.Artist)
 
 		// add results from songs search
 		for _, song := range results.Song {
-			album, err := s.s.GetAlbum(song.Parent)
-			if err != nil {
-				log.Printf("error fetching album: %s", err.Error())
+			if song.AlbumID == "" {
+				continue
 			}
-			s.addNewAlbums([]*subsonic.AlbumID3{album})
+			album, err := s.s.GetAlbum(song.AlbumID)
+			if err != nil || album == nil {
+				log.Printf("error fetching album: %s", err.Error())
+			} else {
+				s.addNewAlbums([]*subsonic.AlbumID3{album})
+			}
 		}
 		s.songOffset += len(results.Song)
 	}
