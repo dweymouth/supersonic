@@ -255,7 +255,11 @@ func (a *PlaylistPageHeader) formatPlaylistOwnerStr(p *subsonic.Playlist) string
 }
 
 func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *subsonic.Playlist) string {
-	return fmt.Sprintf("%d tracks, %s", p.SongCount, util.SecondsToTimeString(float64(p.Duration)))
+	tracks := "tracks"
+	if p.SongCount == 1 {
+		tracks = "track"
+	}
+	return fmt.Sprintf("%d %s, %s", p.SongCount, tracks, util.SecondsToTimeString(float64(p.Duration)))
 }
 
 func (s *playlistPageState) Restore() Page {
