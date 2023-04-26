@@ -7,7 +7,13 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+)
+
+var (
+	themedResStarFilled  = theme.NewThemedResource(res.ResStarFilledSvg)
+	themedResStarOutline = theme.NewThemedResource(res.ResStarOutlineSvg)
 )
 
 type StarRating struct {
@@ -33,9 +39,9 @@ func (s *StarRating) createContainer() {
 	var im *canvas.Image
 	for i := 0; i < 5; i++ {
 		if s.Rating > i {
-			im = canvas.NewImageFromResource(res.ResStarFilledInvertPng)
+			im = canvas.NewImageFromResource(themedResStarFilled)
 		} else {
-			im = canvas.NewImageFromResource(res.ResStarOutlineInvertPng)
+			im = canvas.NewImageFromResource(themedResStarOutline)
 		}
 		im.SetMinSize(fyne.NewSize(s.StarSize, s.StarSize))
 		s.container.Add(im)
@@ -51,9 +57,9 @@ func (s *StarRating) Refresh() {
 		im := s.container.Objects[i].(*canvas.Image)
 		im.SetMinSize(fyne.NewSize(s.StarSize, s.StarSize))
 		if s.Rating > i {
-			im.Resource = res.ResStarFilledInvertPng
+			im.Resource = themedResStarFilled
 		} else {
-			im.Resource = res.ResStarOutlineInvertPng
+			im.Resource = themedResStarOutline
 		}
 	}
 	s.BaseWidget.Refresh()
