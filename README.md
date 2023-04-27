@@ -29,6 +29,7 @@ Screenshots of Supersonic running against the Navidrome [demo server](https://ww
 * [x] Create, play, and update playlists
 * [x] Configure visible tracklist columns
 * [x] Set/unset favorite and browse by favorite albums, artists, and songs
+* [x] Set and view track rating (0-5 stars)
 * [x] View and edit play queue (add and remove tracks; reorder support coming soon)
 * [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs)
 * [ ] Set filters in albums browsing view (planned)

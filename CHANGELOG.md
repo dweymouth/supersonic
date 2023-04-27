@@ -1,5 +1,18 @@
 # Change Log
 
+## Unreleased
+
+### Added
+- [#145](https://github.com/dweymouth/supersonic/issues/145) Add rating column to tracklist with 5-star rating widget
+- [b017995](https://github.com/dweymouth/supersonic/commit/b01799550ded0c6a8f33913827df23818f9a7353) Add Ctrl+W (Cmd+W on Mac) shortcut to close to tray if enabled
+
+### Fixed
+- [#148](https://github.com/dweymouth/supersonic/issues/148) Fix potential crash when searching for albums
+- [#149](https://github.com/dweymouth/supersonic/issues/149) Tracklist columns occasionally misaligned when shrinking window
+- [#142](https://github.com/dweymouth/supersonic/issues/142) Disable hyperlinks for track artists that are not also album artists
+- [#141](https://github.com/dweymouth/supersonic/issues/141) Fix crash when navigating to "Top Tracks" on artist page not yet fully loaded or invalid artist
+- [56b6709](https://github.com/dweymouth/supersonic/commit/56b67097b9259ad16e9799b39df644d323405bbe) Don't pluralize "tracks" for albums and playlists with only one track
+
 ## [0.1.0] - 2023-04-22
 
 ### Added
