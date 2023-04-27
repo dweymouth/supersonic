@@ -3,6 +3,7 @@ package controller
 import (
 	"image"
 	"log"
+	"math"
 	"strconv"
 	"supersonic/backend"
 	"supersonic/player"
@@ -112,27 +113,7 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 			m.App.PlaybackManager.OnTrackFavoriteStatusChanged(id, fav)
 		}
 	}
-	tracklist.OnSetRating = func(trackIDs []string, rating int) {
-		go func() {
-			// Subsonic doesn't allow bulk setting ratings.
-			// To not overwhelm the server with requests, set rating for
-			// only 5 tracks at a time concurrently
-			for i := 0; i < len(trackIDs); i += 5 {
-				var wg sync.WaitGroup
-				for j := i; j < i+5 && j < len(trackIDs); j++ {
-					wg.Add(1)
-					go func(idx int) {
-						m.App.ServerManager.Server.SetRating(trackIDs[idx], rating)
-						wg.Done()
-					}(j)
-				}
-				wg.Wait()
-			}
-		}()
-		for _, id := range trackIDs {
-			m.App.PlaybackManager.OnTrackRatingChanged(id, rating)
-		}
-	}
+	tracklist.OnSetRating = m.setTrackRatings
 	tracklist.OnShowAlbumPage = func(albumID string) {
 		m.NavigateTo(AlbumRoute(albumID))
 	}
@@ -406,5 +387,45 @@ func (c *Controller) doModalClosed() {
 	if c.runOnModalClosed != nil {
 		c.runOnModalClosed()
 		c.runOnModalClosed = nil
+	}
+}
+
+func (c *Controller) setTrackRatings(trackIDs []string, rating int) {
+	// Subsonic doesn't allow bulk setting ratings.
+	// To not overwhelm the server with requests, set rating for
+	// only 5 tracks at a time concurrently
+	batchSize := 5
+	batchSetRating := func(offs int, wg *sync.WaitGroup) {
+		for i := 0; i < batchSize && offs+i < len(trackIDs); i++ {
+			if wg != nil {
+				wg.Add(1)
+			}
+			go func(idx int) {
+				c.App.ServerManager.Server.SetRating(trackIDs[idx], rating)
+				if wg != nil {
+					wg.Done()
+				}
+			}(offs + i)
+		}
+	}
+
+	if len(trackIDs) <= 5 {
+		// one batch only - no need to use wait group
+		batchSetRating(0, nil)
+	} else {
+		go func() {
+			numBatches := int(math.Ceil(float64(len(trackIDs)) / float64(batchSize)))
+			for i := 0; i < numBatches; i++ {
+				var wg sync.WaitGroup
+				batchSetRating(i*batchSize, &wg)
+				wg.Wait()
+			}
+		}()
+	}
+
+	// Notify PlaybackManager of rating change to update
+	// the in-memory track models
+	for _, id := range trackIDs {
+		c.App.PlaybackManager.OnTrackRatingChanged(id, rating)
 	}
 }
