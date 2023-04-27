@@ -168,3 +168,49 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 func (p *PlayerControls) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(p.container)
 }
+
+// This code will be OBSOLETE in Fyne 2.4
+// which will natively add Tappable behavior to slider
+// Tapped is called when a pointer tapped event is captured.
+//
+// Since: 2.4
+func (t *TrackPosSlider) Tapped(e *fyne.PointEvent) {
+	ratio := t.getRatio(e)
+	val := t.Min + ratio*(t.Max-t.Min)
+	t.isDragging = true
+	t.SetValue(val)
+	t.lastDraggedValue = val
+	t.isDragging = false
+	t.DragEnd()
+}
+
+func (t *TrackPosSlider) endOffset() float32 {
+	return (theme.IconInlineSize()-4)/2 + theme.InnerPadding() - 1.5 // align with radio icons
+}
+
+func (t *TrackPosSlider) getRatio(e *fyne.PointEvent) float64 {
+	pad := t.endOffset()
+
+	x := e.Position.X
+	y := e.Position.Y
+
+	switch t.Orientation {
+	case widget.Vertical:
+		if y > t.Size().Height-pad {
+			return 0.0
+		} else if y < pad {
+			return 1.0
+		} else {
+			return 1 - float64(y-pad)/float64(t.Size().Height-pad*2)
+		}
+	case widget.Horizontal:
+		if x > t.Size().Width-pad {
+			return 1.0
+		} else if x < pad {
+			return 0.0
+		} else {
+			return float64(x-pad) / float64(t.Size().Width-pad*2)
+		}
+	}
+	return 0.0
+}
