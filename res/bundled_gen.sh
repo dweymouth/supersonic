@@ -19,14 +19,12 @@ fyne bundle -append -prefix Res icons/freepik/playlist.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/playlist-invert.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/podcast.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/podcast-invert.png >> bundled.go
-fyne bundle -append -prefix Res icons/freepik/star-filled.png >> bundled.go
-fyne bundle -append -prefix Res icons/freepik/star-filled-invert.png >> bundled.go
-fyne bundle -append -prefix Res icons/freepik/star-outline.png >> bundled.go
-fyne bundle -append -prefix Res icons/freepik/star-outline-invert.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/theatermasks.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/theatermasks-invert.png >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/shuffle.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/shuffle-invert.svg >> bundled.go
+fyne bundle -append -prefix Res icons/publicdomain/star-outline.svg >> bundled.go
+fyne bundle -append -prefix Res icons/publicdomain/star-filled.svg >> bundled.go
 
 fyne bundle -append -prefix Res ../LICENSE >> bundled.go
 fyne bundle -append -prefix Res licenses/BSDLICENSE >> bundled.go

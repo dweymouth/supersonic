@@ -107,14 +107,14 @@ func DefaultConfig(appVersionTag string) *Config {
 			CloseToSystemTray:  false,
 		},
 		AlbumPage: AlbumPageConfig{
-			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite"},
+			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},
 		},
 		AlbumsPage: AlbumsPageConfig{
 			SortOrder: string(AlbumSortRecentlyAdded),
 		},
 		ArtistPage: ArtistPageConfig{
 			InitialView:      "Discography",
-			TracklistColumns: []string{"Album", "Time", "Plays", "Favorite"},
+			TracklistColumns: []string{"Album", "Time", "Plays", "Favorite", "Rating"},
 		},
 		FavoritesPage: FavoritesPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
