@@ -58,9 +58,9 @@ type CustomHyperlink struct {
 	NoTruncate bool
 	Disabled   bool
 
-	lastDisabled bool
-	container    *fyne.Container
-	minSize      fyne.Size
+	lastDisabled  bool
+	container     *fyne.Container
+	fullTextWidth float32
 }
 
 func NewCustomHyperlink() *CustomHyperlink {
@@ -74,8 +74,8 @@ func NewCustomHyperlink() *CustomHyperlink {
 			c.OnTapped()
 		}
 	}
+	c.fullTextWidth = c.l.MinSize().Width
 	c.ExtendBaseWidget(c)
-	c.minSize = c.h.MinSize()
 	c.updateContainer(c.Disabled)
 	return c
 }
@@ -84,13 +84,8 @@ func (c *CustomHyperlink) SetText(text string) {
 	c.l.Text = text
 	lastWrapping := c.l.Wrapping
 	c.l.Wrapping = fyne.TextWrapOff
-	s := c.l.MinSize()
+	c.fullTextWidth = c.l.MinSize().Width
 	c.h.SetText(text)
-	if c.NoTruncate {
-		c.minSize = s
-	} else {
-		c.minSize = fyne.NewSize(fyne.Min(c.Size().Width, s.Width), s.Height)
-	}
 	c.l.Wrapping = lastWrapping
 	c.Refresh()
 }
@@ -114,7 +109,10 @@ func (c *CustomHyperlink) Refresh() {
 }
 
 func (c *CustomHyperlink) MinSize() fyne.Size {
-	return c.minSize
+	if c.NoTruncate {
+		return fyne.NewSize(c.fullTextWidth, c.l.MinSize().Height)
+	}
+	return fyne.NewSize(0, c.l.MinSize().Height)
 }
 
 func (c *CustomHyperlink) CreateRenderer() fyne.WidgetRenderer {
