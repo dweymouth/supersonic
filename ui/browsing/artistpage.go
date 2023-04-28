@@ -39,7 +39,7 @@ type ArtistPage struct {
 
 	artistInfo *subsonic.ArtistID3
 
-	albumGrid    *widgets.AlbumGrid
+	albumGrid    *widgets.GridView
 	tracklistCtr *fyne.Container
 	nowPlayingID string
 	header       *ArtistPageHeader
@@ -173,8 +173,8 @@ func (a *ArtistPage) showAlbumGrid() {
 			return
 		}
 		a.albumGrid = widgets.NewFixedAlbumGrid(a.artistInfo.Album, a.im, true /*showYear*/)
-		a.albumGrid.OnPlayAlbum = a.onPlayAlbum
-		a.albumGrid.OnShowAlbumPage = a.onShowAlbumPage
+		a.albumGrid.OnPlay = a.onPlayAlbum
+		a.albumGrid.OnShowItemPage = a.onShowAlbumPage
 	}
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
 	a.container.Objects[0].Refresh()

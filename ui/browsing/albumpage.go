@@ -226,7 +226,7 @@ func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageMana
 	a.Refresh()
 
 	go func() {
-		if cover, err := im.GetAlbumThumbnail(album.CoverArt); err == nil {
+		if cover, err := im.GetCoverThumbnail(album.CoverArt); err == nil {
 			a.cover.Image.Image = cover
 			a.cover.Refresh()
 		} else {
@@ -244,7 +244,7 @@ func (a *AlbumPageHeader) toggleFavorited() {
 }
 
 func (a *AlbumPageHeader) showPopUpCover() {
-	cover, err := a.page.im.GetFullSizeAlbumCover(a.coverID)
+	cover, err := a.page.im.GetFullSizeCoverArt(a.coverID)
 	if err != nil {
 		log.Printf("error getting full size album cover: %s", err.Error())
 		return

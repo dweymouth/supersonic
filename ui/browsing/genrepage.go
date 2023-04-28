@@ -24,8 +24,8 @@ type GenrePage struct {
 	im         *backend.ImageManager
 	pm         *backend.PlaybackManager
 	lm         *backend.LibraryManager
-	grid       *widgets.AlbumGrid
-	searchGrid *widgets.AlbumGrid
+	grid       *widgets.GridView
+	searchGrid *widgets.GridView
 	searcher   *widgets.Searcher
 	searchText string
 	titleDisp  *widget.RichText
@@ -53,9 +53,9 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 	g.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, g.playRandomSongs)
 	iter := g.lm.GenreIter(g.genre)
 	g.grid = widgets.NewAlbumGrid(iter, g.im, false)
-	g.grid.OnPlayAlbum = g.onPlayAlbum
-	g.grid.OnShowArtistPage = g.onShowArtistPage
-	g.grid.OnShowAlbumPage = g.onShowAlbumPage
+	g.grid.OnPlay = g.onPlayAlbum
+	g.grid.OnShowSecondaryPage = g.onShowArtistPage
+	g.grid.OnShowItemPage = g.onShowAlbumPage
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched
 	g.createContainer(false)
@@ -94,13 +94,13 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	g.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, g.playRandomSongs)
-	g.grid = widgets.NewAlbumGridFromState(saved.gridState)
+	g.grid = widgets.NewGridViewFromState(saved.gridState)
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched
 	g.searcher.Entry.Text = saved.searchText
 	g.searchText = saved.searchText
 	if g.searchText != "" {
-		g.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
+		g.searchGrid = widgets.NewGridViewFromState(saved.searchGridState)
 	}
 	g.createContainer(saved.searchText != "")
 
@@ -177,9 +177,9 @@ func (g *GenrePage) doSearch(query string) {
 	})
 	if g.searchGrid == nil {
 		g.searchGrid = widgets.NewAlbumGrid(iter, g.im, false /*showYear*/)
-		g.searchGrid.OnPlayAlbum = g.onPlayAlbum
-		g.searchGrid.OnShowAlbumPage = g.onShowAlbumPage
-		g.searchGrid.OnShowArtistPage = g.onShowArtistPage
+		g.searchGrid.OnPlay = g.onPlayAlbum
+		g.searchGrid.OnShowItemPage = g.onShowAlbumPage
+		g.searchGrid.OnShowSecondaryPage = g.onShowArtistPage
 	} else {
 		g.searchGrid.Reset(iter)
 	}
@@ -198,8 +198,8 @@ type savedGenrePage struct {
 	pm              *backend.PlaybackManager
 	lm              *backend.LibraryManager
 	im              *backend.ImageManager
-	gridState       widgets.AlbumGridState
-	searchGridState widgets.AlbumGridState
+	gridState       widgets.GridViewState
+	searchGridState widgets.GridViewState
 }
 
 func (s *savedGenrePage) Restore() Page {

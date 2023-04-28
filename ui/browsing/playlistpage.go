@@ -233,13 +233,13 @@ func (a *PlaylistPageHeader) Update(playlist *subsonic.Playlist) {
 
 	var haveCover bool
 	if playlist.CoverArt != "" {
-		if im, err := a.page.im.GetAlbumThumbnail(playlist.CoverArt); err == nil && im != nil {
+		if im, err := a.page.im.GetCoverThumbnail(playlist.CoverArt); err == nil && im != nil {
 			a.image.SetImage(im, false /*tappable*/)
 			haveCover = true
 		}
 	}
 	if !haveCover {
-		if im, err := a.page.im.GetAlbumThumbnail(playlist.ID); err == nil && im != nil {
+		if im, err := a.page.im.GetCoverThumbnail(playlist.ID); err == nil && im != nil {
 			a.image.SetImage(im, false)
 		}
 	}
