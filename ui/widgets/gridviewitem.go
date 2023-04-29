@@ -3,7 +3,6 @@ package widgets
 import (
 	"context"
 	"image"
-	"strconv"
 
 	"supersonic/res"
 	"supersonic/ui/layouts"
@@ -13,11 +12,9 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
-var _ fyne.Widget = (*GridViewCard)(nil)
+var _ fyne.Widget = (*GridViewItem)(nil)
 
 var _ fyne.Widget = (*coverImage)(nil)
 var _ fyne.Tappable = (*coverImage)(nil)
@@ -104,7 +101,7 @@ func isInside(origin fyne.Position, radius float32, point fyne.Position) bool {
 	return x*x+y*y <= radius*radius
 }
 
-type GridViewCardModel struct {
+type GridViewItemModel struct {
 	Name        string
 	ID          string
 	CoverArtID  string
@@ -112,17 +109,14 @@ type GridViewCardModel struct {
 	SecondaryID string
 }
 
-type GridViewCard struct {
+type GridViewItem struct {
 	widget.BaseWidget
 
-	albumID   string
-	artistID  string
-	title     *CustomHyperlink
-	artist    *CustomHyperlink
-	year      *widget.Label
-	container *fyne.Container
-
-	showYear bool
+	itemID        string
+	secondaryID   string
+	primaryText   *CustomHyperlink
+	secondaryText *CustomHyperlink
+	container     *fyne.Container
 
 	// updated by GridView
 	Cover *coverImage
@@ -136,13 +130,11 @@ type GridViewCard struct {
 	OnShowSecondaryPage func()
 }
 
-func NewGridViewCard(showYear bool) *GridViewCard {
-	g := &GridViewCard{
-		title:    NewCustomHyperlink(),
-		artist:   NewCustomHyperlink(),
-		year:     widget.NewLabel(""),
-		Cover:    newCoverImage(),
-		showYear: showYear,
+func NewGridViewItem() *GridViewItem {
+	g := &GridViewItem{
+		primaryText:   NewCustomHyperlink(),
+		secondaryText: NewCustomHyperlink(),
+		Cover:         newCoverImage(),
 	}
 	g.ExtendBaseWidget(g)
 	g.Cover.OnDoubleTapped = func() {
@@ -156,8 +148,8 @@ func NewGridViewCard(showYear bool) *GridViewCard {
 		}
 	}
 	g.Cover.OnTapped = showItemFn
-	g.title.OnTapped = showItemFn
-	g.artist.OnTapped = func() {
+	g.primaryText.OnTapped = showItemFn
+	g.secondaryText.OnTapped = func() {
 		if g.OnShowSecondaryPage != nil {
 			g.OnShowSecondaryPage()
 		}
@@ -167,34 +159,31 @@ func NewGridViewCard(showYear bool) *GridViewCard {
 	return g
 }
 
-func (g *GridViewCard) createContainer() {
-	var secondLabel fyne.Widget = g.artist
-	if g.showYear {
-		secondLabel = g.year
-	}
-	info := container.New(&layouts.VboxCustomPadding{ExtraPad: -16}, g.title, secondLabel)
+func (g *GridViewItem) createContainer() {
+	info := container.New(&layouts.VboxCustomPadding{ExtraPad: -16}, g.primaryText, g.secondaryText)
 	c := container.New(&layouts.VboxCustomPadding{ExtraPad: -5}, g.Cover, info)
 	pad := &layouts.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
 	g.container = container.New(pad, c)
 }
 
-func (g *GridViewCard) Update(al *subsonic.AlbumID3) {
-	g.title.SetText(al.Name)
-	g.artist.SetText(al.Artist)
-	g.year.SetText(strconv.Itoa(al.Year))
-	g.albumID = al.ID
-	g.artistID = al.ArtistID
+func (g *GridViewItem) Update(model GridViewItemModel) {
+	g.itemID = model.ID
+	g.secondaryID = model.SecondaryID
+	g.primaryText.SetText(model.Name)
+	g.secondaryText.SetText(model.Secondary)
+	g.secondaryText.Disabled = model.SecondaryID == ""
+	g.secondaryText.Refresh()
 	g.Cover.playbtn.Hidden = true
 }
 
-func (g *GridViewCard) ItemID() string {
-	return g.albumID
+func (g *GridViewItem) ItemID() string {
+	return g.itemID
 }
 
-func (g *GridViewCard) SecondaryID() string {
-	return g.artistID
+func (g *GridViewItem) SecondaryID() string {
+	return g.secondaryID
 }
 
-func (g *GridViewCard) CreateRenderer() fyne.WidgetRenderer {
+func (g *GridViewItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.container)
 }

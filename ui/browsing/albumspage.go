@@ -72,7 +72,7 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 	}
 	a.sortOrder.Selected = cfg.SortOrder
 	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected))
-	a.grid = widgets.NewAlbumGrid(iter, im, false /*showYear*/)
+	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im)
 	a.grid.OnPlay = a.onPlayAlbum
 	a.grid.OnShowSecondaryPage = a.onShowArtistPage
 	a.grid.OnShowItemPage = a.onShowAlbumPage
@@ -180,7 +180,7 @@ func (a *AlbumsPage) Save() SavedPage {
 
 func (a *AlbumsPage) doSearch(query string) {
 	if a.searchGrid == nil {
-		a.searchGrid = widgets.NewAlbumGrid(a.lm.SearchIter(query), a.im, false /*showYear*/)
+		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(a.lm.SearchIter(query)), a.im)
 		a.searchGrid.OnPlay = a.onPlayAlbum
 		a.searchGrid.OnShowItemPage = a.onShowAlbumPage
 		a.searchGrid.OnShowSecondaryPage = a.onShowArtistPage

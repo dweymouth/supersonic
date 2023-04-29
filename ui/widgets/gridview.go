@@ -6,6 +6,7 @@ import (
 	"log"
 	"supersonic/backend"
 	"supersonic/res"
+	"supersonic/sharedutil"
 	"sync"
 
 	"fyne.io/fyne/v2"
@@ -20,6 +21,31 @@ type ImageFetcher interface {
 	GetCoverThumbnail(string) (image.Image, error)
 }
 
+type GridViewIterator interface {
+	NextN(int) []GridViewItemModel
+}
+
+type gridViewAlbumIterator struct {
+	iter *backend.BatchingIterator
+}
+
+func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
+	albums := g.iter.NextN(n)
+	return sharedutil.MapSlice(albums, func(al *subsonic.AlbumID3) GridViewItemModel {
+		return GridViewItemModel{
+			Name:        al.Name,
+			ID:          al.ID,
+			CoverArtID:  al.CoverArt,
+			Secondary:   al.Artist,
+			SecondaryID: al.ArtistID,
+		}
+	})
+}
+
+func NewGridViewAlbumIterator(iter backend.AlbumIterator) GridViewIterator {
+	return gridViewAlbumIterator{iter: backend.NewBatchingIterator(iter)}
+}
+
 type GridView struct {
 	widget.BaseWidget
 
@@ -29,13 +55,12 @@ type GridView struct {
 }
 
 type GridViewState struct {
-	items        []*subsonic.AlbumID3
+	items        []GridViewItemModel
 	itemsMutex   sync.RWMutex
-	iter         *backend.BatchingIterator
+	iter         GridViewIterator
 	highestShown int
 	fetching     bool
 	done         bool
-	showYear     bool
 
 	imageFetcher        ImageFetcher
 	OnPlay              func(string)
@@ -47,13 +72,12 @@ type GridViewState struct {
 
 var _ fyne.Widget = (*GridView)(nil)
 
-func NewFixedAlbumGrid(albums []*subsonic.AlbumID3, fetch ImageFetcher, showYear bool) *GridView {
+func NewFixedGridView(items []GridViewItemModel, fetch ImageFetcher) *GridView {
 	g := &GridView{
 		GridViewState: GridViewState{
-			items:        albums,
+			items:        items,
 			done:         true,
 			imageFetcher: fetch,
-			showYear:     showYear,
 		},
 	}
 	g.ExtendBaseWidget(g)
@@ -61,10 +85,10 @@ func NewFixedAlbumGrid(albums []*subsonic.AlbumID3, fetch ImageFetcher, showYear
 	return g
 }
 
-func NewAlbumGrid(iter backend.AlbumIterator, fetch ImageFetcher, showYear bool) *GridView {
+func NewGridView(iter GridViewIterator, fetch ImageFetcher) *GridView {
 	g := &GridView{
 		GridViewState: GridViewState{
-			iter:         backend.NewBatchingIterator(iter),
+			iter:         iter,
 			imageFetcher: fetch,
 		},
 	}
@@ -106,7 +130,7 @@ func (g *GridView) Reset(iter backend.AlbumIterator) {
 	g.fetching = false
 	g.done = false
 	g.highestShown = 0
-	g.iter = backend.NewBatchingIterator(iter)
+	g.iter = gridViewAlbumIterator{iter: backend.NewBatchingIterator(iter)}
 	g.fetchMoreItems(36)
 }
 
@@ -117,7 +141,7 @@ func (g *GridView) createGridWrapList() {
 		},
 		// create func
 		func() fyne.CanvasObject {
-			card := NewGridViewCard(g.showYear)
+			card := NewGridViewItem()
 			card.OnPlay = func() {
 				if g.OnPlay != nil {
 					g.OnPlay(card.ItemID())
@@ -137,31 +161,31 @@ func (g *GridView) createGridWrapList() {
 		},
 		// update func
 		func(itemID int, obj fyne.CanvasObject) {
-			ac := obj.(*GridViewCard)
+			ac := obj.(*GridViewItem)
 			g.doUpdateItemCard(itemID, ac)
 		},
 	)
 }
 
-func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewCard) {
+func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	if itemIdx > g.highestShown {
 		g.highestShown = itemIdx
 	}
 	g.itemsMutex.RLock()
-	album := g.items[itemIdx]
+	item := g.items[itemIdx]
 	g.itemsMutex.RUnlock()
-	if card.PrevID == album.ID {
+	if card.PrevID == item.ID {
 		// nothing to do
 		return
 	}
-	card.Update(album)
-	card.PrevID = album.ID
+	card.Update(item)
+	card.PrevID = item.ID
 	// cancel any previous image fetch
 	if card.ImgLoadCancel != nil {
 		card.ImgLoadCancel()
 		card.ImgLoadCancel = nil
 	}
-	if img, ok := g.imageFetcher.GetCoverThumbnailFromCache(album.CoverArt); ok {
+	if img, ok := g.imageFetcher.GetCoverThumbnailFromCache(item.CoverArtID); ok {
 		card.Cover.SetImage(img)
 	} else {
 		card.Cover.SetImageResource(res.ResAlbumplaceholderPng)
@@ -169,7 +193,7 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewCard) {
 		ctx, cancel := context.WithCancel(context.Background())
 		card.ImgLoadCancel = cancel
 		go func(ctx context.Context) {
-			i, err := g.imageFetcher.GetCoverThumbnail(album.CoverArt)
+			i, err := g.imageFetcher.GetCoverThumbnail(item.CoverArtID)
 			select {
 			case <-ctx.Done():
 				return

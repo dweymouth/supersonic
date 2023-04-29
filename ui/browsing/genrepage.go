@@ -52,7 +52,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 	}
 	g.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, g.playRandomSongs)
 	iter := g.lm.GenreIter(g.genre)
-	g.grid = widgets.NewAlbumGrid(iter, g.im, false)
+	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 	g.grid.OnPlay = g.onPlayAlbum
 	g.grid.OnShowSecondaryPage = g.onShowArtistPage
 	g.grid.OnShowItemPage = g.onShowAlbumPage
@@ -176,7 +176,7 @@ func (g *GenrePage) doSearch(query string) {
 		return al.Genre == g.genre
 	})
 	if g.searchGrid == nil {
-		g.searchGrid = widgets.NewAlbumGrid(iter, g.im, false /*showYear*/)
+		g.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 		g.searchGrid.OnPlay = g.onPlayAlbum
 		g.searchGrid.OnShowItemPage = g.onShowAlbumPage
 		g.searchGrid.OnShowSecondaryPage = g.onShowArtistPage
