@@ -55,13 +55,15 @@ func NewPlaylistPage(
 		conf.TracklistColumns = cols
 	}
 	a.tracklist.AutoNumber = true
-	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{
+	reorderMenu := fyne.NewMenuItem("Reorder tracks", nil)
+	reorderMenu.ChildMenu = fyne.NewMenu("", []*fyne.MenuItem{
 		fyne.NewMenuItem("Move to top", a.onMoveSelectedToTop),
 		fyne.NewMenuItem("Move up", a.onMoveSelectedUp),
 		fyne.NewMenuItem("Move down", a.onMoveSelectedDown),
 		fyne.NewMenuItem("Move to bottom", a.onMoveSelectedToBottom),
-		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist),
-	}
+	}...)
+	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{reorderMenu,
+		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)}
 	// connect tracklist actions
 	a.contr.ConnectTracklistActions(a.tracklist)
 
