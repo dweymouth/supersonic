@@ -291,12 +291,32 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			fyne.NewMenuItem("Unset favorite", func() {
 				t.onSetFavorites(t.selectedTracks(), false, true)
 			}))
+		ratingMenu := fyne.NewMenuItem("Set rating", nil)
+		ratingMenu.ChildMenu = fyne.NewMenu("", []*fyne.MenuItem{
+			t.newRatingMenuItem(0),
+			t.newRatingMenuItem(1),
+			t.newRatingMenuItem(2),
+			t.newRatingMenuItem(3),
+			t.newRatingMenuItem(4),
+			t.newRatingMenuItem(5),
+		}...)
+		t.ctxMenu.Items = append(t.ctxMenu.Items, ratingMenu)
 		if len(t.AuxiliaryMenuItems) > 0 {
 			t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
 			t.ctxMenu.Items = append(t.ctxMenu.Items, t.AuxiliaryMenuItems...)
 		}
 	}
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
+}
+
+func (t *Tracklist) newRatingMenuItem(rating int) *fyne.MenuItem {
+	label := "(none)"
+	if rating > 0 {
+		label = strconv.Itoa(rating)
+	}
+	return fyne.NewMenuItem(label, func() {
+		t.onSetRatings(t.selectedTracks(), rating, true)
+	})
 }
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
@@ -328,10 +348,19 @@ func (t *Tracklist) onSetRating(trackID string, rating int) {
 	t.tracksMutex.RLock()
 	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
 	t.tracksMutex.RUnlock()
-	tr.UserRating = rating
+	t.onSetRatings([]*subsonic.Child{tr}, rating, false)
+}
+
+func (t *Tracklist) onSetRatings(tracks []*subsonic.Child, rating int, needRefresh bool) {
+	for _, tr := range tracks {
+		tr.UserRating = rating
+	}
+	if needRefresh {
+		t.Refresh()
+	}
 	// notify listener
 	if t.OnSetRating != nil {
-		t.OnSetRating([]string{trackID}, rating)
+		t.OnSetRating(sharedutil.TracksToIDs(tracks), rating)
 	}
 }
 
