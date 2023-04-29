@@ -576,12 +576,6 @@ func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
 	}
 
 	// Render favorite column
-	// TODO: right now the only way for the favorite status to change while the tracklist is visible
-	// is by the user clicking on the heart icon in the favorites column
-	// If this changes in the future (e.g. context menu entry on tracklist), then we will
-	// need better state management/onChanged notif so we know to re-render the column
-	// (maybe update the Starred field directly on the track struct and issue a Refresh call -
-	// like we do to update the now playing value when scrobbles happen)
 	if tr.Starred.IsZero() {
 		t.isFavorite = false
 		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartOutlineInvertPng
