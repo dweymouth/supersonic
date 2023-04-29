@@ -67,7 +67,7 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.sortOrder = NewSelect(backend.AlbumSortOrders, a.onSortOrderChanged)
-	if !sharedutil.StringSliceContains(backend.AlbumSortOrders, cfg.SortOrder) {
+	if !sharedutil.SliceContains(backend.AlbumSortOrders, cfg.SortOrder) {
 		cfg.SortOrder = string(backend.AlbumSortRecentlyAdded)
 	}
 	a.sortOrder.Selected = cfg.SortOrder

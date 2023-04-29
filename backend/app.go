@@ -125,7 +125,7 @@ func (a *App) setupMPV() error {
 	a.Player.SetAudioDevice(desiredDevice)
 
 	rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack}
-	if !sharedutil.StringSliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
+	if !sharedutil.SliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
 		a.Config.ReplayGain.Mode = ReplayGainNone
 	}
 	a.Player.SetReplayGainOptions(player.ReplayGainOptions{

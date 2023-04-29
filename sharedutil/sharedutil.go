@@ -7,18 +7,9 @@ import (
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
-func StringSliceContains(slice []string, str string) bool {
-	for _, s := range slice {
-		if s == str {
-			return true
-		}
-	}
-	return false
-}
-
-func IntSliceContains(slice []int, i int) bool {
-	for _, x := range slice {
-		if x == i {
+func SliceContains[T comparable](ts []T, t T) bool {
+	for _, x := range ts {
+		if x == t {
 			return true
 		}
 	}
@@ -85,7 +76,7 @@ func ReorderTracks(tracks []*subsonic.Child, idxToMove []int, op TrackReorderOp)
 		topIdx := 0
 		botIdx := len(idxToMove)
 		for i, t := range tracks {
-			if IntSliceContains(idxToMove, i) {
+			if SliceContains(idxToMove, i) {
 				newTracks[topIdx] = t
 				topIdx++
 			} else {
@@ -97,7 +88,7 @@ func ReorderTracks(tracks []*subsonic.Child, idxToMove []int, op TrackReorderOp)
 		topIdx := 0
 		botIdx := len(tracks) - len(idxToMove)
 		for i, t := range tracks {
-			if IntSliceContains(idxToMove, i) {
+			if SliceContains(idxToMove, i) {
 				newTracks[botIdx] = t
 				botIdx++
 			} else {
