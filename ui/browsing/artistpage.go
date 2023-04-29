@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"log"
+	"strconv"
 	"strings"
 	"supersonic/backend"
 	"supersonic/res"
@@ -39,7 +40,7 @@ type ArtistPage struct {
 
 	artistInfo *subsonic.ArtistID3
 
-	albumGrid    *widgets.AlbumGrid
+	albumGrid    *widgets.GridView
 	tracklistCtr *fyne.Container
 	nowPlayingID string
 	header       *ArtistPageHeader
@@ -172,9 +173,17 @@ func (a *ArtistPage) showAlbumGrid() {
 			a.activeView = 0 // if page still loading, will show discography view first
 			return
 		}
-		a.albumGrid = widgets.NewFixedAlbumGrid(a.artistInfo.Album, a.im, true /*showYear*/)
-		a.albumGrid.OnPlayAlbum = a.onPlayAlbum
-		a.albumGrid.OnShowAlbumPage = a.onShowAlbumPage
+		model := sharedutil.MapSlice(a.artistInfo.Album, func(al *subsonic.AlbumID3) widgets.GridViewItemModel {
+			return widgets.GridViewItemModel{
+				Name:       al.Name,
+				ID:         al.ID,
+				CoverArtID: al.CoverArt,
+				Secondary:  strconv.Itoa(al.Year),
+			}
+		})
+		a.albumGrid = widgets.NewFixedGridView(model, a.im)
+		a.albumGrid.OnPlay = a.onPlayAlbum
+		a.albumGrid.OnShowItemPage = a.onShowAlbumPage
 	}
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
 	a.container.Objects[0].Refresh()

@@ -32,8 +32,8 @@ type FavoritesPage struct {
 	nowPlayingID      string
 	pendingViewSwitch bool
 
-	grid          *widgets.AlbumGrid
-	searchGrid    *widgets.AlbumGrid
+	grid          *widgets.GridView
+	searchGrid    *widgets.GridView
 	artistListCtr *fyne.Container
 	tracklistCtr  *fyne.Container
 	searcher      *widgets.Searcher
@@ -53,7 +53,7 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Contro
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(0, "")
-	a.grid = widgets.NewAlbumGrid(a.lm.StarredIter(), a.im, false)
+	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(lm.StarredIter()), a.im)
 	a.connectGridActions()
 	if cfg.InitialView == "Artists" {
 		a.toggleBtns.SetActivatedButton(1)
@@ -82,9 +82,9 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int, searchText string) {
 }
 
 func (a *FavoritesPage) connectGridActions() {
-	a.grid.OnPlayAlbum = a.onPlayAlbum
-	a.grid.OnShowAlbumPage = a.onShowAlbumPage
-	a.grid.OnShowArtistPage = a.onShowArtistPage
+	a.grid.OnPlay = a.onPlayAlbum
+	a.grid.OnShowItemPage = a.onShowAlbumPage
+	a.grid.OnShowSecondaryPage = a.onShowArtistPage
 }
 
 func (a *FavoritesPage) createContainer(initialView fyne.CanvasObject) {
@@ -105,11 +105,11 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(saved.activeToggleBtn, saved.searchText)
-	a.grid = widgets.NewAlbumGridFromState(saved.gridState)
+	a.grid = widgets.NewGridViewFromState(saved.gridState)
 	a.connectGridActions()
 
 	if saved.searchText != "" {
-		a.searchGrid = widgets.NewAlbumGridFromState(saved.searchGridState)
+		a.searchGrid = widgets.NewGridViewFromState(saved.searchGridState)
 	}
 
 	if saved.activeToggleBtn == 1 {
@@ -134,7 +134,7 @@ func (a *FavoritesPage) Reload() {
 	if a.searchText != "" {
 		a.doSearchAlbums(a.searchText)
 	} else {
-		a.grid.Reset(a.lm.StarredIter())
+		a.grid.Reset(widgets.NewGridViewAlbumIterator(a.lm.StarredIter()))
 	}
 	if a.tracklistCtr != nil || a.artistListCtr != nil {
 		go func() {
@@ -220,12 +220,12 @@ func (a *FavoritesPage) doSearchAlbums(query string) {
 		return al.Starred.After(time.Time{})
 	})
 	if a.searchGrid == nil {
-		a.searchGrid = widgets.NewAlbumGrid(iter, a.im, false /*showYear*/)
-		a.searchGrid.OnPlayAlbum = a.onPlayAlbum
-		a.searchGrid.OnShowAlbumPage = a.onShowAlbumPage
-		a.searchGrid.OnShowArtistPage = a.onShowArtistPage
+		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
+		a.searchGrid.OnPlay = a.onPlayAlbum
+		a.searchGrid.OnShowItemPage = a.onShowAlbumPage
+		a.searchGrid.OnShowSecondaryPage = a.onShowArtistPage
 	} else {
-		a.searchGrid.Reset(iter)
+		a.searchGrid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
 	a.container.Objects[0] = a.searchGrid
 	a.Refresh()
@@ -352,8 +352,8 @@ type savedFavoritesPage struct {
 	sm              *backend.ServerManager
 	im              *backend.ImageManager
 	lm              *backend.LibraryManager
-	gridState       widgets.AlbumGridState
-	searchGridState widgets.AlbumGridState
+	gridState       widgets.GridViewState
+	searchGridState widgets.GridViewState
 	searchText      string
 	activeToggleBtn int
 }

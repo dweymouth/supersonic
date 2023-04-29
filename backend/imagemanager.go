@@ -45,7 +45,7 @@ func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string)
 	return i
 }
 
-func (i *ImageManager) GetAlbumThumbnailFromCache(coverID string) (image.Image, bool) {
+func (i *ImageManager) GetCoverThumbnailFromCache(coverID string) (image.Image, bool) {
 	img, err := i.thumbnailCache.GetExtendTTL(coverID, i.thumbnailCache.DefaultTTL)
 	if err == nil && img != nil {
 		return img, true
@@ -53,14 +53,14 @@ func (i *ImageManager) GetAlbumThumbnailFromCache(coverID string) (image.Image, 
 	return nil, false
 }
 
-func (i *ImageManager) GetAlbumThumbnail(coverID string) (image.Image, error) {
-	if im, ok := i.GetAlbumThumbnailFromCache(coverID); ok {
+func (i *ImageManager) GetCoverThumbnail(coverID string) (image.Image, error) {
+	if im, ok := i.GetCoverThumbnailFromCache(coverID); ok {
 		return im, nil
 	}
 	return i.fetchAndCacheCoverFromDiskOrServer(coverID, i.thumbnailCache.DefaultTTL)
 }
 
-func (i *ImageManager) GetAlbumThumbnailWithTTL(coverID string, ttl time.Duration) (image.Image, error) {
+func (i *ImageManager) GetCoverThumbnailWithTTL(coverID string, ttl time.Duration) (image.Image, error) {
 	// in-memory cache
 	if img, err := i.thumbnailCache.GetWithNewTTL(coverID, ttl); err == nil {
 		return img, nil
@@ -68,7 +68,7 @@ func (i *ImageManager) GetAlbumThumbnailWithTTL(coverID string, ttl time.Duratio
 	return i.fetchAndCacheCoverFromDiskOrServer(coverID, ttl)
 }
 
-func (i *ImageManager) GetFullSizeAlbumCover(coverID string) (image.Image, error) {
+func (i *ImageManager) GetFullSizeCoverArt(coverID string) (image.Image, error) {
 	if i.cachedFullSizeCoverID == coverID {
 		return i.cachedFullSizeCover, nil
 	}

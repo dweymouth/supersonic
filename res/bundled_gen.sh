@@ -25,6 +25,8 @@ fyne bundle -append -prefix Res icons/publicdomain/shuffle.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/shuffle-invert.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/star-outline.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/star-filled.svg >> bundled.go
+fyne bundle -append -prefix Res icons/publicdomain/grid.svg >> bundled.go
+fyne bundle -append -prefix Res icons/publicdomain/list.svg >> bundled.go
 
 fyne bundle -append -prefix Res ../LICENSE >> bundled.go
 fyne bundle -append -prefix Res licenses/BSDLICENSE >> bundled.go

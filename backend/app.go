@@ -65,7 +65,7 @@ func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*A
 	a.LibraryManager = NewLibraryManager(a.ServerManager)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, configdir.LocalCache(a.appName))
 	a.LibraryManager.PreCacheCoverFn = func(coverID string) {
-		_, _ = a.ImageManager.GetAlbumThumbnail(coverID)
+		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	}
 
 	return a, nil

@@ -35,6 +35,14 @@ func FilterSlice[T any](ss []T, test func(T) bool) []T {
 	return result
 }
 
+func MapSlice[T any, U any](ts []T, f func(T) U) []U {
+	result := make([]U, len(ts))
+	for i, t := range ts {
+		result[i] = f(t)
+	}
+	return result
+}
+
 func FindTrackByID(id string, tracks []*subsonic.Child) *subsonic.Child {
 	for _, tr := range tracks {
 		if id == tr.ID {

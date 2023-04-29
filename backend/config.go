@@ -59,6 +59,10 @@ type PlaylistPageConfig struct {
 	TracklistColumns []string
 }
 
+type PlaylistsPageConfig struct {
+	InitialView string
+}
+
 type TracksPageConfig struct {
 	TracklistColumns []string
 }
@@ -91,6 +95,7 @@ type Config struct {
 	FavoritesPage  FavoritesPageConfig
 	NowPlayingPage NowPlayingPageConfig
 	PlaylistPage   PlaylistPageConfig
+	PlaylistsPage  PlaylistsPageConfig
 	TracksPage     TracksPageConfig
 	LocalPlayback  LocalPlaybackConfig
 	Scrobbling     ScrobbleConfig
@@ -125,6 +130,9 @@ func DefaultConfig(appVersionTag string) *Config {
 		},
 		PlaylistPage: PlaylistPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
+		},
+		PlaylistsPage: PlaylistsPageConfig{
+			InitialView: "List",
 		},
 		TracksPage: TracksPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
