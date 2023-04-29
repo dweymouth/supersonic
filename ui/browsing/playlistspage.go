@@ -23,6 +23,7 @@ import (
 type PlaylistsPage struct {
 	widget.BaseWidget
 
+	cfg               *backend.PlaylistsPageConfig
 	contr             *controller.Controller
 	sm                *backend.ServerManager
 	playlists         []*subsonic.Playlist
@@ -36,12 +37,17 @@ type PlaylistsPage struct {
 	gridView   *widgets.GridView
 }
 
-func NewPlaylistsPage(contr *controller.Controller, sm *backend.ServerManager) *PlaylistsPage {
-	return newPlaylistsPage(contr, sm, "", 0)
+func NewPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, sm *backend.ServerManager) *PlaylistsPage {
+	activeView := 0
+	if cfg.InitialView == "Grid" {
+		activeView = 1
+	}
+	return newPlaylistsPage(contr, cfg, sm, "", activeView)
 }
 
-func newPlaylistsPage(contr *controller.Controller, sm *backend.ServerManager, searchText string, activeView int) *PlaylistsPage {
+func newPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, sm *backend.ServerManager, searchText string, activeView int) *PlaylistsPage {
 	a := &PlaylistsPage{
+		cfg:       cfg,
 		sm:        sm,
 		contr:     contr,
 		titleDisp: widget.NewRichTextWithText("Playlists"),
@@ -95,6 +101,7 @@ func (a *PlaylistsPage) createGridView(playlists []*subsonic.Playlist) {
 }
 
 func (a *PlaylistsPage) showListView() {
+	a.cfg.InitialView = "List" // save setting
 	if a.listView == nil {
 		a.createListView()
 		if a.searcher.Entry.Text != "" {
@@ -108,6 +115,7 @@ func (a *PlaylistsPage) showListView() {
 }
 
 func (a *PlaylistsPage) showGridView() {
+	a.cfg.InitialView = "Grid" // save setting
 	if a.gridView == nil {
 		playlists := a.playlists
 		if a.searcher.Entry.Text != "" {
@@ -190,6 +198,7 @@ func (a *PlaylistsPage) Reload() {
 func (a *PlaylistsPage) Save() SavedPage {
 	return &savedPlaylistsPage{
 		contr:      a.contr,
+		cfg:        a.cfg,
 		sm:         a.sm,
 		searchText: a.searcher.Entry.Text,
 		activeView: a.viewToggle.ActivatedButtonIndex(),
@@ -198,13 +207,14 @@ func (a *PlaylistsPage) Save() SavedPage {
 
 type savedPlaylistsPage struct {
 	contr      *controller.Controller
+	cfg        *backend.PlaylistsPageConfig
 	sm         *backend.ServerManager
 	searchText string
 	activeView int
 }
 
 func (s *savedPlaylistsPage) Restore() Page {
-	return newPlaylistsPage(s.contr, s.sm, s.searchText, s.activeView)
+	return newPlaylistsPage(s.contr, s.cfg, s.sm, s.searchText, s.activeView)
 }
 
 func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {
