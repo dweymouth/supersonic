@@ -134,7 +134,7 @@ func (a *FavoritesPage) Reload() {
 	if a.searchText != "" {
 		a.doSearchAlbums(a.searchText)
 	} else {
-		a.grid.Reset(a.lm.StarredIter())
+		a.grid.Reset(widgets.NewGridViewAlbumIterator(a.lm.StarredIter()))
 	}
 	if a.tracklistCtr != nil || a.artistListCtr != nil {
 		go func() {
@@ -225,7 +225,7 @@ func (a *FavoritesPage) doSearchAlbums(query string) {
 		a.searchGrid.OnShowItemPage = a.onShowAlbumPage
 		a.searchGrid.OnShowSecondaryPage = a.onShowArtistPage
 	} else {
-		a.searchGrid.Reset(iter)
+		a.searchGrid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
 	a.container.Objects[0] = a.searchGrid
 	a.Refresh()

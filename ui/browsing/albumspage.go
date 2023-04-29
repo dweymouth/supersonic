@@ -156,7 +156,8 @@ func (a *AlbumsPage) Reload() {
 	if a.searchText != "" {
 		a.doSearch(a.searchText)
 	} else {
-		a.grid.Reset(a.lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected)))
+		iter := a.lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected))
+		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 		a.grid.Refresh()
 	}
 }
@@ -185,7 +186,7 @@ func (a *AlbumsPage) doSearch(query string) {
 		a.searchGrid.OnShowItemPage = a.onShowAlbumPage
 		a.searchGrid.OnShowSecondaryPage = a.onShowArtistPage
 	} else {
-		a.searchGrid.Reset(a.lm.SearchIter(query))
+		a.searchGrid.Reset(widgets.NewGridViewAlbumIterator(a.lm.SearchIter(query)))
 	}
 	a.container.Objects[0] = a.searchGrid
 	a.Refresh()
@@ -205,7 +206,8 @@ func (a *AlbumsPage) onShowAlbumPage(albumID string) {
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
 	a.cfg.SortOrder = a.sortOrder.Selected
-	a.grid.Reset(a.lm.AlbumsIter(backend.AlbumSortOrder(order)))
+	iter := a.lm.AlbumsIter(backend.AlbumSortOrder(order))
+	a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	if a.searchText == "" {
 		a.container.Objects[0] = a.grid
 		a.Refresh()

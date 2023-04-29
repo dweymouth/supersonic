@@ -119,7 +119,7 @@ func (g *GenrePage) Reload() {
 	if g.searchText != "" {
 		g.doSearch(g.searchText)
 	} else {
-		g.grid.Reset(g.lm.GenreIter(g.genre))
+		g.grid.Reset(widgets.NewGridViewAlbumIterator(g.lm.GenreIter(g.genre)))
 		g.grid.Refresh()
 	}
 }
@@ -181,7 +181,7 @@ func (g *GenrePage) doSearch(query string) {
 		g.searchGrid.OnShowItemPage = g.onShowAlbumPage
 		g.searchGrid.OnShowSecondaryPage = g.onShowArtistPage
 	} else {
-		g.searchGrid.Reset(iter)
+		g.searchGrid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
 	g.container.Objects[0] = g.searchGrid
 	g.Refresh()

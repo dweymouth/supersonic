@@ -14,7 +14,7 @@ import (
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
-const albumFetchBatchSize = 6
+const batchFetchSize = 6
 
 type ImageFetcher interface {
 	GetCoverThumbnailFromCache(string) (image.Image, bool)
@@ -123,15 +123,25 @@ func (g *GridView) Clear() {
 	g.done = true
 }
 
-func (g *GridView) Reset(iter backend.AlbumIterator) {
+func (g *GridView) Reset(iter GridViewIterator) {
 	g.itemsMutex.Lock()
 	g.items = nil
 	g.itemsMutex.Unlock()
 	g.fetching = false
 	g.done = false
 	g.highestShown = 0
-	g.iter = gridViewAlbumIterator{iter: backend.NewBatchingIterator(iter)}
+	g.iter = iter
 	g.fetchMoreItems(36)
+}
+
+func (g *GridView) ResetFixed(items []GridViewItemModel) {
+	g.itemsMutex.Lock()
+	g.items = items
+	g.itemsMutex.Unlock()
+	g.fetching = false
+	g.done = true
+	g.highestShown = 0
+	g.iter = nil
 }
 
 func (g *GridView) createGridWrapList() {
@@ -231,15 +241,15 @@ func (g *GridView) fetchMoreItems(count int) {
 		for !g.done && g.highestShown >= g.lenItems()-10 {
 			n := 0
 			for !g.done && n < count {
-				albums := g.iter.NextN(albumFetchBatchSize)
+				items := g.iter.NextN(batchFetchSize)
 				g.itemsMutex.Lock()
-				g.items = append(g.items, albums...)
+				g.items = append(g.items, items...)
 				g.itemsMutex.Unlock()
-				if len(albums) < albumFetchBatchSize {
+				if len(items) < batchFetchSize {
 					g.done = true
 				}
-				n += len(albums)
-				if len(albums) > 0 {
+				n += len(items)
+				if len(items) > 0 {
 					g.Refresh()
 				}
 			}

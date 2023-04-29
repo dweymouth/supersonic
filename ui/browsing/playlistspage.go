@@ -1,10 +1,12 @@
 package browsing
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
 	"supersonic/backend"
+	"supersonic/res"
 	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
@@ -21,21 +23,24 @@ import (
 type PlaylistsPage struct {
 	widget.BaseWidget
 
-	contr     *controller.Controller
-	sm        *backend.ServerManager
-	playlists []*subsonic.Playlist
+	contr             *controller.Controller
+	sm                *backend.ServerManager
+	playlists         []*subsonic.Playlist
+	searchedPlaylists []*subsonic.Playlist
 
-	searcher  *widgets.Searcher
-	titleDisp *widget.RichText
-	container *fyne.Container
-	list      *PlaylistList
+	viewToggle *widgets.ToggleButtonGroup
+	searcher   *widgets.Searcher
+	titleDisp  *widget.RichText
+	container  *fyne.Container
+	listView   *PlaylistList
+	gridView   *widgets.GridView
 }
 
 func NewPlaylistsPage(contr *controller.Controller, sm *backend.ServerManager) *PlaylistsPage {
-	return newPlaylistsPage(contr, sm, "")
+	return newPlaylistsPage(contr, sm, "", 0)
 }
 
-func newPlaylistsPage(contr *controller.Controller, sm *backend.ServerManager, searchText string) *PlaylistsPage {
+func newPlaylistsPage(contr *controller.Controller, sm *backend.ServerManager, searchText string, activeView int) *PlaylistsPage {
 	a := &PlaylistsPage{
 		sm:        sm,
 		contr:     contr,
@@ -43,14 +48,21 @@ func newPlaylistsPage(contr *controller.Controller, sm *backend.ServerManager, s
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
-	a.list = NewPlaylistList()
-	a.list.OnNavTo = func(id string) {
-		a.contr.NavigateTo(controller.PlaylistRoute(id))
-	}
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
-	a.buildContainer()
+	a.viewToggle = widgets.NewToggleButtonGroup(0,
+		widget.NewButtonWithIcon("", theme.NewThemedResource(res.ResListSvg), a.showListView),
+		widget.NewButtonWithIcon("", theme.NewThemedResource(res.ResGridSvg), a.showGridView))
+	a.viewToggle.SetActivatedButton(activeView)
+	if activeView == 0 {
+		a.createListView()
+		a.buildContainer(a.listView)
+	} else {
+		a.createGridView(nil)
+		a.buildContainer(a.gridView)
+	}
+
 	go a.load(searchText != "")
 	return a
 }
@@ -64,26 +76,101 @@ func (a *PlaylistsPage) load(searchOnLoad bool) {
 	if searchOnLoad {
 		a.onSearched(a.searcher.Entry.Text)
 	} else {
-		a.list.Playlists = playlists
-		a.list.Refresh()
+		a.refreshView(playlists)
 	}
+}
+
+func (a *PlaylistsPage) createListView() {
+	a.listView = NewPlaylistList()
+	a.listView.OnNavTo = a.showPlaylistPage
+}
+
+func (a *PlaylistsPage) createGridView(playlists []*subsonic.Playlist) {
+	model := createPlaylistGridViewModel(playlists)
+	a.gridView = widgets.NewFixedGridView(model, a.contr.App.ImageManager)
+	a.gridView.OnPlay = func(id string) {
+		a.contr.App.PlaybackManager.PlayPlaylist(id, 0)
+	}
+	a.gridView.OnShowItemPage = a.showPlaylistPage
+}
+
+func (a *PlaylistsPage) showListView() {
+	if a.listView == nil {
+		a.createListView()
+		if a.searcher.Entry.Text != "" {
+			a.listView.Playlists = a.searchedPlaylists
+		} else {
+			a.listView.Playlists = a.playlists
+		}
+	}
+	a.container.Objects[0].(*fyne.Container).Objects[0] = a.listView
+	a.container.Objects[0].Refresh()
+}
+
+func (a *PlaylistsPage) showGridView() {
+	if a.gridView == nil {
+		playlists := a.playlists
+		if a.searcher.Entry.Text != "" {
+			playlists = a.searchedPlaylists
+		}
+		a.createGridView(playlists)
+	}
+	a.container.Objects[0].(*fyne.Container).Objects[0] = a.gridView
+	a.container.Objects[0].Refresh()
+}
+
+func createPlaylistGridViewModel(playlists []*subsonic.Playlist) []widgets.GridViewItemModel {
+	return sharedutil.MapSlice(playlists, func(pl *subsonic.Playlist) widgets.GridViewItemModel {
+		tracks := "tracks"
+		if pl.SongCount == 1 {
+			tracks = "track"
+		}
+		return widgets.GridViewItemModel{
+			Name:       pl.Name,
+			ID:         pl.ID,
+			CoverArtID: pl.CoverArt,
+			Secondary:  fmt.Sprintf("%d %s", pl.SongCount, tracks),
+		}
+	})
+}
+
+func (a *PlaylistsPage) showPlaylistPage(id string) {
+	a.contr.NavigateTo(controller.PlaylistRoute(id))
 }
 
 func (a *PlaylistsPage) onSearched(query string) {
 	// since the playlist list is returned in full non-paginated, we will do our own
 	// simple search based on the name, description, and owner, rather than calling a server API
+	var playlists []*subsonic.Playlist
 	if query == "" {
-		a.list.Playlists = a.playlists
+		a.searchedPlaylists = nil
+		playlists = a.playlists
 	} else {
-		result := sharedutil.FilterSlice(a.playlists, func(p *subsonic.Playlist) bool {
+		a.searchedPlaylists = sharedutil.FilterSlice(a.playlists, func(p *subsonic.Playlist) bool {
 			qLower := strings.ToLower(query)
 			return strings.Contains(strings.ToLower(p.Name), qLower) ||
 				strings.Contains(strings.ToLower(p.Comment), qLower) ||
 				strings.Contains(strings.ToLower(p.Owner), qLower)
 		})
-		a.list.Playlists = result
+		playlists = a.searchedPlaylists
 	}
-	a.list.Refresh()
+	a.refreshView(playlists)
+}
+
+// update the model for both views if initialized,
+// refresh the active view
+func (a *PlaylistsPage) refreshView(playlists []*subsonic.Playlist) {
+	if a.listView != nil {
+		a.listView.Playlists = playlists
+	}
+	if a.gridView != nil {
+		a.gridView.ResetFixed(createPlaylistGridViewModel(playlists))
+	}
+	if a.viewToggle.ActivatedButtonIndex() == 0 {
+		a.listView.Refresh()
+	} else {
+		a.gridView.Refresh()
+	}
 }
 
 var _ Searchable = (*PlaylistsPage)(nil)
@@ -97,7 +184,7 @@ func (a *PlaylistsPage) Route() controller.Route {
 }
 
 func (a *PlaylistsPage) Reload() {
-	go a.load(false)
+	go a.load(a.searcher.Entry.Text != "")
 }
 
 func (a *PlaylistsPage) Save() SavedPage {
@@ -105,6 +192,7 @@ func (a *PlaylistsPage) Save() SavedPage {
 		contr:      a.contr,
 		sm:         a.sm,
 		searchText: a.searcher.Entry.Text,
+		activeView: a.viewToggle.ActivatedButtonIndex(),
 	}
 }
 
@@ -112,18 +200,19 @@ type savedPlaylistsPage struct {
 	contr      *controller.Controller
 	sm         *backend.ServerManager
 	searchText string
+	activeView int
 }
 
 func (s *savedPlaylistsPage) Restore() Page {
-	return newPlaylistsPage(s.contr, s.sm, s.searchText)
+	return newPlaylistsPage(s.contr, s.sm, s.searchText, s.activeView)
 }
 
-func (a *PlaylistsPage) buildContainer() {
+func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
 	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 		container.NewBorder(
-			container.NewHBox(a.titleDisp, layout.NewSpacer(), searchVbox),
-			nil, nil, nil, a.list))
+			container.NewHBox(a.titleDisp, container.NewCenter(a.viewToggle), layout.NewSpacer(), searchVbox),
+			nil, nil, nil, initialView))
 }
 
 func (a *PlaylistsPage) CreateRenderer() fyne.WidgetRenderer {
