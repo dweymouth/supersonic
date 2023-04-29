@@ -282,6 +282,15 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 					t.OnAddToPlaylist(t.selectedTrackIDs())
 				}
 			}))
+		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
+		t.ctxMenu.Items = append(t.ctxMenu.Items,
+			fyne.NewMenuItem("Set favorite", func() {
+				t.onSetFavorites(t.selectedTracks(), true, true)
+			}))
+		t.ctxMenu.Items = append(t.ctxMenu.Items,
+			fyne.NewMenuItem("Unset favorite", func() {
+				t.onSetFavorites(t.selectedTracks(), false, true)
+			}))
 		if len(t.AuxiliaryMenuItems) > 0 {
 			t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
 			t.ctxMenu.Items = append(t.ctxMenu.Items, t.AuxiliaryMenuItems...)
@@ -291,18 +300,26 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 }
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
-	// update our own track model
 	t.tracksMutex.RLock()
 	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
 	t.tracksMutex.RUnlock()
-	if fav {
-		tr.Starred = time.Now()
-	} else {
-		tr.Starred = time.Time{}
+	t.onSetFavorites([]*subsonic.Child{tr}, fav, false)
+}
+
+func (t *Tracklist) onSetFavorites(tracks []*subsonic.Child, fav bool, needRefresh bool) {
+	for _, tr := range tracks {
+		if fav {
+			tr.Starred = time.Now()
+		} else {
+			tr.Starred = time.Time{}
+		}
+	}
+	if needRefresh {
+		t.Refresh()
 	}
 	// notify listener
 	if t.OnSetFavorite != nil {
-		t.OnSetFavorite([]string{trackID}, fav)
+		t.OnSetFavorite(sharedutil.TracksToIDs(tracks), fav)
 	}
 }
 
