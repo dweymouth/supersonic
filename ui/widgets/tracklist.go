@@ -471,36 +471,40 @@ type TrackRow struct {
 func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow {
 	t := &TrackRow{tracklist: tracklist, playingIcon: playingIcon}
 	t.ExtendBaseWidget(t)
-	t.num = widget.NewRichTextWithText("")
-	t.num.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
-	t.name = widget.NewRichTextWithText("")
-	t.name.Wrapping = fyne.TextTruncate
+	t.num = newTrailingAlignRichText()
+	t.name = newTruncatingRichText()
 	t.artist = NewCustomHyperlink()
 	t.artist.OnTapped = func() { tracklist.onArtistTapped(t.artistID) }
 	t.album = NewCustomHyperlink()
 	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
-	t.dur = widget.NewRichTextWithText("")
-	t.dur.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
-	t.year = widget.NewRichTextWithText("")
-	t.year.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
+	t.dur = newTrailingAlignRichText()
+	t.year = newTrailingAlignRichText()
 	favorite := NewTappbaleIcon(res.ResHeartOutlineInvertPng)
 	favorite.OnTapped = t.toggleFavorited
 	t.favorite = container.NewCenter(favorite)
 	t.rating = NewStarRating()
 	t.rating.StarSize = 16
 	t.rating.OnRatingChanged = t.setTrackRating
-	t.plays = widget.NewRichTextWithText("")
-	t.plays.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
-	t.bitrate = widget.NewRichTextWithText("")
-	t.bitrate.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
-	t.size = widget.NewRichTextWithText("")
-	t.size.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
-	t.path = widget.NewRichTextWithText("")
-	t.path.Wrapping = fyne.TextTruncate
+	t.plays = newTrailingAlignRichText()
+	t.bitrate = newTrailingAlignRichText()
+	t.size = newTrailingAlignRichText()
+	t.path = newTruncatingRichText()
 
 	t.Content = container.New(tracklist.colLayout,
 		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.rating, t.plays, t.bitrate, t.size, t.path)
 	return t
+}
+
+func newTruncatingRichText() *widget.RichText {
+	rt := widget.NewRichTextWithText("")
+	rt.Wrapping = fyne.TextTruncate
+	return rt
+}
+
+func newTrailingAlignRichText() *widget.RichText {
+	rt := widget.NewRichTextWithText("")
+	rt.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
+	return rt
 }
 
 func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
