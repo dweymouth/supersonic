@@ -7,6 +7,7 @@ import (
 
 type NavigationHandler interface {
 	SetPage(Page)
+	CurrentPage() controller.Route
 }
 
 type Router struct {
@@ -53,5 +54,7 @@ func (r Router) CreatePage(rte controller.Route) Page {
 }
 
 func (r Router) NavigateTo(rte controller.Route) {
-	r.Nav.SetPage(r.CreatePage(rte))
+	if rte != r.Nav.CurrentPage() {
+		r.Nav.SetPage(r.CreatePage(rte))
+	}
 }

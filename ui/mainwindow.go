@@ -65,7 +65,7 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	// inject controller dependencies
 	m.Controller.NavHandler = m.Router.NavigateTo
 	m.Controller.ReloadFunc = m.BrowsingPane.Reload
-	m.Controller.CurPageFunc = m.BrowsingPane.CurPage
+	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
 
 	m.BottomPanel = NewBottomPanel(app.Player, m.Controller)
 	m.BottomPanel.SetPlaybackManager(app.PlaybackManager)

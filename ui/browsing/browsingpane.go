@@ -209,7 +209,10 @@ func (b *BrowsingPane) Reload() {
 	}
 }
 
-func (b *BrowsingPane) CurPage() controller.Route {
+func (b *BrowsingPane) CurrentPage() controller.Route {
+	if b.curPage == nil {
+		return controller.Route{Page: controller.Blank}
+	}
 	return b.curPage.Route()
 }
 
