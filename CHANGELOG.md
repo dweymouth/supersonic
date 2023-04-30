@@ -7,6 +7,7 @@
 - [b017995](https://github.com/dweymouth/supersonic/commit/b01799550ded0c6a8f33913827df23818f9a7353) Add Ctrl+W (Cmd+W on Mac) shortcut to close to tray if enabled
 - [#95](https://github.com/dweymouth/supersonic/issues/95) Enable click-to-seek behavior in seek bar
 - [#40](https://github.com/dweymouth/supersonic/issues/40) Add grid view option to playlists page
+- Add tracklist context menu items to bulk set rating and favorite
 
 ### Fixed
 - [#148](https://github.com/dweymouth/supersonic/issues/148) Fix potential crash when searching for albums
