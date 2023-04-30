@@ -27,6 +27,7 @@ type AppConfig struct {
 	LastCheckedVersion string
 	EnableSystemTray   bool
 	CloseToSystemTray  bool
+	StartupPage        string
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
@@ -102,6 +103,8 @@ type Config struct {
 	ReplayGain     ReplayGainConfig
 }
 
+var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists"}
+
 func DefaultConfig(appVersionTag string) *Config {
 	return &Config{
 		Application: AppConfig{
@@ -110,6 +113,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			LastCheckedVersion: appVersionTag,
 			EnableSystemTray:   true,
 			CloseToSystemTray:  false,
+			StartupPage:        "Albums",
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},

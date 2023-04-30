@@ -62,6 +62,13 @@ func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDev
 }
 
 func (s *SettingsDialog) createGeneralTab() *container.TabItem {
+	startupPage := widget.NewSelect(backend.SupportedStartupPages, func(choice string) {
+		s.config.Application.StartupPage = choice
+	})
+	startupPage.SetSelected(s.config.Application.StartupPage)
+	if startupPage.Selected == "" {
+		startupPage.SetSelectedIndex(0)
+	}
 	closeToTray := widget.NewCheckWithData("Close to system tray",
 		binding.BindBool(&s.config.Application.CloseToSystemTray))
 	if !s.config.Application.EnableSystemTray {
@@ -154,8 +161,8 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 	scrobbleEnabled.Checked = s.config.Scrobbling.Enabled
 
 	return container.NewTabItem("General", container.NewVBox(
-		systemTrayEnable,
-		closeToTray,
+		container.New(layout.NewFormLayout(), widget.NewLabel("Startup page"), startupPage),
+		container.NewHBox(systemTrayEnable, closeToTray),
 		s.newSectionSeparator(),
 
 		widget.NewRichText(&widget.TextSegment{Text: "Scrobbling", Style: boldStyle}),

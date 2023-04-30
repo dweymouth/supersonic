@@ -46,10 +46,6 @@ type MainWindow struct {
 	container      *fyne.Container
 }
 
-var (
-	HomePage = controller.AlbumsRoute()
-)
-
 func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.App, size fyne.Size) MainWindow {
 	m := MainWindow{
 		App:          app,
@@ -86,7 +82,7 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	})
 	app.ServerManager.OnServerConnected(func() {
 		m.BrowsingPane.EnableNavigationButtons()
-		m.Router.NavigateTo(HomePage)
+		m.Router.NavigateTo(m.StartupPage())
 		// check if found new version on startup
 		if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
 			if t != app.VersionTag() {
@@ -127,6 +123,17 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()
 	return m
+}
+
+func (m *MainWindow) StartupPage() controller.Route {
+	switch m.App.Config.Application.StartupPage {
+	case "Favorites":
+		return controller.FavoritesRoute()
+	case "Playlists":
+		return controller.PlaylistsRoute()
+	default:
+		return controller.AlbumsRoute()
+	}
 }
 
 func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
