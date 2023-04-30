@@ -32,6 +32,7 @@ type nowPlayingPageState struct {
 }
 
 func NewNowPlayingPage(
+	highlightedTrackID string,
 	contr *controller.Controller,
 	conf *backend.NowPlayingPageConfig,
 	sm *backend.ServerManager,
@@ -56,7 +57,7 @@ func NewNowPlayingPage(
 	a.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
 	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 		container.NewBorder(a.title, nil, nil, nil, a.tracklist))
-	a.load()
+	a.load(highlightedTrackID)
 	return a
 }
 
@@ -70,7 +71,7 @@ func (a *NowPlayingPage) Save() SavedPage {
 }
 
 func (a *NowPlayingPage) Route() controller.Route {
-	return controller.NowPlayingRoute()
+	return controller.NowPlayingRoute("")
 }
 
 func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
@@ -92,7 +93,7 @@ func (a *NowPlayingPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *
 }
 
 func (a *NowPlayingPage) Reload() {
-	a.load()
+	a.load("")
 }
 
 func (a *NowPlayingPage) onPlayTrackAt(tracknum int) {
@@ -106,12 +107,15 @@ func (a *NowPlayingPage) onRemoveSelectedFromQueue() {
 }
 
 // does not make calls to server - can safely be run in UI callbacks
-func (a *NowPlayingPage) load() {
+func (a *NowPlayingPage) load(highlightedTrackID string) {
 	queue := a.pm.GetPlayQueue()
 	a.tracklist.Tracks = queue
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
+	if highlightedTrackID != "" {
+		a.tracklist.SelectAndScrollToTrack(highlightedTrackID)
+	}
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage(s.contr, s.conf, s.sm, s.pm)
+	return NewNowPlayingPage("", s.contr, s.conf, s.sm, s.pm)
 }

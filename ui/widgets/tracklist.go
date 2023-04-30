@@ -231,6 +231,22 @@ func (t *Tracklist) UnselectAll() {
 	t.list.Refresh()
 }
 
+func (t *Tracklist) SelectAndScrollToTrack(trackID string) {
+	t.tracksMutex.RLock()
+	idx := -1
+	for i, tr := range t.Tracks {
+		if tr.ID == trackID {
+			idx = i
+			break
+		}
+	}
+	t.tracksMutex.RUnlock()
+	if idx >= 0 {
+		t.list.ScrollTo(idx)
+		t.selectionMgr.Select(idx)
+	}
+}
+
 func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.container)
 }

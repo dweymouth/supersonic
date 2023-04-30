@@ -61,6 +61,6 @@ func ArtistsRoute() Route {
 	return Route{Page: Artists}
 }
 
-func NowPlayingRoute() Route {
-	return Route{Page: NowPlaying}
+func NowPlayingRoute(highlightedTrackID string) Route {
+	return Route{Page: NowPlaying, Arg: highlightedTrackID}
 }

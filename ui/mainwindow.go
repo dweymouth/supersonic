@@ -179,7 +179,7 @@ func (m *MainWindow) ShowNewVersionDialog(appName, versionTag string) {
 
 func (m *MainWindow) addNavigationButtons() {
 	m.BrowsingPane.AddNavigationButton(res.ResHeadphonesInvertPng, func() {
-		m.Router.NavigateTo(controller.NowPlayingRoute())
+		m.Router.NavigateTo(controller.NowPlayingRoute(""))
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResHeartFilledInvertPng, func() {
 		m.Router.NavigateTo(controller.FavoritesRoute())

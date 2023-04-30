@@ -61,6 +61,9 @@ func NewBottomPanel(p *player.Player, contr *controller.Controller) *BottomPanel
 	bp.NowPlaying.OnArtistNameTapped(func() {
 		contr.NavigateTo(controller.ArtistRoute(bp.playbackManager.NowPlaying().ArtistID))
 	})
+	bp.NowPlaying.OnTrackNameTapped(func() {
+		contr.NavigateTo(controller.NowPlayingRoute(bp.playbackManager.NowPlaying().ID))
+	})
 	bp.Controls = widgets.NewPlayerControls()
 	bp.Controls.OnPlayPause(func() {
 		p.PlayPause()

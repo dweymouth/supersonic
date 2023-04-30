@@ -90,6 +90,10 @@ func (c *CustomHyperlink) SetText(text string) {
 	c.Refresh()
 }
 
+func (c *CustomHyperlink) SetTextStyle(style fyne.TextStyle) {
+	c.h.TextStyle = style
+}
+
 func (c *CustomHyperlink) Resize(size fyne.Size) {
 	c.h.MaxWidth = size.Width
 	c.BaseWidget.Resize(size)
