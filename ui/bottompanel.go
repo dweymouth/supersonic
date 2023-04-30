@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"image"
+	"log"
 	"supersonic/backend"
 	"supersonic/player"
 	"supersonic/ui/controller"
@@ -25,12 +26,14 @@ type BottomPanel struct {
 	NowPlaying  *widgets.NowPlayingCard
 	Controls    *widgets.PlayerControls
 	AuxControls *widgets.AuxControls
-	container   *fyne.Container
+
+	coverArtID string
+	container  *fyne.Container
 }
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(p *player.Player, nav func(controller.Route)) *BottomPanel {
+func NewBottomPanel(p *player.Player, contr *controller.Controller) *BottomPanel {
 	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
 	p.OnPaused(func() {
@@ -44,11 +47,19 @@ func NewBottomPanel(p *player.Player, nav func(controller.Route)) *BottomPanel {
 	})
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
+	bp.NowPlaying.OnShowCoverImage = func() {
+		im, err := bp.ImageManager.GetFullSizeCoverArt(bp.coverArtID)
+		if err != nil {
+			log.Printf("error getting full size cover image: %s", err.Error())
+		} else {
+			contr.ShowPopUpImage(im)
+		}
+	}
 	bp.NowPlaying.OnAlbumNameTapped(func() {
-		nav(controller.AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
+		contr.NavigateTo(controller.AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
 	})
 	bp.NowPlaying.OnArtistNameTapped(func() {
-		nav(controller.ArtistRoute(bp.playbackManager.NowPlaying().ArtistID))
+		contr.NavigateTo(controller.ArtistRoute(bp.playbackManager.NowPlaying().ArtistID))
 	})
 	bp.Controls = widgets.NewPlayerControls()
 	bp.Controls.OnPlayPause(func() {
@@ -86,8 +97,9 @@ func (bp *BottomPanel) SetPlaybackManager(pm *backend.PlaybackManager) {
 
 func (bp *BottomPanel) onSongChange(song *subsonic.Child, _ *subsonic.Child) {
 	if song == nil {
-		bp.NowPlaying.Update("", "", "", nil)
+		bp.NowPlaying.Update("", "", false, "", nil)
 	} else {
+		bp.coverArtID = song.CoverArt
 		var im image.Image
 		if bp.ImageManager != nil {
 			// set image to expire not long after the length of the song
@@ -97,7 +109,7 @@ func (bp *BottomPanel) onSongChange(song *subsonic.Child, _ *subsonic.Child) {
 			imgTTLSec := song.Duration + 30
 			im, _ = bp.ImageManager.GetCoverThumbnailWithTTL(song.CoverArt, time.Duration(imgTTLSec)*time.Second)
 		}
-		bp.NowPlaying.Update(song.Title, song.Artist, song.Album, im)
+		bp.NowPlaying.Update(song.Title, song.Artist, song.ArtistID != "", song.Album, im)
 	}
 }
 

@@ -18,7 +18,9 @@ type NowPlayingCard struct {
 	trackName  *widget.Label
 	artistName *CustomHyperlink
 	albumName  *CustomHyperlink
-	cover      *canvas.Image
+	cover      *TappableImage
+
+	OnShowCoverImage func()
 
 	c fyne.CanvasObject
 }
@@ -28,9 +30,9 @@ func NewNowPlayingCard() *NowPlayingCard {
 		trackName:  widget.NewLabel(""),
 		artistName: NewCustomHyperlink(),
 		albumName:  NewCustomHyperlink(),
-		cover:      &canvas.Image{},
 	}
 	n.ExtendBaseWidget(n)
+	n.cover = NewTappableImage(n.onShowCoverImage)
 	n.artistName.Hidden = true
 	n.albumName.Hidden = true
 	n.trackName.Wrapping = fyne.TextTruncate
@@ -46,17 +48,24 @@ func NewNowPlayingCard() *NowPlayingCard {
 	return n
 }
 
+func (n *NowPlayingCard) onShowCoverImage() {
+	if n.OnShowCoverImage != nil {
+		n.OnShowCoverImage()
+	}
+}
+
 func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(n.c)
 }
 
-func (n *NowPlayingCard) Update(track, artist, album string, cover image.Image) {
+func (n *NowPlayingCard) Update(track, artist string, artistNavigable bool, album string, cover image.Image) {
 	n.trackName.Text = track
 	n.artistName.SetText(artist)
 	n.artistName.Hidden = artist == ""
+	n.artistName.Disabled = !artistNavigable
 	n.albumName.SetText(album)
 	n.albumName.Hidden = album == ""
-	n.cover.Image = cover
+	n.cover.Image.Image = cover
 	n.c.Refresh()
 }
 
