@@ -16,6 +16,17 @@ import (
 
 const ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
 
+const (
+	IconNameNowPlaying  fyne.ThemeIconName = "NowPlaying"
+	IconNameFavorite    fyne.ThemeIconName = "Favorite"
+	IconNameNotFavorite fyne.ThemeIconName = "NotFavorite"
+	IconNameAlbum       fyne.ThemeIconName = "Album"
+	IconNameArtist      fyne.ThemeIconName = "Artist"
+	IconNameGenre       fyne.ThemeIconName = "Genre"
+	IconNamePlaylist    fyne.ThemeIconName = "Playlist"
+	IconNameShuffle     fyne.ThemeIconName = "Shuffle"
+)
+
 type AppearanceMode string
 
 const (
@@ -82,7 +93,6 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 	return theme.DefaultTheme().Color(name, variant)
 }
 
-<<<<<<< HEAD
 func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 	variant := m.getVariant()
 	switch name {
@@ -176,11 +186,6 @@ func (m MyTheme) createThemeIcons() {
 	ShuffleIcon = myThemedResource{myTheme: m, darkVariant: res.ResShuffleInvertSvg, lightVariant: res.ResShuffleSvg}
 }
 
-func (m MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
-	return theme.DefaultTheme().Icon(name)
-}
-
-<<<<<<< HEAD
 func (m *MyTheme) Font(style fyne.TextStyle) fyne.Resource {
 	switch style {
 	case fyne.TextStyle{}:
@@ -219,7 +224,7 @@ func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
 
 func (m *MyTheme) getVariant() fyne.ThemeVariant {
 	v := "Dark" // default if config has invalid or missing setting
-	if sharedutil.StringSliceContains(
+	if sharedutil.SliceContains(
 		[]string{string(AppearanceLight), string(AppearanceDark), string(AppearanceAuto)},
 		m.config.Appearance) {
 		v = m.config.Appearance

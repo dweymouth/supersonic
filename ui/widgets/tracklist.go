@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"sync"
 	"time"
 
 	"supersonic/sharedutil"
@@ -11,8 +12,6 @@ import (
 	"supersonic/ui/os"
 	myTheme "supersonic/ui/theme"
 	"supersonic/ui/util"
-	"sync"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"

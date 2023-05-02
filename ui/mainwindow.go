@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"supersonic/backend"
+	"supersonic/res"
 	"supersonic/ui/browsing"
 	"supersonic/ui/controller"
 	"supersonic/ui/os"
