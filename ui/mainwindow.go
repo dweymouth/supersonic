@@ -178,22 +178,22 @@ func (m *MainWindow) ShowNewVersionDialog(appName, versionTag string) {
 }
 
 func (m *MainWindow) addNavigationButtons() {
-	m.BrowsingPane.AddNavigationButton(theme.IconNameNowPlaying, func() {
+	m.BrowsingPane.AddNavigationButton(theme.NowPlayingIcon, func() {
 		m.Router.NavigateTo(controller.NowPlayingRoute(""))
 	})
-	m.BrowsingPane.AddNavigationButton(theme.IconNameFavorite, func() {
+	m.BrowsingPane.AddNavigationButton(theme.FavoriteIcon, func() {
 		m.Router.NavigateTo(controller.FavoritesRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(theme.IconNameAlbum, func() {
+	m.BrowsingPane.AddNavigationButton(theme.AlbumIcon, func() {
 		m.Router.NavigateTo(controller.AlbumsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(theme.IconNameArtist, func() {
+	m.BrowsingPane.AddNavigationButton(theme.ArtistIcon, func() {
 		m.Router.NavigateTo(controller.ArtistsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(theme.IconNameGenre, func() {
+	m.BrowsingPane.AddNavigationButton(theme.GenreIcon, func() {
 		m.Router.NavigateTo(controller.GenresRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(theme.IconNamePlaylist, func() {
+	m.BrowsingPane.AddNavigationButton(theme.PlaylistIcon, func() {
 		m.Router.NavigateTo(controller.PlaylistsRoute())
 	})
 	m.BrowsingPane.AddNavigationButton(res.ResMusicnotesInvertPng, func() {

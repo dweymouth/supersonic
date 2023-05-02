@@ -107,25 +107,25 @@ func (b *BrowsingPane) AddSettingsMenuItem(label string, action func()) {
 		fyne.NewMenuItem(label, action))
 }
 
-func (b *BrowsingPane) AddNavigationButton(iconName fyne.ThemeIconName, action func()) {
-	b.navBtnsContainer.Add(widgets.NewThemedIconButton(iconName, "", action))
+func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, action func()) {
+	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", icon, action))
 }
 
 func (b *BrowsingPane) DisableNavigationButtons() {
 	for _, obj := range b.navBtnsContainer.Objects {
-		obj.(*widgets.ThemedIconButton).Disable()
+		obj.(*widget.Button).Disable()
 	}
 }
 
 func (b *BrowsingPane) EnableNavigationButtons() {
 	for _, obj := range b.navBtnsContainer.Objects {
-		obj.(*widgets.ThemedIconButton).Enable()
+		obj.(*widget.Button).Enable()
 	}
 }
 
 func (b *BrowsingPane) ActivateNavigationButton(num int) {
 	if num < len(b.navBtnsContainer.Objects) {
-		btn := b.navBtnsContainer.Objects[num].(*widgets.ThemedIconButton)
+		btn := b.navBtnsContainer.Objects[num].(*widget.Button)
 		if !btn.Disabled() {
 			btn.OnTapped()
 		}

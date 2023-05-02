@@ -206,7 +206,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		page.pm.PlayFromBeginning()
 	})
 	// TODO: find way to pad shuffle svg rather than using a space in the label string
-	shuffleBtn := widgets.NewThemedIconButton(myTheme.IconNameShuffle, " Shuffle", func() {
+	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", myTheme.ShuffleIcon, func() {
 		page.pm.LoadTracks(page.tracklist.Tracks, false /*append*/, true /*shuffle*/)
 		page.pm.PlayFromBeginning()
 	})

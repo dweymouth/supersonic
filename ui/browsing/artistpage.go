@@ -254,7 +254,7 @@ type ArtistPageHeader struct {
 	similarArtists *fyne.Container
 	favoriteBtn    *widgets.FavoriteButton
 	playBtn        *widget.Button
-	playRadioBtn   *widgets.ThemedIconButton
+	playRadioBtn   *widget.Button
 	container      *fyne.Container
 }
 
@@ -276,7 +276,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	}
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), page.playAllTracks)
-	a.playRadioBtn = widgets.NewThemedIconButton(myTheme.IconNameShuffle, " Play Artist Radio", page.playArtistRadio)
+	a.playRadioBtn = widget.NewButtonWithIcon(" Play Artist Radio", myTheme.ShuffleIcon, page.playArtistRadio)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.ExtendBaseWidget(a)
 	a.createContainer()

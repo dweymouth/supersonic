@@ -6,34 +6,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type ThemedIconButton struct {
-	widget.Button
-
-	IconName fyne.ThemeIconName
-}
-
-func NewThemedIconButton(iconName fyne.ThemeIconName, text string, action func()) *ThemedIconButton {
-	b := &ThemedIconButton{
-		IconName: iconName,
-		Button: widget.Button{
-			Text:     text,
-			OnTapped: action,
-		},
-	}
-	b.updateIcon()
-	b.ExtendBaseWidget(b)
-	return b
-}
-
-func (b *ThemedIconButton) updateIcon() {
-	b.Icon = fyne.CurrentApp().Settings().Theme().Icon(b.IconName)
-}
-
-func (b *ThemedIconButton) Refresh() {
-	b.updateIcon()
-	b.Button.Refresh()
-}
-
 type ThemedRectangle struct {
 	widget.BaseWidget
 
@@ -60,22 +32,4 @@ func (t *ThemedRectangle) Refresh() {
 
 func (t *ThemedRectangle) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.rect)
-}
-
-type ThemedTappableIcon struct {
-	TappableIcon
-
-	IconName fyne.ThemeIconName
-}
-
-func NewThemedTappableIcon(iconName fyne.ThemeIconName) *ThemedTappableIcon {
-	t := &ThemedTappableIcon{IconName: iconName}
-	t.ExtendBaseWidget(t)
-	return t
-}
-
-func (t *ThemedTappableIcon) Refresh() {
-	icon := fyne.CurrentApp().Settings().Theme().Icon(t.IconName)
-	t.TappableIcon.Icon.Resource = icon
-	t.TappableIcon.Refresh()
 }

@@ -32,12 +32,10 @@ func (f *FavoriteButton) Tapped(e *fyne.PointEvent) {
 }
 
 func (f *FavoriteButton) Refresh() {
-	var iconName fyne.ThemeIconName
 	if f.IsFavorited {
-		iconName = theme.IconNameFavorite
+		f.Icon = theme.FavoriteIcon
 	} else {
-		iconName = theme.IconNameNotFavorite
+		f.Icon = theme.NotFavoriteIcon
 	}
-	f.Icon = fyne.CurrentApp().Settings().Theme().Icon(iconName)
 	f.Button.Refresh()
 }

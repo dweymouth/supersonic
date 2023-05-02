@@ -170,7 +170,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
 		go page.pm.PlayAlbum(page.albumID, 0)
 	})
-	shuffleBtn := widgets.NewThemedIconButton(myTheme.IconNameShuffle, " Shuffle", func() {
+	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", myTheme.ShuffleIcon, func() {
 		page.pm.LoadTracks(page.tracklist.Tracks, false, true)
 		page.pm.PlayFromBeginning()
 	})

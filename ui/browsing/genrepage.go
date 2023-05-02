@@ -29,7 +29,7 @@ type GenrePage struct {
 	searcher   *widgets.Searcher
 	searchText string
 	titleDisp  *widget.RichText
-	playRandom *widgets.ThemedIconButton
+	playRandom *widget.Button
 
 	OnPlayAlbum func(string, int)
 
@@ -50,7 +50,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 	g.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	g.playRandom = widgets.NewThemedIconButton(myTheme.IconNameShuffle, " Play random", g.playRandomSongs)
+	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
 	iter := g.lm.GenreIter(g.genre)
 	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 	g.grid.OnPlay = g.onPlayAlbum
@@ -93,7 +93,7 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	g.playRandom = widgets.NewThemedIconButton(myTheme.IconNameShuffle, "Play random", g.playRandomSongs)
+	g.playRandom = widget.NewButtonWithIcon("Play random", myTheme.ShuffleIcon, g.playRandomSongs)
 	g.grid = widgets.NewAlbumGridFromState(saved.gridState)
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched

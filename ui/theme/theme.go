@@ -16,17 +16,6 @@ import (
 
 const ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
 
-const (
-	IconNameNowPlaying  fyne.ThemeIconName = "NowPlaying"
-	IconNameFavorite    fyne.ThemeIconName = "Favorite"
-	IconNameNotFavorite fyne.ThemeIconName = "NotFavorite"
-	IconNameAlbum       fyne.ThemeIconName = "Album"
-	IconNameArtist      fyne.ThemeIconName = "Artist"
-	IconNameGenre       fyne.ThemeIconName = "Genre"
-	IconNamePlaylist    fyne.ThemeIconName = "Playlist"
-	IconNameShuffle     fyne.ThemeIconName = "Shuffle"
-)
-
 type AppearanceMode string
 
 const (
@@ -43,10 +32,16 @@ var (
 type MyTheme struct {
 	NormalFont  string
 	BoldFont    string
-	Config *backend.ThemeConfig
+	config *backend.ThemeConfig
 }
 
 var _ fyne.Theme = (*MyTheme)(nil)
+
+func NewMyTheme(config *backend.ThemeConfig) *MyTheme {
+	m := &MyTheme{config: config}
+	m.createThemeIcons()
+	return m
+}
 
 func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Color {
 	variant := m.getVariant()
@@ -87,6 +82,7 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 	return theme.DefaultTheme().Color(name, variant)
 }
 
+<<<<<<< HEAD
 func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 	variant := m.getVariant()
 	switch name {
@@ -135,6 +131,55 @@ func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 	}
 }
 
+type myThemedResource struct {
+	myTheme      MyTheme
+	darkVariant  *fyne.StaticResource
+	lightVariant *fyne.StaticResource
+}
+
+var _ fyne.Resource = myThemedResource{}
+
+func (p myThemedResource) Content() []byte {
+	if p.myTheme.getVariant() == theme.VariantDark {
+		return p.darkVariant.StaticContent
+	}
+	return p.lightVariant.StaticContent
+}
+
+func (p myThemedResource) Name() string {
+	if p.myTheme.getVariant() == theme.VariantDark {
+		return p.darkVariant.StaticName
+	}
+	return p.lightVariant.StaticName
+}
+
+var (
+	AlbumIcon       fyne.Resource
+	ArtistIcon      fyne.Resource
+	FavoriteIcon    fyne.Resource
+	NotFavoriteIcon fyne.Resource
+	GenreIcon       fyne.Resource
+	NowPlayingIcon  fyne.Resource
+	PlaylistIcon    fyne.Resource
+	ShuffleIcon     fyne.Resource
+)
+
+// MUST be called at startup!
+func (m MyTheme) createThemeIcons() {
+	AlbumIcon = myThemedResource{myTheme: m, darkVariant: res.ResDiscInvertPng, lightVariant: res.ResDiscPng}
+	ArtistIcon = myThemedResource{myTheme: m, darkVariant: res.ResPeopleInvertPng, lightVariant: res.ResPeoplePng}
+	FavoriteIcon = myThemedResource{myTheme: m, darkVariant: res.ResHeartFilledInvertPng, lightVariant: res.ResHeartFilledPng}
+	NotFavoriteIcon = myThemedResource{myTheme: m, darkVariant: res.ResHeartOutlineInvertPng, lightVariant: res.ResHeartOutlinePng}
+	GenreIcon = myThemedResource{myTheme: m, darkVariant: res.ResTheatermasksInvertPng, lightVariant: res.ResTheatermasksPng}
+	NowPlayingIcon = myThemedResource{myTheme: m, darkVariant: res.ResHeadphonesInvertPng, lightVariant: res.ResHeadphonesPng}
+	PlaylistIcon = myThemedResource{myTheme: m, darkVariant: res.ResPlaylistInvertPng, lightVariant: res.ResPlaylistPng}
+	ShuffleIcon = myThemedResource{myTheme: m, darkVariant: res.ResShuffleInvertSvg, lightVariant: res.ResShuffleSvg}
+}
+
+func (m MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
+	return theme.DefaultTheme().Icon(name)
+}
+
 <<<<<<< HEAD
 func (m *MyTheme) Font(style fyne.TextStyle) fyne.Resource {
 	switch style {
@@ -176,8 +221,8 @@ func (m *MyTheme) getVariant() fyne.ThemeVariant {
 	v := "Dark" // default if config has invalid or missing setting
 	if sharedutil.StringSliceContains(
 		[]string{string(AppearanceLight), string(AppearanceDark), string(AppearanceAuto)},
-		m.Config.Appearance) {
-		v = m.Config.Appearance
+		m.config.Appearance) {
+		v = m.config.Appearance
 	}
 
 	if AppearanceMode(v) == AppearanceDark {
