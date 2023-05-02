@@ -197,7 +197,7 @@ func (m *MainWindow) addNavigationButtons() {
 	m.BrowsingPane.AddNavigationButton(theme.PlaylistIcon, func() {
 		m.Router.NavigateTo(controller.PlaylistsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResMusicnotesInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.TracksIcon, func() {
 		m.Router.NavigateTo(controller.TracksRoute())
 	})
 }

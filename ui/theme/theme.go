@@ -16,17 +16,6 @@ import (
 
 const ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
 
-const (
-	IconNameNowPlaying  fyne.ThemeIconName = "NowPlaying"
-	IconNameFavorite    fyne.ThemeIconName = "Favorite"
-	IconNameNotFavorite fyne.ThemeIconName = "NotFavorite"
-	IconNameAlbum       fyne.ThemeIconName = "Album"
-	IconNameArtist      fyne.ThemeIconName = "Artist"
-	IconNameGenre       fyne.ThemeIconName = "Genre"
-	IconNamePlaylist    fyne.ThemeIconName = "Playlist"
-	IconNameShuffle     fyne.ThemeIconName = "Shuffle"
-)
-
 type AppearanceMode string
 
 const (
@@ -41,9 +30,9 @@ var (
 )
 
 type MyTheme struct {
-	NormalFont  string
-	BoldFont    string
-	config *backend.ThemeConfig
+	NormalFont string
+	BoldFont   string
+	config     *backend.ThemeConfig
 }
 
 var _ fyne.Theme = (*MyTheme)(nil)
@@ -94,51 +83,7 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 }
 
 func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
-	variant := m.getVariant()
-	switch name {
-	case IconNameAlbum:
-		if variant == theme.VariantDark {
-			return res.ResDiscInvertPng
-		}
-		return res.ResDiscPng
-	case IconNameArtist:
-		if variant == theme.VariantDark {
-			return res.ResPeopleInvertPng
-		}
-		return res.ResPeoplePng
-	case IconNameFavorite:
-		if variant == theme.VariantDark {
-			return res.ResHeartFilledInvertPng
-		}
-		return res.ResHeartFilledPng
-	case IconNameNotFavorite:
-		if variant == theme.VariantDark {
-			return res.ResHeartOutlineInvertPng
-		}
-		return res.ResHeartOutlinePng
-	case IconNameGenre:
-		if variant == theme.VariantDark {
-			return res.ResTheatermasksInvertPng
-		}
-		return res.ResTheatermasksPng
-	case IconNameNowPlaying:
-		if variant == theme.VariantDark {
-			return res.ResHeadphonesInvertPng
-		}
-		return res.ResHeadphonesPng
-	case IconNamePlaylist:
-		if variant == theme.VariantDark {
-			return res.ResPlaylistInvertPng
-		}
-		return res.ResPlaylistPng
-	case IconNameShuffle:
-		if variant == theme.VariantDark {
-			return res.ResShuffleInvertSvg
-		}
-		return res.ResShuffleSvg
-	default:
-		return theme.DefaultTheme().Icon(name)
-	}
+	return theme.DefaultTheme().Icon(name)
 }
 
 type myThemedResource struct {
@@ -172,6 +117,7 @@ var (
 	NowPlayingIcon  fyne.Resource
 	PlaylistIcon    fyne.Resource
 	ShuffleIcon     fyne.Resource
+	TracksIcon      fyne.Resource
 )
 
 // MUST be called at startup!
@@ -184,6 +130,7 @@ func (m MyTheme) createThemeIcons() {
 	NowPlayingIcon = myThemedResource{myTheme: m, darkVariant: res.ResHeadphonesInvertPng, lightVariant: res.ResHeadphonesPng}
 	PlaylistIcon = myThemedResource{myTheme: m, darkVariant: res.ResPlaylistInvertPng, lightVariant: res.ResPlaylistPng}
 	ShuffleIcon = myThemedResource{myTheme: m, darkVariant: res.ResShuffleInvertSvg, lightVariant: res.ResShuffleSvg}
+	TracksIcon = myThemedResource{myTheme: m, darkVariant: res.ResMusicnotesInvertPng, lightVariant: res.ResMusicnotesPng}
 }
 
 func (m *MyTheme) Font(style fyne.TextStyle) fyne.Resource {
