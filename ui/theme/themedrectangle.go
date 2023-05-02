@@ -1,4 +1,4 @@
-package widgets
+package theme
 
 import (
 	"fyne.io/fyne/v2"

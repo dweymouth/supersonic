@@ -5,7 +5,6 @@ import (
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
 	myTheme "supersonic/ui/theme"
-	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -67,7 +66,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
-	bkgrnd := widgets.NewThemedRectangle(myTheme.ColorNamePageBackground)
+	bkgrnd := myTheme.NewThemedRectangle(myTheme.ColorNamePageBackground)
 	b.pageContainer = container.NewMax(bkgrnd, layout.NewSpacer())
 	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 		p := widget.NewPopUpMenu(b.settingsMenu,

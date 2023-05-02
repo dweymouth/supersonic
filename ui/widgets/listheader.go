@@ -3,6 +3,7 @@ package widgets
 import (
 	"log"
 	"supersonic/ui/layouts"
+	myTheme "supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -41,7 +42,7 @@ func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader
 	for i, _ := range l.columnVisible {
 		l.columnVisible[i] = true
 	}
-	l.container = container.NewMax(NewThemedRectangle(theme.ColorNameBackground), l.columnsContainer)
+	l.container = container.NewMax(myTheme.NewThemedRectangle(theme.ColorNameBackground), l.columnsContainer)
 	l.ExtendBaseWidget(l)
 	l.buildColumns()
 	return l
