@@ -53,9 +53,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 	g.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, g.playRandomSongs)
 	iter := g.lm.GenreIter(g.genre)
 	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
-	g.grid.OnPlay = g.onPlayAlbum
-	g.grid.OnShowSecondaryPage = g.onShowArtistPage
-	g.grid.OnShowItemPage = g.onShowAlbumPage
+	g.contr.ConnectAlbumGridActions(g.grid)
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched
 	g.createContainer(false)
@@ -146,18 +144,6 @@ func (g *GenrePage) SearchWidget() fyne.Focusable {
 	return g.searcher.Entry
 }
 
-func (a *GenrePage) onPlayAlbum(albumID string) {
-	go a.pm.PlayAlbum(albumID, 0)
-}
-
-func (a *GenrePage) onShowArtistPage(artistID string) {
-	a.contr.NavigateTo(controller.ArtistRoute(artistID))
-}
-
-func (a *GenrePage) onShowAlbumPage(albumID string) {
-	a.contr.NavigateTo(controller.AlbumRoute(albumID))
-}
-
 func (g *GenrePage) OnSearched(query string) {
 	g.searchText = query
 	if query == "" {
@@ -177,9 +163,7 @@ func (g *GenrePage) doSearch(query string) {
 	})
 	if g.searchGrid == nil {
 		g.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
-		g.searchGrid.OnPlay = g.onPlayAlbum
-		g.searchGrid.OnShowItemPage = g.onShowAlbumPage
-		g.searchGrid.OnShowSecondaryPage = g.onShowArtistPage
+		g.contr.ConnectAlbumGridActions(g.searchGrid)
 	} else {
 		g.searchGrid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}

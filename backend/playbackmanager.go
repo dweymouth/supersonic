@@ -170,8 +170,8 @@ func (p *PlaybackManager) LoadTracks(tracks []*subsonic.Child, appendToQueue, sh
 	return nil
 }
 
-func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int) error {
-	if err := p.LoadAlbum(albumID, false, false); err != nil {
+func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool) error {
+	if err := p.LoadAlbum(albumID, false, shuffle); err != nil {
 		return err
 	}
 	if firstTrack <= 0 {
@@ -180,8 +180,8 @@ func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int) error {
 	return p.player.PlayTrackAt(firstTrack)
 }
 
-func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int) error {
-	if err := p.LoadPlaylist(playlistID, false, false); err != nil {
+func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffle bool) error {
+	if err := p.LoadPlaylist(playlistID, false, shuffle); err != nil {
 		return err
 	}
 	if firstTrack <= 0 {

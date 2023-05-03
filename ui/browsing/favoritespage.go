@@ -54,7 +54,7 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Contro
 	a.ExtendBaseWidget(a)
 	a.createHeader(0, "")
 	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(lm.StarredIter()), a.im)
-	a.connectGridActions()
+	a.contr.ConnectAlbumGridActions(a.grid)
 	if cfg.InitialView == "Artists" {
 		a.toggleBtns.SetActivatedButton(1)
 		a.onShowFavoriteArtists()
@@ -81,12 +81,6 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int, searchText string) {
 	a.searcher.Entry.Text = searchText
 }
 
-func (a *FavoritesPage) connectGridActions() {
-	a.grid.OnPlay = a.onPlayAlbum
-	a.grid.OnShowItemPage = a.onShowAlbumPage
-	a.grid.OnShowSecondaryPage = a.onShowArtistPage
-}
-
 func (a *FavoritesPage) createContainer(initialView fyne.CanvasObject) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
 	a.container = container.NewBorder(
@@ -106,7 +100,6 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	a.ExtendBaseWidget(a)
 	a.createHeader(saved.activeToggleBtn, saved.searchText)
 	a.grid = widgets.NewGridViewFromState(saved.gridState)
-	a.connectGridActions()
 
 	if saved.searchText != "" {
 		a.searchGrid = widgets.NewGridViewFromState(saved.searchGridState)
@@ -221,9 +214,7 @@ func (a *FavoritesPage) doSearchAlbums(query string) {
 	})
 	if a.searchGrid == nil {
 		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
-		a.searchGrid.OnPlay = a.onPlayAlbum
-		a.searchGrid.OnShowItemPage = a.onShowAlbumPage
-		a.searchGrid.OnShowSecondaryPage = a.onShowArtistPage
+		a.contr.ConnectAlbumGridActions(a.searchGrid)
 	} else {
 		a.searchGrid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
@@ -326,18 +317,6 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 		a.container.Objects[0] = a.tracklistCtr
 		a.Refresh()
 	}
-}
-
-func (a *FavoritesPage) onPlayAlbum(albumID string) {
-	go a.pm.PlayAlbum(albumID, 0)
-}
-
-func (a *FavoritesPage) onShowAlbumPage(albumID string) {
-	a.contr.NavigateTo(controller.AlbumRoute(albumID))
-}
-
-func (a *FavoritesPage) onShowArtistPage(artistID string) {
-	a.contr.NavigateTo(controller.ArtistRoute(artistID))
 }
 
 func (a *FavoritesPage) CreateRenderer() fyne.WidgetRenderer {

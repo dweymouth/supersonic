@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"supersonic/backend"
 	"supersonic/player"
+	"supersonic/sharedutil"
 	"supersonic/ui/dialogs"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
@@ -122,6 +123,29 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 	}
 	tracklist.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
 		m.ClosePopUpOnEscape(pop)
+	}
+}
+
+func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
+	grid.OnAddToQueue = func(albumID string) {
+		m.App.PlaybackManager.LoadAlbum(albumID, true, false)
+	}
+	grid.OnPlay = func(albumID string, shuffle bool) {
+		m.App.PlaybackManager.PlayAlbum(albumID, 0, shuffle)
+	}
+	grid.OnShowItemPage = func(albumID string) {
+		m.NavigateTo(AlbumRoute(albumID))
+	}
+	grid.OnShowSecondaryPage = func(artistID string) {
+		m.NavigateTo(ArtistRoute(artistID))
+	}
+	grid.OnAddToPlaylist = func(albumID string) {
+		album, err := m.App.ServerManager.Server.GetAlbum(albumID)
+		if err != nil {
+			log.Printf("error loading album: %s", err.Error())
+			return
+		}
+		m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Song))
 	}
 }
 

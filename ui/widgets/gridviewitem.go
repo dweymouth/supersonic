@@ -18,14 +18,16 @@ var _ fyne.Widget = (*GridViewItem)(nil)
 
 var _ fyne.Widget = (*coverImage)(nil)
 var _ fyne.Tappable = (*coverImage)(nil)
+var _ fyne.SecondaryTappable = (*coverImage)(nil)
 
 type coverImage struct {
 	widget.BaseWidget
 
-	Im             *canvas.Image
-	playbtn        *canvas.Image
-	OnDoubleTapped func()
-	OnTapped       func()
+	Im                *canvas.Image
+	playbtn           *canvas.Image
+	OnPlay            func()
+	OnShowPage        func()
+	OnShowContextMenu func(fyne.Position)
 }
 
 func newCoverImage() *coverImage {
@@ -51,13 +53,19 @@ func (c *coverImage) Cursor() desktop.Cursor {
 
 func (c *coverImage) Tapped(e *fyne.PointEvent) {
 	if isInside(c.center(), c.playbtn.Size().Height/2, e.Position) {
-		if c.OnDoubleTapped != nil {
-			c.OnDoubleTapped()
+		if c.OnPlay != nil {
+			c.OnPlay()
 		}
 		return
 	}
-	if c.OnTapped != nil {
-		c.OnTapped()
+	if c.OnShowPage != nil {
+		c.OnShowPage()
+	}
+}
+
+func (c *coverImage) TappedSecondary(e *fyne.PointEvent) {
+	if c.OnShowContextMenu != nil {
+		c.OnShowContextMenu(e.AbsolutePosition)
 	}
 }
 
@@ -116,6 +124,7 @@ type GridViewItem struct {
 	secondaryID   string
 	primaryText   *CustomHyperlink
 	secondaryText *CustomHyperlink
+	menu          *widget.PopUpMenu
 	container     *fyne.Container
 
 	// updated by GridView
@@ -125,7 +134,9 @@ type GridViewItem struct {
 	PrevID        string
 	ImgLoadCancel context.CancelFunc
 
-	OnPlay              func()
+	OnPlay              func(shuffle bool)
+	OnAddToQueue        func()
+	OnAddToPlaylist     func()
 	OnShowItemPage      func()
 	OnShowSecondaryPage func()
 }
@@ -137,17 +148,14 @@ func NewGridViewItem() *GridViewItem {
 		Cover:         newCoverImage(),
 	}
 	g.ExtendBaseWidget(g)
-	g.Cover.OnDoubleTapped = func() {
-		if g.OnPlay != nil {
-			g.OnPlay()
-		}
-	}
+	g.Cover.OnPlay = func() { g.onPlay(false) }
+	g.Cover.OnShowContextMenu = g.showContextMenu
 	showItemFn := func() {
 		if g.OnShowItemPage != nil {
 			g.OnShowItemPage()
 		}
 	}
-	g.Cover.OnTapped = showItemFn
+	g.Cover.OnShowPage = showItemFn
 	g.primaryText.OnTapped = showItemFn
 	g.secondaryText.OnTapped = func() {
 		if g.OnShowSecondaryPage != nil {
@@ -164,6 +172,18 @@ func (g *GridViewItem) createContainer() {
 	c := container.New(&layouts.VboxCustomPadding{ExtraPad: -5}, g.Cover, info)
 	pad := &layouts.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
 	g.container = container.New(pad, c)
+}
+
+func (g *GridViewItem) showContextMenu(pos fyne.Position) {
+	if g.menu == nil {
+		g.menu = widget.NewPopUpMenu(fyne.NewMenu("",
+			fyne.NewMenuItem("Play", func() { g.onPlay(false) }),
+			fyne.NewMenuItem("Shuffle", func() { g.onPlay(true) }),
+			fyne.NewMenuItem("Add to queue", g.onAddToQueue),
+			fyne.NewMenuItem("Add to playlist...", g.onAddToPlaylist)),
+			fyne.CurrentApp().Driver().CanvasForObject(g))
+	}
+	g.menu.ShowAtPosition(pos)
 }
 
 func (g *GridViewItem) Update(model GridViewItemModel) {
@@ -186,4 +206,22 @@ func (g *GridViewItem) SecondaryID() string {
 
 func (g *GridViewItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.container)
+}
+
+func (g *GridViewItem) onPlay(shuffle bool) {
+	if g.OnPlay != nil {
+		g.OnPlay(shuffle)
+	}
+}
+
+func (g *GridViewItem) onAddToQueue() {
+	if g.OnAddToQueue != nil {
+		g.OnAddToQueue()
+	}
+}
+
+func (g *GridViewItem) onAddToPlaylist() {
+	if g.OnAddToPlaylist != nil {
+		g.OnAddToPlaylist()
+	}
 }

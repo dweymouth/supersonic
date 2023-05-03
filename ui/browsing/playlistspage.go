@@ -94,10 +94,23 @@ func (a *PlaylistsPage) createListView() {
 func (a *PlaylistsPage) createGridView(playlists []*subsonic.Playlist) {
 	model := createPlaylistGridViewModel(playlists)
 	a.gridView = widgets.NewFixedGridView(model, a.contr.App.ImageManager)
-	a.gridView.OnPlay = func(id string) {
-		a.contr.App.PlaybackManager.PlayPlaylist(id, 0)
+	a.gridView.OnPlay = func(id string, shuffle bool) {
+		go a.contr.App.PlaybackManager.PlayPlaylist(id, 0, shuffle)
+	}
+	a.gridView.OnAddToQueue = func(id string) {
+		go a.contr.App.PlaybackManager.LoadPlaylist(id, true, false)
 	}
 	a.gridView.OnShowItemPage = a.showPlaylistPage
+	a.gridView.OnAddToPlaylist = func(id string) {
+		go func() {
+			pl, err := a.contr.App.ServerManager.Server.GetPlaylist(id)
+			if err != nil {
+				log.Printf("error loading playlist: %s", err.Error())
+				return
+			}
+			a.contr.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(pl.Entry))
+		}()
+	}
 }
 
 func (a *PlaylistsPage) showListView() {

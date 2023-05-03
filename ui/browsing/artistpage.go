@@ -124,10 +124,6 @@ func (a *ArtistPage) OnSongChange(track *subsonic.Child, lastScrobbledIfAny *sub
 	}
 }
 
-func (a *ArtistPage) onPlayAlbum(albumID string) {
-	a.pm.PlayAlbum(albumID, 0)
-}
-
 func (a *ArtistPage) playAllTracks() {
 	if a.artistInfo != nil { // page loaded
 		for i, album := range a.artistInfo.Album {
@@ -139,10 +135,6 @@ func (a *ArtistPage) playAllTracks() {
 
 func (a *ArtistPage) playArtistRadio() {
 	go a.pm.PlaySimilarSongs(a.artistID)
-}
-
-func (a *ArtistPage) onShowAlbumPage(albumID string) {
-	a.contr.NavigateTo(controller.AlbumRoute(albumID))
 }
 
 // should be called asynchronously
@@ -182,8 +174,7 @@ func (a *ArtistPage) showAlbumGrid() {
 			}
 		})
 		a.albumGrid = widgets.NewFixedGridView(model, a.im)
-		a.albumGrid.OnPlay = a.onPlayAlbum
-		a.albumGrid.OnShowItemPage = a.onShowAlbumPage
+		a.contr.ConnectAlbumGridActions(a.albumGrid)
 	}
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
 	a.container.Objects[0].Refresh()

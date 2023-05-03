@@ -168,7 +168,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	}
 	a.miscLabel = widget.NewLabel("")
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
-		go page.pm.PlayAlbum(page.albumID, 0)
+		go page.pm.PlayAlbum(page.albumID, 0, false)
 	})
 	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", res.ResShuffleInvertSvg, func() {
 		page.pm.LoadTracks(page.tracklist.Tracks, false, true)

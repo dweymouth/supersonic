@@ -73,9 +73,7 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 	a.sortOrder.Selected = cfg.SortOrder
 	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected))
 	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im)
-	a.grid.OnPlay = a.onPlayAlbum
-	a.grid.OnShowSecondaryPage = a.onShowArtistPage
-	a.grid.OnShowItemPage = a.onShowAlbumPage
+	contr.ConnectAlbumGridActions(a.grid)
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
 	a.createContainer(false)
@@ -182,26 +180,12 @@ func (a *AlbumsPage) Save() SavedPage {
 func (a *AlbumsPage) doSearch(query string) {
 	if a.searchGrid == nil {
 		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(a.lm.SearchIter(query)), a.im)
-		a.searchGrid.OnPlay = a.onPlayAlbum
-		a.searchGrid.OnShowItemPage = a.onShowAlbumPage
-		a.searchGrid.OnShowSecondaryPage = a.onShowArtistPage
+		a.contr.ConnectAlbumGridActions(a.searchGrid)
 	} else {
 		a.searchGrid.Reset(widgets.NewGridViewAlbumIterator(a.lm.SearchIter(query)))
 	}
 	a.container.Objects[0] = a.searchGrid
 	a.Refresh()
-}
-
-func (a *AlbumsPage) onPlayAlbum(albumID string) {
-	go a.pm.PlayAlbum(albumID, 0)
-}
-
-func (a *AlbumsPage) onShowArtistPage(artistID string) {
-	a.contr.NavigateTo(controller.ArtistRoute(artistID))
-}
-
-func (a *AlbumsPage) onShowAlbumPage(albumID string) {
-	a.contr.NavigateTo(controller.AlbumRoute(albumID))
 }
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {

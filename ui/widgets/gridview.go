@@ -58,14 +58,16 @@ type GridViewState struct {
 	items        []GridViewItemModel
 	itemsMutex   sync.RWMutex
 	iter         GridViewIterator
+	imageFetcher ImageFetcher
 	highestShown int
 	fetching     bool
 	done         bool
 
-	imageFetcher        ImageFetcher
-	OnPlay              func(string)
-	OnShowItemPage      func(string)
-	OnShowSecondaryPage func(string)
+	OnPlay              func(id string, shuffle bool)
+	OnAddToQueue        func(id string)
+	OnAddToPlaylist     func(id string)
+	OnShowItemPage      func(id string)
+	OnShowSecondaryPage func(id string)
 
 	scrollPos float32
 }
@@ -152,9 +154,14 @@ func (g *GridView) createGridWrapList() {
 		// create func
 		func() fyne.CanvasObject {
 			card := NewGridViewItem()
-			card.OnPlay = func() {
+			card.OnPlay = func(shuffle bool) {
 				if g.OnPlay != nil {
-					g.OnPlay(card.ItemID())
+					g.OnPlay(card.ItemID(), shuffle)
+				}
+			}
+			card.OnAddToQueue = func() {
+				if g.OnAddToQueue != nil {
+					g.OnAddToQueue(card.ItemID())
 				}
 			}
 			card.OnShowSecondaryPage = func() {
@@ -165,6 +172,11 @@ func (g *GridView) createGridWrapList() {
 			card.OnShowItemPage = func() {
 				if g.OnShowItemPage != nil {
 					g.OnShowItemPage(card.ItemID())
+				}
+			}
+			card.OnAddToPlaylist = func() {
+				if g.OnAddToPlaylist != nil {
+					g.OnAddToPlaylist(card.ItemID())
 				}
 			}
 			return card
