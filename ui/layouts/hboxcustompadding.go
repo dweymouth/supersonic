@@ -37,6 +37,7 @@ func (v *HboxCustomPadding) Layout(objects []fyne.CanvasObject, size fyne.Size) 
 
 	x, y := float32(0), float32(0)
 
+	padding := v.themePad() + v.ExtraPad
 	extra := float32(0)
 	for _, child := range objects {
 		if !child.Visible() {
@@ -46,7 +47,7 @@ func (v *HboxCustomPadding) Layout(objects []fyne.CanvasObject, size fyne.Size) 
 		child.Move(fyne.NewPos(x+extra, y))
 		x += width
 		child.Resize(fyne.NewSize(width, size.Height))
-		extra += (v.themePad() + v.ExtraPad)
+		extra += padding
 	}
 }
 

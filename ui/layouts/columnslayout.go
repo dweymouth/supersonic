@@ -25,8 +25,9 @@ func (c *ColumnsLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 		if !objects[i].Visible() {
 			continue
 		}
-		height = fyne.Max(height, objects[i].MinSize().Height)
-		w := objects[i].MinSize().Width
+		s := objects[i].MinSize()
+		height = fyne.Max(height, s.Height)
+		w := s.Width
 		if i < len(c.ColumnWidths) && c.ColumnWidths[i] > w {
 			w = c.ColumnWidths[i]
 		}

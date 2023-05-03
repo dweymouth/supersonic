@@ -36,6 +36,7 @@ func (v *VboxCustomPadding) Layout(objects []fyne.CanvasObject, size fyne.Size) 
 
 	x, y := float32(0), float32(0)
 
+	padding := theme.Padding() + v.ExtraPad
 	extra := float32(0)
 	for _, child := range objects {
 		if !child.Visible() {
@@ -45,6 +46,6 @@ func (v *VboxCustomPadding) Layout(objects []fyne.CanvasObject, size fyne.Size) 
 		child.Move(fyne.NewPos(x, y+extra))
 		y += height
 		child.Resize(fyne.NewSize(size.Width, height))
-		extra += (theme.Padding() + v.ExtraPad)
+		extra += padding
 	}
 }

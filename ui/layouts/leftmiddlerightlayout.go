@@ -30,14 +30,15 @@ func (b *LeftMiddleRightLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 }
 
 func (b *LeftMiddleRightLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	pad := theme.Padding()
 	midW := fyne.Max(b.middleWidth, objects[1].MinSize().Width)
-	lrW := (size.Width - midW - theme.Padding()*4) / 2
+	lrW := (size.Width - midW - pad*4) / 2
 	objects[0].Resize(fyne.NewSize(lrW, size.Height))
-	objects[0].Move(fyne.NewPos(theme.Padding(), 0))
+	objects[0].Move(fyne.NewPos(pad, 0))
 	objects[1].Resize(fyne.NewSize(midW, size.Height))
-	objects[1].Move(fyne.NewPos(lrW+theme.Padding()*2, 0))
+	objects[1].Move(fyne.NewPos(lrW+pad*2, 0))
 	if objects[2] != nil {
 		objects[2].Resize(fyne.NewSize(lrW, size.Height))
-		objects[2].Move(fyne.NewPos(lrW+midW+theme.Padding()*3, 0))
+		objects[2].Move(fyne.NewPos(lrW+midW+pad*3, 0))
 	}
 }

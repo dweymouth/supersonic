@@ -26,11 +26,13 @@ func (c *MaxPadLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	if len(objects) == 0 {
 		return
 	}
+	pos := fyne.NewPos(c.PadLeft, c.PadTop)
+	objSize := fyne.NewSize(size.Width-c.PadLeft-c.PadRight, size.Height-c.PadTop-c.PadBottom)
 	for _, child := range objects {
 		if !child.Visible() {
 			continue
 		}
-		child.Move(fyne.NewPos(c.PadLeft, c.PadTop))
-		child.Resize(fyne.NewSize(size.Width-c.PadLeft-c.PadRight, size.Height-c.PadTop-c.PadBottom))
+		child.Move(pos)
+		child.Resize(objSize)
 	}
 }
