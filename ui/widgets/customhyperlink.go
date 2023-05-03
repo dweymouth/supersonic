@@ -81,9 +81,9 @@ func NewCustomHyperlink() *CustomHyperlink {
 }
 
 func (c *CustomHyperlink) SetText(text string) {
-	c.l.Text = text
 	lastWrapping := c.l.Wrapping
 	c.l.Wrapping = fyne.TextWrapOff
+	c.l.SetText(text)
 	c.fullTextWidth = c.l.MinSize().Width
 	c.h.SetText(text)
 	c.l.Wrapping = lastWrapping
