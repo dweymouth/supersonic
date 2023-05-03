@@ -209,13 +209,30 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		page.pm.LoadTracks(page.tracklist.Tracks, false /*append*/, true /*shuffle*/)
 		page.pm.PlayFromBeginning()
 	})
+	var pop *widget.PopUpMenu
+	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
+	menuBtn.OnTapped = func() {
+		if pop == nil {
+			menu := fyne.NewMenu("",
+				fyne.NewMenuItem("Add to queue", func() {
+					a.page.pm.LoadPlaylist(a.page.playlistID, true /*append*/, false /*shuffle*/)
+				}),
+				fyne.NewMenuItem("Add to playlist...", func() {
+					a.page.contr.DoAddTracksToPlaylistWorkflow(
+						sharedutil.TracksToIDs(a.page.tracklist.Tracks))
+				}))
+			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
+		}
+		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)
+		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+menuBtn.Size().Height))
+	}
 
 	a.container = container.NewBorder(nil, nil, a.image, nil,
 		container.NewVBox(a.titleLabel, container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 			a.descriptionLabel,
 			a.ownerLabel,
 			a.trackTimeLabel),
-			container.NewHBox(a.editButton, playButton, shuffleBtn),
+			container.NewHBox(a.editButton, playButton, shuffleBtn, menuBtn),
 		))
 	return a
 }
