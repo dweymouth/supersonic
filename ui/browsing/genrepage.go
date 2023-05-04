@@ -93,7 +93,7 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	g.playRandom = widget.NewButtonWithIcon("Play random", myTheme.ShuffleIcon, g.playRandomSongs)
+	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
 	g.grid = widgets.NewGridViewFromState(saved.gridState)
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched
