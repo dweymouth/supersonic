@@ -4,7 +4,6 @@ import (
 	"log"
 	"supersonic/backend"
 	"supersonic/ui"
-	"supersonic/ui/theme"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -27,11 +26,7 @@ func main() {
 	}
 
 	fyneApp := app.New()
-	theme := theme.NewMyTheme(&myApp.Config.Theme)
-	theme.NormalFont = myApp.Config.Application.FontNormalTTF
-	theme.BoldFont = myApp.Config.Application.FontBoldTTF
-	fyneApp.Settings().SetTheme(theme)
-	
+
 	w := float32(myApp.Config.Application.WindowWidth)
 	if w <= 1 {
 		w = 1000
