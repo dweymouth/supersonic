@@ -43,6 +43,7 @@ type MainWindow struct {
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
+	theme          *theme.MyTheme
 	haveSystemTray bool
 	container      *fyne.Container
 }
@@ -52,7 +53,12 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 		App:          app,
 		Window:       fyneApp.NewWindow(appName),
 		BrowsingPane: browsing.NewBrowsingPane(app),
+		theme:        theme.NewMyTheme(&app.Config.Theme),
 	}
+
+	m.theme.NormalFont = app.Config.Application.FontNormalTTF
+	m.theme.BoldFont = app.Config.Application.FontBoldTTF
+	fyneApp.Settings().SetTheme(m.theme)
 
 	if app.Config.Application.EnableSystemTray {
 		m.SetupSystemTrayMenu(appName, fyneApp)
@@ -118,7 +124,11 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 			}
 		}()
 	})
-	m.BrowsingPane.AddSettingsMenuItem("Settings...", m.Controller.ShowSettingsDialog)
+	m.BrowsingPane.AddSettingsMenuItem("Settings...", func() {
+		m.Controller.ShowSettingsDialog(func() {
+			fyneApp.Settings().SetTheme(m.theme)
+		})
+	})
 	m.BrowsingPane.AddSettingsMenuItem("About...", m.Controller.ShowAboutDialog)
 	m.addNavigationButtons()
 	m.BrowsingPane.DisableNavigationButtons()

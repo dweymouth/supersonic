@@ -22,6 +22,8 @@ const (
 	AppearanceLight AppearanceMode = "Light"
 	AppearanceDark  AppearanceMode = "Dark"
 	AppearanceAuto  AppearanceMode = "Auto"
+
+	DefaultAppearance AppearanceMode = AppearanceDark
 )
 
 var (
@@ -170,11 +172,11 @@ func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
 }
 
 func (m *MyTheme) getVariant() fyne.ThemeVariant {
-	v := "Dark" // default if config has invalid or missing setting
+	v := DefaultAppearance // default if config has invalid or missing setting
 	if sharedutil.SliceContains(
 		[]string{string(AppearanceLight), string(AppearanceDark), string(AppearanceAuto)},
 		m.config.Appearance) {
-		v = m.config.Appearance
+		v = AppearanceMode(m.config.Appearance)
 	}
 
 	if AppearanceMode(v) == AppearanceDark {

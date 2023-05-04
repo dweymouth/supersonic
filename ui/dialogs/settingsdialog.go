@@ -9,6 +9,7 @@ import (
 	"supersonic/backend"
 	"supersonic/player"
 	"supersonic/ui/layouts"
+	myTheme "supersonic/ui/theme"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 	"unicode"
@@ -31,6 +32,7 @@ type SettingsDialog struct {
 	OnReplayGainSettingsChanged    func()
 	OnAudioExclusiveSettingChanged func()
 	OnAudioDeviceSettingChanged    func()
+	OnThemeSettingChanged          func()
 	OnDismiss                      func()
 
 	config       *backend.Config
@@ -50,6 +52,10 @@ func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDev
 		s.createPlaybackTab(),
 		s.createExperimentalTab(window),
 	)
+	// workaround issue where inactivated tabs don't fully update when theme setting is changed
+	tabs.OnSelected = func(ti *container.TabItem) {
+		ti.Content.Refresh()
+	}
 	s.promptText = widget.NewRichTextWithText("")
 	s.content = container.NewVBox(tabs, widget.NewSeparator(),
 		container.NewHBox(s.promptText, layout.NewSpacer(), widget.NewButton("Close", func() {
@@ -62,6 +68,21 @@ func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDev
 }
 
 func (s *SettingsDialog) createGeneralTab() *container.TabItem {
+	themeSelect := widget.NewSelect([]string{
+		string(myTheme.AppearanceDark),
+		string(myTheme.AppearanceLight),
+		string(myTheme.AppearanceAuto)}, nil)
+	themeSelect.OnChanged = func(_ string) {
+		s.config.Theme.Appearance = themeSelect.Options[themeSelect.SelectedIndex()]
+		if s.OnThemeSettingChanged != nil {
+			s.OnThemeSettingChanged()
+		}
+	}
+	themeSelect.SetSelected(s.config.Theme.Appearance)
+	if themeSelect.Selected == "" {
+		themeSelect.SetSelectedIndex(0)
+	}
+
 	startupPage := widget.NewSelect(backend.SupportedStartupPages, func(choice string) {
 		s.config.Application.StartupPage = choice
 	})
@@ -161,7 +182,10 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 	scrobbleEnabled.Checked = s.config.Scrobbling.Enabled
 
 	return container.NewTabItem("General", container.NewVBox(
-		container.New(layout.NewFormLayout(), widget.NewLabel("Startup page"), startupPage),
+		container.New(layout.NewFormLayout(),
+			widget.NewLabel("Appearance"), container.NewGridWithColumns(2, themeSelect),
+			widget.NewLabel("Startup page"), container.NewGridWithColumns(2, startupPage),
+		),
 		container.NewHBox(systemTrayEnable, closeToTray),
 		s.newSectionSeparator(),
 
