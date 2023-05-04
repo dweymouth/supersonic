@@ -9,6 +9,7 @@ import (
 	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
+	myTheme "supersonic/ui/theme"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
@@ -266,7 +267,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	}
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), page.playAllTracks)
-	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", res.ResShuffleInvertSvg, page.playArtistRadio)
+	a.playRadioBtn = widget.NewButtonWithIcon(" Play Artist Radio", myTheme.ShuffleIcon, page.playArtistRadio)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.ExtendBaseWidget(a)
 	a.createContainer()

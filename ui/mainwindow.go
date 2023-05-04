@@ -7,6 +7,7 @@ import (
 	"supersonic/ui/browsing"
 	"supersonic/ui/controller"
 	"supersonic/ui/os"
+	"supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -42,6 +43,7 @@ type MainWindow struct {
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
+	theme          *theme.MyTheme
 	haveSystemTray bool
 	container      *fyne.Container
 }
@@ -51,7 +53,12 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 		App:          app,
 		Window:       fyneApp.NewWindow(appName),
 		BrowsingPane: browsing.NewBrowsingPane(app),
+		theme:        theme.NewMyTheme(&app.Config.Theme),
 	}
+
+	m.theme.NormalFont = app.Config.Application.FontNormalTTF
+	m.theme.BoldFont = app.Config.Application.FontBoldTTF
+	fyneApp.Settings().SetTheme(m.theme)
 
 	if app.Config.Application.EnableSystemTray {
 		m.SetupSystemTrayMenu(appName, fyneApp)
@@ -117,7 +124,11 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 			}
 		}()
 	})
-	m.BrowsingPane.AddSettingsMenuItem("Settings...", m.Controller.ShowSettingsDialog)
+	m.BrowsingPane.AddSettingsMenuItem("Settings...", func() {
+		m.Controller.ShowSettingsDialog(func() {
+			fyneApp.Settings().SetTheme(m.theme)
+		})
+	})
 	m.BrowsingPane.AddSettingsMenuItem("About...", m.Controller.ShowAboutDialog)
 	m.addNavigationButtons()
 	m.BrowsingPane.DisableNavigationButtons()
@@ -178,25 +189,25 @@ func (m *MainWindow) ShowNewVersionDialog(appName, versionTag string) {
 }
 
 func (m *MainWindow) addNavigationButtons() {
-	m.BrowsingPane.AddNavigationButton(res.ResHeadphonesInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.NowPlayingIcon, func() {
 		m.Router.NavigateTo(controller.NowPlayingRoute(""))
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResHeartFilledInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.FavoriteIcon, func() {
 		m.Router.NavigateTo(controller.FavoritesRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResDiscInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.AlbumIcon, func() {
 		m.Router.NavigateTo(controller.AlbumsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResPeopleInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.ArtistIcon, func() {
 		m.Router.NavigateTo(controller.ArtistsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResTheatermasksInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.GenreIcon, func() {
 		m.Router.NavigateTo(controller.GenresRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResPlaylistInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.PlaylistIcon, func() {
 		m.Router.NavigateTo(controller.PlaylistsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(res.ResMusicnotesInvertPng, func() {
+	m.BrowsingPane.AddNavigationButton(theme.TracksIcon, func() {
 		m.Router.NavigateTo(controller.TracksRoute())
 	})
 }

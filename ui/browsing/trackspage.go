@@ -2,10 +2,10 @@ package browsing
 
 import (
 	"supersonic/backend"
-	"supersonic/res"
 	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
+	"supersonic/ui/theme"
 	"supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -56,7 +56,7 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 
 	t.title = widget.NewRichTextWithText("All Tracks")
 	t.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
-	t.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, t.playRandomSongs)
+	t.playRandom = widget.NewButtonWithIcon("Play random", theme.ShuffleIcon, t.playRandomSongs)
 	t.searcher = widgets.NewSearcher()
 	t.searcher.OnSearched = t.OnSearched
 	t.createContainer()

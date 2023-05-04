@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"supersonic/res"
+	"supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -32,9 +33,9 @@ func (f *FavoriteButton) Tapped(e *fyne.PointEvent) {
 
 func (f *FavoriteButton) Refresh() {
 	if f.IsFavorited {
-		f.Icon = res.ResHeartFilledInvertPng
+		f.Icon = theme.FavoriteIcon
 	} else {
-		f.Icon = res.ResHeartOutlineInvertPng
+		f.Icon = theme.NotFavoriteIcon
 	}
 	f.Button.Refresh()
 }

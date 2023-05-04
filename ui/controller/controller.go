@@ -339,7 +339,7 @@ func (c *Controller) ShowAboutDialog() {
 	pop.Show()
 }
 
-func (c *Controller) ShowSettingsDialog() {
+func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func()) {
 	devs, err := c.App.Player.ListAudioDevices()
 	if err != nil {
 		log.Printf("error listing audio devices: %v", err)
@@ -356,6 +356,7 @@ func (c *Controller) ShowSettingsDialog() {
 	dlg.OnAudioDeviceSettingChanged = func() {
 		c.App.Player.SetAudioDevice(c.App.Config.LocalPlayback.AudioDeviceName)
 	}
+	dlg.OnThemeSettingChanged = themeUpdateCallbk
 	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
 	dlg.OnDismiss = func() {
 		pop.Hide()

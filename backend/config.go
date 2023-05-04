@@ -87,6 +87,10 @@ type ReplayGainConfig struct {
 	PreventClipping bool
 }
 
+type ThemeConfig struct {
+	Appearance string
+}
+
 type Config struct {
 	Application    AppConfig
 	Servers        []*ServerConfig
@@ -101,6 +105,7 @@ type Config struct {
 	LocalPlayback  LocalPlaybackConfig
 	Scrobbling     ScrobbleConfig
 	ReplayGain     ReplayGainConfig
+	Theme          ThemeConfig
 }
 
 var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists"}
@@ -157,6 +162,9 @@ func DefaultConfig(appVersionTag string) *Config {
 			Mode:            ReplayGainNone,
 			PreampGainDB:    0.0,
 			PreventClipping: true,
+		},
+		Theme: ThemeConfig{
+			Appearance: "Dark",
 		},
 	}
 }

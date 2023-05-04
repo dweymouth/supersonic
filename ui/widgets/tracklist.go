@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"supersonic/res"
+	"sync"
+	"time"
+
 	"supersonic/sharedutil"
 	"supersonic/ui/layouts"
 	"supersonic/ui/os"
+	myTheme "supersonic/ui/theme"
 	"supersonic/ui/util"
-	"sync"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -524,7 +525,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
 	t.dur = newTrailingAlignRichText()
 	t.year = newTrailingAlignRichText()
-	favorite := NewTappbaleIcon(res.ResHeartOutlineInvertPng)
+	favorite := NewTappbaleIcon(myTheme.NotFavoriteIcon)
 	favorite.OnTapped = t.toggleFavorited
 	t.favorite = container.NewCenter(favorite)
 	t.rating = NewStarRating()
@@ -623,10 +624,10 @@ func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
 	// Render favorite column
 	if tr.Starred.IsZero() {
 		t.isFavorite = false
-		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartOutlineInvertPng
+		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.NotFavoriteIcon
 	} else {
 		t.isFavorite = true
-		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartFilledInvertPng
+		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.FavoriteIcon
 	}
 
 	t.rating.Rating = tr.UserRating
@@ -648,12 +649,12 @@ func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
 
 func (t *TrackRow) toggleFavorited() {
 	if t.isFavorite {
-		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartOutlineInvertPng
+		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.NotFavoriteIcon
 		t.favorite.Refresh()
 		t.isFavorite = false
 		t.tracklist.onSetFavorite(t.trackID, false)
 	} else {
-		t.favorite.Objects[0].(*TappableIcon).Resource = res.ResHeartFilledInvertPng
+		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.FavoriteIcon
 		t.favorite.Refresh()
 		t.isFavorite = true
 		t.tracklist.onSetFavorite(t.trackID, true)

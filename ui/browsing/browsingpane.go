@@ -7,7 +7,6 @@ import (
 	myTheme "supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -67,11 +66,8 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
-	b.pageContainer = container.NewMax(
-		canvas.NewRectangle(fyne.CurrentApp().Settings().Theme().Color(
-			myTheme.ColorNamePageBackground, theme.VariantDark,
-		)),
-		layout.NewSpacer())
+	bkgrnd := myTheme.NewThemedRectangle(myTheme.ColorNamePageBackground)
+	b.pageContainer = container.NewMax(bkgrnd, layout.NewSpacer())
 	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 		p := widget.NewPopUpMenu(b.settingsMenu,
 			fyne.CurrentApp().Driver().CanvasForObject(b.settingsBtn))
@@ -110,8 +106,8 @@ func (b *BrowsingPane) AddSettingsMenuItem(label string, action func()) {
 		fyne.NewMenuItem(label, action))
 }
 
-func (b *BrowsingPane) AddNavigationButton(iconRes fyne.Resource, action func()) {
-	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", iconRes, action))
+func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, action func()) {
+	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", icon, action))
 }
 
 func (b *BrowsingPane) DisableNavigationButtons() {

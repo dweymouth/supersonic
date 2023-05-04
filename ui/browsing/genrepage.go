@@ -2,8 +2,8 @@ package browsing
 
 import (
 	"supersonic/backend"
-	"supersonic/res"
 	"supersonic/ui/controller"
+	myTheme "supersonic/ui/theme"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
@@ -50,7 +50,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 	g.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	g.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, g.playRandomSongs)
+	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
 	iter := g.lm.GenreIter(g.genre)
 	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 	g.contr.ConnectAlbumGridActions(g.grid)
@@ -91,7 +91,7 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	g.playRandom = widget.NewButtonWithIcon("Play random", res.ResShuffleInvertSvg, g.playRandomSongs)
+	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
 	g.grid = widgets.NewGridViewFromState(saved.gridState)
 	g.searcher = widgets.NewSearcher()
 	g.searcher.OnSearched = g.OnSearched

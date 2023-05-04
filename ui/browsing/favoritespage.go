@@ -3,9 +3,9 @@ package browsing
 import (
 	"log"
 	"supersonic/backend"
-	"supersonic/res"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
+	myTheme "supersonic/ui/theme"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 	"time"
@@ -73,9 +73,9 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int, searchText string) {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.toggleBtns = widgets.NewToggleButtonGroup(activeBtnIdx,
-		widget.NewButtonWithIcon("", res.ResDiscInvertPng, a.onShowFavoriteAlbums),
-		widget.NewButtonWithIcon("", res.ResPeopleInvertPng, a.onShowFavoriteArtists),
-		widget.NewButtonWithIcon("", res.ResMusicnotesInvertPng, a.onShowFavoriteSongs))
+		widget.NewButtonWithIcon("", myTheme.AlbumIcon, a.onShowFavoriteAlbums),
+		widget.NewButtonWithIcon("", myTheme.ArtistIcon, a.onShowFavoriteArtists),
+		widget.NewButtonWithIcon("", myTheme.TracksIcon, a.onShowFavoriteSongs))
 	a.searcher = widgets.NewSearcher()
 	a.searcher.OnSearched = a.OnSearched
 	a.searcher.Entry.Text = searchText

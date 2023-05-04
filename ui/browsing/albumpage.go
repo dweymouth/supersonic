@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"supersonic/backend"
-	"supersonic/res"
 	"supersonic/sharedutil"
 	"supersonic/ui/controller"
 	"supersonic/ui/layouts"
+	myTheme "supersonic/ui/theme"
 	"supersonic/ui/util"
 	"supersonic/ui/widgets"
 
@@ -170,7 +170,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
 		go page.pm.PlayAlbum(page.albumID, 0, false)
 	})
-	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", res.ResShuffleInvertSvg, func() {
+	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", myTheme.ShuffleIcon, func() {
 		page.pm.LoadTracks(page.tracklist.Tracks, false, true)
 		page.pm.PlayFromBeginning()
 	})
