@@ -4,14 +4,21 @@
 
 ### Added
 - [#145](https://github.com/dweymouth/supersonic/issues/145) Add rating column to tracklist with 5-star rating widget
-- [b017995](https://github.com/dweymouth/supersonic/commit/b01799550ded0c6a8f33913827df23818f9a7353) Add Ctrl+W (Cmd+W on Mac) shortcut to close to tray if enabled
+- [#101](https://github.com/dweymouth/supersonic/issues/101) Add light theme, and optional auto-switching between dark and light
+- [#40](https://github.com/dweymouth/supersonic/issues/40) Add grid view option to playlists page with playlist cover images
 - [#95](https://github.com/dweymouth/supersonic/issues/95) Enable click-to-seek behavior in seek bar
-- [#40](https://github.com/dweymouth/supersonic/issues/40) Add grid view option to playlists page
+- [#136](https://github.com/dweymouth/supersonic/issues/136) Add context menu to items in grid views (albums and playlists)
+- [b017995](https://github.com/dweymouth/supersonic/commit/b01799550ded0c6a8f33913827df23818f9a7353) Add Ctrl+W (Cmd+W on Mac) shortcut to close to tray if enabled
+- [5b6b6b4](https://github.com/dweymouth/supersonic/commit/5b6b6b4fe2388701a780e8fcad1690b63ff55a7e),[a9eac50](https://github.com/dweymouth/supersonic/commit/a9eac505eae1ec144d14547133ca36fafc376837) Add tracklist context menu items to bulk set favorite and rating
+- [fd01e37](https://github.com/dweymouth/supersonic/commit/fd01e3726057fae85c4721e01852a583dfd73929) Add "meatball menu" actions to playlist page
 - [a9263c8](https://github.com/dweymouth/supersonic/commit/a9263c8d4edaa4608381f034f42c35a46548eb98) Add settings option to choose startup page
-- Add tracklist context menu items to bulk set rating and favorite
+- [cbc724d](https://github.com/dweymouth/supersonic/commit/cbc724df93c32a28454fc3f8f4be17fd8e16c362) Migrate to Fyne 2.3.4 (few performance and memory improvements)
+- [053474f](https://github.com/dweymouth/supersonic/commit/053474f669e6c8df1f9213057a74c65a4bf6dbda) Track title in bottom panel links to track location on Now Playing page
+- [7819416](https://github.com/dweymouth/supersonic/commit/78194165f434b5f9d7c9302cb2773bc629df90f0) Clicking thumbnail in bottom panel shows full size cover
+- [de36149](https://github.com/dweymouth/supersonic/commit/de36149ba4d9e5db0757507f50232184b2c4345a) Add volume adjustment options to system tray menu
 
 ### Fixed
-- [#148](https://github.com/dweymouth/supersonic/issues/148) Fix potential crash when searching for albums
+- [#148](https://github.com/dweymouth/supersonic/issues/148) Fix crash when searching for albums on Airsonic servers
 - [#149](https://github.com/dweymouth/supersonic/issues/149) Tracklist columns occasionally misaligned when shrinking window
 - [#142](https://github.com/dweymouth/supersonic/issues/142) Disable hyperlinks for track artists that are not also album artists
 - [#141](https://github.com/dweymouth/supersonic/issues/141) Fix crash when navigating to "Top Tracks" on artist page not yet fully loaded or invalid artist
