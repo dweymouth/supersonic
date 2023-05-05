@@ -3,7 +3,7 @@ module supersonic
 go 1.19
 
 require (
-	fyne.io/fyne/v2 v2.3.3
+	fyne.io/fyne/v2 v2.3.4
 	github.com/20after4/configdir v0.1.1
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
 	github.com/dweymouth/go-subsonic v0.0.0-20230210044542-537b9238299b
@@ -14,9 +14,8 @@ require (
 )
 
 require (
-	fyne.io/systray v1.10.1-0.20230324154429-a8f53a63dc8d // indirect
+	fyne.io/systray v1.10.1-0.20230403195833-7dc3c09283d6 // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect
-	github.com/benoitkugler/textlayout v0.3.0 // indirect
 	github.com/danieljoos/wincred v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v0.1.0 // indirect
@@ -26,7 +25,7 @@ require (
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
-	github.com/go-text/typesetting v0.0.0-20221212183139-1eb938670a1f // indirect
+	github.com/go-text/typesetting v0.0.0-20230405155246-bf9c697c6e16 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/goki/freetype v0.0.0-20220119013949-7a161fd3728c // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
@@ -37,7 +36,7 @@ require (
 	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/tevino/abool v1.2.0 // indirect
 	github.com/yuin/goldmark v1.4.13 // indirect
-	golang.org/x/image v0.0.0-20220601225756-64ec528b34cd // indirect
+	golang.org/x/image v0.3.0 // indirect
 	golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee // indirect
 	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
 	golang.org/x/text v0.6.0 // indirect
@@ -45,4 +44,4 @@ require (
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.3.3 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230407015007-c8e2aa472ae4
+replace fyne.io/fyne/v2 v2.3.4 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5

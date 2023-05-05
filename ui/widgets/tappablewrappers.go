@@ -59,6 +59,26 @@ func NewTappableImage(onTapped func()) *TappableImage {
 	return t
 }
 
+func (t *TappableImage) Hide() {
+	t.BaseWidget.Hide()
+}
+
+func (t *TappableImage) Show() {
+	t.BaseWidget.Show()
+}
+
+func (t *TappableImage) Move(pos fyne.Position) {
+	t.BaseWidget.Move(pos)
+}
+
+func (t *TappableImage) Refresh() {
+	t.BaseWidget.Refresh()
+}
+
+func (t *TappableImage) Resize(size fyne.Size) {
+	t.BaseWidget.Resize(size)
+}
+
 func (t *TappableImage) Cursor() desktop.Cursor {
 	if t.haveImage() {
 		return desktop.PointerCursor
@@ -70,16 +90,6 @@ func (t *TappableImage) Tapped(e *fyne.PointEvent) {
 	if t.haveImage() && t.OnTapped != nil {
 		t.OnTapped()
 	}
-}
-
-func (t *TappableImage) Refresh() {
-	t.Image.Refresh()
-	t.BaseWidget.Refresh()
-}
-
-func (t *TappableImage) Resize(size fyne.Size) {
-	t.Image.Resize(size)
-	t.BaseWidget.Resize(size)
 }
 
 func (t *TappableImage) CreateRenderer() fyne.WidgetRenderer {
