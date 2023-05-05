@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"runtime"
 	"supersonic/backend"
 	"supersonic/ui"
 	"time"
@@ -37,13 +38,15 @@ func main() {
 	}
 	mainWindow := ui.NewMainWindow(fyneApp, displayName, appVersion, myApp, fyne.NewSize(w, h))
 
-	// TODO: There is some race condition with running this initial startup
-	// task immediately before showing and running the window/Fyne main loop where
-	// the window can occasionally get misdrawn on startup. (Only seen on Ubuntu so far).
-	// This makes it much less likely to occur (not seen on dozens of startups)
-	// but is a hacky "solution"!
 	go func() {
-		time.Sleep(250 * time.Millisecond)
+		// TODO: There is a race condition with laying out the window before the
+		// window creation animation on Ubuntu (and other DEs?) finishes, where
+		// the window will be misdrawn into a smaller area if the animation hasn't finished.
+		// This makes it much less likely to occur (not seen on dozens of startups)
+		// but is a hacky "solution"!
+		if runtime.GOOS == "linux" {
+			time.Sleep(250 * time.Millisecond)
+		}
 		defaultServer := myApp.Config.GetDefaultServer()
 		if defaultServer == nil {
 			mainWindow.Controller.PromptForFirstServer()
