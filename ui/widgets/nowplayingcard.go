@@ -33,6 +33,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	}
 	n.ExtendBaseWidget(n)
 	n.cover = NewTappableImage(n.onShowCoverImage)
+	n.trackName.Hidden = true
 	n.artistName.Hidden = true
 	n.albumName.Hidden = true
 	n.trackName.SetTextStyle(fyne.TextStyle{Bold: true})
@@ -59,6 +60,7 @@ func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 
 func (n *NowPlayingCard) Update(track, artist string, artistNavigable bool, album string, cover image.Image) {
 	n.trackName.SetText(track)
+	n.trackName.Hidden = track == ""
 	n.artistName.SetText(artist)
 	n.artistName.Hidden = artist == ""
 	n.artistName.Disabled = !artistNavigable
