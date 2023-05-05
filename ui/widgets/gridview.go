@@ -51,7 +51,7 @@ type GridView struct {
 
 	GridViewState
 
-	grid *widget.GridWrapList
+	grid *GridWrap
 }
 
 type GridViewState struct {
@@ -83,7 +83,7 @@ func NewFixedGridView(items []GridViewItemModel, fetch ImageFetcher) *GridView {
 		},
 	}
 	g.ExtendBaseWidget(g)
-	g.createGridWrapList()
+	g.createGridWrap()
 	return g
 }
 
@@ -96,7 +96,7 @@ func NewGridView(iter GridViewIterator, fetch ImageFetcher) *GridView {
 	}
 	g.ExtendBaseWidget(g)
 
-	g.createGridWrapList()
+	g.createGridWrap()
 
 	// fetch initial items
 	g.fetchMoreItems(36)
@@ -112,7 +112,7 @@ func (g *GridView) SaveToState() GridViewState {
 func NewGridViewFromState(state GridViewState) *GridView {
 	g := &GridView{GridViewState: state}
 	g.ExtendBaseWidget(g)
-	g.createGridWrapList()
+	g.createGridWrap()
 	g.Refresh() // needed to initialize the widget
 	g.grid.ScrollToOffset(state.scrollPos)
 	return g
@@ -146,8 +146,8 @@ func (g *GridView) ResetFixed(items []GridViewItemModel) {
 	g.iter = nil
 }
 
-func (g *GridView) createGridWrapList() {
-	g.grid = widget.NewGridWrapList(
+func (g *GridView) createGridWrap() {
+	g.grid = NewGridWrap(
 		func() int {
 			return g.lenItems()
 		},
@@ -182,9 +182,9 @@ func (g *GridView) createGridWrapList() {
 			return card
 		},
 		// update func
-		func(itemID int, obj fyne.CanvasObject) {
+		func(itemID GridWrapItemID, obj fyne.CanvasObject) {
 			ac := obj.(*GridViewItem)
-			g.doUpdateItemCard(itemID, ac)
+			g.doUpdateItemCard(int(itemID), ac)
 		},
 	)
 }
