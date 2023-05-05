@@ -60,11 +60,14 @@ func NewTappableImage(onTapped func()) *TappableImage {
 }
 
 func (t *TappableImage) Cursor() desktop.Cursor {
-	return desktop.PointerCursor
+	if t.haveImage() {
+		return desktop.PointerCursor
+	}
+	return desktop.DefaultCursor
 }
 
 func (t *TappableImage) Tapped(e *fyne.PointEvent) {
-	if t.OnTapped != nil {
+	if t.haveImage() && t.OnTapped != nil {
 		t.OnTapped()
 	}
 }
@@ -81,4 +84,8 @@ func (t *TappableImage) Resize(size fyne.Size) {
 
 func (t *TappableImage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(&t.Image)
+}
+
+func (t *TappableImage) haveImage() bool {
+	return t.Image.Resource != nil || t.Image.Image != nil
 }
