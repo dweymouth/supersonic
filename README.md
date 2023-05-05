@@ -18,6 +18,7 @@ Screenshots of Supersonic running against the Navidrome [demo server](https://ww
 
 ## Features
 * [x] Fast, lightweight, native UI with infinite scrolling
+* [x] Light and Dark themes, with optional auto theme switching
 * [x] High-quality gapless audio playback powered by MPV, with optional audio exclusive mode
 * [x] ReplayGain support (depends on files being tagged on server)
 * [x] Scrobble plays to server, with configurable criteria

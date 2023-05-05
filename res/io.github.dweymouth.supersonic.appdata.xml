@@ -21,6 +21,7 @@
     </p>
     <ul>
       <li>Fast, lightweight, native UI, with infinite scrolling</li>
+      <li>Light and Dark themes, with optional auto theme switching</li>
       <li>High-quality gapless audio playback powered by MPV, with optional  audio exclusive mode</li>
       <li>ReplayGain support (depends on files being tagged on server)</li>
       <li>Scrobble plays to server, with configurable criteria</li>
@@ -57,10 +58,10 @@
   </screenshots>
 
  <releases>
-  <release date="2023-04-22" version="0.1.0">
+  <release date="2023-05-05" version="0.2.0">
    <description>
      <p>
-       Version 0.1.0 release of Supersonic!
+       Version 0.2.0 release of Supersonic!
      </p>
 
      <p>
@@ -68,25 +69,32 @@
      </p>
 
      <ul>
-       <li>Add playback settings dropdown to choose output audio device</li>
-       <li>Add file path column to tracklist view</li>
-       <li>Add (optional) system tray menu and close to tray support</li>
-       <li>Show disc number and disc count for multi-disc albums</li>
-       <li>Add search bar to artist, genres, and playlists pages</li>
-       <li>Add alternate (e.g. external) hostname to server connection config</li>
-       <li>Add "..." button to album page with menu to add album to queue or playlist</li>
-       <li>Add searchable "All Tracks" page, with button to play random tracks</li>
-       <li>Add experimental support for setting custom application font</li>
+       <li>Add rating column to tracklist with 5-star rating widget</li>
+       <li>Add light theme, and optional auto-switching between dark and light</li>
+       <li>Add grid view option to playlists page with playlist cover images</li>
+       <li>Enable click-to-seek behavior in seek bar</li>
+       <li>Add context menu to items in grid views (albums and playlists)</li>
+       <li>Add Ctrl+W (Cmd+W on Mac) shortcut to close to tray if enabled</li>
+       <li>Add tracklist context menu items to bulk set favorite and rating</li>
+       <li>Add "meatball menu" actions to playlist page</li>
+       <li>Add settings option to choose startup page</li>
+       <li>Migrate to Fyne 2.3.4 (few performance and memory improvements)</li>
+       <li>Track title in bottom panel links to track location on Now Playing page</li>
+       <li>Clicking thumbnail in bottom panel shows full size cover</li>
+       <li>Add volume adjustment options to system tray menu</li>
      </ul>
+
      <p>
        Fixed
      </p>
 
      <ul>
-       <li>Don't show update available prompt if the found version is the same as the running app version</li>
-       <li>Update Mac build process to support OS versions back to High Sierra (thanks @whorfin!)</li>
-       <li>Navigating back twice to an albums page with search result clears search state</li>
-    </ul>
+       <li>Fix crash when searching for albums on Airsonic servers</li>
+       <li>Tracklist columns occasionally misaligned when shrinking window</li>
+       <li>Disable hyperlinks for track artists that are not also album artists</li>
+       <li>Fix crash when navigating to "Top Tracks" on artist page not yet fully loaded or invalid artist</li>
+       <li>Don't pluralize "tracks" for albums and playlists with only one track</li>
+     </ul>
    </description>
   </release>
  </releases>
