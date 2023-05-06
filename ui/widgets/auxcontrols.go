@@ -57,6 +57,10 @@ func (v *volumeSlider) MinSize() fyne.Size {
 	return fyne.NewSize(v.Width, h)
 }
 
+func (v *volumeSlider) Scrolled(e *fyne.ScrollEvent) {
+	v.SetValue(v.Value + float64(0.5*e.Scrolled.DY))
+}
+
 type VolumeControl struct {
 	widget.BaseWidget
 

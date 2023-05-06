@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- [#156](https://github.com/dweymouth/supersonic/issues/156) Allow adjusting volume slider with the scroll wheel
+
+## [0.2.0] - 2023-05-05
+
+### Added
 - [#145](https://github.com/dweymouth/supersonic/issues/145) Add rating column to tracklist with 5-star rating widget
 - [#101](https://github.com/dweymouth/supersonic/issues/101) Add light theme, and optional auto-switching between dark and light
 - [#40](https://github.com/dweymouth/supersonic/issues/40) Add grid view option to playlists page with playlist cover images
