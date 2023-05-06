@@ -1,4 +1,4 @@
-module supersonic
+module github.com/dweymouth/supersonic
 
 go 1.19
 
