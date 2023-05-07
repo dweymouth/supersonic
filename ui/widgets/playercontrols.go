@@ -1,7 +1,7 @@
 package widgets
 
 import (
-	"supersonic/ui/util"
+	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"

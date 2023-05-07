@@ -5,20 +5,22 @@ import (
 	"log"
 	"math"
 	"strconv"
-	"supersonic/backend"
-	"supersonic/player"
-	"supersonic/sharedutil"
-	"supersonic/ui/dialogs"
-	"supersonic/ui/util"
-	"supersonic/ui/widgets"
 	"sync"
 	"time"
+
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/dweymouth/supersonic/ui/dialogs"
+	"github.com/dweymouth/supersonic/ui/util"
+	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 

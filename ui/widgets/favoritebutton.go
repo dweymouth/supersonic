@@ -1,8 +1,8 @@
 package widgets
 
 import (
-	"supersonic/res"
-	"supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/res"
+	"github.com/dweymouth/supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"

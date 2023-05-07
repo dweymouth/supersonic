@@ -1,11 +1,11 @@
 package browsing
 
 import (
-	"supersonic/backend"
-	"supersonic/sharedutil"
-	"supersonic/ui/controller"
-	"supersonic/ui/util"
-	"supersonic/ui/widgets"
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/dweymouth/supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/ui/util"
+	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"

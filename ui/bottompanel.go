@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"supersonic/backend"
-	"supersonic/player"
-	"supersonic/ui/controller"
-	"supersonic/ui/layouts"
-	"supersonic/ui/widgets"
 	"time"
+
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/ui/layouts"
+	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"

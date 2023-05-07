@@ -1,7 +1,7 @@
 package widgets
 
 import (
-	"supersonic/backend"
+	"github.com/dweymouth/supersonic/backend"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
 )

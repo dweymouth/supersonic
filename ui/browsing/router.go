@@ -1,8 +1,8 @@
 package browsing
 
 import (
-	"supersonic/backend"
-	"supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/ui/controller"
 )
 
 type NavigationHandler interface {

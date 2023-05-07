@@ -6,9 +6,10 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
-	"supersonic/backend"
-	"supersonic/res"
-	"supersonic/sharedutil"
+
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/res"
+	"github.com/dweymouth/supersonic/sharedutil"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"

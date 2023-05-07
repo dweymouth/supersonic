@@ -4,10 +4,11 @@ import (
 	"context"
 	"log"
 	"strconv"
-	"supersonic/backend/util"
-	"supersonic/player"
-	"supersonic/sharedutil"
 	"time"
+
+	"github.com/dweymouth/supersonic/backend/util"
+	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/sharedutil"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
 )

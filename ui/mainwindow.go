@@ -2,12 +2,13 @@ package ui
 
 import (
 	"fmt"
-	"supersonic/backend"
-	"supersonic/res"
-	"supersonic/ui/browsing"
-	"supersonic/ui/controller"
-	"supersonic/ui/os"
-	"supersonic/ui/theme"
+
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/res"
+	"github.com/dweymouth/supersonic/ui/browsing"
+	"github.com/dweymouth/supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/ui/os"
+	"github.com/dweymouth/supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"

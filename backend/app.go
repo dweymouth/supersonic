@@ -7,10 +7,11 @@ import (
 	"log"
 	"os"
 	"path"
-	"supersonic/backend/util"
-	"supersonic/player"
-	"supersonic/sharedutil"
 	"time"
+
+	"github.com/dweymouth/supersonic/backend/util"
+	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/sharedutil"
 
 	"github.com/20after4/configdir"
 	"github.com/zalando/go-keyring"

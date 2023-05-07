@@ -1,17 +1,18 @@
 package browsing
 
 import (
-	"supersonic/backend"
-	"supersonic/ui/controller"
-	myTheme "supersonic/ui/theme"
-	"supersonic/ui/util"
-	"supersonic/ui/widgets"
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/ui/controller"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
+	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 

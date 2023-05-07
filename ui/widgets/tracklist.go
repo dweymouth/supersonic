@@ -7,11 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"supersonic/sharedutil"
-	"supersonic/ui/layouts"
-	"supersonic/ui/os"
-	myTheme "supersonic/ui/theme"
-	"supersonic/ui/util"
+	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/dweymouth/supersonic/ui/layouts"
+	"github.com/dweymouth/supersonic/ui/os"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"

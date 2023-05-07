@@ -1,7 +1,7 @@
 package dialogs
 
 import (
-	"supersonic/backend"
+	"github.com/dweymouth/supersonic/backend"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"

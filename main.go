@@ -3,9 +3,10 @@ package main
 import (
 	"log"
 	"runtime"
-	"supersonic/backend"
-	"supersonic/ui"
 	"time"
+
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/ui"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"

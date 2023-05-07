@@ -5,18 +5,20 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"supersonic/backend"
-	"supersonic/res"
-	"supersonic/sharedutil"
-	"supersonic/ui/controller"
-	"supersonic/ui/layouts"
-	"supersonic/ui/widgets"
+
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/res"
+	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/dweymouth/supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/ui/layouts"
+	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/dweymouth/go-subsonic/subsonic"
 )
 

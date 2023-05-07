@@ -4,8 +4,8 @@ import (
 	"context"
 	"image"
 
-	"supersonic/res"
-	"supersonic/ui/layouts"
+	"github.com/dweymouth/supersonic/res"
+	"github.com/dweymouth/supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"

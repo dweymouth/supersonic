@@ -2,8 +2,9 @@ package widgets
 
 import (
 	"log"
-	"supersonic/ui/layouts"
-	myTheme "supersonic/ui/theme"
+
+	"github.com/dweymouth/supersonic/ui/layouts"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
