@@ -7,3 +7,4 @@ Path=/usr/bin
 Exec=supersonic-desktop
 Terminal=false
 Icon=supersonic-desktop
+Categories=Audio;AudioVideo
