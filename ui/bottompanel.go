@@ -56,6 +56,15 @@ func NewBottomPanel(p *player.Player, contr *controller.Controller) *BottomPanel
 			contr.ShowPopUpImage(im)
 		}
 	}
+	bp.NowPlaying.OnSetFavorite = func(fav bool) {
+		contr.SetTrackFavorites([]string{bp.playbackManager.NowPlaying().ID}, fav)
+	}
+	bp.NowPlaying.OnSetRating = func(rating int) {
+		contr.SetTrackRatings([]string{bp.playbackManager.NowPlaying().ID}, rating)
+	}
+	bp.NowPlaying.OnAddToPlaylist = func() {
+		contr.DoAddTracksToPlaylistWorkflow([]string{bp.playbackManager.NowPlaying().ID})
+	}
 	bp.NowPlaying.OnAlbumNameTapped(func() {
 		contr.NavigateTo(controller.AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
 	})

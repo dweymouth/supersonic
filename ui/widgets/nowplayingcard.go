@@ -4,6 +4,7 @@ import (
 	"image"
 
 	"github.com/dweymouth/supersonic/ui/layouts"
+	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -20,8 +21,12 @@ type NowPlayingCard struct {
 	artistName *CustomHyperlink
 	albumName  *CustomHyperlink
 	cover      *TappableImage
+	menu       *widget.PopUpMenu
 
 	OnShowCoverImage func()
+	OnSetRating      func(rating int)
+	OnSetFavorite    func(favorite bool)
+	OnAddToPlaylist  func()
 
 	c fyne.CanvasObject
 }
@@ -34,6 +39,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	}
 	n.ExtendBaseWidget(n)
 	n.cover = NewTappableImage(n.onShowCoverImage)
+	n.cover.OnTappedSecondary = n.showMenu
 	n.trackName.Hidden = true
 	n.artistName.Hidden = true
 	n.albumName.Hidden = true
@@ -52,6 +58,24 @@ func NewNowPlayingCard() *NowPlayingCard {
 func (n *NowPlayingCard) onShowCoverImage() {
 	if n.OnShowCoverImage != nil {
 		n.OnShowCoverImage()
+	}
+}
+
+func (n *NowPlayingCard) onSetFavorite(fav bool) {
+	if n.OnSetFavorite != nil {
+		n.OnSetFavorite(fav)
+	}
+}
+
+func (n *NowPlayingCard) onSetRating(rating int) {
+	if n.OnSetRating != nil {
+		n.OnSetRating(rating)
+	}
+}
+
+func (n *NowPlayingCard) onAddToPlaylist() {
+	if n.OnAddToPlaylist != nil {
+		n.OnAddToPlaylist()
 	}
 }
 
@@ -81,4 +105,17 @@ func (n *NowPlayingCard) OnAlbumNameTapped(f func()) {
 
 func (n *NowPlayingCard) OnTrackNameTapped(f func()) {
 	n.trackName.OnTapped = f
+}
+
+func (n *NowPlayingCard) showMenu(pos fyne.Position) {
+	if n.menu == nil {
+		ratingMenu := util.NewRatingSubmenu(n.onSetRating)
+		m := fyne.NewMenu("",
+			fyne.NewMenuItem("Set favorite", func() { n.onSetFavorite(true) }),
+			fyne.NewMenuItem("Unset favorite", func() { n.onSetFavorite(false) }),
+			ratingMenu,
+			fyne.NewMenuItem("Add to playlist...", func() { n.onAddToPlaylist() }))
+		n.menu = widget.NewPopUpMenu(m, fyne.CurrentApp().Driver().CanvasForObject(n))
+	}
+	n.menu.ShowAtPosition(pos)
 }

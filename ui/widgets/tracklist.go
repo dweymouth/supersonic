@@ -308,15 +308,9 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			fyne.NewMenuItem("Unset favorite", func() {
 				t.onSetFavorites(t.selectedTracks(), false, true)
 			}))
-		ratingMenu := fyne.NewMenuItem("Set rating", nil)
-		ratingMenu.ChildMenu = fyne.NewMenu("", []*fyne.MenuItem{
-			t.newRatingMenuItem(0),
-			t.newRatingMenuItem(1),
-			t.newRatingMenuItem(2),
-			t.newRatingMenuItem(3),
-			t.newRatingMenuItem(4),
-			t.newRatingMenuItem(5),
-		}...)
+		ratingMenu := util.NewRatingSubmenu(func(rating int) {
+			t.onSetRatings(t.selectedTracks(), rating, true)
+		})
 		t.ctxMenu.Items = append(t.ctxMenu.Items, ratingMenu)
 		if len(t.AuxiliaryMenuItems) > 0 {
 			t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
@@ -324,16 +318,6 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		}
 	}
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
-}
-
-func (t *Tracklist) newRatingMenuItem(rating int) *fyne.MenuItem {
-	label := "(none)"
-	if rating > 0 {
-		label = strconv.Itoa(rating)
-	}
-	return fyne.NewMenuItem(label, func() {
-		t.onSetRatings(t.selectedTracks(), rating, true)
-	})
 }
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {

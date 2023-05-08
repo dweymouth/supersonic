@@ -105,18 +105,8 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 		m.App.PlaybackManager.LoadTracks(tracks, false, false)
 		m.App.PlaybackManager.PlayFromBeginning()
 	}
-	tracklist.OnSetFavorite = func(trackIDs []string, fav bool) {
-		s := m.App.ServerManager.Server
-		if fav {
-			go s.Star(subsonic.StarParameters{SongIDs: trackIDs})
-		} else {
-			go s.Unstar(subsonic.StarParameters{SongIDs: trackIDs})
-		}
-		for _, id := range trackIDs {
-			m.App.PlaybackManager.OnTrackFavoriteStatusChanged(id, fav)
-		}
-	}
-	tracklist.OnSetRating = m.setTrackRatings
+	tracklist.OnSetFavorite = m.SetTrackFavorites
+	tracklist.OnSetRating = m.SetTrackRatings
 	tracklist.OnShowAlbumPage = func(albumID string) {
 		m.NavigateTo(AlbumRoute(albumID))
 	}
@@ -417,7 +407,19 @@ func (c *Controller) doModalClosed() {
 	}
 }
 
-func (c *Controller) setTrackRatings(trackIDs []string, rating int) {
+func (c *Controller) SetTrackFavorites(trackIDs []string, favorite bool) {
+	s := c.App.ServerManager.Server
+	if favorite {
+		go s.Star(subsonic.StarParameters{SongIDs: trackIDs})
+	} else {
+		go s.Unstar(subsonic.StarParameters{SongIDs: trackIDs})
+	}
+	for _, id := range trackIDs {
+		c.App.PlaybackManager.OnTrackFavoriteStatusChanged(id, favorite)
+	}
+}
+
+func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
 	// Subsonic doesn't allow bulk setting ratings.
 	// To not overwhelm the server with requests, set rating for
 	// only 5 tracks at a time concurrently

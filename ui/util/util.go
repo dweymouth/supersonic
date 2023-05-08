@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -85,6 +86,28 @@ func RichTextSegsFromHTMLString(s string) []widget.RichTextSegment {
 	}
 
 	return segs
+}
+
+func NewRatingSubmenu(onSetRating func(int)) *fyne.MenuItem {
+	newRatingMenuItem := func(rating int) *fyne.MenuItem {
+		label := "(none)"
+		if rating > 0 {
+			label = strconv.Itoa(rating)
+		}
+		return fyne.NewMenuItem(label, func() {
+			onSetRating(rating)
+		})
+	}
+	ratingMenu := fyne.NewMenuItem("Set rating", nil)
+	ratingMenu.ChildMenu = fyne.NewMenu("", []*fyne.MenuItem{
+		newRatingMenuItem(0),
+		newRatingMenuItem(1),
+		newRatingMenuItem(2),
+		newRatingMenuItem(3),
+		newRatingMenuItem(4),
+		newRatingMenuItem(5),
+	}...)
+	return ratingMenu
 }
 
 type HSpace struct {
