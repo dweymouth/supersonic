@@ -52,7 +52,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 		SizeName: theme.SizeNameHeadingText,
 	}
 	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
-	iter := g.lm.GenreIter(g.genre)
+	iter := g.lm.GenreIter(g.genre, backend.AlbumFilter{})
 	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 	g.contr.ConnectAlbumGridActions(g.grid)
 	g.searcher = widgets.NewSearchEntry()
@@ -118,7 +118,8 @@ func (g *GenrePage) Reload() {
 	if g.searchText != "" {
 		g.doSearch(g.searchText)
 	} else {
-		g.grid.Reset(widgets.NewGridViewAlbumIterator(g.lm.GenreIter(g.genre)))
+		iter := g.lm.GenreIter(g.genre, backend.AlbumFilter{})
+		g.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 		g.grid.Refresh()
 	}
 }

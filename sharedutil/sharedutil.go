@@ -17,6 +17,9 @@ func SliceContains[T comparable](ts []T, t T) bool {
 }
 
 func FilterSlice[T any](ss []T, test func(T) bool) []T {
+	if ss == nil {
+		return nil
+	}
 	result := make([]T, 0)
 	for _, s := range ss {
 		if test(s) {
@@ -27,6 +30,9 @@ func FilterSlice[T any](ss []T, test func(T) bool) []T {
 }
 
 func MapSlice[T any, U any](ts []T, f func(T) U) []U {
+	if ts == nil {
+		return nil
+	}
 	result := make([]U, len(ts))
 	for i, t := range ts {
 		result[i] = f(t)
