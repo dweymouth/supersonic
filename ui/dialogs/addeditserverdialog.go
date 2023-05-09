@@ -22,6 +22,7 @@ type AddEditServerDialog struct {
 	LegacyAuth bool
 	OnSubmit   func()
 
+	passField  *widget.Entry
 	submitBtn  *widget.Button
 	promptText *widget.RichText
 	container  *fyne.Container
@@ -29,7 +30,7 @@ type AddEditServerDialog struct {
 
 var _ fyne.Widget = (*AddEditServerDialog)(nil)
 
-func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *AddEditServerDialog {
+func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig, focusHandler func(fyne.Focusable)) *AddEditServerDialog {
 	a := &AddEditServerDialog{}
 	a.ExtendBaseWidget(a)
 	if prefillServer != nil {
@@ -42,20 +43,20 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 
 	titleLabel := widget.NewLabel(title)
 	titleLabel.TextStyle.Bold = true
-	nickField := widget.NewEntryWithData(binding.BindString(&a.Nickname))
-	nickField.SetPlaceHolder("My Server")
-	hostField := widget.NewEntryWithData(binding.BindString(&a.Host))
-	hostField.SetPlaceHolder("http://localhost:4533")
+	a.passField = widget.NewPasswordEntry()
+	a.passField.OnSubmitted = func(_ string) { a.doSubmit() }
+	userField := widget.NewEntryWithData(binding.BindString(&a.Username))
+	userField.OnSubmitted = func(_ string) { focusHandler(a.passField) }
 	altHostField := widget.NewEntryWithData(binding.BindString(&a.AltHost))
 	altHostField.SetPlaceHolder("(optional) https://my-external-domain.net/music")
-	userField := widget.NewEntryWithData(binding.BindString(&a.Username))
-	passField := widget.NewPasswordEntry()
-	a.submitBtn = widget.NewButton("Enter", func() {
-		a.Password = passField.Text
-		if a.OnSubmit != nil {
-			a.OnSubmit()
-		}
-	})
+	altHostField.OnSubmitted = func(_ string) { focusHandler(userField) }
+	hostField := widget.NewEntryWithData(binding.BindString(&a.Host))
+	hostField.SetPlaceHolder("http://localhost:4533")
+	hostField.OnSubmitted = func(_ string) { focusHandler(altHostField) }
+	nickField := widget.NewEntryWithData(binding.BindString(&a.Nickname))
+	nickField.SetPlaceHolder("My Server")
+	nickField.OnSubmitted = func(_ string) { focusHandler(hostField) }
+	a.submitBtn = widget.NewButton("Enter", a.doSubmit)
 	a.promptText = widget.NewRichTextWithText("")
 	a.promptText.Hidden = true
 
@@ -73,7 +74,7 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig) *
 			widget.NewLabel("Username"),
 			userField,
 			widget.NewLabel("Password"),
-			passField,
+			a.passField,
 		),
 		container.NewHBox(layout.NewSpacer(), legacyAuthCheck),
 		widget.NewSeparator(),
@@ -101,6 +102,13 @@ func (a *AddEditServerDialog) EnableSubmit() {
 func (a *AddEditServerDialog) DisableSubmit() {
 	a.submitBtn.Disable()
 	a.submitBtn.Refresh()
+}
+
+func (a *AddEditServerDialog) doSubmit() {
+	a.Password = a.passField.Text
+	if a.OnSubmit != nil {
+		a.OnSubmit()
+	}
 }
 
 func (a *AddEditServerDialog) doSetPromptText(text string, color fyne.ThemeColorName) {

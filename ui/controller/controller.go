@@ -142,7 +142,7 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 }
 
 func (m *Controller) PromptForFirstServer() {
-	d := dialogs.NewAddEditServerDialog("Connect to Server", nil)
+	d := dialogs.NewAddEditServerDialog("Connect to Server", nil, m.MainWindow.Canvas().Focus)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func() {
 		d.DisableSubmit()
@@ -294,7 +294,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 	}
 	d.OnEditServer = func(server *backend.ServerConfig) {
 		pop.Hide()
-		editD := dialogs.NewAddEditServerDialog("Edit server", server)
+		editD := dialogs.NewAddEditServerDialog("Edit server", server, m.MainWindow.Canvas().Focus)
 		editPop := widget.NewModalPopUp(editD, m.MainWindow.Canvas())
 		editD.OnSubmit = func() {
 			d.DisableSubmit()
