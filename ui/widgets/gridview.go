@@ -129,11 +129,11 @@ func (g *GridView) Clear() {
 func (g *GridView) Reset(iter GridViewIterator) {
 	g.itemsMutex.Lock()
 	g.items = nil
-	g.itemsMutex.Unlock()
 	g.fetching = false
 	g.done = false
 	g.highestShown = 0
 	g.iter = iter
+	g.itemsMutex.Unlock()
 	g.fetchMoreItems(36)
 }
 
@@ -194,8 +194,13 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	if itemIdx > g.highestShown {
 		g.highestShown = itemIdx
 	}
+	var item GridViewItemModel
 	g.itemsMutex.RLock()
-	item := g.items[itemIdx]
+	// itemIdx can rarely be out of range if the data is being updated
+	// as the view is requested to refresh
+	if itemIdx < len(g.items) {
+		item = g.items[itemIdx]
+	}
 	g.itemsMutex.RUnlock()
 	if card.PrevID == item.ID {
 		// nothing to do
@@ -208,26 +213,31 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 		card.ImgLoadCancel()
 		card.ImgLoadCancel = nil
 	}
-	if img, ok := g.imageFetcher.GetCoverThumbnailFromCache(item.CoverArtID); ok {
-		card.Cover.SetImage(img)
-	} else {
-		card.Cover.SetImageResource(res.ResAlbumplaceholderPng)
-		// asynchronously fetch cover image
-		ctx, cancel := context.WithCancel(context.Background())
-		card.ImgLoadCancel = cancel
-		go func(ctx context.Context) {
-			i, err := g.imageFetcher.GetCoverThumbnail(item.CoverArtID)
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				if err == nil {
-					card.Cover.SetImage(i)
-				} else {
-					log.Printf("error fetching image: %s", err.Error())
+	if item.CoverArtID != "" {
+		if img, ok := g.imageFetcher.GetCoverThumbnailFromCache(item.CoverArtID); ok {
+			card.Cover.SetImage(img)
+		} else {
+			card.Cover.SetImageResource(res.ResAlbumplaceholderPng)
+			// asynchronously fetch cover image
+			ctx, cancel := context.WithCancel(context.Background())
+			card.ImgLoadCancel = cancel
+			go func(ctx context.Context) {
+				i, err := g.imageFetcher.GetCoverThumbnail(item.CoverArtID)
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					if err == nil {
+						card.Cover.SetImage(i)
+					} else {
+						log.Printf("error fetching image: %s", err.Error())
+					}
 				}
-			}
-		}(ctx)
+			}(ctx)
+		}
+	} else {
+		// use the placeholder image for an item that has no cover art ID
+		card.Cover.SetImageResource(res.ResAlbumplaceholderPng)
 	}
 
 	// if user has scrolled near the bottom, fetch more
