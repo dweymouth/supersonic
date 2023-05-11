@@ -12,8 +12,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 // TODO: there is a lot of code duplication between this and albumspage. Refactor?
@@ -160,9 +158,7 @@ func (g *GenrePage) OnSearched(query string) {
 }
 
 func (g *GenrePage) doSearch(query string) {
-	iter := g.lm.SearchIterWithFilter(query, func(al *subsonic.AlbumID3) bool {
-		return al.Genre == g.genre
-	})
+	iter := g.lm.SearchIterWithFilter(query, backend.AlbumFilter{Genres: []string{g.genre}})
 	if g.searchGrid == nil {
 		g.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 		g.contr.ConnectAlbumGridActions(g.searchGrid)

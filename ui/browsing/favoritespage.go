@@ -2,7 +2,6 @@ package browsing
 
 import (
 	"log"
-	"time"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -213,9 +212,7 @@ func (a *FavoritesPage) OnSongChange(song *subsonic.Child, _ *subsonic.Child) {
 }
 
 func (a *FavoritesPage) doSearchAlbums(query string) {
-	iter := a.lm.SearchIterWithFilter(query, func(al *subsonic.AlbumID3) bool {
-		return al.Starred.After(time.Time{})
-	})
+	iter := a.lm.SearchIterWithFilter(query, backend.AlbumFilter{ExcludeUnfavorited: true})
 	if a.searchGrid == nil {
 		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
 		a.contr.ConnectAlbumGridActions(a.searchGrid)

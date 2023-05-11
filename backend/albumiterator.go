@@ -68,6 +68,11 @@ func (f *AlbumFilter) Matches(album *subsonic.AlbumID3) bool {
 	return false
 }
 
+func (f *AlbumFilter) IsEmpty() bool {
+	return !f.ExcludeFavorited && !f.ExcludeUnfavorited &&
+		f.MinYear == 0 && f.MaxYear == 0 && len(f.Genres) == 0
+}
+
 func (l *LibraryManager) AlbumsIter(sort AlbumSortOrder, filter AlbumFilter) AlbumIterator {
 	switch sort {
 	case AlbumSortRecentlyAdded:
@@ -101,10 +106,10 @@ func (l *LibraryManager) GenreIter(genre string, filter AlbumFilter) AlbumIterat
 }
 
 func (l *LibraryManager) SearchIter(query string) AlbumIterator {
-	return l.newSearchIter(query, func(*subsonic.AlbumID3) bool { return true })
+	return l.newSearchIter(query, AlbumFilter{})
 }
 
-func (l *LibraryManager) SearchIterWithFilter(query string, filter func(*subsonic.AlbumID3) bool) AlbumIterator {
+func (l *LibraryManager) SearchIterWithFilter(query string, filter AlbumFilter) AlbumIterator {
 	return l.newSearchIter(query, filter)
 }
 
@@ -119,7 +124,7 @@ func (l *LibraryManager) GetAlbum(id string) (*subsonic.AlbumID3, error) {
 type baseIter struct {
 	listType      string
 	filter        AlbumFilter
-	pos           int
+	serverPos     int
 	l             *LibraryManager
 	s             *subsonic.Client
 	opts          map[string]string
@@ -142,36 +147,33 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 	if r.done {
 		return nil
 	}
-	if r.prefetched != nil {
+	if r.prefetched != nil && r.prefetchedPos < len(r.prefetched) {
 		a := r.prefetched[r.prefetchedPos]
 		r.prefetchedPos++
-		if r.prefetchedPos == len(r.prefetched) {
-			r.prefetched = nil
-			r.prefetchedPos = 0
-			r.pos++
-		}
-		r.pos++
-
 		return a
 	}
-	r.opts["offset"] = strconv.Itoa(r.pos)
-	albums, err := r.s.GetAlbumList2(r.listType, r.opts)
-	if err != nil {
-		log.Println(err)
-		albums = nil
+	r.prefetched = nil
+	for { // keep fetching until we are done or have mathcing results
+		r.opts["offset"] = strconv.Itoa(r.serverPos)
+		albums, err := r.s.GetAlbumList2(r.listType, r.opts)
+		if err != nil {
+			log.Printf("error fetching albums: %s", err.Error())
+			albums = nil
+		}
+		if len(albums) == 0 {
+			r.done = true
+			return nil
+		}
+		r.serverPos += len(albums)
+		albums = sharedutil.FilterSlice(albums, r.filter.Matches)
+		r.prefetched = albums
+		if len(albums) > 0 {
+			break
+		}
 	}
-	albums = sharedutil.FilterSlice(albums, r.filter.Matches)
-	if len(albums) == 0 {
-		r.done = true
-		return nil
-	} else if len(albums) == 1 {
-		r.done = true
-		return albums[0]
-	}
-	r.prefetched = albums
 	r.prefetchedPos = 1
 	if r.l.PreCacheCoverFn != nil {
-		for _, album := range albums {
+		for _, album := range r.prefetched {
 			go r.l.PreCacheCoverFn(album.CoverArt)
 		}
 	}
@@ -183,14 +185,14 @@ type searchIter struct {
 	searchIterBase
 
 	l             *LibraryManager
-	filter        func(*subsonic.AlbumID3) bool
+	filter        AlbumFilter
 	prefetched    []*subsonic.AlbumID3
 	prefetchedPos int
 	albumIDset    map[string]bool
 	done          bool
 }
 
-func (l *LibraryManager) newSearchIter(query string, filter func(*subsonic.AlbumID3) bool) *searchIter {
+func (l *LibraryManager) newSearchIter(query string, filter AlbumFilter) *searchIter {
 	return &searchIter{
 		searchIterBase: searchIterBase{
 			query: query,
@@ -266,7 +268,7 @@ func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 		if _, have := s.albumIDset[album.ID]; have {
 			continue
 		}
-		if !s.filter(album) {
+		if !s.filter.Matches(album) {
 			continue
 		}
 		s.prefetched = append(s.prefetched, album)
