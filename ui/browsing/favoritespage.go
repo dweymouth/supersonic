@@ -210,6 +210,14 @@ func (a *FavoritesPage) OnSongChange(song *subsonic.Child, _ *subsonic.Child) {
 	}
 }
 
+var _ CanSelectAll = (*FavoritesPage)(nil)
+
+func (a *FavoritesPage) SelectAll() {
+	if a.toggleBtns.ActivatedButtonIndex() == 2 /*songs*/ && a.tracklistCtr != nil {
+		a.tracklistCtr.Objects[0].(*widgets.Tracklist).SelectAll()
+	}
+}
+
 func (a *FavoritesPage) doSearchAlbums(query string) {
 	iter := a.lm.SearchIterWithFilter(query, func(al *subsonic.AlbumID3) bool {
 		return al.Starred.After(time.Time{})
