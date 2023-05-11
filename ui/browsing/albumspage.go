@@ -4,6 +4,7 @@ import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/ui/dialogs"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
@@ -27,7 +28,9 @@ type AlbumsPage struct {
 	grid       *widgets.GridView
 	searchGrid *widgets.GridView
 	searcher   *widgets.SearchEntry
+	filterBtn  *widgets.AlbumFilterButton
 	searchText string
+	filter     backend.AlbumFilter
 	titleDisp  *widget.RichText
 	sortOrder  *selectWidget
 	container  *fyne.Container
@@ -71,11 +74,12 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 		cfg.SortOrder = string(backend.AlbumSortRecentlyAdded)
 	}
 	a.sortOrder.Selected = cfg.SortOrder
-	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected), backend.AlbumFilter{})
+	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected), a.filter)
 	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im)
 	contr.ConnectAlbumGridActions(a.grid)
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = a.OnSearched
+	a.filterBtn = widgets.NewAlbumFilterButton(&a.filter, func(filter *backend.AlbumFilter) fyne.CanvasObject { return dialogs.NewAlbumFilterDialog(filter) })
 	a.createContainer(false)
 
 	return a
@@ -89,7 +93,7 @@ func (a *AlbumsPage) createContainer(searchgrid bool) {
 		g = a.searchGrid
 	}
 	a.container = container.NewBorder(
-		container.NewHBox(util.NewHSpace(6), a.titleDisp, sortVbox, layout.NewSpacer(), searchVbox, util.NewHSpace(12)),
+		container.NewHBox(util.NewHSpace(6), a.titleDisp, sortVbox, layout.NewSpacer(), a.filterBtn, searchVbox, util.NewHSpace(12)),
 		nil,
 		nil,
 		nil,
@@ -154,7 +158,7 @@ func (a *AlbumsPage) Reload() {
 	if a.searchText != "" {
 		a.doSearch(a.searchText)
 	} else {
-		iter := a.lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected), backend.AlbumFilter{})
+		iter := a.lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected), a.filter)
 		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 		a.grid.Refresh()
 	}
@@ -190,7 +194,7 @@ func (a *AlbumsPage) doSearch(query string) {
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
 	a.cfg.SortOrder = a.sortOrder.Selected
-	iter := a.lm.AlbumsIter(backend.AlbumSortOrder(order), backend.AlbumFilter{})
+	iter := a.lm.AlbumsIter(backend.AlbumSortOrder(order), a.filter)
 	a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	if a.searchText == "" {
 		a.container.Objects[0] = a.grid
