@@ -33,7 +33,7 @@ type ArtistsGenresPage struct {
 
 	titleDisp *widget.RichText
 	container *fyne.Container
-	searcher  *widgets.Searcher
+	searcher  *widgets.SearchEntry
 }
 
 func NewArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *backend.ServerManager) *ArtistsGenresPage {
@@ -63,7 +63,7 @@ func newArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *b
 			a.contr.NavigateTo(controller.ArtistRoute(id))
 		}
 	}
-	a.searcher = widgets.NewSearcher()
+	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 	a.buildContainer()
@@ -111,7 +111,7 @@ func (a *ArtistsGenresPage) onSearched(query string) {
 var _ Searchable = (*ArtistsGenresPage)(nil)
 
 func (a *ArtistsGenresPage) SearchWidget() fyne.Focusable {
-	return a.searcher.Entry
+	return a.searcher
 }
 
 func (a *ArtistsGenresPage) Route() controller.Route {
@@ -175,7 +175,7 @@ func (a *ArtistsGenresPage) buildGenresListModel(genres []*subsonic.Genre) []wid
 }
 
 func (a *ArtistsGenresPage) buildContainer() {
-	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
+	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
 	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 		container.NewBorder(
 			container.New(&layouts.MaxPadLayout{PadLeft: -5},

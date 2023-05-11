@@ -6,6 +6,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/layout"
@@ -58,6 +60,22 @@ func fmtStringForThreeSigFigs(num float64) string {
 func ImageAspect(im image.Image) float32 {
 	b := im.Bounds()
 	return float32(b.Max.X-b.Min.X) / float32(b.Max.Y-b.Min.Y)
+}
+
+// Debouncer returns a function that will call callOnDone when
+// it has not been invoked since the last dur interval.
+func NewDebouncer(dur time.Duration, callOnDone func()) func() {
+	var mu sync.Mutex
+	var timer *time.Timer
+	return func() {
+		mu.Lock()
+		defer mu.Unlock()
+
+		if timer != nil {
+			timer.Stop()
+		}
+		timer = time.AfterFunc(dur, callOnDone)
+	}
 }
 
 func RichTextSegsFromHTMLString(s string) []widget.RichTextSegment {

@@ -32,7 +32,7 @@ type PlaylistsPage struct {
 	searchedPlaylists []*subsonic.Playlist
 
 	viewToggle *widgets.ToggleButtonGroup
-	searcher   *widgets.Searcher
+	searcher   *widgets.SearchEntry
 	titleDisp  *widget.RichText
 	container  *fyne.Container
 	listView   *PlaylistList
@@ -56,7 +56,7 @@ func newPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageCo
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
-	a.searcher = widgets.NewSearcher()
+	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 	a.viewToggle = widgets.NewToggleButtonGroup(0,
@@ -199,7 +199,7 @@ func (a *PlaylistsPage) refreshView(playlists []*subsonic.Playlist) {
 var _ Searchable = (*PlaylistsPage)(nil)
 
 func (a *PlaylistsPage) SearchWidget() fyne.Focusable {
-	return a.searcher.Entry
+	return a.searcher
 }
 
 func (a *PlaylistsPage) Route() controller.Route {
@@ -233,7 +233,7 @@ func (s *savedPlaylistsPage) Restore() Page {
 }
 
 func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {
-	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
+	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
 	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 		container.NewBorder(
 			container.NewHBox(a.titleDisp, container.NewCenter(a.viewToggle), layout.NewSpacer(), searchVbox),

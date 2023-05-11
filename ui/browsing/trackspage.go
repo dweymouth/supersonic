@@ -24,7 +24,7 @@ type TracksPage struct {
 	nowPlayingID string
 
 	title           *widget.RichText
-	searcher        *widgets.Searcher
+	searcher        *widgets.SearchEntry
 	tracklist       *widgets.Tracklist
 	loader          widgets.TracklistLoader
 	searchTracklist *widgets.Tracklist
@@ -58,7 +58,7 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	t.title = widget.NewRichTextWithText("All Tracks")
 	t.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
 	t.playRandom = widget.NewButtonWithIcon("Play random", theme.ShuffleIcon, t.playRandomSongs)
-	t.searcher = widgets.NewSearcher()
+	t.searcher = widgets.NewSearchEntry()
 	t.searcher.OnSearched = t.OnSearched
 	t.createContainer()
 	t.Reload()
@@ -67,7 +67,7 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 
 func (t *TracksPage) createContainer() {
 	playRandomVbox := container.NewVBox(layout.NewSpacer(), t.playRandom, layout.NewSpacer())
-	searchVbox := container.NewVBox(layout.NewSpacer(), t.searcher.Entry, layout.NewSpacer())
+	searchVbox := container.NewVBox(layout.NewSpacer(), t.searcher, layout.NewSpacer())
 	topRow := container.NewHBox(t.title, playRandomVbox, layout.NewSpacer(), searchVbox)
 	t.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
 		container.NewBorder(topRow, nil, nil, nil, t.tracklist))
@@ -100,7 +100,7 @@ func (t *TracksPage) OnSongChange(track *subsonic.Child, lastScrobbledIfAny *sub
 var _ Searchable = (*TracksPage)(nil)
 
 func (t *TracksPage) SearchWidget() fyne.Focusable {
-	return t.searcher.Entry
+	return t.searcher
 }
 
 func (t *TracksPage) OnSearched(query string) {

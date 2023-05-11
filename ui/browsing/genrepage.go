@@ -27,7 +27,7 @@ type GenrePage struct {
 	lm         *backend.LibraryManager
 	grid       *widgets.GridView
 	searchGrid *widgets.GridView
-	searcher   *widgets.Searcher
+	searcher   *widgets.SearchEntry
 	searchText string
 	titleDisp  *widget.RichText
 	playRandom *widget.Button
@@ -55,7 +55,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 	iter := g.lm.GenreIter(g.genre)
 	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 	g.contr.ConnectAlbumGridActions(g.grid)
-	g.searcher = widgets.NewSearcher()
+	g.searcher = widgets.NewSearchEntry()
 	g.searcher.OnSearched = g.OnSearched
 	g.createContainer(false)
 
@@ -63,7 +63,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 }
 
 func (g *GenrePage) createContainer(searchGrid bool) {
-	searchVbox := container.NewVBox(layout.NewSpacer(), g.searcher.Entry, layout.NewSpacer())
+	searchVbox := container.NewVBox(layout.NewSpacer(), g.searcher, layout.NewSpacer())
 	gr := g.grid
 	if searchGrid {
 		gr = g.searchGrid
@@ -94,7 +94,7 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	}
 	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
 	g.grid = widgets.NewGridViewFromState(saved.gridState)
-	g.searcher = widgets.NewSearcher()
+	g.searcher = widgets.NewSearchEntry()
 	g.searcher.OnSearched = g.OnSearched
 	g.searcher.Entry.Text = saved.searchText
 	g.searchText = saved.searchText
@@ -142,7 +142,7 @@ func (g *GenrePage) Save() SavedPage {
 var _ Searchable = (*AlbumsPage)(nil)
 
 func (g *GenrePage) SearchWidget() fyne.Focusable {
-	return g.searcher.Entry
+	return g.searcher
 }
 
 func (g *GenrePage) OnSearched(query string) {

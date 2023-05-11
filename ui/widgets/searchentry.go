@@ -1,76 +1,21 @@
 package widgets
 
 import (
-	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/ui/util"
 )
 
-// Searcher is a search entry widget that will issue a search command
+// SearchEntry is a search entry widget that will issue a search command
 // (aka call OnSearched) when a short span of time has elapsed since
 // the user typed into the widget.
-type Searcher struct {
-	Entry      *SearchEntry
-	OnSearched func(string)
-
-	searchGoroutine   bool
-	pendingSearch     bool
-	pendingSearchLock sync.Mutex
-}
-
-func NewSearcher() *Searcher {
-	s := &Searcher{
-		Entry: NewSearchEntry(),
-	}
-	s.Entry.OnChanged = s.onSearchTextChanged
-	return s
-}
-
-func (s *Searcher) onSearchTextChanged(text string) {
-	if text == "" {
-		s.sendSearch("")
-		return
-	}
-	s.pendingSearchLock.Lock()
-	defer s.pendingSearchLock.Unlock()
-	s.pendingSearch = true
-	if !s.searchGoroutine {
-		go s.waitAndSearch()
-		s.searchGoroutine = true
-	}
-}
-
-func (s *Searcher) waitAndSearch() {
-	t := time.NewTicker(200 * time.Millisecond)
-	var getReadyToSearch bool
-	var done bool
-	for !done {
-		<-t.C
-		s.pendingSearchLock.Lock()
-		if s.pendingSearch {
-			getReadyToSearch = true
-			s.pendingSearch = false
-		} else if getReadyToSearch {
-			s.sendSearch(s.Entry.Text)
-			t.Stop()
-			s.searchGoroutine = false
-			done = true
-		}
-		s.pendingSearchLock.Unlock()
-	}
-}
-
-func (s *Searcher) sendSearch(text string) {
-	if s.OnSearched != nil {
-		s.OnSearched(text)
-	}
-}
-
 type SearchEntry struct {
 	widget.Entry
+
+	OnSearched func(string)
 }
 
 func NewSearchEntry() *SearchEntry {
@@ -80,6 +25,10 @@ func NewSearchEntry() *SearchEntry {
 	sf.ActionItem = NewClearTextButton(func() {
 		sf.SetText("")
 	})
+	debounceFunc := util.NewDebouncer(200*time.Millisecond, func() {
+		sf.sendSearch(sf.Entry.Text)
+	})
+	sf.Entry.OnChanged = func(_ string) { debounceFunc() }
 	return sf
 }
 
@@ -102,6 +51,12 @@ type clearTextButton struct {
 	widget.Icon
 
 	OnTapped func()
+}
+
+func (s *SearchEntry) sendSearch(text string) {
+	if s.OnSearched != nil {
+		s.OnSearched(text)
+	}
 }
 
 func NewClearTextButton(onTapped func()) *clearTextButton {

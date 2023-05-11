@@ -38,7 +38,7 @@ type FavoritesPage struct {
 	searchGrid    *widgets.GridView
 	artistListCtr *fyne.Container
 	tracklistCtr  *fyne.Container
-	searcher      *widgets.Searcher
+	searcher      *widgets.SearchEntry
 	titleDisp     *widget.RichText
 	toggleBtns    *widgets.ToggleButtonGroup
 	container     *fyne.Container
@@ -78,13 +78,13 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int, searchText string) {
 		widget.NewButtonWithIcon("", myTheme.AlbumIcon, a.onShowFavoriteAlbums),
 		widget.NewButtonWithIcon("", myTheme.ArtistIcon, a.onShowFavoriteArtists),
 		widget.NewButtonWithIcon("", myTheme.TracksIcon, a.onShowFavoriteSongs))
-	a.searcher = widgets.NewSearcher()
+	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = a.OnSearched
 	a.searcher.Entry.Text = searchText
 }
 
 func (a *FavoritesPage) createContainer(initialView fyne.CanvasObject) {
-	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher.Entry, layout.NewSpacer())
+	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
 	a.container = container.NewBorder(
 		container.NewHBox(util.NewHSpace(9), a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), searchVbox, util.NewHSpace(15)),
 		nil, nil, nil, initialView)
@@ -182,7 +182,7 @@ func (a *FavoritesPage) Save() SavedPage {
 var _ Searchable = (*FavoritesPage)(nil)
 
 func (a *FavoritesPage) SearchWidget() fyne.Focusable {
-	return a.searcher.Entry
+	return a.searcher
 }
 
 func (a *FavoritesPage) OnSearched(query string) {
