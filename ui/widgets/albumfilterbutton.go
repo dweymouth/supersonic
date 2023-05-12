@@ -17,7 +17,8 @@ import (
 type AlbumFilterButton struct {
 	widget.Button
 
-	OnChanged func()
+	OnChanged     func()
+	GenreDisabled bool
 
 	filter *backend.AlbumFilter
 	dialog *widget.PopUp
@@ -36,12 +37,17 @@ func NewAlbumFilterButton(filter *backend.AlbumFilter) *AlbumFilterButton {
 }
 
 func (a *AlbumFilterButton) Refresh() {
-	if a.filter.IsEmpty() {
+	if a.filter.IsEmpty() || (a.GenreDisabled && a.filterEmptyExceptGenre()) {
 		a.Importance = widget.MediumImportance
 	} else {
 		a.Importance = widget.HighImportance
 	}
 	a.Button.Refresh()
+}
+
+func (a *AlbumFilterButton) filterEmptyExceptGenre() bool {
+	return !a.filter.ExcludeFavorited && !a.filter.ExcludeUnfavorited &&
+		a.filter.MinYear == 0 && a.filter.MaxYear == 0
 }
 
 func (a *AlbumFilterButton) onFilterChanged() {

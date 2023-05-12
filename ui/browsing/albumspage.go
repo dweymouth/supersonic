@@ -76,15 +76,15 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected), a.filter)
 	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im)
 	contr.ConnectAlbumGridActions(a.grid)
-	a.createSearchAndFilter("")
+	a.createSearchAndFilter()
 	a.createContainer(false)
 
 	return a
 }
 
-func (a *AlbumsPage) createSearchAndFilter(searchText string) {
+func (a *AlbumsPage) createSearchAndFilter() {
 	a.searcher = widgets.NewSearchEntry()
-	a.searcher.Text = searchText
+	a.searcher.Text = a.searchText
 	a.searcher.OnSearched = a.OnSearched
 	a.filterBtn = widgets.NewAlbumFilterButton(&a.filter)
 	a.filterBtn.OnChanged = a.Reload
@@ -129,7 +129,7 @@ func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	if a.searchText != "" {
 		a.searchGrid = widgets.NewGridViewFromState(saved.searchGridState)
 	}
-	a.createSearchAndFilter(saved.searchText)
+	a.createSearchAndFilter()
 	a.createContainer(saved.searchText != "")
 
 	return a

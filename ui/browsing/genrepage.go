@@ -27,6 +27,8 @@ type GenrePage struct {
 	searchGrid *widgets.GridView
 	searcher   *widgets.SearchEntry
 	searchText string
+	filter     backend.AlbumFilter
+	filterBtn  *widgets.AlbumFilterButton
 	titleDisp  *widget.RichText
 	playRandom *widget.Button
 
@@ -37,11 +39,12 @@ type GenrePage struct {
 
 func NewGenrePage(genre string, contr *controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *GenrePage {
 	g := &GenrePage{
-		genre: genre,
-		contr: contr,
-		pm:    pm,
-		lm:    lm,
-		im:    im,
+		genre:  genre,
+		filter: backend.AlbumFilter{Genres: []string{genre}},
+		contr:  contr,
+		pm:     pm,
+		lm:     lm,
+		im:     im,
 	}
 	g.ExtendBaseWidget(g)
 
@@ -50,14 +53,22 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 		SizeName: theme.SizeNameHeadingText,
 	}
 	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
-	iter := g.lm.GenreIter(g.genre, backend.AlbumFilter{})
+	iter := g.lm.GenreIter(g.genre, g.filter)
 	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 	g.contr.ConnectAlbumGridActions(g.grid)
-	g.searcher = widgets.NewSearchEntry()
-	g.searcher.OnSearched = g.OnSearched
+	g.createSearchAndFilter()
 	g.createContainer(false)
 
 	return g
+}
+
+func (g *GenrePage) createSearchAndFilter() {
+	g.searcher = widgets.NewSearchEntry()
+	g.searcher.Text = g.searchText
+	g.searcher.OnSearched = g.OnSearched
+	g.filterBtn = widgets.NewAlbumFilterButton(&g.filter)
+	g.filterBtn.GenreDisabled = true
+	g.filterBtn.OnChanged = g.Reload
 }
 
 func (g *GenrePage) createContainer(searchGrid bool) {
@@ -68,21 +79,21 @@ func (g *GenrePage) createContainer(searchGrid bool) {
 	}
 	playRandomVbox := container.NewVBox(layout.NewSpacer(), g.playRandom, layout.NewSpacer())
 	g.container = container.NewBorder(
-		container.NewHBox(util.NewHSpace(6), g.titleDisp, playRandomVbox, layout.NewSpacer(), searchVbox, util.NewHSpace(15)),
-		nil,
-		nil,
-		nil,
-		gr,
+		container.NewHBox(util.NewHSpace(6),
+			g.titleDisp, playRandomVbox, layout.NewSpacer(), container.NewCenter(g.filterBtn), searchVbox, util.NewHSpace(15)),
+		nil, nil, nil, gr,
 	)
 }
 
 func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g := &GenrePage{
-		genre: saved.genre,
-		contr: saved.contr,
-		pm:    saved.pm,
-		lm:    saved.lm,
-		im:    saved.im,
+		genre:      saved.genre,
+		contr:      saved.contr,
+		pm:         saved.pm,
+		lm:         saved.lm,
+		im:         saved.im,
+		searchText: saved.searchText,
+		filter:     saved.filter,
 	}
 	g.ExtendBaseWidget(g)
 
@@ -92,10 +103,7 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	}
 	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
 	g.grid = widgets.NewGridViewFromState(saved.gridState)
-	g.searcher = widgets.NewSearchEntry()
-	g.searcher.OnSearched = g.OnSearched
-	g.searcher.Entry.Text = saved.searchText
-	g.searchText = saved.searchText
+	g.createSearchAndFilter()
 	if g.searchText != "" {
 		g.searchGrid = widgets.NewGridViewFromState(saved.searchGridState)
 	}
@@ -116,7 +124,7 @@ func (g *GenrePage) Reload() {
 	if g.searchText != "" {
 		g.doSearch(g.searchText)
 	} else {
-		iter := g.lm.GenreIter(g.genre, backend.AlbumFilter{})
+		iter := g.lm.GenreIter(g.genre, g.filter)
 		g.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 		g.grid.Refresh()
 	}
@@ -125,6 +133,7 @@ func (g *GenrePage) Reload() {
 func (g *GenrePage) Save() SavedPage {
 	sg := &savedGenrePage{
 		genre:      g.genre,
+		filter:     g.filter,
 		searchText: g.searchText,
 		contr:      g.contr,
 		pm:         g.pm,
@@ -158,7 +167,7 @@ func (g *GenrePage) OnSearched(query string) {
 }
 
 func (g *GenrePage) doSearch(query string) {
-	iter := g.lm.SearchIterWithFilter(query, backend.AlbumFilter{Genres: []string{g.genre}})
+	iter := g.lm.SearchIterWithFilter(query, g.filter)
 	if g.searchGrid == nil {
 		g.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 		g.contr.ConnectAlbumGridActions(g.searchGrid)
@@ -176,6 +185,7 @@ func (g *GenrePage) playRandomSongs() {
 type savedGenrePage struct {
 	genre           string
 	searchText      string
+	filter          backend.AlbumFilter
 	contr           *controller.Controller
 	pm              *backend.PlaybackManager
 	lm              *backend.LibraryManager
