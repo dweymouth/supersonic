@@ -27,7 +27,7 @@ func NewAlbumFilterButton(filter *backend.AlbumFilter) *AlbumFilterButton {
 	a := &AlbumFilterButton{
 		filter: filter,
 		Button: widget.Button{
-			Icon: theme.AlbumIcon,
+			Icon: theme.FilterIcon,
 		},
 	}
 	a.OnTapped = a.showFilterDialog
