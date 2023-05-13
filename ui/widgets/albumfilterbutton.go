@@ -17,8 +17,9 @@ import (
 type AlbumFilterButton struct {
 	widget.Button
 
-	OnChanged     func()
-	GenreDisabled bool
+	OnChanged        func()
+	GenreDisabled    bool
+	FavoriteDisabled bool
 
 	filter *backend.AlbumFilter
 	dialog *widget.PopUp
@@ -37,7 +38,7 @@ func NewAlbumFilterButton(filter *backend.AlbumFilter) *AlbumFilterButton {
 }
 
 func (a *AlbumFilterButton) Refresh() {
-	if a.filter.IsEmpty() || (a.GenreDisabled && a.filterEmptyExceptGenre()) {
+	if a.filterEmpty() {
 		a.Importance = widget.MediumImportance
 	} else {
 		a.Importance = widget.HighImportance
@@ -45,9 +46,10 @@ func (a *AlbumFilterButton) Refresh() {
 	a.Button.Refresh()
 }
 
-func (a *AlbumFilterButton) filterEmptyExceptGenre() bool {
-	return !a.filter.ExcludeFavorited && !a.filter.ExcludeUnfavorited &&
-		a.filter.MinYear == 0 && a.filter.MaxYear == 0
+func (a *AlbumFilterButton) filterEmpty() bool {
+	return a.filter.MinYear == 0 && a.filter.MaxYear == 0 &&
+		(a.FavoriteDisabled || !a.filter.ExcludeFavorited && !a.filter.ExcludeUnfavorited) &&
+		(a.GenreDisabled || len(a.filter.Genres) == 0)
 }
 
 func (a *AlbumFilterButton) onFilterChanged() {
@@ -59,7 +61,7 @@ func (a *AlbumFilterButton) onFilterChanged() {
 
 func (a *AlbumFilterButton) showFilterDialog() {
 	if a.dialog == nil {
-		filterDlg := NewAlbumFilterPopup(a.filter)
+		filterDlg := NewAlbumFilterPopup(a)
 		filterDlg.OnChanged = a.onFilterChanged
 		a.dialog = widget.NewPopUp(filterDlg, fyne.CurrentApp().Driver().CanvasForObject(a))
 	}
@@ -72,12 +74,14 @@ type AlbumFilterPopup struct {
 
 	OnChanged func()
 
-	filter    *backend.AlbumFilter
-	container *fyne.Container
+	isFavorite    *widget.Check
+	isNotFavorite *widget.Check
+	filterBtn     *AlbumFilterButton
+	container     *fyne.Container
 }
 
-func NewAlbumFilterPopup(filter *backend.AlbumFilter) *AlbumFilterPopup {
-	a := &AlbumFilterPopup{filter: filter}
+func NewAlbumFilterPopup(filter *AlbumFilterButton) *AlbumFilterPopup {
+	a := &AlbumFilterPopup{filterBtn: filter}
 	a.ExtendBaseWidget(a)
 
 	debounceOnChanged := util.NewDebouncer(350*time.Millisecond, a.emitOnChanged)
@@ -90,45 +94,46 @@ func NewAlbumFilterPopup(filter *backend.AlbumFilter) *AlbumFilterPopup {
 	minYear.SetMinCharWidth(4)
 	minYear.OnChanged = func(yearStr string) {
 		if yearStr == "" {
-			a.filter.MinYear = 0
+			a.filterBtn.filter.MinYear = 0
 		} else if i, err := strconv.Atoi(yearStr); err == nil {
-			a.filter.MinYear = i
+			a.filterBtn.filter.MinYear = i
 		}
 		debounceOnChanged()
 	}
-	if filter.MinYear > 0 {
-		minYear.Text = strconv.Itoa(filter.MinYear)
+	if a.filterBtn.filter.MinYear > 0 {
+		minYear.Text = strconv.Itoa(a.filterBtn.filter.MinYear)
 	}
 	maxYear := NewTextRestrictedEntry(yearValidator)
 	maxYear.SetMinCharWidth(4)
 	maxYear.OnChanged = func(yearStr string) {
 		if yearStr == "" {
-			a.filter.MaxYear = 0
+			a.filterBtn.filter.MaxYear = 0
 		} else if i, err := strconv.Atoi(yearStr); err == nil {
-			a.filter.MaxYear = i
+			a.filterBtn.filter.MaxYear = i
 		}
 		debounceOnChanged()
 	}
-	if filter.MaxYear > 0 {
-		maxYear.Text = strconv.Itoa(filter.MaxYear)
+	if a.filterBtn.filter.MaxYear > 0 {
+		maxYear.Text = strconv.Itoa(a.filterBtn.filter.MaxYear)
 	}
 
 	// setup is favorite/not favorite filters
-	var isNotFavorite *widget.Check
-	isFavorite := widget.NewCheck("Is favorite", func(fav bool) {
+	a.isFavorite = widget.NewCheck("Is favorite", func(fav bool) {
 		if fav {
-			isNotFavorite.SetChecked(false)
+			a.isNotFavorite.SetChecked(false)
 		}
-		a.filter.ExcludeUnfavorited = fav
+		a.filterBtn.filter.ExcludeUnfavorited = fav
 		debounceOnChanged()
 	})
-	isNotFavorite = widget.NewCheck("Is not favorite", func(fav bool) {
+	a.isFavorite.Hidden = a.filterBtn.FavoriteDisabled
+	a.isNotFavorite = widget.NewCheck("Is not favorite", func(fav bool) {
 		if fav {
-			isFavorite.SetChecked(false)
+			a.isFavorite.SetChecked(false)
 		}
-		a.filter.ExcludeFavorited = fav
+		a.filterBtn.filter.ExcludeFavorited = fav
 		debounceOnChanged()
 	})
+	a.isNotFavorite.Hidden = a.filterBtn.FavoriteDisabled
 
 	// setup container
 	title := widget.NewLabel("Album filters")
@@ -136,10 +141,16 @@ func NewAlbumFilterPopup(filter *backend.AlbumFilter) *AlbumFilterPopup {
 	a.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()),
 		container.NewHBox(widget.NewLabel("Year from"), minYear, widget.NewLabel("to"), maxYear),
-		container.NewHBox(isFavorite, isNotFavorite),
+		container.NewHBox(a.isFavorite, a.isNotFavorite),
 	)
 
 	return a
+}
+
+func (a *AlbumFilterPopup) Refresh() {
+	a.isFavorite.Hidden = a.filterBtn.FavoriteDisabled
+	a.isNotFavorite.Hidden = a.filterBtn.FavoriteDisabled
+	a.BaseWidget.Refresh()
 }
 
 func (a *AlbumFilterPopup) emitOnChanged() {
