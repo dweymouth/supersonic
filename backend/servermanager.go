@@ -71,14 +71,14 @@ func (s *ServerManager) testConnectionAndCreateClient(connection ServerConnectio
 
 func (s *ServerManager) connect(connection ServerConnection, password string) (*subsonic.Client, error) {
 	cli := &subsonic.Client{
-		Client:       &http.Client{},
+		Client:       &http.Client{Timeout: 10 * time.Second},
 		BaseUrl:      connection.Hostname,
 		User:         connection.Username,
 		PasswordAuth: connection.LegacyAuth,
 		ClientName:   "supersonic",
 	}
 	altCli := &subsonic.Client{
-		Client:       &http.Client{},
+		Client:       &http.Client{Timeout: 10 * time.Second},
 		BaseUrl:      connection.AltHostname,
 		User:         connection.Username,
 		PasswordAuth: connection.LegacyAuth,
