@@ -132,6 +132,12 @@ func (a *FavoritesPage) Route() controller.Route {
 	return controller.FavoritesRoute()
 }
 
+func (a *FavoritesPage) Tapped(*fyne.PointEvent) {
+	if a.tracklistCtr != nil {
+		a.tracklistCtr.Objects[0].(*widgets.Tracklist).UnselectAll()
+	}
+}
+
 func (a *FavoritesPage) Reload() {
 	// reload favorite albums view
 	if a.searchText != "" {

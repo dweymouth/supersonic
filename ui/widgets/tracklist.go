@@ -60,7 +60,7 @@ type Tracklist struct {
 
 	// user action callbacks
 	OnPlayTrackAt   func(int)
-	OnPlaySelection func(tracks []*subsonic.Child)
+	OnPlaySelection func(tracks []*subsonic.Child, shuffle bool)
 	OnAddToQueue    func(trackIDs []*subsonic.Child)
 	OnAddToPlaylist func(trackIDs []string)
 	OnSetFavorite   func(trackIDs []string, fav bool)
@@ -283,7 +283,13 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			t.ctxMenu.Items = append(t.ctxMenu.Items,
 				fyne.NewMenuItem("Play", func() {
 					if t.OnPlaySelection != nil {
-						t.OnPlaySelection(t.selectedTracks())
+						t.OnPlaySelection(t.selectedTracks(), false)
+					}
+				}))
+			t.ctxMenu.Items = append(t.ctxMenu.Items,
+				fyne.NewMenuItem("Shuffle", func() {
+					if t.OnPlaySelection != nil {
+						t.OnPlaySelection(t.selectedTracks(), true)
 					}
 				}))
 			t.ctxMenu.Items = append(t.ctxMenu.Items,

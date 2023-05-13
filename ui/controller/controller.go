@@ -101,8 +101,8 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 		m.App.PlaybackManager.LoadTracks(tracklist.Tracks, false, false)
 		m.App.PlaybackManager.PlayTrackAt(idx)
 	}
-	tracklist.OnPlaySelection = func(tracks []*subsonic.Child) {
-		m.App.PlaybackManager.LoadTracks(tracks, false, false)
+	tracklist.OnPlaySelection = func(tracks []*subsonic.Child, shuffle bool) {
+		m.App.PlaybackManager.LoadTracks(tracks, false, shuffle)
 		m.App.PlaybackManager.PlayFromBeginning()
 	}
 	tracklist.OnSetFavorite = m.SetTrackFavorites
