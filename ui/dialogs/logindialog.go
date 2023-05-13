@@ -40,6 +40,7 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 	l.serverSelect.SetSelectedIndex(0)
 	editBtn := widget.NewButtonWithIcon("", theme.DocumentCreateIcon(), l.onEditServer)
 	l.passField = widget.NewPasswordEntry()
+	l.passField.OnSubmitted = func(_ string) { l.onSubmit() }
 	l.submitBtn = widget.NewButton("OK", l.onSubmit)
 
 	l.promptText = widget.NewRichTextWithText("")

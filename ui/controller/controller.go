@@ -158,11 +158,9 @@ func (m *Controller) PromptForFirstServer() {
 					LegacyAuth:  d.LegacyAuth,
 				}
 				server := m.App.Config.AddServer(d.Nickname, conn)
-				if err := m.App.ServerManager.SetServerPassword(server, d.Password); err != nil {
-					log.Printf("error setting keyring credentials: %v", err)
-					// TODO: handle?
+				if err := m.trySetPasswordAndConnectToServer(server, d.Password); err != nil {
+					log.Printf("error connecting to server: %s", err.Error())
 				}
-				m.DoConnectToServerWorkflow(server)
 			}
 			d.EnableSubmit()
 		}()
@@ -362,9 +360,8 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func()) {
 func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {
 	if err := c.App.ServerManager.SetServerPassword(server, password); err != nil {
 		log.Printf("error setting keyring credentials: %v", err)
-		// TODO: how best to handle this unexpected codepath
-		// fall back to prompting for password on each run of the app?
-		return err
+		// Don't return an error; fall back to just using the password in-memory
+		// User will need to log in with the password on subsequent runs.
 	}
 	return c.tryConnectToServer(server, password)
 }
