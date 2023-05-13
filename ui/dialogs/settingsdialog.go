@@ -113,8 +113,8 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 
 	// Scrobble settings
 
-	twoDigitValidator := func(text string, r rune) bool {
-		return unicode.IsDigit(r) && len(text) < 2
+	twoDigitValidator := func(text, selText string, r rune) bool {
+		return unicode.IsDigit(r) && len(text)-len(selText) < 2
 	}
 
 	percentEntry := widgets.NewTextRestrictedEntry(twoDigitValidator)
@@ -247,7 +247,7 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 		replayGainSelect.SetSelectedIndex(0)
 	}
 
-	preampGain := widgets.NewTextRestrictedEntry(func(curText string, r rune) bool {
+	preampGain := widgets.NewTextRestrictedEntry(func(curText, _ string, r rune) bool {
 		return (curText == "" && r == '-') ||
 			(curText == "" && unicode.IsDigit(r)) ||
 			((curText == "-" || curText == "0") && unicode.IsDigit(r))

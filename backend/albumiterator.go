@@ -3,8 +3,10 @@ package backend
 import (
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
+	"github.com/dweymouth/supersonic/sharedutil"
 )
 
 type AlbumSortOrder string
@@ -33,43 +35,81 @@ var (
 	}
 )
 
-func (l *LibraryManager) AlbumsIter(sort AlbumSortOrder) AlbumIterator {
+type AlbumFilter struct {
+	MinYear int
+	MaxYear int      // 0 == unset/match any
+	Genres  []string // len(0) == unset/match any
+
+	ExcludeFavorited   bool // mut. exc. with ExcludeUnfavorited
+	ExcludeUnfavorited bool // mut. exc. with ExcludeFavorited
+}
+
+func (f *AlbumFilter) Matches(album *subsonic.AlbumID3) bool {
+	if album == nil {
+		return false
+	}
+	if f.ExcludeFavorited && !album.Starred.IsZero() {
+		return false
+	}
+	if f.ExcludeUnfavorited && album.Starred.IsZero() {
+		return false
+	}
+	if y := album.Year; y < f.MinYear || (f.MaxYear > 0 && y > f.MaxYear) {
+		return false
+	}
+	if len(f.Genres) == 0 {
+		return true
+	}
+	for _, g := range f.Genres {
+		if strings.EqualFold(g, album.Genre) {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *AlbumFilter) IsEmpty() bool {
+	return !f.ExcludeFavorited && !f.ExcludeUnfavorited &&
+		f.MinYear == 0 && f.MaxYear == 0 && len(f.Genres) == 0
+}
+
+func (l *LibraryManager) AlbumsIter(sort AlbumSortOrder, filter AlbumFilter) AlbumIterator {
 	switch sort {
 	case AlbumSortRecentlyAdded:
-		return l.newBaseIter("newest", make(map[string]string))
+		return l.newBaseIter("newest", filter, make(map[string]string))
 	case AlbumSortRecentlyPlayed:
-		return l.newBaseIter("recent", make(map[string]string))
+		return l.newBaseIter("recent", filter, make(map[string]string))
 	case AlbumSortFrequentlyPlayed:
-		return l.newBaseIter("frequent", make(map[string]string))
+		return l.newBaseIter("frequent", filter, make(map[string]string))
 	case AlbumSortRandom:
 		return l.newRandomIter()
 	case AlbumSortTitleAZ:
-		return l.newBaseIter("alphabeticalByName", make(map[string]string))
+		return l.newBaseIter("alphabeticalByName", filter, make(map[string]string))
 	case AlbumSortArtistAZ:
-		return l.newBaseIter("alphabeticalByArtist", make(map[string]string))
+		return l.newBaseIter("alphabeticalByArtist", filter, make(map[string]string))
 	case AlbumSortYearAscending:
-		return l.newBaseIter("byYear", map[string]string{"fromYear": "0", "toYear": "3000"})
+		return l.newBaseIter("byYear", filter, map[string]string{"fromYear": "0", "toYear": "3000"})
 	case AlbumSortYearDescending:
-		return l.newBaseIter("byYear", map[string]string{"fromYear": "3000", "toYear": "0"})
+		return l.newBaseIter("byYear", filter, map[string]string{"fromYear": "3000", "toYear": "0"})
 	default:
 		log.Printf("Undefined album sort order: %s", sort)
 		return nil
 	}
 }
 
-func (l *LibraryManager) StarredIter() AlbumIterator {
-	return l.newBaseIter("starred", make(map[string]string))
+func (l *LibraryManager) StarredIter(filter AlbumFilter) AlbumIterator {
+	return l.newBaseIter("starred", filter, make(map[string]string))
 }
 
-func (l *LibraryManager) GenreIter(genre string) AlbumIterator {
-	return l.newBaseIter("byGenre", map[string]string{"genre": genre})
+func (l *LibraryManager) GenreIter(genre string, filter AlbumFilter) AlbumIterator {
+	return l.newBaseIter("byGenre", filter, map[string]string{"genre": genre})
 }
 
 func (l *LibraryManager) SearchIter(query string) AlbumIterator {
-	return l.newSearchIter(query, func(*subsonic.AlbumID3) bool { return true })
+	return l.newSearchIter(query, AlbumFilter{})
 }
 
-func (l *LibraryManager) SearchIterWithFilter(query string, filter func(*subsonic.AlbumID3) bool) AlbumIterator {
+func (l *LibraryManager) SearchIterWithFilter(query string, filter AlbumFilter) AlbumIterator {
 	return l.newSearchIter(query, filter)
 }
 
@@ -83,7 +123,8 @@ func (l *LibraryManager) GetAlbum(id string) (*subsonic.AlbumID3, error) {
 
 type baseIter struct {
 	listType      string
-	pos           int
+	filter        AlbumFilter
+	serverPos     int
 	l             *LibraryManager
 	s             *subsonic.Client
 	opts          map[string]string
@@ -92,9 +133,10 @@ type baseIter struct {
 	done          bool
 }
 
-func (l *LibraryManager) newBaseIter(listType string, opts map[string]string) *baseIter {
+func (l *LibraryManager) newBaseIter(listType string, filter AlbumFilter, opts map[string]string) *baseIter {
 	return &baseIter{
 		listType: listType,
+		filter:   filter,
 		l:        l,
 		s:        l.s.Server,
 		opts:     opts,
@@ -105,35 +147,33 @@ func (r *baseIter) Next() *subsonic.AlbumID3 {
 	if r.done {
 		return nil
 	}
-	if r.prefetched != nil {
+	if r.prefetched != nil && r.prefetchedPos < len(r.prefetched) {
 		a := r.prefetched[r.prefetchedPos]
 		r.prefetchedPos++
-		if r.prefetchedPos == len(r.prefetched) {
-			r.prefetched = nil
-			r.prefetchedPos = 0
-			r.pos++
-		}
-		r.pos++
-
 		return a
 	}
-	r.opts["offset"] = strconv.Itoa(r.pos)
-	albums, err := r.s.GetAlbumList2(r.listType, r.opts)
-	if err != nil {
-		log.Println(err)
-		albums = nil
+	r.prefetched = nil
+	for { // keep fetching until we are done or have mathcing results
+		r.opts["offset"] = strconv.Itoa(r.serverPos)
+		albums, err := r.s.GetAlbumList2(r.listType, r.opts)
+		if err != nil {
+			log.Printf("error fetching albums: %s", err.Error())
+			albums = nil
+		}
+		if len(albums) == 0 {
+			r.done = true
+			return nil
+		}
+		r.serverPos += len(albums)
+		albums = sharedutil.FilterSlice(albums, r.filter.Matches)
+		r.prefetched = albums
+		if len(albums) > 0 {
+			break
+		}
 	}
-	if len(albums) == 0 {
-		r.done = true
-		return nil
-	} else if len(albums) == 1 {
-		r.done = true
-		return albums[0]
-	}
-	r.prefetched = albums
 	r.prefetchedPos = 1
 	if r.l.PreCacheCoverFn != nil {
-		for _, album := range albums {
+		for _, album := range r.prefetched {
 			go r.l.PreCacheCoverFn(album.CoverArt)
 		}
 	}
@@ -145,14 +185,14 @@ type searchIter struct {
 	searchIterBase
 
 	l             *LibraryManager
-	filter        func(*subsonic.AlbumID3) bool
+	filter        AlbumFilter
 	prefetched    []*subsonic.AlbumID3
 	prefetchedPos int
 	albumIDset    map[string]bool
 	done          bool
 }
 
-func (l *LibraryManager) newSearchIter(query string, filter func(*subsonic.AlbumID3) bool) *searchIter {
+func (l *LibraryManager) newSearchIter(query string, filter AlbumFilter) *searchIter {
 	return &searchIter{
 		searchIterBase: searchIterBase{
 			query: query,
@@ -228,7 +268,7 @@ func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 		if _, have := s.albumIDset[album.ID]; have {
 			continue
 		}
-		if !s.filter(album) {
+		if !s.filter.Matches(album) {
 			continue
 		}
 		s.prefetched = append(s.prefetched, album)

@@ -2,7 +2,6 @@ package browsing
 
 import (
 	"log"
-	"time"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -30,6 +29,7 @@ type FavoritesPage struct {
 	sm    *backend.ServerManager
 	lm    *backend.LibraryManager
 
+	filter            backend.AlbumFilter
 	searchText        string
 	nowPlayingID      string
 	pendingViewSwitch bool
@@ -39,6 +39,7 @@ type FavoritesPage struct {
 	artistListCtr *fyne.Container
 	tracklistCtr  *fyne.Container
 	searcher      *widgets.SearchEntry
+	filterBtn     *widgets.AlbumFilterButton
 	titleDisp     *widget.RichText
 	toggleBtns    *widgets.ToggleButtonGroup
 	container     *fyne.Container
@@ -46,16 +47,18 @@ type FavoritesPage struct {
 
 func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *FavoritesPage {
 	a := &FavoritesPage{
-		cfg:   cfg,
-		contr: contr,
-		pm:    pm,
-		lm:    lm,
-		sm:    sm,
-		im:    im,
+		filter: backend.AlbumFilter{ExcludeUnfavorited: true},
+		cfg:    cfg,
+		contr:  contr,
+		pm:     pm,
+		lm:     lm,
+		sm:     sm,
+		im:     im,
 	}
 	a.ExtendBaseWidget(a)
-	a.createHeader(0, "")
-	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(lm.StarredIter()), a.im)
+	a.createHeader(0)
+	iter := lm.StarredIter(a.filter)
+	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
 	a.contr.ConnectAlbumGridActions(a.grid)
 	if cfg.InitialView == "Artists" {
 		a.toggleBtns.SetActivatedButton(1)
@@ -69,7 +72,7 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Contro
 	return a
 }
 
-func (a *FavoritesPage) createHeader(activeBtnIdx int, searchText string) {
+func (a *FavoritesPage) createHeader(activeBtnIdx int) {
 	a.titleDisp = widget.NewRichTextWithText("Favorites")
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
@@ -80,27 +83,32 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int, searchText string) {
 		widget.NewButtonWithIcon("", myTheme.TracksIcon, a.onShowFavoriteSongs))
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = a.OnSearched
-	a.searcher.Entry.Text = searchText
+	a.searcher.Entry.Text = a.searchText
+	a.filterBtn = widgets.NewAlbumFilterButton(&a.filter)
+	a.filterBtn.FavoriteDisabled = true
+	a.filterBtn.OnChanged = a.Reload
 }
 
 func (a *FavoritesPage) createContainer(initialView fyne.CanvasObject) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
-	a.container = container.NewBorder(
-		container.NewHBox(util.NewHSpace(9), a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), searchVbox, util.NewHSpace(15)),
+	a.container = container.NewBorder(container.NewHBox(util.NewHSpace(9),
+		a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), container.NewCenter(a.filterBtn), searchVbox, util.NewHSpace(15)),
 		nil, nil, nil, initialView)
 }
 
 func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	a := &FavoritesPage{
-		cfg:   saved.cfg,
-		contr: saved.contr,
-		pm:    saved.pm,
-		lm:    saved.lm,
-		sm:    saved.sm,
-		im:    saved.im,
+		cfg:        saved.cfg,
+		contr:      saved.contr,
+		pm:         saved.pm,
+		lm:         saved.lm,
+		sm:         saved.sm,
+		im:         saved.im,
+		searchText: saved.searchText,
+		filter:     saved.filter,
 	}
 	a.ExtendBaseWidget(a)
-	a.createHeader(saved.activeToggleBtn, saved.searchText)
+	a.createHeader(saved.activeToggleBtn)
 	a.grid = widgets.NewGridViewFromState(saved.gridState)
 
 	if saved.searchText != "" {
@@ -129,7 +137,8 @@ func (a *FavoritesPage) Reload() {
 	if a.searchText != "" {
 		a.doSearchAlbums(a.searchText)
 	} else {
-		a.grid.Reset(widgets.NewGridViewAlbumIterator(a.lm.StarredIter()))
+		iter := a.lm.StarredIter(a.filter)
+		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
 	if a.tracklistCtr != nil || a.artistListCtr != nil {
 		go func() {
@@ -169,6 +178,7 @@ func (a *FavoritesPage) Save() SavedPage {
 		sm:              a.sm,
 		im:              a.im,
 		lm:              a.lm,
+		filter:          a.filter,
 		searchText:      a.searchText,
 		gridState:       a.grid.SaveToState(),
 		activeToggleBtn: a.toggleBtns.ActivatedButtonIndex(),
@@ -219,9 +229,7 @@ func (a *FavoritesPage) SelectAll() {
 }
 
 func (a *FavoritesPage) doSearchAlbums(query string) {
-	iter := a.lm.SearchIterWithFilter(query, func(al *subsonic.AlbumID3) bool {
-		return al.Starred.After(time.Time{})
-	})
+	iter := a.lm.SearchIterWithFilter(query, a.filter)
 	if a.searchGrid == nil {
 		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
 		a.contr.ConnectAlbumGridActions(a.searchGrid)
@@ -235,6 +243,7 @@ func (a *FavoritesPage) doSearchAlbums(query string) {
 func (a *FavoritesPage) onShowFavoriteAlbums() {
 	a.cfg.InitialView = "Albums" // save setting
 	a.searcher.Entry.Show()
+	a.filterBtn.Show()
 	if a.searchText == "" {
 		a.container.Objects[0] = a.grid
 	} else {
@@ -246,6 +255,7 @@ func (a *FavoritesPage) onShowFavoriteAlbums() {
 func (a *FavoritesPage) onShowFavoriteArtists() {
 	a.cfg.InitialView = "Artists" // save setting
 	a.searcher.Entry.Hide()       // disable search on artists for now
+	a.filterBtn.Hide()
 	if a.artistListCtr == nil {
 		if a.pendingViewSwitch {
 			return
@@ -294,6 +304,7 @@ func buildArtistListModel(artists []*subsonic.ArtistID3) []widgets.ArtistGenreLi
 func (a *FavoritesPage) onShowFavoriteSongs() {
 	a.cfg.InitialView = "Songs" // save setting
 	a.searcher.Entry.Hide()     // disable search on songs for now
+	a.filterBtn.Hide()
 	if a.tracklistCtr == nil {
 		if a.pendingViewSwitch {
 			return
@@ -343,6 +354,7 @@ type savedFavoritesPage struct {
 	lm              *backend.LibraryManager
 	gridState       widgets.GridViewState
 	searchGridState widgets.GridViewState
+	filter          backend.AlbumFilter
 	searchText      string
 	activeToggleBtn int
 }

@@ -121,6 +121,7 @@ var (
 	PlaylistIcon    fyne.Resource
 	ShuffleIcon     fyne.Resource
 	TracksIcon      fyne.Resource
+	FilterIcon      fyne.Resource = theme.NewThemedResource(res.ResFilterSvg)
 )
 
 // MUST be called at startup!

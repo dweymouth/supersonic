@@ -9,7 +9,7 @@ import (
 func (l *LibraryManager) AllTracksIterator() TrackIterator {
 	return &allTracksIterator{
 		l:         l,
-		albumIter: l.AlbumsIter(AlbumSortArtistAZ),
+		albumIter: l.AlbumsIter(AlbumSortArtistAZ, AlbumFilter{}),
 	}
 }
 

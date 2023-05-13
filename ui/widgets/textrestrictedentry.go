@@ -13,19 +13,21 @@ import (
 type TextRestrictedEntry struct {
 	widget.Entry
 
-	charAllowed func(string, rune) bool
+	charAllowed CharAllowedFunc
 
 	minWidth float32
 }
 
-func NewTextRestrictedEntry(charAllowed func(curText string, r rune) bool) *TextRestrictedEntry {
+type CharAllowedFunc func(curText string, selectedText string, r rune) bool
+
+func NewTextRestrictedEntry(charAllowed CharAllowedFunc) *TextRestrictedEntry {
 	e := &TextRestrictedEntry{charAllowed: charAllowed}
 	e.ExtendBaseWidget(e)
 	return e
 }
 
 func (e *TextRestrictedEntry) TypedRune(r rune) {
-	if e.charAllowed == nil || e.charAllowed(e.Text, r) {
+	if e.charAllowed == nil || e.charAllowed(e.Text, e.SelectedText(), r) {
 		e.Entry.TypedRune(r)
 	}
 }
