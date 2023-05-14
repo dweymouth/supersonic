@@ -19,9 +19,21 @@ type AlbumWithTracks struct {
 }
 
 type Artist struct {
-	ID     string
-	Name   string
+	ID         string
+	Name       string
+	AlbumCount int
+}
+
+type ArtistWithAlbums struct {
+	Artist
 	Albums []Album
+}
+
+type ArtistInfo struct {
+	Biography      string
+	LastFMUrl      string
+	ImageURL       string
+	SimilarArtists []Artist
 }
 
 type Genre struct {
@@ -39,10 +51,11 @@ type Track struct {
 	Genre       string
 	ArtistIDs   []string
 	ArtistNames []string
+	Album       string
 	Rating      int
 	Favorite    bool
 	Size        int64
-	PlayCount   int64
+	PlayCount   int
 	FilePath    string
 }
 

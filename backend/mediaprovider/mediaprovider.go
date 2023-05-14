@@ -34,7 +34,9 @@ type Favorites struct {
 type MediaProvider interface {
 	GetAlbum(albumID string) (*AlbumWithTracks, error)
 
-	GetArtist(artistID string) (*Artist, error)
+	GetArtist(artistID string) (*ArtistWithAlbums, error)
+
+	GetArtistInfo(artistID string) (*ArtistInfo, error)
 
 	GetPlaylist(playlistID string) (*PlaylistWithTracks, error)
 
@@ -56,9 +58,21 @@ type MediaProvider interface {
 
 	GetFavorites() (Favorites, error)
 
-	GetPlaylists() ([]Playlist, error)
-
 	SetFavorite(params RatingFavoriteParameters) error
 
 	SetRating(params RatingFavoriteParameters) error
+
+	GetPlaylists() ([]Playlist, error)
+
+	CreatePlaylist(name string, trackIDs []string) error
+
+	EditPlaylist(id, name, description string, public bool) error
+
+	EditPlaylistTracks(id string, trackIDsToAdd, trackIDsToRemove []string) error
+
+	ReplacePlaylistTracks(id string, trackIDs []string) error
+
+	DeletePlaylist(id string) error
+
+	Scrobble(trackID string, submission bool) error
 }
