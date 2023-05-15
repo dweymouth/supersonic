@@ -34,19 +34,17 @@ type AlbumPage struct {
 type albumPageState struct {
 	albumID string
 	cfg     *backend.AlbumPageConfig
-	lm      *backend.LibraryManager
+	mp      mediaprovider.MediaProvider
 	pm      *backend.PlaybackManager
 	im      *backend.ImageManager
-	sm      *backend.ServerManager
 	contr   *controller.Controller
 }
 
 func NewAlbumPage(
 	albumID string,
 	cfg *backend.AlbumPageConfig,
-	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
-	lm *backend.LibraryManager,
+	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
 	contr *controller.Controller,
 ) *AlbumPage {
@@ -54,9 +52,8 @@ func NewAlbumPage(
 		albumPageState: albumPageState{
 			albumID: albumID,
 			cfg:     cfg,
-			sm:      sm,
 			pm:      pm,
-			lm:      lm,
+			mp:      mp,
 			im:      im,
 			contr:   contr,
 		},
@@ -115,7 +112,7 @@ func (a *AlbumPage) SelectAll() {
 
 // should be called asynchronously
 func (a *AlbumPage) load() {
-	album, err := a.sm.Server.GetAlbum(a.albumID)
+	album, err := a.mp.GetAlbum(a.albumID)
 	if err != nil {
 		log.Printf("Failed to get album: %s", err.Error())
 		return
@@ -238,7 +235,7 @@ func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backe
 
 func (a *AlbumPageHeader) toggleFavorited() {
 	params := mediaprovider.RatingFavoriteParameters{AlbumIDs: []string{a.albumID}}
-	a.page.sm.Server.SetFavorite(params, a.toggleFavButton.IsFavorited)
+	a.page.mp.SetFavorite(params, a.toggleFavButton.IsFavorited)
 }
 
 func (a *AlbumPageHeader) showPopUpCover() {
@@ -263,5 +260,5 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return NewAlbumPage(s.albumID, s.cfg, s.sm, s.pm, s.lm, s.im, s.contr)
+	return NewAlbumPage(s.albumID, s.cfg, s.pm, s.mp, s.im, s.contr)
 }

@@ -20,8 +20,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 var _ fyne.Widget = (*ArtistPage)(nil)
@@ -42,7 +40,7 @@ type ArtistPage struct {
 
 	artistPageState
 
-	artistInfo *subsonic.ArtistID3
+	artistInfo *mediaprovider.ArtistWithAlbums
 
 	albumGrid    *widgets.GridView
 	tracklistCtr *fyne.Container
@@ -130,7 +128,7 @@ func (a *ArtistPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track
 
 func (a *ArtistPage) playAllTracks() {
 	if a.artistInfo != nil { // page loaded
-		for i, album := range a.artistInfo.Album {
+		for i, album := range a.artistInfo.Albums {
 			a.pm.LoadAlbum(album.ID, i > 0 /*append*/, false /*shuffle*/)
 		}
 		a.pm.PlayFromBeginning()
@@ -155,7 +153,7 @@ func (a *ArtistPage) load() {
 	} else {
 		a.showTopTracks()
 	}
-	info, err := a.sm.Server.GetArtistInfo2(a.artistID, nil)
+	info, err := a.sm.Server.GetArtistInfo(a.artistID)
 	if err != nil {
 		log.Printf("Failed to get artist info: %s", err.Error())
 	}
@@ -169,11 +167,11 @@ func (a *ArtistPage) showAlbumGrid() {
 			a.activeView = 0 // if page still loading, will show discography view first
 			return
 		}
-		model := sharedutil.MapSlice(a.artistInfo.Album, func(al *subsonic.AlbumID3) widgets.GridViewItemModel {
+		model := sharedutil.MapSlice(a.artistInfo.Albums, func(al *mediaprovider.Album) widgets.GridViewItemModel {
 			return widgets.GridViewItemModel{
 				Name:       al.Name,
 				ID:         al.ID,
-				CoverArtID: al.CoverArt,
+				CoverArtID: al.CoverArtID,
 				Secondary:  strconv.Itoa(al.Year),
 			}
 		})
@@ -191,7 +189,7 @@ func (a *ArtistPage) showTopTracks() {
 			a.activeView = 1 // if page still loading, will show tracks view first
 			return
 		}
-		ts, err := a.sm.Server.GetTopSongs(a.artistInfo.Name, map[string]string{"count": "20"})
+		ts, err := a.sm.Server.GetTopTracks(a.artistInfo.Artist, 20)
 		if err != nil {
 			log.Printf("error getting top songs: %s", err.Error())
 			return
@@ -277,18 +275,18 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	return a
 }
 
-func (a *ArtistPageHeader) Update(artist *subsonic.ArtistID3) {
+func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums) {
 	if artist == nil {
 		return
 	}
-	a.favoriteBtn.IsFavorited = !artist.Starred.IsZero()
+	a.favoriteBtn.IsFavorited = !artist.Favorite
 	a.favoriteBtn.Refresh()
 	a.artistID = artist.ID
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
 	a.titleDisp.Refresh()
 }
 
-func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
+func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 	if info == nil {
 		return
 	}
@@ -304,7 +302,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 	}
 
 	a.similarArtists.RemoveAll()
-	for i, art := range info.SimilarArtist {
+	for i, art := range info.SimilarArtists {
 		if i == 0 {
 			a.similarArtists.Add(widget.NewLabel("Similar Artists:"))
 		}
@@ -321,11 +319,11 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 	}
 	a.similarArtists.Refresh()
 
-	if info.LargeImageUrl != "" {
+	if info.ImageURL != "" {
 		if a.artistImage.HaveImage() {
-			_ = a.artistPage.im.RefreshCachedArtistImageIfExpired(a.artistID, info.LargeImageUrl)
+			_ = a.artistPage.im.RefreshCachedArtistImageIfExpired(a.artistID, info.ImageURL)
 		} else {
-			im, err := a.artistPage.im.FetchAndCacheArtistImage(a.artistID, info.LargeImageUrl)
+			im, err := a.artistPage.im.FetchAndCacheArtistImage(a.artistID, info.ImageURL)
 			if err == nil {
 				a.artistImage.SetImage(im, true /*tappable*/)
 			}
@@ -334,11 +332,8 @@ func (a *ArtistPageHeader) UpdateInfo(info *subsonic.ArtistInfo2) {
 }
 
 func (a *ArtistPageHeader) toggleFavorited() {
-	if a.favoriteBtn.IsFavorited {
-		a.artistPage.sm.Server.Star(subsonic.StarParameters{ArtistIDs: []string{a.artistID}})
-	} else {
-		a.artistPage.sm.Server.Unstar(subsonic.StarParameters{ArtistIDs: []string{a.artistID}})
-	}
+	params := mediaprovider.RatingFavoriteParameters{ArtistIDs: []string{a.artistID}}
+	a.artistPage.sm.Server.SetFavorite(params, a.favoriteBtn.IsFavorited)
 }
 
 func (a *ArtistPageHeader) createContainer() {

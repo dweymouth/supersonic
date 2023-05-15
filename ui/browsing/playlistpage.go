@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -17,8 +18,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type PlaylistPage struct {
@@ -90,7 +89,7 @@ func (a *PlaylistPage) Route() controller.Route {
 	return controller.PlaylistRoute(a.playlistID)
 }
 
-func (a *PlaylistPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
+func (a *PlaylistPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
 	if song == nil {
 		a.nowPlayingID = ""
 	} else {
@@ -119,7 +118,7 @@ func (a *PlaylistPage) load() {
 		log.Printf("Failed to get playlist: %s", err.Error())
 		return
 	}
-	a.tracklist.Tracks = playlist.Entry
+	a.tracklist.Tracks = playlist.Tracks
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 	a.tracklist.Refresh()
 	a.header.Update(playlist)
@@ -148,10 +147,7 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 	for i, tr := range newTracks {
 		ids[i] = tr.ID
 	}
-	err := a.sm.Server.CreatePlaylistWithTracks(ids, map[string]string{
-		"playlistId": a.playlistID,
-	})
-	if err != nil {
+	if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 		log.Printf("error updating playlist: %s", err.Error())
 	} else {
 		a.tracklist.Tracks = newTracks
@@ -161,7 +157,7 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
-	a.sm.Server.UpdatePlaylistTracks(a.playlistID, nil, a.tracklist.SelectedTrackIndexes())
+	a.sm.Server.EditPlaylistTracks(a.playlistID, nil, a.tracklist.SelectedTrackIndexes())
 	a.tracklist.UnselectAll()
 	go a.Reload()
 }
@@ -170,7 +166,7 @@ type PlaylistPageHeader struct {
 	widget.BaseWidget
 
 	page         *PlaylistPage
-	playlistInfo *subsonic.Playlist
+	playlistInfo *mediaprovider.PlaylistWithTracks
 	image        *widgets.ImagePlaceholder
 
 	editButton       *widget.Button
@@ -199,7 +195,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.trackTimeLabel = widget.NewLabel("")
 	a.editButton = widget.NewButtonWithIcon("Edit", theme.DocumentCreateIcon(), func() {
 		if a.playlistInfo != nil {
-			page.contr.DoEditPlaylistWorkflow(a.playlistInfo)
+			page.contr.DoEditPlaylistWorkflow(&a.playlistInfo.Playlist)
 		}
 	})
 	a.editButton.Hidden = true
@@ -244,18 +240,18 @@ func (a *PlaylistPageHeader) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }
 
-func (a *PlaylistPageHeader) Update(playlist *subsonic.Playlist) {
+func (a *PlaylistPageHeader) Update(playlist *mediaprovider.PlaylistWithTracks) {
 	a.playlistInfo = playlist
-	a.editButton.Hidden = playlist.Owner != a.page.sm.Server.User
+	a.editButton.Hidden = playlist.Owner != a.page.sm.LoggedInUser
 	a.titleLabel.Segments[0].(*widget.TextSegment).Text = playlist.Name
-	a.descriptionLabel.SetText(playlist.Comment)
+	a.descriptionLabel.SetText(playlist.Description)
 	a.ownerLabel.SetText(a.formatPlaylistOwnerStr(playlist))
 	a.trackTimeLabel.SetText(a.formatPlaylistTrackTimeStr(playlist))
 	a.createdAtLabel.SetText("created at TODO")
 
 	var haveCover bool
-	if playlist.CoverArt != "" {
-		if im, err := a.page.im.GetCoverThumbnail(playlist.CoverArt); err == nil && im != nil {
+	if playlist.CoverArtID != "" {
+		if im, err := a.page.im.GetCoverThumbnail(playlist.CoverArtID); err == nil && im != nil {
 			a.image.SetImage(im, false /*tappable*/)
 			haveCover = true
 		}
@@ -268,7 +264,7 @@ func (a *PlaylistPageHeader) Update(playlist *subsonic.Playlist) {
 	a.Refresh()
 }
 
-func (a *PlaylistPageHeader) formatPlaylistOwnerStr(p *subsonic.Playlist) string {
+func (a *PlaylistPageHeader) formatPlaylistOwnerStr(p *mediaprovider.PlaylistWithTracks) string {
 	pubPriv := "Public"
 	if !p.Public {
 		pubPriv = "Private"
@@ -276,12 +272,12 @@ func (a *PlaylistPageHeader) formatPlaylistOwnerStr(p *subsonic.Playlist) string
 	return fmt.Sprintf("%s playlist by %s", pubPriv, p.Owner)
 }
 
-func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *subsonic.Playlist) string {
+func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *mediaprovider.PlaylistWithTracks) string {
 	tracks := "tracks"
-	if p.SongCount == 1 {
+	if p.TrackCount == 1 {
 		tracks = "track"
 	}
-	return fmt.Sprintf("%d %s, %s", p.SongCount, tracks, util.SecondsToTimeString(float64(p.Duration)))
+	return fmt.Sprintf("%d %s, %s", p.TrackCount, tracks, util.SecondsToTimeString(float64(p.Duration)))
 }
 
 func (s *playlistPageState) Restore() Page {

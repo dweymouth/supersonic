@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -10,8 +11,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type NowPlayingPage struct {
@@ -83,7 +82,7 @@ func (a *NowPlayingPage) SelectAll() {
 	a.tracklist.SelectAll()
 }
 
-func (a *NowPlayingPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
+func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
 	if song == nil {
 		a.nowPlayingID = ""
 	} else {

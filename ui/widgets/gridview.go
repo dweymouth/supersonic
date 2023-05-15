@@ -6,16 +6,37 @@ import (
 	"log"
 	"sync"
 
-	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 const batchFetchSize = 6
+
+type BatchingIterator struct {
+	iter mediaprovider.AlbumIterator
+}
+
+func NewBatchingIterator(iter mediaprovider.AlbumIterator) BatchingIterator {
+	return BatchingIterator{iter}
+}
+
+func (b *BatchingIterator) NextN(n int) []*mediaprovider.Album {
+	results := make([]*mediaprovider.Album, 0, n)
+	i := 0
+	for i < n {
+		album := b.iter.Next()
+		if album == nil {
+			break
+		}
+		results = append(results, album)
+		i++
+	}
+	return results
+}
 
 type ImageFetcher interface {
 	GetCoverThumbnailFromCache(string) (image.Image, bool)
@@ -27,24 +48,24 @@ type GridViewIterator interface {
 }
 
 type gridViewAlbumIterator struct {
-	iter *backend.BatchingIterator
+	iter BatchingIterator
 }
 
 func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
 	albums := g.iter.NextN(n)
-	return sharedutil.MapSlice(albums, func(al *subsonic.AlbumID3) GridViewItemModel {
+	return sharedutil.MapSlice(albums, func(al *mediaprovider.Album) GridViewItemModel {
 		return GridViewItemModel{
 			Name:        al.Name,
 			ID:          al.ID,
-			CoverArtID:  al.CoverArt,
-			Secondary:   al.Artist,
-			SecondaryID: al.ArtistID,
+			CoverArtID:  al.CoverArtID,
+			Secondary:   al.ArtistNames[0],
+			SecondaryID: al.ArtistIDs[0],
 		}
 	})
 }
 
-func NewGridViewAlbumIterator(iter backend.AlbumIterator) GridViewIterator {
-	return gridViewAlbumIterator{iter: backend.NewBatchingIterator(iter)}
+func NewGridViewAlbumIterator(iter mediaprovider.AlbumIterator) GridViewIterator {
+	return gridViewAlbumIterator{iter: NewBatchingIterator(iter)}
 }
 
 type GridView struct {

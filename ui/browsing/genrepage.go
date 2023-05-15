@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -22,12 +23,12 @@ type GenrePage struct {
 	contr      *controller.Controller
 	im         *backend.ImageManager
 	pm         *backend.PlaybackManager
-	lm         *backend.LibraryManager
+	mp         mediaprovider.MediaProvider
 	grid       *widgets.GridView
 	searchGrid *widgets.GridView
 	searcher   *widgets.SearchEntry
 	searchText string
-	filter     backend.AlbumFilter
+	filter     mediaprovider.AlbumFilter
 	filterBtn  *widgets.AlbumFilterButton
 	titleDisp  *widget.RichText
 	playRandom *widget.Button
@@ -37,13 +38,13 @@ type GenrePage struct {
 	container *fyne.Container
 }
 
-func NewGenrePage(genre string, contr *controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *GenrePage {
+func NewGenrePage(genre string, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) *GenrePage {
 	g := &GenrePage{
 		genre:  genre,
-		filter: backend.AlbumFilter{Genres: []string{genre}},
+		filter: mediaprovider.AlbumFilter{Genres: []string{genre}},
 		contr:  contr,
 		pm:     pm,
-		lm:     lm,
+		mp:     mp,
 		im:     im,
 	}
 	g.ExtendBaseWidget(g)
@@ -53,7 +54,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 		SizeName: theme.SizeNameHeadingText,
 	}
 	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
-	iter := g.lm.GenreIter(g.genre, g.filter)
+	iter := g.mp.IterateAlbums("", "", g.filter)
 	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 	g.contr.ConnectAlbumGridActions(g.grid)
 	g.createSearchAndFilter()
@@ -90,7 +91,7 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 		genre:      saved.genre,
 		contr:      saved.contr,
 		pm:         saved.pm,
-		lm:         saved.lm,
+		mp:         saved.mp,
 		im:         saved.im,
 		searchText: saved.searchText,
 		filter:     saved.filter,
@@ -124,7 +125,7 @@ func (g *GenrePage) Reload() {
 	if g.searchText != "" {
 		g.doSearch(g.searchText)
 	} else {
-		iter := g.lm.GenreIter(g.genre, g.filter)
+		iter := g.mp.IterateAlbums("", "", g.filter)
 		g.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 		g.grid.Refresh()
 	}
@@ -137,7 +138,7 @@ func (g *GenrePage) Save() SavedPage {
 		searchText: g.searchText,
 		contr:      g.contr,
 		pm:         g.pm,
-		lm:         g.lm,
+		mp:         g.mp,
 		im:         g.im,
 		gridState:  g.grid.SaveToState(),
 	}
@@ -167,7 +168,7 @@ func (g *GenrePage) OnSearched(query string) {
 }
 
 func (g *GenrePage) doSearch(query string) {
-	iter := g.lm.SearchIterWithFilter(query, g.filter)
+	iter := g.mp.IterateAlbums("", query, g.filter)
 	if g.searchGrid == nil {
 		g.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
 		g.contr.ConnectAlbumGridActions(g.searchGrid)
@@ -185,10 +186,10 @@ func (g *GenrePage) playRandomSongs() {
 type savedGenrePage struct {
 	genre           string
 	searchText      string
-	filter          backend.AlbumFilter
+	filter          mediaprovider.AlbumFilter
 	contr           *controller.Controller
 	pm              *backend.PlaybackManager
-	lm              *backend.LibraryManager
+	mp              mediaprovider.MediaProvider
 	im              *backend.ImageManager
 	gridState       widgets.GridViewState
 	searchGridState widgets.GridViewState

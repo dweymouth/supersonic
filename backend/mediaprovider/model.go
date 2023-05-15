@@ -21,6 +21,7 @@ type AlbumWithTracks struct {
 type Artist struct {
 	ID         string
 	Name       string
+	Favorite   bool
 	AlbumCount int
 }
 
@@ -71,6 +72,7 @@ type Playlist struct {
 	Description string
 	Public      bool
 	Owner       string
+	Duration    int
 	TrackCount  int
 }
 

@@ -3,12 +3,10 @@ package controller
 import (
 	"image"
 	"log"
-	"math"
-	"strconv"
-	"sync"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/player"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/dialogs"
@@ -20,8 +18,6 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type NavigationHandler func(Route)
@@ -94,14 +90,14 @@ func (m *Controller) ShowPopUpImage(img image.Image) {
 
 func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 	tracklist.OnAddToPlaylist = m.DoAddTracksToPlaylistWorkflow
-	tracklist.OnAddToQueue = func(tracks []*subsonic.Child) {
+	tracklist.OnAddToQueue = func(tracks []*mediaprovider.Track) {
 		m.App.PlaybackManager.LoadTracks(tracks, true, false)
 	}
 	tracklist.OnPlayTrackAt = func(idx int) {
 		m.App.PlaybackManager.LoadTracks(tracklist.Tracks, false, false)
 		m.App.PlaybackManager.PlayTrackAt(idx)
 	}
-	tracklist.OnPlaySelection = func(tracks []*subsonic.Child, shuffle bool) {
+	tracklist.OnPlaySelection = func(tracks []*mediaprovider.Track, shuffle bool) {
 		m.App.PlaybackManager.LoadTracks(tracks, false, shuffle)
 		m.App.PlaybackManager.PlayFromBeginning()
 	}
@@ -137,7 +133,7 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 			log.Printf("error loading album: %s", err.Error())
 			return
 		}
-		m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Song))
+		m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
 	}
 }
 
@@ -173,7 +169,10 @@ func (m *Controller) PromptForFirstServer() {
 // Depending on the results of that dialog, potentially create a new playlist
 // Add tracks to the user-specified playlist
 func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
-	pls, err := m.App.LibraryManager.GetUserOwnedPlaylists()
+	pls, err := m.App.ServerManager.Server.GetPlaylists()
+	pls = sharedutil.FilterSlice(pls, func(pl *mediaprovider.Playlist) bool {
+		return pl.Owner == m.App.ServerManager.LoggedInUser
+	})
 	if err != nil {
 		// TODO: surface this error to user
 		log.Printf("error getting user-owned playlists: %s", err.Error())
@@ -192,10 +191,9 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 		pop.Hide()
 		m.doModalClosed()
 		if playlistChoice < 0 {
-			m.App.ServerManager.Server.CreatePlaylistWithTracks(
-				trackIDs, map[string]string{"name": newPlaylistName})
+			m.App.ServerManager.Server.CreatePlaylist(newPlaylistName, trackIDs)
 		} else {
-			m.App.ServerManager.Server.UpdatePlaylistTracks(
+			m.App.ServerManager.Server.EditPlaylistTracks(
 				pls[playlistChoice].ID, trackIDs, nil /*tracksToRemove*/)
 		}
 	}
@@ -203,7 +201,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	pop.Show()
 }
 
-func (m *Controller) DoEditPlaylistWorkflow(playlist *subsonic.Playlist) {
+func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 	dlg := dialogs.NewEditPlaylistDialog(playlist)
 	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
 	m.ClosePopUpOnEscape(pop)
@@ -234,11 +232,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *subsonic.Playlist) {
 		pop.Hide()
 		m.doModalClosed()
 		go func() {
-			err := m.App.ServerManager.Server.UpdatePlaylist(playlist.ID, map[string]string{
-				"name":    dlg.Name,
-				"comment": dlg.Description,
-				"public":  strconv.FormatBool(dlg.IsPublic),
-			})
+			err := m.App.ServerManager.Server.EditPlaylist(playlist.ID, dlg.Name, dlg.Description, dlg.IsPublic)
 			if err != nil {
 				log.Printf("error updating playlist: %s", err.Error())
 			} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
@@ -405,49 +399,19 @@ func (c *Controller) doModalClosed() {
 }
 
 func (c *Controller) SetTrackFavorites(trackIDs []string, favorite bool) {
-	s := c.App.ServerManager.Server
-	if favorite {
-		go s.Star(subsonic.StarParameters{SongIDs: trackIDs})
-	} else {
-		go s.Unstar(subsonic.StarParameters{SongIDs: trackIDs})
-	}
+	c.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
+		TrackIDs: trackIDs,
+	}, favorite)
+
 	for _, id := range trackIDs {
 		c.App.PlaybackManager.OnTrackFavoriteStatusChanged(id, favorite)
 	}
 }
 
 func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
-	// Subsonic doesn't allow bulk setting ratings.
-	// To not overwhelm the server with requests, set rating for
-	// only 5 tracks at a time concurrently
-	batchSize := 5
-	batchSetRating := func(offs int, wg *sync.WaitGroup) {
-		for i := 0; i < batchSize && offs+i < len(trackIDs); i++ {
-			if wg != nil {
-				wg.Add(1)
-			}
-			go func(idx int) {
-				c.App.ServerManager.Server.SetRating(trackIDs[idx], rating)
-				if wg != nil {
-					wg.Done()
-				}
-			}(offs + i)
-		}
-	}
-
-	if len(trackIDs) <= 5 {
-		// one batch only - no need to use wait group
-		batchSetRating(0, nil)
-	} else {
-		go func() {
-			numBatches := int(math.Ceil(float64(len(trackIDs)) / float64(batchSize)))
-			for i := 0; i < numBatches; i++ {
-				var wg sync.WaitGroup
-				batchSetRating(i*batchSize, &wg)
-				wg.Wait()
-			}
-		}()
-	}
+	c.App.ServerManager.Server.SetRating(mediaprovider.RatingFavoriteParameters{
+		TrackIDs: trackIDs,
+	}, rating)
 
 	// Notify PlaybackManager of rating change to update
 	// the in-memory track models

@@ -3,9 +3,9 @@ package browsing
 import (
 	"log"
 	"strings"
-	"time"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -16,8 +16,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 var _ fyne.Widget = (*ArtistPage)(nil)
@@ -80,7 +78,7 @@ func (a *ArtistsGenresPage) load(searchOnLoad bool) {
 		}
 		a.model = a.buildGenresListModel(genres)
 	} else {
-		artists, err := a.sm.Server.GetArtists(nil)
+		artists, err := a.sm.Server.GetArtists()
 		if err != nil {
 			log.Printf("error loading artists: %v", err.Error())
 		}
@@ -145,29 +143,27 @@ func (s *savedArtistsGenresPage) Restore() Page {
 	return newArtistsGenresPage(s.isGenresPage, s.contr, s.sm, s.searchText)
 }
 
-func (a *ArtistsGenresPage) buildArtistListModel(artists *subsonic.ArtistsID3) []widgets.ArtistGenreListItemModel {
+func (a *ArtistsGenresPage) buildArtistListModel(artists []*mediaprovider.Artist) []widgets.ArtistGenreListItemModel {
 	model := make([]widgets.ArtistGenreListItemModel, 0)
-	for _, idx := range artists.Index {
-		for _, artist := range idx.Artist {
-			model = append(model, widgets.ArtistGenreListItemModel{
-				ID:         artist.ID,
-				Name:       artist.Name,
-				AlbumCount: artist.AlbumCount,
-				Favorite:   artist.Starred != time.Time{},
-			})
-		}
+	for _, artist := range artists {
+		model = append(model, widgets.ArtistGenreListItemModel{
+			ID:         artist.ID,
+			Name:       artist.Name,
+			AlbumCount: artist.AlbumCount,
+			Favorite:   artist.Favorite,
+		})
 	}
 	return model
 }
 
-func (a *ArtistsGenresPage) buildGenresListModel(genres []*subsonic.Genre) []widgets.ArtistGenreListItemModel {
+func (a *ArtistsGenresPage) buildGenresListModel(genres []*mediaprovider.Genre) []widgets.ArtistGenreListItemModel {
 	model := make([]widgets.ArtistGenreListItemModel, 0)
 	for _, genre := range genres {
 		model = append(model, widgets.ArtistGenreListItemModel{
 			ID:         genre.Name,
 			Name:       genre.Name,
 			AlbumCount: genre.AlbumCount,
-			TrackCount: genre.SongCount,
+			TrackCount: genre.TrackCount,
 			Favorite:   false,
 		})
 	}

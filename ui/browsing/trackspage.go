@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -12,8 +13,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type TracksPage struct {
@@ -37,11 +36,11 @@ type tracksPageState struct {
 	searchText string
 	contr      *controller.Controller
 	conf       *backend.TracksPageConfig
-	lm         *backend.LibraryManager
+	mp         mediaprovider.MediaProvider
 }
 
-func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, lm *backend.LibraryManager) *TracksPage {
-	t := &TracksPage{tracksPageState: tracksPageState{contr: contr, conf: conf, lm: lm}}
+func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, mp mediaprovider.MediaProvider) *TracksPage {
+	t := &TracksPage{tracksPageState: tracksPageState{contr: contr, conf: conf, mp: mp}}
 	t.ExtendBaseWidget(t)
 
 	t.tracklist = widgets.NewTracklist(nil)
@@ -79,12 +78,12 @@ func (t *TracksPage) Route() controller.Route {
 
 func (t *TracksPage) Reload() {
 	t.tracklist.Clear()
-	iter := t.lm.AllTracksIterator()
+	iter := t.mp.IterateTracks("")
 	// loads asynchronously
 	t.loader = widgets.NewTracklistLoader(t.tracklist, iter)
 }
 
-func (t *TracksPage) OnSongChange(track *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
+func (t *TracksPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
 	t.nowPlayingID = sharedutil.TrackIDOrEmptyStr(track)
 	t.tracklist.SetNowPlaying(t.nowPlayingID)
 	if t.searchTracklist != nil {
@@ -130,7 +129,7 @@ func (t *TracksPage) doSearch(query string) {
 	} else {
 		t.searchTracklist.Clear()
 	}
-	iter := t.lm.SearchTracksIterator(query)
+	iter := t.mp.IterateTracks(query)
 	t.searchLoader = widgets.NewTracklistLoader(t.searchTracklist, iter)
 	t.container.Objects[0].(*fyne.Container).Objects[0] = t.searchTracklist
 	t.Refresh()
@@ -146,7 +145,7 @@ func (t *TracksPage) Save() SavedPage {
 }
 
 func (s *tracksPageState) Restore() Page {
-	t := NewTracksPage(s.contr, s.conf, s.lm)
+	t := NewTracksPage(s.contr, s.conf, s.mp)
 	t.searchText = s.searchText
 	if t.searchText != "" {
 		t.searcher.Entry.Text = t.searchText

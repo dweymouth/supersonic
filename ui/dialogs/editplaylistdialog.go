@@ -6,7 +6,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic/subsonic"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
 type EditPlaylistDialog struct {
@@ -23,11 +23,11 @@ type EditPlaylistDialog struct {
 	container *fyne.Container
 }
 
-func NewEditPlaylistDialog(playlist *subsonic.Playlist) *EditPlaylistDialog {
+func NewEditPlaylistDialog(playlist *mediaprovider.Playlist) *EditPlaylistDialog {
 	e := &EditPlaylistDialog{
 		IsPublic:    playlist.Public,
 		Name:        playlist.Name,
-		Description: playlist.Comment,
+		Description: playlist.Description,
 	}
 	e.ExtendBaseWidget(e)
 

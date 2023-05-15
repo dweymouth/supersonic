@@ -95,6 +95,7 @@ func (s *subsonicMediaProvider) GetArtist(artistID string) (*mediaprovider.Artis
 		Artist: mediaprovider.Artist{
 			ID:         ar.ID,
 			Name:       ar.Name,
+			Favorite:   !ar.Starred.IsZero(),
 			AlbumCount: ar.AlbumCount,
 		},
 		Albums: sharedutil.MapSlice(ar.Album, toAlbum),
@@ -168,12 +169,21 @@ func (s *subsonicMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.P
 		return nil, err
 	}
 	return &mediaprovider.PlaylistWithTracks{
-		Playlist: toPlaylist(pl),
-		Tracks:   sharedutil.MapSlice(pl.Entry, toTrack),
+		Playlist: mediaprovider.Playlist{
+			ID:          pl.ID,
+			CoverArtID:  pl.CoverArt,
+			Name:        pl.Name,
+			Description: pl.Comment,
+			TrackCount:  pl.SongCount,
+			Public:      pl.Public,
+			Owner:       pl.Owner,
+			Duration:    pl.Duration,
+		},
+		Tracks: sharedutil.MapSlice(pl.Entry, toTrack),
 	}, nil
 }
 
-func (s *subsonicMediaProvider) GetPlaylists() ([]mediaprovider.Playlist, error) {
+func (s *subsonicMediaProvider) GetPlaylists() ([]*mediaprovider.Playlist, error) {
 	pl, err := s.client.GetPlaylists(map[string]string{})
 	if err != nil {
 		return nil, err
@@ -207,6 +217,18 @@ func (s *subsonicMediaProvider) GetStreamURL(trackID string) (string, error) {
 		return "", err
 	}
 	return u.String(), nil
+}
+
+func (s *subsonicMediaProvider) GetTopTracks(artist mediaprovider.Artist, count int) ([]*mediaprovider.Track, error) {
+	params := map[string]string{}
+	if count > 0 {
+		params["count"] = strconv.Itoa(count)
+	}
+	tr, err := s.client.GetTopSongs(artist.Name, params)
+	if err != nil {
+		return nil, err
+	}
+	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
 func (s *subsonicMediaProvider) ReplacePlaylistTracks(playlistID string, trackIDs []string) error {
@@ -319,8 +341,9 @@ func toArtist(ar *subsonic.Artist) *mediaprovider.Artist {
 		return nil
 	}
 	return &mediaprovider.Artist{
-		ID:   ar.ID,
-		Name: ar.Name,
+		ID:       ar.ID,
+		Name:     ar.Name,
+		Favorite: !ar.Starred.IsZero(),
 	}
 }
 
@@ -331,16 +354,20 @@ func toArtistFromID3(ar *subsonic.ArtistID3) *mediaprovider.Artist {
 	return &mediaprovider.Artist{
 		ID:         ar.ID,
 		Name:       ar.Name,
+		Favorite:   !ar.Starred.IsZero(),
 		AlbumCount: ar.AlbumCount,
 	}
 }
 
-func toPlaylist(pl *subsonic.Playlist) mediaprovider.Playlist {
-	return mediaprovider.Playlist{
+func toPlaylist(pl *subsonic.Playlist) *mediaprovider.Playlist {
+	return &mediaprovider.Playlist{
 		Name:        pl.Name,
+		ID:          pl.ID,
+		CoverArtID:  pl.CoverArt,
 		Description: pl.Comment,
 		Owner:       pl.Owner,
 		Public:      pl.Public,
 		TrackCount:  pl.SongCount,
+		Duration:    pl.Duration,
 	}
 }
