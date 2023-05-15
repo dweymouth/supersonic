@@ -80,7 +80,7 @@ func (s *subsonicMediaProvider) GetAlbum(albumID string) (*mediaprovider.AlbumWi
 			Favorite:    !al.Starred.IsZero(),
 			Duration:    al.Duration,
 		},
-		Tracks: sharedutil.MapSlice(al.Song, s.toTrack),
+		Tracks: sharedutil.MapSlice(al.Song, toTrack),
 	}, nil
 }
 
@@ -138,7 +138,7 @@ func (s *subsonicMediaProvider) GetFavorites() (mediaprovider.Favorites, error) 
 	return mediaprovider.Favorites{
 		Albums:  sharedutil.MapSlice(fav.Album, toAlbum),
 		Artists: sharedutil.MapSlice(fav.Artist, toArtistFromID3),
-		Tracks:  sharedutil.MapSlice(fav.Song, s.toTrack),
+		Tracks:  sharedutil.MapSlice(fav.Song, toTrack),
 	}, nil
 }
 
@@ -163,7 +163,7 @@ func (s *subsonicMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.P
 	}
 	return &mediaprovider.PlaylistWithTracks{
 		Playlist: toPlaylist(pl),
-		Tracks:   sharedutil.MapSlice(pl.Entry, s.toTrack),
+		Tracks:   sharedutil.MapSlice(pl.Entry, toTrack),
 	}, nil
 }
 
@@ -184,7 +184,7 @@ func (s *subsonicMediaProvider) GetRandomTracks(genreName string, count int) ([]
 	if err != nil {
 		return nil, err
 	}
-	return sharedutil.MapSlice(tr, s.toTrack), nil
+	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
 func (s *subsonicMediaProvider) GetSimilarTracks(artistID string, count int) ([]mediaprovider.Track, error) {
@@ -192,10 +192,10 @@ func (s *subsonicMediaProvider) GetSimilarTracks(artistID string, count int) ([]
 	if err != nil {
 		return nil, err
 	}
-	return sharedutil.MapSlice(tr, s.toTrack), nil
+	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
-func (s *subsonicMediaProvider) toTrack(ch *subsonic.Child) mediaprovider.Track {
+func toTrack(ch *subsonic.Child) mediaprovider.Track {
 	if ch == nil {
 		log.Println("subsonicMediaProvider: toTrack called on nil track")
 		return mediaprovider.Track{}
