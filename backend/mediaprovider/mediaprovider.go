@@ -58,9 +58,11 @@ type MediaProvider interface {
 
 	GetFavorites() (Favorites, error)
 
+	GetStreamURL(trackID string) (string, error)
+
 	SetFavorite(params RatingFavoriteParameters) error
 
-	SetRating(params RatingFavoriteParameters) error
+	SetRating(params RatingFavoriteParameters, rating int) error
 
 	GetPlaylists() ([]Playlist, error)
 

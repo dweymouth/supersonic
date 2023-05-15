@@ -3,7 +3,10 @@ package subsonic
 import (
 	"image"
 	"log"
+	"math"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -25,7 +28,7 @@ type subsonicMediaProvider struct {
 	client *subsonic.Client
 }
 
-func SubsonicMediaProvider(subsonicClient *subsonic.Client) *subsonicMediaProvider /*mediaprovider.MediaProvider*/ {
+func SubsonicMediaProvider(subsonicClient *subsonic.Client) mediaprovider.MediaProvider {
 	return &subsonicMediaProvider{client: subsonicClient}
 }
 
@@ -193,6 +196,71 @@ func (s *subsonicMediaProvider) GetSimilarTracks(artistID string, count int) ([]
 		return nil, err
 	}
 	return sharedutil.MapSlice(tr, toTrack), nil
+}
+
+func (s *subsonicMediaProvider) GetStreamURL(trackID string) (string, error) {
+	u, err := s.client.GetStreamURL(trackID, map[string]string{})
+	if err != nil {
+		return "", err
+	}
+	return u.String(), nil
+}
+
+func (s *subsonicMediaProvider) ReplacePlaylistTracks(playlistID string, trackIDs []string) error {
+	return s.client.CreatePlaylistWithTracks(trackIDs, map[string]string{"playlistId": playlistID})
+}
+
+func (s *subsonicMediaProvider) Scrobble(trackID string, submission bool) error {
+	return s.client.Scrobble(trackID, map[string]string{
+		"time":       strconv.FormatInt(time.Now().UnixMilli(), 10),
+		"submission": strconv.FormatBool(submission)})
+}
+
+func (s *subsonicMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteParameters) error {
+	return s.client.Star(subsonic.StarParameters{
+		AlbumIDs:  params.AlbumIDs,
+		ArtistIDs: params.ArtistIDs,
+		SongIDs:   params.TrackIDs,
+	})
+}
+
+func (s *subsonicMediaProvider) SetRating(params mediaprovider.RatingFavoriteParameters, rating int) error {
+	// Subsonic doesn't allow bulk setting ratings.
+	// To not overwhelm the server with requests, set rating for
+	// only 5 tracks at a time concurrently
+	batchSize := 5
+	var err error
+	batchSetRating := func(offs int, wg *sync.WaitGroup) {
+		for i := 0; i < batchSize && offs+i < len(params.TrackIDs); i++ {
+			if wg != nil {
+				wg.Add(1)
+			}
+			go func(idx int) {
+				newErr := s.client.SetRating(params.TrackIDs[idx], rating)
+				if err == nil && newErr != nil {
+					err = newErr
+				}
+				if wg != nil {
+					wg.Done()
+				}
+			}(offs + i)
+		}
+	}
+
+	if len(params.TrackIDs) <= 5 {
+		// one batch only - no need to use wait group
+		batchSetRating(0, nil)
+	} else {
+		go func() {
+			numBatches := int(math.Ceil(float64(len(params.TrackIDs)) / float64(batchSize)))
+			for i := 0; i < numBatches; i++ {
+				var wg sync.WaitGroup
+				batchSetRating(i*batchSize, &wg)
+				wg.Wait()
+			}
+		}()
+	}
+	return err
 }
 
 func toTrack(ch *subsonic.Child) mediaprovider.Track {
