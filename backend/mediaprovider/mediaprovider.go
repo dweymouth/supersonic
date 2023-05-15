@@ -68,7 +68,7 @@ type MediaProvider interface {
 
 	EditPlaylist(id, name, description string, public bool) error
 
-	EditPlaylistTracks(id string, trackIDsToAdd, trackIDsToRemove []string) error
+	EditPlaylistTracks(id string, trackIDsToAdd []string, trackIndexesToRemove []int) error
 
 	ReplacePlaylistTracks(id string, trackIDs []string) error
 

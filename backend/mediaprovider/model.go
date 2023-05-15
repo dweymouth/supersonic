@@ -48,6 +48,8 @@ type Track struct {
 	ParentID    string
 	Name        string
 	Duration    int
+	TrackNumber int
+	DiscNumber  int
 	Genre       string
 	ArtistIDs   []string
 	ArtistNames []string
@@ -66,6 +68,7 @@ type Playlist struct {
 	Description string
 	Public      bool
 	Owner       string
+	TrackCount  int
 }
 
 type PlaylistWithTracks struct {
