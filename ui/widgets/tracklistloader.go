@@ -1,25 +1,23 @@
 package widgets
 
 import (
-	"github.com/dweymouth/supersonic/backend"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
 // Component that manages lazily loading more tracks into a Tracklist
 // as the user scrolls near the bottom.
 type TracklistLoader struct {
 	tracklist *Tracklist
-	iter      backend.TrackIterator
+	iter      mediaprovider.TrackIterator
 
-	trackBuffer  []*subsonic.Child
+	trackBuffer  []*mediaprovider.Track
 	fetching     bool
 	done         bool
 	len          int
 	highestShown int
 }
 
-func NewTracklistLoader(tracklist *Tracklist, iter backend.TrackIterator) TracklistLoader {
+func NewTracklistLoader(tracklist *Tracklist, iter mediaprovider.TrackIterator) TracklistLoader {
 	t := TracklistLoader{
 		tracklist: tracklist,
 		iter:      iter,
@@ -44,7 +42,7 @@ func (t *TracklistLoader) loadMoreTracks(num int) {
 	// repeat fetch task as long as user has scrolled near bottom
 	for !t.done && t.highestShown >= t.len-25 {
 		if t.trackBuffer == nil {
-			t.trackBuffer = make([]*subsonic.Child, 0, num)
+			t.trackBuffer = make([]*mediaprovider.Track, 0, num)
 		}
 		t.trackBuffer = t.trackBuffer[:0]
 		for i := 0; i < num; i++ {

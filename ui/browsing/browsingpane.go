@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -11,8 +12,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type Page interface {
@@ -37,7 +36,7 @@ type CanSelectAll interface {
 }
 
 type CanShowNowPlaying interface {
-	OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child)
+	OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track)
 }
 
 type BrowsingPane struct {
@@ -160,7 +159,7 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	return true
 }
 
-func (b *BrowsingPane) onSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
+func (b *BrowsingPane) onSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
 	if b.curPage == nil {
 		return
 	}

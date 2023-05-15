@@ -26,9 +26,9 @@ type RatingFavoriteParameters struct {
 }
 
 type Favorites struct {
-	Albums  []Album
-	Artists []Artist
-	Tracks  []Track
+	Albums  []*Album
+	Artists []*Artist
+	Tracks  []*Track
 }
 
 type MediaProvider interface {
@@ -48,19 +48,19 @@ type MediaProvider interface {
 
 	IterateTracks(searchQuery string) TrackIterator
 
-	GetRandomTracks(genre string, count int) ([]Track, error)
+	GetRandomTracks(genre string, count int) ([]*Track, error)
 
-	GetSimilarTracks(artistID string, count int) ([]Track, error)
+	GetSimilarTracks(artistID string, count int) ([]*Track, error)
 
-	GetArtists() ([]Artist, error)
+	GetArtists() ([]*Artist, error)
 
-	GetGenres() ([]Genre, error)
+	GetGenres() ([]*Genre, error)
 
 	GetFavorites() (Favorites, error)
 
 	GetStreamURL(trackID string) (string, error)
 
-	SetFavorite(params RatingFavoriteParameters) error
+	SetFavorite(params RatingFavoriteParameters, favorite bool) error
 
 	SetRating(params RatingFavoriteParameters, rating int) error
 

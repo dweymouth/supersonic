@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -15,8 +16,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type FavoritesPage struct {
@@ -216,7 +215,7 @@ func (a *FavoritesPage) OnSearched(query string) {
 
 var _ CanShowNowPlaying = (*FavoritesPage)(nil)
 
-func (a *FavoritesPage) OnSongChange(song *subsonic.Child, _ *subsonic.Child) {
+func (a *FavoritesPage) OnSongChange(song, _ *mediaprovider.Track) {
 	a.nowPlayingID = ""
 	if song != nil {
 		a.nowPlayingID = song.ID
@@ -271,12 +270,12 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 			a.createContainer(layout.NewSpacer())
 		}
 		go func() {
-			s, err := a.sm.Server.GetStarred2(nil)
+			fav, err := a.sm.Server.GetFavorites()
 			if err != nil {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
-			model := buildArtistListModel(s.Artist)
+			model := buildArtistListModel(fav.Artists)
 			artistList := widgets.NewArtistGenreList(model)
 			artistList.ShowAlbumCount = true
 			artistList.OnNavTo = func(artistID string) {
@@ -295,7 +294,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 	}
 }
 
-func buildArtistListModel(artists []*subsonic.ArtistID3) []widgets.ArtistGenreListItemModel {
+func buildArtistListModel(artists []*mediaprovider.Artist) []widgets.ArtistGenreListItemModel {
 	model := make([]widgets.ArtistGenreListItemModel, 0)
 	for _, ar := range artists {
 		model = append(model, widgets.ArtistGenreListItemModel{
@@ -320,12 +319,12 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			a.createContainer(layout.NewSpacer())
 		}
 		go func() {
-			s, err := a.sm.Server.GetStarred2(nil)
+			fav, err := a.sm.Server.GetFavorites()
 			if err != nil {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
-			tracklist := widgets.NewTracklist(s.Song)
+			tracklist := widgets.NewTracklist(fav.Tracks)
 			tracklist.AutoNumber = true
 			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 			tracklist.OnVisibleColumnsChanged = func(cols []string) {
@@ -360,7 +359,7 @@ type savedFavoritesPage struct {
 	lm              *backend.LibraryManager
 	gridState       widgets.GridViewState
 	searchGridState widgets.GridViewState
-	filter          backend.AlbumFilter
+	filter          mediaprovider.AlbumFilter
 	searchText      string
 	activeToggleBtn int
 }

@@ -5,8 +5,8 @@ import (
 	"log"
 	"strconv"
 	"sync"
-	"time"
 
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/os"
@@ -18,7 +18,6 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 const (
@@ -40,7 +39,7 @@ type Tracklist struct {
 	// Tracks is the set of tracks displayed by the widget.
 	// Direct access to this is not thread-safe but OK for
 	// views that only load tracks into the widget once at page load.
-	Tracks []*subsonic.Child
+	Tracks []*mediaprovider.Track
 
 	// AutoNumber sets whether to auto-number the tracks 1..N in display order,
 	// or to use the number from the track's metadata
@@ -60,8 +59,8 @@ type Tracklist struct {
 
 	// user action callbacks
 	OnPlayTrackAt   func(int)
-	OnPlaySelection func(tracks []*subsonic.Child, shuffle bool)
-	OnAddToQueue    func(trackIDs []*subsonic.Child)
+	OnPlaySelection func(tracks []*mediaprovider.Track, shuffle bool)
+	OnAddToQueue    func(trackIDs []*mediaprovider.Track)
 	OnAddToPlaylist func(trackIDs []string)
 	OnSetFavorite   func(trackIDs []string, fav bool)
 	OnSetRating     func(trackIDs []string, rating int)
@@ -85,7 +84,7 @@ type Tracklist struct {
 	container    *fyne.Container
 }
 
-func NewTracklist(tracks []*subsonic.Child) *Tracklist {
+func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 	t := &Tracklist{Tracks: tracks, visibleColumns: make([]bool, 12)}
 
 	t.ExtendBaseWidget(t)
@@ -144,7 +143,7 @@ func (t *Tracklist) buildHeader() {
 }
 
 // Gets the track at the given index. Thread-safe.
-func (t *Tracklist) TrackAt(idx int) *subsonic.Child {
+func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
 	if idx >= len(t.Tracks) {
@@ -216,7 +215,7 @@ func (t *Tracklist) Clear() {
 }
 
 // Append more tracks to the tracklist. Thread-safe.
-func (t *Tracklist) AppendTracks(trs []*subsonic.Child) {
+func (t *Tracklist) AppendTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
 	t.Tracks = append(t.Tracks, trs...)
@@ -330,16 +329,12 @@ func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	t.tracksMutex.RLock()
 	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
 	t.tracksMutex.RUnlock()
-	t.onSetFavorites([]*subsonic.Child{tr}, fav, false)
+	t.onSetFavorites([]*mediaprovider.Track{tr}, fav, false)
 }
 
-func (t *Tracklist) onSetFavorites(tracks []*subsonic.Child, fav bool, needRefresh bool) {
+func (t *Tracklist) onSetFavorites(tracks []*mediaprovider.Track, fav bool, needRefresh bool) {
 	for _, tr := range tracks {
-		if fav {
-			tr.Starred = time.Now()
-		} else {
-			tr.Starred = time.Time{}
-		}
+		tr.Favorite = fav
 	}
 	if needRefresh {
 		t.Refresh()
@@ -355,12 +350,12 @@ func (t *Tracklist) onSetRating(trackID string, rating int) {
 	t.tracksMutex.RLock()
 	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
 	t.tracksMutex.RUnlock()
-	t.onSetRatings([]*subsonic.Child{tr}, rating, false)
+	t.onSetRatings([]*mediaprovider.Track{tr}, rating, false)
 }
 
-func (t *Tracklist) onSetRatings(tracks []*subsonic.Child, rating int, needRefresh bool) {
+func (t *Tracklist) onSetRatings(tracks []*mediaprovider.Track, rating int, needRefresh bool) {
 	for _, tr := range tracks {
-		tr.UserRating = rating
+		tr.Rating = rating
 	}
 	if needRefresh {
 		t.Refresh()
@@ -383,9 +378,9 @@ func (t *Tracklist) onAlbumTapped(albumID string) {
 	}
 }
 
-func (t *Tracklist) selectedTracks() []*subsonic.Child {
+func (t *Tracklist) selectedTracks() []*mediaprovider.Track {
 	sel := t.selectionMgr.GetSelection()
-	tracks := make([]*subsonic.Child, 0, len(sel))
+	tracks := make([]*mediaprovider.Track, 0, len(sel))
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
 	for _, idx := range sel {
@@ -484,7 +479,7 @@ type TrackRow struct {
 	albumID    string
 	isPlaying  bool
 	isFavorite bool
-	playCount  int64
+	playCount  int
 
 	num      *widget.RichText
 	name     *widget.RichText
@@ -543,37 +538,37 @@ func newTrailingAlignRichText() *widget.RichText {
 	return rt
 }
 
-func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
+func (t *TrackRow) Update(tr *mediaprovider.Track, rowNum int) {
 	// Update info that can change if this row is bound to
-	// a new track (*subsonic.Child)
+	// a new track (*mediaprovider.Track)
 	if tr.ID != t.trackID {
 		if t.Focused {
 			fyne.CurrentApp().Driver().CanvasForObject(t).Focus(nil)
 			t.Focused = false
 		}
 		t.trackID = tr.ID
-		t.artistID = tr.ArtistID
+		t.artistID = tr.ArtistIDs[0]
 		t.albumID = tr.AlbumID
 
-		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
-		t.artist.SetText(tr.Artist)
-		t.artist.Disabled = tr.ArtistID == ""
+		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
+		t.artist.SetText(tr.ArtistNames[0])
+		t.artist.Disabled = tr.ArtistIDs[0] == ""
 		t.album.SetText(tr.Album)
 		t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
 		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
 		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
 		t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
 		t.size.Segments[0].(*widget.TextSegment).Text = util.BytesToSizeString(tr.Size)
-		t.path.Segments[0].(*widget.TextSegment).Text = tr.Path
+		t.path.Segments[0].(*widget.TextSegment).Text = tr.FilePath
 	}
 
 	// Update track num if needed
-	// (which can change based on bound *subsonic.Child or tracklist.AutoNumber)
+	// (which can change based on bound *mediaprovider.Track or tracklist.AutoNumber)
 	if t.trackNum != rowNum {
 		discNum := -1
 		var str string
 		if rowNum < 0 {
-			rowNum = tr.Track
+			rowNum = tr.TrackNumber
 			if t.tracklist.ShowDiscNumber {
 				discNum = tr.DiscNumber
 			}
@@ -612,7 +607,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
 	}
 
 	// Render favorite column
-	if tr.Starred.IsZero() {
+	if tr.Favorite {
 		t.isFavorite = false
 		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.NotFavoriteIcon
 	} else {
@@ -620,7 +615,7 @@ func (t *TrackRow) Update(tr *subsonic.Child, rowNum int) {
 		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.FavoriteIcon
 	}
 
-	t.rating.Rating = tr.UserRating
+	t.rating.Rating = tr.Rating
 
 	// Show only columns configured to be visible
 	t.artist.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnArtist)]

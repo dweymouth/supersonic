@@ -2,7 +2,6 @@ package subsonic
 
 import (
 	"image"
-	"log"
 	"math"
 	"strconv"
 	"sync"
@@ -115,12 +114,12 @@ func (s *subsonicMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.A
 	}, nil
 }
 
-func (s *subsonicMediaProvider) GetArtists() ([]mediaprovider.Artist, error) {
+func (s *subsonicMediaProvider) GetArtists() ([]*mediaprovider.Artist, error) {
 	idxs, err := s.client.GetArtists(map[string]string{})
 	if err != nil {
 		return nil, err
 	}
-	var artists []mediaprovider.Artist
+	var artists []*mediaprovider.Artist
 	for _, idx := range idxs.Index {
 		for _, ar := range idx.Artist {
 			artists = append(artists, toArtistFromID3(ar))
@@ -130,7 +129,11 @@ func (s *subsonicMediaProvider) GetArtists() ([]mediaprovider.Artist, error) {
 }
 
 func (s *subsonicMediaProvider) GetCoverArt(id string, size int) (image.Image, error) {
-	return s.client.GetCoverArt(id, map[string]string{"size": strconv.Itoa(size)})
+	params := map[string]string{}
+	if size > 0 {
+		params["size"] = strconv.Itoa(size)
+	}
+	return s.client.GetCoverArt(id, params)
 }
 
 func (s *subsonicMediaProvider) GetFavorites() (mediaprovider.Favorites, error) {
@@ -145,13 +148,13 @@ func (s *subsonicMediaProvider) GetFavorites() (mediaprovider.Favorites, error) 
 	}, nil
 }
 
-func (s *subsonicMediaProvider) GetGenres() ([]mediaprovider.Genre, error) {
+func (s *subsonicMediaProvider) GetGenres() ([]*mediaprovider.Genre, error) {
 	g, err := s.client.GetGenres()
 	if err != nil {
 		return nil, err
 	}
-	return sharedutil.MapSlice(g, func(g *subsonic.Genre) mediaprovider.Genre {
-		return mediaprovider.Genre{
+	return sharedutil.MapSlice(g, func(g *subsonic.Genre) *mediaprovider.Genre {
+		return &mediaprovider.Genre{
 			Name:       g.Name,
 			AlbumCount: g.AlbumCount,
 			TrackCount: g.SongCount,
@@ -178,7 +181,7 @@ func (s *subsonicMediaProvider) GetPlaylists() ([]mediaprovider.Playlist, error)
 	return sharedutil.MapSlice(pl, toPlaylist), nil
 }
 
-func (s *subsonicMediaProvider) GetRandomTracks(genreName string, count int) ([]mediaprovider.Track, error) {
+func (s *subsonicMediaProvider) GetRandomTracks(genreName string, count int) ([]*mediaprovider.Track, error) {
 	opts := map[string]string{"size": strconv.Itoa(count)}
 	if genreName != "" {
 		opts["genre"] = genreName
@@ -190,7 +193,7 @@ func (s *subsonicMediaProvider) GetRandomTracks(genreName string, count int) ([]
 	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
-func (s *subsonicMediaProvider) GetSimilarTracks(artistID string, count int) ([]mediaprovider.Track, error) {
+func (s *subsonicMediaProvider) GetSimilarTracks(artistID string, count int) ([]*mediaprovider.Track, error) {
 	tr, err := s.client.GetSimilarSongs2(artistID, map[string]string{"count": strconv.Itoa(count)})
 	if err != nil {
 		return nil, err
@@ -216,12 +219,16 @@ func (s *subsonicMediaProvider) Scrobble(trackID string, submission bool) error 
 		"submission": strconv.FormatBool(submission)})
 }
 
-func (s *subsonicMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteParameters) error {
-	return s.client.Star(subsonic.StarParameters{
+func (s *subsonicMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteParameters, favorite bool) error {
+	subParams := subsonic.StarParameters{
 		AlbumIDs:  params.AlbumIDs,
 		ArtistIDs: params.ArtistIDs,
 		SongIDs:   params.TrackIDs,
-	})
+	}
+	if favorite {
+		return s.client.Star(subParams)
+	}
+	return s.client.Unstar(subParams)
 }
 
 func (s *subsonicMediaProvider) SetRating(params mediaprovider.RatingFavoriteParameters, rating int) error {
@@ -263,12 +270,11 @@ func (s *subsonicMediaProvider) SetRating(params mediaprovider.RatingFavoritePar
 	return err
 }
 
-func toTrack(ch *subsonic.Child) mediaprovider.Track {
+func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 	if ch == nil {
-		log.Println("subsonicMediaProvider: toTrack called on nil track")
-		return mediaprovider.Track{}
+		return nil
 	}
-	return mediaprovider.Track{
+	return &mediaprovider.Track{
 		ID:          ch.ID,
 		CoverArtID:  ch.CoverArt,
 		ParentID:    ch.Parent,
@@ -280,19 +286,21 @@ func toTrack(ch *subsonic.Child) mediaprovider.Track {
 		ArtistIDs:   []string{ch.ArtistID},
 		ArtistNames: []string{ch.Artist},
 		Album:       ch.Album,
+		AlbumID:     ch.AlbumID,
+		Year:        ch.Year,
 		Rating:      ch.UserRating,
 		Favorite:    !ch.Starred.IsZero(),
 		PlayCount:   int(ch.PlayCount),
 		FilePath:    ch.Path,
+		BitRate:     ch.BitRate,
 	}
 }
 
-func toAlbum(al *subsonic.AlbumID3) mediaprovider.Album {
+func toAlbum(al *subsonic.AlbumID3) *mediaprovider.Album {
 	if al == nil {
-		log.Println("subsonicMediaProvider: toAlbum called on nil album")
-		return mediaprovider.Album{}
+		return nil
 	}
-	return mediaprovider.Album{
+	return &mediaprovider.Album{
 		ID:          al.ID,
 		CoverArtID:  al.CoverArt,
 		Name:        al.Name,
@@ -306,23 +314,21 @@ func toAlbum(al *subsonic.AlbumID3) mediaprovider.Album {
 	}
 }
 
-func toArtist(ar *subsonic.Artist) mediaprovider.Artist {
+func toArtist(ar *subsonic.Artist) *mediaprovider.Artist {
 	if ar == nil {
-		log.Println("subsonicMediaProvider: toArtist called on nil artist")
-		return mediaprovider.Artist{}
+		return nil
 	}
-	return mediaprovider.Artist{
+	return &mediaprovider.Artist{
 		ID:   ar.ID,
 		Name: ar.Name,
 	}
 }
 
-func toArtistFromID3(ar *subsonic.ArtistID3) mediaprovider.Artist {
+func toArtistFromID3(ar *subsonic.ArtistID3) *mediaprovider.Artist {
 	if ar == nil {
-		log.Println("subsonicMediaProvider: toArtistFromID3 called on nil artistID3")
-		return mediaprovider.Artist{}
+		return nil
 	}
-	return mediaprovider.Artist{
+	return &mediaprovider.Artist{
 		ID:         ar.ID,
 		Name:       ar.Name,
 		AlbumCount: ar.AlbumCount,

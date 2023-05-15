@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -29,7 +30,7 @@ type AlbumsPage struct {
 	searcher   *widgets.SearchEntry
 	filterBtn  *widgets.AlbumFilterButton
 	searchText string
-	filter     backend.AlbumFilter
+	filter     mediaprovider.AlbumFilter
 	titleDisp  *widget.RichText
 	sortOrder  *selectWidget
 	container  *fyne.Container

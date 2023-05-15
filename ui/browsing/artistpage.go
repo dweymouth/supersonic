@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -118,7 +119,7 @@ func (a *ArtistPage) Save() SavedPage {
 
 var _ CanShowNowPlaying = (*ArtistPage)(nil)
 
-func (a *ArtistPage) OnSongChange(track *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
+func (a *ArtistPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
 	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(track)
 	if a.tracklistCtr != nil {
 		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)

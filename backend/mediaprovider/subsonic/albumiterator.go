@@ -78,7 +78,7 @@ type baseIter struct {
 	serverPos     int
 	s             *subsonic.Client
 	opts          map[string]string
-	prefetched    []mediaprovider.Album
+	prefetched    []*mediaprovider.Album
 	prefetchedPos int
 	done          bool
 }
@@ -99,7 +99,7 @@ func (r *baseIter) Next() *mediaprovider.Album {
 	if r.prefetched != nil && r.prefetchedPos < len(r.prefetched) {
 		a := r.prefetched[r.prefetchedPos]
 		r.prefetchedPos++
-		return &a
+		return a
 	}
 	r.prefetched = nil
 	for { // keep fetching until we are done or have mathcing results
@@ -129,8 +129,7 @@ func (r *baseIter) Next() *mediaprovider.Album {
 		}
 	*/
 
-	ret := r.prefetched[0]
-	return &ret
+	return r.prefetched[0]
 }
 
 type searchIter struct {
@@ -207,8 +206,7 @@ func (s *searchIter) Next() *mediaprovider.Album {
 			s.prefetchedPos = 0
 		}
 
-		al := toAlbum(a)
-		return &al
+		return toAlbum(a)
 	}
 
 	return nil
@@ -323,8 +321,7 @@ func (r *randomIter) Next() *mediaprovider.Album {
 			r.prefetchedPos = 0
 		}
 
-		al := toAlbum(a)
-		return &al
+		return toAlbum(a)
 	}
 
 	return nil

@@ -15,7 +15,7 @@ type Album struct {
 
 type AlbumWithTracks struct {
 	Album
-	Tracks []Track
+	Tracks []*Track
 }
 
 type Artist struct {
@@ -26,14 +26,14 @@ type Artist struct {
 
 type ArtistWithAlbums struct {
 	Artist
-	Albums []Album
+	Albums []*Album
 }
 
 type ArtistInfo struct {
 	Biography      string
 	LastFMUrl      string
 	ImageURL       string
-	SimilarArtists []Artist
+	SimilarArtists []*Artist
 }
 
 type Genre struct {
@@ -54,11 +54,14 @@ type Track struct {
 	ArtistIDs   []string
 	ArtistNames []string
 	Album       string
+	AlbumID     string
+	Year        int
 	Rating      int
 	Favorite    bool
 	Size        int64
 	PlayCount   int
 	FilePath    string
+	BitRate     int
 }
 
 type Playlist struct {
@@ -73,5 +76,5 @@ type Playlist struct {
 
 type PlaylistWithTracks struct {
 	Playlist
-	Tracks []Track
+	Tracks []*Track
 }

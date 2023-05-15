@@ -58,7 +58,7 @@ func (a *allTracksIterator) Next() *mediaprovider.Track {
 
 	tr := a.curAlbum.Tracks[a.curTrackIdx]
 	a.curTrackIdx += 1
-	return &tr
+	return tr
 }
 
 type searchTracksIterator struct {
@@ -109,8 +109,7 @@ func (s *searchTracksIterator) Next() *mediaprovider.Track {
 			s.prefetched = s.prefetched[:0]
 			s.prefetchedPos = 0
 		}
-		track := toTrack(tr)
-		return &track
+		return toTrack(tr)
 	}
 
 	// no more results

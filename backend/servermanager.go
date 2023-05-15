@@ -7,13 +7,16 @@ import (
 	"time"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	subsonicMP "github.com/dweymouth/supersonic/backend/mediaprovider/subsonic"
 	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 )
 
 type ServerManager struct {
-	ServerID uuid.UUID
-	Server   *subsonic.Client
+	LoggedInUser string
+	ServerID     uuid.UUID
+	Server       mediaprovider.MediaProvider
 
 	appName           string
 	onServerConnected []func()
@@ -31,7 +34,8 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 	if err != nil {
 		return err
 	}
-	s.Server = cli
+	s.Server = subsonicMP.SubsonicMediaProvider(cli)
+	s.LoggedInUser = conf.Username
 	s.ServerID = conf.ID
 	for _, cb := range s.onServerConnected {
 		cb()
@@ -116,6 +120,7 @@ func (s *ServerManager) Logout() {
 			cb()
 		}
 		s.Server = nil
+		s.LoggedInUser = ""
 		s.ServerID = uuid.UUID{}
 	}
 }

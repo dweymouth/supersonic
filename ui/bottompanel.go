@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/player"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -15,7 +16,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type BottomPanel struct {
@@ -69,7 +69,7 @@ func NewBottomPanel(p *player.Player, contr *controller.Controller) *BottomPanel
 		contr.NavigateTo(controller.AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
 	})
 	bp.NowPlaying.OnArtistNameTapped(func() {
-		contr.NavigateTo(controller.ArtistRoute(bp.playbackManager.NowPlaying().ArtistID))
+		contr.NavigateTo(controller.ArtistRoute(bp.playbackManager.NowPlaying().ArtistIDs[0]))
 	})
 	bp.NowPlaying.OnTrackNameTapped(func() {
 		contr.NavigateTo(controller.NowPlayingRoute(bp.playbackManager.NowPlaying().ID))
@@ -108,11 +108,11 @@ func (bp *BottomPanel) SetPlaybackManager(pm *backend.PlaybackManager) {
 	})
 }
 
-func (bp *BottomPanel) onSongChange(song *subsonic.Child, _ *subsonic.Child) {
+func (bp *BottomPanel) onSongChange(song, _ *mediaprovider.Track) {
 	if song == nil {
 		bp.NowPlaying.Update("", "", false, "", nil)
 	} else {
-		bp.coverArtID = song.CoverArt
+		bp.coverArtID = song.CoverArtID
 		var im image.Image
 		if bp.ImageManager != nil {
 			// set image to expire not long after the length of the song
@@ -120,9 +120,9 @@ func (bp *BottomPanel) onSongChange(song *subsonic.Child, _ *subsonic.Child) {
 			// be in cache for the next song if it's from the same album, or
 			// if the user navigates to the album page for the track
 			imgTTLSec := song.Duration + 30
-			im, _ = bp.ImageManager.GetCoverThumbnailWithTTL(song.CoverArt, time.Duration(imgTTLSec)*time.Second)
+			im, _ = bp.ImageManager.GetCoverThumbnailWithTTL(song.CoverArtID, time.Duration(imgTTLSec)*time.Second)
 		}
-		bp.NowPlaying.Update(song.Title, song.Artist, song.ArtistID != "", song.Album, im)
+		bp.NowPlaying.Update(song.Name, song.ArtistNames[0], song.ArtistIDs[0] != "", song.Album, im)
 	}
 }
 

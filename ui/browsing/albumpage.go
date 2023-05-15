@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -17,8 +18,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type AlbumPage struct {
@@ -92,11 +91,11 @@ func (a *AlbumPage) Route() controller.Route {
 	return controller.AlbumRoute(a.albumID)
 }
 
-func (a *AlbumPage) OnSongChange(song *subsonic.Child, lastScrobbledIfAny *subsonic.Child) {
-	if song == nil {
+func (a *AlbumPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
+	if track == nil {
 		a.nowPlayingID = ""
 	} else {
-		a.nowPlayingID = song.ID
+		a.nowPlayingID = track.ID
 	}
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 	a.tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
@@ -116,14 +115,14 @@ func (a *AlbumPage) SelectAll() {
 
 // should be called asynchronously
 func (a *AlbumPage) load() {
-	album, err := a.lm.GetAlbum(a.albumID)
+	album, err := a.sm.Server.GetAlbum(a.albumID)
 	if err != nil {
 		log.Printf("Failed to get album: %s", err.Error())
 		return
 	}
 	a.header.Update(album, a.im)
-	a.tracklist.ShowDiscNumber = album.Song[0].DiscNumber != album.Song[len(album.Song)-1].DiscNumber
-	a.tracklist.Tracks = album.Song
+	a.tracklist.ShowDiscNumber = album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber
+	a.tracklist.Tracks = album.Tracks
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 }
 
@@ -215,20 +214,20 @@ func (a *AlbumPageHeader) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }
 
-func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageManager) {
+func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backend.ImageManager) {
 	a.albumID = album.ID
-	a.coverID = album.CoverArt
-	a.artistID = album.ArtistID
+	a.coverID = album.CoverArtID
+	a.artistID = album.ArtistIDs[0]
 	a.titleLabel.Segments[0].(*widget.TextSegment).Text = album.Name
-	a.artistLabel.SetText(album.Artist)
-	a.genre = album.Genre
-	a.genreLabel.SetText(album.Genre)
+	a.artistLabel.SetText(album.ArtistNames[0])
+	a.genre = album.Genres[0]
+	a.genreLabel.SetText(album.Genres[0])
 	a.miscLabel.SetText(formatMiscLabelStr(album))
-	a.toggleFavButton.IsFavorited = !album.Starred.IsZero()
+	a.toggleFavButton.IsFavorited = album.Favorite
 	a.Refresh()
 
 	go func() {
-		if cover, err := im.GetCoverThumbnail(album.CoverArt); err == nil {
+		if cover, err := im.GetCoverThumbnail(album.CoverArtID); err == nil {
 			a.cover.Image.Image = cover
 			a.cover.Refresh()
 		} else {
@@ -238,11 +237,8 @@ func (a *AlbumPageHeader) Update(album *subsonic.AlbumID3, im *backend.ImageMana
 }
 
 func (a *AlbumPageHeader) toggleFavorited() {
-	if a.toggleFavButton.IsFavorited {
-		a.page.sm.Server.Star(subsonic.StarParameters{AlbumIDs: []string{a.albumID}})
-	} else {
-		a.page.sm.Server.Unstar(subsonic.StarParameters{AlbumIDs: []string{a.albumID}})
-	}
+	params := mediaprovider.RatingFavoriteParameters{AlbumIDs: []string{a.albumID}}
+	a.page.sm.Server.SetFavorite(params, a.toggleFavButton.IsFavorited)
 }
 
 func (a *AlbumPageHeader) showPopUpCover() {
@@ -254,16 +250,16 @@ func (a *AlbumPageHeader) showPopUpCover() {
 	a.page.contr.ShowPopUpImage(cover)
 }
 
-func formatMiscLabelStr(a *subsonic.AlbumID3) string {
+func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 	var discs string
-	if discCount := a.Song[len(a.Song)-1].DiscNumber; discCount > 1 {
+	if discCount := a.Tracks[len(a.Tracks)-1].DiscNumber; discCount > 1 {
 		discs = fmt.Sprintf("%d discs · ", discCount)
 	}
 	tracks := "tracks"
-	if a.SongCount == 1 {
+	if a.TrackCount == 1 {
 		tracks = "track"
 	}
-	return fmt.Sprintf("%d · %d %s · %s%s", a.Year, a.SongCount, tracks, discs, util.SecondsToTimeString(float64(a.Duration)))
+	return fmt.Sprintf("%d · %d %s · %s%s", a.Year, a.TrackCount, tracks, discs, util.SecondsToTimeString(float64(a.Duration)))
 }
 
 func (s *albumPageState) Restore() Page {
