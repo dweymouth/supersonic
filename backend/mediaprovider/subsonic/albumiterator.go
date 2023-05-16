@@ -65,6 +65,9 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 	if sortOrder == "" && filter.ExcludeUnfavorited {
 		return s.newBaseIter("starred", filter, s.prefetchCoverCB, make(map[string]string))
 	}
+	if sortOrder == "" {
+		sortOrder = AlbumSortRecentlyAdded // default
+	}
 	switch sortOrder {
 	case AlbumSortRecentlyAdded:
 		return s.newBaseIter("newest", filter, s.prefetchCoverCB, make(map[string]string))
