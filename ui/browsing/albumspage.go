@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -23,13 +24,13 @@ type AlbumsPage struct {
 	contr      *controller.Controller
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
-	lm         *backend.LibraryManager
+	mp         mediaprovider.MediaProvider
 	grid       *widgets.GridView
 	searchGrid *widgets.GridView
 	searcher   *widgets.SearchEntry
 	filterBtn  *widgets.AlbumFilterButton
 	searchText string
-	filter     backend.AlbumFilter
+	filter     mediaprovider.AlbumFilter
 	titleDisp  *widget.RichText
 	sortOrder  *selectWidget
 	container  *fyne.Container
@@ -54,12 +55,12 @@ func (s *selectWidget) MinSize() fyne.Size {
 	return fyne.NewSize(170, s.Select.MinSize().Height)
 }
 
-func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *AlbumsPage {
+func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) *AlbumsPage {
 	a := &AlbumsPage{
 		cfg:   cfg,
 		contr: contr,
 		pm:    pm,
-		lm:    lm,
+		mp:    mp,
 		im:    im,
 	}
 	a.ExtendBaseWidget(a)
@@ -68,12 +69,12 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.sortOrder = NewSelect(backend.AlbumSortOrders, a.onSortOrderChanged)
-	if !sharedutil.SliceContains(backend.AlbumSortOrders, cfg.SortOrder) {
-		cfg.SortOrder = string(backend.AlbumSortRecentlyAdded)
+	a.sortOrder = NewSelect(mp.AlbumSortOrders(), a.onSortOrderChanged)
+	if !sharedutil.SliceContains(mp.AlbumSortOrders(), cfg.SortOrder) {
+		cfg.SortOrder = string(mp.AlbumSortOrders()[0])
 	}
 	a.sortOrder.Selected = cfg.SortOrder
-	iter := lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected), a.filter)
+	iter := mp.IterateAlbums(a.sortOrder.Selected, a.filter)
 	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im)
 	contr.ConnectAlbumGridActions(a.grid)
 	a.createSearchAndFilter()
@@ -111,7 +112,7 @@ func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 		cfg:        saved.cfg,
 		contr:      saved.contr,
 		pm:         saved.pm,
-		lm:         saved.lm,
+		mp:         saved.mp,
 		im:         saved.im,
 		searchText: saved.searchText,
 		filter:     saved.filter,
@@ -122,7 +123,7 @@ func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.sortOrder = NewSelect(backend.AlbumSortOrders, nil)
+	a.sortOrder = NewSelect(a.mp.AlbumSortOrders(), nil)
 	a.sortOrder.Selected = saved.sortOrder
 	a.sortOrder.OnChanged = a.onSortOrderChanged
 	a.grid = widgets.NewGridViewFromState(saved.gridState)
@@ -162,7 +163,7 @@ func (a *AlbumsPage) Reload() {
 	if a.searchText != "" {
 		a.doSearch(a.searchText)
 	} else {
-		iter := a.lm.AlbumsIter(backend.AlbumSortOrder(a.sortOrder.Selected), a.filter)
+		iter := a.mp.IterateAlbums(a.sortOrder.Selected, a.filter)
 		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 		a.grid.Refresh()
 	}
@@ -173,7 +174,7 @@ func (a *AlbumsPage) Save() SavedPage {
 		cfg:        a.cfg,
 		contr:      a.contr,
 		pm:         a.pm,
-		lm:         a.lm,
+		mp:         a.mp,
 		im:         a.im,
 		searchText: a.searchText,
 		filter:     a.filter,
@@ -187,11 +188,12 @@ func (a *AlbumsPage) Save() SavedPage {
 }
 
 func (a *AlbumsPage) doSearch(query string) {
+	iter := widgets.NewGridViewAlbumIterator(a.mp.SearchAlbums(query, a.filter))
 	if a.searchGrid == nil {
-		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(a.lm.SearchIter(query)), a.im)
+		a.searchGrid = widgets.NewGridView(iter, a.im)
 		a.contr.ConnectAlbumGridActions(a.searchGrid)
 	} else {
-		a.searchGrid.Reset(widgets.NewGridViewAlbumIterator(a.lm.SearchIterWithFilter(query, a.filter)))
+		a.searchGrid.Reset(iter)
 	}
 	a.container.Objects[0] = a.searchGrid
 	a.Refresh()
@@ -199,7 +201,7 @@ func (a *AlbumsPage) doSearch(query string) {
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
 	a.cfg.SortOrder = a.sortOrder.Selected
-	iter := a.lm.AlbumsIter(backend.AlbumSortOrder(order), a.filter)
+	iter := a.mp.IterateAlbums(order, a.filter)
 	a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	if a.searchText == "" {
 		a.container.Objects[0] = a.grid
@@ -214,11 +216,11 @@ func (a *AlbumsPage) CreateRenderer() fyne.WidgetRenderer {
 
 type savedAlbumsPage struct {
 	searchText      string
-	filter          backend.AlbumFilter
+	filter          mediaprovider.AlbumFilter
 	cfg             *backend.AlbumsPageConfig
 	contr           *controller.Controller
 	pm              *backend.PlaybackManager
-	lm              *backend.LibraryManager
+	mp              mediaprovider.MediaProvider
 	im              *backend.ImageManager
 	sortOrder       string
 	gridState       widgets.GridViewState

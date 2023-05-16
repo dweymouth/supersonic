@@ -18,6 +18,8 @@ import (
 
 const CachedImageValidTime = 24 * time.Hour
 
+const coverArtThumbnailSize = 300
+
 type ImageManager struct {
 	s              *ServerManager
 	baseCacheDir   string
@@ -72,7 +74,7 @@ func (i *ImageManager) GetFullSizeCoverArt(coverID string) (image.Image, error) 
 	if i.cachedFullSizeCoverID == coverID {
 		return i.cachedFullSizeCover, nil
 	}
-	im, err := i.s.Server.GetCoverArt(coverID, nil)
+	im, err := i.s.Server.GetCoverArt(coverID, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +145,7 @@ func (i *ImageManager) fetchAndCacheCoverFromDiskOrServer(coverID string, ttl ti
 }
 
 func (i *ImageManager) fetchAndCacheCoverFromServer(coverID string, ttl time.Duration) (image.Image, error) {
-	img, err := i.s.Server.GetCoverArt(coverID, map[string]string{"size": "300"})
+	img, err := i.s.Server.GetCoverArt(coverID, coverArtThumbnailSize)
 	if err != nil {
 		return nil, err
 	}

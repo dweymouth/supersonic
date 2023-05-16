@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
@@ -21,11 +21,11 @@ type AlbumFilterButton struct {
 	GenreDisabled    bool
 	FavoriteDisabled bool
 
-	filter *backend.AlbumFilter
+	filter *mediaprovider.AlbumFilter
 	dialog *widget.PopUp
 }
 
-func NewAlbumFilterButton(filter *backend.AlbumFilter) *AlbumFilterButton {
+func NewAlbumFilterButton(filter *mediaprovider.AlbumFilter) *AlbumFilterButton {
 	a := &AlbumFilterButton{
 		filter: filter,
 		Button: widget.Button{

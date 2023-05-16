@@ -1,62 +1,62 @@
-package backend
+package subsonic
 
 import (
 	"log"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
-func (l *LibraryManager) AllTracksIterator() TrackIterator {
-	return &allTracksIterator{
-		l:         l,
-		albumIter: l.AlbumsIter(AlbumSortArtistAZ, AlbumFilter{}),
+func (s *subsonicMediaProvider) IterateTracks(searchQuery string) mediaprovider.TrackIterator {
+	if searchQuery == "" {
+		return &allTracksIterator{
+			s:         s,
+			albumIter: s.IterateAlbums(AlbumSortArtistAZ, mediaprovider.AlbumFilter{}),
+		}
 	}
-}
-
-func (l *LibraryManager) SearchTracksIterator(query string) TrackIterator {
 	return &searchTracksIterator{
 		searchIterBase: searchIterBase{
-			s:     l.s.Server,
-			query: query,
+			s:     s.client,
+			query: searchQuery,
 		},
 		trackIDset: make(map[string]bool),
 	}
 }
 
 type allTracksIterator struct {
-	l           *LibraryManager
-	albumIter   AlbumIterator
-	curAlbum    *subsonic.AlbumID3
+	s           *subsonicMediaProvider
+	albumIter   mediaprovider.AlbumIterator
+	curAlbum    *mediaprovider.AlbumWithTracks
 	curTrackIdx int
 	done        bool
 }
 
-func (a *allTracksIterator) Next() *subsonic.Child {
+func (a *allTracksIterator) Next() *mediaprovider.Track {
 	if a.done {
 		return nil
 	}
 
 	// fetch next album
-	if a.curAlbum == nil || a.curTrackIdx >= len(a.curAlbum.Song) {
+	if a.curAlbum == nil || a.curTrackIdx >= len(a.curAlbum.Tracks) {
 		al := a.albumIter.Next()
 		if al == nil {
 			a.done = true
 			return nil
 		}
-		al, err := a.l.s.Server.GetAlbum(al.ID)
+		alWithTracks, err := a.s.GetAlbum(al.ID)
 		if err != nil {
 			log.Printf("error fetching album: %s", err.Error())
 		}
-		if len(al.Song) == 0 {
+		if len(alWithTracks.Tracks) == 0 {
 			// in the unlikely case of an album with zero tracks,
 			// just call recursively to move to next album
 			return a.Next()
 		}
-		a.curAlbum = al
+		a.curAlbum = alWithTracks
 		a.curTrackIdx = 0
 	}
 
-	tr := a.curAlbum.Song[a.curTrackIdx]
+	tr := a.curAlbum.Tracks[a.curTrackIdx]
 	a.curTrackIdx += 1
 	return tr
 }
@@ -70,7 +70,7 @@ type searchTracksIterator struct {
 	done          bool
 }
 
-func (s *searchTracksIterator) Next() *subsonic.Child {
+func (s *searchTracksIterator) Next() *mediaprovider.Track {
 	if s.done {
 		return nil
 	}
@@ -109,7 +109,7 @@ func (s *searchTracksIterator) Next() *subsonic.Child {
 			s.prefetched = s.prefetched[:0]
 			s.prefetchedPos = 0
 		}
-		return tr
+		return toTrack(tr)
 	}
 
 	// no more results

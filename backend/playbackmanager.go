@@ -3,14 +3,12 @@ package backend
 import (
 	"context"
 	"log"
-	"strconv"
 	"time"
 
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/player"
 	"github.com/dweymouth/supersonic/sharedutil"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 const (
@@ -33,14 +31,14 @@ type PlaybackManager struct {
 	curTrackTime      float64
 	callbacksDisabled bool
 
-	playQueue     []*subsonic.Child
+	playQueue     []*mediaprovider.Track
 	nowPlayingIdx int64
 
 	// to pass to onSongChange listeners; clear once listeners have been called
-	lastScrobbled *subsonic.Child
+	lastScrobbled *mediaprovider.Track
 	scrobbleCfg   *ScrobbleConfig
 
-	onSongChange     []func(nowPlaying *subsonic.Child, justScrobbledIfAny *subsonic.Child)
+	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
 }
 
@@ -111,7 +109,7 @@ func (p *PlaybackManager) DisableCallbacks() {
 }
 
 // Gets the curently playing song, if any.
-func (p *PlaybackManager) NowPlaying() *subsonic.Child {
+func (p *PlaybackManager) NowPlaying() *mediaprovider.Track {
 	if len(p.playQueue) == 0 || p.player.GetStatus().State == player.Stopped {
 		return nil
 	}
@@ -119,7 +117,7 @@ func (p *PlaybackManager) NowPlaying() *subsonic.Child {
 }
 
 // Sets a callback that is notified whenever a new song begins playing.
-func (p *PlaybackManager) OnSongChange(cb func(nowPlaying *subsonic.Child, justScrobbledIfAny *subsonic.Child)) {
+func (p *PlaybackManager) OnSongChange(cb func(nowPlaying *mediaprovider.Track, justScrobbledIfAny *mediaprovider.Track)) {
 	p.onSongChange = append(p.onSongChange, cb)
 }
 
@@ -134,7 +132,7 @@ func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool, shuffle 
 	if err != nil {
 		return err
 	}
-	return p.LoadTracks(album.Song, appendToQueue, shuffle)
+	return p.LoadTracks(album.Tracks, appendToQueue, shuffle)
 }
 
 // Loads the specified playlist into the play queue.
@@ -143,10 +141,10 @@ func (p *PlaybackManager) LoadPlaylist(playlistID string, appendToQueue bool, sh
 	if err != nil {
 		return err
 	}
-	return p.LoadTracks(playlist.Entry, appendToQueue, shuffle)
+	return p.LoadTracks(playlist.Tracks, appendToQueue, shuffle)
 }
 
-func (p *PlaybackManager) LoadTracks(tracks []*subsonic.Child, appendToQueue, shuffle bool) error {
+func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueue, shuffle bool) error {
 	if !appendToQueue {
 		p.player.Stop()
 		p.nowPlayingIdx = 0
@@ -157,11 +155,11 @@ func (p *PlaybackManager) LoadTracks(tracks []*subsonic.Child, appendToQueue, sh
 		util.ShuffleSlice(nums)
 	}
 	for _, i := range nums {
-		url, err := p.sm.Server.GetStreamURL(tracks[i].ID, map[string]string{})
+		url, err := p.sm.Server.GetStreamURL(tracks[i].ID)
 		if err != nil {
 			return err
 		}
-		p.player.AppendFile(url.String())
+		p.player.AppendFile(url)
 		// ensure a deep copy of the track info so that we can maintain our own state
 		// (tracking play count increases, favorite, and rating) without messing up
 		// other views' track models
@@ -200,11 +198,7 @@ func (p *PlaybackManager) PlayTrackAt(idx int) error {
 }
 
 func (p *PlaybackManager) PlayRandomSongs(genreName string) {
-	params := map[string]string{"size": "100"}
-	if genreName != "" {
-		params["genre"] = genreName
-	}
-	if songs, err := p.sm.Server.GetRandomSongs(params); err != nil {
+	if songs, err := p.sm.Server.GetRandomTracks(genreName, 100); err != nil {
 		log.Printf("error getting random songs: %s", err.Error())
 	} else {
 		p.LoadTracks(songs, false, false)
@@ -213,8 +207,7 @@ func (p *PlaybackManager) PlayRandomSongs(genreName string) {
 }
 
 func (p *PlaybackManager) PlaySimilarSongs(id string) {
-	params := map[string]string{"size": "100"}
-	if songs, err := p.sm.Server.GetSimilarSongs2(id, params); err != nil {
+	if songs, err := p.sm.Server.GetSimilarTracks(id, 100); err != nil {
 		log.Printf("error getting similar songs: %s", err.Error())
 	} else {
 		p.LoadTracks(songs, false, false)
@@ -222,8 +215,8 @@ func (p *PlaybackManager) PlaySimilarSongs(id string) {
 	}
 }
 
-func (p *PlaybackManager) GetPlayQueue() []*subsonic.Child {
-	pq := make([]*subsonic.Child, len(p.playQueue))
+func (p *PlaybackManager) GetPlayQueue() []*mediaprovider.Track {
+	pq := make([]*mediaprovider.Track, len(p.playQueue))
 	for i, tr := range p.playQueue {
 		copy := *tr
 		pq[i] = &copy
@@ -235,11 +228,7 @@ func (p *PlaybackManager) GetPlayQueue() []*subsonic.Child {
 // this should be called to ensure the in-memory track model is updated.
 func (p *PlaybackManager) OnTrackFavoriteStatusChanged(id string, fav bool) {
 	if tr := sharedutil.FindTrackByID(id, p.playQueue); tr != nil {
-		if fav {
-			tr.Starred = time.Now()
-		} else {
-			tr.Starred = time.Time{}
-		}
+		tr.Favorite = fav
 	}
 }
 
@@ -247,13 +236,13 @@ func (p *PlaybackManager) OnTrackFavoriteStatusChanged(id string, fav bool) {
 // this should be called to ensure the in-memory track model is updated.
 func (p *PlaybackManager) OnTrackRatingChanged(id string, rating int) {
 	if tr := sharedutil.FindTrackByID(id, p.playQueue); tr != nil {
-		tr.UserRating = rating
+		tr.Rating = rating
 	}
 }
 
 // trackIdxs must be sorted
 func (p *PlaybackManager) RemoveTracksFromQueue(trackIdxs []int) {
-	newQueue := make([]*subsonic.Child, 0, len(p.playQueue)-len(trackIdxs))
+	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIdxs))
 	rmCount := 0
 	rmIdx := 0
 	for i, tr := range p.playQueue {
@@ -310,10 +299,10 @@ func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 		playDur.Seconds() >= float64(p.scrobbleCfg.ThresholdTimeSeconds)
 	if timeThresholdMet || pcnt >= float64(p.scrobbleCfg.ThresholdPercent) {
 		song := p.playQueue[p.nowPlayingIdx]
-		log.Printf("Scrobbling %q", song.Title)
+		log.Printf("Scrobbling %q", song.Name)
 		song.PlayCount += 1
 		p.lastScrobbled = song
-		go p.sm.Server.Scrobble(song.ID, map[string]string{"time": strconv.FormatInt(time.Now().Unix()*1000, 10)})
+		go p.sm.Server.Scrobble(song.ID, true)
 	}
 }
 
@@ -322,10 +311,7 @@ func (p *PlaybackManager) sendNowPlayingScrobble() {
 		return
 	}
 	song := p.playQueue[p.nowPlayingIdx]
-	go p.sm.Server.Scrobble(song.ID, map[string]string{
-		"time":       strconv.FormatInt(time.Now().Unix()*1000, 10),
-		"submission": "false",
-	})
+	go p.sm.Server.Scrobble(song.ID, false)
 }
 
 func (p *PlaybackManager) invokeOnSongChangeCallbacks() {

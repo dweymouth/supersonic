@@ -7,14 +7,18 @@ import (
 	"time"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	subsonicMP "github.com/dweymouth/supersonic/backend/mediaprovider/subsonic"
 	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 )
 
 type ServerManager struct {
-	ServerID uuid.UUID
-	Server   *subsonic.Client
+	LoggedInUser string
+	ServerID     uuid.UUID
+	Server       mediaprovider.MediaProvider
 
+	prefetchCoverCB   func(string)
 	appName           string
 	onServerConnected []func()
 	onLogout          []func()
@@ -26,12 +30,21 @@ func NewServerManager(appName string) *ServerManager {
 	return &ServerManager{appName: appName}
 }
 
+func (s *ServerManager) SetPrefetchAlbumCoverCallback(cb func(string)) {
+	s.prefetchCoverCB = cb
+	if s.Server != nil {
+		s.Server.SetPrefetchCoverCallback(cb)
+	}
+}
+
 func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) error {
 	cli, err := s.testConnectionAndCreateClient(conf.ServerConnection, password)
 	if err != nil {
 		return err
 	}
-	s.Server = cli
+	s.Server = subsonicMP.SubsonicMediaProvider(cli)
+	s.Server.SetPrefetchCoverCallback(s.prefetchCoverCB)
+	s.LoggedInUser = conf.Username
 	s.ServerID = conf.ID
 	for _, cb := range s.onServerConnected {
 		cb()
@@ -116,6 +129,7 @@ func (s *ServerManager) Logout() {
 			cb()
 		}
 		s.Server = nil
+		s.LoggedInUser = ""
 		s.ServerID = uuid.UUID{}
 	}
 }

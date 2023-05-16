@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -15,8 +16,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type FavoritesPage struct {
@@ -26,10 +25,9 @@ type FavoritesPage struct {
 	contr *controller.Controller
 	pm    *backend.PlaybackManager
 	im    *backend.ImageManager
-	sm    *backend.ServerManager
-	lm    *backend.LibraryManager
+	mp    mediaprovider.MediaProvider
 
-	filter            backend.AlbumFilter
+	filter            mediaprovider.AlbumFilter
 	searchText        string
 	nowPlayingID      string
 	pendingViewSwitch bool
@@ -45,19 +43,18 @@ type FavoritesPage struct {
 	container     *fyne.Container
 }
 
-func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, lm *backend.LibraryManager, im *backend.ImageManager) *FavoritesPage {
+func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Controller, mp mediaprovider.MediaProvider, pm *backend.PlaybackManager, im *backend.ImageManager) *FavoritesPage {
 	a := &FavoritesPage{
-		filter: backend.AlbumFilter{ExcludeUnfavorited: true},
+		filter: mediaprovider.AlbumFilter{ExcludeUnfavorited: true},
 		cfg:    cfg,
 		contr:  contr,
 		pm:     pm,
-		lm:     lm,
-		sm:     sm,
+		mp:     mp,
 		im:     im,
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(0)
-	iter := lm.StarredIter(a.filter)
+	iter := mp.IterateAlbums("", a.filter)
 	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
 	a.contr.ConnectAlbumGridActions(a.grid)
 	if cfg.InitialView == "Artists" {
@@ -101,8 +98,7 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 		cfg:        saved.cfg,
 		contr:      saved.contr,
 		pm:         saved.pm,
-		lm:         saved.lm,
-		sm:         saved.sm,
+		mp:         saved.mp,
 		im:         saved.im,
 		searchText: saved.searchText,
 		filter:     saved.filter,
@@ -143,13 +139,13 @@ func (a *FavoritesPage) Reload() {
 	if a.searchText != "" {
 		a.doSearchAlbums(a.searchText)
 	} else {
-		iter := a.lm.StarredIter(a.filter)
+		iter := a.mp.IterateAlbums("", a.filter)
 		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
 	if a.tracklistCtr != nil || a.artistListCtr != nil {
 		go func() {
 			// re-fetch starred info from server
-			starred, err := a.sm.Server.GetStarred2(nil)
+			starred, err := a.mp.GetFavorites()
 			if err != nil {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
@@ -157,7 +153,7 @@ func (a *FavoritesPage) Reload() {
 			if a.tracklistCtr != nil {
 				// refresh favorite songs view
 				tr := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
-				tr.Tracks = starred.Song
+				tr.Tracks = starred.Tracks
 				if a.toggleBtns.ActivatedButtonIndex() == 2 {
 					// favorite songs view is visible
 					tr.Refresh()
@@ -166,7 +162,7 @@ func (a *FavoritesPage) Reload() {
 			if a.artistListCtr != nil {
 				// refresh favorite artists view
 				al := a.artistListCtr.Objects[0].(*widgets.ArtistGenreList)
-				al.Items = buildArtistListModel(starred.Artist)
+				al.Items = buildArtistListModel(starred.Artists)
 				if a.toggleBtns.ActivatedButtonIndex() == 1 {
 					// favorite artists view is visible
 					al.Refresh()
@@ -181,9 +177,8 @@ func (a *FavoritesPage) Save() SavedPage {
 		cfg:             a.cfg,
 		contr:           a.contr,
 		pm:              a.pm,
-		sm:              a.sm,
+		mp:              a.mp,
 		im:              a.im,
-		lm:              a.lm,
 		filter:          a.filter,
 		searchText:      a.searchText,
 		gridState:       a.grid.SaveToState(),
@@ -216,7 +211,7 @@ func (a *FavoritesPage) OnSearched(query string) {
 
 var _ CanShowNowPlaying = (*FavoritesPage)(nil)
 
-func (a *FavoritesPage) OnSongChange(song *subsonic.Child, _ *subsonic.Child) {
+func (a *FavoritesPage) OnSongChange(song, _ *mediaprovider.Track) {
 	a.nowPlayingID = ""
 	if song != nil {
 		a.nowPlayingID = song.ID
@@ -235,7 +230,7 @@ func (a *FavoritesPage) SelectAll() {
 }
 
 func (a *FavoritesPage) doSearchAlbums(query string) {
-	iter := a.lm.SearchIterWithFilter(query, a.filter)
+	iter := a.mp.SearchAlbums(query, a.filter)
 	if a.searchGrid == nil {
 		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
 		a.contr.ConnectAlbumGridActions(a.searchGrid)
@@ -271,12 +266,12 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 			a.createContainer(layout.NewSpacer())
 		}
 		go func() {
-			s, err := a.sm.Server.GetStarred2(nil)
+			fav, err := a.mp.GetFavorites()
 			if err != nil {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
-			model := buildArtistListModel(s.Artist)
+			model := buildArtistListModel(fav.Artists)
 			artistList := widgets.NewArtistGenreList(model)
 			artistList.ShowAlbumCount = true
 			artistList.OnNavTo = func(artistID string) {
@@ -295,7 +290,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 	}
 }
 
-func buildArtistListModel(artists []*subsonic.ArtistID3) []widgets.ArtistGenreListItemModel {
+func buildArtistListModel(artists []*mediaprovider.Artist) []widgets.ArtistGenreListItemModel {
 	model := make([]widgets.ArtistGenreListItemModel, 0)
 	for _, ar := range artists {
 		model = append(model, widgets.ArtistGenreListItemModel{
@@ -320,12 +315,12 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			a.createContainer(layout.NewSpacer())
 		}
 		go func() {
-			s, err := a.sm.Server.GetStarred2(nil)
+			fav, err := a.mp.GetFavorites()
 			if err != nil {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
-			tracklist := widgets.NewTracklist(s.Song)
+			tracklist := widgets.NewTracklist(fav.Tracks)
 			tracklist.AutoNumber = true
 			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 			tracklist.OnVisibleColumnsChanged = func(cols []string) {
@@ -355,12 +350,11 @@ type savedFavoritesPage struct {
 	cfg             *backend.FavoritesPageConfig
 	contr           *controller.Controller
 	pm              *backend.PlaybackManager
-	sm              *backend.ServerManager
+	mp              mediaprovider.MediaProvider
 	im              *backend.ImageManager
-	lm              *backend.LibraryManager
 	gridState       widgets.GridViewState
 	searchGridState widgets.GridViewState
-	filter          backend.AlbumFilter
+	filter          mediaprovider.AlbumFilter
 	searchText      string
 	activeToggleBtn int
 }

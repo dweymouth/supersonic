@@ -4,7 +4,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/dweymouth/go-subsonic/subsonic"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
 func SliceContains[T comparable](ts []T, t T) bool {
@@ -40,7 +40,7 @@ func MapSlice[T any, U any](ts []T, f func(T) U) []U {
 	return result
 }
 
-func FindTrackByID(id string, tracks []*subsonic.Child) *subsonic.Child {
+func FindTrackByID(id string, tracks []*mediaprovider.Track) *mediaprovider.Track {
 	for _, tr := range tracks {
 		if id == tr.ID {
 			return tr
@@ -49,15 +49,15 @@ func FindTrackByID(id string, tracks []*subsonic.Child) *subsonic.Child {
 	return nil
 }
 
-func TrackIDOrEmptyStr(track *subsonic.Child) string {
+func TrackIDOrEmptyStr(track *mediaprovider.Track) string {
 	if track == nil {
 		return ""
 	}
 	return track.ID
 }
 
-func TracksToIDs(tracks []*subsonic.Child) []string {
-	return MapSlice(tracks, func(tr *subsonic.Child) string {
+func TracksToIDs(tracks []*mediaprovider.Track) []string {
+	return MapSlice(tracks, func(tr *mediaprovider.Track) string {
 		return tr.ID
 	})
 }
@@ -73,8 +73,8 @@ const (
 
 // Reorder tracks and return a new track slice.
 // idxToMove must contain only valid indexes into tracks, and no repeats
-func ReorderTracks(tracks []*subsonic.Child, idxToMove []int, op TrackReorderOp) []*subsonic.Child {
-	newTracks := make([]*subsonic.Child, len(tracks))
+func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReorderOp) []*mediaprovider.Track {
+	newTracks := make([]*mediaprovider.Track, len(tracks))
 	switch op {
 	case MoveToTop:
 		topIdx := 0

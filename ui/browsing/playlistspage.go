@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -18,8 +19,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 type PlaylistsPage struct {
@@ -27,9 +26,9 @@ type PlaylistsPage struct {
 
 	cfg               *backend.PlaylistsPageConfig
 	contr             *controller.Controller
-	sm                *backend.ServerManager
-	playlists         []*subsonic.Playlist
-	searchedPlaylists []*subsonic.Playlist
+	mp                mediaprovider.MediaProvider
+	playlists         []*mediaprovider.Playlist
+	searchedPlaylists []*mediaprovider.Playlist
 
 	viewToggle *widgets.ToggleButtonGroup
 	searcher   *widgets.SearchEntry
@@ -39,18 +38,18 @@ type PlaylistsPage struct {
 	gridView   *widgets.GridView
 }
 
-func NewPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, sm *backend.ServerManager) *PlaylistsPage {
+func NewPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider) *PlaylistsPage {
 	activeView := 0
 	if cfg.InitialView == "Grid" {
 		activeView = 1
 	}
-	return newPlaylistsPage(contr, cfg, sm, "", activeView)
+	return newPlaylistsPage(contr, cfg, mp, "", activeView)
 }
 
-func newPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, sm *backend.ServerManager, searchText string, activeView int) *PlaylistsPage {
+func newPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider, searchText string, activeView int) *PlaylistsPage {
 	a := &PlaylistsPage{
 		cfg:       cfg,
-		sm:        sm,
+		mp:        mp,
 		contr:     contr,
 		titleDisp: widget.NewRichTextWithText("Playlists"),
 	}
@@ -76,7 +75,7 @@ func newPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageCo
 }
 
 func (a *PlaylistsPage) load(searchOnLoad bool) {
-	playlists, err := a.sm.Server.GetPlaylists(nil)
+	playlists, err := a.mp.GetPlaylists()
 	if err != nil {
 		log.Printf("error loading playlists: %v", err.Error())
 	}
@@ -93,7 +92,7 @@ func (a *PlaylistsPage) createListView() {
 	a.listView.OnNavTo = a.showPlaylistPage
 }
 
-func (a *PlaylistsPage) createGridView(playlists []*subsonic.Playlist) {
+func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 	model := createPlaylistGridViewModel(playlists)
 	a.gridView = widgets.NewFixedGridView(model, a.contr.App.ImageManager)
 	a.gridView.OnPlay = func(id string, shuffle bool) {
@@ -110,7 +109,7 @@ func (a *PlaylistsPage) createGridView(playlists []*subsonic.Playlist) {
 				log.Printf("error loading playlist: %s", err.Error())
 				return
 			}
-			a.contr.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(pl.Entry))
+			a.contr.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(pl.Tracks))
 		}()
 	}
 }
@@ -142,17 +141,17 @@ func (a *PlaylistsPage) showGridView() {
 	a.container.Objects[0].Refresh()
 }
 
-func createPlaylistGridViewModel(playlists []*subsonic.Playlist) []widgets.GridViewItemModel {
-	return sharedutil.MapSlice(playlists, func(pl *subsonic.Playlist) widgets.GridViewItemModel {
+func createPlaylistGridViewModel(playlists []*mediaprovider.Playlist) []widgets.GridViewItemModel {
+	return sharedutil.MapSlice(playlists, func(pl *mediaprovider.Playlist) widgets.GridViewItemModel {
 		tracks := "tracks"
-		if pl.SongCount == 1 {
+		if pl.TrackCount == 1 {
 			tracks = "track"
 		}
 		return widgets.GridViewItemModel{
 			Name:       pl.Name,
 			ID:         pl.ID,
-			CoverArtID: pl.CoverArt,
-			Secondary:  fmt.Sprintf("%d %s", pl.SongCount, tracks),
+			CoverArtID: pl.CoverArtID,
+			Secondary:  fmt.Sprintf("%d %s", pl.TrackCount, tracks),
 		}
 	})
 }
@@ -164,15 +163,15 @@ func (a *PlaylistsPage) showPlaylistPage(id string) {
 func (a *PlaylistsPage) onSearched(query string) {
 	// since the playlist list is returned in full non-paginated, we will do our own
 	// simple search based on the name, description, and owner, rather than calling a server API
-	var playlists []*subsonic.Playlist
+	var playlists []*mediaprovider.Playlist
 	if query == "" {
 		a.searchedPlaylists = nil
 		playlists = a.playlists
 	} else {
-		a.searchedPlaylists = sharedutil.FilterSlice(a.playlists, func(p *subsonic.Playlist) bool {
+		a.searchedPlaylists = sharedutil.FilterSlice(a.playlists, func(p *mediaprovider.Playlist) bool {
 			qLower := strings.ToLower(query)
 			return strings.Contains(strings.ToLower(p.Name), qLower) ||
-				strings.Contains(strings.ToLower(p.Comment), qLower) ||
+				strings.Contains(strings.ToLower(p.Description), qLower) ||
 				strings.Contains(strings.ToLower(p.Owner), qLower)
 		})
 		playlists = a.searchedPlaylists
@@ -182,7 +181,7 @@ func (a *PlaylistsPage) onSearched(query string) {
 
 // update the model for both views if initialized,
 // refresh the active view
-func (a *PlaylistsPage) refreshView(playlists []*subsonic.Playlist) {
+func (a *PlaylistsPage) refreshView(playlists []*mediaprovider.Playlist) {
 	if a.listView != nil {
 		a.listView.Playlists = playlists
 	}
@@ -214,7 +213,7 @@ func (a *PlaylistsPage) Save() SavedPage {
 	return &savedPlaylistsPage{
 		contr:      a.contr,
 		cfg:        a.cfg,
-		sm:         a.sm,
+		mp:         a.mp,
 		searchText: a.searcher.Entry.Text,
 		activeView: a.viewToggle.ActivatedButtonIndex(),
 	}
@@ -223,13 +222,13 @@ func (a *PlaylistsPage) Save() SavedPage {
 type savedPlaylistsPage struct {
 	contr      *controller.Controller
 	cfg        *backend.PlaylistsPageConfig
-	sm         *backend.ServerManager
+	mp         mediaprovider.MediaProvider
 	searchText string
 	activeView int
 }
 
 func (s *savedPlaylistsPage) Restore() Page {
-	return newPlaylistsPage(s.contr, s.cfg, s.sm, s.searchText, s.activeView)
+	return newPlaylistsPage(s.contr, s.cfg, s.mp, s.searchText, s.activeView)
 }
 
 func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {
@@ -247,7 +246,7 @@ func (a *PlaylistsPage) CreateRenderer() fyne.WidgetRenderer {
 type PlaylistList struct {
 	widget.BaseWidget
 
-	Playlists []*subsonic.Playlist
+	Playlists []*mediaprovider.Playlist
 	OnNavTo   func(string)
 
 	columnsLayout *layouts.ColumnsLayout
@@ -274,9 +273,9 @@ func NewPlaylistList() *PlaylistList {
 			row := item.(*PlaylistListRow)
 			row.ID = a.Playlists[id].ID
 			row.nameLabel.Text = a.Playlists[id].Name
-			row.descrptionLabel.Text = a.Playlists[id].Comment
+			row.descrptionLabel.Text = a.Playlists[id].Description
 			row.ownerLabel.Text = a.Playlists[id].Owner
-			row.trackCountLabel.Text = strconv.Itoa(a.Playlists[id].SongCount)
+			row.trackCountLabel.Text = strconv.Itoa(a.Playlists[id].TrackCount)
 			row.Refresh()
 		},
 	)

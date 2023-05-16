@@ -3,11 +3,11 @@ package sharedutil
 import (
 	"testing"
 
-	"github.com/dweymouth/go-subsonic/subsonic"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
 func Test_ReorderTracks(t *testing.T) {
-	tracks := []*subsonic.Child{
+	tracks := []*mediaprovider.Track{
 		{ID: "a"}, // 0
 		{ID: "b"}, // 1
 		{ID: "c"}, // 2
@@ -18,7 +18,7 @@ func Test_ReorderTracks(t *testing.T) {
 
 	// test MoveToTop:
 	idxToMove := []int{0, 2, 3, 5}
-	want := []*subsonic.Child{
+	want := []*mediaprovider.Track{
 		{ID: "a"},
 		{ID: "c"},
 		{ID: "d"},
@@ -33,7 +33,7 @@ func Test_ReorderTracks(t *testing.T) {
 
 	// test MoveToBottom:
 	idxToMove = []int{0, 2, 5}
-	want = []*subsonic.Child{
+	want = []*mediaprovider.Track{
 		{ID: "b"},
 		{ID: "d"},
 		{ID: "e"},
@@ -48,7 +48,7 @@ func Test_ReorderTracks(t *testing.T) {
 
 	// test MoveUp:
 	idxToMove = []int{0, 1, 3, 5}
-	want = []*subsonic.Child{
+	want = []*mediaprovider.Track{
 		{ID: "a"},
 		{ID: "b"},
 		{ID: "d"},
@@ -63,7 +63,7 @@ func Test_ReorderTracks(t *testing.T) {
 
 	// test MoveDown:
 	idxToMove = []int{2, 4, 5}
-	want = []*subsonic.Child{
+	want = []*mediaprovider.Track{
 		{ID: "a"},
 		{ID: "b"},
 		{ID: "d"},
@@ -77,7 +77,7 @@ func Test_ReorderTracks(t *testing.T) {
 	}
 }
 
-func tracklistsEqual(t *testing.T, a, b []*subsonic.Child) bool {
+func tracklistsEqual(t *testing.T, a, b []*mediaprovider.Track) bool {
 	t.Helper()
 	if len(a) != len(b) {
 		return false

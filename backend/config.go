@@ -124,7 +124,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},
 		},
 		AlbumsPage: AlbumsPageConfig{
-			SortOrder: string(AlbumSortRecentlyAdded),
+			SortOrder: string("Recently Added"),
 		},
 		ArtistPage: ArtistPageConfig{
 			InitialView:      "Discography",

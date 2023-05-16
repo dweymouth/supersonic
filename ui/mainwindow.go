@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui/browsing"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -15,7 +16,6 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/go-subsonic/subsonic"
 )
 
 var (
@@ -81,12 +81,12 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
 	m.Window.SetContent(m.container)
 	m.Window.Resize(size)
-	app.PlaybackManager.OnSongChange(func(song *subsonic.Child, _ *subsonic.Child) {
+	app.PlaybackManager.OnSongChange(func(song, _ *mediaprovider.Track) {
 		if song == nil {
 			m.Window.SetTitle(appName)
 			return
 		}
-		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", song.Title, song.Artist, appName))
+		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", song.Name, song.ArtistNames[0], appName))
 	})
 	app.ServerManager.OnServerConnected(func() {
 		m.BrowsingPane.EnableNavigationButtons()
