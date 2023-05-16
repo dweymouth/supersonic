@@ -281,31 +281,31 @@ func (r *randomIter) Next() *mediaprovider.Album {
 		return nil
 	}
 
-	if r.prefetched == nil {
+	// repeat fetch task until we have matching results
+	// or we reach the end (handled via short circuit return)
+	for len(r.prefetched) == 0 {
 		if r.phaseTwo {
-			for len(r.prefetched) == 0 {
-				albums, err := r.s.GetAlbumList2("newest", map[string]string{"size": "20", "offset": strconv.Itoa(r.offset)})
-				if err != nil {
-					log.Println(err)
-					albums = nil
-				}
-				if len(albums) == 0 {
-					r.done = true
-					r.albumIDSet = nil
-					return nil
-				}
-				r.offset += len(albums)
-				for _, album := range albums {
-					if _, ok := r.albumIDSet[album.ID]; !ok && filterMatches(r.filter, album) {
-						r.prefetched = append(r.prefetched, album)
-						if r.prefetchCB != nil {
-							go r.prefetchCB(album.CoverArt)
-						}
-						r.albumIDSet[album.ID] = true
+			// fetch albums from deterministic order
+			albums, err := r.s.GetAlbumList2("newest", map[string]string{"size": "25", "offset": strconv.Itoa(r.offset)})
+			if err != nil {
+				log.Printf("error fetching albums: %s", err.Error())
+				albums = nil
+			}
+			if len(albums) == 0 {
+				r.done = true
+				r.albumIDSet = nil
+				return nil
+			}
+			r.offset += len(albums)
+			for _, album := range albums {
+				if _, ok := r.albumIDSet[album.ID]; !ok && filterMatches(r.filter, album) {
+					r.prefetched = append(r.prefetched, album)
+					if r.prefetchCB != nil {
+						go r.prefetchCB(album.CoverArt)
 					}
+					r.albumIDSet[album.ID] = true
 				}
 			}
-			r.prefetchedPos = 0
 		} else {
 			albums, err := r.s.GetAlbumList2("random", map[string]string{"size": "25"})
 			if err != nil {
@@ -316,13 +316,17 @@ func (r *randomIter) Next() *mediaprovider.Album {
 			}
 			var hitCount int
 			for _, album := range albums {
-				if _, ok := r.albumIDSet[album.ID]; !ok && filterMatches(r.filter, album) {
+				if _, ok := r.albumIDSet[album.ID]; !ok {
+					// still need to keep track even if album is not matched
+					// by the filter because we need to know when to move to phase two
 					hitCount++
-					r.prefetched = append(r.prefetched, album)
-					if r.prefetchCB != nil {
-						go r.prefetchCB(album.CoverArt)
-					}
 					r.albumIDSet[album.ID] = true
+					if filterMatches(r.filter, album) {
+						r.prefetched = append(r.prefetched, album)
+						if r.prefetchCB != nil {
+							go r.prefetchCB(album.CoverArt)
+						}
+					}
 				}
 			}
 			if successRatio := float64(hitCount) / float64(25); successRatio < 0.3 {
