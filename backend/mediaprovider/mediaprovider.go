@@ -44,9 +44,11 @@ type MediaProvider interface {
 
 	AlbumSortOrders() []string
 
-	IterateAlbums(sortOrder string, searchQuery string, filter AlbumFilter) AlbumIterator
+	IterateAlbums(sortOrder string, filter AlbumFilter) AlbumIterator
 
 	IterateTracks(searchQuery string) TrackIterator
+
+	SearchAlbums(searchQuery string, filter AlbumFilter) AlbumIterator
 
 	GetRandomTracks(genre string, count int) ([]*Track, error)
 

@@ -30,7 +30,7 @@ type artistPageState struct {
 
 	cfg   *backend.ArtistPageConfig
 	pm    *backend.PlaybackManager
-	sm    *backend.ServerManager
+	mp    mediaprovider.MediaProvider
 	im    *backend.ImageManager
 	contr *controller.Controller
 }
@@ -49,20 +49,20 @@ type ArtistPage struct {
 	container    *fyne.Container
 }
 
-func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
+func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
 	activeView := 0
 	if cfg.InitialView == "Top Tracks" {
 		activeView = 1
 	}
-	return newArtistPage(artistID, cfg, pm, sm, im, contr, activeView)
+	return newArtistPage(artistID, cfg, pm, mp, im, contr, activeView)
 }
 
-func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, sm *backend.ServerManager, im *backend.ImageManager, contr *controller.Controller, activeView int) *ArtistPage {
+func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
 		artistID:   artistID,
 		cfg:        cfg,
 		pm:         pm,
-		sm:         sm,
+		mp:         mp,
 		im:         im,
 		contr:      contr,
 		activeView: activeView,
@@ -141,7 +141,7 @@ func (a *ArtistPage) playArtistRadio() {
 
 // should be called asynchronously
 func (a *ArtistPage) load() {
-	artist, err := a.sm.Server.GetArtist(a.artistID)
+	artist, err := a.mp.GetArtist(a.artistID)
 	if err != nil {
 		log.Printf("Failed to get artist: %s", err.Error())
 		return
@@ -153,7 +153,7 @@ func (a *ArtistPage) load() {
 	} else {
 		a.showTopTracks()
 	}
-	info, err := a.sm.Server.GetArtistInfo(a.artistID)
+	info, err := a.mp.GetArtistInfo(a.artistID)
 	if err != nil {
 		log.Printf("Failed to get artist info: %s", err.Error())
 	}
@@ -189,7 +189,7 @@ func (a *ArtistPage) showTopTracks() {
 			a.activeView = 1 // if page still loading, will show tracks view first
 			return
 		}
-		ts, err := a.sm.Server.GetTopTracks(a.artistInfo.Artist, 20)
+		ts, err := a.mp.GetTopTracks(a.artistInfo.Artist, 20)
 		if err != nil {
 			log.Printf("error getting top songs: %s", err.Error())
 			return
@@ -232,7 +232,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return newArtistPage(s.artistID, s.cfg, s.pm, s.sm, s.im, s.contr, s.activeView)
+	return newArtistPage(s.artistID, s.cfg, s.pm, s.mp, s.im, s.contr, s.activeView)
 }
 
 type ArtistPageHeader struct {
@@ -333,7 +333,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 
 func (a *ArtistPageHeader) toggleFavorited() {
 	params := mediaprovider.RatingFavoriteParameters{ArtistIDs: []string{a.artistID}}
-	a.artistPage.sm.Server.SetFavorite(params, a.favoriteBtn.IsFavorited)
+	a.artistPage.mp.SetFavorite(params, a.favoriteBtn.IsFavorited)
 }
 
 func (a *ArtistPageHeader) createContainer() {

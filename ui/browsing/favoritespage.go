@@ -25,7 +25,7 @@ type FavoritesPage struct {
 	contr *controller.Controller
 	pm    *backend.PlaybackManager
 	im    *backend.ImageManager
-	sm    *backend.ServerManager
+	mp    mediaprovider.MediaProvider
 
 	filter            mediaprovider.AlbumFilter
 	searchText        string
@@ -43,18 +43,18 @@ type FavoritesPage struct {
 	container     *fyne.Container
 }
 
-func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Controller, sm *backend.ServerManager, pm *backend.PlaybackManager, im *backend.ImageManager) *FavoritesPage {
+func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Controller, mp mediaprovider.MediaProvider, pm *backend.PlaybackManager, im *backend.ImageManager) *FavoritesPage {
 	a := &FavoritesPage{
 		filter: mediaprovider.AlbumFilter{ExcludeUnfavorited: true},
 		cfg:    cfg,
 		contr:  contr,
 		pm:     pm,
-		sm:     sm,
+		mp:     mp,
 		im:     im,
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(0)
-	iter := sm.Server.IterateAlbums("", "", a.filter)
+	iter := mp.IterateAlbums("", a.filter)
 	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
 	a.contr.ConnectAlbumGridActions(a.grid)
 	if cfg.InitialView == "Artists" {
@@ -98,7 +98,7 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 		cfg:        saved.cfg,
 		contr:      saved.contr,
 		pm:         saved.pm,
-		sm:         saved.sm,
+		mp:         saved.mp,
 		im:         saved.im,
 		searchText: saved.searchText,
 		filter:     saved.filter,
@@ -139,13 +139,13 @@ func (a *FavoritesPage) Reload() {
 	if a.searchText != "" {
 		a.doSearchAlbums(a.searchText)
 	} else {
-		iter := a.sm.Server.IterateAlbums("", "", a.filter)
+		iter := a.mp.IterateAlbums("", a.filter)
 		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
 	if a.tracklistCtr != nil || a.artistListCtr != nil {
 		go func() {
 			// re-fetch starred info from server
-			starred, err := a.sm.Server.GetFavorites()
+			starred, err := a.mp.GetFavorites()
 			if err != nil {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
@@ -177,7 +177,7 @@ func (a *FavoritesPage) Save() SavedPage {
 		cfg:             a.cfg,
 		contr:           a.contr,
 		pm:              a.pm,
-		sm:              a.sm,
+		mp:              a.mp,
 		im:              a.im,
 		filter:          a.filter,
 		searchText:      a.searchText,
@@ -230,7 +230,7 @@ func (a *FavoritesPage) SelectAll() {
 }
 
 func (a *FavoritesPage) doSearchAlbums(query string) {
-	iter := a.sm.Server.IterateAlbums("", query, a.filter)
+	iter := a.mp.SearchAlbums(query, a.filter)
 	if a.searchGrid == nil {
 		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
 		a.contr.ConnectAlbumGridActions(a.searchGrid)
@@ -266,7 +266,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 			a.createContainer(layout.NewSpacer())
 		}
 		go func() {
-			fav, err := a.sm.Server.GetFavorites()
+			fav, err := a.mp.GetFavorites()
 			if err != nil {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
@@ -315,7 +315,7 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			a.createContainer(layout.NewSpacer())
 		}
 		go func() {
-			fav, err := a.sm.Server.GetFavorites()
+			fav, err := a.mp.GetFavorites()
 			if err != nil {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
@@ -350,7 +350,7 @@ type savedFavoritesPage struct {
 	cfg             *backend.FavoritesPageConfig
 	contr           *controller.Controller
 	pm              *backend.PlaybackManager
-	sm              *backend.ServerManager
+	mp              mediaprovider.MediaProvider
 	im              *backend.ImageManager
 	gridState       widgets.GridViewState
 	searchGridState widgets.GridViewState

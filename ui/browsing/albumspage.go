@@ -74,7 +74,7 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 		cfg.SortOrder = string(mp.AlbumSortOrders()[0])
 	}
 	a.sortOrder.Selected = cfg.SortOrder
-	iter := mp.IterateAlbums(a.sortOrder.Selected, "", a.filter)
+	iter := mp.IterateAlbums(a.sortOrder.Selected, a.filter)
 	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im)
 	contr.ConnectAlbumGridActions(a.grid)
 	a.createSearchAndFilter()
@@ -163,7 +163,7 @@ func (a *AlbumsPage) Reload() {
 	if a.searchText != "" {
 		a.doSearch(a.searchText)
 	} else {
-		iter := a.mp.IterateAlbums(a.sortOrder.Selected, "", a.filter)
+		iter := a.mp.IterateAlbums(a.sortOrder.Selected, a.filter)
 		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 		a.grid.Refresh()
 	}
@@ -188,7 +188,7 @@ func (a *AlbumsPage) Save() SavedPage {
 }
 
 func (a *AlbumsPage) doSearch(query string) {
-	iter := widgets.NewGridViewAlbumIterator(a.mp.IterateAlbums("", query, a.filter))
+	iter := widgets.NewGridViewAlbumIterator(a.mp.SearchAlbums(query, a.filter))
 	if a.searchGrid == nil {
 		a.searchGrid = widgets.NewGridView(iter, a.im)
 		a.contr.ConnectAlbumGridActions(a.searchGrid)
@@ -201,7 +201,7 @@ func (a *AlbumsPage) doSearch(query string) {
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
 	a.cfg.SortOrder = a.sortOrder.Selected
-	iter := a.mp.IterateAlbums(order, "", a.filter)
+	iter := a.mp.IterateAlbums(order, a.filter)
 	a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	if a.searchText == "" {
 		a.container.Objects[0] = a.grid

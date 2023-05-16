@@ -12,36 +12,12 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-const (
-	AlbumSortRecentlyAdded    string = "Recently Added"
-	AlbumSortRecentlyPlayed   string = "Recently Played"
-	AlbumSortFrequentlyPlayed string = "Frequently Played"
-	AlbumSortRandom           string = "Random"
-	AlbumSortTitleAZ          string = "Title (A-Z)"
-	AlbumSortArtistAZ         string = "Artist (A-Z)"
-	AlbumSortYearAscending    string = "Year (ascending)"
-	AlbumSortYearDescending   string = "Year (descending)"
-)
-
 type subsonicMediaProvider struct {
 	client *subsonic.Client
 }
 
 func SubsonicMediaProvider(subsonicClient *subsonic.Client) mediaprovider.MediaProvider {
 	return &subsonicMediaProvider{client: subsonicClient}
-}
-
-func (s *subsonicMediaProvider) AlbumSortOrders() []string {
-	return []string{
-		AlbumSortRecentlyAdded,
-		AlbumSortRecentlyPlayed,
-		AlbumSortFrequentlyPlayed,
-		AlbumSortRandom,
-		AlbumSortTitleAZ,
-		AlbumSortArtistAZ,
-		AlbumSortYearAscending,
-		AlbumSortYearDescending,
-	}
 }
 
 func (s *subsonicMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
@@ -69,21 +45,11 @@ func (s *subsonicMediaProvider) GetAlbum(albumID string) (*mediaprovider.AlbumWi
 	if err != nil {
 		return nil, err
 	}
-	return &mediaprovider.AlbumWithTracks{
-		Album: mediaprovider.Album{
-			ID:          al.ID,
-			Name:        al.Name,
-			ArtistIDs:   []string{al.ArtistID},
-			CoverArtID:  al.CoverArt,
-			ArtistNames: []string{al.Artist},
-			Genres:      []string{al.Genre},
-			Year:        al.Year,
-			TrackCount:  al.SongCount,
-			Favorite:    !al.Starred.IsZero(),
-			Duration:    al.Duration,
-		},
+	album := &mediaprovider.AlbumWithTracks{
 		Tracks: sharedutil.MapSlice(al.Song, toTrack),
-	}, nil
+	}
+	fillAlbum(al, &album.Album)
+	return album, nil
 }
 
 func (s *subsonicMediaProvider) GetArtist(artistID string) (*mediaprovider.ArtistWithAlbums, error) {
@@ -168,19 +134,11 @@ func (s *subsonicMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.P
 	if err != nil {
 		return nil, err
 	}
-	return &mediaprovider.PlaylistWithTracks{
-		Playlist: mediaprovider.Playlist{
-			ID:          pl.ID,
-			CoverArtID:  pl.CoverArt,
-			Name:        pl.Name,
-			Description: pl.Comment,
-			TrackCount:  pl.SongCount,
-			Public:      pl.Public,
-			Owner:       pl.Owner,
-			Duration:    pl.Duration,
-		},
+	playlist := &mediaprovider.PlaylistWithTracks{
 		Tracks: sharedutil.MapSlice(pl.Entry, toTrack),
-	}, nil
+	}
+	fillPlaylist(pl, &playlist.Playlist)
+	return playlist, nil
 }
 
 func (s *subsonicMediaProvider) GetPlaylists() ([]*mediaprovider.Playlist, error) {
@@ -261,34 +219,24 @@ func (s *subsonicMediaProvider) SetRating(params mediaprovider.RatingFavoritePar
 	var err error
 	batchSetRating := func(offs int, wg *sync.WaitGroup) {
 		for i := 0; i < batchSize && offs+i < len(params.TrackIDs); i++ {
-			if wg != nil {
-				wg.Add(1)
-			}
+			wg.Add(1)
 			go func(idx int) {
 				newErr := s.client.SetRating(params.TrackIDs[idx], rating)
 				if err == nil && newErr != nil {
 					err = newErr
 				}
-				if wg != nil {
-					wg.Done()
-				}
+				wg.Done()
 			}(offs + i)
 		}
 	}
 
-	if len(params.TrackIDs) <= 5 {
-		// one batch only - no need to use wait group
-		batchSetRating(0, nil)
-	} else {
-		go func() {
-			numBatches := int(math.Ceil(float64(len(params.TrackIDs)) / float64(batchSize)))
-			for i := 0; i < numBatches; i++ {
-				var wg sync.WaitGroup
-				batchSetRating(i*batchSize, &wg)
-				wg.Wait()
-			}
-		}()
+	numBatches := int(math.Ceil(float64(len(params.TrackIDs)) / float64(batchSize)))
+	for i := 0; i < numBatches; i++ {
+		var wg sync.WaitGroup
+		batchSetRating(i*batchSize, &wg)
+		wg.Wait()
 	}
+
 	return err
 }
 
@@ -314,6 +262,7 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		Favorite:    !ch.Starred.IsZero(),
 		PlayCount:   int(ch.PlayCount),
 		FilePath:    ch.Path,
+		Size:        ch.Size,
 		BitRate:     ch.BitRate,
 	}
 }
@@ -322,18 +271,22 @@ func toAlbum(al *subsonic.AlbumID3) *mediaprovider.Album {
 	if al == nil {
 		return nil
 	}
-	return &mediaprovider.Album{
-		ID:          al.ID,
-		CoverArtID:  al.CoverArt,
-		Name:        al.Name,
-		Duration:    al.Duration,
-		ArtistIDs:   []string{al.ArtistID},
-		ArtistNames: []string{al.Artist},
-		Year:        al.Year,
-		Genres:      []string{al.Genre},
-		TrackCount:  al.SongCount,
-		Favorite:    !al.Starred.IsZero(),
-	}
+	album := &mediaprovider.Album{}
+	fillAlbum(al, album)
+	return album
+}
+
+func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
+	album.ID = subAlbum.ID
+	album.CoverArtID = subAlbum.CoverArt
+	album.Name = subAlbum.Name
+	album.Duration = subAlbum.Duration
+	album.ArtistIDs = []string{subAlbum.ArtistID}
+	album.ArtistNames = []string{subAlbum.Artist}
+	album.Year = subAlbum.Year
+	album.TrackCount = subAlbum.SongCount
+	album.Genres = []string{subAlbum.Genre}
+	album.Favorite = !subAlbum.Starred.IsZero()
 }
 
 func toArtist(ar *subsonic.Artist) *mediaprovider.Artist {
@@ -360,14 +313,21 @@ func toArtistFromID3(ar *subsonic.ArtistID3) *mediaprovider.Artist {
 }
 
 func toPlaylist(pl *subsonic.Playlist) *mediaprovider.Playlist {
-	return &mediaprovider.Playlist{
-		Name:        pl.Name,
-		ID:          pl.ID,
-		CoverArtID:  pl.CoverArt,
-		Description: pl.Comment,
-		Owner:       pl.Owner,
-		Public:      pl.Public,
-		TrackCount:  pl.SongCount,
-		Duration:    pl.Duration,
+	if pl == nil {
+		return nil
 	}
+	playlist := &mediaprovider.Playlist{}
+	fillPlaylist(pl, playlist)
+	return playlist
+}
+
+func fillPlaylist(pl *subsonic.Playlist, playlist *mediaprovider.Playlist) {
+	playlist.Name = pl.Name
+	playlist.ID = pl.ID
+	playlist.CoverArtID = pl.CoverArt
+	playlist.Description = pl.Comment
+	playlist.Owner = pl.Owner
+	playlist.Public = pl.Public
+	playlist.TrackCount = pl.SongCount
+	playlist.Duration = pl.Duration
 }

@@ -128,12 +128,14 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 		m.NavigateTo(ArtistRoute(artistID))
 	}
 	grid.OnAddToPlaylist = func(albumID string) {
-		album, err := m.App.ServerManager.Server.GetAlbum(albumID)
-		if err != nil {
-			log.Printf("error loading album: %s", err.Error())
-			return
-		}
-		m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
+		go func() {
+			album, err := m.App.ServerManager.Server.GetAlbum(albumID)
+			if err != nil {
+				log.Printf("error loading album: %s", err.Error())
+				return
+			}
+			m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
+		}()
 	}
 }
 
@@ -169,36 +171,38 @@ func (m *Controller) PromptForFirstServer() {
 // Depending on the results of that dialog, potentially create a new playlist
 // Add tracks to the user-specified playlist
 func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
-	pls, err := m.App.ServerManager.Server.GetPlaylists()
-	pls = sharedutil.FilterSlice(pls, func(pl *mediaprovider.Playlist) bool {
-		return pl.Owner == m.App.ServerManager.LoggedInUser
-	})
-	if err != nil {
-		// TODO: surface this error to user
-		log.Printf("error getting user-owned playlists: %s", err.Error())
-		return
-	}
-	plNames := make([]string, 0, len(pls))
-	for _, pl := range pls {
-		plNames = append(plNames, pl.Name)
-	}
-
-	dlg := dialogs.NewAddToPlaylistDialog("Add to Playlist", plNames)
-	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
-	m.ClosePopUpOnEscape(pop)
-	dlg.OnCanceled = pop.Hide
-	dlg.OnSubmit = func(playlistChoice int, newPlaylistName string) {
-		pop.Hide()
-		m.doModalClosed()
-		if playlistChoice < 0 {
-			m.App.ServerManager.Server.CreatePlaylist(newPlaylistName, trackIDs)
-		} else {
-			m.App.ServerManager.Server.EditPlaylistTracks(
-				pls[playlistChoice].ID, trackIDs, nil /*tracksToRemove*/)
+	go func() {
+		pls, err := m.App.ServerManager.Server.GetPlaylists()
+		pls = sharedutil.FilterSlice(pls, func(pl *mediaprovider.Playlist) bool {
+			return pl.Owner == m.App.ServerManager.LoggedInUser
+		})
+		if err != nil {
+			// TODO: surface this error to user
+			log.Printf("error getting user-owned playlists: %s", err.Error())
+			return
 		}
-	}
-	m.haveModal = true
-	pop.Show()
+		plNames := make([]string, 0, len(pls))
+		for _, pl := range pls {
+			plNames = append(plNames, pl.Name)
+		}
+
+		dlg := dialogs.NewAddToPlaylistDialog("Add to Playlist", plNames)
+		pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
+		m.ClosePopUpOnEscape(pop)
+		dlg.OnCanceled = pop.Hide
+		dlg.OnSubmit = func(playlistChoice int, newPlaylistName string) {
+			pop.Hide()
+			m.doModalClosed()
+			if playlistChoice < 0 {
+				go m.App.ServerManager.Server.CreatePlaylist(newPlaylistName, trackIDs)
+			} else {
+				go m.App.ServerManager.Server.EditPlaylistTracks(
+					pls[playlistChoice].ID, trackIDs, nil /*tracksToRemove*/)
+			}
+		}
+		m.haveModal = true
+		pop.Show()
+	}()
 }
 
 func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
@@ -399,7 +403,7 @@ func (c *Controller) doModalClosed() {
 }
 
 func (c *Controller) SetTrackFavorites(trackIDs []string, favorite bool) {
-	c.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
+	go c.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
 		TrackIDs: trackIDs,
 	}, favorite)
 
@@ -409,7 +413,7 @@ func (c *Controller) SetTrackFavorites(trackIDs []string, favorite bool) {
 }
 
 func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
-	c.App.ServerManager.Server.SetRating(mediaprovider.RatingFavoriteParameters{
+	go c.App.ServerManager.Server.SetRating(mediaprovider.RatingFavoriteParameters{
 		TrackIDs: trackIDs,
 	}, rating)
 

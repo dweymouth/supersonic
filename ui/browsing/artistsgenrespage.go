@@ -4,7 +4,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -25,7 +24,7 @@ type ArtistsGenresPage struct {
 
 	isGenresPage bool
 	contr        *controller.Controller
-	sm           *backend.ServerManager
+	mp           mediaprovider.MediaProvider
 	model        []widgets.ArtistGenreListItemModel
 	list         *widgets.ArtistGenreList
 
@@ -34,11 +33,11 @@ type ArtistsGenresPage struct {
 	searcher  *widgets.SearchEntry
 }
 
-func NewArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *backend.ServerManager) *ArtistsGenresPage {
-	return newArtistsGenresPage(isGenresPage, contr, sm, "")
+func NewArtistsGenresPage(isGenresPage bool, contr *controller.Controller, mp mediaprovider.MediaProvider) *ArtistsGenresPage {
+	return newArtistsGenresPage(isGenresPage, contr, mp, "")
 }
 
-func newArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *backend.ServerManager, searchText string) *ArtistsGenresPage {
+func newArtistsGenresPage(isGenresPage bool, contr *controller.Controller, mp mediaprovider.MediaProvider, searchText string) *ArtistsGenresPage {
 	title := "Artists"
 	if isGenresPage {
 		title = "Genres"
@@ -46,7 +45,7 @@ func newArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *b
 	a := &ArtistsGenresPage{
 		isGenresPage: isGenresPage,
 		contr:        contr,
-		sm:           sm,
+		mp:           mp,
 		titleDisp:    widget.NewRichTextWithText(title),
 	}
 	a.ExtendBaseWidget(a)
@@ -72,13 +71,13 @@ func newArtistsGenresPage(isGenresPage bool, contr *controller.Controller, sm *b
 // should be called asynchronously
 func (a *ArtistsGenresPage) load(searchOnLoad bool) {
 	if a.isGenresPage {
-		genres, err := a.sm.Server.GetGenres()
+		genres, err := a.mp.GetGenres()
 		if err != nil {
 			log.Printf("error loading genres: %v", err.Error())
 		}
 		a.model = a.buildGenresListModel(genres)
 	} else {
-		artists, err := a.sm.Server.GetArtists()
+		artists, err := a.mp.GetArtists()
 		if err != nil {
 			log.Printf("error loading artists: %v", err.Error())
 		}
@@ -127,7 +126,7 @@ func (a *ArtistsGenresPage) Save() SavedPage {
 	return &savedArtistsGenresPage{
 		isGenresPage: a.isGenresPage,
 		contr:        a.contr,
-		sm:           a.sm,
+		mp:           a.mp,
 		searchText:   a.searcher.Entry.Text,
 	}
 }
@@ -135,12 +134,12 @@ func (a *ArtistsGenresPage) Save() SavedPage {
 type savedArtistsGenresPage struct {
 	isGenresPage bool
 	contr        *controller.Controller
-	sm           *backend.ServerManager
+	mp           mediaprovider.MediaProvider
 	searchText   string
 }
 
 func (s *savedArtistsGenresPage) Restore() Page {
-	return newArtistsGenresPage(s.isGenresPage, s.contr, s.sm, s.searchText)
+	return newArtistsGenresPage(s.isGenresPage, s.contr, s.mp, s.searchText)
 }
 
 func (a *ArtistsGenresPage) buildArtistListModel(artists []*mediaprovider.Artist) []widgets.ArtistGenreListItemModel {

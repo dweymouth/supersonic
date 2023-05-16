@@ -11,7 +11,7 @@ func (s *subsonicMediaProvider) IterateTracks(searchQuery string) mediaprovider.
 	if searchQuery == "" {
 		return &allTracksIterator{
 			s:         s,
-			albumIter: s.IterateAlbums(AlbumSortArtistAZ, "", mediaprovider.AlbumFilter{}),
+			albumIter: s.IterateAlbums(AlbumSortArtistAZ, mediaprovider.AlbumFilter{}),
 		}
 	}
 	return &searchTracksIterator{

@@ -608,11 +608,11 @@ func (t *TrackRow) Update(tr *mediaprovider.Track, rowNum int) {
 
 	// Render favorite column
 	if tr.Favorite {
-		t.isFavorite = false
-		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.NotFavoriteIcon
-	} else {
 		t.isFavorite = true
 		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.FavoriteIcon
+	} else {
+		t.isFavorite = false
+		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.NotFavoriteIcon
 	}
 
 	t.rating.Rating = tr.Rating

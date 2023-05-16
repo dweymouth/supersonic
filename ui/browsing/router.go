@@ -32,21 +32,21 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	case controller.Albums:
 		return NewAlbumsPage(&r.App.Config.AlbumsPage, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager)
 	case controller.Artist:
-		return NewArtistPage(rte.Arg, &r.App.Config.ArtistPage, r.App.PlaybackManager, r.App.ServerManager, r.App.ImageManager, r.Controller)
+		return NewArtistPage(rte.Arg, &r.App.Config.ArtistPage, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager, r.Controller)
 	case controller.Artists:
-		return NewArtistsGenresPage(false, r.Controller, r.App.ServerManager)
+		return NewArtistsGenresPage(false, r.Controller, r.App.ServerManager.Server)
 	case controller.Favorites:
-		return NewFavoritesPage(&r.App.Config.FavoritesPage, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager)
+		return NewFavoritesPage(&r.App.Config.FavoritesPage, r.Controller, r.App.ServerManager.Server, r.App.PlaybackManager, r.App.ImageManager)
 	case controller.Genre:
 		return NewGenrePage(rte.Arg, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager)
 	case controller.Genres:
-		return NewArtistsGenresPage(true, r.Controller, r.App.ServerManager)
+		return NewArtistsGenresPage(true, r.Controller, r.App.ServerManager.Server)
 	case controller.NowPlaying:
-		return NewNowPlayingPage(rte.Arg, r.Controller, &r.App.Config.NowPlayingPage, r.App.ServerManager, r.App.PlaybackManager)
+		return NewNowPlayingPage(rte.Arg, r.Controller, &r.App.Config.NowPlayingPage, r.App.PlaybackManager)
 	case controller.Playlist:
 		return NewPlaylistPage(rte.Arg, &r.App.Config.PlaylistPage, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager)
 	case controller.Playlists:
-		return NewPlaylistsPage(r.Controller, &r.App.Config.PlaylistsPage, r.App.ServerManager)
+		return NewPlaylistsPage(r.Controller, &r.App.Config.PlaylistsPage, r.App.ServerManager.Server)
 	case controller.Tracks:
 		return NewTracksPage(r.Controller, &r.App.Config.TracksPage, r.App.ServerManager.Server)
 	}

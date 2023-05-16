@@ -26,7 +26,7 @@ type PlaylistsPage struct {
 
 	cfg               *backend.PlaylistsPageConfig
 	contr             *controller.Controller
-	sm                *backend.ServerManager
+	mp                mediaprovider.MediaProvider
 	playlists         []*mediaprovider.Playlist
 	searchedPlaylists []*mediaprovider.Playlist
 
@@ -38,18 +38,18 @@ type PlaylistsPage struct {
 	gridView   *widgets.GridView
 }
 
-func NewPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, sm *backend.ServerManager) *PlaylistsPage {
+func NewPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider) *PlaylistsPage {
 	activeView := 0
 	if cfg.InitialView == "Grid" {
 		activeView = 1
 	}
-	return newPlaylistsPage(contr, cfg, sm, "", activeView)
+	return newPlaylistsPage(contr, cfg, mp, "", activeView)
 }
 
-func newPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, sm *backend.ServerManager, searchText string, activeView int) *PlaylistsPage {
+func newPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider, searchText string, activeView int) *PlaylistsPage {
 	a := &PlaylistsPage{
 		cfg:       cfg,
-		sm:        sm,
+		mp:        mp,
 		contr:     contr,
 		titleDisp: widget.NewRichTextWithText("Playlists"),
 	}
@@ -75,7 +75,7 @@ func newPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageCo
 }
 
 func (a *PlaylistsPage) load(searchOnLoad bool) {
-	playlists, err := a.sm.Server.GetPlaylists()
+	playlists, err := a.mp.GetPlaylists()
 	if err != nil {
 		log.Printf("error loading playlists: %v", err.Error())
 	}
@@ -213,7 +213,7 @@ func (a *PlaylistsPage) Save() SavedPage {
 	return &savedPlaylistsPage{
 		contr:      a.contr,
 		cfg:        a.cfg,
-		sm:         a.sm,
+		mp:         a.mp,
 		searchText: a.searcher.Entry.Text,
 		activeView: a.viewToggle.ActivatedButtonIndex(),
 	}
@@ -222,13 +222,13 @@ func (a *PlaylistsPage) Save() SavedPage {
 type savedPlaylistsPage struct {
 	contr      *controller.Controller
 	cfg        *backend.PlaylistsPageConfig
-	sm         *backend.ServerManager
+	mp         mediaprovider.MediaProvider
 	searchText string
 	activeView int
 }
 
 func (s *savedPlaylistsPage) Restore() Page {
-	return newPlaylistsPage(s.contr, s.cfg, s.sm, s.searchText, s.activeView)
+	return newPlaylistsPage(s.contr, s.cfg, s.mp, s.searchText, s.activeView)
 }
 
 func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {

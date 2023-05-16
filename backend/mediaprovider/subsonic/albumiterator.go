@@ -10,6 +10,30 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
+const (
+	AlbumSortRecentlyAdded    string = "Recently Added"
+	AlbumSortRecentlyPlayed   string = "Recently Played"
+	AlbumSortFrequentlyPlayed string = "Frequently Played"
+	AlbumSortRandom           string = "Random"
+	AlbumSortTitleAZ          string = "Title (A-Z)"
+	AlbumSortArtistAZ         string = "Artist (A-Z)"
+	AlbumSortYearAscending    string = "Year (ascending)"
+	AlbumSortYearDescending   string = "Year (descending)"
+)
+
+func (s *subsonicMediaProvider) AlbumSortOrders() []string {
+	return []string{
+		AlbumSortRecentlyAdded,
+		AlbumSortRecentlyPlayed,
+		AlbumSortFrequentlyPlayed,
+		AlbumSortRandom,
+		AlbumSortTitleAZ,
+		AlbumSortArtistAZ,
+		AlbumSortYearAscending,
+		AlbumSortYearDescending,
+	}
+}
+
 func filterMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3) bool {
 	if album == nil {
 		return false
@@ -34,15 +58,7 @@ func filterMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3) bool {
 	return false
 }
 
-func filterIsEmpty(f mediaprovider.AlbumFilter) bool {
-	return !f.ExcludeFavorited && !f.ExcludeUnfavorited &&
-		f.MinYear == 0 && f.MaxYear == 0 && len(f.Genres) == 0
-}
-
-func (s *subsonicMediaProvider) IterateAlbums(sortOrder, searchQuery string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
-	if searchQuery != "" {
-		return s.newSearchIter(searchQuery, filter)
-	}
+func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
 	if sortOrder == "" && len(filter.Genres) == 1 {
 		return s.newBaseIter("byGenre", filter, map[string]string{"genre": filter.Genres[0]})
 	}
@@ -70,6 +86,10 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder, searchQuery string, fil
 		log.Printf("Undefined album sort order: %s", sortOrder)
 		return nil
 	}
+}
+
+func (s *subsonicMediaProvider) SearchAlbums(searchQuery string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
+	return s.newSearchIter(searchQuery, filter)
 }
 
 type baseIter struct {
@@ -217,7 +237,7 @@ func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 		if _, have := s.albumIDset[album.ID]; have {
 			continue
 		}
-		if filterMatches(s.filter, album) {
+		if !filterMatches(s.filter, album) {
 			continue
 		}
 		s.prefetched = append(s.prefetched, album)
@@ -326,27 +346,3 @@ func (r *randomIter) Next() *mediaprovider.Album {
 
 	return nil
 }
-
-/*
-type BatchingIterator struct {
-	iter AlbumIterator
-}
-
-func NewBatchingIterator(iter AlbumIterator) *BatchingIterator {
-	return &BatchingIterator{iter}
-}
-
-func (b *BatchingIterator) NextN(n int) []*subsonic.AlbumID3 {
-	results := make([]*subsonic.AlbumID3, 0, n)
-	i := 0
-	for i < n {
-		album := b.iter.Next()
-		if album == nil {
-			break
-		}
-		results = append(results, album)
-		i++
-	}
-	return results
-}
-*/

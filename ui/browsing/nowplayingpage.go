@@ -27,7 +27,6 @@ type NowPlayingPage struct {
 type nowPlayingPageState struct {
 	contr *controller.Controller
 	conf  *backend.NowPlayingPageConfig
-	sm    *backend.ServerManager
 	pm    *backend.PlaybackManager
 }
 
@@ -35,10 +34,9 @@ func NewNowPlayingPage(
 	highlightedTrackID string,
 	contr *controller.Controller,
 	conf *backend.NowPlayingPageConfig,
-	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 ) *NowPlayingPage {
-	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{contr: contr, conf: conf, sm: sm, pm: pm}}
+	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{contr: contr, conf: conf, pm: pm}}
 	a.ExtendBaseWidget(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
@@ -117,5 +115,5 @@ func (a *NowPlayingPage) load(highlightedTrackID string) {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage("", s.contr, s.conf, s.sm, s.pm)
+	return NewNowPlayingPage("", s.contr, s.conf, s.pm)
 }
