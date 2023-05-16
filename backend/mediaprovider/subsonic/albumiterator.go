@@ -60,28 +60,28 @@ func filterMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3) bool {
 
 func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
 	if sortOrder == "" && len(filter.Genres) == 1 {
-		return s.newBaseIter("byGenre", filter, map[string]string{"genre": filter.Genres[0]})
+		return s.newBaseIter("byGenre", filter, s.prefetchCoverCB, map[string]string{"genre": filter.Genres[0]})
 	}
 	if sortOrder == "" && filter.ExcludeUnfavorited {
-		return s.newBaseIter("starred", filter, make(map[string]string))
+		return s.newBaseIter("starred", filter, s.prefetchCoverCB, make(map[string]string))
 	}
 	switch sortOrder {
 	case AlbumSortRecentlyAdded:
-		return s.newBaseIter("newest", filter, make(map[string]string))
+		return s.newBaseIter("newest", filter, s.prefetchCoverCB, make(map[string]string))
 	case AlbumSortRecentlyPlayed:
-		return s.newBaseIter("recent", filter, make(map[string]string))
+		return s.newBaseIter("recent", filter, s.prefetchCoverCB, make(map[string]string))
 	case AlbumSortFrequentlyPlayed:
-		return s.newBaseIter("frequent", filter, make(map[string]string))
+		return s.newBaseIter("frequent", filter, s.prefetchCoverCB, make(map[string]string))
 	case AlbumSortRandom:
-		return s.newRandomIter()
+		return s.newRandomIter(filter, s.prefetchCoverCB)
 	case AlbumSortTitleAZ:
-		return s.newBaseIter("alphabeticalByName", filter, make(map[string]string))
+		return s.newBaseIter("alphabeticalByName", filter, s.prefetchCoverCB, make(map[string]string))
 	case AlbumSortArtistAZ:
-		return s.newBaseIter("alphabeticalByArtist", filter, make(map[string]string))
+		return s.newBaseIter("alphabeticalByArtist", filter, s.prefetchCoverCB, make(map[string]string))
 	case AlbumSortYearAscending:
-		return s.newBaseIter("byYear", filter, map[string]string{"fromYear": "0", "toYear": "3000"})
+		return s.newBaseIter("byYear", filter, s.prefetchCoverCB, map[string]string{"fromYear": "0", "toYear": "3000"})
 	case AlbumSortYearDescending:
-		return s.newBaseIter("byYear", filter, map[string]string{"fromYear": "3000", "toYear": "0"})
+		return s.newBaseIter("byYear", filter, s.prefetchCoverCB, map[string]string{"fromYear": "3000", "toYear": "0"})
 	default:
 		log.Printf("Undefined album sort order: %s", sortOrder)
 		return nil
@@ -89,12 +89,13 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 }
 
 func (s *subsonicMediaProvider) SearchAlbums(searchQuery string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
-	return s.newSearchIter(searchQuery, filter)
+	return s.newSearchIter(searchQuery, filter, s.prefetchCoverCB)
 }
 
 type baseIter struct {
 	listType      string
 	filter        mediaprovider.AlbumFilter
+	prefetchCB    func(string)
 	serverPos     int
 	s             *subsonic.Client
 	opts          map[string]string
@@ -103,12 +104,13 @@ type baseIter struct {
 	done          bool
 }
 
-func (s *subsonicMediaProvider) newBaseIter(listType string, filter mediaprovider.AlbumFilter, opts map[string]string) *baseIter {
+func (s *subsonicMediaProvider) newBaseIter(listType string, filter mediaprovider.AlbumFilter, cb func(string), opts map[string]string) *baseIter {
 	return &baseIter{
-		listType: listType,
-		filter:   filter,
-		s:        s.client,
-		opts:     opts,
+		prefetchCB: cb,
+		listType:   listType,
+		filter:     filter,
+		s:          s.client,
+		opts:       opts,
 	}
 }
 
@@ -141,20 +143,18 @@ func (r *baseIter) Next() *mediaprovider.Album {
 		}
 	}
 	r.prefetchedPos = 1
-	/*
-		if r.l.PreCacheCoverFn != nil {
-			for _, album := range r.prefetched {
-				go r.l.PreCacheCoverFn(album.CoverArt)
-			}
+	if r.prefetchCB != nil {
+		for _, album := range r.prefetched {
+			go r.prefetchCB(album.CoverArtID)
 		}
-	*/
-
+	}
 	return r.prefetched[0]
 }
 
 type searchIter struct {
 	searchIterBase
 
+	prefetchCB    func(string)
 	filter        mediaprovider.AlbumFilter
 	prefetched    []*subsonic.AlbumID3
 	prefetchedPos int
@@ -162,12 +162,13 @@ type searchIter struct {
 	done          bool
 }
 
-func (s *subsonicMediaProvider) newSearchIter(query string, filter mediaprovider.AlbumFilter) *searchIter {
+func (s *subsonicMediaProvider) newSearchIter(query string, filter mediaprovider.AlbumFilter, cb func(string)) *searchIter {
 	return &searchIter{
 		searchIterBase: searchIterBase{
 			query: query,
 			s:     s.client,
 		},
+		prefetchCB: cb,
 		filter:     filter,
 		albumIDset: make(map[string]bool),
 	}
@@ -241,16 +242,16 @@ func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 			continue
 		}
 		s.prefetched = append(s.prefetched, album)
-		/*
-			if s.l.PreCacheCoverFn != nil {
-				go s.l.PreCacheCoverFn(album.CoverArt)
-			}
-		*/
+		if s.prefetchCB != nil {
+			go s.prefetchCB(album.CoverArt)
+		}
 		s.albumIDset[album.ID] = true
 	}
 }
 
 type randomIter struct {
+	filter        mediaprovider.AlbumFilter
+	prefetchCB    func(coverArtID string)
 	albumIDSet    map[string]bool
 	s             *subsonic.Client
 	prefetched    []*subsonic.AlbumID3
@@ -266,8 +267,10 @@ type randomIter struct {
 	done     bool
 }
 
-func (s *subsonicMediaProvider) newRandomIter() *randomIter {
+func (s *subsonicMediaProvider) newRandomIter(filter mediaprovider.AlbumFilter, cb func(string)) *randomIter {
 	return &randomIter{
+		filter:     filter,
+		prefetchCB: cb,
 		s:          s.client,
 		albumIDSet: make(map[string]bool),
 	}
@@ -293,13 +296,11 @@ func (r *randomIter) Next() *mediaprovider.Album {
 				}
 				r.offset += len(albums)
 				for _, album := range albums {
-					if _, ok := r.albumIDSet[album.ID]; !ok {
+					if _, ok := r.albumIDSet[album.ID]; !ok && filterMatches(r.filter, album) {
 						r.prefetched = append(r.prefetched, album)
-						/*
-							if r.l.PreCacheCoverFn != nil {
-								go r.l.PreCacheCoverFn(album.CoverArt)
-							}
-						*/
+						if r.prefetchCB != nil {
+							go r.prefetchCB(album.CoverArt)
+						}
 						r.albumIDSet[album.ID] = true
 					}
 				}
@@ -315,14 +316,12 @@ func (r *randomIter) Next() *mediaprovider.Album {
 			}
 			var hitCount int
 			for _, album := range albums {
-				if _, ok := r.albumIDSet[album.ID]; !ok {
+				if _, ok := r.albumIDSet[album.ID]; !ok && filterMatches(r.filter, album) {
 					hitCount++
 					r.prefetched = append(r.prefetched, album)
-					/*
-						if r.l.PreCacheCoverFn != nil {
-							go r.l.PreCacheCoverFn(album.CoverArt)
-						}
-					*/
+					if r.prefetchCB != nil {
+						go r.prefetchCB(album.CoverArt)
+					}
 					r.albumIDSet[album.ID] = true
 				}
 			}

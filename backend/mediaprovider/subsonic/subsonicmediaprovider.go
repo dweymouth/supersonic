@@ -13,11 +13,16 @@ import (
 )
 
 type subsonicMediaProvider struct {
-	client *subsonic.Client
+	client          *subsonic.Client
+	prefetchCoverCB func(coverArtID string)
 }
 
 func SubsonicMediaProvider(subsonicClient *subsonic.Client) mediaprovider.MediaProvider {
 	return &subsonicMediaProvider{client: subsonicClient}
+}
+
+func (s *subsonicMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID string)) {
+	s.prefetchCoverCB = cb
 }
 
 func (s *subsonicMediaProvider) CreatePlaylist(name string, trackIDs []string) error {

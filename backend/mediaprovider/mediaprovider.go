@@ -32,6 +32,8 @@ type Favorites struct {
 }
 
 type MediaProvider interface {
+	SetPrefetchCoverCallback(cb func(coverArtID string))
+
 	GetAlbum(albumID string) (*AlbumWithTracks, error)
 
 	GetArtist(artistID string) (*ArtistWithAlbums, error)

@@ -63,9 +63,9 @@ func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*A
 	a.ServerManager = NewServerManager(appName)
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player, &a.Config.Scrobbling)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, configdir.LocalCache(a.appName))
-	//a.LibraryManager.PreCacheCoverFn = func(coverID string) {
-	//_, _ = a.ImageManager.GetCoverThumbnail(coverID)
-	//}
+	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
+		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
+	})
 
 	return a, nil
 }
