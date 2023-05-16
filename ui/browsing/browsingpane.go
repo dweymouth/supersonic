@@ -82,6 +82,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 			container.NewHBox(b.back, b.forward, b.reload), b.navBtnsContainer,
 			container.NewHBox(layout.NewSpacer(), b.settingsBtn))),
 		nil, nil, nil, b.pageContainer)
+	b.updateHistoryButtons()
 	return b
 }
 
@@ -93,12 +94,14 @@ func (b *BrowsingPane) SetPage(p Page) {
 	oldPage := b.curPage
 	if b.doSetPage(p) && oldPage != nil {
 		b.addPageToHistory(oldPage, true)
+		b.updateHistoryButtons()
 	}
 }
 
 func (b *BrowsingPane) ClearHistory() {
 	b.history = nil
 	b.historyIdx = 0
+	b.updateHistoryButtons()
 }
 
 func (b *BrowsingPane) AddSettingsMenuItem(label string, action func()) {
@@ -184,11 +187,25 @@ func (b *BrowsingPane) addPageToHistory(p Page, truncate bool) {
 	b.historyIdx++
 }
 
+func (b *BrowsingPane) updateHistoryButtons() {
+	if b.historyIdx > 0 {
+		b.back.Enable()
+	} else {
+		b.back.Disable()
+	}
+	if b.historyIdx < len(b.history)-1 {
+		b.forward.Enable()
+	} else {
+		b.forward.Disable()
+	}
+}
+
 func (b *BrowsingPane) GoBack() {
 	if b.historyIdx > 0 {
 		b.addPageToHistory(b.curPage, false)
 		b.historyIdx -= 2
 		b.doSetPage(b.history[b.historyIdx].Restore())
+		b.updateHistoryButtons()
 	}
 }
 
@@ -196,6 +213,7 @@ func (b *BrowsingPane) GoForward() {
 	if b.historyIdx < len(b.history)-1 {
 		b.addPageToHistory(b.curPage, false)
 		b.doSetPage(b.history[b.historyIdx].Restore())
+		b.updateHistoryButtons()
 	}
 }
 
