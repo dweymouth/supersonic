@@ -69,6 +69,11 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 			return color.RGBA{R: 20, G: 20, B: 20, A: 50}
 		}
 		return color.RGBA{R: 200, G: 200, B: 200, A: 240}
+	case theme.ColorNameDisabledButton:
+		if variant == theme.VariantLight {
+			return color.RGBA{R: 205, G: 205, B: 205, A: 240}
+		}
+		return theme.DefaultTheme().Color(theme.ColorNameDisabledButton, variant)
 	case theme.ColorNameInputBackground:
 		if variant == theme.VariantDark {
 			return color.RGBA{R: 20, G: 20, B: 20, A: 50}
