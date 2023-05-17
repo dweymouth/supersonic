@@ -88,13 +88,17 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 
 func (b *BrowsingPane) SetPage(p Page) {
 	if p == nil {
-		b.doSetPage(&blankPage{})
-		return
-	}
-	oldPage := b.curPage
-	if b.doSetPage(p) && oldPage != nil {
-		b.addPageToHistory(oldPage, true)
-		b.updateHistoryButtons()
+		// special case to set a "blank page"
+		// only used on logout, in conjunction with clearing the history
+		b.pageContainer.Objects[1] = layout.NewSpacer()
+		b.curPage = nil
+		b.pageContainer.Refresh()
+	} else {
+		oldPage := b.curPage
+		if b.doSetPage(p) && oldPage != nil {
+			b.addPageToHistory(oldPage, true)
+			b.updateHistoryButtons()
+		}
 	}
 }
 
@@ -225,7 +229,7 @@ func (b *BrowsingPane) Reload() {
 
 func (b *BrowsingPane) CurrentPage() controller.Route {
 	if b.curPage == nil {
-		return controller.Route{Page: controller.Blank}
+		return controller.Route{Page: controller.None}
 	}
 	return b.curPage.Route()
 }
@@ -233,17 +237,3 @@ func (b *BrowsingPane) CurrentPage() controller.Route {
 func (b *BrowsingPane) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(b.container)
 }
-
-type blankPage struct {
-	layout.Spacer
-}
-
-var _ Page = (*blankPage)(nil)
-
-func (p *blankPage) Reload() {}
-
-func (p *blankPage) Route() controller.Route { return controller.Route{Page: controller.Blank} }
-
-func (p *blankPage) Save() SavedPage { return p }
-
-func (p *blankPage) Restore() Page { return p }

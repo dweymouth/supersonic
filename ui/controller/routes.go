@@ -3,7 +3,7 @@ package controller
 type PageName int
 
 const (
-	Blank PageName = iota
+	None PageName = iota // nil case
 	Album
 	Albums
 	Artist
