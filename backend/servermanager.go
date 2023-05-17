@@ -20,14 +20,15 @@ type ServerManager struct {
 
 	prefetchCoverCB   func(string)
 	appName           string
+	config            *Config
 	onServerConnected []func()
 	onLogout          []func()
 }
 
 var ErrUnreachable = errors.New("server is unreachable")
 
-func NewServerManager(appName string) *ServerManager {
-	return &ServerManager{appName: appName}
+func NewServerManager(appName string, config *Config) *ServerManager {
+	return &ServerManager{appName: appName, config: config}
 }
 
 func (s *ServerManager) SetPrefetchAlbumCoverCallback(cb func(string)) {
@@ -46,6 +47,7 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 	s.Server.SetPrefetchCoverCallback(s.prefetchCoverCB)
 	s.LoggedInUser = conf.Username
 	s.ServerID = conf.ID
+	s.config.SetDefaultServer(s.ServerID)
 	for _, cb := range s.onServerConnected {
 		cb()
 	}
@@ -144,8 +146,8 @@ func (s *ServerManager) OnLogout(cb func()) {
 	s.onLogout = append(s.onLogout, cb)
 }
 
-func (s *ServerManager) GetServerPassword(server *ServerConfig) (string, error) {
-	return keyring.Get(s.appName, server.ID.String())
+func (s *ServerManager) GetServerPassword(serverID uuid.UUID) (string, error) {
+	return keyring.Get(s.appName, serverID.String())
 }
 
 func (s *ServerManager) SetServerPassword(server *ServerConfig, password string) error {

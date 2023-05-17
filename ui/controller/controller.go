@@ -250,7 +250,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 }
 
 func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
-	pass, err := c.App.ServerManager.GetServerPassword(server)
+	pass, err := c.App.ServerManager.GetServerPassword(server.ID)
 	if err != nil {
 		log.Printf("error getting password from keyring: %v", err)
 		c.PromptForLoginAndConnect()
@@ -269,7 +269,7 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 func (m *Controller) PromptForLoginAndConnect() {
 	// TODO: this will need to be rewritten a bit when we support multi servers
 	// need to make sure the intended server is first in the list passed to NewLoginDialog
-	d := dialogs.NewLoginDialog(m.App.Config.Servers)
+	d := dialogs.NewLoginDialog(m.App.Config.Servers, m.App.ServerManager.GetServerPassword)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func(server *backend.ServerConfig, password string) {
 		d.DisableSubmit()
@@ -310,6 +310,30 @@ func (m *Controller) PromptForLoginAndConnect() {
 			}()
 		}
 		editPop.Show()
+	}
+	d.OnNewServer = func() {
+		pop.Hide()
+		newD := dialogs.NewAddEditServerDialog("Add server", nil, m.MainWindow.Canvas().Focus)
+		newPop := widget.NewModalPopUp(newD, m.MainWindow.Canvas())
+		newD.OnSubmit = func() {
+			d.DisableSubmit()
+			go func() {
+				if m.testConnectionAndUpdateDialogText(newD) {
+					newPop.Hide()
+					conn := backend.ServerConnection{
+						Hostname:    newD.Host,
+						AltHostname: newD.AltHost,
+						Username:    newD.Username,
+						LegacyAuth:  newD.LegacyAuth,
+					}
+					server := m.App.Config.AddServer(newD.Nickname, conn)
+					m.trySetPasswordAndConnectToServer(server, newD.Password)
+					m.doModalClosed()
+				}
+				d.EnableSubmit()
+			}()
+		}
+		newPop.Show()
 	}
 	m.haveModal = true
 	pop.Show()

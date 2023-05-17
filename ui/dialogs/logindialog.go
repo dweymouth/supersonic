@@ -2,6 +2,7 @@ package dialogs
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/google/uuid"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -10,11 +11,14 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+type PasswordFetchFunc func(serverID uuid.UUID) (string, error)
+
 type LoginDialog struct {
 	widget.BaseWidget
 
 	OnSubmit     func(server *backend.ServerConfig, password string)
 	OnEditServer func(server *backend.ServerConfig)
+	OnNewServer  func()
 
 	servers      []*backend.ServerConfig
 	serverSelect *widget.Select
@@ -27,7 +31,7 @@ type LoginDialog struct {
 
 var _ fyne.Widget = (*LoginDialog)(nil)
 
-func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
+func NewLoginDialog(servers []*backend.ServerConfig, pwFetch PasswordFetchFunc) *LoginDialog {
 	l := &LoginDialog{servers: servers}
 	l.ExtendBaseWidget(l)
 	titleLabel := widget.NewLabel("Login to Server")
@@ -36,9 +40,20 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 	for i, s := range servers {
 		serverNames[i] = s.Nickname
 	}
-	l.serverSelect = widget.NewSelect(serverNames, func(_ string) {})
+	l.serverSelect = widget.NewSelect(serverNames, func(_ string) {
+		if l.passField == nil {
+			return
+		}
+		if pwFetch != nil {
+			if pw, err := pwFetch(servers[l.serverSelect.SelectedIndex()].ID); err == nil {
+				l.passField.SetText(pw)
+				return
+			}
+		}
+	})
 	l.serverSelect.SetSelectedIndex(0)
 	editBtn := widget.NewButtonWithIcon("", theme.DocumentCreateIcon(), l.onEditServer)
+	newBtn := widget.NewButtonWithIcon("", theme.ContentAddIcon(), l.onNewServer)
 	l.passField = widget.NewPasswordEntry()
 	l.passField.OnSubmitted = func(_ string) { l.onSubmit() }
 	l.submitBtn = widget.NewButton("OK", l.onSubmit)
@@ -51,7 +66,7 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel("Server"),
-			container.NewBorder(nil, nil, nil, editBtn, l.serverSelect),
+			container.NewBorder(nil, nil, nil, container.NewHBox(editBtn, newBtn), l.serverSelect),
 			widget.NewLabel("Password"),
 			l.passField),
 		widget.NewSeparator(),
@@ -96,7 +111,7 @@ func (l *LoginDialog) CreateRenderer() fyne.WidgetRenderer {
 
 func (l *LoginDialog) MinSize() fyne.Size {
 	l.ExtendBaseWidget(l)
-	return fyne.NewSize(300, l.container.MinSize().Height)
+	return fyne.NewSize(330, l.container.MinSize().Height)
 }
 
 func (l *LoginDialog) onSubmit() {
@@ -108,5 +123,11 @@ func (l *LoginDialog) onSubmit() {
 func (l *LoginDialog) onEditServer() {
 	if l.OnEditServer != nil {
 		l.OnEditServer(l.servers[l.serverSelect.SelectedIndex()])
+	}
+}
+
+func (l *LoginDialog) onNewServer() {
+	if l.OnNewServer != nil {
+		l.OnNewServer()
 	}
 }
