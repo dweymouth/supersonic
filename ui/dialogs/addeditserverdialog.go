@@ -21,6 +21,7 @@ type AddEditServerDialog struct {
 	Password   string
 	LegacyAuth bool
 	OnSubmit   func()
+	OnCancel   func()
 
 	passField  *widget.Entry
 	submitBtn  *widget.Button
@@ -30,7 +31,7 @@ type AddEditServerDialog struct {
 
 var _ fyne.Widget = (*AddEditServerDialog)(nil)
 
-func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig, focusHandler func(fyne.Focusable)) *AddEditServerDialog {
+func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backend.ServerConfig, focusHandler func(fyne.Focusable)) *AddEditServerDialog {
 	a := &AddEditServerDialog{}
 	a.ExtendBaseWidget(a)
 	if prefillServer != nil {
@@ -57,10 +58,25 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig, f
 	nickField.SetPlaceHolder("My Server")
 	nickField.OnSubmitted = func(_ string) { focusHandler(hostField) }
 	a.submitBtn = widget.NewButton("Enter", a.doSubmit)
+	a.submitBtn.Importance = widget.HighImportance
 	a.promptText = widget.NewRichTextWithText("")
 	a.promptText.Hidden = true
 
 	legacyAuthCheck := widget.NewCheckWithData("Use legacy authentication", binding.BindBool(&a.LegacyAuth))
+
+	var bottomRow *fyne.Container
+	if cancelable {
+		bottomRow = container.NewHBox(
+			a.promptText,
+			layout.NewSpacer(),
+			widget.NewButton("Cancel", a.onCancel),
+			a.submitBtn)
+	} else {
+		bottomRow = container.NewHBox(
+			a.promptText,
+			layout.NewSpacer(),
+			a.submitBtn)
+	}
 
 	a.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
@@ -78,10 +94,7 @@ func NewAddEditServerDialog(title string, prefillServer *backend.ServerConfig, f
 		),
 		container.NewHBox(layout.NewSpacer(), legacyAuthCheck),
 		widget.NewSeparator(),
-		container.NewHBox(
-			a.promptText,
-			layout.NewSpacer(),
-			a.submitBtn),
+		bottomRow,
 	)
 	return a
 }
@@ -108,6 +121,12 @@ func (a *AddEditServerDialog) doSubmit() {
 	a.Password = a.passField.Text
 	if a.OnSubmit != nil {
 		a.OnSubmit()
+	}
+}
+
+func (a *AddEditServerDialog) onCancel() {
+	if a.OnCancel != nil {
+		a.OnCancel()
 	}
 }
 

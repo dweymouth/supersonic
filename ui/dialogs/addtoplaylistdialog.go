@@ -48,6 +48,7 @@ func NewAddToPlaylistDialog(title string, existingPlaylistNames []string) *AddTo
 	a.newPlaylistLabel.Hidden = true
 
 	a.okBtn = widget.NewButton("OK", a.onOK)
+	a.okBtn.Importance = widget.HighImportance
 	a.okBtn.Disable()
 	cancelBtn := widget.NewButton("Cancel", a.onCancel)
 

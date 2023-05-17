@@ -44,6 +44,7 @@ func NewEditPlaylistDialog(playlist *mediaprovider.Playlist) *EditPlaylistDialog
 			e.OnUpdateMetadata()
 		}
 	})
+	submitBtn.Importance = widget.HighImportance
 	cancelBtn := widget.NewButton("Cancel", func() {
 		if e.OnCanceled != nil {
 			e.OnCanceled()

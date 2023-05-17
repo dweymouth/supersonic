@@ -12,6 +12,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/player"
 	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/google/uuid"
 
 	"github.com/20after4/configdir"
 	"github.com/zalando/go-keyring"
@@ -147,6 +148,12 @@ func (a *App) LoginToDefaultServer(string) error {
 		return fmt.Errorf("error reading keyring credentials: %v", err)
 	}
 	return a.ServerManager.ConnectToServer(serverCfg, pass)
+}
+
+func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
+	path := path.Join(configdir.LocalCache(a.appName), serverID.String())
+	log.Printf("Deleting server cache dir: %s", path)
+	return os.RemoveAll(path)
 }
 
 func (a *App) Shutdown() {
