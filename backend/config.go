@@ -183,52 +183,6 @@ func ReadConfigFile(filepath, appVersionTag string) (*Config, error) {
 	return c, nil
 }
 
-func (c *Config) GetDefaultServer() *ServerConfig {
-	for _, s := range c.Servers {
-		if s.Default {
-			return s
-		}
-	}
-	if len(c.Servers) > 0 {
-		return c.Servers[0]
-	}
-	return nil
-}
-
-func (c *Config) SetDefaultServer(serverID uuid.UUID) {
-	var found bool
-	for _, s := range c.Servers {
-		f := s.ID == serverID
-		if f {
-			found = true
-		}
-		s.Default = f
-	}
-	if !found && len(c.Servers) > 0 {
-		c.Servers[0].Default = true
-	}
-}
-
-func (c *Config) AddServer(nickname string, connection ServerConnection) *ServerConfig {
-	s := &ServerConfig{
-		ID:               uuid.New(),
-		Nickname:         nickname,
-		ServerConnection: connection,
-	}
-	c.Servers = append(c.Servers, s)
-	return s
-}
-
-func (c *Config) DeleteServer(uuid uuid.UUID) {
-	newServers := make([]*ServerConfig, 0, len(c.Servers)-1)
-	for _, s := range c.Servers {
-		if s.ID != uuid {
-			newServers = append(newServers, s)
-		}
-	}
-	c.Servers = newServers
-}
-
 func (c *Config) WriteConfigFile(filepath string) error {
 	b, err := toml.Marshal(c)
 	if err != nil {
