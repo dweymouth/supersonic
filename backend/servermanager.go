@@ -47,7 +47,7 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 	s.Server.SetPrefetchCoverCallback(s.prefetchCoverCB)
 	s.LoggedInUser = conf.Username
 	s.ServerID = conf.ID
-	s.config.SetDefaultServer(s.ServerID)
+	s.SetDefaultServer(s.ServerID)
 	for _, cb := range s.onServerConnected {
 		cb()
 	}

@@ -139,7 +139,7 @@ func (a *App) setupMPV() error {
 }
 
 func (a *App) LoginToDefaultServer(string) error {
-	serverCfg := a.Config.GetDefaultServer()
+	serverCfg := a.ServerManager.GetDefaultServer()
 	if serverCfg == nil {
 		return ErrNoServers
 	}
