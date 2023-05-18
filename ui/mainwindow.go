@@ -113,7 +113,8 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 		m.BrowsingPane.ClearHistory()
 		m.Controller.PromptForLoginAndConnect()
 	})
-	m.BrowsingPane.AddSettingsMenuItem("Log Out", app.ServerManager.Logout)
+	m.BrowsingPane.AddSettingsMenuItem("Log Out", func() { app.ServerManager.Logout(true) })
+	m.BrowsingPane.AddSettingsMenuItem("Switch Servers", func() { app.ServerManager.Logout(false) })
 	m.BrowsingPane.AddSettingsMenuItem("Check for Updates", func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {

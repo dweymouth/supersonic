@@ -3,6 +3,7 @@ package backend
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -14,6 +15,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"github.com/20after4/configdir"
+	"github.com/google/uuid"
 )
 
 const CachedImageValidTime = 24 * time.Hour
@@ -74,6 +76,9 @@ func (i *ImageManager) GetFullSizeCoverArt(coverID string) (image.Image, error) 
 	if i.cachedFullSizeCoverID == coverID {
 		return i.cachedFullSizeCover, nil
 	}
+	if i.s.Server == nil {
+		return nil, errors.New("logged out")
+	}
 	im, err := i.s.Server.GetCoverArt(coverID, 0)
 	if err != nil {
 		return nil, err
@@ -105,6 +110,11 @@ func (i *ImageManager) RefreshCachedArtistImageIfExpired(artistID string, imgURL
 }
 
 func (i *ImageManager) ensureCoverCacheDir() string {
+	// if user logged out with pending fetches in progress,
+	// make sure we don't write to nil (00000000-*0) cache directory
+	if i.s.ServerID == uuid.Nil {
+		return ""
+	}
 	path := path.Join(i.baseCacheDir, i.s.ServerID.String(), "covers")
 	configdir.MakePath(path)
 	return path
@@ -145,6 +155,9 @@ func (i *ImageManager) fetchAndCacheCoverFromDiskOrServer(coverID string, ttl ti
 }
 
 func (i *ImageManager) fetchAndCacheCoverFromServer(coverID string, ttl time.Duration) (image.Image, error) {
+	if i.s.Server == nil {
+		return nil, errors.New("logged out")
+	}
 	img, err := i.s.Server.GetCoverArt(coverID, coverArtThumbnailSize)
 	if err != nil {
 		return nil, err

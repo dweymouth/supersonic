@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"image"
 	"log"
 	"time"
@@ -140,7 +141,7 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 }
 
 func (m *Controller) PromptForFirstServer() {
-	d := dialogs.NewAddEditServerDialog("Connect to Server", nil, m.MainWindow.Canvas().Focus)
+	d := dialogs.NewAddEditServerDialog("Connect to Server", false, nil, m.MainWindow.Canvas().Focus)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func() {
 		d.DisableSubmit()
@@ -155,7 +156,7 @@ func (m *Controller) PromptForFirstServer() {
 					Username:    d.Username,
 					LegacyAuth:  d.LegacyAuth,
 				}
-				server := m.App.Config.AddServer(d.Nickname, conn)
+				server := m.App.ServerManager.AddServer(d.Nickname, conn)
 				if err := m.trySetPasswordAndConnectToServer(server, d.Password); err != nil {
 					log.Printf("error connecting to server: %s", err.Error())
 				}
@@ -250,7 +251,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 }
 
 func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
-	pass, err := c.App.ServerManager.GetServerPassword(server)
+	pass, err := c.App.ServerManager.GetServerPassword(server.ID)
 	if err != nil {
 		log.Printf("error getting password from keyring: %v", err)
 		c.PromptForLoginAndConnect()
@@ -269,7 +270,7 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 func (m *Controller) PromptForLoginAndConnect() {
 	// TODO: this will need to be rewritten a bit when we support multi servers
 	// need to make sure the intended server is first in the list passed to NewLoginDialog
-	d := dialogs.NewLoginDialog(m.App.Config.Servers)
+	d := dialogs.NewLoginDialog(m.App.Config.Servers, m.App.ServerManager.GetServerPassword)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func(server *backend.ServerConfig, password string) {
 		d.DisableSubmit()
@@ -290,7 +291,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 	}
 	d.OnEditServer = func(server *backend.ServerConfig) {
 		pop.Hide()
-		editD := dialogs.NewAddEditServerDialog("Edit server", server, m.MainWindow.Canvas().Focus)
+		editD := dialogs.NewAddEditServerDialog("Edit server", true, server, m.MainWindow.Canvas().Focus)
 		editPop := widget.NewModalPopUp(editD, m.MainWindow.Canvas())
 		editD.OnSubmit = func() {
 			d.DisableSubmit()
@@ -309,7 +310,58 @@ func (m *Controller) PromptForLoginAndConnect() {
 				d.EnableSubmit()
 			}()
 		}
+		editD.OnCancel = func() {
+			editPop.Hide()
+			pop.Show()
+		}
 		editPop.Show()
+	}
+	d.OnNewServer = func() {
+		pop.Hide()
+		newD := dialogs.NewAddEditServerDialog("Add server", true, nil, m.MainWindow.Canvas().Focus)
+		newPop := widget.NewModalPopUp(newD, m.MainWindow.Canvas())
+		newD.OnSubmit = func() {
+			d.DisableSubmit()
+			go func() {
+				if m.testConnectionAndUpdateDialogText(newD) {
+					// connection is good
+					newPop.Hide()
+					conn := backend.ServerConnection{
+						Hostname:    newD.Host,
+						AltHostname: newD.AltHost,
+						Username:    newD.Username,
+						LegacyAuth:  newD.LegacyAuth,
+					}
+					server := m.App.ServerManager.AddServer(newD.Nickname, conn)
+					m.trySetPasswordAndConnectToServer(server, newD.Password)
+					m.doModalClosed()
+				}
+				d.EnableSubmit()
+			}()
+		}
+		newD.OnCancel = func() {
+			newPop.Hide()
+			pop.Show()
+		}
+		newPop.Show()
+	}
+	d.OnDeleteServer = func(server *backend.ServerConfig) {
+		pop.Hide()
+		dialog.ShowConfirm("Confirm delete server",
+			fmt.Sprintf("Are you sure you want to delete the server %q?", server.Nickname),
+			func(ok bool) {
+				if ok {
+					m.App.ServerManager.DeleteServer(server.ID)
+					m.App.DeleteServerCacheDir(server.ID)
+					d.SetServers(m.App.Config.Servers)
+				}
+				if len(m.App.Config.Servers) == 0 {
+					m.PromptForFirstServer()
+				} else {
+					pop.Show()
+				}
+			}, m.MainWindow)
+
 	}
 	m.haveModal = true
 	pop.Show()

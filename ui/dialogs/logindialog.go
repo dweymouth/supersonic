@@ -2,6 +2,8 @@ package dialogs
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/google/uuid"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -10,13 +12,18 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+type PasswordFetchFunc func(serverID uuid.UUID) (string, error)
+
 type LoginDialog struct {
 	widget.BaseWidget
 
-	OnSubmit     func(server *backend.ServerConfig, password string)
-	OnEditServer func(server *backend.ServerConfig)
+	OnSubmit       func(server *backend.ServerConfig, password string)
+	OnEditServer   func(server *backend.ServerConfig)
+	OnDeleteServer func(server *backend.ServerConfig)
+	OnNewServer    func()
 
-	servers      []*backend.ServerConfig
+	servers []*backend.ServerConfig
+
 	serverSelect *widget.Select
 	passField    *widget.Entry
 	promptText   *widget.RichText
@@ -27,22 +34,31 @@ type LoginDialog struct {
 
 var _ fyne.Widget = (*LoginDialog)(nil)
 
-func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
+func NewLoginDialog(servers []*backend.ServerConfig, pwFetch PasswordFetchFunc) *LoginDialog {
 	l := &LoginDialog{servers: servers}
 	l.ExtendBaseWidget(l)
 	titleLabel := widget.NewLabel("Login to Server")
 	titleLabel.TextStyle.Bold = true
-	serverNames := make([]string, len(servers))
-	for i, s := range servers {
-		serverNames[i] = s.Nickname
-	}
-	l.serverSelect = widget.NewSelect(serverNames, func(_ string) {})
-	l.serverSelect.SetSelectedIndex(0)
-	editBtn := widget.NewButtonWithIcon("", theme.DocumentCreateIcon(), l.onEditServer)
 	l.passField = widget.NewPasswordEntry()
 	l.passField.OnSubmitted = func(_ string) { l.onSubmit() }
-	l.submitBtn = widget.NewButton("OK", l.onSubmit)
 
+	serverNames := sharedutil.MapSlice(servers, func(s *backend.ServerConfig) string { return s.Nickname })
+	l.serverSelect = widget.NewSelect(serverNames, func(_ string) {
+		if pwFetch != nil {
+			if pw, err := pwFetch(servers[l.serverSelect.SelectedIndex()].ID); err == nil {
+				l.passField.SetText(pw)
+				return
+			}
+		}
+		l.passField.SetText("")
+	})
+	l.serverSelect.SetSelectedIndex(0)
+
+	editBtn := widget.NewButtonWithIcon("", theme.DocumentCreateIcon(), l.onEditServer)
+	newBtn := widget.NewButtonWithIcon("", theme.ContentAddIcon(), l.onNewServer)
+	deleteBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() { l.onDeleteServer(l.serverSelect.SelectedIndex()) })
+	l.submitBtn = widget.NewButton("OK", l.onSubmit)
+	l.submitBtn.Importance = widget.HighImportance
 	l.promptText = widget.NewRichTextWithText("")
 	l.promptText.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameError
 	l.promptText.Hidden = true
@@ -51,7 +67,7 @@ func NewLoginDialog(servers []*backend.ServerConfig) *LoginDialog {
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel("Server"),
-			container.NewBorder(nil, nil, nil, editBtn, l.serverSelect),
+			container.NewBorder(nil, nil, nil, container.NewHBox(editBtn, newBtn, deleteBtn), l.serverSelect),
 			widget.NewLabel("Password"),
 			l.passField),
 		widget.NewSeparator(),
@@ -66,6 +82,14 @@ func (l *LoginDialog) SetInfoText(text string) {
 
 func (l *LoginDialog) SetErrorText(text string) {
 	l.doSetPromptText(text, theme.ColorNameError)
+}
+
+func (l *LoginDialog) SetServers(servers []*backend.ServerConfig) {
+	l.servers = servers
+	l.serverSelect.Options = sharedutil.MapSlice(servers, func(s *backend.ServerConfig) string { return s.Nickname })
+	if len(servers) > 0 {
+		l.serverSelect.SetSelectedIndex(0)
+	}
 }
 
 func (l *LoginDialog) EnableSubmit() {
@@ -96,7 +120,7 @@ func (l *LoginDialog) CreateRenderer() fyne.WidgetRenderer {
 
 func (l *LoginDialog) MinSize() fyne.Size {
 	l.ExtendBaseWidget(l)
-	return fyne.NewSize(300, l.container.MinSize().Height)
+	return fyne.NewSize(375, l.container.MinSize().Height)
 }
 
 func (l *LoginDialog) onSubmit() {
@@ -108,5 +132,17 @@ func (l *LoginDialog) onSubmit() {
 func (l *LoginDialog) onEditServer() {
 	if l.OnEditServer != nil {
 		l.OnEditServer(l.servers[l.serverSelect.SelectedIndex()])
+	}
+}
+
+func (l *LoginDialog) onNewServer() {
+	if l.OnNewServer != nil {
+		l.OnNewServer()
+	}
+}
+
+func (l *LoginDialog) onDeleteServer(idx int) {
+	if l.OnDeleteServer != nil {
+		l.OnDeleteServer(l.servers[idx])
 	}
 }
