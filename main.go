@@ -48,7 +48,7 @@ func main() {
 		if runtime.GOOS == "linux" {
 			time.Sleep(250 * time.Millisecond)
 		}
-		defaultServer := myApp.Config.GetDefaultServer()
+		defaultServer := myApp.ServerManager.GetDefaultServer()
 		if defaultServer == nil {
 			mainWindow.Controller.PromptForFirstServer()
 		} else {

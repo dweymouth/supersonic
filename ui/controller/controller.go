@@ -156,7 +156,7 @@ func (m *Controller) PromptForFirstServer() {
 					Username:    d.Username,
 					LegacyAuth:  d.LegacyAuth,
 				}
-				server := m.App.Config.AddServer(d.Nickname, conn)
+				server := m.App.ServerManager.AddServer(d.Nickname, conn)
 				if err := m.trySetPasswordAndConnectToServer(server, d.Password); err != nil {
 					log.Printf("error connecting to server: %s", err.Error())
 				}
@@ -332,7 +332,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 						Username:    newD.Username,
 						LegacyAuth:  newD.LegacyAuth,
 					}
-					server := m.App.Config.AddServer(newD.Nickname, conn)
+					server := m.App.ServerManager.AddServer(newD.Nickname, conn)
 					m.trySetPasswordAndConnectToServer(server, newD.Password)
 					m.doModalClosed()
 				}
@@ -351,7 +351,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 			fmt.Sprintf("Are you sure you want to delete the server %q?", server.Nickname),
 			func(ok bool) {
 				if ok {
-					m.App.Config.DeleteServer(server.ID)
+					m.App.ServerManager.DeleteServer(server.ID)
 					m.App.DeleteServerCacheDir(server.ID)
 					d.SetServers(m.App.Config.Servers)
 				}

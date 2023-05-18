@@ -73,6 +73,89 @@ func (s *ServerManager) TestConnectionAndAuth(
 	}
 }
 
+func (s *ServerManager) GetDefaultServer() *ServerConfig {
+	for _, s := range s.config.Servers {
+		if s.Default {
+			return s
+		}
+	}
+	if len(s.config.Servers) > 0 {
+		return s.config.Servers[0]
+	}
+	return nil
+}
+
+func (s *ServerManager) SetDefaultServer(serverID uuid.UUID) {
+	var found bool
+	for _, s := range s.config.Servers {
+		f := s.ID == serverID
+		if f {
+			found = true
+		}
+		s.Default = f
+	}
+	if !found && len(s.config.Servers) > 0 {
+		s.config.Servers[0].Default = true
+	}
+}
+
+func (s *ServerManager) AddServer(nickname string, connection ServerConnection) *ServerConfig {
+	sc := &ServerConfig{
+		ID:               uuid.New(),
+		Nickname:         nickname,
+		ServerConnection: connection,
+	}
+	s.config.Servers = append(s.config.Servers, sc)
+	return sc
+}
+
+func (s *ServerManager) DeleteServer(serverID uuid.UUID) {
+	s.deleteServerPassword(serverID)
+	newServers := make([]*ServerConfig, 0, len(s.config.Servers)-1)
+	for _, s := range s.config.Servers {
+		if s.ID != serverID {
+			newServers = append(newServers, s)
+		}
+	}
+	s.config.Servers = newServers
+}
+
+func (s *ServerManager) Logout(deletePassword bool) {
+	if s.Server != nil {
+		if deletePassword {
+			s.deleteServerPassword(s.ServerID)
+		}
+		for _, cb := range s.onLogout {
+			cb()
+		}
+		s.Server = nil
+		s.LoggedInUser = ""
+		s.ServerID = uuid.UUID{}
+	}
+}
+
+func (s *ServerManager) deleteServerPassword(serverID uuid.UUID) {
+	keyring.Delete(s.appName, s.ServerID.String())
+}
+
+// Sets a callback that is invoked when a server is connected to.
+func (s *ServerManager) OnServerConnected(cb func()) {
+	s.onServerConnected = append(s.onServerConnected, cb)
+}
+
+// Sets a callback that is invoked when the user logs out of a server.
+func (s *ServerManager) OnLogout(cb func()) {
+	s.onLogout = append(s.onLogout, cb)
+}
+
+func (s *ServerManager) GetServerPassword(serverID uuid.UUID) (string, error) {
+	return keyring.Get(s.appName, serverID.String())
+}
+
+func (s *ServerManager) SetServerPassword(server *ServerConfig, password string) error {
+	return keyring.Set(s.appName, server.ID.String(), password)
+}
+
 func (s *ServerManager) testConnectionAndCreateClient(connection ServerConnection, password string) (*subsonic.Client, error) {
 	cli, err := s.connect(connection, password)
 	if err != nil {
@@ -122,34 +205,4 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (*
 		}
 		return cli, nil
 	}
-}
-
-func (s *ServerManager) Logout() {
-	if s.Server != nil {
-		keyring.Delete(s.appName, s.ServerID.String())
-		for _, cb := range s.onLogout {
-			cb()
-		}
-		s.Server = nil
-		s.LoggedInUser = ""
-		s.ServerID = uuid.UUID{}
-	}
-}
-
-// Sets a callback that is invoked when a server is connected to.
-func (s *ServerManager) OnServerConnected(cb func()) {
-	s.onServerConnected = append(s.onServerConnected, cb)
-}
-
-// Sets a callback that is invoked when the user logs out of a server.
-func (s *ServerManager) OnLogout(cb func()) {
-	s.onLogout = append(s.onLogout, cb)
-}
-
-func (s *ServerManager) GetServerPassword(serverID uuid.UUID) (string, error) {
-	return keyring.Get(s.appName, serverID.String())
-}
-
-func (s *ServerManager) SetServerPassword(server *ServerConfig, password string) error {
-	return keyring.Set(s.appName, server.ID.String(), password)
 }

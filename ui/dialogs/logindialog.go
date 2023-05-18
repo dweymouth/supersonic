@@ -39,27 +39,26 @@ func NewLoginDialog(servers []*backend.ServerConfig, pwFetch PasswordFetchFunc) 
 	l.ExtendBaseWidget(l)
 	titleLabel := widget.NewLabel("Login to Server")
 	titleLabel.TextStyle.Bold = true
+	l.passField = widget.NewPasswordEntry()
+	l.passField.OnSubmitted = func(_ string) { l.onSubmit() }
+
 	serverNames := sharedutil.MapSlice(servers, func(s *backend.ServerConfig) string { return s.Nickname })
 	l.serverSelect = widget.NewSelect(serverNames, func(_ string) {
-		if l.passField == nil {
-			return
-		}
 		if pwFetch != nil {
 			if pw, err := pwFetch(servers[l.serverSelect.SelectedIndex()].ID); err == nil {
 				l.passField.SetText(pw)
 				return
 			}
 		}
+		l.passField.SetText("")
 	})
 	l.serverSelect.SetSelectedIndex(0)
+
 	editBtn := widget.NewButtonWithIcon("", theme.DocumentCreateIcon(), l.onEditServer)
 	newBtn := widget.NewButtonWithIcon("", theme.ContentAddIcon(), l.onNewServer)
 	deleteBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() { l.onDeleteServer(l.serverSelect.SelectedIndex()) })
-	l.passField = widget.NewPasswordEntry()
-	l.passField.OnSubmitted = func(_ string) { l.onSubmit() }
 	l.submitBtn = widget.NewButton("OK", l.onSubmit)
 	l.submitBtn.Importance = widget.HighImportance
-
 	l.promptText = widget.NewRichTextWithText("")
 	l.promptText.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameError
 	l.promptText.Hidden = true
