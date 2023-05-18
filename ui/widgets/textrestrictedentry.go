@@ -36,7 +36,7 @@ func (e *TextRestrictedEntry) TypedShortcut(s fyne.Shortcut) {
 	if s.ShortcutName() == (&fyne.ShortcutPaste{}).ShortcutName() {
 		return
 	}
-	e.TypedShortcut(s)
+	e.Entry.TypedShortcut(s)
 }
 
 func (e *TextRestrictedEntry) SetMinCharWidth(numChars int) {
