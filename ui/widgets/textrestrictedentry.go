@@ -32,6 +32,13 @@ func (e *TextRestrictedEntry) TypedRune(r rune) {
 	}
 }
 
+func (e *TextRestrictedEntry) TypedShortcut(s fyne.Shortcut) {
+	if s.ShortcutName() == (&fyne.ShortcutPaste{}).ShortcutName() {
+		return
+	}
+	e.TypedShortcut(s)
+}
+
 func (e *TextRestrictedEntry) SetMinCharWidth(numChars int) {
 	e.minWidth = theme.Padding()*2 + fyne.MeasureText(strings.Repeat("W", numChars),
 		fyne.CurrentApp().Settings().Theme().Size(theme.SizeNameText), e.TextStyle).Width

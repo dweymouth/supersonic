@@ -88,7 +88,8 @@ func NewAlbumFilterPopup(filter *AlbumFilterButton) *AlbumFilterPopup {
 
 	// setup min and max year filters
 	yearValidator := func(curText, selText string, r rune) bool {
-		return unicode.IsDigit(r) && (len(selText) > 0 || len(curText) <= 3)
+		l := len(curText) - len(selText)
+		return unicode.IsDigit(r) && l <= 3 && (l > 0 || r != '0')
 	}
 	minYear := NewTextRestrictedEntry(yearValidator)
 	minYear.SetMinCharWidth(4)
