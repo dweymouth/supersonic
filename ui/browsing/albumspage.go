@@ -87,7 +87,7 @@ func (a *AlbumsPage) createSearchAndFilter() {
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.Text = a.searchText
 	a.searcher.OnSearched = a.OnSearched
-	a.filterBtn = widgets.NewAlbumFilterButton(&a.filter)
+	a.filterBtn = widgets.NewAlbumFilterButton(&a.filter, a.mp.GetGenres)
 	a.filterBtn.OnChanged = a.Reload
 }
 

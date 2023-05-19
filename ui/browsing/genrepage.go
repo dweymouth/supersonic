@@ -67,7 +67,8 @@ func (g *GenrePage) createSearchAndFilter() {
 	g.searcher = widgets.NewSearchEntry()
 	g.searcher.Text = g.searchText
 	g.searcher.OnSearched = g.OnSearched
-	g.filterBtn = widgets.NewAlbumFilterButton(&g.filter)
+	// genre filter is disabled for this page, so no need to actually call genre list fetching function
+	g.filterBtn = widgets.NewAlbumFilterButton(&g.filter, func() ([]*mediaprovider.Genre, error) { return nil, nil })
 	g.filterBtn.GenreDisabled = true
 	g.filterBtn.OnChanged = g.Reload
 }

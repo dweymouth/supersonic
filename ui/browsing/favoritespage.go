@@ -81,7 +81,7 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int) {
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = a.OnSearched
 	a.searcher.Entry.Text = a.searchText
-	a.filterBtn = widgets.NewAlbumFilterButton(&a.filter)
+	a.filterBtn = widgets.NewAlbumFilterButton(&a.filter, a.mp.GetGenres)
 	a.filterBtn.FavoriteDisabled = true
 	a.filterBtn.OnChanged = a.Reload
 }

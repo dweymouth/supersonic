@@ -11,7 +11,8 @@ import (
 type TappableIcon struct {
 	widget.Icon
 
-	OnTapped func()
+	NoPointerCursor bool
+	OnTapped        func()
 }
 
 func NewTappbaleIcon(res fyne.Resource) *TappableIcon {
@@ -42,6 +43,9 @@ func (t *TappableIcon) MouseOut() {}
 func (t *TappableIcon) MouseMoved(*desktop.MouseEvent) {}
 
 func (t *TappableIcon) Cursor() desktop.Cursor {
+	if t.NoPointerCursor {
+		return desktop.DefaultCursor
+	}
 	return desktop.PointerCursor
 }
 
