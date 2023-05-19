@@ -82,7 +82,7 @@ type GridViewState struct {
 	iter         GridViewIterator
 	imageFetcher ImageFetcher
 	highestShown int
-	fetching     bool
+	fetchCancel  context.CancelFunc
 	done         bool
 
 	OnPlay              func(id string, shuffle bool)
@@ -148,9 +148,12 @@ func (g *GridView) Clear() {
 }
 
 func (g *GridView) Reset(iter GridViewIterator) {
+	if g.fetchCancel != nil {
+		g.fetchCancel()
+		g.fetchCancel = nil
+	}
 	g.itemsMutex.Lock()
 	g.items = nil
-	g.fetching = false
 	g.done = false
 	g.highestShown = 0
 	g.iter = iter
@@ -159,10 +162,13 @@ func (g *GridView) Reset(iter GridViewIterator) {
 }
 
 func (g *GridView) ResetFixed(items []GridViewItemModel) {
+	if g.fetchCancel != nil {
+		g.fetchCancel()
+		g.fetchCancel = nil
+	}
 	g.itemsMutex.Lock()
 	g.items = items
 	g.itemsMutex.Unlock()
-	g.fetching = false
 	g.done = true
 	g.highestShown = 0
 	g.iter = nil
@@ -262,7 +268,7 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	}
 
 	// if user has scrolled near the bottom, fetch more
-	if !g.done && !g.fetching && itemIdx > g.lenItems()-10 {
+	if !g.done && g.fetchCancel == nil && itemIdx > g.lenItems()-10 {
 		g.fetchMoreItems(20)
 	}
 }
@@ -277,8 +283,10 @@ func (g *GridView) lenItems() int {
 func (g *GridView) fetchMoreItems(count int) {
 	if g.iter == nil {
 		g.done = true
+		return
 	}
-	g.fetching = true
+	ctx, cancel := context.WithCancel(context.Background())
+	g.fetchCancel = cancel
 	go func() {
 		// keep repeating the fetch task as long as the user
 		// has scrolled near the bottom
@@ -286,19 +294,24 @@ func (g *GridView) fetchMoreItems(count int) {
 			n := 0
 			for !g.done && n < count {
 				items := g.iter.NextN(batchFetchSize)
-				g.itemsMutex.Lock()
-				g.items = append(g.items, items...)
-				g.itemsMutex.Unlock()
-				if len(items) < batchFetchSize {
-					g.done = true
-				}
-				n += len(items)
-				if len(items) > 0 {
-					g.Refresh()
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					g.itemsMutex.Lock()
+					g.items = append(g.items, items...)
+					g.itemsMutex.Unlock()
+					if len(items) < batchFetchSize {
+						g.done = true
+					}
+					n += len(items)
+					if len(items) > 0 {
+						g.Refresh()
+					}
 				}
 			}
 		}
-		g.fetching = false
+		g.fetchCancel = nil
 	}()
 }
 
