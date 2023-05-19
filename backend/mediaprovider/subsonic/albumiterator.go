@@ -34,7 +34,7 @@ func (s *subsonicMediaProvider) AlbumSortOrders() []string {
 	}
 }
 
-func filterMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3) bool {
+func filterMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3, ignoreGenre bool) bool {
 	if album == nil {
 		return false
 	}
@@ -47,7 +47,7 @@ func filterMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3) bool {
 	if y := album.Year; y < f.MinYear || (f.MaxYear > 0 && y > f.MaxYear) {
 		return false
 	}
-	if len(f.Genres) == 0 {
+	if ignoreGenre || len(f.Genres) == 0 {
 		return true
 	}
 	for _, g := range f.Genres {
@@ -139,7 +139,13 @@ func (r *baseIter) Next() *mediaprovider.Album {
 			return nil
 		}
 		r.serverPos += len(albums)
-		albums = sharedutil.FilterSlice(albums, func(al *subsonic.AlbumID3) bool { return filterMatches(r.filter, al) })
+		albums = sharedutil.FilterSlice(albums, func(al *subsonic.AlbumID3) bool {
+			// The Subsonic API returns only the first genre for multi-genre albums,
+			// but servers do internally match against all the genres the album is categorized with.
+			// So we must not additionally filter by genre to avoid excluding results where
+			// the single genre returned by Subsonic isn't the one we're iterating on.
+			return filterMatches(r.filter, al, r.listType == "byGenre" /*ignoreGenre*/)
+		})
 		r.prefetched = sharedutil.MapSlice(albums, toAlbum)
 		if len(albums) > 0 {
 			break
@@ -241,7 +247,7 @@ func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 		if _, have := s.albumIDset[album.ID]; have {
 			continue
 		}
-		if !filterMatches(s.filter, album) {
+		if !filterMatches(s.filter, album, false) {
 			continue
 		}
 		s.prefetched = append(s.prefetched, album)
@@ -301,7 +307,7 @@ func (r *randomIter) Next() *mediaprovider.Album {
 			}
 			r.offset += len(albums)
 			for _, album := range albums {
-				if _, ok := r.albumIDSet[album.ID]; !ok && filterMatches(r.filter, album) {
+				if _, ok := r.albumIDSet[album.ID]; !ok && filterMatches(r.filter, album, false) {
 					r.prefetched = append(r.prefetched, album)
 					if r.prefetchCB != nil {
 						go r.prefetchCB(album.CoverArt)
@@ -324,7 +330,7 @@ func (r *randomIter) Next() *mediaprovider.Album {
 					// by the filter because we need to know when to move to phase two
 					hitCount++
 					r.albumIDSet[album.ID] = true
-					if filterMatches(r.filter, album) {
+					if filterMatches(r.filter, album, false) {
 						r.prefetched = append(r.prefetched, album)
 						if r.prefetchCB != nil {
 							go r.prefetchCB(album.CoverArt)
