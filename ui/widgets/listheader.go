@@ -15,6 +15,14 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+type ColumnSort int
+
+const (
+	SortNone ColumnSort = iota
+	SortAscending
+	SortDescending
+)
+
 type ListColumn struct {
 	Text             string
 	AlignTrailing    bool
@@ -24,6 +32,7 @@ type ListColumn struct {
 type ListHeader struct {
 	widget.BaseWidget
 
+	OnColumnSortChanged         func(int, ColumnSort)
 	OnColumnVisibilityChanged   func(int, bool)
 	OnColumnVisibilityMenuShown func(*widget.PopUp)
 
@@ -67,9 +76,12 @@ func (l *ListHeader) SetColumnVisible(colNum int, visible bool) {
 }
 
 func (l *ListHeader) buildColumns() {
-	for _, c := range l.columns {
+	for i, c := range l.columns {
 		hdr := newColHeader(c)
-		hdr.SortVisible = true
+		hdr.OnSortChanged = func(i int) func(ColumnSort) {
+			return func(sort ColumnSort) { l.onSortChanged(i, sort) }
+		}(i)
+		hdr.OnTappedSecondary = l.TappedSecondary
 		l.columnsContainer.Add(
 			// hdr,
 			// TODO: remove debugging background
@@ -78,6 +90,20 @@ func (l *ListHeader) buildColumns() {
 				hdr,
 			),
 		)
+	}
+}
+
+func (l *ListHeader) onSortChanged(colNum int, sort ColumnSort) {
+	for i, c := range l.columnsContainer.Objects {
+		if i != colNum {
+			c.(*fyne.Container).Objects[1].(*colHeader).Sort = SortNone
+			// TODO
+			//c.(*colHeader).Sort = sortNone
+		}
+	}
+	l.Refresh()
+	if l.OnColumnSortChanged != nil {
+		l.OnColumnSortChanged(colNum, sort)
 	}
 }
 
@@ -128,8 +154,9 @@ func (l *ListHeader) createOnChangedCallbk(colNum int) func(bool) {
 type colHeader struct {
 	widget.BaseWidget
 
-	SortDescending bool
-	SortVisible    bool
+	Sort              ColumnSort
+	OnSortChanged     func(ColumnSort)
+	OnTappedSecondary func(*fyne.PointEvent)
 
 	columnCfg ListColumn
 
@@ -158,17 +185,40 @@ func newColHeader(columnCfg ListColumn) *colHeader {
 	return c
 }
 
+func (c *colHeader) Tapped(*fyne.PointEvent) {
+	switch c.Sort {
+	case SortNone:
+		c.Sort = SortAscending
+	case SortAscending:
+		c.Sort = SortDescending
+	case SortDescending:
+		c.Sort = SortNone
+	default:
+		log.Println("notReached colHeader.Tapped")
+	}
+	c.Refresh()
+	if c.OnSortChanged != nil {
+		c.OnSortChanged(c.Sort)
+	}
+}
+
+func (c *colHeader) TappedSecondary(e *fyne.PointEvent) {
+	if c.OnTappedSecondary != nil {
+		c.OnTappedSecondary(e)
+	}
+}
+
 func (c *colHeader) Refresh() {
-	if c.SortDescending {
+	if c.Sort == SortDescending {
 		c.sortIcon.Resource = theme.MenuDropDownIcon()
 	} else {
 		c.sortIcon.Resource = theme.MenuDropUpIcon()
 	}
 
-	if c.SortVisible && c.sortIcon.Hidden {
+	if c.Sort > 0 && c.sortIcon.Hidden {
 		c.sortIcon.Show()
 		c.container.Add(c.sortIconNegSpacer)
-	} else if !c.sortIcon.Hidden {
+	} else if c.Sort == SortNone && !c.sortIcon.Hidden {
 		c.sortIcon.Hide()
 		c.container.Remove(c.sortIconNegSpacer)
 	}
