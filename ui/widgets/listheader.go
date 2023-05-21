@@ -5,9 +5,12 @@ import (
 
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -40,7 +43,7 @@ func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader
 		columnsContainer: container.New(layout),
 	}
 	l.columnVisible = make([]bool, len(cols))
-	for i, _ := range l.columnVisible {
+	for i := range l.columnVisible {
 		l.columnVisible[i] = true
 	}
 	l.container = container.NewMax(myTheme.NewThemedRectangle(theme.ColorNameBackground), l.columnsContainer)
@@ -65,14 +68,16 @@ func (l *ListHeader) SetColumnVisible(colNum int, visible bool) {
 
 func (l *ListHeader) buildColumns() {
 	for _, c := range l.columns {
-		t := widget.NewRichTextWithText(c.Text)
-		t.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
-		al := fyne.TextAlignLeading
-		if c.AlignTrailing {
-			al = fyne.TextAlignTrailing
-		}
-		t.Segments[0].(*widget.TextSegment).Style.Alignment = al
-		l.columnsContainer.Add(t)
+		hdr := newColHeader(c)
+		hdr.SortVisible = true
+		l.columnsContainer.Add(
+			// hdr,
+			// TODO: remove debugging background
+			container.NewMax(container.New(&layouts.MaxPadLayout{PadLeft: 2, PadRight: 2},
+				canvas.NewRectangle(theme.SelectionColor())),
+				hdr,
+			),
+		)
 	}
 }
 
@@ -118,4 +123,68 @@ func (l *ListHeader) createOnChangedCallbk(colNum int) func(bool) {
 			l.OnColumnVisibilityChanged(colNum, val)
 		}
 	}
+}
+
+type colHeader struct {
+	widget.BaseWidget
+
+	SortDescending bool
+	SortVisible    bool
+
+	columnCfg ListColumn
+
+	label             *widget.RichText
+	sortIcon          *widget.Icon
+	sortIconNegSpacer fyne.CanvasObject
+	container         *fyne.Container
+}
+
+func newColHeader(columnCfg ListColumn) *colHeader {
+	c := &colHeader{columnCfg: columnCfg}
+	c.ExtendBaseWidget(c)
+
+	c.label = widget.NewRichTextWithText(columnCfg.Text)
+	c.label.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
+	al := fyne.TextAlignLeading
+	if columnCfg.AlignTrailing {
+		al = fyne.TextAlignTrailing
+	}
+	c.label.Segments[0].(*widget.TextSegment).Style.Alignment = al
+	c.sortIcon = widget.NewIcon(theme.MenuDropDownIcon())
+	// hack to remove extra icon space
+	// should be hidden whenever sortIcon is hidden
+	c.sortIconNegSpacer = util.NewHSpace(0)
+
+	return c
+}
+
+func (c *colHeader) Refresh() {
+	if c.SortDescending {
+		c.sortIcon.Resource = theme.MenuDropDownIcon()
+	} else {
+		c.sortIcon.Resource = theme.MenuDropUpIcon()
+	}
+
+	if c.SortVisible && c.sortIcon.Hidden {
+		c.sortIcon.Show()
+		c.container.Add(c.sortIconNegSpacer)
+	} else if !c.sortIcon.Hidden {
+		c.sortIcon.Hide()
+		c.container.Remove(c.sortIconNegSpacer)
+	}
+
+	c.BaseWidget.Refresh()
+}
+
+func (c *colHeader) CreateRenderer() fyne.WidgetRenderer {
+	if c.container == nil {
+		c.container = container.New(&layouts.HboxCustomPadding{DisableThemePad: true, ExtraPad: -8})
+		if c.columnCfg.AlignTrailing {
+			c.container.Add(layout.NewSpacer())
+		}
+		c.container.Add(c.label)
+		c.container.Add(c.sortIcon)
+		c.container.Add(c.sortIconNegSpacer)
+	}
+	return widget.NewSimpleRenderer(c.container)
 }

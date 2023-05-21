@@ -90,7 +90,7 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(t.lenTracks)
 	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Bitrate, Size, Path
-	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 50, 50, 45, 95, 55, 65, 70, -1})
+	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 55, 100, 65, 75, 75, -1})
 	t.buildHeader()
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
