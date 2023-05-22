@@ -32,6 +32,8 @@ type ListColumn struct {
 type ListHeader struct {
 	widget.BaseWidget
 
+	DisableSorting bool
+
 	OnColumnSortChanged         func(int, ColumnSort)
 	OnColumnVisibilityChanged   func(int, bool)
 	OnColumnVisibilityMenuShown func(*widget.PopUp)
@@ -77,7 +79,7 @@ func (l *ListHeader) SetColumnVisible(colNum int, visible bool) {
 
 func (l *ListHeader) buildColumns() {
 	for i, c := range l.columns {
-		hdr := newColHeader(c)
+		hdr := newColHeader(c, &l.DisableSorting)
 		hdr.OnSortChanged = func(i int) func(ColumnSort) {
 			return func(sort ColumnSort) { l.onSortChanged(i, sort) }
 		}(i)
@@ -158,7 +160,8 @@ type colHeader struct {
 	OnSortChanged     func(ColumnSort)
 	OnTappedSecondary func(*fyne.PointEvent)
 
-	columnCfg ListColumn
+	sortDisabled *bool
+	columnCfg    ListColumn
 
 	label             *widget.RichText
 	sortIcon          *widget.Icon
@@ -166,8 +169,8 @@ type colHeader struct {
 	container         *fyne.Container
 }
 
-func newColHeader(columnCfg ListColumn) *colHeader {
-	c := &colHeader{columnCfg: columnCfg}
+func newColHeader(columnCfg ListColumn, sortDisabled *bool) *colHeader {
+	c := &colHeader{columnCfg: columnCfg, sortDisabled: sortDisabled}
 	c.ExtendBaseWidget(c)
 
 	c.label = widget.NewRichTextWithText(columnCfg.Text)
@@ -186,6 +189,9 @@ func newColHeader(columnCfg ListColumn) *colHeader {
 }
 
 func (c *colHeader) Tapped(*fyne.PointEvent) {
+	if *c.sortDisabled {
+		return
+	}
 	switch c.Sort {
 	case SortNone:
 		c.Sort = SortAscending
@@ -218,7 +224,7 @@ func (c *colHeader) Refresh() {
 	if c.Sort > 0 && c.sortIcon.Hidden {
 		c.sortIcon.Show()
 		c.container.Add(c.sortIconNegSpacer)
-	} else if c.Sort == SortNone && !c.sortIcon.Hidden {
+	} else if (c.Sort == SortNone || *c.sortDisabled) && !c.sortIcon.Hidden {
 		c.sortIcon.Hide()
 		c.container.Remove(c.sortIconNegSpacer)
 	}

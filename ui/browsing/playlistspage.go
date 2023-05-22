@@ -290,6 +290,7 @@ func (p *PlaylistList) buildHeader() {
 		{"Description", false, false},
 		{"Owner", false, false},
 		{"Track Count", true, false}}, p.columnsLayout)
+	p.header.DisableSorting = true
 
 }
 

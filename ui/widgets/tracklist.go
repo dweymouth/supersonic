@@ -61,6 +61,9 @@ type Tracklist struct {
 	// the tracklist context menu.
 	DisablePlaybackMenu bool
 
+	// Disables sorting the tracklist by clicking individual columns.
+	DisableSorting bool
+
 	// user action callbacks
 	OnPlayTrackAt   func(int)
 	OnPlaySelection func(tracks []*mediaprovider.Track, shuffle bool)
@@ -92,7 +95,7 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
-	t := &Tracklist{tracks: tracks, visibleColumns: make([]bool, 12)}
+	t := &Tracklist{tracks: tracks, tracksOrigOrder: tracks, visibleColumns: make([]bool, 12)}
 
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(t.lenTracks)
@@ -346,6 +349,11 @@ func (t *Tracklist) SelectAndScrollToTrack(trackID string) {
 
 func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.container)
+}
+
+func (t *Tracklist) Refresh() {
+	t.hdr.DisableSorting = t.DisableSorting
+	t.BaseWidget.Refresh()
 }
 
 func (t *Tracklist) onPlayTrackAt(idx int) {

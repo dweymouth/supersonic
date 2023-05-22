@@ -66,6 +66,7 @@ func NewArtistGenreList(items []ArtistGenreListItemModel) *ArtistGenreList {
 	a.ExtendBaseWidget(a)
 	a.hdr = NewListHeader([]ListColumn{
 		{"Name", false, false}, {"Album Count", true, false}, {"Track Count", true, false}}, a.columnsLayout)
+	a.hdr.DisableSorting = true
 	a.list = widget.NewList(
 		func() int { return len(a.Items) },
 		func() fyne.CanvasObject {
