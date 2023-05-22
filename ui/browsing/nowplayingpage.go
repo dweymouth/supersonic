@@ -107,7 +107,7 @@ func (a *NowPlayingPage) onRemoveSelectedFromQueue() {
 // does not make calls to server - can safely be run in UI callbacks
 func (a *NowPlayingPage) load(highlightedTrackID string) {
 	queue := a.pm.GetPlayQueue()
-	a.tracklist.Tracks = queue
+	a.tracklist.SetTracks(queue)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 	if highlightedTrackID != "" {
 		a.tracklist.SelectAndScrollToTrack(highlightedTrackID)

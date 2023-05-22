@@ -154,7 +154,7 @@ func (a *FavoritesPage) Reload() {
 			if a.tracklistCtr != nil {
 				// refresh favorite songs view
 				tr := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
-				tr.Tracks = starred.Tracks
+				tr.SetTracks(starred.Tracks)
 				if a.toggleBtns.ActivatedButtonIndex() == 2 {
 					// favorite songs view is visible
 					tr.Refresh()

@@ -95,7 +95,7 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 		m.App.PlaybackManager.LoadTracks(tracks, true, false)
 	}
 	tracklist.OnPlayTrackAt = func(idx int) {
-		m.App.PlaybackManager.LoadTracks(tracklist.Tracks, false, false)
+		m.App.PlaybackManager.LoadTracks(tracklist.GetTracks(), false, false)
 		m.App.PlaybackManager.PlayTrackAt(idx)
 	}
 	tracklist.OnPlaySelection = func(tracks []*mediaprovider.Track, shuffle bool) {

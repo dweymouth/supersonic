@@ -26,6 +26,7 @@ type AlbumPage struct {
 	albumPageState
 
 	header       *AlbumPageHeader
+	tracks       []*mediaprovider.Track
 	tracklist    *widgets.Tracklist
 	nowPlayingID string
 	container    *fyne.Container
@@ -119,7 +120,8 @@ func (a *AlbumPage) load() {
 	}
 	a.header.Update(album, a.im)
 	a.tracklist.ShowDiscNumber = album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber
-	a.tracklist.Tracks = album.Tracks
+	a.tracks = album.Tracks
+	a.tracklist.SetTracks(album.Tracks)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 }
 
@@ -169,7 +171,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		go page.pm.PlayAlbum(page.albumID, 0, false)
 	})
 	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", myTheme.ShuffleIcon, func() {
-		page.pm.LoadTracks(page.tracklist.Tracks, false, true)
+		page.pm.LoadTracks(page.tracklist.GetTracks(), false, true)
 		page.pm.PlayFromBeginning()
 	})
 	var pop *widget.PopUpMenu
@@ -178,11 +180,11 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		if pop == nil {
 			menu := fyne.NewMenu("",
 				fyne.NewMenuItem("Add to queue", func() {
-					a.page.pm.LoadAlbum(a.albumID, true /*append*/, false /*shuffle*/)
+					go a.page.pm.LoadAlbum(a.albumID, true /*append*/, false /*shuffle*/)
 				}),
 				fyne.NewMenuItem("Add to playlist...", func() {
 					a.page.contr.DoAddTracksToPlaylistWorkflow(
-						sharedutil.TracksToIDs(a.page.tracklist.Tracks))
+						sharedutil.TracksToIDs(a.page.tracks))
 				}))
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}

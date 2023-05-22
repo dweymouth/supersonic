@@ -27,6 +27,7 @@ type PlaylistPage struct {
 
 	header       *PlaylistPageHeader
 	tracklist    *widgets.Tracklist
+	tracks       []*mediaprovider.Track
 	nowPlayingID string
 	container    *fyne.Container
 }
@@ -118,7 +119,8 @@ func (a *PlaylistPage) load() {
 		log.Printf("Failed to get playlist: %s", err.Error())
 		return
 	}
-	a.tracklist.Tracks = playlist.Tracks
+	a.tracks = playlist.Tracks
+	a.tracklist.SetTracks(playlist.Tracks)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 	a.tracklist.Refresh()
 	a.header.Update(playlist)
@@ -141,8 +143,9 @@ func (a *PlaylistPage) onMoveSelectedToBottom() {
 }
 
 func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
+	// TODO: revisit this for how to deal with sort order
 	idxs := a.tracklist.SelectedTrackIndexes()
-	newTracks := sharedutil.ReorderTracks(a.tracklist.Tracks, idxs, op)
+	newTracks := sharedutil.ReorderTracks(a.tracklist.GetTracks(), idxs, op)
 	ids := make([]string, len(newTracks))
 	for i, tr := range newTracks {
 		ids[i] = tr.ID
@@ -150,7 +153,7 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 	if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 		log.Printf("error updating playlist: %s", err.Error())
 	} else {
-		a.tracklist.Tracks = newTracks
+		a.tracklist.SetTracks(newTracks)
 		a.tracklist.UnselectAll()
 		a.tracklist.Refresh()
 	}
@@ -200,12 +203,12 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	})
 	a.editButton.Hidden = true
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
-		page.pm.LoadTracks(page.tracklist.Tracks, false, false)
+		page.pm.LoadTracks(page.tracks, false, false)
 		page.pm.PlayFromBeginning()
 	})
 	// TODO: find way to pad shuffle svg rather than using a space in the label string
 	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", myTheme.ShuffleIcon, func() {
-		page.pm.LoadTracks(page.tracklist.Tracks, false /*append*/, true /*shuffle*/)
+		page.pm.LoadTracks(page.tracks, false /*append*/, true /*shuffle*/)
 		page.pm.PlayFromBeginning()
 	})
 	var pop *widget.PopUpMenu
@@ -218,7 +221,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 				}),
 				fyne.NewMenuItem("Add to playlist...", func() {
 					a.page.contr.DoAddTracksToPlaylistWorkflow(
-						sharedutil.TracksToIDs(a.page.tracklist.Tracks))
+						sharedutil.TracksToIDs(a.page.tracks))
 				}))
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
