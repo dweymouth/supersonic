@@ -27,6 +27,7 @@ var _ fyne.Widget = (*ArtistPage)(nil)
 type artistPageState struct {
 	artistID   string
 	activeView int
+	trackSort  widgets.TracklistSort
 
 	cfg   *backend.ArtistPageConfig
 	pm    *backend.PlaybackManager
@@ -54,10 +55,10 @@ func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.P
 	if cfg.InitialView == "Top Tracks" {
 		activeView = 1
 	}
-	return newArtistPage(artistID, cfg, pm, mp, im, contr, activeView)
+	return newArtistPage(artistID, cfg, pm, mp, im, contr, activeView, widgets.TracklistSort{})
 }
 
-func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int) *ArtistPage {
+func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int, sort widgets.TracklistSort) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
 		artistID:   artistID,
 		cfg:        cfg,
@@ -112,6 +113,9 @@ func (a *ArtistPage) Reload() {
 
 func (a *ArtistPage) Save() SavedPage {
 	s := a.artistPageState
+	if a.tracklistCtr != nil {
+		s.trackSort = a.tracklistCtr.Objects[0].(*widgets.Tracklist).Sorting()
+	}
 	return &s
 }
 
@@ -197,6 +201,7 @@ func (a *ArtistPage) showTopTracks() {
 		tl := widgets.NewTracklist(ts)
 		tl.AutoNumber = true
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
+		tl.SetSorting(a.trackSort)
 		tl.OnVisibleColumnsChanged = func(cols []string) {
 			a.cfg.TracklistColumns = cols
 		}
@@ -232,7 +237,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return newArtistPage(s.artistID, s.cfg, s.pm, s.mp, s.im, s.contr, s.activeView)
+	return newArtistPage(s.artistID, s.cfg, s.pm, s.mp, s.im, s.contr, s.activeView, s.trackSort)
 }
 
 type ArtistPageHeader struct {

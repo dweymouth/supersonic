@@ -42,6 +42,11 @@ var columns = []string{
 	ColumnFavorite, ColumnRating, ColumnPlays, ColumnBitrate, ColumnSize, ColumnPath,
 }
 
+type TracklistSort struct {
+	SortOrder  ColumnSort
+	ColumnName string
+}
+
 type Tracklist struct {
 	widget.BaseWidget
 
@@ -80,6 +85,7 @@ type Tracklist struct {
 	OnTrackShown                func(tracknum int)
 
 	visibleColumns []bool
+	sorting        TracklistSort
 
 	tracksMutex     sync.RWMutex
 	tracks          []*mediaprovider.Track
@@ -103,7 +109,7 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 55, 100, 65, 75, 75, -1})
 	t.buildHeader()
 	t.hdr.OnColumnSortChanged = func(idx int, sort ColumnSort) {
-		t.SortByColumn(colName(idx), sort)
+		t.SetSorting(TracklistSort{ColumnName: colName(idx), SortOrder: sort})
 	}
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
@@ -229,48 +235,53 @@ func (t *Tracklist) intSort(fieldFn func(*mediaprovider.Track) int64, sortOrder 
 	t.tracks = new
 }
 
-func (t *Tracklist) SortByColumn(columnName string, sortOrder ColumnSort) {
+func (t *Tracklist) Sorting() TracklistSort {
+	return t.sorting
+}
+
+func (t *Tracklist) SetSorting(sorting TracklistSort) {
+	t.sorting = sorting
 	t.tracksMutex.Lock()
-	if sortOrder == SortNone {
+	if sorting.SortOrder == SortNone {
 		t.tracks = t.tracksOrigOrder
 		t.tracksMutex.Unlock()
 		t.Refresh()
 		return
 	}
-	switch columnName {
+	switch sorting.ColumnName {
 	case ColumnNum:
-		if sortOrder == SortDescending {
+		if sorting.SortOrder == SortDescending {
 			t.tracks = sharedutil.Reversed(t.tracksOrigOrder)
 		} else {
 			t.tracks = t.tracksOrigOrder
 		}
 	case ColumnTitle:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Name }, sortOrder)
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Name }, sorting.SortOrder)
 	case ColumnArtist:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.ArtistNames[0] }, sortOrder)
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.ArtistNames[0] }, sorting.SortOrder)
 	case ColumnAlbum:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Album }, sortOrder)
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Album }, sorting.SortOrder)
 	case ColumnPath:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.FilePath }, sortOrder)
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.FilePath }, sorting.SortOrder)
 	case ColumnRating:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Rating) }, sortOrder)
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Rating) }, sorting.SortOrder)
 	case ColumnTime:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Duration) }, sortOrder)
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Duration) }, sorting.SortOrder)
 	case ColumnYear:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Year) }, sortOrder)
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Year) }, sorting.SortOrder)
 	case ColumnSize:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return tr.Size }, sortOrder)
+		t.intSort(func(tr *mediaprovider.Track) int64 { return tr.Size }, sorting.SortOrder)
 	case ColumnPlays:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.PlayCount) }, sortOrder)
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.PlayCount) }, sorting.SortOrder)
 	case ColumnBitrate:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.BitRate) }, sortOrder)
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.BitRate) }, sorting.SortOrder)
 	case ColumnFavorite:
 		t.intSort(func(tr *mediaprovider.Track) int64 {
 			if tr.Favorite {
 				return 1
 			}
 			return 0
-		}, sortOrder)
+		}, sorting.SortOrder)
 	}
 	t.tracksMutex.Unlock()
 	t.Refresh()

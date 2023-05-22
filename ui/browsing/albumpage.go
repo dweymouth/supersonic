@@ -34,6 +34,7 @@ type AlbumPage struct {
 
 type albumPageState struct {
 	albumID string
+	sort    widgets.TracklistSort
 	cfg     *backend.AlbumPageConfig
 	mp      mediaprovider.MediaProvider
 	pm      *backend.PlaybackManager
@@ -49,6 +50,18 @@ func NewAlbumPage(
 	im *backend.ImageManager,
 	contr *controller.Controller,
 ) *AlbumPage {
+	return newAlbumPage(albumID, cfg, pm, mp, im, contr, widgets.TracklistSort{})
+}
+
+func newAlbumPage(
+	albumID string,
+	cfg *backend.AlbumPageConfig,
+	pm *backend.PlaybackManager,
+	mp mediaprovider.MediaProvider,
+	im *backend.ImageManager,
+	contr *controller.Controller,
+	sort widgets.TracklistSort,
+) *AlbumPage {
 	a := &AlbumPage{
 		albumPageState: albumPageState{
 			albumID: albumID,
@@ -63,6 +76,7 @@ func NewAlbumPage(
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
+	a.tracklist.SetSorting(sort)
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		a.cfg.TracklistColumns = cols
 	}
@@ -82,6 +96,7 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *AlbumPage) Save() SavedPage {
 	s := a.albumPageState
+	s.sort = a.tracklist.Sorting()
 	return &s
 }
 
@@ -262,5 +277,5 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return NewAlbumPage(s.albumID, s.cfg, s.pm, s.mp, s.im, s.contr)
+	return newAlbumPage(s.albumID, s.cfg, s.pm, s.mp, s.im, s.contr, s.sort)
 }

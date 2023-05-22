@@ -39,6 +39,7 @@ type playlistPageState struct {
 	sm         *backend.ServerManager
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
+	trackSort  widgets.TracklistSort
 }
 
 func NewPlaylistPage(
@@ -49,11 +50,24 @@ func NewPlaylistPage(
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
 ) *PlaylistPage {
+	return newPlaylistPage(playlistID, conf, contr, sm, pm, im, widgets.TracklistSort{})
+}
+
+func newPlaylistPage(
+	playlistID string,
+	conf *backend.PlaylistPageConfig,
+	contr *controller.Controller,
+	sm *backend.ServerManager,
+	pm *backend.PlaybackManager,
+	im *backend.ImageManager,
+	trackSort widgets.TracklistSort,
+) *PlaylistPage {
 	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, conf: conf, contr: contr, sm: sm, pm: pm, im: im}}
 	a.ExtendBaseWidget(a)
 	a.header = NewPlaylistPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
+	a.tracklist.SetSorting(trackSort)
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		conf.TracklistColumns = cols
 	}
@@ -83,6 +97,7 @@ func (a *PlaylistPage) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *PlaylistPage) Save() SavedPage {
 	p := a.playlistPageState
+	p.trackSort = a.tracklist.Sorting()
 	return &p
 }
 
@@ -284,5 +299,5 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *mediaprovider.Playlis
 }
 
 func (s *playlistPageState) Restore() Page {
-	return NewPlaylistPage(s.playlistID, s.conf, s.contr, s.sm, s.pm, s.im)
+	return newPlaylistPage(s.playlistID, s.conf, s.contr, s.sm, s.pm, s.im, s.trackSort)
 }
