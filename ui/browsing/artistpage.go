@@ -67,6 +67,7 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.P
 		im:         im,
 		contr:      contr,
 		activeView: activeView,
+		trackSort:  sort,
 	}}
 	a.ExtendBaseWidget(a)
 	a.header = NewArtistPageHeader(a)
