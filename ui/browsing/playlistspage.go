@@ -286,10 +286,10 @@ func NewPlaylistList() *PlaylistList {
 
 func (p *PlaylistList) buildHeader() {
 	p.header = widgets.NewListHeader([]widgets.ListColumn{
-		{"Name", false, false},
-		{"Description", false, false},
-		{"Owner", false, false},
-		{"Track Count", true, false}}, p.columnsLayout)
+		{"Name", fyne.TextAlignLeading, false},
+		{"Description", fyne.TextAlignLeading, false},
+		{"Owner", fyne.TextAlignLeading, false},
+		{"Track Count", fyne.TextAlignTrailing, false}}, p.columnsLayout)
 	p.header.DisableSorting = true
 
 }

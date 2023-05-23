@@ -144,18 +144,18 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 
 func (t *Tracklist) buildHeader() {
 	t.hdr = NewListHeader([]ListColumn{
-		{Text: "#", AlignTrailing: true, CanToggleVisible: false},
-		{Text: "Title", AlignTrailing: false, CanToggleVisible: false},
-		{Text: "Artist", AlignTrailing: false, CanToggleVisible: true},
-		{Text: "Album", AlignTrailing: false, CanToggleVisible: true},
-		{Text: "Time", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Year", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Fav.", AlignTrailing: false, CanToggleVisible: true},
-		{Text: "Rating", AlignTrailing: false, CanToggleVisible: true},
-		{Text: "Plays", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Bitrate", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Size", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "File Path", AlignTrailing: false, CanToggleVisible: true}},
+		{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
+		{Text: "Title", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: "Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true},
+		{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 		t.colLayout)
 }
 

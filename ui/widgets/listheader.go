@@ -8,7 +8,6 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -30,7 +29,7 @@ type ListHeaderSort struct {
 
 type ListColumn struct {
 	Text             string
-	AlignTrailing    bool
+	Alignment        fyne.TextAlign
 	CanToggleVisible bool
 }
 
@@ -90,14 +89,7 @@ func (l *ListHeader) buildColumns() {
 			return func(sort SortType) { l.SetSorting(ListHeaderSort{ColNumber: i, Type: sort}) }
 		}(i)
 		hdr.OnTappedSecondary = l.TappedSecondary
-		l.columnsContainer.Add(
-			// hdr,
-			// TODO: remove debugging background
-			container.NewMax(container.New(&layouts.MaxPadLayout{PadLeft: 2, PadRight: 2},
-				canvas.NewRectangle(theme.SelectionColor())),
-				hdr,
-			),
-		)
+		l.columnsContainer.Add(hdr)
 	}
 }
 
@@ -109,13 +101,10 @@ func (l *ListHeader) SetSorting(sort ListHeaderSort) {
 	}
 	l.sort = sort
 	for i, c := range l.columnsContainer.Objects {
-		// TODO
-		//c.(*colHeader).Sort = sortNone
-		hdr := c.(*fyne.Container).Objects[1].(*colHeader)
 		if i == sort.ColNumber {
-			hdr.Sort = sort.Type
+			c.(*colHeader).Sort = sort.Type
 		} else {
-			hdr.Sort = SortNone
+			c.(*colHeader).Sort = SortNone
 		}
 	}
 	l.Refresh()
@@ -189,12 +178,10 @@ func newColHeader(columnCfg ListColumn, sortDisabled *bool) *colHeader {
 	c.ExtendBaseWidget(c)
 
 	c.label = widget.NewRichTextWithText(columnCfg.Text)
-	c.label.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
-	al := fyne.TextAlignLeading
-	if columnCfg.AlignTrailing {
-		al = fyne.TextAlignTrailing
+	c.label.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
+		TextStyle: fyne.TextStyle{Bold: true},
+		Alignment: columnCfg.Alignment,
 	}
-	c.label.Segments[0].(*widget.TextSegment).Style.Alignment = al
 	c.sortIcon = widget.NewIcon(theme.MenuDropDownIcon())
 	// hack to remove extra icon space
 	// should be hidden whenever sortIcon is hidden
@@ -250,12 +237,15 @@ func (c *colHeader) Refresh() {
 func (c *colHeader) CreateRenderer() fyne.WidgetRenderer {
 	if c.container == nil {
 		c.container = container.New(&layouts.HboxCustomPadding{DisableThemePad: true, ExtraPad: -8})
-		if c.columnCfg.AlignTrailing {
+		if c.columnCfg.Alignment != fyne.TextAlignLeading {
 			c.container.Add(layout.NewSpacer())
 		}
 		c.container.Add(c.label)
 		c.container.Add(c.sortIcon)
 		c.container.Add(c.sortIconNegSpacer)
+		if c.columnCfg.Alignment == fyne.TextAlignCenter {
+			c.container.Add(layout.NewSpacer())
+		}
 	}
 	return widget.NewSimpleRenderer(c.container)
 }
