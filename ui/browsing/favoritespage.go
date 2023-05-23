@@ -110,6 +110,7 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	if saved.searchText != "" {
 		a.searchGrid = widgets.NewGridViewFromState(saved.searchGridState)
 	}
+	a.toggleBtns.SetActivatedButton(saved.activeToggleBtn)
 
 	if saved.activeToggleBtn == 1 {
 		a.onShowFavoriteArtists()
