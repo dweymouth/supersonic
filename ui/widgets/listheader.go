@@ -15,13 +15,18 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type ColumnSort int
+type SortType int
 
 const (
-	SortNone ColumnSort = iota
+	SortNone SortType = iota
 	SortAscending
 	SortDescending
 )
+
+type ListHeaderSort struct {
+	ColNumber int
+	Type      SortType
+}
 
 type ListColumn struct {
 	Text             string
@@ -34,10 +39,11 @@ type ListHeader struct {
 
 	DisableSorting bool
 
-	OnColumnSortChanged         func(int, ColumnSort)
+	OnColumnSortChanged         func(ListHeaderSort)
 	OnColumnVisibilityChanged   func(int, bool)
 	OnColumnVisibilityMenuShown func(*widget.PopUp)
 
+	sort          ListHeaderSort
 	columns       []ListColumn
 	columnVisible []bool
 	columnsLayout *layouts.ColumnsLayout
@@ -80,8 +86,8 @@ func (l *ListHeader) SetColumnVisible(colNum int, visible bool) {
 func (l *ListHeader) buildColumns() {
 	for i, c := range l.columns {
 		hdr := newColHeader(c, &l.DisableSorting)
-		hdr.OnSortChanged = func(i int) func(ColumnSort) {
-			return func(sort ColumnSort) { l.onSortChanged(i, sort) }
+		hdr.OnSortChanged = func(i int) func(SortType) {
+			return func(sort SortType) { l.SetSorting(ListHeaderSort{ColNumber: i, Type: sort}) }
 		}(i)
 		hdr.OnTappedSecondary = l.TappedSecondary
 		l.columnsContainer.Add(
@@ -95,17 +101,26 @@ func (l *ListHeader) buildColumns() {
 	}
 }
 
-func (l *ListHeader) onSortChanged(colNum int, sort ColumnSort) {
+// Sets the sorting for the ListHeader. Will invoke
+// OnColumnSortChanged if set.
+func (l *ListHeader) SetSorting(sort ListHeaderSort) {
+	if l.sort == sort {
+		return
+	}
+	l.sort = sort
 	for i, c := range l.columnsContainer.Objects {
-		if i != colNum {
-			c.(*fyne.Container).Objects[1].(*colHeader).Sort = SortNone
-			// TODO
-			//c.(*colHeader).Sort = sortNone
+		// TODO
+		//c.(*colHeader).Sort = sortNone
+		hdr := c.(*fyne.Container).Objects[1].(*colHeader)
+		if i == sort.ColNumber {
+			hdr.Sort = sort.Type
+		} else {
+			hdr.Sort = SortNone
 		}
 	}
 	l.Refresh()
 	if l.OnColumnSortChanged != nil {
-		l.OnColumnSortChanged(colNum, sort)
+		l.OnColumnSortChanged(sort)
 	}
 }
 
@@ -156,8 +171,8 @@ func (l *ListHeader) createOnChangedCallbk(colNum int) func(bool) {
 type colHeader struct {
 	widget.BaseWidget
 
-	Sort              ColumnSort
-	OnSortChanged     func(ColumnSort)
+	Sort              SortType
+	OnSortChanged     func(SortType)
 	OnTappedSecondary func(*fyne.PointEvent)
 
 	sortDisabled *bool

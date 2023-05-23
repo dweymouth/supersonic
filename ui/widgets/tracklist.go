@@ -43,7 +43,7 @@ var columns = []string{
 }
 
 type TracklistSort struct {
-	SortOrder  ColumnSort
+	SortOrder  SortType
 	ColumnName string
 }
 
@@ -108,9 +108,7 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Bitrate, Size, Path
 	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 55, 100, 65, 75, 75, -1})
 	t.buildHeader()
-	t.hdr.OnColumnSortChanged = func(idx int, sort ColumnSort) {
-		t.SetSorting(TracklistSort{ColumnName: colName(idx), SortOrder: sort})
-	}
+	t.hdr.OnColumnSortChanged = t.onSorted
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
 		if t.OnColumnVisibilityMenuShown != nil {
@@ -210,81 +208,16 @@ func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
 	}
 }
 
-func (t *Tracklist) stringSort(fieldFn func(*mediaprovider.Track) string, sortOrder ColumnSort) {
-	new := make([]*mediaprovider.Track, len(t.tracksOrigOrder))
-	copy(new, t.tracksOrigOrder)
-	sort.SliceStable(new, func(i, j int) bool {
-		cmp := strings.Compare(fieldFn(new[i]), fieldFn(new[j]))
-		if sortOrder == SortDescending {
-			return cmp > 0
-		}
-		return cmp < 0
-	})
-	t.tracks = new
-}
-
-func (t *Tracklist) intSort(fieldFn func(*mediaprovider.Track) int64, sortOrder ColumnSort) {
-	new := make([]*mediaprovider.Track, len(t.tracksOrigOrder))
-	copy(new, t.tracksOrigOrder)
-	sort.SliceStable(new, func(i, j int) bool {
-		if sortOrder == SortDescending {
-			return fieldFn(new[i]) > fieldFn(new[j])
-		}
-		return fieldFn(new[i]) < fieldFn(new[j])
-	})
-	t.tracks = new
-}
-
 func (t *Tracklist) Sorting() TracklistSort {
 	return t.sorting
 }
 
 func (t *Tracklist) SetSorting(sorting TracklistSort) {
-	t.sorting = sorting
-	t.tracksMutex.Lock()
-	if sorting.SortOrder == SortNone {
-		t.tracks = t.tracksOrigOrder
-		t.tracksMutex.Unlock()
-		t.Refresh()
+	if sorting.ColumnName == "" {
 		return
 	}
-	switch sorting.ColumnName {
-	case ColumnNum:
-		if sorting.SortOrder == SortDescending {
-			t.tracks = sharedutil.Reversed(t.tracksOrigOrder)
-		} else {
-			t.tracks = t.tracksOrigOrder
-		}
-	case ColumnTitle:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Name }, sorting.SortOrder)
-	case ColumnArtist:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.ArtistNames[0] }, sorting.SortOrder)
-	case ColumnAlbum:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Album }, sorting.SortOrder)
-	case ColumnPath:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.FilePath }, sorting.SortOrder)
-	case ColumnRating:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Rating) }, sorting.SortOrder)
-	case ColumnTime:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Duration) }, sorting.SortOrder)
-	case ColumnYear:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Year) }, sorting.SortOrder)
-	case ColumnSize:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return tr.Size }, sorting.SortOrder)
-	case ColumnPlays:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.PlayCount) }, sorting.SortOrder)
-	case ColumnBitrate:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.BitRate) }, sorting.SortOrder)
-	case ColumnFavorite:
-		t.intSort(func(tr *mediaprovider.Track) int64 {
-			if tr.Favorite {
-				return 1
-			}
-			return 0
-		}, sorting.SortOrder)
-	}
-	t.tracksMutex.Unlock()
-	t.Refresh()
+	// actual sorting will be handled in callback from header
+	t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(sorting.ColumnName), Type: sorting.SortOrder})
 }
 
 func (t *Tracklist) SetNowPlaying(trackID string) {
@@ -302,7 +235,7 @@ func (t *Tracklist) IncrementPlayCount(trackID string) {
 	}
 }
 
-// Remove all tracks from the tracklist. Thread-safe.
+// Remove all tracks from the tracklist. Does not issue Refresh call. Thread-safe.
 func (t *Tracklist) Clear() {
 	t.selectionMgr.UnselectAll()
 	t.tracksMutex.Lock()
@@ -310,12 +243,12 @@ func (t *Tracklist) Clear() {
 	t.tracks = nil
 }
 
-// Sets the tracks in the tracklist. Thread-safe.
+// Sets the tracks in the tracklist. Does not issue Refresh call. Thread-safe.
 func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	t.tracks = trs
 	t.tracksOrigOrder = trs
+	t.doSortTracks()
 }
 
 // Returns the tracks in the tracklist in the current display order.
@@ -325,7 +258,7 @@ func (t *Tracklist) GetTracks() []*mediaprovider.Track {
 	return t.tracks
 }
 
-// Append more tracks to the tracklist. Thread-safe.
+// Append more tracks to the tracklist. Does not issue Refresh call. Thread-safe.
 func (t *Tracklist) AppendTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
@@ -365,6 +298,81 @@ func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
 func (t *Tracklist) Refresh() {
 	t.hdr.DisableSorting = t.DisableSorting
 	t.BaseWidget.Refresh()
+}
+
+func (t *Tracklist) stringSort(fieldFn func(*mediaprovider.Track) string) {
+	new := make([]*mediaprovider.Track, len(t.tracksOrigOrder))
+	copy(new, t.tracksOrigOrder)
+	sort.SliceStable(new, func(i, j int) bool {
+		cmp := strings.Compare(fieldFn(new[i]), fieldFn(new[j]))
+		if t.sorting.SortOrder == SortDescending {
+			return cmp > 0
+		}
+		return cmp < 0
+	})
+	t.tracks = new
+}
+
+func (t *Tracklist) intSort(fieldFn func(*mediaprovider.Track) int64) {
+	new := make([]*mediaprovider.Track, len(t.tracksOrigOrder))
+	copy(new, t.tracksOrigOrder)
+	sort.SliceStable(new, func(i, j int) bool {
+		if t.sorting.SortOrder == SortDescending {
+			return fieldFn(new[i]) > fieldFn(new[j])
+		}
+		return fieldFn(new[i]) < fieldFn(new[j])
+	})
+	t.tracks = new
+}
+
+func (t *Tracklist) doSortTracks() {
+	if t.sorting.SortOrder == SortNone {
+		t.tracks = t.tracksOrigOrder
+		return
+	}
+	switch t.sorting.ColumnName {
+	case ColumnNum:
+		if t.sorting.SortOrder == SortDescending {
+			t.tracks = sharedutil.Reversed(t.tracksOrigOrder)
+		} else {
+			t.tracks = t.tracksOrigOrder
+		}
+	case ColumnTitle:
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Name })
+	case ColumnArtist:
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.ArtistNames[0] })
+	case ColumnAlbum:
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Album })
+	case ColumnPath:
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.FilePath })
+	case ColumnRating:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Rating) })
+	case ColumnTime:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Duration) })
+	case ColumnYear:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Year) })
+	case ColumnSize:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return tr.Size })
+	case ColumnPlays:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.PlayCount) })
+	case ColumnBitrate:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.BitRate) })
+	case ColumnFavorite:
+		t.intSort(func(tr *mediaprovider.Track) int64 {
+			if tr.Favorite {
+				return 1
+			}
+			return 0
+		})
+	}
+}
+
+func (t *Tracklist) onSorted(sort ListHeaderSort) {
+	t.sorting = TracklistSort{ColumnName: colName(sort.ColNumber), SortOrder: sort.Type}
+	t.tracksMutex.Lock()
+	t.doSortTracks()
+	t.tracksMutex.Unlock()
+	t.Refresh()
 }
 
 func (t *Tracklist) onPlayTrackAt(idx int) {
