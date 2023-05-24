@@ -70,7 +70,6 @@ func newPlaylistPage(
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		conf.TracklistColumns = cols
 	}
-	a.tracklist.AutoNumber = true
 	reorderMenu := fyne.NewMenuItem("Reorder tracks", nil)
 	reorderMenu.ChildMenu = fyne.NewMenu("", []*fyne.MenuItem{
 		fyne.NewMenuItem("Move to top", a.onMoveSelectedToTop),
@@ -132,6 +131,12 @@ func (a *PlaylistPage) load() {
 	if err != nil {
 		log.Printf("Failed to get playlist: %s", err.Error())
 		return
+	}
+	// Playlists, like albums, have a sequential running order. We want the number column to
+	// represent the track's original position in the playlist, if the user applies a sort.
+	// Re-purpose the TrackNumber field for the track's position in the playlist, rather than its parent album.
+	for i, tr := range playlist.Tracks {
+		tr.TrackNumber = i + 1
 	}
 	a.tracks = playlist.Tracks
 	a.tracklist.SetTracks(playlist.Tracks)
