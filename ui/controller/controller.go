@@ -57,7 +57,7 @@ func (m *Controller) CloseEscapablePopUp() {
 }
 
 // If there is currently no modal popup managed by the Controller visible,
-// then run f (which should create and show a modal dialog) immediately.
+// then run f (which should create and show modal dialog) immediately.
 // else run f when the current modal dialog workflow has ended.
 func (m *Controller) QueueShowModalFunc(f func()) {
 	if m.haveModal {
@@ -140,6 +140,18 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 	}
 }
 
+func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
+	grid.OnShowItemPage = func(id string) { m.NavigateTo(ArtistRoute(id)) }
+	grid.OnPlay = func(artistID string, shuffle bool) { go m.PlayArtistDiscography(artistID, shuffle) }
+	grid.OnAddToQueue = func(artistID string) {
+		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), true /*append*/, false /*shuffle*/)
+	}
+	grid.OnAddToPlaylist = func(artistID string) {
+		go m.DoAddTracksToPlaylistWorkflow(
+			sharedutil.TracksToIDs(m.GetArtistTracks(artistID)))
+	}
+}
+
 func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {
 	server := m.App.ServerManager.Server
 	if server == nil {
@@ -198,7 +210,7 @@ func (m *Controller) PromptForFirstServer() {
 }
 
 // Show dialog to prompt for playlist.
-// Depending on the results of that dialog, potentially create a new playlist
+// Depending on the results of that dialog, potentially create new playlist
 // Add tracks to the user-specified playlist
 func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	go func() {
@@ -297,7 +309,7 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 }
 
 func (m *Controller) PromptForLoginAndConnect() {
-	// TODO: this will need to be rewritten a bit when we support multi servers
+	// TODO: this will need to be rewritten bit when we support multi servers
 	// need to make sure the intended server is first in the list passed to NewLoginDialog
 	d := dialogs.NewLoginDialog(m.App.Config.Servers, m.App.ServerManager.GetServerPassword)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())

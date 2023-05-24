@@ -1,6 +1,7 @@
 package browsing
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -162,8 +163,8 @@ func (a *FavoritesPage) Reload() {
 			}
 			if a.artistListCtr != nil {
 				// refresh favorite artists view
-				al := a.artistListCtr.Objects[0].(*widgets.ArtistGenreList)
-				al.Items = buildArtistListModel(starred.Artists)
+				al := a.artistListCtr.Objects[0].(*widgets.GridView)
+				al.ResetFixed(buildArtistListModel(starred.Artists))
 				if a.toggleBtns.ActivatedButtonIndex() == 1 {
 					// favorite artists view is visible
 					al.Refresh()
@@ -273,14 +274,11 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				return
 			}
 			model := buildArtistListModel(fav.Artists)
-			artistList := widgets.NewArtistGenreList(model)
-			artistList.ShowAlbumCount = true
-			artistList.OnNavTo = func(artistID string) {
-				a.contr.NavigateTo(controller.ArtistRoute(artistID))
-			}
+			artistGrid := widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
+			a.contr.ConnectArtistGridActions(artistGrid)
 			a.artistListCtr = container.New(
 				&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
-				artistList)
+				artistGrid)
 			a.container.Objects[0] = a.artistListCtr
 			a.Refresh()
 			a.pendingViewSwitch = false
@@ -291,13 +289,18 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 	}
 }
 
-func buildArtistListModel(artists []*mediaprovider.Artist) []widgets.ArtistGenreListItemModel {
-	model := make([]widgets.ArtistGenreListItemModel, 0)
+func buildArtistListModel(artists []*mediaprovider.Artist) []widgets.GridViewItemModel {
+	model := make([]widgets.GridViewItemModel, 0)
 	for _, ar := range artists {
-		model = append(model, widgets.ArtistGenreListItemModel{
+		albums := "albums"
+		if ar.AlbumCount == 1 {
+			albums = "album"
+		}
+		model = append(model, widgets.GridViewItemModel{
 			ID:         ar.ID,
+			CoverArtID: ar.CoverArtID,
 			Name:       ar.Name,
-			AlbumCount: ar.AlbumCount,
+			Secondary:  fmt.Sprintf("%d %s", ar.AlbumCount, albums),
 		})
 	}
 	return model

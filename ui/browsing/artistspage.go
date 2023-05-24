@@ -76,15 +76,7 @@ func newArtistsPage(
 	a.searcher.OnSearched = func(query string) { a.onSearched(query, false /*firstLoad*/) }
 	a.searcher.Entry.Text = searchText
 	a.grid = widgets.NewFixedGridView(nil, a.im, myTheme.ArtistIcon)
-	a.grid.OnShowItemPage = a.showArtistPage
-	a.grid.OnPlay = func(artistID string, shuffle bool) { go a.contr.PlayArtistDiscography(artistID, shuffle) }
-	a.grid.OnAddToQueue = func(artistID string) {
-		go a.pm.LoadTracks(a.contr.GetArtistTracks(artistID), true /*append*/, false /*shuffle*/)
-	}
-	a.grid.OnAddToPlaylist = func(artistID string) {
-		go a.contr.DoAddTracksToPlaylistWorkflow(
-			sharedutil.TracksToIDs(a.contr.GetArtistTracks(artistID)))
-	}
+	a.contr.ConnectArtistGridActions(a.grid)
 
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
 	a.container = container.NewBorder(
