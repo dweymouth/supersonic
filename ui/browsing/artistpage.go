@@ -251,7 +251,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, 225)
-	a.artistImage.OnTapped = func() {
+	a.artistImage.OnTapped = func(*fyne.PointEvent) {
 		if im := a.artistImage.Image(); im != nil {
 			a.artistPage.contr.ShowPopUpImage(im)
 		}

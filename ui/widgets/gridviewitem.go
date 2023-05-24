@@ -17,8 +17,6 @@ import (
 var _ fyne.Widget = (*GridViewItem)(nil)
 
 var _ fyne.Widget = (*coverImage)(nil)
-var _ fyne.Tappable = (*coverImage)(nil)
-var _ fyne.SecondaryTappable = (*coverImage)(nil)
 
 type coverImage struct {
 	widget.BaseWidget
@@ -32,12 +30,14 @@ type coverImage struct {
 
 func newCoverImage(placeholderResource fyne.Resource) *coverImage {
 	c := &coverImage{}
-	c.ExtendBaseWidget(c)
 	c.Im = NewImagePlaceholder(placeholderResource, 200)
+	c.Im.OnTapped = c.Tapped
+	c.Im.OnTappedSecondary = c.TappedSecondary
 	c.Im.ScaleMode = canvas.ImageScaleFastest
 	c.playbtn = &canvas.Image{FillMode: canvas.ImageFillContain, Resource: res.ResPlaybuttonPng}
 	c.playbtn.SetMinSize(fyne.NewSize(60, 60))
 	c.playbtn.Hidden = true
+	c.ExtendBaseWidget(c)
 	return c
 }
 
@@ -93,7 +93,7 @@ func (a *coverImage) center() fyne.Position {
 }
 
 func (a *coverImage) SetImage(im image.Image) {
-	a.Im.SetImage(im, false)
+	a.Im.SetImage(im, true)
 }
 
 func isInside(origin fyne.Position, radius float32, point fyne.Position) bool {

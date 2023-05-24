@@ -25,7 +25,8 @@ type ImagePlaceholder struct {
 	border    *myTheme.ThemedRectangle
 	minSize   float32
 
-	OnTapped func()
+	OnTapped          func(*fyne.PointEvent)
+	OnTappedSecondary func(*fyne.PointEvent)
 }
 
 func NewImagePlaceholder(centerIcon fyne.Resource, minSize float32) *ImagePlaceholder {
@@ -35,6 +36,7 @@ func NewImagePlaceholder(centerIcon fyne.Resource, minSize float32) *ImagePlaceh
 	i.iconImage.FillMode = canvas.ImageFillContain
 	i.iconImage.SetMinSize(fyne.NewSize(minSize/4, minSize/4))
 	i.imageDisp = NewTappableImage(i.onTapped)
+	i.imageDisp.OnTappedSecondary = i.onTappedSecondary
 	i.imageDisp.FillMode = canvas.ImageFillContain
 	i.imageDisp.Hidden = true
 	i.border = myTheme.NewThemedRectangle(theme.ColorNameBackground)
@@ -66,9 +68,15 @@ func (i *ImagePlaceholder) Image() image.Image {
 	return i.image
 }
 
-func (i *ImagePlaceholder) onTapped() {
+func (i *ImagePlaceholder) onTapped(e *fyne.PointEvent) {
 	if i.OnTapped != nil {
-		i.OnTapped()
+		i.OnTapped(e)
+	}
+}
+
+func (i *ImagePlaceholder) onTappedSecondary(e *fyne.PointEvent) {
+	if i.OnTappedSecondary != nil {
+		i.OnTappedSecondary(e)
 	}
 }
 
