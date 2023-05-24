@@ -67,7 +67,6 @@ func newArtistsPage(
 	}
 	a.ExtendBaseWidget(a)
 
-	log.Printf("Scroll pos: full %0.2f search %0.2f", fullGridScrollPos, searchGridScrollPos)
 	a.titleDisp = widget.NewRichTextWithText("Artists")
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
@@ -154,10 +153,6 @@ func (a *ArtistsPage) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *ArtistsPage) Route() controller.Route {
 	return controller.ArtistsRoute()
-}
-
-func (a *ArtistsPage) showArtistPage(id string) {
-	a.contr.NavigateTo(controller.ArtistRoute(id))
 }
 
 func (a *ArtistsPage) Save() SavedPage {
