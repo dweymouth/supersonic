@@ -57,7 +57,7 @@ func (m *Controller) CloseEscapablePopUp() {
 }
 
 // If there is currently no modal popup managed by the Controller visible,
-// then run f (which should create and show modal dialog) immediately.
+// then run f (which should create and show a modal dialog) immediately.
 // else run f when the current modal dialog workflow has ended.
 func (m *Controller) QueueShowModalFunc(f func()) {
 	if m.haveModal {
