@@ -164,7 +164,7 @@ func (a *FavoritesPage) Reload() {
 			if a.artistListCtr != nil {
 				// refresh favorite artists view
 				al := a.artistListCtr.Objects[0].(*widgets.GridView)
-				al.ResetFixed(buildArtistListModel(starred.Artists))
+				al.ResetFixed(buildArtistGridViewModel(starred.Artists))
 				if a.toggleBtns.ActivatedButtonIndex() == 1 {
 					// favorite artists view is visible
 					al.Refresh()
@@ -273,7 +273,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
-			model := buildArtistListModel(fav.Artists)
+			model := buildArtistGridViewModel(fav.Artists)
 			artistGrid := widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
 			a.contr.ConnectArtistGridActions(artistGrid)
 			a.artistListCtr = container.New(
@@ -289,7 +289,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 	}
 }
 
-func buildArtistListModel(artists []*mediaprovider.Artist) []widgets.GridViewItemModel {
+func buildArtistGridViewModel(artists []*mediaprovider.Artist) []widgets.GridViewItemModel {
 	model := make([]widgets.GridViewItemModel, 0)
 	for _, ar := range artists {
 		albums := "albums"
