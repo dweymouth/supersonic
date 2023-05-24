@@ -54,11 +54,12 @@ type TappableImage struct {
 	widget.BaseWidget
 	canvas.Image
 
-	OnTapped          func()
-	OnTappedSecondary func(pos fyne.Position)
+	DisableTapping    bool
+	OnTapped          func(*fyne.PointEvent)
+	OnTappedSecondary func(*fyne.PointEvent)
 }
 
-func NewTappableImage(onTapped func()) *TappableImage {
+func NewTappableImage(onTapped func(*fyne.PointEvent)) *TappableImage {
 	t := &TappableImage{OnTapped: onTapped}
 	t.ExtendBaseWidget(t)
 	return t
@@ -85,21 +86,21 @@ func (t *TappableImage) Resize(size fyne.Size) {
 }
 
 func (t *TappableImage) Cursor() desktop.Cursor {
-	if t.haveImage() {
+	if !t.DisableTapping && t.haveImage() {
 		return desktop.PointerCursor
 	}
 	return desktop.DefaultCursor
 }
 
-func (t *TappableImage) Tapped(_ *fyne.PointEvent) {
-	if t.haveImage() && t.OnTapped != nil {
-		t.OnTapped()
+func (t *TappableImage) Tapped(e *fyne.PointEvent) {
+	if !t.DisableTapping && t.haveImage() && t.OnTapped != nil {
+		t.OnTapped(e)
 	}
 }
 
 func (t *TappableImage) TappedSecondary(e *fyne.PointEvent) {
-	if t.haveImage() && t.OnTappedSecondary != nil {
-		t.OnTappedSecondary(e.AbsolutePosition)
+	if !t.DisableTapping && t.haveImage() && t.OnTappedSecondary != nil {
+		t.OnTappedSecondary(e)
 	}
 }
 

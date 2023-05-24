@@ -94,14 +94,12 @@ func (a *AboutDialog) buildCreditsContainer() fyne.CanvasObject {
 	freepikURL, _ := url.Parse("https://www.flaticon.com/authors/freepik")
 	appIconCredit := widget.NewLabel("The Supersonic app icon is a derivative of a work created by Piotr Siedlecki and placed in the public domain.")
 	appIconCredit.Wrapping = fyne.TextWrapWord
-	albumPlaceholderCredit := widget.NewLabel("The album cover placeholder image was created by @LaurenBacall originally for the MP3Tag project.")
-	albumPlaceholderCredit.Wrapping = fyne.TextWrapWord
 	return container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 		widget.NewLabel("Major frameworks and modules used in this application include:"),
 		container.NewHBox(widget.NewHyperlink("Fyne toolkit", fyneURL), widget.NewLabel("BSD 3-Clause License")),
 		container.NewHBox(widget.NewHyperlink("go-subsonic", goSubsonicURL), widget.NewLabel("GPL v3 License")),
 		container.NewHBox(widget.NewHyperlink("go-toml", goTomlURL), widget.NewLabel("MIT License")),
-		appIconCredit, albumPlaceholderCredit,
+		appIconCredit,
 		container.NewHBox(widget.NewLabel("Additional icons by:"), widget.NewHyperlink("Freepik on flaticon.com", freepikURL)),
 	)
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -94,7 +95,7 @@ func (a *PlaylistsPage) createListView() {
 
 func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 	model := createPlaylistGridViewModel(playlists)
-	a.gridView = widgets.NewFixedGridView(model, a.contr.App.ImageManager)
+	a.gridView = widgets.NewFixedGridView(model, a.contr.App.ImageManager, myTheme.PlaylistIcon)
 	a.gridView.OnPlay = func(id string, shuffle bool) {
 		go a.contr.App.PlaybackManager.PlayPlaylist(id, 0, shuffle)
 	}

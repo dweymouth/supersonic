@@ -55,7 +55,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	return n
 }
 
-func (n *NowPlayingCard) onShowCoverImage() {
+func (n *NowPlayingCard) onShowCoverImage(*fyne.PointEvent) {
 	if n.OnShowCoverImage != nil {
 		n.OnShowCoverImage()
 	}
@@ -107,7 +107,7 @@ func (n *NowPlayingCard) OnTrackNameTapped(f func()) {
 	n.trackName.OnTapped = f
 }
 
-func (n *NowPlayingCard) showMenu(pos fyne.Position) {
+func (n *NowPlayingCard) showMenu(e *fyne.PointEvent) {
 	if n.menu == nil {
 		ratingMenu := util.NewRatingSubmenu(n.onSetRating)
 		m := fyne.NewMenu("",
@@ -117,5 +117,5 @@ func (n *NowPlayingCard) showMenu(pos fyne.Position) {
 			fyne.NewMenuItem("Add to playlist...", func() { n.onAddToPlaylist() }))
 		n.menu = widget.NewPopUpMenu(m, fyne.CurrentApp().Driver().CanvasForObject(n))
 	}
-	n.menu.ShowAtPosition(pos)
+	n.menu.ShowAtPosition(e.AbsolutePosition)
 }

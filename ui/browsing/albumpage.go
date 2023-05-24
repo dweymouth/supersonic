@@ -164,7 +164,7 @@ type AlbumPageHeader struct {
 func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a := &AlbumPageHeader{page: page}
 	a.ExtendBaseWidget(a)
-	a.cover = widgets.NewTappableImage(func() { go a.showPopUpCover() })
+	a.cover = widgets.NewTappableImage(func(*fyne.PointEvent) { go a.showPopUpCover() })
 	a.cover.FillMode = canvas.ImageFillContain
 	a.cover.SetMinSize(fyne.NewSize(225, 225))
 
