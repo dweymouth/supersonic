@@ -139,6 +139,7 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 		secondaryText: NewCustomHyperlink(),
 		Cover:         newCoverImage(placeholderResource),
 	}
+	g.primaryText.SetTextStyle(fyne.TextStyle{Bold: true})
 	g.ExtendBaseWidget(g)
 	g.Cover.OnPlay = func() { g.onPlay(false) }
 	g.Cover.OnShowContextMenu = g.showContextMenu
