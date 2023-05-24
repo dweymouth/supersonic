@@ -210,7 +210,7 @@ func (m *Controller) PromptForFirstServer() {
 }
 
 // Show dialog to prompt for playlist.
-// Depending on the results of that dialog, potentially create new playlist
+// Depending on the results of that dialog, potentially create a new playlist
 // Add tracks to the user-specified playlist
 func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	go func() {
@@ -309,7 +309,7 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 }
 
 func (m *Controller) PromptForLoginAndConnect() {
-	// TODO: this will need to be rewritten bit when we support multi servers
+	// TODO: this will need to be rewritten a bit when we support multi servers
 	// need to make sure the intended server is first in the list passed to NewLoginDialog
 	d := dialogs.NewLoginDialog(m.App.Config.Servers, m.App.ServerManager.GetServerPassword)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
