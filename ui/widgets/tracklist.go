@@ -214,6 +214,10 @@ func (t *Tracklist) Sorting() TracklistSort {
 
 func (t *Tracklist) SetSorting(sorting TracklistSort) {
 	if sorting.ColumnName == "" {
+		// nil case - reset current sort
+		if sharedutil.SliceContains(columns, t.sorting.ColumnName) {
+			t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(t.sorting.ColumnName), Type: SortNone})
+		}
 		return
 	}
 	// actual sorting will be handled in callback from header
@@ -425,7 +429,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		t.ctxMenu.Items = append(t.ctxMenu.Items,
 			fyne.NewMenuItem("Add to playlist...", func() {
 				if t.OnAddToPlaylist != nil {
-					t.OnAddToPlaylist(t.selectedTrackIDs())
+					t.OnAddToPlaylist(t.SelectedTrackIDs())
 				}
 			}))
 		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
@@ -513,7 +517,7 @@ func (t *Tracklist) selectedTracks() []*mediaprovider.Track {
 	return tracks
 }
 
-func (t *Tracklist) selectedTrackIDs() []string {
+func (t *Tracklist) SelectedTrackIDs() []string {
 	sel := t.selectionMgr.GetSelection()
 	tracks := make([]string, 0, len(sel))
 	t.tracksMutex.RLock()

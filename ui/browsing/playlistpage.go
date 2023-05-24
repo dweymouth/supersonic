@@ -158,16 +158,23 @@ func (a *PlaylistPage) onMoveSelectedToBottom() {
 }
 
 func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
-	// TODO: revisit this for how to deal with sort order
-	idxs := a.tracklist.SelectedTrackIndexes()
-	newTracks := sharedutil.ReorderTracks(a.tracklist.GetTracks(), idxs, op)
-	ids := make([]string, len(newTracks))
-	for i, tr := range newTracks {
-		ids[i] = tr.ID
+	// Since the tracklist view may be sorted in a different order than the
+	// actual running order, we need to get the IDs of the selected tracks
+	// from the tracklist and convert them to indices in the *original* run order
+	ids := a.tracklist.SelectedTrackIDs()
+	idxs := make([]int, 0, len(ids))
+	for i, tr := range a.tracks {
+		if sharedutil.SliceContains(ids, tr.ID) {
+			idxs = append(idxs, i)
+		}
 	}
+	newTracks := sharedutil.ReorderTracks(a.tracks, idxs, op)
+	ids = sharedutil.TracksToIDs(newTracks)
 	if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 		log.Printf("error updating playlist: %s", err.Error())
 	} else {
+		// force-switch back to unsorted view to show new track order
+		a.tracklist.SetSorting(widgets.TracklistSort{})
 		a.tracklist.SetTracks(newTracks)
 		a.tracklist.UnselectAll()
 		a.tracklist.Refresh()
