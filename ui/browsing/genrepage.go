@@ -33,8 +33,6 @@ type GenrePage struct {
 	titleDisp  *widget.RichText
 	playRandom *widget.Button
 
-	OnPlayAlbum func(string, int)
-
 	container *fyne.Container
 }
 

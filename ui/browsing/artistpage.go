@@ -126,15 +126,6 @@ func (a *ArtistPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track
 	}
 }
 
-func (a *ArtistPage) playAllTracks() {
-	if a.artistInfo != nil { // page loaded
-		for i, album := range a.artistInfo.Albums {
-			a.pm.LoadAlbum(album.ID, i > 0 /*append*/, false /*shuffle*/)
-		}
-		a.pm.PlayFromBeginning()
-	}
-}
-
 func (a *ArtistPage) playArtistRadio() {
 	go a.pm.PlaySimilarSongs(a.artistID)
 }
@@ -267,7 +258,9 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		}
 	}
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
-	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), page.playAllTracks)
+	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), func() {
+		go a.artistPage.contr.PlayArtistDiscography(a.artistID, false /*shuffle*/)
+	})
 	a.playRadioBtn = widget.NewButtonWithIcon(" Play Artist Radio", myTheme.ShuffleIcon, page.playArtistRadio)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.ExtendBaseWidget(a)

@@ -20,6 +20,7 @@ type AlbumWithTracks struct {
 
 type Artist struct {
 	ID         string
+	CoverArtID string
 	Name       string
 	Favorite   bool
 	AlbumCount int
