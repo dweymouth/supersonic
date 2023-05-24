@@ -33,15 +33,15 @@ type FavoritesPage struct {
 	nowPlayingID      string
 	pendingViewSwitch bool
 
-	grid          *widgets.GridView
-	searchGrid    *widgets.GridView
-	artistListCtr *fyne.Container
-	tracklistCtr  *fyne.Container
-	searcher      *widgets.SearchEntry
-	filterBtn     *widgets.AlbumFilterButton
-	titleDisp     *widget.RichText
-	toggleBtns    *widgets.ToggleButtonGroup
-	container     *fyne.Container
+	grid         *widgets.GridView
+	searchGrid   *widgets.GridView
+	artistGrid   *widgets.GridView
+	tracklistCtr *fyne.Container
+	searcher     *widgets.SearchEntry
+	filterBtn    *widgets.AlbumFilterButton
+	titleDisp    *widget.RichText
+	toggleBtns   *widgets.ToggleButtonGroup
+	container    *fyne.Container
 }
 
 func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Controller, mp mediaprovider.MediaProvider, pm *backend.PlaybackManager, im *backend.ImageManager) *FavoritesPage {
@@ -144,7 +144,7 @@ func (a *FavoritesPage) Reload() {
 		iter := a.mp.IterateAlbums("", a.filter)
 		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
-	if a.tracklistCtr != nil || a.artistListCtr != nil {
+	if a.tracklistCtr != nil || a.artistGrid != nil {
 		go func() {
 			// re-fetch starred info from server
 			starred, err := a.mp.GetFavorites()
@@ -161,13 +161,12 @@ func (a *FavoritesPage) Reload() {
 					tr.Refresh()
 				}
 			}
-			if a.artistListCtr != nil {
+			if a.artistGrid != nil {
 				// refresh favorite artists view
-				al := a.artistListCtr.Objects[0].(*widgets.GridView)
-				al.ResetFixed(buildArtistGridViewModel(starred.Artists))
+				a.artistGrid.ResetFixed(buildArtistGridViewModel(starred.Artists))
 				if a.toggleBtns.ActivatedButtonIndex() == 1 {
 					// favorite artists view is visible
-					al.Refresh()
+					a.artistGrid.Refresh()
 				}
 			}
 		}()
@@ -259,7 +258,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 	a.cfg.InitialView = "Artists" // save setting
 	a.searcher.Entry.Hide()       // disable search on artists for now
 	a.filterBtn.Hide()
-	if a.artistListCtr == nil {
+	if a.artistGrid == nil {
 		if a.pendingViewSwitch {
 			return
 		}
@@ -274,17 +273,14 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				return
 			}
 			model := buildArtistGridViewModel(fav.Artists)
-			artistGrid := widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
-			a.contr.ConnectArtistGridActions(artistGrid)
-			a.artistListCtr = container.New(
-				&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
-				artistGrid)
-			a.container.Objects[0] = a.artistListCtr
+			a.artistGrid = widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
+			a.contr.ConnectArtistGridActions(a.artistGrid)
+			a.container.Objects[0] = a.artistGrid
 			a.Refresh()
 			a.pendingViewSwitch = false
 		}()
 	} else {
-		a.container.Objects[0] = a.artistListCtr
+		a.container.Objects[0] = a.artistGrid
 		a.Refresh()
 	}
 }
