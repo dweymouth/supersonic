@@ -6,7 +6,6 @@ import (
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -183,7 +182,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a := &PlaylistPageHeader{page: page}
 	a.ExtendBaseWidget(a)
 
-	a.image = widgets.NewImagePlaceholder(res.ResPlaylistInvertPng, 225)
+	a.image = widgets.NewImagePlaceholder(myTheme.PlaylistIcon, 225)
 	a.titleLabel = widget.NewRichTextWithText("")
 	a.titleLabel.Wrapping = fyne.TextTruncate
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{

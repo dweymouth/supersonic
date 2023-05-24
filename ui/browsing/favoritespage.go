@@ -55,7 +55,7 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Contro
 	a.ExtendBaseWidget(a)
 	a.createHeader(0)
 	iter := mp.IterateAlbums("", a.filter)
-	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
+	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im, myTheme.AlbumIcon)
 	a.contr.ConnectAlbumGridActions(a.grid)
 	if cfg.InitialView == "Artists" {
 		a.toggleBtns.SetActivatedButton(1)
@@ -233,7 +233,7 @@ func (a *FavoritesPage) SelectAll() {
 func (a *FavoritesPage) doSearchAlbums(query string) {
 	iter := a.mp.SearchAlbums(query, a.filter)
 	if a.searchGrid == nil {
-		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
+		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im, myTheme.AlbumIcon)
 		a.contr.ConnectAlbumGridActions(a.searchGrid)
 	} else {
 		a.searchGrid.Reset(widgets.NewGridViewAlbumIterator(iter))

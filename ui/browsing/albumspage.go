@@ -5,6 +5,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
@@ -75,7 +76,7 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 	}
 	a.sortOrder.Selected = cfg.SortOrder
 	iter := mp.IterateAlbums(a.sortOrder.Selected, a.filter)
-	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im)
+	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im, myTheme.AlbumIcon)
 	contr.ConnectAlbumGridActions(a.grid)
 	a.createSearchAndFilter()
 	a.createContainer(false)
@@ -190,7 +191,7 @@ func (a *AlbumsPage) Save() SavedPage {
 func (a *AlbumsPage) doSearch(query string) {
 	iter := widgets.NewGridViewAlbumIterator(a.mp.SearchAlbums(query, a.filter))
 	if a.searchGrid == nil {
-		a.searchGrid = widgets.NewGridView(iter, a.im)
+		a.searchGrid = widgets.NewGridView(iter, a.im, myTheme.AlbumIcon)
 		a.contr.ConnectAlbumGridActions(a.searchGrid)
 	} else {
 		a.searchGrid.Reset(iter)

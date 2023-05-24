@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 
 	"fyne.io/fyne/v2"
@@ -81,6 +80,7 @@ type GridViewState struct {
 	itemsMutex   sync.RWMutex
 	iter         GridViewIterator
 	imageFetcher ImageFetcher
+	placeholder  fyne.Resource
 	highestShown int
 	fetchCancel  context.CancelFunc
 	done         bool
@@ -96,12 +96,13 @@ type GridViewState struct {
 
 var _ fyne.Widget = (*GridView)(nil)
 
-func NewFixedGridView(items []GridViewItemModel, fetch ImageFetcher) *GridView {
+func NewFixedGridView(items []GridViewItemModel, fetch ImageFetcher, placeholder fyne.Resource) *GridView {
 	g := &GridView{
 		GridViewState: GridViewState{
 			items:        items,
 			done:         true,
 			imageFetcher: fetch,
+			placeholder:  placeholder,
 		},
 	}
 	g.ExtendBaseWidget(g)
@@ -109,7 +110,7 @@ func NewFixedGridView(items []GridViewItemModel, fetch ImageFetcher) *GridView {
 	return g
 }
 
-func NewGridView(iter GridViewIterator, fetch ImageFetcher) *GridView {
+func NewGridView(iter GridViewIterator, fetch ImageFetcher, placeholder fyne.Resource) *GridView {
 	g := &GridView{
 		GridViewState: GridViewState{
 			iter:         iter,
@@ -117,7 +118,6 @@ func NewGridView(iter GridViewIterator, fetch ImageFetcher) *GridView {
 		},
 	}
 	g.ExtendBaseWidget(g)
-
 	g.createGridWrap()
 
 	// fetch initial items
@@ -174,6 +174,14 @@ func (g *GridView) ResetFixed(items []GridViewItemModel) {
 	g.iter = nil
 }
 
+func (g *GridView) GetScrollOffset() float32 {
+	return g.grid.GetScrollOffset()
+}
+
+func (g *GridView) ScrollToOffset(offs float32) {
+	g.grid.ScrollToOffset(offs)
+}
+
 func (g *GridView) createGridWrap() {
 	g.grid = NewGridWrap(
 		func() int {
@@ -181,7 +189,7 @@ func (g *GridView) createGridWrap() {
 		},
 		// create func
 		func() fyne.CanvasObject {
-			card := NewGridViewItem()
+			card := NewGridViewItem(g.placeholder)
 			card.OnPlay = func(shuffle bool) {
 				if g.OnPlay != nil {
 					g.OnPlay(card.ItemID(), shuffle)
@@ -244,7 +252,7 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 		if img, ok := g.imageFetcher.GetCoverThumbnailFromCache(item.CoverArtID); ok {
 			card.Cover.SetImage(img)
 		} else {
-			card.Cover.SetImageResource(res.ResAlbumplaceholderPng)
+			card.Cover.SetImage(nil)
 			// asynchronously fetch cover image
 			ctx, cancel := context.WithCancel(context.Background())
 			card.ImgLoadCancel = cancel
@@ -263,8 +271,8 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 			}(ctx)
 		}
 	} else {
-		// use the placeholder image for an item that has no cover art ID
-		card.Cover.SetImageResource(res.ResAlbumplaceholderPng)
+		// use the placeholder for an item that has no cover art ID
+		card.Cover.SetImage(nil)
 	}
 
 	// if user has scrolled near the bottom, fetch more

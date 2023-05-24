@@ -1,7 +1,6 @@
 #!/bin/sh
 
 fyne bundle -package res -prefix Res appicon-256.png > bundled.go
-fyne bundle -append -prefix Res albumplaceholder.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/disc.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/disc-invert.png >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/headphones.png >> bundled.go

@@ -7,7 +7,6 @@ import (
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -166,7 +165,7 @@ func (a *ArtistPage) showAlbumGrid() {
 				Secondary:  strconv.Itoa(al.Year),
 			}
 		})
-		a.albumGrid = widgets.NewFixedGridView(model, a.im)
+		a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
 		a.contr.ConnectAlbumGridActions(a.albumGrid)
 	}
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
@@ -251,7 +250,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.artistImage = widgets.NewImagePlaceholder(res.ResPeopleInvertPng, 225)
+	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, 225)
 	a.artistImage.OnTapped = func() {
 		if im := a.artistImage.Image(); im != nil {
 			a.artistPage.contr.ShowPopUpImage(im)

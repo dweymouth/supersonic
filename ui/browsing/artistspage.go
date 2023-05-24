@@ -14,6 +14,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 )
@@ -74,7 +75,7 @@ func newArtistsPage(
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = func(query string) { a.onSearched(query, false /*firstLoad*/) }
 	a.searcher.Entry.Text = searchText
-	a.grid = widgets.NewFixedGridView(nil, a.im)
+	a.grid = widgets.NewFixedGridView(nil, a.im, myTheme.ArtistIcon)
 	a.grid.OnShowItemPage = a.showArtistPage
 	a.grid.OnPlay = func(artistID string, shuffle bool) { go a.contr.PlayArtistDiscography(artistID, shuffle) }
 	a.grid.OnAddToQueue = func(artistID string) {

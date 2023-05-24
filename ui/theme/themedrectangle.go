@@ -11,7 +11,9 @@ type ThemedRectangle struct {
 
 	rect *canvas.Rectangle
 
-	ColorName fyne.ThemeColorName
+	ColorName       fyne.ThemeColorName
+	BorderWidth     float32
+	BorderColorName fyne.ThemeColorName
 }
 
 func NewThemedRectangle(colorName fyne.ThemeColorName) *ThemedRectangle {
@@ -25,8 +27,11 @@ func NewThemedRectangle(colorName fyne.ThemeColorName) *ThemedRectangle {
 }
 
 func (t *ThemedRectangle) Refresh() {
-	t.rect.FillColor = fyne.CurrentApp().Settings().Theme().Color(t.ColorName,
-		fyne.CurrentApp().Settings().ThemeVariant())
+	settings := fyne.CurrentApp().Settings()
+	theme := settings.Theme()
+	t.rect.FillColor = theme.Color(t.ColorName, settings.ThemeVariant())
+	t.rect.StrokeWidth = t.BorderWidth
+	t.rect.StrokeColor = theme.Color(t.BorderColorName, settings.ThemeVariant())
 	t.BaseWidget.Refresh()
 }
 
