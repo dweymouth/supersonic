@@ -44,6 +44,7 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	t.ExtendBaseWidget(t)
 
 	t.tracklist = widgets.NewTracklist(nil)
+	t.tracklist.DisableSorting = true
 	t.tracklist.AutoNumber = true
 	t.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	t.tracklist.OnVisibleColumnsChanged = func(cols []string) {

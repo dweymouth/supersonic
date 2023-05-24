@@ -28,6 +28,7 @@ type FavoritesPage struct {
 	im    *backend.ImageManager
 	mp    mediaprovider.MediaProvider
 
+	trackSort         widgets.TracklistSort
 	filter            mediaprovider.AlbumFilter
 	searchText        string
 	nowPlayingID      string
@@ -103,6 +104,7 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 		im:         saved.im,
 		searchText: saved.searchText,
 		filter:     saved.filter,
+		trackSort:  saved.trackSort,
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(saved.activeToggleBtn)
@@ -155,7 +157,7 @@ func (a *FavoritesPage) Reload() {
 			if a.tracklistCtr != nil {
 				// refresh favorite songs view
 				tr := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
-				tr.Tracks = starred.Tracks
+				tr.SetTracks(starred.Tracks)
 				if a.toggleBtns.ActivatedButtonIndex() == 2 {
 					// favorite songs view is visible
 					tr.Refresh()
@@ -187,6 +189,9 @@ func (a *FavoritesPage) Save() SavedPage {
 	}
 	if a.searchGrid != nil {
 		sf.searchGridState = a.searchGrid.SaveToState()
+	}
+	if a.tracklistCtr != nil {
+		sf.trackSort = a.tracklistCtr.Objects[0].(*widgets.Tracklist).Sorting()
 	}
 	return sf
 }
@@ -323,6 +328,7 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			tracklist := widgets.NewTracklist(fav.Tracks)
 			tracklist.AutoNumber = true
 			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
+			tracklist.SetSorting(a.trackSort)
 			tracklist.OnVisibleColumnsChanged = func(cols []string) {
 				a.cfg.TracklistColumns = cols
 			}
@@ -357,6 +363,7 @@ type savedFavoritesPage struct {
 	filter          mediaprovider.AlbumFilter
 	searchText      string
 	activeToggleBtn int
+	trackSort       widgets.TracklistSort
 }
 
 func (s *savedFavoritesPage) Restore() Page {

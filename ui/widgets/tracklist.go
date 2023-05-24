@@ -3,7 +3,9 @@ package widgets
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -21,6 +23,8 @@ import (
 )
 
 const (
+	ColumnNum      = "Num"
+	ColumnTitle    = "Title"
 	ColumnArtist   = "Artist"
 	ColumnAlbum    = "Album"
 	ColumnTime     = "Time"
@@ -33,13 +37,18 @@ const (
 	ColumnPath     = "Path"
 )
 
+var columns = []string{
+	ColumnNum, ColumnTitle, ColumnArtist, ColumnAlbum, ColumnTime, ColumnYear,
+	ColumnFavorite, ColumnRating, ColumnPlays, ColumnBitrate, ColumnSize, ColumnPath,
+}
+
+type TracklistSort struct {
+	SortOrder  SortType
+	ColumnName string
+}
+
 type Tracklist struct {
 	widget.BaseWidget
-
-	// Tracks is the set of tracks displayed by the widget.
-	// Direct access to this is not thread-safe but OK for
-	// views that only load tracks into the widget once at page load.
-	Tracks []*mediaprovider.Track
 
 	// AutoNumber sets whether to auto-number the tracks 1..N in display order,
 	// or to use the number from the track's metadata
@@ -57,6 +66,9 @@ type Tracklist struct {
 	// the tracklist context menu.
 	DisablePlaybackMenu bool
 
+	// Disables sorting the tracklist by clicking individual columns.
+	DisableSorting bool
+
 	// user action callbacks
 	OnPlayTrackAt   func(int)
 	OnPlaySelection func(tracks []*mediaprovider.Track, shuffle bool)
@@ -73,8 +85,12 @@ type Tracklist struct {
 	OnTrackShown                func(tracknum int)
 
 	visibleColumns []bool
+	sorting        TracklistSort
 
-	tracksMutex  sync.RWMutex
+	tracksMutex     sync.RWMutex
+	tracks          []*mediaprovider.Track
+	tracksOrigOrder []*mediaprovider.Track
+
 	selectionMgr util.ListSelectionManager
 	nowPlayingID string
 	colLayout    *layouts.ColumnsLayout
@@ -85,13 +101,14 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
-	t := &Tracklist{Tracks: tracks, visibleColumns: make([]bool, 12)}
+	t := &Tracklist{tracks: tracks, tracksOrigOrder: tracks, visibleColumns: make([]bool, 12)}
 
 	t.ExtendBaseWidget(t)
 	t.selectionMgr = util.NewListSelectionManager(t.lenTracks)
 	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Bitrate, Size, Path
-	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 50, 50, 45, 95, 55, 65, 70, -1})
+	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 55, 100, 65, 75, 75, -1})
 	t.buildHeader()
+	t.hdr.OnColumnSortChanged = t.onSorted
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
 		if t.OnColumnVisibilityMenuShown != nil {
@@ -127,18 +144,18 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 
 func (t *Tracklist) buildHeader() {
 	t.hdr = NewListHeader([]ListColumn{
-		{Text: "#", AlignTrailing: true, CanToggleVisible: false},
-		{Text: "Title", AlignTrailing: false, CanToggleVisible: false},
-		{Text: "Artist", AlignTrailing: false, CanToggleVisible: true},
-		{Text: "Album", AlignTrailing: false, CanToggleVisible: true},
-		{Text: "Time", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Year", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Fav.", AlignTrailing: false, CanToggleVisible: true},
-		{Text: "Rating", AlignTrailing: false, CanToggleVisible: true},
-		{Text: "Plays", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Bitrate", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "Size", AlignTrailing: true, CanToggleVisible: true},
-		{Text: "File Path", AlignTrailing: false, CanToggleVisible: true}},
+		{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
+		{Text: "Title", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: "Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true},
+		{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 		t.colLayout)
 }
 
@@ -146,10 +163,10 @@ func (t *Tracklist) buildHeader() {
 func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
-	if idx >= len(t.Tracks) {
+	if idx >= len(t.tracks) {
 		return nil
 	}
-	return t.Tracks[idx]
+	return t.tracks[idx]
 }
 
 func (t *Tracklist) SetVisibleColumns(cols []string) {
@@ -191,6 +208,22 @@ func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
 	}
 }
 
+func (t *Tracklist) Sorting() TracklistSort {
+	return t.sorting
+}
+
+func (t *Tracklist) SetSorting(sorting TracklistSort) {
+	if sorting.ColumnName == "" {
+		// nil case - reset current sort
+		if sharedutil.SliceContains(columns, t.sorting.ColumnName) {
+			t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(t.sorting.ColumnName), Type: SortNone})
+		}
+		return
+	}
+	// actual sorting will be handled in callback from header
+	t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(sorting.ColumnName), Type: sorting.SortOrder})
+}
+
 func (t *Tracklist) SetNowPlaying(trackID string) {
 	t.nowPlayingID = trackID
 	t.list.Refresh()
@@ -198,7 +231,7 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 
 func (t *Tracklist) IncrementPlayCount(trackID string) {
 	t.tracksMutex.RLock()
-	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	tr := sharedutil.FindTrackByID(trackID, t.tracks)
 	t.tracksMutex.RUnlock()
 	if tr != nil {
 		tr.PlayCount += 1
@@ -206,19 +239,34 @@ func (t *Tracklist) IncrementPlayCount(trackID string) {
 	}
 }
 
-// Remove all tracks from the tracklist. Thread-safe.
+// Remove all tracks from the tracklist. Does not issue Refresh call. Thread-safe.
 func (t *Tracklist) Clear() {
 	t.selectionMgr.UnselectAll()
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	t.Tracks = nil
+	t.tracks = nil
 }
 
-// Append more tracks to the tracklist. Thread-safe.
+// Sets the tracks in the tracklist. Does not issue Refresh call. Thread-safe.
+func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
+	t.tracksMutex.Lock()
+	defer t.tracksMutex.Unlock()
+	t.tracksOrigOrder = trs
+	t.doSortTracks()
+}
+
+// Returns the tracks in the tracklist in the current display order.
+func (t *Tracklist) GetTracks() []*mediaprovider.Track {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	return t.tracks
+}
+
+// Append more tracks to the tracklist. Does not issue Refresh call. Thread-safe.
 func (t *Tracklist) AppendTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	t.Tracks = append(t.Tracks, trs...)
+	t.tracks = append(t.tracks, trs...)
 }
 
 func (t *Tracklist) SelectAll() {
@@ -234,7 +282,7 @@ func (t *Tracklist) UnselectAll() {
 func (t *Tracklist) SelectAndScrollToTrack(trackID string) {
 	t.tracksMutex.RLock()
 	idx := -1
-	for i, tr := range t.Tracks {
+	for i, tr := range t.tracks {
 		if tr.ID == trackID {
 			idx = i
 			break
@@ -249,6 +297,86 @@ func (t *Tracklist) SelectAndScrollToTrack(trackID string) {
 
 func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.container)
+}
+
+func (t *Tracklist) Refresh() {
+	t.hdr.DisableSorting = t.DisableSorting
+	t.BaseWidget.Refresh()
+}
+
+func (t *Tracklist) stringSort(fieldFn func(*mediaprovider.Track) string) {
+	new := make([]*mediaprovider.Track, len(t.tracksOrigOrder))
+	copy(new, t.tracksOrigOrder)
+	sort.SliceStable(new, func(i, j int) bool {
+		cmp := strings.Compare(fieldFn(new[i]), fieldFn(new[j]))
+		if t.sorting.SortOrder == SortDescending {
+			return cmp > 0
+		}
+		return cmp < 0
+	})
+	t.tracks = new
+}
+
+func (t *Tracklist) intSort(fieldFn func(*mediaprovider.Track) int64) {
+	new := make([]*mediaprovider.Track, len(t.tracksOrigOrder))
+	copy(new, t.tracksOrigOrder)
+	sort.SliceStable(new, func(i, j int) bool {
+		if t.sorting.SortOrder == SortDescending {
+			return fieldFn(new[i]) > fieldFn(new[j])
+		}
+		return fieldFn(new[i]) < fieldFn(new[j])
+	})
+	t.tracks = new
+}
+
+func (t *Tracklist) doSortTracks() {
+	if t.sorting.SortOrder == SortNone {
+		t.tracks = t.tracksOrigOrder
+		return
+	}
+	switch t.sorting.ColumnName {
+	case ColumnNum:
+		if t.sorting.SortOrder == SortDescending {
+			t.tracks = sharedutil.Reversed(t.tracksOrigOrder)
+		} else {
+			t.tracks = t.tracksOrigOrder
+		}
+	case ColumnTitle:
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Name })
+	case ColumnArtist:
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.ArtistNames[0] })
+	case ColumnAlbum:
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Album })
+	case ColumnPath:
+		t.stringSort(func(tr *mediaprovider.Track) string { return tr.FilePath })
+	case ColumnRating:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Rating) })
+	case ColumnTime:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Duration) })
+	case ColumnYear:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Year) })
+	case ColumnSize:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return tr.Size })
+	case ColumnPlays:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.PlayCount) })
+	case ColumnBitrate:
+		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.BitRate) })
+	case ColumnFavorite:
+		t.intSort(func(tr *mediaprovider.Track) int64 {
+			if tr.Favorite {
+				return 1
+			}
+			return 0
+		})
+	}
+}
+
+func (t *Tracklist) onSorted(sort ListHeaderSort) {
+	t.sorting = TracklistSort{ColumnName: colName(sort.ColNumber), SortOrder: sort.Type}
+	t.tracksMutex.Lock()
+	t.doSortTracks()
+	t.tracksMutex.Unlock()
+	t.Refresh()
 }
 
 func (t *Tracklist) onPlayTrackAt(idx int) {
@@ -301,7 +429,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		t.ctxMenu.Items = append(t.ctxMenu.Items,
 			fyne.NewMenuItem("Add to playlist...", func() {
 				if t.OnAddToPlaylist != nil {
-					t.OnAddToPlaylist(t.selectedTrackIDs())
+					t.OnAddToPlaylist(t.SelectedTrackIDs())
 				}
 			}))
 		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
@@ -327,7 +455,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	t.tracksMutex.RLock()
-	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	tr := sharedutil.FindTrackByID(trackID, t.tracks)
 	t.tracksMutex.RUnlock()
 	t.onSetFavorites([]*mediaprovider.Track{tr}, fav, false)
 }
@@ -348,7 +476,7 @@ func (t *Tracklist) onSetFavorites(tracks []*mediaprovider.Track, fav bool, need
 func (t *Tracklist) onSetRating(trackID string, rating int) {
 	// update our own track model
 	t.tracksMutex.RLock()
-	tr := sharedutil.FindTrackByID(trackID, t.Tracks)
+	tr := sharedutil.FindTrackByID(trackID, t.tracks)
 	t.tracksMutex.RUnlock()
 	t.onSetRatings([]*mediaprovider.Track{tr}, rating, false)
 }
@@ -384,18 +512,18 @@ func (t *Tracklist) selectedTracks() []*mediaprovider.Track {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
 	for _, idx := range sel {
-		tracks = append(tracks, t.Tracks[idx])
+		tracks = append(tracks, t.tracks[idx])
 	}
 	return tracks
 }
 
-func (t *Tracklist) selectedTrackIDs() []string {
+func (t *Tracklist) SelectedTrackIDs() []string {
 	sel := t.selectionMgr.GetSelection()
 	tracks := make([]string, 0, len(sel))
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
 	for _, idx := range sel {
-		tracks = append(tracks, t.Tracks[idx].ID)
+		tracks = append(tracks, t.tracks[idx].ID)
 	}
 	return tracks
 }
@@ -407,64 +535,23 @@ func (t *Tracklist) SelectedTrackIndexes() []int {
 func (t *Tracklist) lenTracks() int {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
-	return len(t.Tracks)
+	return len(t.tracks)
 }
 
 func ColNumber(colName string) int {
-	// built-in columns # and Title are always visible
-	switch colName {
-	case ColumnArtist:
-		return 2
-	case ColumnAlbum:
-		return 3
-	case ColumnTime:
-		return 4
-	case ColumnYear:
-		return 5
-	case ColumnFavorite:
-		return 6
-	case ColumnRating:
-		return 7
-	case ColumnPlays:
-		return 8
-	case ColumnBitrate:
-		return 9
-	case ColumnSize:
-		return 10
-	case ColumnPath:
-		return 11
-	default:
+	i := sharedutil.IndexOf(columns, colName)
+	if i < 0 {
 		log.Printf("error: Tracklist: invalid column name %s", colName)
-		return -100
 	}
+	return i
 }
 
 func colName(i int) string {
-	// built-in columns # and Title are always visible
-	switch i {
-	case 2:
-		return ColumnArtist
-	case 3:
-		return ColumnAlbum
-	case 4:
-		return ColumnTime
-	case 5:
-		return ColumnYear
-	case 6:
-		return ColumnFavorite
-	case 7:
-		return ColumnRating
-	case 8:
-		return ColumnPlays
-	case 9:
-		return ColumnBitrate
-	case 10:
-		return ColumnSize
-	case 11:
-		return ColumnPath
-	default:
-		return ""
+	if i < len(columns) {
+		return columns[i]
 	}
+	log.Println("notReached: Tracklist.colName")
+	return ""
 }
 
 type TrackRow struct {

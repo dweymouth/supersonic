@@ -1,6 +1,8 @@
 package layouts
 
-import "fyne.io/fyne/v2"
+import (
+	"fyne.io/fyne/v2"
+)
 
 // ColumnsLayout lays out a number of items into columns.
 // There are two types of columns: fixed-width and variable width.
@@ -58,11 +60,13 @@ func (c *ColumnsLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 		if !objects[i].Visible() {
 			continue
 		}
+
 		w := objects[i].MinSize().Width
-		if i < len(c.ColumnWidths) && c.ColumnWidths[i] > w {
-			w = c.ColumnWidths[i]
-		} else if c.ColumnWidths[i] < 0 && expandObjW > w {
-			w = expandObjW
+		if i >= len(c.ColumnWidths) || c.ColumnWidths[i] < 0 {
+			// expanding width column
+			w = fyne.Max(expandObjW, w)
+		} else {
+			w = fyne.Max(c.ColumnWidths[i], w)
 		}
 		objects[i].Resize(fyne.NewSize(w, size.Height))
 		objects[i].Move(fyne.NewPos(x, 0))

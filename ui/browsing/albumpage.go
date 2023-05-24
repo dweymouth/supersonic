@@ -26,6 +26,7 @@ type AlbumPage struct {
 	albumPageState
 
 	header       *AlbumPageHeader
+	tracks       []*mediaprovider.Track
 	tracklist    *widgets.Tracklist
 	nowPlayingID string
 	container    *fyne.Container
@@ -33,6 +34,7 @@ type AlbumPage struct {
 
 type albumPageState struct {
 	albumID string
+	sort    widgets.TracklistSort
 	cfg     *backend.AlbumPageConfig
 	mp      mediaprovider.MediaProvider
 	pm      *backend.PlaybackManager
@@ -48,6 +50,18 @@ func NewAlbumPage(
 	im *backend.ImageManager,
 	contr *controller.Controller,
 ) *AlbumPage {
+	return newAlbumPage(albumID, cfg, pm, mp, im, contr, widgets.TracklistSort{})
+}
+
+func newAlbumPage(
+	albumID string,
+	cfg *backend.AlbumPageConfig,
+	pm *backend.PlaybackManager,
+	mp mediaprovider.MediaProvider,
+	im *backend.ImageManager,
+	contr *controller.Controller,
+	sort widgets.TracklistSort,
+) *AlbumPage {
 	a := &AlbumPage{
 		albumPageState: albumPageState{
 			albumID: albumID,
@@ -62,6 +76,7 @@ func NewAlbumPage(
 	a.header = NewAlbumPageHeader(a)
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
+	a.tracklist.SetSorting(sort)
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		a.cfg.TracklistColumns = cols
 	}
@@ -81,6 +96,7 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *AlbumPage) Save() SavedPage {
 	s := a.albumPageState
+	s.sort = a.tracklist.Sorting()
 	return &s
 }
 
@@ -119,7 +135,8 @@ func (a *AlbumPage) load() {
 	}
 	a.header.Update(album, a.im)
 	a.tracklist.ShowDiscNumber = album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber
-	a.tracklist.Tracks = album.Tracks
+	a.tracks = album.Tracks
+	a.tracklist.SetTracks(album.Tracks)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 }
 
@@ -169,7 +186,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		go page.pm.PlayAlbum(page.albumID, 0, false)
 	})
 	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", myTheme.ShuffleIcon, func() {
-		page.pm.LoadTracks(page.tracklist.Tracks, false, true)
+		page.pm.LoadTracks(page.tracklist.GetTracks(), false, true)
 		page.pm.PlayFromBeginning()
 	})
 	var pop *widget.PopUpMenu
@@ -178,11 +195,11 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		if pop == nil {
 			menu := fyne.NewMenu("",
 				fyne.NewMenuItem("Add to queue", func() {
-					a.page.pm.LoadAlbum(a.albumID, true /*append*/, false /*shuffle*/)
+					go a.page.pm.LoadAlbum(a.albumID, true /*append*/, false /*shuffle*/)
 				}),
 				fyne.NewMenuItem("Add to playlist...", func() {
 					a.page.contr.DoAddTracksToPlaylistWorkflow(
-						sharedutil.TracksToIDs(a.page.tracklist.Tracks))
+						sharedutil.TracksToIDs(a.page.tracks))
 				}))
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
@@ -260,5 +277,5 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return NewAlbumPage(s.albumID, s.cfg, s.pm, s.mp, s.im, s.contr)
+	return newAlbumPage(s.albumID, s.cfg, s.pm, s.mp, s.im, s.contr, s.sort)
 }

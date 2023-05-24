@@ -178,7 +178,8 @@ func NewGenreList(items []*mediaprovider.Genre) *GenreList {
 	}
 	a.ExtendBaseWidget(a)
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
-		{"Name", false, false}, {"Album Count", true, false}, {"Track Count", true, false}}, a.columnsLayout)
+		{"Name", fyne.TextAlignLeading, false}, {"Album Count", fyne.TextAlignTrailing, false}, {"Track Count", fyne.TextAlignTrailing, false}}, a.columnsLayout)
+	a.hdr.DisableSorting = true
 	a.list = widget.NewList(
 		func() int { return len(a.Items) },
 		func() fyne.CanvasObject {
