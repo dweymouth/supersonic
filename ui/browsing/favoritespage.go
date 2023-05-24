@@ -1,6 +1,7 @@
 package browsing
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -32,15 +33,15 @@ type FavoritesPage struct {
 	nowPlayingID      string
 	pendingViewSwitch bool
 
-	grid          *widgets.GridView
-	searchGrid    *widgets.GridView
-	artistListCtr *fyne.Container
-	tracklistCtr  *fyne.Container
-	searcher      *widgets.SearchEntry
-	filterBtn     *widgets.AlbumFilterButton
-	titleDisp     *widget.RichText
-	toggleBtns    *widgets.ToggleButtonGroup
-	container     *fyne.Container
+	grid         *widgets.GridView
+	searchGrid   *widgets.GridView
+	artistGrid   *widgets.GridView
+	tracklistCtr *fyne.Container
+	searcher     *widgets.SearchEntry
+	filterBtn    *widgets.AlbumFilterButton
+	titleDisp    *widget.RichText
+	toggleBtns   *widgets.ToggleButtonGroup
+	container    *fyne.Container
 }
 
 func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Controller, mp mediaprovider.MediaProvider, pm *backend.PlaybackManager, im *backend.ImageManager) *FavoritesPage {
@@ -55,7 +56,7 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Contro
 	a.ExtendBaseWidget(a)
 	a.createHeader(0)
 	iter := mp.IterateAlbums("", a.filter)
-	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
+	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im, myTheme.AlbumIcon)
 	a.contr.ConnectAlbumGridActions(a.grid)
 	if cfg.InitialView == "Artists" {
 		a.toggleBtns.SetActivatedButton(1)
@@ -143,7 +144,7 @@ func (a *FavoritesPage) Reload() {
 		iter := a.mp.IterateAlbums("", a.filter)
 		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
-	if a.tracklistCtr != nil || a.artistListCtr != nil {
+	if a.tracklistCtr != nil || a.artistGrid != nil {
 		go func() {
 			// re-fetch starred info from server
 			starred, err := a.mp.GetFavorites()
@@ -160,13 +161,12 @@ func (a *FavoritesPage) Reload() {
 					tr.Refresh()
 				}
 			}
-			if a.artistListCtr != nil {
+			if a.artistGrid != nil {
 				// refresh favorite artists view
-				al := a.artistListCtr.Objects[0].(*widgets.ArtistGenreList)
-				al.Items = buildArtistListModel(starred.Artists)
+				a.artistGrid.ResetFixed(buildArtistGridViewModel(starred.Artists))
 				if a.toggleBtns.ActivatedButtonIndex() == 1 {
 					// favorite artists view is visible
-					al.Refresh()
+					a.artistGrid.Refresh()
 				}
 			}
 		}()
@@ -233,7 +233,7 @@ func (a *FavoritesPage) SelectAll() {
 func (a *FavoritesPage) doSearchAlbums(query string) {
 	iter := a.mp.SearchAlbums(query, a.filter)
 	if a.searchGrid == nil {
-		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im)
+		a.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im, myTheme.AlbumIcon)
 		a.contr.ConnectAlbumGridActions(a.searchGrid)
 	} else {
 		a.searchGrid.Reset(widgets.NewGridViewAlbumIterator(iter))
@@ -258,7 +258,7 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 	a.cfg.InitialView = "Artists" // save setting
 	a.searcher.Entry.Hide()       // disable search on artists for now
 	a.filterBtn.Hide()
-	if a.artistListCtr == nil {
+	if a.artistGrid == nil {
 		if a.pendingViewSwitch {
 			return
 		}
@@ -272,32 +272,31 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
-			model := buildArtistListModel(fav.Artists)
-			artistList := widgets.NewArtistGenreList(model)
-			artistList.ShowAlbumCount = true
-			artistList.OnNavTo = func(artistID string) {
-				a.contr.NavigateTo(controller.ArtistRoute(artistID))
-			}
-			a.artistListCtr = container.New(
-				&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
-				artistList)
-			a.container.Objects[0] = a.artistListCtr
+			model := buildArtistGridViewModel(fav.Artists)
+			a.artistGrid = widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
+			a.contr.ConnectArtistGridActions(a.artistGrid)
+			a.container.Objects[0] = a.artistGrid
 			a.Refresh()
 			a.pendingViewSwitch = false
 		}()
 	} else {
-		a.container.Objects[0] = a.artistListCtr
+		a.container.Objects[0] = a.artistGrid
 		a.Refresh()
 	}
 }
 
-func buildArtistListModel(artists []*mediaprovider.Artist) []widgets.ArtistGenreListItemModel {
-	model := make([]widgets.ArtistGenreListItemModel, 0)
+func buildArtistGridViewModel(artists []*mediaprovider.Artist) []widgets.GridViewItemModel {
+	model := make([]widgets.GridViewItemModel, 0)
 	for _, ar := range artists {
-		model = append(model, widgets.ArtistGenreListItemModel{
+		albums := "albums"
+		if ar.AlbumCount == 1 {
+			albums = "album"
+		}
+		model = append(model, widgets.GridViewItemModel{
 			ID:         ar.ID,
+			CoverArtID: ar.CoverArtID,
 			Name:       ar.Name,
-			AlbumCount: ar.AlbumCount,
+			Secondary:  fmt.Sprintf("%d %s", ar.AlbumCount, albums),
 		})
 	}
 	return model

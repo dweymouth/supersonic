@@ -33,8 +33,6 @@ type GenrePage struct {
 	titleDisp  *widget.RichText
 	playRandom *widget.Button
 
-	OnPlayAlbum func(string, int)
-
 	container *fyne.Container
 }
 
@@ -55,7 +53,7 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 	}
 	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
 	iter := g.mp.IterateAlbums("", g.filter)
-	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
+	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im, myTheme.AlbumIcon)
 	g.contr.ConnectAlbumGridActions(g.grid)
 	g.createSearchAndFilter()
 	g.createContainer(false)
@@ -171,7 +169,7 @@ func (g *GenrePage) OnSearched(query string) {
 func (g *GenrePage) doSearch(query string) {
 	iter := g.mp.SearchAlbums(query, g.filter)
 	if g.searchGrid == nil {
-		g.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im)
+		g.searchGrid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im, myTheme.AlbumIcon)
 		g.contr.ConnectAlbumGridActions(g.searchGrid)
 	} else {
 		g.searchGrid.Reset(widgets.NewGridViewAlbumIterator(iter))

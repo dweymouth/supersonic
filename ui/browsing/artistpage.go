@@ -7,7 +7,6 @@ import (
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -126,15 +125,6 @@ func (a *ArtistPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track
 	}
 }
 
-func (a *ArtistPage) playAllTracks() {
-	if a.artistInfo != nil { // page loaded
-		for i, album := range a.artistInfo.Albums {
-			a.pm.LoadAlbum(album.ID, i > 0 /*append*/, false /*shuffle*/)
-		}
-		a.pm.PlayFromBeginning()
-	}
-}
-
 func (a *ArtistPage) playArtistRadio() {
 	go a.pm.PlaySimilarSongs(a.artistID)
 }
@@ -175,7 +165,7 @@ func (a *ArtistPage) showAlbumGrid() {
 				Secondary:  strconv.Itoa(al.Year),
 			}
 		})
-		a.albumGrid = widgets.NewFixedGridView(model, a.im)
+		a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
 		a.contr.ConnectAlbumGridActions(a.albumGrid)
 	}
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
@@ -260,14 +250,16 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.artistImage = widgets.NewImagePlaceholder(res.ResPeopleInvertPng, 225)
-	a.artistImage.OnTapped = func() {
+	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, 225)
+	a.artistImage.OnTapped = func(*fyne.PointEvent) {
 		if im := a.artistImage.Image(); im != nil {
 			a.artistPage.contr.ShowPopUpImage(im)
 		}
 	}
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
-	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), page.playAllTracks)
+	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), func() {
+		go a.artistPage.contr.PlayArtistDiscography(a.artistID, false /*shuffle*/)
+	})
 	a.playRadioBtn = widget.NewButtonWithIcon(" Play Artist Radio", myTheme.ShuffleIcon, page.playArtistRadio)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.ExtendBaseWidget(a)

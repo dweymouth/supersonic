@@ -17,27 +17,27 @@ import (
 var _ fyne.Widget = (*GridViewItem)(nil)
 
 var _ fyne.Widget = (*coverImage)(nil)
-var _ fyne.Tappable = (*coverImage)(nil)
-var _ fyne.SecondaryTappable = (*coverImage)(nil)
 
 type coverImage struct {
 	widget.BaseWidget
 
-	Im                *canvas.Image
+	Im                *ImagePlaceholder
 	playbtn           *canvas.Image
 	OnPlay            func()
 	OnShowPage        func()
 	OnShowContextMenu func(fyne.Position)
 }
 
-func newCoverImage() *coverImage {
+func newCoverImage(placeholderResource fyne.Resource) *coverImage {
 	c := &coverImage{}
-	c.ExtendBaseWidget(c)
-	c.Im = &canvas.Image{FillMode: canvas.ImageFillContain, ScaleMode: canvas.ImageScaleFastest}
-	c.Im.SetMinSize(fyne.NewSize(200, 200))
+	c.Im = NewImagePlaceholder(placeholderResource, 200)
+	c.Im.OnTapped = c.Tapped
+	c.Im.OnTappedSecondary = c.TappedSecondary
+	c.Im.ScaleMode = canvas.ImageScaleFastest
 	c.playbtn = &canvas.Image{FillMode: canvas.ImageFillContain, Resource: res.ResPlaybuttonPng}
 	c.playbtn.SetMinSize(fyne.NewSize(60, 60))
 	c.playbtn.Hidden = true
+	c.ExtendBaseWidget(c)
 	return c
 }
 
@@ -93,15 +93,7 @@ func (a *coverImage) center() fyne.Position {
 }
 
 func (a *coverImage) SetImage(im image.Image) {
-	a.Im.Resource = nil
-	a.Im.Image = im
-	a.Refresh()
-}
-
-func (a *coverImage) SetImageResource(res *fyne.StaticResource) {
-	a.Im.Image = nil
-	a.Im.Resource = res
-	a.Refresh()
+	a.Im.SetImage(im, true)
 }
 
 func isInside(origin fyne.Position, radius float32, point fyne.Position) bool {
@@ -141,11 +133,11 @@ type GridViewItem struct {
 	OnShowSecondaryPage func()
 }
 
-func NewGridViewItem() *GridViewItem {
+func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	g := &GridViewItem{
 		primaryText:   NewCustomHyperlink(),
 		secondaryText: NewCustomHyperlink(),
-		Cover:         newCoverImage(),
+		Cover:         newCoverImage(placeholderResource),
 	}
 	g.ExtendBaseWidget(g)
 	g.Cover.OnPlay = func() { g.onPlay(false) }

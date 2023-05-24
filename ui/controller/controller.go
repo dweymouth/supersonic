@@ -140,6 +140,47 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 	}
 }
 
+func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
+	grid.OnShowItemPage = func(id string) { m.NavigateTo(ArtistRoute(id)) }
+	grid.OnPlay = func(artistID string, shuffle bool) { go m.PlayArtistDiscography(artistID, shuffle) }
+	grid.OnAddToQueue = func(artistID string) {
+		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), true /*append*/, false /*shuffle*/)
+	}
+	grid.OnAddToPlaylist = func(artistID string) {
+		go m.DoAddTracksToPlaylistWorkflow(
+			sharedutil.TracksToIDs(m.GetArtistTracks(artistID)))
+	}
+}
+
+func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {
+	server := m.App.ServerManager.Server
+	if server == nil {
+		log.Println("error playing artist discography: logged out")
+		return nil
+	}
+
+	artist, err := server.GetArtist(artistID)
+	if err != nil {
+		log.Printf("error getting artist discography: %v", err.Error())
+		return nil
+	}
+	var allTracks []*mediaprovider.Track
+	for _, album := range artist.Albums {
+		album, err := server.GetAlbum(album.ID)
+		if err != nil {
+			log.Printf("error loading album tracks: %v", err.Error())
+			return nil
+		}
+		allTracks = append(allTracks, album.Tracks...)
+	}
+	return allTracks
+}
+
+func (m *Controller) PlayArtistDiscography(artistID string, shuffle bool) {
+	m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), false, shuffle)
+	m.App.PlaybackManager.PlayFromBeginning()
+}
+
 func (m *Controller) PromptForFirstServer() {
 	d := dialogs.NewAddEditServerDialog("Connect to Server", false, nil, m.MainWindow.Canvas().Focus)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())

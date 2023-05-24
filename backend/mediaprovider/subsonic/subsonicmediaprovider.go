@@ -311,6 +311,7 @@ func toArtistFromID3(ar *subsonic.ArtistID3) *mediaprovider.Artist {
 	}
 	return &mediaprovider.Artist{
 		ID:         ar.ID,
+		CoverArtID: ar.CoverArt,
 		Name:       ar.Name,
 		Favorite:   !ar.Starred.IsZero(),
 		AlbumCount: ar.AlbumCount,
