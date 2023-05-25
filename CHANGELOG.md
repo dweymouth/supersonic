@@ -5,6 +5,8 @@
 ### Added
 - [#168](https://github.com/dweymouth/supersonic/issues/168) Add multi-server support (add, delete, switch servers)
 - [#99](https://github.com/dweymouth/supersonic/issues/99) Add filter options to album grid views
+- [#170](https://github.com/dweymouth/supersonic/issues/170) Add ability to sort tracklist by individual columns
+- [#151](https://github.com/dweymouth/supersonic/issues/151) Add grid view for artists
 - [#166](https://github.com/dweymouth/supersonic/issues/166) Disable back/forward buttons when no navigation is possible (thank you @davidhaymond!)
 - [#156](https://github.com/dweymouth/supersonic/issues/156) Allow adjusting volume slider with the scroll wheel
 - [3e448ed](https://github.com/dweymouth/supersonic/commit/3e448ed995bd58354ca809c6fa17de875cd40c45) Add context menu to cover thumbnail in bottom panel to rate/favorite/add to playlist current track
@@ -14,6 +16,7 @@
 - [#158](https://github.com/dweymouth/supersonic/issues/158) Crash in "Play artist radio" feature when server returns empty response 
 - [#161](https://github.com/dweymouth/supersonic/issues/161) Race condition occasionally causing album search results to be incorrect
 - [#163](https://github.com/dweymouth/supersonic/issues/163) Inability to log in on KDE and other systems where a credential storage service is not available
+- [#172](https://github.com/dweymouth/supersonic/issues/172) Navigating back to Favorites page twice always resets view to Albums
 - [b2dce99](https://github.com/dweymouth/supersonic/commit/b2dce99714a650707b4c2dcda51df47f07a98976) Fixed a rare crash from a race condition with album searching
 - [dde8cd0](https://github.com/dweymouth/supersonic/commit/dde8cd02675ab020af2fa58adbf02f324a7a1c3b) Fixed a resource leak of HTTP connections
 - [c97edef](https://github.com/dweymouth/supersonic/commit/c97edef403acc92aabe8940675ba9de5152a55a6) Ctrl+A should select all tracks on Favorites page
