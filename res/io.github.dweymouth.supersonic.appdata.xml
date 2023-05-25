@@ -25,12 +25,14 @@
       <li>High-quality gapless audio playback powered by MPV, with optional  audio exclusive mode</li>
       <li>ReplayGain support (depends on files being tagged on server)</li>
       <li>Scrobble plays to server, with configurable criteria</li>
+      <li>Multi-server support</li>
       <li>Primary and alternate server hostnames, e.g. for internal and external URLs</li>
       <li>Browse by albums, artists, genres, playlists</li>
+      <li>Set filters in albums browsing view</li>
       <li>Album and playlist views with tracklist and cover image</li>
       <li>Artist view with biography, image, similar artists, and discography</li>
       <li>Create, play, and update playlists</li>
-      <li>Configure visible tracklist columns</li>
+      <li>Sort tracklist views by column and configure visible tracklist columns</li>
       <li>Set/unset favorite and browse by favorite albums, artists, and songs</li>
       <li>View and edit play queue (add and remove tracks; reorder support  coming soon)</li>
       <li>Shuffle and repeat playback modes (partial; shuffle album,  playlist, artist radio, random songs)</li>
@@ -58,10 +60,10 @@
   </screenshots>
 
  <releases>
-  <release date="2023-05-05" version="0.2.0">
+  <release date="2023-05-24" version="0.3.0">
    <description>
      <p>
-       Version 0.2.0 release of Supersonic!
+       Version 0.3.0 release of Supersonic!
      </p>
 
      <p>
@@ -69,19 +71,14 @@
      </p>
 
      <ul>
-       <li>Add rating column to tracklist with 5-star rating widget</li>
-       <li>Add light theme, and optional auto-switching between dark and light</li>
-       <li>Add grid view option to playlists page with playlist cover images</li>
-       <li>Enable click-to-seek behavior in seek bar</li>
-       <li>Add context menu to items in grid views (albums and playlists)</li>
-       <li>Add Ctrl+W (Cmd+W on Mac) shortcut to close to tray if enabled</li>
-       <li>Add tracklist context menu items to bulk set favorite and rating</li>
-       <li>Add "meatball menu" actions to playlist page</li>
-       <li>Add settings option to choose startup page</li>
-       <li>Migrate to Fyne 2.3.4 (few performance and memory improvements)</li>
-       <li>Track title in bottom panel links to track location on Now Playing page</li>
-       <li>Clicking thumbnail in bottom panel shows full size cover</li>
-       <li>Add volume adjustment options to system tray menu</li>
+       <li>Add multi-server support (add, delete, switch servers)</li>
+       <li>Add filter options to album grid views</li>
+       <li>Add ability to sort tracklist by individual columns</li>
+       <li>Add grid view for artists showing portrait image</li>
+       <li>Disable back/forward buttons when no navigation is possible</li>
+       <li>Allow adjusting volume slider with the scroll wheel</li>
+       <li>Add context menu to cover thumbnail in bottom panel to rate/favorite/add to playlist current track</li>
+       <li>Add shuffle option to tracklist context menu</li>
      </ul>
 
      <p>
@@ -89,11 +86,13 @@
      </p>
 
      <ul>
-       <li>Fix crash when searching for albums on Airsonic servers</li>
-       <li>Tracklist columns occasionally misaligned when shrinking window</li>
-       <li>Disable hyperlinks for track artists that are not also album artists</li>
-       <li>Fix crash when navigating to "Top Tracks" on artist page not yet fully loaded or invalid artist</li>
-       <li>Don't pluralize "tracks" for albums and playlists with only one track</li>
+       <li>Fix crash in "Play artist radio" feature when server returns empty response</li>
+       <li>Fix race condition occasionally causing album search results to be incorrect</li>
+       <li>Fix inability to log in on KDE and other systems where a credential storage service is not available</li>
+       <li>Fix navigating back to Favorites page twice always resets view to Albums</li>
+       <li>Fixed a rare crash from a race condition with album searching</li>
+       <li>Fixed a resource leak of HTTP connections</li>
+       <li>Fixed Ctrl+A not selecting all tracks on Favorites page</li>
      </ul>
    </description>
   </release>
