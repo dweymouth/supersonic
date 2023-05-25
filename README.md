@@ -22,20 +22,20 @@ Screenshots of Supersonic running against the Navidrome [demo server](https://ww
 * [x] High-quality gapless audio playback powered by MPV, with optional audio exclusive mode
 * [x] ReplayGain support (depends on files being tagged on server)
 * [x] Scrobble plays to server, with configurable criteria
+* [x] Add and switch between multiple servers
 * [x] Primary and alternate server hostnames, e.g. for internal and external URLs
 * [x] Browse by albums, artists, genres, playlists
+* [x] Set filters in albums browsing view
 * [x] Album and playlist views with tracklist and cover image
 * [x] Artist view with biography, image, similar artists, and discography
 * [x] Play "artist radio" (mix of songs from given artist and similar artists, depends on your server's support)
 * [x] Create, play, and update playlists
-* [x] Configure visible tracklist columns
+* [x] Sort tracklist views by column and configure visible tracklist columns
 * [x] Set/unset favorite and browse by favorite albums, artists, and songs
 * [x] Set and view track rating (0-5 stars)
 * [x] View and edit play queue (add and remove tracks; reorder support coming soon)
 * [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs)
-* [ ] Set filters in albums browsing view (planned)
 * [ ] Browse by folders (planned)
-* [ ] Multi-server support (planned)
 * [ ] Download songs, albums or playlists (planned)
 * [ ] Cast to uPnP/DLNA devices (likely planned)
 * [ ] Built-in multi-band equalizer (eventully planned)
@@ -49,7 +49,7 @@ On Linux, Supersonic is [available as a Flatpak](https://flathub.org/apps/detail
 
 If you are running Windows, Mac OS, or a Debian-based Linux distro, download the latest [release](https://github.com/dweymouth/supersonic/releases) for your operating system. If you prefer to build from source, or are not running one of these OSes, then see the build instructions for your platform below.
 
-**Apple Silicon (M1/M2) Macs:** There is currently only an x64 release build offered, but it should run with no issues on M1/M2 macs using Rosetta. You will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `sudo xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
+**Apple Silicon (M1/M2) Macs:** There is currently only an x64 release build offered. The x64 release will run on M1/M2 Macs via Rosetta, but there is currently a [bug](https://github.com/dweymouth/supersonic/issues/171) where resizing the window will cause the app to crash. It is recommended to build from source if you have a M1/M2 Mac. (And I'm looking for volunteers to build on M1 Macs and upload the binaries when I push releases!) If you run the release build via Rosetta, you will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `sudo xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
 
 **If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv1` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
 
