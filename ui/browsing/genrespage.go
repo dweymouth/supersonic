@@ -46,8 +46,6 @@ func newGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider,
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
 	a.list = NewGenreList(nil)
-	a.list.ShowAlbumCount = true
-	a.list.ShowTrackCount = true
 	a.list.OnNavTo = func(id string) { a.contr.NavigateTo(controller.GenreRoute(id)) }
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = a.onSearched
@@ -63,6 +61,7 @@ func (a *GenresPage) load(searchOnLoad bool) {
 	if err != nil {
 		log.Printf("error loading genres: %v", err.Error())
 	}
+	a.genres = genres
 	if searchOnLoad {
 		a.onSearched(a.searcher.Entry.Text)
 	} else {
@@ -77,8 +76,9 @@ func (a *GenresPage) onSearched(query string) {
 	if query == "" {
 		a.list.Items = a.genres
 	} else {
+		query = strings.ToLower(query)
 		result := sharedutil.FilterSlice(a.genres, func(x *mediaprovider.Genre) bool {
-			return strings.Contains(strings.ToLower(x.Name), strings.ToLower(query))
+			return strings.Contains(strings.ToLower(x.Name), query)
 		})
 		a.list.Items = result
 	}
@@ -134,10 +134,8 @@ func (a *GenresPage) CreateRenderer() fyne.WidgetRenderer {
 type GenreList struct {
 	widget.BaseWidget
 
-	Items          []*mediaprovider.Genre
-	ShowAlbumCount bool
-	ShowTrackCount bool
-	OnNavTo        func(string)
+	Items   []*mediaprovider.Genre
+	OnNavTo func(string)
 
 	columnsLayout *layouts.ColumnsLayout
 	hdr           *widgets.ListHeader
@@ -190,8 +188,6 @@ func NewGenreList(items []*mediaprovider.Genre) *GenreList {
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			row := item.(*GenreListRow)
 			row.Item = a.Items[id]
-			row.albumCountLabel.Hidden = !a.ShowAlbumCount
-			row.trackCountLabel.Hidden = !a.ShowTrackCount
 			row.nameLabel.Text = row.Item.Name
 			row.albumCountLabel.Text = strconv.Itoa(row.Item.AlbumCount)
 			row.trackCountLabel.Text = strconv.Itoa(row.Item.TrackCount)
@@ -200,12 +196,6 @@ func NewGenreList(items []*mediaprovider.Genre) *GenreList {
 	)
 	a.container = container.NewBorder(a.hdr, nil, nil, nil, a.list)
 	return a
-}
-
-func (a *GenreList) Refresh() {
-	a.hdr.SetColumnVisible(1, a.ShowAlbumCount)
-	a.hdr.SetColumnVisible(2, a.ShowTrackCount)
-	a.BaseWidget.Refresh()
 }
 
 func (a *GenreList) onRowDoubleTapped(item *mediaprovider.Genre) {
