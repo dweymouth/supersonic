@@ -304,6 +304,10 @@ func (t *Tracklist) Refresh() {
 	t.BaseWidget.Refresh()
 }
 
+// do nothing Tapped handler so that tapping the separator between rows
+// doesn't fall through to the page (which calls UnselectAll on tracklist)
+func (t *Tracklist) Tapped(*fyne.PointEvent) {}
+
 func (t *Tracklist) stringSort(fieldFn func(*mediaprovider.Track) string) {
 	new := make([]*mediaprovider.Track, len(t.tracksOrigOrder))
 	copy(new, t.tracksOrigOrder)
