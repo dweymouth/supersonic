@@ -89,6 +89,7 @@ func (i *ImagePlaceholder) Refresh() {
 	i.iconImage.Hidden = i.HaveImage()
 	i.imageDisp.Hidden = !i.HaveImage()
 	i.imageDisp.ScaleMode = i.ScaleMode
+	i.iconImage.ScaleMode = i.ScaleMode
 	i.BaseWidget.Refresh()
 }
 
