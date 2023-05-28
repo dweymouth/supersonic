@@ -277,7 +277,7 @@ func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums) {
 	if artist == nil {
 		return
 	}
-	a.favoriteBtn.IsFavorited = !artist.Favorite
+	a.favoriteBtn.IsFavorited = artist.Favorite
 	a.favoriteBtn.Refresh()
 	a.artistID = artist.ID
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
