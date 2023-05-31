@@ -1,6 +1,7 @@
 package subsonic
 
 import (
+	"errors"
 	"image"
 	"math"
 	"strconv"
@@ -74,15 +75,18 @@ func (s *subsonicMediaProvider) GetArtist(artistID string) (*mediaprovider.Artis
 }
 
 func (s *subsonicMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.ArtistInfo, error) {
-	info, err := s.client.GetArtistInfo(artistID, map[string]string{})
+	info, err := s.client.GetArtistInfo2(artistID, map[string]string{})
 	if err != nil {
 		return nil, err
+	}
+	if info == nil {
+		return nil, errors.New("server returned empty artist info")
 	}
 	return &mediaprovider.ArtistInfo{
 		Biography:      info.Biography,
 		LastFMUrl:      info.LastFmUrl,
 		ImageURL:       info.LargeImageUrl,
-		SimilarArtists: sharedutil.MapSlice(info.SimilarArtist, toArtist),
+		SimilarArtists: sharedutil.MapSlice(info.SimilarArtist, toArtistFromID3),
 	}, nil
 }
 
@@ -292,17 +296,6 @@ func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
 	album.TrackCount = subAlbum.SongCount
 	album.Genres = []string{subAlbum.Genre}
 	album.Favorite = !subAlbum.Starred.IsZero()
-}
-
-func toArtist(ar *subsonic.Artist) *mediaprovider.Artist {
-	if ar == nil {
-		return nil
-	}
-	return &mediaprovider.Artist{
-		ID:       ar.ID,
-		Name:     ar.Name,
-		Favorite: !ar.Starred.IsZero(),
-	}
 }
 
 func toArtistFromID3(ar *subsonic.ArtistID3) *mediaprovider.Artist {
