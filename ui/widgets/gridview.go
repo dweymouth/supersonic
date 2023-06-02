@@ -115,6 +115,7 @@ func NewGridView(iter GridViewIterator, fetch ImageFetcher, placeholder fyne.Res
 		GridViewState: GridViewState{
 			iter:         iter,
 			imageFetcher: fetch,
+			placeholder:  placeholder,
 		},
 	}
 	g.ExtendBaseWidget(g)
