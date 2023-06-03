@@ -3,6 +3,12 @@
 <a href='https://ko-fi.com/dweymouth' target='_blank'><img height='40' align='right' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com'/>  
   
 # Supersonic
+
+[![License](https://img.shields.io/github/license/dweymouth/supersonic)](https://github.com/dweymouth/supersonic/blob/main/LICENSE)
+[![Last Release](https://img.shields.io/github/v/release/dweymouth/supersonic?logo=github&label=latest&style=flat)](https://github.com/dweymouth/supersonic/releases)
+[![Downloads](https://img.shields.io/github/downloads/dweymouth/supersonic/total?logo=github&style=flat)](https://github.com/dweymouth/supersonic/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dweymouth/supersonic)](https://goreportcard.com/report/github.com/dweymouth/supersonic)
+
 A lightweight cross-platform desktop client for Subsonic music servers (Navidrome, Gonic, Airsonic, etc).
 
 [Jump to installation instructions](https://github.com/dweymouth/supersonic#installation)
@@ -49,7 +55,7 @@ On Linux, Supersonic is [available as a Flatpak](https://flathub.org/apps/detail
 
 If you are running Windows, Mac OS, or a Debian-based Linux distro, download the latest [release](https://github.com/dweymouth/supersonic/releases) for your operating system. If you prefer to build from source, or are not running one of these OSes, then see the build instructions for your platform below.
 
-**Apple Silicon (M1/M2) Macs:** There is currently only an x64 release build offered. The x64 release will run on M1/M2 Macs via Rosetta, but there is currently a [bug](https://github.com/dweymouth/supersonic/issues/171) where resizing the window will cause the app to crash. It is recommended to build from source if you have a M1/M2 Mac. (And I'm looking for volunteers to build on M1 Macs and upload the binaries when I push releases!) If you run the release build via Rosetta, you will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `sudo xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
+**Apple Silicon (M1/M2) Macs:** There is currently only an x64 release build offered. The x64 release will run on M1/M2 Macs via Rosetta, but there is currently a [bug](https://github.com/dweymouth/supersonic/issues/171) where resizing the window will cause the app to crash. The release build is not officially supported and it is recommended to [build from source](https://github.com/dweymouth/supersonic#build-instructions-mac-os) if you have a M1/M2 Mac. (And I'm **looking for volunteers** to build on M1 Macs and upload the binaries when I push releases!) If you run the release build via Rosetta, you will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `sudo xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
 
 **If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv1` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
 
