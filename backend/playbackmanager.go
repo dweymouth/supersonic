@@ -240,7 +240,6 @@ func (p *PlaybackManager) OnTrackRatingChanged(id string, rating int) {
 	}
 }
 
-// trackIdxs must be sorted
 func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIDs))
 	rmCount := 0
