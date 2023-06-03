@@ -88,10 +88,9 @@ type Tracklist struct {
 	sorting        TracklistSort
 
 	tracksMutex     sync.RWMutex
-	tracks          []*mediaprovider.Track
-	tracksOrigOrder []*mediaprovider.Track
+	tracks          []*trackModel
+	tracksOrigOrder []*trackModel
 
-	selectionMgr util.ListSelectionManager
 	nowPlayingID string
 	colLayout    *layouts.ColumnsLayout
 	hdr          *ListHeader
@@ -100,11 +99,19 @@ type Tracklist struct {
 	container    *fyne.Container
 }
 
-func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
-	t := &Tracklist{tracks: tracks, tracksOrigOrder: tracks, visibleColumns: make([]bool, 12)}
+type trackModel struct {
+	track    *mediaprovider.Track
+	selected bool
+}
 
+func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
+	t := &Tracklist{visibleColumns: make([]bool, 12)}
 	t.ExtendBaseWidget(t)
-	t.selectionMgr = util.NewListSelectionManager(t.lenTracks)
+
+	if len(tracks) > 0 {
+		t.SetTracks(tracks)
+	}
+
 	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Bitrate, Size, Path
 	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 55, 100, 65, 75, 75, -1})
 	t.buildHeader()
@@ -128,12 +135,11 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
 			tr := item.(*TrackRow)
 			tr.trackIdx = itemID
-			tr.Selected = t.selectionMgr.IsSelected(itemID)
 			i := -1 // signal that we want to display the actual track num.
 			if t.AutoNumber {
 				i = itemID + 1
 			}
-			tr.Update(t.TrackAt(itemID), i)
+			tr.Update(t.trackModelAt(itemID), i)
 			if t.OnTrackShown != nil {
 				t.OnTrackShown(itemID)
 			}
@@ -161,9 +167,14 @@ func (t *Tracklist) buildHeader() {
 
 // Gets the track at the given index. Thread-safe.
 func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
+	return t.trackModelAt(idx).track
+}
+
+func (t *Tracklist) trackModelAt(idx int) *trackModel {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
 	if idx >= len(t.tracks) {
+		log.Println("error: Tracklist.trackModelAt: index out of range")
 		return nil
 	}
 	return t.tracks[idx]
@@ -231,9 +242,8 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 
 func (t *Tracklist) IncrementPlayCount(trackID string) {
 	t.tracksMutex.RLock()
-	tr := sharedutil.FindTrackByID(trackID, t.tracks)
 	t.tracksMutex.RUnlock()
-	if tr != nil {
+	if tr := t.findTrackByID(trackID); tr != nil {
 		tr.PlayCount += 1
 		t.list.Refresh()
 	}
@@ -241,17 +251,17 @@ func (t *Tracklist) IncrementPlayCount(trackID string) {
 
 // Remove all tracks from the tracklist. Does not issue Refresh call. Thread-safe.
 func (t *Tracklist) Clear() {
-	t.selectionMgr.UnselectAll()
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
 	t.tracks = nil
+	t.tracksOrigOrder = nil
 }
 
 // Sets the tracks in the tracklist. Does not issue Refresh call. Thread-safe.
 func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	t.tracksOrigOrder = trs
+	t.tracksOrigOrder = toTrackModels(trs)
 	t.doSortTracks()
 }
 
@@ -259,39 +269,55 @@ func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
 func (t *Tracklist) GetTracks() []*mediaprovider.Track {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
-	return t.tracks
+	return sharedutil.MapSlice(t.tracks, func(tm *trackModel) *mediaprovider.Track {
+		return tm.track
+	})
 }
 
 // Append more tracks to the tracklist. Does not issue Refresh call. Thread-safe.
 func (t *Tracklist) AppendTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	t.tracks = append(t.tracks, trs...)
+	t.tracksOrigOrder = append(t.tracks, toTrackModels(trs)...)
+	t.doSortTracks()
 }
 
 func (t *Tracklist) SelectAll() {
-	t.selectionMgr.SelectAll()
+	t.tracksMutex.RLock()
+	for _, tm := range t.tracks {
+		tm.selected = true
+	}
+	t.tracksMutex.RUnlock()
 	t.list.Refresh()
 }
 
 func (t *Tracklist) UnselectAll() {
-	t.selectionMgr.UnselectAll()
+	t.unselectAll()
 	t.list.Refresh()
+}
+
+func (t *Tracklist) unselectAll() {
+	t.tracksMutex.RLock()
+	for _, tm := range t.tracks {
+		tm.selected = false
+	}
+	t.tracksMutex.RUnlock()
 }
 
 func (t *Tracklist) SelectAndScrollToTrack(trackID string) {
 	t.tracksMutex.RLock()
 	idx := -1
 	for i, tr := range t.tracks {
-		if tr.ID == trackID {
+		if tr.track.ID == trackID {
 			idx = i
-			break
+			tr.selected = true
+		} else {
+			tr.selected = false
 		}
 	}
 	t.tracksMutex.RUnlock()
 	if idx >= 0 {
 		t.list.ScrollTo(idx)
-		t.selectionMgr.Select(idx)
 	}
 }
 
@@ -304,12 +330,18 @@ func (t *Tracklist) Refresh() {
 	t.BaseWidget.Refresh()
 }
 
+func toTrackModels(trs []*mediaprovider.Track) []*trackModel {
+	return sharedutil.MapSlice(trs, func(tr *mediaprovider.Track) *trackModel {
+		return &trackModel{track: tr, selected: false}
+	})
+}
+
 // do nothing Tapped handler so that tapping the separator between rows
 // doesn't fall through to the page (which calls UnselectAll on tracklist)
 func (t *Tracklist) Tapped(*fyne.PointEvent) {}
 
-func (t *Tracklist) stringSort(fieldFn func(*mediaprovider.Track) string) {
-	new := make([]*mediaprovider.Track, len(t.tracksOrigOrder))
+func (t *Tracklist) stringSort(fieldFn func(*trackModel) string) {
+	new := make([]*trackModel, len(t.tracksOrigOrder))
 	copy(new, t.tracksOrigOrder)
 	sort.SliceStable(new, func(i, j int) bool {
 		cmp := strings.Compare(fieldFn(new[i]), fieldFn(new[j]))
@@ -321,8 +353,8 @@ func (t *Tracklist) stringSort(fieldFn func(*mediaprovider.Track) string) {
 	t.tracks = new
 }
 
-func (t *Tracklist) intSort(fieldFn func(*mediaprovider.Track) int64) {
-	new := make([]*mediaprovider.Track, len(t.tracksOrigOrder))
+func (t *Tracklist) intSort(fieldFn func(*trackModel) int64) {
+	new := make([]*trackModel, len(t.tracksOrigOrder))
 	copy(new, t.tracksOrigOrder)
 	sort.SliceStable(new, func(i, j int) bool {
 		if t.sorting.SortOrder == SortDescending {
@@ -346,28 +378,28 @@ func (t *Tracklist) doSortTracks() {
 			t.tracks = t.tracksOrigOrder
 		}
 	case ColumnTitle:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Name })
+		t.stringSort(func(tr *trackModel) string { return tr.track.Name })
 	case ColumnArtist:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.ArtistNames[0] })
+		t.stringSort(func(tr *trackModel) string { return tr.track.ArtistNames[0] })
 	case ColumnAlbum:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.Album })
+		t.stringSort(func(tr *trackModel) string { return tr.track.Album })
 	case ColumnPath:
-		t.stringSort(func(tr *mediaprovider.Track) string { return tr.FilePath })
+		t.stringSort(func(tr *trackModel) string { return tr.track.FilePath })
 	case ColumnRating:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Rating) })
+		t.intSort(func(tr *trackModel) int64 { return int64(tr.track.Rating) })
 	case ColumnTime:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Duration) })
+		t.intSort(func(tr *trackModel) int64 { return int64(tr.track.Duration) })
 	case ColumnYear:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.Year) })
+		t.intSort(func(tr *trackModel) int64 { return int64(tr.track.Year) })
 	case ColumnSize:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return tr.Size })
+		t.intSort(func(tr *trackModel) int64 { return tr.track.Size })
 	case ColumnPlays:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.PlayCount) })
+		t.intSort(func(tr *trackModel) int64 { return int64(tr.track.PlayCount) })
 	case ColumnBitrate:
-		t.intSort(func(tr *mediaprovider.Track) int64 { return int64(tr.BitRate) })
+		t.intSort(func(tr *trackModel) int64 { return int64(tr.track.BitRate) })
 	case ColumnFavorite:
-		t.intSort(func(tr *mediaprovider.Track) int64 {
-			if tr.Favorite {
+		t.intSort(func(tr *trackModel) int64 {
+			if tr.track.Favorite {
 				return 1
 			}
 			return 0
@@ -393,20 +425,60 @@ func (t *Tracklist) onSelectTrack(idx int) {
 	if d, ok := fyne.CurrentApp().Driver().(desktop.Driver); ok {
 		mod := d.CurrentKeyModifiers()
 		if mod&os.ControlModifier != 0 {
-			t.selectionMgr.SelectAddOrRemove(idx)
+			t.selectAddOrRemove(idx)
 		} else if mod&fyne.KeyModifierShift != 0 {
-			t.selectionMgr.SelectRange(idx)
+			t.selectRange(idx)
 		} else {
-			t.selectionMgr.Select(idx)
+			t.selectTrack(idx)
 		}
 	} else {
-		t.selectionMgr.Select(idx)
+		t.selectTrack(idx)
 	}
 	t.list.Refresh()
 }
 
+func (t *Tracklist) selectAddOrRemove(idx int) {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	t.tracks[idx].selected = !t.tracks[idx].selected
+}
+
+func (t *Tracklist) selectTrack(idx int) {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	if t.tracks[idx].selected {
+		return
+	}
+	t.unselectAll()
+	t.tracks[idx].selected = true
+}
+
+func (t *Tracklist) selectRange(idx int) {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	if t.tracks[idx].selected {
+		return
+	}
+	lastSelected := -1
+	for i := len(t.tracks) - 1; i >= 0; i-- {
+		if t.tracks[i].selected {
+			lastSelected = i
+			break
+		}
+	}
+	if lastSelected < 0 {
+		t.tracks[idx].selected = true
+		return
+	}
+	from := minInt(idx, lastSelected)
+	to := maxInt(idx, lastSelected)
+	for i := from; i <= to; i++ {
+		t.tracks[i].selected = true
+	}
+}
+
 func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
-	t.selectionMgr.Select(trackIdx)
+	t.selectTrack(trackIdx)
 	t.list.Refresh()
 	if t.ctxMenu == nil {
 		t.ctxMenu = fyne.NewMenu("")
@@ -459,7 +531,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	t.tracksMutex.RLock()
-	tr := sharedutil.FindTrackByID(trackID, t.tracks)
+	tr := t.findTrackByID(trackID)
 	t.tracksMutex.RUnlock()
 	t.onSetFavorites([]*mediaprovider.Track{tr}, fav, false)
 }
@@ -480,7 +552,7 @@ func (t *Tracklist) onSetFavorites(tracks []*mediaprovider.Track, fav bool, need
 func (t *Tracklist) onSetRating(trackID string, rating int) {
 	// update our own track model
 	t.tracksMutex.RLock()
-	tr := sharedutil.FindTrackByID(trackID, t.tracks)
+	tr := t.findTrackByID(trackID)
 	t.tracksMutex.RUnlock()
 	t.onSetRatings([]*mediaprovider.Track{tr}, rating, false)
 }
@@ -510,30 +582,34 @@ func (t *Tracklist) onAlbumTapped(albumID string) {
 	}
 }
 
-func (t *Tracklist) selectedTracks() []*mediaprovider.Track {
-	sel := t.selectionMgr.GetSelection()
-	tracks := make([]*mediaprovider.Track, 0, len(sel))
+func (t *Tracklist) findTrackByID(id string) *mediaprovider.Track {
+	idx := sharedutil.Find(t.tracks, func(tr *trackModel) bool {
+		return tr.track.ID == id
+	})
+	if idx >= 0 {
+		return t.tracks[idx].track
+	}
+	return nil
+}
+
+func (t *Tracklist) selectedTrackModels() []*trackModel {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
-	for _, idx := range sel {
-		tracks = append(tracks, t.tracks[idx])
-	}
-	return tracks
+	return sharedutil.FilterSlice(t.tracks, func(tm *trackModel) bool {
+		return tm.selected
+	})
+}
+
+func (t *Tracklist) selectedTracks() []*mediaprovider.Track {
+	return sharedutil.MapSlice(t.selectedTrackModels(), func(tm *trackModel) *mediaprovider.Track {
+		return tm.track
+	})
 }
 
 func (t *Tracklist) SelectedTrackIDs() []string {
-	sel := t.selectionMgr.GetSelection()
-	tracks := make([]string, 0, len(sel))
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
-	for _, idx := range sel {
-		tracks = append(tracks, t.tracks[idx].ID)
-	}
-	return tracks
-}
-
-func (t *Tracklist) SelectedTrackIndexes() []int {
-	return t.selectionMgr.GetSelection()
+	return sharedutil.MapSlice(t.selectedTrackModels(), func(tm *trackModel) string {
+		return tm.track.ID
+	})
 }
 
 func (t *Tracklist) lenTracks() int {
@@ -629,9 +705,12 @@ func newTrailingAlignRichText() *widget.RichText {
 	return rt
 }
 
-func (t *TrackRow) Update(tr *mediaprovider.Track, rowNum int) {
+func (t *TrackRow) Update(tm *trackModel, rowNum int) {
+	t.Selected = tm.selected
+
 	// Update info that can change if this row is bound to
 	// a new track (*mediaprovider.Track)
+	tr := tm.track
 	if tr.ID != t.trackID {
 		if t.Focused {
 			fyne.CurrentApp().Driver().CanvasForObject(t).Focus(nil)
@@ -745,4 +824,18 @@ func (t *TrackRow) TappedSecondary(e *fyne.PointEvent) {
 	if t.OnTappedSecondary != nil {
 		t.OnTappedSecondary(e, t.trackIdx)
 	}
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

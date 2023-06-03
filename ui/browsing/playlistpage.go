@@ -186,7 +186,14 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
-	a.sm.Server.EditPlaylistTracks(a.playlistID, nil, a.tracklist.SelectedTrackIndexes())
+	sel := sharedutil.ToSet(a.tracklist.SelectedTrackIDs())
+	idxs := make([]int, 0, len(sel))
+	for i, tr := range a.tracks {
+		if _, ok := sel[tr.ID]; ok {
+			idxs = append(idxs, i)
+		}
+	}
+	a.sm.Server.EditPlaylistTracks(a.playlistID, nil, idxs)
 	a.tracklist.UnselectAll()
 	go a.Reload()
 }
