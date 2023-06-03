@@ -1,7 +1,7 @@
 icon_path = ./res/appicon-512.png
 icon_path_mac = ./res/appicon-macos.png
 app_name = Supersonic
-app_version = 0.3.0
+app_version = 0.3.1
 
 build:
 	go build

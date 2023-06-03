@@ -60,39 +60,23 @@
   </screenshots>
 
  <releases>
-  <release date="2023-05-24" version="0.3.0">
+  <release date="2023-06-03" version="0.3.1">
    <description>
      <p>
-       Version 0.3.0 release of Supersonic!
+       Version 0.3.1 (bug fix point release) of Supersonic
      </p>
-
-     <p>
-       Added
-     </p>
-
-     <ul>
-       <li>Add multi-server support (add, delete, switch servers)</li>
-       <li>Add filter options to album grid views</li>
-       <li>Add ability to sort tracklist by individual columns</li>
-       <li>Add grid view for artists showing portrait image</li>
-       <li>Disable back/forward buttons when no navigation is possible</li>
-       <li>Allow adjusting volume slider with the scroll wheel</li>
-       <li>Add context menu to cover thumbnail in bottom panel to rate/favorite/add to playlist current track</li>
-       <li>Add shuffle option to tracklist context menu</li>
-     </ul>
 
      <p>
        Fixed
      </p>
 
      <ul>
-       <li>Fix crash in "Play artist radio" feature when server returns empty response</li>
-       <li>Fix race condition occasionally causing album search results to be incorrect</li>
-       <li>Fix inability to log in on KDE and other systems where a credential storage service is not available</li>
-       <li>Fix navigating back to Favorites page twice always resets view to Albums</li>
-       <li>Fixed a rare crash from a race condition with album searching</li>
-       <li>Fixed a resource leak of HTTP connections</li>
-       <li>Fixed Ctrl+A not selecting all tracks on Favorites page</li>
+       <li>Fix regression: crashing on Funkwhale when navigating to Artist page</li>
+       <li>Tracklist selection now updates properly if sorting with items selected</li>
+       <li>Fix regression: searching genres list unbroken</li>
+       <li>Fix version number shown in Mac system About dialog</li>
+       <li>Fix favorite button on Artist page showing opposite state</li>
+       <li>Fix issing album icon in cover image placeholder for album grid views</li>
      </ul>
    </description>
   </release>
