@@ -99,7 +99,7 @@ func (a *NowPlayingPage) onPlayTrackAt(tracknum int) {
 }
 
 func (a *NowPlayingPage) onRemoveSelectedFromQueue() {
-	a.pm.RemoveTracksFromQueue(a.tracklist.SelectedTrackIndexes())
+	a.pm.RemoveTracksFromQueue(a.tracklist.SelectedTrackIDs())
 	a.tracklist.UnselectAll()
 	a.Reload()
 }

@@ -132,17 +132,21 @@ func (a *PlaylistPage) load() {
 		log.Printf("Failed to get playlist: %s", err.Error())
 		return
 	}
-	// Playlists, like albums, have a sequential running order. We want the number column to
-	// represent the track's original position in the playlist, if the user applies a sort.
-	// Re-purpose the TrackNumber field for the track's position in the playlist, rather than its parent album.
-	for i, tr := range playlist.Tracks {
-		tr.TrackNumber = i + 1
-	}
+	renumberTracks(playlist.Tracks)
 	a.tracks = playlist.Tracks
 	a.tracklist.SetTracks(playlist.Tracks)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 	a.tracklist.Refresh()
 	a.header.Update(playlist)
+}
+
+func renumberTracks(tracks []*mediaprovider.Track) {
+	// Playlists, like albums, have a sequential running order. We want the number column to
+	// represent the track's original position in the playlist, if the user applies a sort.
+	// Re-purpose the TrackNumber field for the track's position in the playlist, rather than its parent album.
+	for i, tr := range tracks {
+		tr.TrackNumber = i + 1
+	}
 }
 
 func (a *PlaylistPage) onMoveSelectedToTop() {
@@ -177,6 +181,7 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 	if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 		log.Printf("error updating playlist: %s", err.Error())
 	} else {
+		renumberTracks(newTracks)
 		// force-switch back to unsorted view to show new track order
 		a.tracklist.SetSorting(widgets.TracklistSort{})
 		a.tracklist.SetTracks(newTracks)
@@ -186,7 +191,14 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
-	a.sm.Server.EditPlaylistTracks(a.playlistID, nil, a.tracklist.SelectedTrackIndexes())
+	sel := sharedutil.ToSet(a.tracklist.SelectedTrackIDs())
+	idxs := make([]int, 0, len(sel))
+	for i, tr := range a.tracks {
+		if _, ok := sel[tr.ID]; ok {
+			idxs = append(idxs, i)
+		}
+	}
+	a.sm.Server.EditPlaylistTracks(a.playlistID, nil, idxs)
 	a.tracklist.UnselectAll()
 	go a.Reload()
 }

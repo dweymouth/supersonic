@@ -240,17 +240,15 @@ func (p *PlaybackManager) OnTrackRatingChanged(id string, rating int) {
 	}
 }
 
-// trackIdxs must be sorted
-func (p *PlaybackManager) RemoveTracksFromQueue(trackIdxs []int) {
-	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIdxs))
+func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
+	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIDs))
 	rmCount := 0
-	rmIdx := 0
+	idSet := sharedutil.ToSet(trackIDs)
 	for i, tr := range p.playQueue {
-		if rmIdx < len(trackIdxs) && trackIdxs[rmIdx] == i {
+		if _, ok := idSet[tr.ID]; ok {
 			// removing this track
 			// TODO: if we are removing the currently playing track,
 			// we need to scrobble it if it played for more than the scrobble threshold
-			rmIdx++
 			if err := p.player.RemoveTrackAt(i - rmCount); err == nil {
 				rmCount++
 			} else {

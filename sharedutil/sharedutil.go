@@ -40,13 +40,17 @@ func MapSlice[T any, U any](ts []T, f func(T) U) []U {
 	return result
 }
 
-func IndexOf[T comparable](ts []T, t T) int {
+func Find[T any](ts []T, f func(T) bool) int {
 	for i, tt := range ts {
-		if t == tt {
+		if f(tt) {
 			return i
 		}
 	}
 	return -1
+}
+
+func IndexOf[T comparable](ts []T, t T) int {
+	return Find(ts, func(tt T) bool { return t == tt })
 }
 
 func Reversed[T any](ts []T) []T {
@@ -60,6 +64,14 @@ func Reversed[T any](ts []T) []T {
 		j--
 	}
 	return new
+}
+
+func ToSet[T comparable](ts []T) map[T]interface{} {
+	set := make(map[T]interface{}, len(ts))
+	for _, t := range ts {
+		set[t] = nil
+	}
+	return set
 }
 
 func FindTrackByID(id string, tracks []*mediaprovider.Track) *mediaprovider.Track {
