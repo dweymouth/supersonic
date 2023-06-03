@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Fixed
+- [#182](https://github.com/dweymouth/supersonic/issues/182) Regression: crash on Funkwhale when navigating to Artist page
+- [#178](https://github.com/dweymouth/supersonic/issues/178) Tracklist selection doesn't update properly if sorting with items selected
+- [#176](https://github.com/dweymouth/supersonic/issues/176) Regression: searching genres list broken
+- [#175](https://github.com/dweymouth/supersonic/issues/175) Incorrect version number shown in Mac system About dialog
+- [066be7b](https://github.com/dweymouth/supersonic/commit/066be7bb8d29024b98f4f34419dddce3defe14ab) Favorite button on Artist page showing opposite state
+- [8b238fd](https://github.com/dweymouth/supersonic/commit/8b238fd2396205ccb7fd0a7afa08a2cd1b36990e) Missing album icon in cover image placeholder for album grid views
+
+## [0.3.0] - 2023-05-25
+
 ### Added
 - [#168](https://github.com/dweymouth/supersonic/issues/168) Add multi-server support (add, delete, switch servers)
 - [#99](https://github.com/dweymouth/supersonic/issues/99) Add filter options to album grid views
