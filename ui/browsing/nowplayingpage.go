@@ -125,6 +125,7 @@ func (a *NowPlayingPage) OnPlayTimeUpdate(_, _ float64) {
 func (a *NowPlayingPage) formatStatusLine() {
 	playerStats := a.p.GetStatus()
 	ts := a.statusLabel.Segments[0].(*widget.TextSegment)
+	lastStatus := ts.Text
 	state := "Stopped"
 	switch playerStats.State {
 	case player.Paused:
@@ -169,7 +170,9 @@ func (a *NowPlayingPage) formatStatusLine() {
 			audioInfo.Bitrate/1000,
 			util.SecondsToTimeString(a.totalTime))
 	}
-	a.statusLabel.Refresh()
+	if lastStatus != ts.Text {
+		a.statusLabel.Refresh()
+	}
 }
 
 func (a *NowPlayingPage) Reload() {
