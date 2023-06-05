@@ -70,6 +70,25 @@ type AudioDevice struct {
 	Description string
 }
 
+// Media information about the currently playing media.
+type MediaInfo struct {
+	// The sample format as string. This uses the same names as used in other places of mpv.
+	// NOTE: this is the format that the decoder outputs, NOT necessarily the format of the file.
+	Format string
+
+	// Audio samplerate.
+	Samplerate int
+
+	// The number of channels.
+	ChannelCount int
+
+	// The audio codec.
+	Codec string
+
+	// The average bit rate in bits per second.
+	Bitrate int
+}
+
 // Player encapsulates the mpv instance and provides functions
 // to control it and to check its status.
 type Player struct {
@@ -411,6 +430,29 @@ func (p *Player) ListAudioDevices() ([]AudioDevice, error) {
 
 func (p *Player) SetAudioDevice(deviceName string) error {
 	return p.mpv.SetPropertyString("audio-device", deviceName)
+}
+
+func (p *Player) GetMediaInfo() (MediaInfo, error) {
+	var info MediaInfo
+	n, err := p.mpv.GetProperty("audio-params", mpv.FORMAT_NODE)
+	if err != nil {
+		return info, err
+	}
+	nodeMap := n.(*mpv.Node).Data.(map[string]*mpv.Node)
+	info.Format = nodeMap["format"].Data.(string)
+	info.Samplerate = int(nodeMap["samplerate"].Data.(int64))
+	info.ChannelCount = int(nodeMap["channel-count"].Data.(int64))
+
+	br, err := p.mpv.GetProperty("audio-bitrate", mpv.FORMAT_INT64)
+	if err == nil {
+		info.Bitrate = int(br.(int64))
+	}
+	codec, err := p.mpv.GetProperty("track-list/0/codec", mpv.FORMAT_STRING)
+	if err == nil {
+		info.Codec = codec.(string)
+	}
+
+	return info, nil
 }
 
 func (p *Player) getInt64Property(propName string) (int64, error) {

@@ -39,6 +39,10 @@ type CanShowNowPlaying interface {
 	OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track)
 }
 
+type CanShowPlayTime interface {
+	OnPlayTimeUpdate(curTime, totalTime float64)
+}
+
 type BrowsingPane struct {
 	widget.BaseWidget
 
@@ -66,6 +70,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
+	b.app.PlaybackManager.OnPlayTimeUpdate(b.onPlayTimeUpdate)
 	bkgrnd := myTheme.NewThemedRectangle(myTheme.ColorNamePageBackground)
 	b.pageContainer = container.NewMax(bkgrnd, layout.NewSpacer())
 	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
@@ -172,6 +177,15 @@ func (b *BrowsingPane) onSongChange(song, lastScrobbledIfAny *mediaprovider.Trac
 	}
 	if p, ok := b.curPage.(CanShowNowPlaying); ok {
 		p.OnSongChange(song, lastScrobbledIfAny)
+	}
+}
+
+func (b *BrowsingPane) onPlayTimeUpdate(cur, total float64) {
+	if b.curPage == nil {
+		return
+	}
+	if p, ok := b.curPage.(CanShowPlayTime); ok {
+		p.OnPlayTimeUpdate(cur, total)
 	}
 }
 

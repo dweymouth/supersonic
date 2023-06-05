@@ -116,6 +116,10 @@ func (p *PlaybackManager) NowPlaying() *mediaprovider.Track {
 	return p.playQueue[p.nowPlayingIdx]
 }
 
+func (p *PlaybackManager) NowPlayingIndex() int {
+	return int(p.nowPlayingIdx)
+}
+
 // Sets a callback that is notified whenever a new song begins playing.
 func (p *PlaybackManager) OnSongChange(cb func(nowPlaying *mediaprovider.Track, justScrobbledIfAny *mediaprovider.Track)) {
 	p.onSongChange = append(p.onSongChange, cb)
