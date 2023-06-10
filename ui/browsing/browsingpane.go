@@ -50,6 +50,7 @@ type BrowsingPane struct {
 
 	curPage Page
 
+	home       *widget.Button
 	forward    *widget.Button
 	back       *widget.Button
 	reload     *widget.Button
@@ -66,6 +67,7 @@ type BrowsingPane struct {
 func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
+	b.home = widget.NewButtonWithIcon("", theme.HomeIcon(), b.GoHome)
 	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
@@ -84,7 +86,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.container = container.NewBorder(container.New(
 		&layouts.MaxPadLayout{PadLeft: -5, PadRight: -5},
 		container.New(layouts.NewLeftMiddleRightLayout(0),
-			container.NewHBox(b.back, b.forward, b.reload), b.navBtnsContainer,
+			container.NewHBox(b.home, b.back, b.forward, b.reload), b.navBtnsContainer,
 			container.NewHBox(layout.NewSpacer(), b.settingsBtn))),
 		nil, nil, nil, b.pageContainer)
 	b.updateHistoryButtons()
@@ -215,6 +217,17 @@ func (b *BrowsingPane) updateHistoryButtons() {
 		b.forward.Enable()
 	} else {
 		b.forward.Disable()
+	}
+}
+
+func (b *BrowsingPane) GoHome() {
+	if len(b.history) > 0 {
+		homePage := b.history[0].Restore()
+		if b.CurrentPage() != homePage.Route() {
+			b.addPageToHistory(b.curPage, false)
+			b.doSetPage(homePage)
+			b.updateHistoryButtons()
+		}
 	}
 }
 
