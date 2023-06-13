@@ -15,7 +15,7 @@ type TappableIcon struct {
 	OnTapped        func()
 }
 
-func NewTappbaleIcon(res fyne.Resource) *TappableIcon {
+func NewTappableIcon(res fyne.Resource) *TappableIcon {
 	icon := &TappableIcon{}
 	icon.ExtendBaseWidget(icon)
 	icon.SetResource(res)

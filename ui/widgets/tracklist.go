@@ -677,7 +677,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
 	t.dur = newTrailingAlignRichText()
 	t.year = newTrailingAlignRichText()
-	favorite := NewTappbaleIcon(myTheme.NotFavoriteIcon)
+	favorite := NewTappableIcon(myTheme.NotFavoriteIcon)
 	favorite.OnTapped = t.toggleFavorited
 	t.favorite = container.NewCenter(favorite)
 	t.rating = NewStarRating()

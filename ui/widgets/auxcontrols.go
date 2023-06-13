@@ -121,7 +121,7 @@ type VolumeControl struct {
 func NewVolumeControl(initialVol int) *VolumeControl {
 	v := &VolumeControl{}
 	v.ExtendBaseWidget(v)
-	v.icon = NewTappbaleIcon(theme.VolumeUpIcon())
+	v.icon = NewTappableIcon(theme.VolumeUpIcon())
 	v.icon.OnTapped = v.toggleMute
 	v.slider = NewVolumeSlider(100)
 	v.lastVol = initialVol

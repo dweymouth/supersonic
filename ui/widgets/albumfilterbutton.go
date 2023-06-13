@@ -258,7 +258,7 @@ func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []
 	)
 	g.filterText = widget.NewEntry()
 	g.filterText.SetPlaceHolder("Filter genres")
-	i := NewTappbaleIcon(theme.ContentClearIcon())
+	i := NewTappableIcon(theme.ContentClearIcon())
 	i.NoPointerCursor = true
 	i.OnTapped = func() { g.filterText.SetText("") }
 	g.filterText.ActionItem = i
