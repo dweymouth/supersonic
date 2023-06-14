@@ -37,7 +37,7 @@ func main() {
 	if h <= 1 {
 		h = 800
 	}
-	mainWindow := ui.NewMainWindow(fyneApp, displayName, appVersion, myApp, fyne.NewSize(w, h))
+	mainWindow := ui.NewMainWindow(fyneApp, appname, displayName, appVersion, myApp, fyne.NewSize(w, h))
 	myApp.OnReactivate = mainWindow.Show
 
 	go func() {

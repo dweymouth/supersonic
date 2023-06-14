@@ -48,8 +48,8 @@ type MyTheme struct {
 
 var _ fyne.Theme = (*MyTheme)(nil)
 
-func NewMyTheme(config *backend.ThemeConfig) *MyTheme {
-	m := &MyTheme{config: config}
+func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
+	m := &MyTheme{config: config, themeFileDir: themeFileDir}
 	m.defaultThemeFile, _ = DecodeThemeFile(bytes.NewReader(res.ResDefaultToml.StaticContent))
 	m.createThemeIcons()
 	return m
@@ -142,9 +142,9 @@ func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 func (m *MyTheme) ListThemeFiles() map[string]string {
 	files, _ := filepath.Glob(m.themeFileDir + "/*.toml")
 	result := make(map[string]string)
-	for _, filename := range files {
-		if themeFile, err := ReadThemeFile(path.Join(m.themeFileDir, filename)); err == nil {
-			result[filename] = themeFile.SupersonicTheme.Name
+	for _, filepath := range files {
+		if themeFile, err := ReadThemeFile(filepath); err == nil {
+			result[path.Base(filepath)] = themeFile.SupersonicTheme.Name
 		}
 	}
 	return result

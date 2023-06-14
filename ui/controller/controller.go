@@ -441,14 +441,14 @@ func (c *Controller) ShowAboutDialog() {
 	pop.Show()
 }
 
-func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func()) {
+func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map[string]string) {
 	devs, err := c.App.Player.ListAudioDevices()
 	if err != nil {
 		log.Printf("error listing audio devices: %v", err)
 		devs = []player.AudioDevice{{Name: "auto", Description: "Autoselect device"}}
 	}
 
-	dlg := dialogs.NewSettingsDialog(c.App.Config, devs, c.MainWindow)
+	dlg := dialogs.NewSettingsDialog(c.App.Config, devs, themeFiles, c.MainWindow)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
 	}
