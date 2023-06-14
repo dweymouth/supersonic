@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"io"
 	"os"
 	"strings"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/pelletier/go-toml"
 )
@@ -83,8 +86,12 @@ func ReadThemeFile(filePath string) (*ThemeFile, error) {
 	}
 	defer f.Close()
 
+	return DecodeThemeFile(f)
+}
+
+func DecodeThemeFile(reader io.Reader) (*ThemeFile, error) {
 	theme := &ThemeFile{}
-	if err := toml.NewDecoder(f).Decode(theme); err != nil {
+	if err := toml.NewDecoder(reader).Decode(theme); err != nil {
 		return nil, err
 	}
 
@@ -96,6 +103,13 @@ func ReadThemeFile(filePath string) (*ThemeFile, error) {
 	}
 
 	return theme, nil
+}
+
+func (t *ThemeFile) SupportsVariant(v fyne.ThemeVariant) bool {
+	if v == theme.VariantDark {
+		return t.SupersonicTheme.SupportsDark
+	}
+	return t.SupersonicTheme.SupportsLight
 }
 
 // Parses a CSS-style #RRGGBB or #RRGGBBAA string

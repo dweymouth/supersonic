@@ -140,6 +140,11 @@ var ResFilterSvg = &fyne.StaticResource{
 	StaticContent: []byte(
 		"<svg fill=\"#000000\" version=\"1.1\" id=\"Capa_1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" \r\n\t width=\"800px\" height=\"800px\" viewBox=\"0 0 971.986 971.986\"\r\n\t xml:space=\"preserve\">\r\n<g>\r\n\t<path d=\"M370.216,459.3c10.2,11.1,15.8,25.6,15.8,40.6v442c0,26.601,32.1,40.101,51.1,21.4l123.3-141.3\r\n\t\tc16.5-19.8,25.6-29.601,25.6-49.2V500c0-15,5.7-29.5,15.8-40.601L955.615,75.5c26.5-28.8,6.101-75.5-33.1-75.5h-873\r\n\t\tc-39.2,0-59.7,46.6-33.1,75.5L370.216,459.3z\"/>\r\n</g>\r\n</svg>\r\n"),
 }
+var ResDefaultToml = &fyne.StaticResource{
+	StaticName: "default.toml",
+	StaticContent: []byte(
+		"[SupersonicTheme]\nName = \"Default\"\nVersion = \"0.1\"\nSupportsDark = true\nSupportsLight = true\n\n[DarkColors]\nPageBackground = \"#0F0F0F\"\nBackground = \"#232323\"\nScrollBar = \"#F3F3F3\"\nButton = \"#14141432\"\nInputBackground = \"#14141432\"\n\n[LightColors]\nPageBackground = \"#FAFAFA\"\nBackground = \"#E1DFE1\"\nScrollBar = \"#565656\"\nButton = \"#C8C8C8F0\"\nDisabledButton = \"#CDCDCDF0\"\nForeground = \"#0A0A0A\"\nPrimary = \"#1919FA\""),
+}
 var ResLICENSE = &fyne.StaticResource{
 	StaticName: "LICENSE",
 	StaticContent: []byte(

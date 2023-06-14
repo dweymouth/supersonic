@@ -89,6 +89,7 @@ type ReplayGainConfig struct {
 }
 
 type ThemeConfig struct {
+	ThemeFile  string
 	Appearance string
 }
 

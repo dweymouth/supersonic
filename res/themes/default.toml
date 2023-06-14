@@ -1,0 +1,21 @@
+[SupersonicTheme]
+Name = "Default"
+Version = "0.1"
+SupportsDark = true
+SupportsLight = true
+
+[DarkColors]
+PageBackground = "#0F0F0F"
+Background = "#232323"
+ScrollBar = "#F3F3F3"
+Button = "#14141432"
+InputBackground = "#14141432"
+
+[LightColors]
+PageBackground = "#FAFAFA"
+Background = "#E1DFE1"
+ScrollBar = "#565656"
+Button = "#C8C8C8F0"
+DisabledButton = "#CDCDCDF0"
+Foreground = "#0A0A0A"
+Primary = "#1919FA"
