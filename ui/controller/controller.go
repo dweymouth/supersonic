@@ -3,7 +3,10 @@ package controller
 import (
 	"fmt"
 	"image"
+	"io"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -113,6 +116,7 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 	tracklist.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
 		m.ClosePopUpOnEscape(pop)
 	}
+	tracklist.OnShowDownloadDialog = m.ShowDownloadDialog
 }
 
 func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
@@ -515,4 +519,50 @@ func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
 	for _, id := range trackIDs {
 		c.App.PlaybackManager.OnTrackRatingChanged(id, rating)
 	}
+}
+
+func (c *Controller) ShowDownloadDialog(track *mediaprovider.Track) {
+	parts := strings.Split(track.FilePath, "/")
+	fileName := parts[len(parts)-1]
+
+	dg := dialog.NewFileSave(
+		func(file fyne.URIWriteCloser, err error) {
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			if file == nil {
+				return
+			}
+
+			filePath := file.URI().Path()
+			go c.downloadTrack(track.ID, filePath)
+		},
+		c.MainWindow)
+	dg.SetFileName(fileName)
+	dg.Show()
+}
+
+func (c *Controller) downloadTrack(trackID, filePath string) {
+	reader, err := c.App.ServerManager.Server.DownloadTrack(trackID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	saveDir, err := os.Create(filePath)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer saveDir.Close()
+
+	_, err = io.Copy(saveDir, reader)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	log.Printf("Saved song to: %s\n", saveDir.Name())
 }

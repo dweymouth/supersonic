@@ -80,6 +80,8 @@ github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee h1:ZGyJ6wp7CAfT31
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee/go.mod h1:Ov0ieN90M7i+0k3OxhA/g1dozGs+UcPHDsMKqPgRDk0=
 github.com/dweymouth/go-subsonic v0.0.0-20230513020020-0790f53c2868 h1:403Dden/cdQyDM8ydonHLxTBPjgQXZ76PUfmBG92+Dw=
 github.com/dweymouth/go-subsonic v0.0.0-20230513020020-0790f53c2868/go.mod h1:fUez6NFiEJiQTZizZ1BThZr5GJXAbigzGYjEPNm4tdI=
+github.com/dweymouth/go-subsonic v0.0.0-20230614154319-792d18c75fb4 h1:cuyvB4GjTMBHKJwMJ/LFpuKfSVXuCheNj6fgxBa3m1Y=
+github.com/dweymouth/go-subsonic v0.0.0-20230614154319-792d18c75fb4/go.mod h1:fUez6NFiEJiQTZizZ1BThZr5GJXAbigzGYjEPNm4tdI=
 github.com/eclipse/paho.mqtt.golang v1.3.5/go.mod h1:eTzb4gxwwyWpqBUHGQZ4ABAV7+Jgm1PklsYT/eo8Hcc=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
