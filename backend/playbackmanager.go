@@ -60,8 +60,7 @@ func NewPlaybackManager(
 		if tracknum >= int64(len(pm.playQueue)) {
 			return
 		}
-		pm.checkScrobble(pm.playTimeStopwatch.Elapsed())
-		pm.playTimeStopwatch.Reset()
+		pm.checkScrobble()
 		if pm.player.GetStatus().State == player.Playing {
 			pm.playTimeStopwatch.Start()
 		}
@@ -76,8 +75,7 @@ func NewPlaybackManager(
 	})
 	p.OnStopped(func() {
 		pm.playTimeStopwatch.Stop()
-		pm.checkScrobble(pm.playTimeStopwatch.Elapsed())
-		pm.playTimeStopwatch.Reset()
+		pm.checkScrobble()
 		pm.stopPollTimePos()
 		pm.doUpdateTimePos()
 		pm.invokeOnSongChangeCallbacks()
@@ -248,11 +246,15 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIDs))
 	rmCount := 0
 	idSet := sharedutil.ToSet(trackIDs)
+	isPlayingTrackRemoved := false
 	for i, tr := range p.playQueue {
 		if _, ok := idSet[tr.ID]; ok {
 			// removing this track
-			// TODO: if we are removing the currently playing track,
-			// we need to scrobble it if it played for more than the scrobble threshold
+			if i == p.NowPlayingIndex() {
+				isPlayingTrackRemoved = true
+				// If we are removing the currently playing track, we need to scrobble it
+				p.checkScrobble()
+			}
 			if err := p.player.RemoveTrackAt(i - rmCount); err == nil {
 				rmCount++
 			} else {
@@ -268,8 +270,9 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 	p.playQueue = newQueue
 	p.nowPlayingIdx = p.player.GetStatus().PlaylistPos
 	// fire on song change callbacks in case the playing track was removed
-	// TODO: only call this if the playing track actually was removed
-	p.invokeOnSongChangeCallbacks()
+	if isPlayingTrackRemoved {
+		p.invokeOnSongChangeCallbacks()
+	}
 }
 
 // Stop playback and clear the play queue.
@@ -289,10 +292,11 @@ func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
 }
 
 // call BEFORE updating p.nowPlayingIdx
-func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
+func (p *PlaybackManager) checkScrobble() {
 	if !p.scrobbleCfg.Enabled || len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
 		return
 	}
+	playDur := p.playTimeStopwatch.Elapsed()
 	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
 		return
 	}
@@ -306,6 +310,7 @@ func (p *PlaybackManager) checkScrobble(playDur time.Duration) {
 		p.lastScrobbled = song
 		go p.sm.Server.Scrobble(song.ID, true)
 	}
+	p.playTimeStopwatch.Reset()
 }
 
 func (p *PlaybackManager) sendNowPlayingScrobble() {
