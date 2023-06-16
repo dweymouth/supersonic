@@ -58,6 +58,14 @@ type ReplayGainOptions struct {
 	// Fallback gain intentionally omitted
 }
 
+// The playback loop mode (LoopNone, LoopAll).
+type LoopMode int
+
+const (
+	LoopNone LoopMode = iota
+	LoopAll
+)
+
 // Information about a specific audio device.
 // Returned by ListAudioDevices.
 type AudioDevice struct {
@@ -99,6 +107,7 @@ type Player struct {
 	haveRGainOpts  bool
 	audioExclusive bool
 	status         Status
+	loopMode       LoopMode
 	seeking        bool
 	curPlaylistPos int64
 	prePausedState State
@@ -107,11 +116,12 @@ type Player struct {
 	bgCancel context.CancelFunc
 
 	// callbacks
-	onPaused      []func()
-	onStopped     []func()
-	onPlaying     []func()
-	onSeek        []func()
-	onTrackChange []func(int64)
+	onPaused          []func()
+	onStopped         []func()
+	onPlaying         []func()
+	onSeek            []func()
+	onLoopModeChanged []func(string)
+	onTrackChange     []func(int64)
 }
 
 // Returns a new player.
@@ -390,6 +400,47 @@ func (p *Player) PlayPause() error {
 	}
 }
 
+// Sets the loop mode of the player.
+func (p *Player) SetLoopMode(mode LoopMode) error {
+	if !p.initialized {
+		return ErrUnitialized
+	}
+
+	// Return early if player is already in specified mode
+	if mode == p.loopMode {
+		return nil
+	}
+
+	switch mode {
+	case LoopNone:
+		p.mpv.SetOptionString("loop-playlist", "no")
+	case LoopAll:
+		p.mpv.SetOptionString("loop-playlist", "inf")
+	}
+	p.loopMode = mode
+
+	defer func() {
+		for _, cb := range p.onLoopModeChanged {
+			cb(p.loopMode.String())
+		}
+	}()
+
+	return nil
+}
+
+// Changes the loop mode of the player to the next one.
+// Useful for toggling UI elements, to change modes without knowing the current player mode.
+func (p *Player) SetNextLoopMode() error {
+	switch p.loopMode {
+	case LoopNone:
+		return p.SetLoopMode(LoopAll)
+	case LoopAll:
+		return p.SetLoopMode(LoopNone)
+	default:
+		return nil
+	}
+}
+
 // Get the current status of the player.
 func (p *Player) GetStatus() Status {
 	if !p.initialized {
@@ -491,6 +542,11 @@ func (p *Player) OnSeek(cb func()) {
 	p.onSeek = append(p.onSeek, cb)
 }
 
+// Registers a callback which is invoked when the player enables queue repeat.
+func (p *Player) OnLoopModeChanged(cb func(string)) {
+	p.onLoopModeChanged = append(p.onLoopModeChanged, cb)
+}
+
 // Registers a callback which is invoked when the currently playing track changes,
 // or when playback begins at any time from the Stopped state.
 // Callback is invoked with the index of the currently playing track (zero-based).
@@ -589,4 +645,14 @@ func (s SeekMode) String() string {
 		return "relative-percent"
 	}
 	return "UNKNOWN_SEEK_MODE"
+}
+
+func (l LoopMode) String() string {
+	switch l {
+	case LoopNone:
+		return "no"
+	case LoopAll:
+		return "all"
+	}
+	return "UNKNOWN_LOOP_MODE"
 }

@@ -46,6 +46,9 @@ func NewBottomPanel(p *player.Player, contr *controller.Controller) *BottomPanel
 	p.OnStopped(func() {
 		bp.Controls.SetPlaying(false)
 	})
+	p.OnLoopModeChanged(func(mode string) {
+		bp.Controls.SetLoopMode(mode)
+	})
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
 	bp.NowPlaying.OnShowCoverImage = func() {
@@ -86,6 +89,9 @@ func NewBottomPanel(p *player.Player, contr *controller.Controller) *BottomPanel
 	})
 	bp.Controls.OnSeek(func(f float64) {
 		p.Seek(fmt.Sprintf("%d", int(f*100)), player.SeekAbsolutePercent)
+	})
+	bp.Controls.OnChangeLoopMode(func() {
+		p.SetNextLoopMode()
 	})
 
 	bp.AuxControls = widgets.NewAuxControls(p.GetVolume())
