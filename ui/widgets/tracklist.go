@@ -70,13 +70,13 @@ type Tracklist struct {
 	DisableSorting bool
 
 	// user action callbacks
-	OnPlayTrackAt        func(int)
-	OnPlaySelection      func(tracks []*mediaprovider.Track, shuffle bool)
-	OnAddToQueue         func(trackIDs []*mediaprovider.Track)
-	OnAddToPlaylist      func(trackIDs []string)
-	OnSetFavorite        func(trackIDs []string, fav bool)
-	OnSetRating          func(trackIDs []string, rating int)
-	OnShowDownloadDialog func(track *mediaprovider.Track)
+	OnPlayTrackAt   func(int)
+	OnPlaySelection func(tracks []*mediaprovider.Track, shuffle bool)
+	OnAddToQueue    func(trackIDs []*mediaprovider.Track)
+	OnAddToPlaylist func(trackIDs []string)
+	OnSetFavorite   func(trackIDs []string, fav bool)
+	OnSetRating     func(trackIDs []string, rating int)
+	OnDownload      func(tracks []*mediaprovider.Track)
 
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
@@ -588,9 +588,7 @@ func (t *Tracklist) onAlbumTapped(albumID string) {
 }
 
 func (t *Tracklist) onDownload(tracks []*mediaprovider.Track) {
-	for _, track := range tracks {
-		t.OnShowDownloadDialog(track)
-	}
+	t.OnDownload(tracks)
 }
 
 func (t *Tracklist) findTrackByID(id string) *mediaprovider.Track {

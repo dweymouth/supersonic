@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"archive/zip"
 	"fmt"
 	"image"
 	"io"
@@ -116,7 +117,7 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 	tracklist.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
 		m.ClosePopUpOnEscape(pop)
 	}
-	tracklist.OnShowDownloadDialog = m.ShowDownloadDialog
+	tracklist.OnDownload = m.ShowDownloadDialog
 }
 
 func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
@@ -521,9 +522,15 @@ func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
 	}
 }
 
-func (c *Controller) ShowDownloadDialog(track *mediaprovider.Track) {
-	parts := strings.Split(track.FilePath, "/")
-	fileName := parts[len(parts)-1]
+func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track) {
+	numTracks := len(tracks)
+	var fileName string
+	if numTracks == 1 {
+		parts := strings.Split(tracks[0].FilePath, "/")
+		fileName = parts[len(parts)-1]
+	} else {
+		fileName = "downloaded_tracks.zip"
+	}
 
 	dg := dialog.NewFileSave(
 		func(file fyne.URIWriteCloser, err error) {
@@ -535,34 +542,76 @@ func (c *Controller) ShowDownloadDialog(track *mediaprovider.Track) {
 			if file == nil {
 				return
 			}
+			if numTracks == 1 {
+				go c.downloadTrack(tracks[0], file.URI().Path())
+			} else {
+				go c.downloadTracks(tracks, file.URI().Path())
+			}
 
-			filePath := file.URI().Path()
-			go c.downloadTrack(track.ID, filePath)
 		},
 		c.MainWindow)
 	dg.SetFileName(fileName)
 	dg.Show()
 }
 
-func (c *Controller) downloadTrack(trackID, filePath string) {
-	reader, err := c.App.ServerManager.Server.DownloadTrack(trackID)
+func (c *Controller) downloadTrack(track *mediaprovider.Track, filePath string) {
+	reader, err := c.App.ServerManager.Server.DownloadTrack(track.ID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	saveDir, err := os.Create(filePath)
+	file, err := os.Create(filePath)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	defer saveDir.Close()
+	defer file.Close()
 
-	_, err = io.Copy(saveDir, reader)
+	_, err = io.Copy(file, reader)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	log.Printf("Saved song to: %s\n", saveDir.Name())
+	log.Printf("Saved song %s to: %s\n", track.Name, filePath)
+}
+
+func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath string) {
+	zipFile, err := os.Create(filePath)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer zipFile.Close()
+
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	for _, track := range tracks {
+		reader, err := c.App.ServerManager.Server.DownloadTrack(track.ID)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		parts := strings.Split(track.FilePath, "/")
+		fileName := parts[len(parts)-1]
+
+		fileWriter, err := zipWriter.Create(fileName)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		_, err = io.Copy(fileWriter, reader)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		log.Printf("Saved song %s to: %s\n", track.Name, filePath)
+	}
+
+	log.Printf("Finished download to: %s\n", filePath)
 }
