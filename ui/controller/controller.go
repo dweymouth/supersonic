@@ -7,7 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
-	"strings"
+	"path/filepath"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -526,8 +526,7 @@ func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track) {
 	numTracks := len(tracks)
 	var fileName string
 	if numTracks == 1 {
-		parts := strings.Split(tracks[0].FilePath, "/")
-		fileName = parts[len(parts)-1]
+		fileName = filepath.Base(tracks[0].FilePath)
 	} else {
 		fileName = "downloaded_tracks.zip"
 	}
@@ -595,8 +594,7 @@ func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath stri
 			continue
 		}
 
-		parts := strings.Split(track.FilePath, "/")
-		fileName := parts[len(parts)-1]
+		fileName := filepath.Base(track.FilePath)
 
 		fileWriter, err := zipWriter.Create(fileName)
 		if err != nil {
