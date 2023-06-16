@@ -248,11 +248,15 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIDs))
 	rmCount := 0
 	idSet := sharedutil.ToSet(trackIDs)
+	isPlayingTrackRemoved := false
 	for i, tr := range p.playQueue {
 		if _, ok := idSet[tr.ID]; ok {
 			// removing this track
-			// TODO: if we are removing the currently playing track,
-			// we need to scrobble it if it played for more than the scrobble threshold
+			if i == p.NowPlayingIndex() {
+				isPlayingTrackRemoved = true
+				// If we are removing the currently playing track, we need to scrobble it
+				p.checkScrobble(p.playTimeStopwatch.Elapsed())
+			}
 			if err := p.player.RemoveTrackAt(i - rmCount); err == nil {
 				rmCount++
 			} else {
@@ -268,8 +272,9 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 	p.playQueue = newQueue
 	p.nowPlayingIdx = p.player.GetStatus().PlaylistPos
 	// fire on song change callbacks in case the playing track was removed
-	// TODO: only call this if the playing track actually was removed
-	p.invokeOnSongChangeCallbacks()
+	if isPlayingTrackRemoved {
+		p.invokeOnSongChangeCallbacks()
+	}
 }
 
 // Stop playback and clear the play queue.
