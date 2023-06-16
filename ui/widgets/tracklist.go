@@ -588,7 +588,9 @@ func (t *Tracklist) onAlbumTapped(albumID string) {
 }
 
 func (t *Tracklist) onDownload(tracks []*mediaprovider.Track) {
-	t.OnDownload(tracks)
+	if t.OnDownload != nil {
+		t.OnDownload(tracks)
+	}
 }
 
 func (t *Tracklist) findTrackByID(id string) *mediaprovider.Track {
