@@ -1,6 +1,9 @@
 package mediaprovider
 
-import "image"
+import (
+	"image"
+	"io"
+)
 
 type AlbumFilter struct {
 	MinYear int
@@ -83,4 +86,6 @@ type MediaProvider interface {
 	DeletePlaylist(id string) error
 
 	Scrobble(trackID string, submission bool) error
+
+	DownloadTrack(trackID string) (io.Reader, error)
 }

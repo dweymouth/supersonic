@@ -3,6 +3,7 @@ package subsonic
 import (
 	"errors"
 	"image"
+	"io"
 	"math"
 	"strconv"
 	"sync"
@@ -247,6 +248,10 @@ func (s *subsonicMediaProvider) SetRating(params mediaprovider.RatingFavoritePar
 	}
 
 	return err
+}
+
+func (s *subsonicMediaProvider) DownloadTrack(trackID string) (io.Reader, error) {
+	return s.client.Download(trackID)
 }
 
 func toTrack(ch *subsonic.Child) *mediaprovider.Track {
