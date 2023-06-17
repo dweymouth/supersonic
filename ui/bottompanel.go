@@ -34,9 +34,17 @@ type BottomPanel struct {
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(p *player.Player, contr *controller.Controller) *BottomPanel {
-	bp := &BottomPanel{}
+func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, contr *controller.Controller) *BottomPanel {
+	bp := &BottomPanel{playbackManager: pm}
 	bp.ExtendBaseWidget(bp)
+
+	bp.playbackManager.OnSongChange(bp.onSongChange)
+	bp.playbackManager.OnPlayTimeUpdate(func(cur, total float64) {
+		if !bp.playbackManager.IsSeeking() {
+			bp.Controls.UpdatePlayTime(cur, total)
+		}
+	})
+
 	p.OnPaused(func() {
 		bp.Controls.SetPlaying(false)
 	})
@@ -91,7 +99,7 @@ func NewBottomPanel(p *player.Player, contr *controller.Controller) *BottomPanel
 		p.Seek(fmt.Sprintf("%d", int(f*100)), player.SeekAbsolutePercent)
 	})
 	bp.Controls.OnChangeLoopMode(func() {
-		p.SetNextLoopMode()
+		bp.playbackManager.SetNextLoopMode()
 	})
 
 	bp.AuxControls = widgets.NewAuxControls(p.GetVolume())
@@ -102,16 +110,6 @@ func NewBottomPanel(p *player.Player, contr *controller.Controller) *BottomPanel
 	bp.container = container.New(layouts.NewLeftMiddleRightLayout(500),
 		bp.NowPlaying, bp.Controls, bp.AuxControls)
 	return bp
-}
-
-func (bp *BottomPanel) SetPlaybackManager(pm *backend.PlaybackManager) {
-	bp.playbackManager = pm
-	pm.OnSongChange(bp.onSongChange)
-	pm.OnPlayTimeUpdate(func(cur, total float64) {
-		if !pm.IsSeeking() {
-			bp.Controls.UpdatePlayTime(cur, total)
-		}
-	})
 }
 
 func (bp *BottomPanel) onSongChange(song, _ *mediaprovider.Track) {

@@ -291,6 +291,12 @@ func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
 	})
 }
 
+// Changes the loop mode of the player to the next one.
+// Useful for toggling UI elements, to change modes without knowing the current player mode.
+func (p *PlaybackManager) SetNextLoopMode() error {
+	return p.player.SetNextLoopMode()
+}
+
 // call BEFORE updating p.nowPlayingIdx
 func (p *PlaybackManager) checkScrobble() {
 	if !p.scrobbleCfg.Enabled || len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
