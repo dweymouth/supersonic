@@ -123,8 +123,9 @@ func (a *App) startSessionWatcher(sessionPath string) {
 				select {
 				case <-a.bgrndCtx.Done():
 					return
-				case event, ok := <-sessionWatch.Events:
-					if ok && event.Op == fsnotify.Create && path.Base(event.Name) == sessionActivateFile {
+				case <-sessionWatch.Events:
+					activatePath := path.Join(sessionPath, sessionActivateFile)
+					if _, err := os.Stat(activatePath); err == nil {
 						os.Remove(path.Join(sessionPath, sessionActivateFile))
 						if a.OnReactivate != nil {
 							a.OnReactivate()
