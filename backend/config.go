@@ -28,6 +28,7 @@ type AppConfig struct {
 	EnableSystemTray   bool
 	CloseToSystemTray  bool
 	StartupPage        string
+	AllowMultiInstance bool
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
@@ -119,6 +120,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			EnableSystemTray:   true,
 			CloseToSystemTray:  false,
 			StartupPage:        "Albums",
+			AllowMultiInstance: false,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},

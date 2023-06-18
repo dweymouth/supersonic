@@ -38,6 +38,7 @@ func main() {
 		h = 800
 	}
 	mainWindow := ui.NewMainWindow(fyneApp, displayName, appVersion, myApp, fyne.NewSize(w, h))
+	myApp.OnReactivate = mainWindow.Show
 
 	go func() {
 		// TODO: There is a race condition with laying out the window before the

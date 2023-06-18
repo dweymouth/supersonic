@@ -8,6 +8,7 @@ require (
 	github.com/20after4/configdir v0.1.1
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
 	github.com/dweymouth/go-subsonic v0.0.0-20230614154319-792d18c75fb4
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml/v2 v2.0.8
 	github.com/zalando/go-keyring v0.2.1
@@ -20,7 +21,6 @@ require (
 	github.com/danieljoos/wincred v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v0.1.0 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect

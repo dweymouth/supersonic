@@ -12,14 +12,22 @@ import (
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/player"
 	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
 
 	"github.com/20after4/configdir"
 	"github.com/zalando/go-keyring"
 )
 
+const (
+	sessionDir          = "session"
+	sessionLockFile     = ".lock"
+	sessionActivateFile = ".activate"
+)
+
 var (
-	ErrNoServers = errors.New("no servers set up")
+	ErrNoServers       = errors.New("no servers set up")
+	ErrAnotherInstance = errors.New("another instance is running")
 )
 
 type App struct {
@@ -29,6 +37,7 @@ type App struct {
 	PlaybackManager *PlaybackManager
 	Player          *player.Player
 	UpdateChecker   UpdateChecker
+	OnReactivate    func()
 
 	appName       string
 	appVersionTag string
@@ -42,14 +51,33 @@ func (a *App) VersionTag() string {
 }
 
 func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*App, error) {
-	a := &App{appName: appName, appVersionTag: appVersionTag, configFile: configFile}
-	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
+	sessionPath := configdir.LocalConfig(appName, sessionDir)
+	if _, err := os.Stat(path.Join(sessionPath, sessionLockFile)); err == nil {
+		log.Println("Another instance is running. Reactivating it and exiting...")
+		if f, err := os.Create(path.Join(sessionPath, sessionActivateFile)); err == nil {
+			f.Close()
+		}
+		return nil, ErrAnotherInstance
+	}
 
 	log.Printf("Starting %s...", appName)
 	log.Printf("Using config dir: %s", configdir.LocalConfig(appName))
 	log.Printf("Using cache dir: %s", configdir.LocalCache(appName))
 
+	a := &App{appName: appName, appVersionTag: appVersionTag, configFile: configFile}
+	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 	a.readConfig()
+
+	if !a.Config.Application.AllowMultiInstance {
+		log.Println("Creating session lock file")
+		os.MkdirAll(sessionPath, 0770)
+		if f, err := os.Create(path.Join(sessionPath, sessionLockFile)); err == nil {
+			f.Close()
+		} else {
+			log.Printf("error creating session file: %s", err.Error())
+		}
+		a.startSessionWatcher(sessionPath)
+	}
 
 	a.UpdateChecker = NewUpdateChecker(appVersionTag, latestReleaseURL, &a.Config.Application.LastCheckedVersion)
 	a.UpdateChecker.Start(a.bgrndCtx, 24*time.Hour)
@@ -85,6 +113,27 @@ func (a *App) readConfig() {
 		}
 	}
 	a.Config = cfg
+}
+
+func (a *App) startSessionWatcher(sessionPath string) {
+	if sessionWatch, err := fsnotify.NewWatcher(); err == nil {
+		sessionWatch.Add(sessionPath)
+		go func() {
+			for {
+				select {
+				case <-a.bgrndCtx.Done():
+					return
+				case event, ok := <-sessionWatch.Events:
+					if ok && event.Op == fsnotify.Create && path.Base(event.Name) == sessionActivateFile {
+						os.Remove(path.Join(sessionPath, sessionActivateFile))
+						if a.OnReactivate != nil {
+							a.OnReactivate()
+						}
+					}
+				}
+			}
+		}()
+	}
 }
 
 func (a *App) initMPV() error {
@@ -163,6 +212,7 @@ func (a *App) Shutdown() {
 	a.cancel()
 	a.Player.Destroy()
 	a.Config.WriteConfigFile(a.configPath())
+	os.RemoveAll(configdir.LocalConfig(a.appName, sessionDir))
 }
 
 func (a *App) configPath() string {
