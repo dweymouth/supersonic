@@ -74,61 +74,66 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		thFile = m.defaultThemeFile
 	}
 	colors := thFile.DarkColors
+	defColors := m.defaultThemeFile.DarkColors
 	if variant == theme.VariantLight {
 		colors = thFile.LightColors
+		defColors = m.defaultThemeFile.LightColors
 	}
 	switch name {
 	case ColorNamePageBackground:
-		return colorOrDefault(colors.PageBackground, name, variant)
+		return colorOrDefault(colors.PageBackground, defColors.PageBackground, name, variant)
 	case theme.ColorNameBackground:
-		return colorOrDefault(colors.Background, name, variant)
+		return colorOrDefault(colors.Background, defColors.Background, name, variant)
 	case theme.ColorNameButton:
-		return colorOrDefault(colors.Button, name, variant)
+		return colorOrDefault(colors.Button, defColors.Button, name, variant)
 	case theme.ColorNameDisabled:
-		return colorOrDefault(colors.Disabled, name, variant)
+		return colorOrDefault(colors.Disabled, defColors.Disabled, name, variant)
 	case theme.ColorNameDisabledButton:
-		return colorOrDefault(colors.DisabledButton, name, variant)
+		return colorOrDefault(colors.DisabledButton, defColors.DisabledButton, name, variant)
 	case theme.ColorNameError:
-		return colorOrDefault(colors.Error, name, variant)
+		return colorOrDefault(colors.Error, defColors.Error, name, variant)
 	case theme.ColorNameFocus:
-		return colorOrDefault(colors.Focus, name, variant)
+		return colorOrDefault(colors.Focus, defColors.Focus, name, variant)
 	case theme.ColorNameForeground:
-		return colorOrDefault(colors.Foreground, name, variant)
+		return colorOrDefault(colors.Foreground, defColors.Foreground, name, variant)
 	case theme.ColorNameHover:
-		return colorOrDefault(colors.Hover, name, variant)
+		return colorOrDefault(colors.Hover, defColors.Hover, name, variant)
 	case theme.ColorNameInputBackground:
-		return colorOrDefault(colors.InputBackground, name, variant)
+		return colorOrDefault(colors.InputBackground, defColors.InputBackground, name, variant)
 	case theme.ColorNameInputBorder:
-		return colorOrDefault(colors.InputBorder, name, variant)
+		return colorOrDefault(colors.InputBorder, defColors.InputBorder, name, variant)
 	case theme.ColorNameMenuBackground:
-		return colorOrDefault(colors.MenuBackground, name, variant)
+		return colorOrDefault(colors.MenuBackground, defColors.MenuBackground, name, variant)
 	case theme.ColorNameOverlayBackground:
-		return colorOrDefault(colors.OverlayBackground, name, variant)
+		return colorOrDefault(colors.OverlayBackground, defColors.OverlayBackground, name, variant)
 	case theme.ColorNamePlaceHolder:
-		return colorOrDefault(colors.Placeholder, name, variant)
+		return colorOrDefault(colors.Placeholder, defColors.Placeholder, name, variant)
 	case theme.ColorNamePressed:
-		return colorOrDefault(colors.Pressed, name, variant)
+		return colorOrDefault(colors.Pressed, defColors.Pressed, name, variant)
 	case theme.ColorNamePrimary:
-		return colorOrDefault(colors.Primary, name, variant)
+		return colorOrDefault(colors.Primary, defColors.Primary, name, variant)
 	case theme.ColorNameScrollBar:
-		return colorOrDefault(colors.ScrollBar, name, variant)
+		return colorOrDefault(colors.ScrollBar, defColors.ScrollBar, name, variant)
 	case theme.ColorNameSelection:
-		return colorOrDefault(colors.Selection, name, variant)
+		return colorOrDefault(colors.Selection, defColors.Selection, name, variant)
 	case theme.ColorNameSeparator:
-		return colorOrDefault(colors.Separator, name, variant)
+		return colorOrDefault(colors.Separator, defColors.Separator, name, variant)
 	case theme.ColorNameShadow:
-		return colorOrDefault(colors.Shadow, name, variant)
+		return colorOrDefault(colors.Shadow, defColors.Shadow, name, variant)
 	case theme.ColorNameSuccess:
-		return colorOrDefault(colors.Success, name, variant)
+		return colorOrDefault(colors.Success, defColors.Success, name, variant)
 	case theme.ColorNameWarning:
-		return colorOrDefault(colors.Warning, name, variant)
+		return colorOrDefault(colors.Warning, defColors.Warning, name, variant)
 	default:
-		return colorOrDefault("", name, variant)
+		return colorOrDefault("", "", name, variant)
 	}
 }
 
-func colorOrDefault(colorStr string, name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+func colorOrDefault(colorStr, defColorStr string, name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	if c, err := ColorStringToColor(colorStr); err == nil {
+		return c
+	}
+	if c, err := ColorStringToColor(defColorStr); err == nil {
 		return c
 	}
 	return theme.DefaultTheme().Color(name, variant)
