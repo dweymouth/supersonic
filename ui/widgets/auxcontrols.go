@@ -14,6 +14,7 @@ type AuxControls struct {
 	widget.BaseWidget
 
 	VolumeControl *VolumeControl
+	loop          *widget.Button
 
 	container *fyne.Container
 }
@@ -21,14 +22,36 @@ type AuxControls struct {
 func NewAuxControls(initialVolume int) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
+		loop:          widget.NewButtonWithIcon("", theme.MediaReplayIcon(), func() {}),
 	}
-	a.container = container.NewHBox(layout.NewSpacer(), a.VolumeControl)
+	a.container = container.NewHBox(
+		layout.NewSpacer(),
+		container.NewVBox(
+			layout.NewSpacer(),
+			a.VolumeControl,
+			container.NewCenter(layout.NewSpacer(), a.loop),
+			layout.NewSpacer(),
+		),
+	)
 	return a
 }
 
 func (a *AuxControls) CreateRenderer() fyne.WidgetRenderer {
 	a.ExtendBaseWidget(a)
 	return widget.NewSimpleRenderer(a.container)
+}
+
+func (a *AuxControls) OnChangeLoopMode(f func()) {
+	a.loop.OnTapped = f
+}
+
+func (a *AuxControls) SetLoopMode(mode string) {
+	if mode == "all" {
+		a.loop.Importance = widget.HighImportance
+	} else {
+		a.loop.Importance = widget.MediumImportance
+	}
+	a.loop.Refresh()
 }
 
 type volumeSlider struct {

@@ -10,10 +10,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-var (
-	themedResReplay = theme.NewThemedResource(theme.MediaReplayIcon())
-)
-
 // TrackPosSlider is a custom slider that doesn't trigger
 // the seek action until drag end.
 type TrackPosSlider struct {
@@ -66,7 +62,6 @@ type PlayerControls struct {
 	prev           *widget.Button
 	playpause      *widget.Button
 	next           *widget.Button
-	loop           *widget.Button
 	container      *fyne.Container
 
 	totalTime float64
@@ -110,9 +105,8 @@ func NewPlayerControls() *PlayerControls {
 	pc.prev = widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {})
 	pc.next = widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), func() {})
 	pc.playpause = widget.NewButtonWithIcon("", theme.MediaPlayIcon(), func() {})
-	pc.loop = widget.NewButtonWithIcon("", themedResReplay, func() {})
 
-	buttons := container.NewHBox(pc.prev, pc.playpause, pc.next, pc.loop)
+	buttons := container.NewHBox(pc.prev, pc.playpause, pc.next)
 	b := container.New(layout.NewCenterLayout(), buttons)
 
 	c := container.NewBorder(nil, nil, pc.curTimeLabel, pc.totalTimeLabel, pc.slider)
@@ -142,20 +136,6 @@ func (pc *PlayerControls) SetPlaying(playing bool) {
 		pc.playpause.SetIcon(theme.MediaPauseIcon())
 	} else {
 		pc.playpause.SetIcon(theme.MediaPlayIcon())
-	}
-}
-
-func (pc *PlayerControls) OnChangeLoopMode(f func()) {
-	pc.loop.OnTapped = f
-}
-
-func (pc *PlayerControls) SetLoopMode(mode string) {
-	if mode == "all" {
-		themedResReplay.ColorName = theme.ColorNameSuccess
-		pc.loop.SetIcon(themedResReplay)
-	} else {
-		themedResReplay.ColorName = ""
-		pc.loop.SetIcon(themedResReplay)
 	}
 }
 
