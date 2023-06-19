@@ -54,7 +54,7 @@ func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, contr *contro
 	p.OnStopped(func() {
 		bp.Controls.SetPlaying(false)
 	})
-	p.OnLoopModeChanged(func(mode string) {
+	pm.OnLoopModeChange(func(mode string) {
 		bp.Controls.SetLoopMode(mode)
 	})
 

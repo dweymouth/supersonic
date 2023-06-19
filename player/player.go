@@ -116,12 +116,11 @@ type Player struct {
 	bgCancel context.CancelFunc
 
 	// callbacks
-	onPaused          []func()
-	onStopped         []func()
-	onPlaying         []func()
-	onSeek            []func()
-	onLoopModeChanged []func(string)
-	onTrackChange     []func(int64)
+	onPaused      []func()
+	onStopped     []func()
+	onPlaying     []func()
+	onSeek        []func()
+	onTrackChange []func(int64)
 }
 
 // Returns a new player.
@@ -400,7 +399,12 @@ func (p *Player) PlayPause() error {
 	}
 }
 
-// Sets the loop mode of the player.
+// Get the loop mode of the player.
+func (p *Player) GetLoopMode() LoopMode {
+	return p.loopMode
+}
+
+// Set the loop mode of the player.
 func (p *Player) SetLoopMode(mode LoopMode) error {
 	if !p.initialized {
 		return ErrUnitialized
@@ -413,22 +417,20 @@ func (p *Player) SetLoopMode(mode LoopMode) error {
 
 	switch mode {
 	case LoopNone:
-		p.mpv.SetOptionString("loop-playlist", "no")
+		if err := p.mpv.SetOptionString("loop-playlist", "no"); err != nil {
+			return err
+		}
 	case LoopAll:
-		p.mpv.SetOptionString("loop-playlist", "inf")
+		if err := p.mpv.SetOptionString("loop-playlist", "inf"); err != nil {
+			return err
+		}
 	}
 	p.loopMode = mode
-
-	defer func() {
-		for _, cb := range p.onLoopModeChanged {
-			cb(p.loopMode.String())
-		}
-	}()
 
 	return nil
 }
 
-// Changes the loop mode of the player to the next one.
+// Change the loop mode of the player to the next one.
 // Useful for toggling UI elements, to change modes without knowing the current player mode.
 func (p *Player) SetNextLoopMode() error {
 	switch p.loopMode {
@@ -540,11 +542,6 @@ func (p *Player) OnPlaying(cb func()) {
 // Registers a callback which is invoked whenever a seek event occurs.
 func (p *Player) OnSeek(cb func()) {
 	p.onSeek = append(p.onSeek, cb)
-}
-
-// Registers a callback which is invoked when the player enables queue repeat.
-func (p *Player) OnLoopModeChanged(cb func(string)) {
-	p.onLoopModeChanged = append(p.onLoopModeChanged, cb)
 }
 
 // Registers a callback which is invoked when the currently playing track changes,

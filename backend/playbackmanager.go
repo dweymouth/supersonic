@@ -40,6 +40,7 @@ type PlaybackManager struct {
 
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
+	onLoopModeChange []func(string)
 }
 
 func NewPlaybackManager(
@@ -126,6 +127,11 @@ func (p *PlaybackManager) OnSongChange(cb func(nowPlaying *mediaprovider.Track, 
 // Registers a callback that is notified whenever the play time should be updated.
 func (p *PlaybackManager) OnPlayTimeUpdate(cb func(float64, float64)) {
 	p.onPlayTimeUpdate = append(p.onPlayTimeUpdate, cb)
+}
+
+// Registers a callback that is notified whenever the loop mode changes.
+func (p *PlaybackManager) OnLoopModeChange(cb func(string)) {
+	p.onLoopModeChange = append(p.onLoopModeChange, cb)
 }
 
 // Loads the specified album into the play queue.
@@ -294,7 +300,17 @@ func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
 // Changes the loop mode of the player to the next one.
 // Useful for toggling UI elements, to change modes without knowing the current player mode.
 func (p *PlaybackManager) SetNextLoopMode() error {
-	return p.player.SetNextLoopMode()
+	if err := p.player.SetNextLoopMode(); err != nil {
+		return err
+	}
+
+	defer func() {
+		for _, cb := range p.onLoopModeChange {
+			cb(p.player.GetLoopMode().String())
+		}
+	}()
+
+	return nil
 }
 
 // call BEFORE updating p.nowPlayingIdx
