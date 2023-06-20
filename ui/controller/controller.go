@@ -143,6 +143,16 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 			m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
 		}()
 	}
+	grid.OnDownload = func(albumID string) {
+		go func() {
+			album, err := m.App.ServerManager.Server.GetAlbum(albumID)
+			if err != nil {
+				log.Printf("error loading album: %s", err.Error())
+				return
+			}
+			m.ShowDownloadDialog(album.Tracks)
+		}()
+	}
 }
 
 func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
@@ -154,6 +164,12 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 	grid.OnAddToPlaylist = func(artistID string) {
 		go m.DoAddTracksToPlaylistWorkflow(
 			sharedutil.TracksToIDs(m.GetArtistTracks(artistID)))
+	}
+	grid.OnDownload = func(artistID string) {
+		go func() {
+			tracks := m.GetArtistTracks(artistID)
+			m.ShowDownloadDialog(tracks)
+		}()
 	}
 }
 

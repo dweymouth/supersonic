@@ -129,6 +129,7 @@ type GridViewItem struct {
 	OnPlay              func(shuffle bool)
 	OnAddToQueue        func()
 	OnAddToPlaylist     func()
+	OnDownload          func()
 	OnShowItemPage      func()
 	OnShowSecondaryPage func()
 }
@@ -173,7 +174,8 @@ func (g *GridViewItem) showContextMenu(pos fyne.Position) {
 			fyne.NewMenuItem("Play", func() { g.onPlay(false) }),
 			fyne.NewMenuItem("Shuffle", func() { g.onPlay(true) }),
 			fyne.NewMenuItem("Add to queue", g.onAddToQueue),
-			fyne.NewMenuItem("Add to playlist...", g.onAddToPlaylist)),
+			fyne.NewMenuItem("Add to playlist...", g.onAddToPlaylist),
+			fyne.NewMenuItem("Download...", g.onDownload)),
 			fyne.CurrentApp().Driver().CanvasForObject(g))
 	}
 	g.menu.ShowAtPosition(pos)
@@ -216,5 +218,11 @@ func (g *GridViewItem) onAddToQueue() {
 func (g *GridViewItem) onAddToPlaylist() {
 	if g.OnAddToPlaylist != nil {
 		g.OnAddToPlaylist()
+	}
+}
+
+func (g *GridViewItem) onDownload() {
+	if g.OnDownload != nil {
+		g.OnDownload()
 	}
 }

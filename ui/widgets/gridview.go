@@ -89,6 +89,7 @@ type GridViewState struct {
 	OnPlay              func(id string, shuffle bool)
 	OnAddToQueue        func(id string)
 	OnAddToPlaylist     func(id string)
+	OnDownload          func(id string)
 	OnShowItemPage      func(id string)
 	OnShowSecondaryPage func(id string)
 
@@ -215,6 +216,11 @@ func (g *GridView) createGridWrap() {
 			card.OnAddToPlaylist = func() {
 				if g.OnAddToPlaylist != nil {
 					g.OnAddToPlaylist(card.ItemID())
+				}
+			}
+			card.OnDownload = func() {
+				if g.OnDownload != nil {
+					g.OnDownload(card.itemID)
 				}
 			}
 			return card
