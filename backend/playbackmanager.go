@@ -304,11 +304,9 @@ func (p *PlaybackManager) SetNextLoopMode() error {
 		return err
 	}
 
-	defer func() {
-		for _, cb := range p.onLoopModeChange {
-			cb(p.player.GetLoopMode().String())
-		}
-	}()
+	for _, cb := range p.onLoopModeChange {
+		cb(p.player.GetLoopMode().String())
+	}
 
 	return nil
 }
