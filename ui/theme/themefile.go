@@ -32,6 +32,8 @@ type ThemeFile struct {
 type ThemeColors struct {
 	// Supersonic-specific colors
 
+	ListHeader string
+
 	PageBackground string
 
 	// Fyne colors

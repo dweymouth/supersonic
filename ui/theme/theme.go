@@ -18,7 +18,10 @@ import (
 	"fyne.io/fyne/v2/theme"
 )
 
-const ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
+const (
+	ColorNameListHeader     fyne.ThemeColorName = "ListHeader"
+	ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
+)
 
 type AppearanceMode string
 
@@ -80,6 +83,8 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		defColors = m.defaultThemeFile.LightColors
 	}
 	switch name {
+	case ColorNameListHeader:
+		return colorOrDefault(colors.ListHeader, defColors.ListHeader, name, variant)
 	case ColorNamePageBackground:
 		return colorOrDefault(colors.PageBackground, defColors.PageBackground, name, variant)
 	case theme.ColorNameBackground:
