@@ -113,6 +113,16 @@ func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 			a.contr.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(pl.Tracks))
 		}()
 	}
+	a.gridView.OnDownload = func(id string) {
+		go func() {
+			pl, err := a.contr.App.ServerManager.Server.GetPlaylist(id)
+			if err != nil {
+				log.Printf("error loading playlist: %s", err.Error())
+				return
+			}
+			a.contr.ShowDownloadDialog(pl.Tracks)
+		}()
+	}
 }
 
 func (a *PlaylistsPage) showListView() {
