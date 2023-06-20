@@ -58,6 +58,14 @@ type ReplayGainOptions struct {
 	// Fallback gain intentionally omitted
 }
 
+// The playback loop mode (LoopNone, LoopAll).
+type LoopMode int
+
+const (
+	LoopNone LoopMode = iota
+	LoopAll
+)
+
 // Information about a specific audio device.
 // Returned by ListAudioDevices.
 type AudioDevice struct {
@@ -99,6 +107,7 @@ type Player struct {
 	haveRGainOpts  bool
 	audioExclusive bool
 	status         Status
+	loopMode       LoopMode
 	seeking        bool
 	curPlaylistPos int64
 	prePausedState State
@@ -390,6 +399,50 @@ func (p *Player) PlayPause() error {
 	}
 }
 
+// Get the loop mode of the player.
+func (p *Player) GetLoopMode() LoopMode {
+	return p.loopMode
+}
+
+// Set the loop mode of the player.
+func (p *Player) SetLoopMode(mode LoopMode) error {
+	if !p.initialized {
+		return ErrUnitialized
+	}
+
+	// Return early if player is already in specified mode
+	if mode == p.loopMode {
+		return nil
+	}
+
+	switch mode {
+	case LoopNone:
+		if err := p.mpv.SetOptionString("loop-playlist", "no"); err != nil {
+			return err
+		}
+	case LoopAll:
+		if err := p.mpv.SetOptionString("loop-playlist", "inf"); err != nil {
+			return err
+		}
+	}
+	p.loopMode = mode
+
+	return nil
+}
+
+// Change the loop mode of the player to the next one.
+// Useful for toggling UI elements, to change modes without knowing the current player mode.
+func (p *Player) SetNextLoopMode() error {
+	switch p.loopMode {
+	case LoopNone:
+		return p.SetLoopMode(LoopAll)
+	case LoopAll:
+		return p.SetLoopMode(LoopNone)
+	default:
+		return nil
+	}
+}
+
 // Get the current status of the player.
 func (p *Player) GetStatus() Status {
 	if !p.initialized {
@@ -589,4 +642,14 @@ func (s SeekMode) String() string {
 		return "relative-percent"
 	}
 	return "UNKNOWN_SEEK_MODE"
+}
+
+func (l LoopMode) String() string {
+	switch l {
+	case LoopNone:
+		return "no"
+	case LoopAll:
+		return "all"
+	}
+	return "UNKNOWN_LOOP_MODE"
 }

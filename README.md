@@ -1,7 +1,7 @@
 <img src="res/appicon-128.png" alt="Supersonic logo" title="Supersonic" align="left" height="60px"/>
 <a href='https://flathub.org/apps/details/io.github.dweymouth.supersonic'><img height="50px" align="right" alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a></div>
-<a href='https://ko-fi.com/dweymouth' target='_blank'><img height='40' align='right' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com'/>  
-  
+<a href='https://ko-fi.com/dweymouth' target='_blank'><img height='40' align='right' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com'/>
+
 # Supersonic
 
 [![License](https://img.shields.io/github/license/dweymouth/supersonic)](https://github.com/dweymouth/supersonic/blob/main/LICENSE)
@@ -40,7 +40,7 @@ Screenshots of Supersonic running against the Navidrome [demo server](https://ww
 * [x] Set/unset favorite and browse by favorite albums, artists, and songs
 * [x] Set and view track rating (0-5 stars)
 * [x] View and edit play queue (add and remove tracks; reorder support coming soon)
-* [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs)
+* [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs; repeat all)
 * [ ] Browse by folders (planned)
 * [ ] Download songs, albums or playlists (planned)
 * [ ] Cast to uPnP/DLNA devices (likely planned)
@@ -86,7 +86,7 @@ Supersonic is available in the AUR and can be built either manually with `makepk
 
 ### Build with an AUR helper
 * Invoke your favorite AUR helper to automatically build the package
-  - ``yay -S supersonic-desktop`` 
+  - ``yay -S supersonic-desktop``
 
 ## Build instructions (Mac OS)
 
