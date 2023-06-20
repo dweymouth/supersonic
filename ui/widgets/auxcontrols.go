@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/ui/util"
 )
 
 // The "aux" controls for playback, positioned to the right
@@ -14,22 +15,41 @@ type AuxControls struct {
 	widget.BaseWidget
 
 	VolumeControl *VolumeControl
-	loop          *widget.Button
+	loop          *miniButton
 
 	container *fyne.Container
+}
+
+type miniButton struct {
+	widget.Button
+}
+
+func newMiniButton(icon fyne.Resource) *miniButton {
+	b := &miniButton{
+		Button: widget.Button{
+			Icon: icon,
+		},
+	}
+	b.ExtendBaseWidget(b)
+	return b
+}
+
+func (b *miniButton) MinSize() fyne.Size {
+	return fyne.NewSize(24, 24)
 }
 
 func NewAuxControls(initialVolume int) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
-		loop:          widget.NewButtonWithIcon("", theme.MediaReplayIcon(), func() {}),
+		loop:          newMiniButton(theme.MediaReplayIcon()),
 	}
 	a.container = container.NewHBox(
 		layout.NewSpacer(),
 		container.NewVBox(
+			util.NewHSpace(0), // hack to move everything down a tiny bit
 			layout.NewSpacer(),
 			a.VolumeControl,
-			container.NewCenter(layout.NewSpacer(), a.loop),
+			container.NewHBox(layout.NewSpacer(), a.loop, util.NewHSpace(5)),
 			layout.NewSpacer(),
 		),
 	)
