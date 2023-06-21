@@ -68,8 +68,13 @@ func (a *AuxControls) OnChangeLoopMode(f func()) {
 func (a *AuxControls) SetLoopMode(mode string) {
 	if mode == "all" {
 		a.loop.Importance = widget.HighImportance
+		a.loop.Icon = theme.MediaReplayIcon()
+	} else if mode == "one" {
+		a.loop.Importance = widget.HighImportance
+		a.loop.Icon = theme.MediaReplayIcon()  // TODO: This icon must be changed to the "Repeat" one with a 1.
 	} else {
 		a.loop.Importance = widget.MediumImportance
+		a.loop.Icon = theme.MediaReplayIcon()
 	}
 	a.loop.Refresh()
 }

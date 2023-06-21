@@ -58,12 +58,13 @@ type ReplayGainOptions struct {
 	// Fallback gain intentionally omitted
 }
 
-// The playback loop mode (LoopNone, LoopAll).
+// The playback loop mode (LoopNone, LoopAll, LoopOne).
 type LoopMode int
 
 const (
 	LoopNone LoopMode = iota
 	LoopAll
+	LoopOne
 )
 
 // Information about a specific audio device.
@@ -420,8 +421,21 @@ func (p *Player) SetLoopMode(mode LoopMode) error {
 		if err := p.mpv.SetOptionString("loop-playlist", "no"); err != nil {
 			return err
 		}
+		if err := p.mpv.SetOptionString("loop-file", "no"); err != nil {
+			return err
+		}
 	case LoopAll:
 		if err := p.mpv.SetOptionString("loop-playlist", "inf"); err != nil {
+			return err
+		}
+		if err := p.mpv.SetOptionString("loop-file", "no"); err != nil {
+			return err
+		}
+	case LoopOne:
+		if err := p.mpv.SetOptionString("loop-playlist", "no"); err != nil {
+			return err
+		}
+		if err := p.mpv.SetOptionString("loop-file", "inf"); err != nil {
 			return err
 		}
 	}
@@ -437,6 +451,8 @@ func (p *Player) SetNextLoopMode() error {
 	case LoopNone:
 		return p.SetLoopMode(LoopAll)
 	case LoopAll:
+		return p.SetLoopMode(LoopOne)
+	case LoopOne:
 		return p.SetLoopMode(LoopNone)
 	default:
 		return nil
@@ -650,6 +666,8 @@ func (l LoopMode) String() string {
 		return "no"
 	case LoopAll:
 		return "all"
+	case LoopOne:
+		return "one"
 	}
 	return "UNKNOWN_LOOP_MODE"
 }
