@@ -38,14 +38,15 @@ type SettingsDialog struct {
 
 	config       *backend.Config
 	audioDevices []player.AudioDevice
+	themeFiles   map[string]string // filename -> displayName
 	promptText   *widget.RichText
 
 	content fyne.CanvasObject
 }
 
 // TODO: having this depend on the player package for the AudioDevice type is kinda gross. Refactor.
-func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDevice, window fyne.Window) *SettingsDialog {
-	s := &SettingsDialog{config: config, audioDevices: audioDeviceList}
+func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDevice, themeFileList map[string]string, window fyne.Window) *SettingsDialog {
+	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList}
 	s.ExtendBaseWidget(s)
 
 	tabs := container.NewAppTabs(
@@ -69,19 +70,39 @@ func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDev
 }
 
 func (s *SettingsDialog) createGeneralTab() *container.TabItem {
-	themeSelect := widget.NewSelect([]string{
-		string(myTheme.AppearanceDark),
-		string(myTheme.AppearanceLight),
-		string(myTheme.AppearanceAuto)}, nil)
-	themeSelect.OnChanged = func(_ string) {
-		s.config.Theme.Appearance = themeSelect.Options[themeSelect.SelectedIndex()]
+	themeNames := []string{"Default"}
+	themeFileNames := []string{""}
+	i, selIndex := 1, 0
+	for filename, displayname := range s.themeFiles {
+		themeFileNames = append(themeFileNames, filename)
+		themeNames = append(themeNames, displayname)
+		if strings.EqualFold(filename, s.config.Theme.ThemeFile) {
+			selIndex = i
+		}
+		i++
+	}
+
+	themeFileSelect := widget.NewSelect(themeNames, nil)
+	themeFileSelect.SetSelectedIndex(selIndex)
+	themeFileSelect.OnChanged = func(_ string) {
+		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
 		if s.OnThemeSettingChanged != nil {
 			s.OnThemeSettingChanged()
 		}
 	}
-	themeSelect.SetSelected(s.config.Theme.Appearance)
-	if themeSelect.Selected == "" {
-		themeSelect.SetSelectedIndex(0)
+	themeModeSelect := widget.NewSelect([]string{
+		string(myTheme.AppearanceDark),
+		string(myTheme.AppearanceLight),
+		string(myTheme.AppearanceAuto)}, nil)
+	themeModeSelect.OnChanged = func(_ string) {
+		s.config.Theme.Appearance = themeModeSelect.Options[themeModeSelect.SelectedIndex()]
+		if s.OnThemeSettingChanged != nil {
+			s.OnThemeSettingChanged()
+		}
+	}
+	themeModeSelect.SetSelected(s.config.Theme.Appearance)
+	if themeModeSelect.Selected == "" {
+		themeModeSelect.SetSelectedIndex(0)
 	}
 
 	startupPage := widget.NewSelect(backend.SupportedStartupPages, func(choice string) {
@@ -183,8 +204,11 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 	scrobbleEnabled.Checked = s.config.Scrobbling.Enabled
 
 	return container.NewTabItem("General", container.NewVBox(
-		container.New(layout.NewFormLayout(),
-			widget.NewLabel("Appearance"), container.NewGridWithColumns(2, themeSelect),
+		container.NewBorder(nil, nil, widget.NewLabel("Theme"), /*left*/
+			container.NewHBox(widget.NewLabel("Mode"), themeModeSelect, util.NewHSpace(5)), // right
+			themeFileSelect, // center
+		),
+		container.NewHBox(
 			widget.NewLabel("Startup page"), container.NewGridWithColumns(2, startupPage),
 		),
 		container.NewHBox(systemTrayEnable, closeToTray),

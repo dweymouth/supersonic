@@ -62,7 +62,7 @@ func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader
 	for i := range l.columnVisible {
 		l.columnVisible[i] = true
 	}
-	l.container = container.NewMax(myTheme.NewThemedRectangle(theme.ColorNameBackground), l.columnsContainer)
+	l.container = container.NewMax(myTheme.NewThemedRectangle(myTheme.ColorNameListHeader), l.columnsContainer)
 	l.ExtendBaseWidget(l)
 	l.buildColumns()
 	return l

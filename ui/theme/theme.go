@@ -1,10 +1,13 @@
 package theme
 
 import (
+	"bytes"
 	"errors"
 	"image/color"
 	"io/ioutil"
 	"log"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -15,7 +18,10 @@ import (
 	"fyne.io/fyne/v2/theme"
 )
 
-const ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
+const (
+	ColorNameListHeader     fyne.ThemeColorName = "ListHeader"
+	ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
+)
 
 type AppearanceMode string
 
@@ -33,65 +39,125 @@ var (
 )
 
 type MyTheme struct {
-	NormalFont string
-	BoldFont   string
-	config     *backend.ThemeConfig
+	NormalFont   string
+	BoldFont     string
+	config       *backend.ThemeConfig
+	themeFileDir string
+
+	loadedThemeFilename string
+	loadedThemeFile     *ThemeFile
+	defaultThemeFile    *ThemeFile
 }
 
 var _ fyne.Theme = (*MyTheme)(nil)
 
-func NewMyTheme(config *backend.ThemeConfig) *MyTheme {
-	m := &MyTheme{config: config}
+func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
+	m := &MyTheme{config: config, themeFileDir: themeFileDir}
+	m.defaultThemeFile, _ = DecodeThemeFile(bytes.NewReader(res.ResDefaultToml.StaticContent))
 	m.createThemeIcons()
 	return m
 }
 
 func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Color {
+	// load theme file if necessary
+	if m.loadedThemeFile == nil || m.config.ThemeFile != m.loadedThemeFilename {
+		t, err := ReadThemeFile(path.Join(m.themeFileDir, m.config.ThemeFile))
+		if err == nil {
+			m.loadedThemeFile = t
+		} else {
+			log.Printf("failed to load theme file %q: %s", m.config.ThemeFile, err.Error())
+			m.loadedThemeFile = m.defaultThemeFile
+		}
+		m.loadedThemeFilename = m.config.ThemeFile
+	}
+
 	variant := m.getVariant()
+	thFile := m.loadedThemeFile
+	if !thFile.SupportsVariant(variant) {
+		thFile = m.defaultThemeFile
+	}
+	colors := thFile.DarkColors
+	defColors := m.defaultThemeFile.DarkColors
+	if variant == theme.VariantLight {
+		colors = thFile.LightColors
+		defColors = m.defaultThemeFile.LightColors
+	}
 	switch name {
+	case ColorNameListHeader:
+		return colorOrDefault(colors.ListHeader, defColors.ListHeader, name, variant)
 	case ColorNamePageBackground:
-		if variant == theme.VariantDark {
-			return color.RGBA{R: 15, G: 15, B: 15, A: 255}
-		}
-		return color.RGBA{R: 250, G: 250, B: 250, A: 255}
+		return colorOrDefault(colors.PageBackground, defColors.PageBackground, name, variant)
 	case theme.ColorNameBackground:
-		if variant == theme.VariantDark {
-			return color.RGBA{R: 35, G: 35, B: 35, A: 255}
-		}
-		return color.RGBA{R: 225, G: 223, B: 225, A: 255}
-	case theme.ColorNameScrollBar:
-		if variant == theme.VariantDark {
-			return theme.DarkTheme().Color(theme.ColorNameForeground, variant)
-		}
-		return theme.LightTheme().Color(theme.ColorNameForeground, variant)
+		return colorOrDefault(colors.Background, defColors.Background, name, variant)
 	case theme.ColorNameButton:
-		if variant == theme.VariantDark {
-			return color.RGBA{R: 20, G: 20, B: 20, A: 50}
-		}
-		return color.RGBA{R: 200, G: 200, B: 200, A: 240}
+		return colorOrDefault(colors.Button, defColors.Button, name, variant)
+	case theme.ColorNameDisabled:
+		return colorOrDefault(colors.Disabled, defColors.Disabled, name, variant)
 	case theme.ColorNameDisabledButton:
-		if variant == theme.VariantLight {
-			return color.RGBA{R: 205, G: 205, B: 205, A: 240}
-		}
-		return theme.DefaultTheme().Color(theme.ColorNameDisabledButton, variant)
-	case theme.ColorNameInputBackground:
-		if variant == theme.VariantDark {
-			return color.RGBA{R: 20, G: 20, B: 20, A: 50}
-		}
+		return colorOrDefault(colors.DisabledButton, defColors.DisabledButton, name, variant)
+	case theme.ColorNameError:
+		return colorOrDefault(colors.Error, defColors.Error, name, variant)
+	case theme.ColorNameFocus:
+		return colorOrDefault(colors.Focus, defColors.Focus, name, variant)
 	case theme.ColorNameForeground:
-		if variant == theme.VariantLight {
-			return color.RGBA{R: 10, G: 10, B: 10, A: 255}
-		}
+		return colorOrDefault(colors.Foreground, defColors.Foreground, name, variant)
+	case theme.ColorNameHover:
+		return colorOrDefault(colors.Hover, defColors.Hover, name, variant)
+	case theme.ColorNameInputBackground:
+		return colorOrDefault(colors.InputBackground, defColors.InputBackground, name, variant)
+	case theme.ColorNameInputBorder:
+		return colorOrDefault(colors.InputBorder, defColors.InputBorder, name, variant)
+	case theme.ColorNameMenuBackground:
+		return colorOrDefault(colors.MenuBackground, defColors.MenuBackground, name, variant)
+	case theme.ColorNameOverlayBackground:
+		return colorOrDefault(colors.OverlayBackground, defColors.OverlayBackground, name, variant)
+	case theme.ColorNamePlaceHolder:
+		return colorOrDefault(colors.Placeholder, defColors.Placeholder, name, variant)
+	case theme.ColorNamePressed:
+		return colorOrDefault(colors.Pressed, defColors.Pressed, name, variant)
 	case theme.ColorNamePrimary:
-		if variant == theme.VariantLight {
-			return color.RGBA{R: 25, G: 25, B: 250, A: 255}
-		}
+		return colorOrDefault(colors.Primary, defColors.Primary, name, variant)
+	case theme.ColorNameScrollBar:
+		return colorOrDefault(colors.ScrollBar, defColors.ScrollBar, name, variant)
+	case theme.ColorNameSelection:
+		return colorOrDefault(colors.Selection, defColors.Selection, name, variant)
+	case theme.ColorNameSeparator:
+		return colorOrDefault(colors.Separator, defColors.Separator, name, variant)
+	case theme.ColorNameShadow:
+		return colorOrDefault(colors.Shadow, defColors.Shadow, name, variant)
+	case theme.ColorNameSuccess:
+		return colorOrDefault(colors.Success, defColors.Success, name, variant)
+	case theme.ColorNameWarning:
+		return colorOrDefault(colors.Warning, defColors.Warning, name, variant)
+	default:
+		return colorOrDefault("", "", name, variant)
+	}
+}
+
+func colorOrDefault(colorStr, defColorStr string, name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	if c, err := ColorStringToColor(colorStr); err == nil {
+		return c
+	}
+	if c, err := ColorStringToColor(defColorStr); err == nil {
+		return c
 	}
 	return theme.DefaultTheme().Color(name, variant)
 }
 
 func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 	return theme.DefaultTheme().Icon(name)
+}
+
+// Returns a map [themeFileName] -> displayName
+func (m *MyTheme) ListThemeFiles() map[string]string {
+	files, _ := filepath.Glob(m.themeFileDir + "/*.toml")
+	result := make(map[string]string)
+	for _, filepath := range files {
+		if themeFile, err := ReadThemeFile(filepath); err == nil {
+			result[path.Base(filepath)] = themeFile.SupersonicTheme.Name
+		}
+	}
+	return result
 }
 
 type myThemedResource struct {

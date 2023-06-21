@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 
+	"github.com/20after4/configdir"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
@@ -49,12 +50,12 @@ type MainWindow struct {
 	container      *fyne.Container
 }
 
-func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.App, size fyne.Size) MainWindow {
+func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App, size fyne.Size) MainWindow {
 	m := MainWindow{
 		App:          app,
-		Window:       fyneApp.NewWindow(appName),
+		Window:       fyneApp.NewWindow(displayAppName),
 		BrowsingPane: browsing.NewBrowsingPane(app),
-		theme:        theme.NewMyTheme(&app.Config.Theme),
+		theme:        theme.NewMyTheme(&app.Config.Theme, configdir.LocalConfig(appName, "themes")),
 	}
 
 	m.theme.NormalFont = app.Config.Application.FontNormalTTF
@@ -62,7 +63,7 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	fyneApp.Settings().SetTheme(m.theme)
 
 	if app.Config.Application.EnableSystemTray {
-		m.SetupSystemTrayMenu(appName, fyneApp)
+		m.SetupSystemTrayMenu(displayAppName, fyneApp)
 	}
 	m.Controller = &controller.Controller{
 		AppVersion: appVersion,
@@ -82,10 +83,10 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	m.Window.Resize(size)
 	app.PlaybackManager.OnSongChange(func(song, _ *mediaprovider.Track) {
 		if song == nil {
-			m.Window.SetTitle(appName)
+			m.Window.SetTitle(displayAppName)
 			return
 		}
-		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", song.Name, song.ArtistNames[0], appName))
+		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", song.Name, song.ArtistNames[0], displayAppName))
 	})
 	app.ServerManager.OnServerConnected(func() {
 		m.BrowsingPane.EnableNavigationButtons()
@@ -93,7 +94,7 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 		// check if found new version on startup
 		if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
 			if t != app.VersionTag() {
-				m.ShowNewVersionDialog(appName, t)
+				m.ShowNewVersionDialog(displayAppName, t)
 			}
 			m.App.Config.Application.LastCheckedVersion = t
 		}
@@ -101,7 +102,7 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 		m.App.UpdateChecker.OnUpdatedVersionFound = func() {
 			t := m.App.UpdateChecker.VersionTagFound()
 			if t != app.VersionTag() {
-				m.ShowNewVersionDialog(appName, t)
+				m.ShowNewVersionDialog(displayAppName, t)
 			}
 			m.App.Config.Application.LastCheckedVersion = t
 		}
@@ -117,10 +118,10 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	m.BrowsingPane.AddSettingsMenuItem("Check for Updates", func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
-				m.ShowNewVersionDialog(appName, t)
+				m.ShowNewVersionDialog(displayAppName, t)
 			} else {
 				dialog.ShowInformation("No new version found",
-					"You are running the latest version of "+appName,
+					"You are running the latest version of "+displayAppName,
 					m.Window)
 			}
 		}()
@@ -128,7 +129,7 @@ func NewMainWindow(fyneApp fyne.App, appName, appVersion string, app *backend.Ap
 	m.BrowsingPane.AddSettingsMenuItem("Settings...", func() {
 		m.Controller.ShowSettingsDialog(func() {
 			fyneApp.Settings().SetTheme(m.theme)
-		})
+		}, m.theme.ListThemeFiles())
 	})
 	m.BrowsingPane.AddSettingsMenuItem("About...", m.Controller.ShowAboutDialog)
 	m.addNavigationButtons()

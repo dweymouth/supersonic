@@ -28,6 +28,8 @@ fyne bundle -append -prefix Res icons/publicdomain/grid.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/list.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/filter.svg >> bundled.go
 
+fyne bundle -append -prefix Res themes/default.toml >> bundled.go
+
 fyne bundle -append -prefix Res ../LICENSE >> bundled.go
 fyne bundle -append -prefix Res licenses/BSDLICENSE >> bundled.go
 fyne bundle -append -prefix Res licenses/MITLICENSE >> bundled.go
