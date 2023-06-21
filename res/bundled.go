@@ -140,6 +140,16 @@ var ResFilterSvg = &fyne.StaticResource{
 	StaticContent: []byte(
 		"<svg fill=\"#000000\" version=\"1.1\" id=\"Capa_1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" \r\n\t width=\"800px\" height=\"800px\" viewBox=\"0 0 971.986 971.986\"\r\n\t xml:space=\"preserve\">\r\n<g>\r\n\t<path d=\"M370.216,459.3c10.2,11.1,15.8,25.6,15.8,40.6v442c0,26.601,32.1,40.101,51.1,21.4l123.3-141.3\r\n\t\tc16.5-19.8,25.6-29.601,25.6-49.2V500c0-15,5.7-29.5,15.8-40.601L955.615,75.5c26.5-28.8,6.101-75.5-33.1-75.5h-873\r\n\t\tc-39.2,0-59.7,46.6-33.1,75.5L370.216,459.3z\"/>\r\n</g>\r\n</svg>\r\n"),
 }
+var ResRepeatSvg = &fyne.StaticResource{
+	StaticName: "repeat.svg",
+	StaticContent: []byte(
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<svg width=\"800px\" height=\"800px\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n    <g>\n        <path fill=\"none\" d=\"M0 0h24v24H0z\"/>\n        <path d=\"M8 20v1.932a.5.5 0 0 1-.82.385l-4.12-3.433A.5.5 0 0 1 3.382 18H18a2 2 0 0 0 2-2V8h2v8a4 4 0 0 1-4 4H8zm8-16V2.068a.5.5 0 0 1 .82-.385l4.12 3.433a.5.5 0 0 1-.321.884H6a2 2 0 0 0-2 2v8H2V8a4 4 0 0 1 4-4h10z\"/>\n    </g>\n</svg>"),
+}
+var ResRepeatoneSvg = &fyne.StaticResource{
+	StaticName: "repeatone.svg",
+	StaticContent: []byte(
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<svg width=\"800px\" height=\"800px\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\n    <g>\n        <path fill=\"none\" d=\"M0 0h24v24H0z\"/>\n        <path d=\"M8 20v1.932a.5.5 0 0 1-.82.385l-4.12-3.433A.5.5 0 0 1 3.382 18H18a2 2 0 0 0 2-2V8h2v8a4 4 0 0 1-4 4H8zm8-17.932a.5.5 0 0 1 .82-.385l4.12 3.433a.5.5 0 0 1-.321.884H6a2 2 0 0 0-2 2v8H2V8a4 4 0 0 1 4-4h10V2.068zM11 8h2v8h-2v-6H9V9l2-1z\"/>\n    </g>\n</svg>"),
+}
 var ResDefaultToml = &fyne.StaticResource{
 	StaticName: "default.toml",
 	StaticContent: []byte(
