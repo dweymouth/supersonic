@@ -202,7 +202,13 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 						sharedutil.TracksToIDs(a.page.tracks))
 				}),
 				fyne.NewMenuItem("Download", func() {
-					a.page.contr.ShowDownloadDialog(a.page.tracks)
+					go func() {
+						album, err := a.page.mp.GetAlbum(a.albumID)
+						if err != nil {
+							log.Print("Error while getting the album: ", album)
+						}
+						a.page.contr.ShowDownloadDialog(a.page.tracks, album.Name)
+					}()
 				}))
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}

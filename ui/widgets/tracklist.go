@@ -76,7 +76,7 @@ type Tracklist struct {
 	OnAddToPlaylist func(trackIDs []string)
 	OnSetFavorite   func(trackIDs []string, fav bool)
 	OnSetRating     func(trackIDs []string, rating int)
-	OnDownload      func(tracks []*mediaprovider.Track)
+	OnDownload      func(tracks []*mediaprovider.Track, downloadName string)
 
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
@@ -511,7 +511,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			}))
 		t.ctxMenu.Items = append(t.ctxMenu.Items,
 			fyne.NewMenuItem("Download", func() {
-				t.onDownload(t.selectedTracks())
+				t.onDownload(t.selectedTracks(), "Selected tracks")
 			}))
 		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
 		t.ctxMenu.Items = append(t.ctxMenu.Items,
@@ -587,9 +587,9 @@ func (t *Tracklist) onAlbumTapped(albumID string) {
 	}
 }
 
-func (t *Tracklist) onDownload(tracks []*mediaprovider.Track) {
+func (t *Tracklist) onDownload(tracks []*mediaprovider.Track, downloadName string) {
 	if t.OnDownload != nil {
-		t.OnDownload(tracks)
+		t.OnDownload(tracks, downloadName)
 	}
 }
 

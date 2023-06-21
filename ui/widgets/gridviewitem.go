@@ -175,7 +175,7 @@ func (g *GridViewItem) showContextMenu(pos fyne.Position) {
 			fyne.NewMenuItem("Shuffle", func() { g.onPlay(true) }),
 			fyne.NewMenuItem("Add to queue", g.onAddToQueue),
 			fyne.NewMenuItem("Add to playlist...", g.onAddToPlaylist),
-			fyne.NewMenuItem("Download...", g.onDownload)),
+			fyne.NewMenuItem("Download", g.onDownload)),
 			fyne.CurrentApp().Driver().CanvasForObject(g))
 	}
 	g.menu.ShowAtPosition(pos)

@@ -120,7 +120,7 @@ func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 				log.Printf("error loading playlist: %s", err.Error())
 				return
 			}
-			a.contr.ShowDownloadDialog(pl.Tracks)
+			a.contr.ShowDownloadDialog(pl.Tracks, pl.Name)
 		}()
 	}
 }
