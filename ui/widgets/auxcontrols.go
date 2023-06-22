@@ -6,6 +6,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
@@ -41,7 +43,7 @@ func (b *miniButton) MinSize() fyne.Size {
 func NewAuxControls(initialVolume int) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
-		loop:          newMiniButton(theme.MediaReplayIcon()),
+		loop:          newMiniButton(myTheme.RepeatIcon),
 	}
 	a.container = container.NewHBox(
 		layout.NewSpacer(),
@@ -68,8 +70,13 @@ func (a *AuxControls) OnChangeLoopMode(f func()) {
 func (a *AuxControls) SetLoopMode(mode string) {
 	if mode == "all" {
 		a.loop.Importance = widget.HighImportance
+		a.loop.Icon = myTheme.RepeatIcon
+	} else if mode == "one" {
+		a.loop.Importance = widget.HighImportance
+		a.loop.Icon = myTheme.RepeatOneIcon
 	} else {
 		a.loop.Importance = widget.MediumImportance
+		a.loop.Icon = myTheme.RepeatIcon
 	}
 	a.loop.Refresh()
 }

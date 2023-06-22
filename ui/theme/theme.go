@@ -193,6 +193,8 @@ var (
 	ShuffleIcon     fyne.Resource
 	TracksIcon      fyne.Resource
 	FilterIcon      fyne.Resource = theme.NewThemedResource(res.ResFilterSvg)
+	RepeatIcon      fyne.Resource = theme.NewThemedResource(res.ResRepeatSvg)
+	RepeatOneIcon   fyne.Resource = theme.NewThemedResource(res.ResRepeatoneSvg)
 )
 
 // MUST be called at startup!
