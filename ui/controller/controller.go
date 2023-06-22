@@ -150,7 +150,7 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 				log.Printf("error loading album: %s", err.Error())
 				return
 			}
-			m.ShowDownloadDialog(album.Tracks)
+			m.ShowDownloadDialog(album.Tracks, album.Name)
 		}()
 	}
 }
@@ -168,7 +168,12 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 	grid.OnDownload = func(artistID string) {
 		go func() {
 			tracks := m.GetArtistTracks(artistID)
-			m.ShowDownloadDialog(tracks)
+			artist, err := m.App.ServerManager.Server.GetArtist(artistID)
+			if err != nil {
+				log.Printf("error getting artist: %v", err.Error())
+				return
+			}
+			m.ShowDownloadDialog(tracks, artist.Name)
 		}()
 	}
 }
@@ -538,7 +543,7 @@ func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
 	}
 }
 
-func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track) {
+func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track, downloadName string) {
 	numTracks := len(tracks)
 	var fileName string
 	if numTracks == 1 {
@@ -560,7 +565,7 @@ func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track) {
 			if numTracks == 1 {
 				go c.downloadTrack(tracks[0], file.URI().Path())
 			} else {
-				go c.downloadTracks(tracks, file.URI().Path())
+				go c.downloadTracks(tracks, file.URI().Path(), downloadName)
 			}
 
 		},
@@ -590,9 +595,10 @@ func (c *Controller) downloadTrack(track *mediaprovider.Track, filePath string) 
 	}
 
 	log.Printf("Saved song %s to: %s\n", track.Name, filePath)
+	c.sendNotification(fmt.Sprintf("Download completed: %s", track.Name), fmt.Sprintf("Saved at: %s", filePath))
 }
 
-func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath string) {
+func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath, downloadName string) {
 	zipFile, err := os.Create(filePath)
 	if err != nil {
 		log.Println(err)
@@ -627,5 +633,12 @@ func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath stri
 		log.Printf("Saved song %s to: %s\n", track.Name, filePath)
 	}
 
-	log.Printf("Finished download to: %s\n", filePath)
+	c.sendNotification(fmt.Sprintf("Download completed: %s", downloadName), fmt.Sprintf("Saved at: %s", filePath))
+}
+
+func (c *Controller) sendNotification(title, content string) {
+	fyne.CurrentApp().SendNotification(&fyne.Notification{
+		Title:   title,
+		Content: content,
+	})
 }
