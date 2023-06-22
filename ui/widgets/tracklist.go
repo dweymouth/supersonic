@@ -510,7 +510,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 				}
 			}))
 		t.ctxMenu.Items = append(t.ctxMenu.Items,
-			fyne.NewMenuItem("Download", func() {
+			fyne.NewMenuItem("Download...", func() {
 				t.onDownload(t.selectedTracks(), "Selected tracks")
 			}))
 		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
