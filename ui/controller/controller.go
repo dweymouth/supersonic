@@ -651,3 +651,22 @@ func (c *Controller) sendNotification(title, content string) {
 		Content: content,
 	})
 }
+
+func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover image.Image) {
+	go func() {
+		albumInfo, err := c.App.ServerManager.Server.GetAlbumInfo(albumID)
+		if err != nil {
+			log.Print("Error getting album info: ", err)
+			return
+		}
+		dlg := dialogs.NewAlbumInfoDialog(albumInfo, albumName, albumCover)
+		pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
+		dlg.OnDismiss = func() {
+			pop.Hide()
+			c.doModalClosed()
+		}
+		c.ClosePopUpOnEscape(pop)
+		c.haveModal = true
+		pop.Show()
+	}()
+}

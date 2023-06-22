@@ -39,6 +39,8 @@ type MediaProvider interface {
 
 	GetAlbum(albumID string) (*AlbumWithTracks, error)
 
+	GetAlbumInfo(albumID string) (*AlbumInfo, error)
+
 	GetArtist(artistID string) (*ArtistWithAlbums, error)
 
 	GetArtistInfo(artistID string) (*ArtistInfo, error)
