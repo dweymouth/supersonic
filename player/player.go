@@ -113,6 +113,7 @@ type Player struct {
 	curPlaylistPos int64
 	prePausedState State
 	clientName     string
+	equalizer      Equalizer
 
 	bgCancel context.CancelFunc
 
@@ -499,6 +500,14 @@ func (p *Player) ListAudioDevices() ([]AudioDevice, error) {
 
 func (p *Player) SetAudioDevice(deviceName string) error {
 	return p.mpv.SetPropertyString("audio-device", deviceName)
+}
+
+func (p *Player) SetEqualizer(eq Equalizer) error {
+	p.equalizer = eq
+	if eq == nil || !eq.IsEnabled() {
+		return p.mpv.SetPropertyString("af", "")
+	}
+	return p.mpv.SetPropertyString("af", eq.Curve().String())
 }
 
 func (p *Player) GetMediaInfo() (MediaInfo, error) {

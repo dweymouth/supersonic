@@ -1,9 +1,61 @@
 package player
 
+// Equalizer implementations based on the ffmpeg 'equalizer' filter
+
 import (
 	"fmt"
+	"math"
 	"strings"
 )
+
+type Equalizer interface {
+	IsEnabled() bool
+	Curve() EqualizerCurve
+	Type() string
+	// Returns the band frequencies as strings friendly for display
+	BandFrequencies() []string
+}
+
+type ISO15BandEqualizer struct {
+	Disabled  bool
+	BandGains [15]float64
+}
+
+var (
+	iso15Bands = []string{"25", "40", "63", "100", "160", "250", "400", "630", "1k", "1.6k", "2.5k", "4k", "6.3k", "10k", "16k"}
+	iso15FMult = math.Pow(2, 2./3)
+)
+
+var _ Equalizer = (*ISO15BandEqualizer)(nil)
+
+func (i *ISO15BandEqualizer) IsEnabled() bool {
+	return !i.Disabled
+}
+
+func (i *ISO15BandEqualizer) Curve() EqualizerCurve {
+	fC := float64(25)
+	curve := make([]EqualizerBand, 0, len(i.BandGains))
+	for _, bandGain := range i.BandGains {
+		curve = append(curve, EqualizerBand{
+			Frequency: int(math.Round(fC)),
+			Width:     2. / 3,
+			WidthType: WidthTypeOctave,
+			Gain:      bandGain,
+		})
+		fC *= iso15FMult
+	}
+	return curve
+}
+
+func (*ISO15BandEqualizer) BandFrequencies() []string {
+	ret := make([]string, len(iso15Bands))
+	copy(ret, iso15Bands)
+	return ret
+}
+
+func (*ISO15BandEqualizer) Type() string {
+	return "ISO15Band"
+}
 
 type WidthType int
 
