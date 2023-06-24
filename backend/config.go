@@ -70,10 +70,13 @@ type TracksPageConfig struct {
 }
 
 type LocalPlaybackConfig struct {
-	AudioDeviceName     string
-	AudioExclusive      bool
-	InMemoryCacheSizeMB int
-	Volume              int
+	AudioDeviceName       string
+	AudioExclusive        bool
+	InMemoryCacheSizeMB   int
+	Volume                int
+	EqualizerEnabled      bool
+	EqualizerPreamp       float64
+	GraphicEqualizerBands []float64
 }
 
 type ScrobbleConfig struct {
@@ -151,10 +154,13 @@ func DefaultConfig(appVersionTag string) *Config {
 		},
 		LocalPlayback: LocalPlaybackConfig{
 			// "auto" is the name to pass to MPV for autoselecting the output device
-			AudioDeviceName:     "auto",
-			AudioExclusive:      false,
-			InMemoryCacheSizeMB: 30,
-			Volume:              100,
+			AudioDeviceName:       "auto",
+			AudioExclusive:        false,
+			InMemoryCacheSizeMB:   30,
+			Volume:                100,
+			EqualizerEnabled:      false,
+			EqualizerPreamp:       0,
+			GraphicEqualizerBands: make([]float64, 15),
 		},
 		Scrobbling: ScrobbleConfig{
 			Enabled:              true,

@@ -192,6 +192,13 @@ func (a *App) setupMPV() error {
 	})
 	a.Player.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
 
+	eq := &player.ISO15BandEqualizer{
+		EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
+		Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+	}
+	copy(eq.BandGains[:], a.Config.LocalPlayback.GraphicEqualizerBands)
+	a.Player.SetEqualizer(eq)
+
 	return nil
 }
 

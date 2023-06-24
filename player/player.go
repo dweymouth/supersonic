@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 
 	"github.com/dweymouth/go-mpv"
@@ -113,6 +114,7 @@ type Player struct {
 	curPlaylistPos int64
 	prePausedState State
 	clientName     string
+	equalizer      Equalizer
 
 	bgCancel context.CancelFunc
 
@@ -499,6 +501,28 @@ func (p *Player) ListAudioDevices() ([]AudioDevice, error) {
 
 func (p *Player) SetAudioDevice(deviceName string) error {
 	return p.mpv.SetPropertyString("audio-device", deviceName)
+}
+
+func (p *Player) SetEqualizer(eq Equalizer) error {
+	p.equalizer = eq
+	if eq == nil || !eq.IsEnabled() {
+		return p.mpv.SetPropertyString("af", "")
+	}
+	af := ""
+	if math.Abs(eq.Preamp()) > 0.01 {
+		af = fmt.Sprintf("volume=volume=%0.1fdB", eq.Preamp())
+	}
+	eqAF := eq.Curve().String()
+	if af == "" {
+		af = eqAF
+	} else if eqAF != "" {
+		af = fmt.Sprintf("%s,%s", af, eqAF)
+	}
+	return p.mpv.SetPropertyString("af", af)
+}
+
+func (p *Player) Equalizer() Equalizer {
+	return p.equalizer
 }
 
 func (p *Player) GetMediaInfo() (MediaInfo, error) {

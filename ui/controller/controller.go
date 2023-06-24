@@ -453,7 +453,8 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 		devs = []player.AudioDevice{{Name: "auto", Description: "Autoselect device"}}
 	}
 
-	dlg := dialogs.NewSettingsDialog(c.App.Config, devs, themeFiles, c.MainWindow)
+	bands := c.App.Player.Equalizer().BandFrequencies()
+	dlg := dialogs.NewSettingsDialog(c.App.Config, devs, themeFiles, bands, c.MainWindow)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
 	}
@@ -464,6 +465,14 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 		c.App.Player.SetAudioDevice(c.App.Config.LocalPlayback.AudioDeviceName)
 	}
 	dlg.OnThemeSettingChanged = themeUpdateCallbk
+	dlg.OnEqualizerSettingsChanged = func() {
+		// currently we only have one equalizer type
+		eq := c.App.Player.Equalizer().(*player.ISO15BandEqualizer)
+		eq.Disabled = !c.App.Config.LocalPlayback.EqualizerEnabled
+		eq.EQPreamp = c.App.Config.LocalPlayback.EqualizerPreamp
+		copy(eq.BandGains[:], c.App.Config.LocalPlayback.GraphicEqualizerBands)
+		c.App.Player.SetEqualizer(eq)
+	}
 	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
 	dlg.OnDismiss = func() {
 		pop.Hide()
