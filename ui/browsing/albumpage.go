@@ -201,8 +201,9 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 					a.page.contr.DoAddTracksToPlaylistWorkflow(
 						sharedutil.TracksToIDs(a.page.tracks))
 				}),
-				fyne.NewMenuItem("Download", func() {
-					a.page.contr.ShowDownloadDialog(a.page.tracks)
+				fyne.NewMenuItem("Download...", func() {
+					a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
+			
 				}))
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}

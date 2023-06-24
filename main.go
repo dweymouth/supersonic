@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui"
 
 	"fyne.io/fyne/v2"
@@ -28,6 +29,7 @@ func main() {
 	}
 
 	fyneApp := app.New()
+	fyneApp.SetIcon(res.ResAppicon256Png)
 
 	w := float32(myApp.Config.Application.WindowWidth)
 	if w <= 1 {
