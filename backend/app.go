@@ -53,11 +53,18 @@ func (a *App) VersionTag() string {
 func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*App, error) {
 	sessionPath := configdir.LocalConfig(appName, sessionDir)
 	if _, err := os.Stat(path.Join(sessionPath, sessionLockFile)); err == nil {
-		log.Println("Another instance is running. Reactivating it and exiting...")
-		if f, err := os.Create(path.Join(sessionPath, sessionActivateFile)); err == nil {
+		log.Println("Another instance is running. Reactivating it...")
+		reactivateFile := path.Join(sessionPath, sessionActivateFile)
+		if f, err := os.Create(reactivateFile); err == nil {
 			f.Close()
 		}
-		return nil, ErrAnotherInstance
+		time.Sleep(750 * time.Millisecond)
+		if _, err := os.Stat(reactivateFile); err == nil {
+			log.Println("No other instance responded. Starting as normal...")
+			os.RemoveAll(sessionPath)
+		} else {
+			return nil, ErrAnotherInstance
+		}
 	}
 
 	log.Printf("Starting %s...", appName)
