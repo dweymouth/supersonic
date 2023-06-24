@@ -60,24 +60,33 @@
   </screenshots>
 
  <releases>
-  <release date="2023-06-03" version="0.3.1">
+  <release date="2023-06-24" version="0.4.0">
    <description>
      <p>
-       Version 0.3.1 (bug fix point release) of Supersonic
+       Version 0.4.0 of Supersonic
      </p>
+
+     <p>
+       Added
+     </p>
+     <ul>
+       <li>Add 15 band graphic equalizer</li>
+       <li>Add custom theme support</li>
+       <li>Add playback status line to bottom of Now Playing page</li>
+       <li>Add repeat playback modes</li>
+       <li>Add Home button to navigation bar</li>
+       <li>Add ability to download tracks, albums, and playlists</li>
+       <li>Add click-to-set to volume slider</li>
+       <li>Attempting to launch a second instance refocuses the existing window</li>
+     </ul>
 
      <p>
        Fixed
      </p>
-
      <ul>
-       <li>Fix regression: crashing on Funkwhale when navigating to Artist page</li>
-       <li>Tracklist selection now updates properly if sorting with items selected</li>
-       <li>Fix regression: searching genres list unbroken</li>
-       <li>Fix version number shown in Mac system About dialog</li>
-       <li>Fix favorite button on Artist page showing opposite state</li>
-       <li>Fix issing album icon in cover image placeholder for album grid views</li>
+       <li>Track correctly scrobbles if removed from play queue while playing</li>
      </ul>
+
    </description>
   </release>
  </releases>
