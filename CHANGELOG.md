@@ -3,6 +3,21 @@
 ## Unreleased
 
 ### Fixed
+- [#196](https://github.com/dweymouth/supersonic/pull/196) Track correctly scrobbles if removed from play queue while playing (thanks @adamantike!)
+
+### Added
+- [#207](https://github.com/dweymouth/supersonic/pull/207) Add 15 band graphic equalizer
+- [#203](https://github.com/dweymouth/supersonic/pull/203) Add custom theme support
+- [fedb9fd](https://github.com/dweymouth/supersonic/commit/fedb9fd70d3374b6cb68f6d434c9e1546ba77678) Add playback status line to bottom of Now Playing page
+- [#197](https://github.com/dweymouth/supersonic/pull/197) Add repeat playback modes (thanks @adamantike!)
+- [#187](https://github.com/dweymouth/supersonic/pull/187) Add Home button to navigation bar (thanks @natilou!)
+- [#191](https://github.com/dweymouth/supersonic/pull/191),[#201](https://github.com/dweymouth/supersonic/pull/201),[#206](https://github.com/dweymouth/supersonic/pull/206) Add ability to download tracks, albums, and playlists (thanks @natilou!)
+- [c19edcc](https://github.com/dweymouth/supersonic/commit/c19edccf809988207a6bc257653ddcd5a3b7dae8) Add click-to-set to volume slider (thanks @adamantike!)
+- [#193](https://github.com/dweymouth/supersonic/issues/193) Attempting to launch a second instance refocuses the existing window
+
+## [0.3.1] - 2023-06-03
+
+### Fixed
 - [#182](https://github.com/dweymouth/supersonic/issues/182) Regression: crash on Funkwhale when navigating to Artist page
 - [#178](https://github.com/dweymouth/supersonic/issues/178) Tracklist selection doesn't update properly if sorting with items selected
 - [#176](https://github.com/dweymouth/supersonic/issues/176) Regression: searching genres list broken
