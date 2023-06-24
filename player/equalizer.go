@@ -78,16 +78,23 @@ type EqualizerCurve []EqualizerBand
 
 func (e EqualizerCurve) String() string {
 	var sb strings.Builder
-	for i, band := range e {
-		if i > 0 {
-			sb.WriteString(",")
+	first := true
+	for _, band := range e {
+		if s := band.String(); s != "" {
+			if !first {
+				sb.WriteString(",")
+			}
+			sb.WriteString(s)
+			first = false
 		}
-		sb.WriteString(band.String())
 	}
 	return sb.String()
 }
 
 func (e EqualizerBand) String() string {
+	if math.Abs(e.Gain) < 0.02 {
+		return ""
+	}
 	return fmt.Sprintf("equalizer=f=%d:g=%0.2f:t=%s:w=%0.2f",
 		e.Frequency, e.Gain, e.WidthType.String(), e.Width)
 }

@@ -510,6 +510,10 @@ func (p *Player) SetEqualizer(eq Equalizer) error {
 	return p.mpv.SetPropertyString("af", eq.Curve().String())
 }
 
+func (p *Player) Equalizer() Equalizer {
+	return p.equalizer
+}
+
 func (p *Player) GetMediaInfo() (MediaInfo, error) {
 	var info MediaInfo
 	n, err := p.mpv.GetProperty("audio-params", mpv.FORMAT_NODE)

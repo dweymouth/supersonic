@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -35,6 +36,7 @@ type SettingsDialog struct {
 	OnAudioDeviceSettingChanged    func()
 	OnThemeSettingChanged          func()
 	OnDismiss                      func()
+	OnEqualizerSettingsChanged     func()
 
 	config       *backend.Config
 	audioDevices []player.AudioDevice
@@ -45,13 +47,20 @@ type SettingsDialog struct {
 }
 
 // TODO: having this depend on the player package for the AudioDevice type is kinda gross. Refactor.
-func NewSettingsDialog(config *backend.Config, audioDeviceList []player.AudioDevice, themeFileList map[string]string, window fyne.Window) *SettingsDialog {
+func NewSettingsDialog(
+	config *backend.Config,
+	audioDeviceList []player.AudioDevice,
+	themeFileList map[string]string,
+	equalizerBands []string,
+	window fyne.Window,
+) *SettingsDialog {
 	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList}
 	s.ExtendBaseWidget(s)
 
 	tabs := container.NewAppTabs(
 		s.createGeneralTab(),
 		s.createPlaybackTab(),
+		s.createEqualizerTab(equalizerBands),
 		s.createExperimentalTab(window),
 	)
 	// workaround issue where inactivated tabs don't fully update when theme setting is changed
@@ -318,6 +327,28 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 			widget.NewLabel("Prevent clipping"), container.NewHBox(preventClipping, layout.NewSpacer()),
 		),
 	))
+}
+
+func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem {
+	enabled := widget.NewCheck("Enabled", func(b bool) {
+		s.config.LocalPlayback.EqualizerEnabled = b
+		if s.OnEqualizerSettingsChanged != nil {
+			s.OnEqualizerSettingsChanged()
+		}
+	})
+	enabled.Checked = s.config.LocalPlayback.EqualizerEnabled
+	geq := NewGraphicEqualizer(eqBands, s.config.LocalPlayback.GraphicEqualizerBands) // TODO: This should probably be an argument?
+	debouncer := util.NewDebouncer(200*time.Millisecond, func() {
+		if s.OnEqualizerSettingsChanged != nil {
+			s.OnEqualizerSettingsChanged()
+		}
+	})
+	geq.OnChanged = func(b int, g float64) {
+		s.config.LocalPlayback.GraphicEqualizerBands[b] = g
+		debouncer()
+	}
+	cont := container.NewBorder(container.NewHBox(enabled), nil, nil, nil, geq)
+	return container.NewTabItem("Equalizer", cont)
 }
 
 func (s *SettingsDialog) createExperimentalTab(window fyne.Window) *container.TabItem {
