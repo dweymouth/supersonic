@@ -14,20 +14,21 @@ import (
 type GraphicEqualizer struct {
 	widget.BaseWidget
 
-	OnChanged func(band int, gain float64)
+	OnChanged       func(band int, gain float64)
+	OnPreampChanged func(gain float64)
 
 	container *fyne.Container
 }
 
-func NewGraphicEqualizer(bandFreqs []string, bandGains []float64) *GraphicEqualizer {
+func NewGraphicEqualizer(preamp float64, bandFreqs []string, bandGains []float64) *GraphicEqualizer {
 	g := &GraphicEqualizer{}
 	g.ExtendBaseWidget(g)
-	g.buildSliders(bandFreqs, bandGains)
+	g.buildSliders(preamp, bandFreqs, bandGains)
 
 	return g
 }
 
-func (g *GraphicEqualizer) buildSliders(bands []string, bandGains []float64) {
+func (g *GraphicEqualizer) buildSliders(preamp float64, bands []string, bandGains []float64) {
 	rng := container.NewVBox(
 		newCaptionTextSizeLabel("+12", fyne.TextAlignTrailing),
 		layout.NewSpacer(),
@@ -35,7 +36,16 @@ func (g *GraphicEqualizer) buildSliders(bands []string, bandGains []float64) {
 		layout.NewSpacer(),
 		newCaptionTextSizeLabel("-12", fyne.TextAlignTrailing),
 	)
-	bandSliders := container.New(layouts.NewGridLayoutWithColumnsAndPadding(16, -16))
+	bandSliders := container.New(layouts.NewGridLayoutWithColumnsAndPadding(len(bands)+2, -16))
+	pre := newCaptionTextSizeLabel("Pre", fyne.TextAlignCenter)
+	preampSlider := newEQSlider()
+	preampSlider.SetValue(preamp)
+	preampSlider.OnChanged = func(f float64) {
+		if g.OnPreampChanged != nil {
+			g.OnPreampChanged(f)
+		}
+	}
+	bandSliders.Add(container.NewBorder(nil, pre, nil, nil, preampSlider))
 	bandSliders.Add(container.NewBorder(nil, widget.NewLabel(""), nil, nil, rng))
 	for i, band := range bands {
 		s := newEQSlider()
@@ -55,7 +65,7 @@ func (g *GraphicEqualizer) buildSliders(bands []string, bandGains []float64) {
 	}
 	g.container = container.NewMax(
 		container.NewBorder(nil, widget.NewLabel(""), nil, nil,
-			container.NewBorder(nil, nil, util.NewHSpace(35), util.NewHSpace(5),
+			container.NewBorder(nil, nil, util.NewHSpace(5), util.NewHSpace(5),
 				container.NewVBox(
 					layout.NewSpacer(),
 					myTheme.NewThemedRectangle(theme.ColorNameInputBackground),

@@ -337,14 +337,20 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 		}
 	})
 	enabled.Checked = s.config.LocalPlayback.EqualizerEnabled
-	geq := NewGraphicEqualizer(eqBands, s.config.LocalPlayback.GraphicEqualizerBands) // TODO: This should probably be an argument?
-	debouncer := util.NewDebouncer(200*time.Millisecond, func() {
+	geq := NewGraphicEqualizer(s.config.LocalPlayback.EqualizerPreamp,
+		eqBands,
+		s.config.LocalPlayback.GraphicEqualizerBands)
+	debouncer := util.NewDebouncer(350*time.Millisecond, func() {
 		if s.OnEqualizerSettingsChanged != nil {
 			s.OnEqualizerSettingsChanged()
 		}
 	})
 	geq.OnChanged = func(b int, g float64) {
 		s.config.LocalPlayback.GraphicEqualizerBands[b] = g
+		debouncer()
+	}
+	geq.OnPreampChanged = func(g float64) {
+		s.config.LocalPlayback.EqualizerPreamp = g
 		debouncer()
 	}
 	cont := container.NewBorder(container.NewHBox(enabled), nil, nil, nil, geq)

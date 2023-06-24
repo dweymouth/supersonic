@@ -464,6 +464,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 		// currently we only have one equalizer type
 		eq := c.App.Player.Equalizer().(*player.ISO15BandEqualizer)
 		eq.Disabled = !c.App.Config.LocalPlayback.EqualizerEnabled
+		eq.EQPreamp = c.App.Config.LocalPlayback.EqualizerPreamp
 		copy(eq.BandGains[:], c.App.Config.LocalPlayback.GraphicEqualizerBands)
 		c.App.Player.SetEqualizer(eq)
 	}

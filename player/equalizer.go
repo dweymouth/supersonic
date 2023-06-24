@@ -10,6 +10,7 @@ import (
 
 type Equalizer interface {
 	IsEnabled() bool
+	Preamp() float64
 	Curve() EqualizerCurve
 	Type() string
 	// Returns the band frequencies as strings friendly for display
@@ -18,6 +19,7 @@ type Equalizer interface {
 
 type ISO15BandEqualizer struct {
 	Disabled  bool
+	EQPreamp  float64
 	BandGains [15]float64
 }
 
@@ -30,6 +32,10 @@ var _ Equalizer = (*ISO15BandEqualizer)(nil)
 
 func (i *ISO15BandEqualizer) IsEnabled() bool {
 	return !i.Disabled
+}
+
+func (i *ISO15BandEqualizer) Preamp() float64 {
+	return i.EQPreamp
 }
 
 func (i *ISO15BandEqualizer) Curve() EqualizerCurve {

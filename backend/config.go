@@ -75,6 +75,7 @@ type LocalPlaybackConfig struct {
 	InMemoryCacheSizeMB   int
 	Volume                int
 	EqualizerEnabled      bool
+	EqualizerPreamp       float64
 	GraphicEqualizerBands []float64
 }
 
@@ -158,6 +159,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			InMemoryCacheSizeMB:   30,
 			Volume:                100,
 			EqualizerEnabled:      false,
+			EqualizerPreamp:       0,
 			GraphicEqualizerBands: make([]float64, 15),
 		},
 		Scrobbling: ScrobbleConfig{

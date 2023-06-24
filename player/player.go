@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 
 	"github.com/dweymouth/go-mpv"
@@ -507,7 +508,17 @@ func (p *Player) SetEqualizer(eq Equalizer) error {
 	if eq == nil || !eq.IsEnabled() {
 		return p.mpv.SetPropertyString("af", "")
 	}
-	return p.mpv.SetPropertyString("af", eq.Curve().String())
+	af := ""
+	if math.Abs(eq.Preamp()) > 0.01 {
+		af = fmt.Sprintf("volume=volume=%0.1fdB", eq.Preamp())
+	}
+	eqAF := eq.Curve().String()
+	if af == "" {
+		af = eqAF
+	} else if eqAF != "" {
+		af = fmt.Sprintf("%s,%s", af, eqAF)
+	}
+	return p.mpv.SetPropertyString("af", af)
 }
 
 func (p *Player) Equalizer() Equalizer {
