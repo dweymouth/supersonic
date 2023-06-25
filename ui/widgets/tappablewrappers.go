@@ -81,6 +81,13 @@ func (t *TappableImage) Refresh() {
 	t.BaseWidget.Refresh()
 }
 
+func (t *TappableImage) MinSize() fyne.Size {
+	if !t.haveImage() {
+		return fyne.NewSize(0, 0)
+	}
+	return t.Image.MinSize()
+}
+
 func (t *TappableImage) Resize(size fyne.Size) {
 	t.BaseWidget.Resize(size)
 }
