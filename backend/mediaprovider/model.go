@@ -19,8 +19,8 @@ type AlbumWithTracks struct {
 }
 
 type AlbumInfo struct {
-	Info          string
-	LastFMUrl     string
+	Notes         string
+	LastFmUrl     string
 	MusicBrainzID string
 }
 

@@ -18,6 +18,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const musicBrainzReleaseUrl = "https://musicbrainz.org/release"
+
 type AlbumInfoDialog struct {
 	widget.BaseWidget
 
@@ -61,11 +63,11 @@ func (a *AlbumInfoDialog) buildMainContainer(albumInfo *mediaprovider.AlbumInfo,
 
 	infoContent := widget.NewLabel("Album info not available")
 
-	if albumInfo.Info != "" {
-		infoContent = a.infoLabel(albumInfo.Info)
+	if albumInfo.Notes != "" {
+		infoContent = a.infoLabel(albumInfo.Notes)
 	}
 
-	urlContainer := a.buildUrlContainer(albumInfo.LastFMUrl, albumInfo.MusicBrainzID)
+	urlContainer := a.buildUrlContainer(albumInfo.LastFmUrl, albumInfo.MusicBrainzID)
 
 	return container.NewVBox(
 		iconImage,
@@ -89,14 +91,19 @@ func (a *AlbumInfoDialog) infoLabel(info string) *widget.Label {
 	return lbl
 }
 
-func (a *AlbumInfoDialog) buildUrlContainer(lastFM, musicBrainzID string) *fyne.Container {
+func (a *AlbumInfoDialog) buildUrlContainer(lastFm, musicBrainzID string) *fyne.Container {
 	urls := make([]*widget.Hyperlink, 0)
 
-	if lastFMUrl, err := url.Parse(lastFM); err == nil {
-		urls = append(urls, widget.NewHyperlink("Last.fm", lastFMUrl))
+	if lastFm != "" {
+		if lastFmUrl, err := url.Parse(lastFm); err == nil {
+			urls = append(urls, widget.NewHyperlink("Last.fm", lastFmUrl))
+		}
 	}
-	if musicBrainzUrl, err := url.Parse(fmt.Sprintf("https://musicbrainz.org/release/%s", musicBrainzID)); err == nil {
-		urls = append(urls, widget.NewHyperlink("MusicBrainz", musicBrainzUrl))
+
+	if musicBrainzID != "" {
+		if musicBrainzUrl, err := url.Parse(fmt.Sprintf("%s/%s", musicBrainzReleaseUrl, musicBrainzID)); err == nil {
+			urls = append(urls, widget.NewHyperlink("MusicBrainz", musicBrainzUrl))
+		}
 	}
 
 	urlContainer := container.New(&layouts.HboxCustomPadding{DisableThemePad: true, ExtraPad: -10})

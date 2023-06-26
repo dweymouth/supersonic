@@ -204,7 +204,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 				fyne.NewMenuItem("Download...", func() {
 					a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
 				}),
-				fyne.NewMenuItem("Get Info...", func() {
+				fyne.NewMenuItem("Show Info...", func() {
 					a.page.contr.ShowAlbumInfoDialog(a.albumID, a.titleLabel.String(), a.cover.Image.Image)
 				}))
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))

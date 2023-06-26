@@ -65,8 +65,8 @@ func (s *subsonicMediaProvider) GetAlbumInfo(albumID string) (*mediaprovider.Alb
 		return nil, err
 	}
 	album := &mediaprovider.AlbumInfo{
-		Info:          al.Notes,
-		LastFMUrl:     al.LastFmUrl,
+		Notes:         al.Notes,
+		LastFmUrl:     al.LastFmUrl,
 		MusicBrainzID: al.MusicBrainzID,
 	}
 	return album, nil
