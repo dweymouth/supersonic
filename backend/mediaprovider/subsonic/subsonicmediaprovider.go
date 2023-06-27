@@ -59,6 +59,19 @@ func (s *subsonicMediaProvider) GetAlbum(albumID string) (*mediaprovider.AlbumWi
 	return album, nil
 }
 
+func (s *subsonicMediaProvider) GetAlbumInfo(albumID string) (*mediaprovider.AlbumInfo, error) {
+	al, err := s.client.GetAlbumInfo(albumID)
+	if err != nil {
+		return nil, err
+	}
+	album := &mediaprovider.AlbumInfo{
+		Notes:         al.Notes,
+		LastFmUrl:     al.LastFmUrl,
+		MusicBrainzID: al.MusicBrainzID,
+	}
+	return album, nil
+}
+
 func (s *subsonicMediaProvider) GetArtist(artistID string) (*mediaprovider.ArtistWithAlbums, error) {
 	ar, err := s.client.GetArtist(artistID)
 	if err != nil {

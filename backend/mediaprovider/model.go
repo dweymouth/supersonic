@@ -18,6 +18,12 @@ type AlbumWithTracks struct {
 	Tracks []*Track
 }
 
+type AlbumInfo struct {
+	Notes         string
+	LastFmUrl     string
+	MusicBrainzID string
+}
+
 type Artist struct {
 	ID         string
 	CoverArtID string
