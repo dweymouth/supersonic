@@ -59,18 +59,22 @@ If you are running Windows, Mac OS, or a Debian-based Linux distro, download the
 
 **If you are on Linux** you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv1` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
 
-## Build instructions (Ubuntu)
+## Build instructions (Linux)
 
-### Install dependencies
+### Ubuntu dependencies
 * ``sudo snap install --classic go``, and make sure the Go bin directory is in your `$PATH`
-* install the ``fyne`` packaging tool ``go install fyne.io/fyne/v2/cmd/fyne@latest``
-* ``sudo apt install libmpv-dev``
-* ``sudo apt install gcc libegl1-mesa-dev xorg-dev``
+* ``sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev``
+
+### Fedora dependencies
+* ``sudo dnf install golang mpv-devel libX11-devel libXcursor-devel libXrandr-devel libXinerama-devel libXi-devel libglvnd-devel libXxf86vm-devel``
 
 ### Build
 * clone the repo, CD into the repo root, and run ``go build .``
 * (note that the first build will take some time as it will download and build the UI library)
-* run ``make package_linux`` to generate an installable .tar.xz bundle
+
+### Generate installable .tar.xz bundle
+* install the ``fyne`` packaging tool ``go install fyne.io/fyne/v2/cmd/fyne@latest``
+* run ``make package_linux``
 
 ## Build instructions (Arch Linux)
 
