@@ -44,7 +44,6 @@ func NewAlbumInfoDialog(albumInfo *mediaprovider.AlbumInfo, albumName string, al
 			}),
 		),
 	)
-	a.content.Resize(a.MinSize())
 	return a
 }
 
@@ -69,11 +68,14 @@ func (a *AlbumInfoDialog) buildMainContainer(albumInfo *mediaprovider.AlbumInfo,
 
 	urlContainer := a.buildUrlContainer(albumInfo.LastFmUrl, albumInfo.MusicBrainzID)
 
-	return container.NewVBox(
-		iconImage,
-		title,
-		infoContent,
-		urlContainer,
+	return container.New(
+		&layouts.MaxPadLayout{PadLeft: 15, PadRight: 10, PadTop: 15, PadBottom: 10},
+		container.NewVBox(
+			iconImage,
+			title,
+			infoContent,
+			urlContainer,
+		),
 	)
 
 }
