@@ -37,6 +37,7 @@ type App struct {
 	PlaybackManager *PlaybackManager
 	Player          *player.Player
 	UpdateChecker   UpdateChecker
+	MPRISHandler    *MPRISHandler
 	OnReactivate    func()
 
 	appName       string
@@ -102,6 +103,9 @@ func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*A
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
+
+	a.MPRISHandler = NewMPRISHandler(a.Player, a.PlaybackManager)
+	a.MPRISHandler.Start()
 
 	return a, nil
 }
@@ -221,6 +225,7 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 }
 
 func (a *App) Shutdown() {
+	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
 	a.Player.Stop() // will trigger scrobble check
 	a.Config.LocalPlayback.Volume = a.Player.GetVolume()
