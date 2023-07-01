@@ -88,6 +88,16 @@ func (i *ImageManager) GetFullSizeCoverArt(coverID string) (image.Image, error) 
 	return im, nil
 }
 
+func (i *ImageManager) GetCoverArtUrl(coverID string) (string, error) {
+	path := i.filePathForCover(coverID)
+	if _, err := os.Stat(path); err == nil {
+		// this is probably broken for Windows but it's currently only used
+		// for MPRIS, so we are OK for now
+		return fmt.Sprintf("file://%s", path), nil
+	}
+	return "", errors.New("cover not found")
+}
+
 func (i *ImageManager) GetCachedArtistImage(artistID string) (image.Image, bool) {
 	return i.loadLocalImage(i.filePathForArtistImage(artistID))
 }

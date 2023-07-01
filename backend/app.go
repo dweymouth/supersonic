@@ -38,7 +38,10 @@ type App struct {
 	Player          *player.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
-	OnReactivate    func()
+
+	// UI callbacks to be set in main
+	OnReactivate func()
+	OnExit       func()
 
 	appName       string
 	appVersionTag string
@@ -104,8 +107,7 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
 
-	a.MPRISHandler = NewMPRISHandler(displayAppName, a.Player, a.PlaybackManager)
-	a.MPRISHandler.Start()
+	a.setupMPRIS(displayAppName)
 
 	return a, nil
 }
@@ -138,13 +140,17 @@ func (a *App) startSessionWatcher(sessionPath string) {
 					activatePath := path.Join(sessionPath, sessionActivateFile)
 					if _, err := os.Stat(activatePath); err == nil {
 						os.Remove(path.Join(sessionPath, sessionActivateFile))
-						if a.OnReactivate != nil {
-							a.OnReactivate()
-						}
+						a.callOnReactivate()
 					}
 				}
 			}
 		}()
+	}
+}
+
+func (a *App) callOnReactivate() {
+	if a.OnReactivate != nil {
+		a.OnReactivate()
 	}
 }
 
@@ -204,6 +210,23 @@ func (a *App) setupMPV() error {
 	a.Player.SetEqualizer(eq)
 
 	return nil
+}
+
+func (a *App) setupMPRIS(mprisAppName string) {
+	a.MPRISHandler = NewMPRISHandler(mprisAppName, a.Player, a.PlaybackManager)
+	a.MPRISHandler.ArtURLLookup = a.ImageManager.GetCoverArtUrl
+	a.MPRISHandler.OnRaise = func() error { a.callOnReactivate(); return nil }
+	a.MPRISHandler.OnQuit = func() error {
+		if a.OnExit == nil {
+			return errors.New("no quit handler registered")
+		}
+		go func() {
+			time.Sleep(10 * time.Millisecond)
+			a.OnExit()
+		}()
+		return nil
+	}
+	a.MPRISHandler.Start()
 }
 
 func (a *App) LoginToDefaultServer(string) error {

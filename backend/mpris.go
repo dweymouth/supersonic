@@ -31,7 +31,7 @@ type MPRISHandler struct {
 	OnRaise func() error
 
 	// Function to look up the artwork URL for a given track ID
-	ArtURLLookup func(trackID string) string
+	ArtURLLookup func(trackID string) (string, error)
 
 	playerName string
 	p          *player.Player
@@ -44,6 +44,10 @@ func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *
 	m := &MPRISHandler{playerName: playerName, p: p, pm: pm}
 	m.s = server.NewServer(playerName, m, m)
 	m.evt = events.NewEventHandler(m.s)
+	m.p.OnSeek(func() {
+		pos := secondsToMicroseconds(m.p.GetStatus().TimePos)
+		m.evt.Player.OnSeek(pos)
+	})
 	return m
 }
 
@@ -176,7 +180,9 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	}
 	var artURL string
 	if tr.ID != "" && m.ArtURLLookup != nil {
-		artURL = m.ArtURLLookup(tr.ID)
+		if u, err := m.ArtURLLookup(tr.ID); err == nil {
+			artURL = u
+		}
 	}
 	return types.Metadata{
 		TrackId:     dbus.ObjectPath(trackID),
@@ -205,11 +211,11 @@ func (m *MPRISHandler) Position() (int64, error) {
 }
 
 func (m *MPRISHandler) MinimumRate() (float64, error) {
-	return 0, notImplemented
+	return 1, nil
 }
 
 func (m *MPRISHandler) MaximumRate() (float64, error) {
-	return 0, notImplemented
+	return 1, nil
 }
 
 func (m *MPRISHandler) CanGoNext() (bool, error) {
@@ -229,7 +235,7 @@ func (m *MPRISHandler) CanPause() (bool, error) {
 }
 
 func (m *MPRISHandler) CanSeek() (bool, error) {
-	return false, notImplemented
+	return true, nil
 }
 
 func (m *MPRISHandler) CanControl() (bool, error) {
