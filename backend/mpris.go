@@ -48,6 +48,13 @@ func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *
 		pos := secondsToMicroseconds(m.p.GetStatus().TimePos)
 		m.evt.Player.OnSeek(pos)
 	})
+	m.pm.OnSongChange(func(_, _ *mediaprovider.Track) {
+		m.evt.Player.OnTitle()
+	})
+	emitPlayStatus := func() { m.evt.Player.OnPlayPause() }
+	m.p.OnStopped(emitPlayStatus)
+	m.p.OnPlaying(emitPlayStatus)
+	m.p.OnPaused(emitPlayStatus)
 	return m
 }
 
