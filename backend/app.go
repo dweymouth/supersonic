@@ -51,7 +51,7 @@ func (a *App) VersionTag() string {
 	return a.appVersionTag
 }
 
-func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*App, error) {
+func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleaseURL string) (*App, error) {
 	sessionPath := configdir.LocalConfig(appName, sessionDir)
 	if _, err := os.Stat(path.Join(sessionPath, sessionLockFile)); err == nil {
 		log.Println("Another instance is running. Reactivating it...")
@@ -104,7 +104,7 @@ func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*A
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
 
-	a.MPRISHandler = NewMPRISHandler(a.Player, a.PlaybackManager)
+	a.MPRISHandler = NewMPRISHandler(displayAppName, a.Player, a.PlaybackManager)
 	a.MPRISHandler.Start()
 
 	return a, nil

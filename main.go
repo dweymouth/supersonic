@@ -23,7 +23,7 @@ const (
 )
 
 func main() {
-	myApp, err := backend.StartupApp(appname, appVersionTag, configFile, latestReleaseURL)
+	myApp, err := backend.StartupApp(appname, displayName, appVersionTag, configFile, latestReleaseURL)
 	if err != nil {
 		log.Fatalf("fatal startup error: %v", err.Error())
 	}
