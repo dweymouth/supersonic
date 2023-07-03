@@ -123,7 +123,11 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 			t.OnColumnVisibilityMenuShown(pop)
 		}
 	}
-	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(theme.MediaPlayIcon())))
+
+	playIcon := theme.NewThemedResource(theme.MediaPlayIcon())
+	playIcon.ColorName = theme.ColorNamePrimary
+	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(playIcon)))
+
 	t.list = widget.NewList(
 		t.lenTracks,
 		func() fyne.CanvasObject {
