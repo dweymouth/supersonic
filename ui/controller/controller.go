@@ -561,7 +561,7 @@ func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track, downloadN
 		fileName = "downloaded_tracks.zip"
 	}
 
-	dg := dialog.NewFileSave(
+	dg := dialogs.NewNativeFileSave(
 		func(file fyne.URIWriteCloser, err error) {
 			if err != nil {
 				log.Println(err)

@@ -19,7 +19,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
@@ -408,7 +407,7 @@ func (s *SettingsDialog) doChooseTTFFile(window fyne.Window, entry *widget.Entry
 			entry.SetText(urirc.URI().Path())
 		}
 	}
-	dlg := dialog.NewFileOpen(callback, window)
+	dlg := NewNativeFileOpen(callback, window)
 	dlg.SetFilter(&storage.ExtensionFileFilter{Extensions: []string{".ttf"}})
 	dlg.Show()
 }
