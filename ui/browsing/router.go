@@ -3,6 +3,7 @@ package browsing
 import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/ui/util"
 )
 
 type NavigationHandler interface {
@@ -11,16 +12,18 @@ type NavigationHandler interface {
 }
 
 type Router struct {
-	App        *backend.App
-	Controller *controller.Controller
-	Nav        NavigationHandler
+	App         *backend.App
+	Controller  *controller.Controller
+	Nav         NavigationHandler
+	widgetCache util.WidgetCache
 }
 
 func NewRouter(app *backend.App, controller *controller.Controller, nav NavigationHandler) Router {
 	r := Router{
-		App:        app,
-		Controller: controller,
-		Nav:        nav,
+		App:         app,
+		Controller:  controller,
+		Nav:         nav,
+		widgetCache: util.NewWidgetCache(),
 	}
 	return r
 }
@@ -28,11 +31,11 @@ func NewRouter(app *backend.App, controller *controller.Controller, nav Navigati
 func (r Router) CreatePage(rte controller.Route) Page {
 	switch rte.Page {
 	case controller.Album:
-		return NewAlbumPage(rte.Arg, &r.App.Config.AlbumPage, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager, r.Controller)
+		return NewAlbumPage(rte.Arg, &r.App.Config.AlbumPage, &r.widgetCache, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager, r.Controller)
 	case controller.Albums:
 		return NewAlbumsPage(&r.App.Config.AlbumsPage, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager)
 	case controller.Artist:
-		return NewArtistPage(rte.Arg, &r.App.Config.ArtistPage, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager, r.Controller)
+		return NewArtistPage(rte.Arg, &r.App.Config.ArtistPage, &r.widgetCache, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager, r.Controller)
 	case controller.Artists:
 		return NewArtistsPage(r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager)
 	case controller.Favorites:

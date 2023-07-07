@@ -44,8 +44,10 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	t.ExtendBaseWidget(t)
 
 	t.tracklist = widgets.NewTracklist(nil)
-	t.tracklist.DisableSorting = true
-	t.tracklist.AutoNumber = true
+	t.tracklist.Options = widgets.TracklistOptions{
+		DisableSorting: true,
+		AutoNumber:     true,
+	}
 	t.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	t.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		t.conf.TracklistColumns = cols
@@ -119,7 +121,7 @@ func (t *TracksPage) OnSearched(query string) {
 func (t *TracksPage) doSearch(query string) {
 	if t.searchTracklist == nil {
 		t.searchTracklist = widgets.NewTracklist(nil)
-		t.searchTracklist.AutoNumber = true
+		t.searchTracklist.Options = widgets.TracklistOptions{AutoNumber: true}
 		t.searchTracklist.SetVisibleColumns(t.conf.TracklistColumns)
 		t.searchTracklist.SetNowPlaying(t.nowPlayingID)
 		t.searchTracklist.OnVisibleColumnsChanged = func(cols []string) {

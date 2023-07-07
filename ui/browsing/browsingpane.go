@@ -233,17 +233,21 @@ func (b *BrowsingPane) GoHome() {
 
 func (b *BrowsingPane) GoBack() {
 	if b.historyIdx > 0 {
+		// due to widget reuse between pages,
+		// we must create the new page before calling addPageToHistory
+		p := b.history[b.historyIdx-1].Restore()
 		b.addPageToHistory(b.curPage, false)
 		b.historyIdx -= 2
-		b.doSetPage(b.history[b.historyIdx].Restore())
+		b.doSetPage(p)
 		b.updateHistoryButtons()
 	}
 }
 
 func (b *BrowsingPane) GoForward() {
 	if b.historyIdx < len(b.history)-1 {
+		p := b.history[b.historyIdx+1].Restore()
 		b.addPageToHistory(b.curPage, false)
-		b.doSetPage(b.history[b.historyIdx].Restore())
+		b.doSetPage(p)
 		b.updateHistoryButtons()
 	}
 }

@@ -33,29 +33,32 @@ type AlbumPage struct {
 }
 
 type albumPageState struct {
-	albumID string
-	sort    widgets.TracklistSort
-	cfg     *backend.AlbumPageConfig
-	mp      mediaprovider.MediaProvider
-	pm      *backend.PlaybackManager
-	im      *backend.ImageManager
-	contr   *controller.Controller
+	albumID     string
+	sort        widgets.TracklistSort
+	cfg         *backend.AlbumPageConfig
+	widgetCache *util.WidgetCache
+	mp          mediaprovider.MediaProvider
+	pm          *backend.PlaybackManager
+	im          *backend.ImageManager
+	contr       *controller.Controller
 }
 
 func NewAlbumPage(
 	albumID string,
 	cfg *backend.AlbumPageConfig,
+	cache *util.WidgetCache,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
 	contr *controller.Controller,
 ) *AlbumPage {
-	return newAlbumPage(albumID, cfg, pm, mp, im, contr, widgets.TracklistSort{})
+	return newAlbumPage(albumID, cfg, cache, pm, mp, im, contr, widgets.TracklistSort{})
 }
 
 func newAlbumPage(
 	albumID string,
 	cfg *backend.AlbumPageConfig,
+	cache *util.WidgetCache,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
@@ -64,16 +67,23 @@ func newAlbumPage(
 ) *AlbumPage {
 	a := &AlbumPage{
 		albumPageState: albumPageState{
-			albumID: albumID,
-			cfg:     cfg,
-			pm:      pm,
-			mp:      mp,
-			im:      im,
-			contr:   contr,
+			albumID:     albumID,
+			cfg:         cfg,
+			widgetCache: cache,
+			pm:          pm,
+			mp:          mp,
+			im:          im,
+			contr:       contr,
 		},
 	}
 	a.ExtendBaseWidget(a)
-	a.header = NewAlbumPageHeader(a)
+	if h := a.widgetCache.Obtain(util.WidgetTypeAlbumPageHeader); h != nil {
+		a.header = h.(*AlbumPageHeader)
+		a.header.Clear()
+	} else {
+		a.header = NewAlbumPageHeader(a)
+	}
+	a.header.page = a
 	a.tracklist = widgets.NewTracklist(nil)
 	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 	a.tracklist.SetSorting(sort)
@@ -97,6 +107,7 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 func (a *AlbumPage) Save() SavedPage {
 	s := a.albumPageState
 	s.sort = a.tracklist.Sorting()
+	a.widgetCache.Release(util.WidgetTypeAlbumPageHeader, a.header)
 	return &s
 }
 
@@ -134,7 +145,9 @@ func (a *AlbumPage) load() {
 		return
 	}
 	a.header.Update(album, a.im)
-	a.tracklist.ShowDiscNumber = album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber
+	a.tracklist.Options = widgets.TracklistOptions{
+		ShowDiscNumber: album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber,
+	}
 	a.tracks = album.Tracks
 	a.tracklist.SetTracks(album.Tracks)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
@@ -256,6 +269,18 @@ func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backe
 	}()
 }
 
+func (a *AlbumPageHeader) Clear() {
+	a.albumID = ""
+	a.coverID = ""
+	a.artistID = ""
+	a.titleLabel.Segments[0].(*widget.TextSegment).Text = ""
+	a.artistLabel.SetText("")
+	a.genreLabel.SetText("")
+	a.miscLabel.SetText("")
+	a.toggleFavButton.IsFavorited = false
+	a.cover.Image.Image = nil
+}
+
 func (a *AlbumPageHeader) toggleFavorited() {
 	params := mediaprovider.RatingFavoriteParameters{AlbumIDs: []string{a.albumID}}
 	a.page.mp.SetFavorite(params, a.toggleFavButton.IsFavorited)
@@ -283,5 +308,5 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return newAlbumPage(s.albumID, s.cfg, s.pm, s.mp, s.im, s.contr, s.sort)
+	return newAlbumPage(s.albumID, s.cfg, s.widgetCache, s.pm, s.mp, s.im, s.contr, s.sort)
 }

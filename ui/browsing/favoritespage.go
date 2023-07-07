@@ -326,7 +326,7 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 				return
 			}
 			tracklist := widgets.NewTracklist(fav.Tracks)
-			tracklist.AutoNumber = true
+			tracklist.Options = widgets.TracklistOptions{AutoNumber: true}
 			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 			tracklist.SetSorting(a.trackSort)
 			tracklist.OnVisibleColumnsChanged = func(cols []string) {

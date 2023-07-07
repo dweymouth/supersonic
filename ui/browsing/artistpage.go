@@ -28,11 +28,12 @@ type artistPageState struct {
 	activeView int
 	trackSort  widgets.TracklistSort
 
-	cfg   *backend.ArtistPageConfig
-	pm    *backend.PlaybackManager
-	mp    mediaprovider.MediaProvider
-	im    *backend.ImageManager
-	contr *controller.Controller
+	widgetCache *util.WidgetCache
+	cfg         *backend.ArtistPageConfig
+	pm          *backend.PlaybackManager
+	mp          mediaprovider.MediaProvider
+	im          *backend.ImageManager
+	contr       *controller.Controller
 }
 
 type ArtistPage struct {
@@ -49,27 +50,34 @@ type ArtistPage struct {
 	container    *fyne.Container
 }
 
-func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
+func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, cache *util.WidgetCache, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
 	activeView := 0
 	if cfg.InitialView == "Top Tracks" {
 		activeView = 1
 	}
-	return newArtistPage(artistID, cfg, pm, mp, im, contr, activeView, widgets.TracklistSort{})
+	return newArtistPage(artistID, cfg, cache, pm, mp, im, contr, activeView, widgets.TracklistSort{})
 }
 
-func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int, sort widgets.TracklistSort) *ArtistPage {
+func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, cache *util.WidgetCache, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int, sort widgets.TracklistSort) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
-		artistID:   artistID,
-		cfg:        cfg,
-		pm:         pm,
-		mp:         mp,
-		im:         im,
-		contr:      contr,
-		activeView: activeView,
-		trackSort:  sort,
+		artistID:    artistID,
+		cfg:         cfg,
+		widgetCache: cache,
+		pm:          pm,
+		mp:          mp,
+		im:          im,
+		contr:       contr,
+		activeView:  activeView,
+		trackSort:   sort,
 	}}
 	a.ExtendBaseWidget(a)
-	a.header = NewArtistPageHeader(a)
+	if h := a.widgetCache.Obtain(util.WidgetTypeArtistPageHeader); h != nil {
+		a.header = h.(*ArtistPageHeader)
+	} else {
+		a.header = NewArtistPageHeader(a)
+	}
+	a.header.artistPage = a
+	a.header.Clear()
 	if img, ok := im.GetCachedArtistImage(artistID); ok {
 		a.header.artistImage.SetImage(img, true /*tappable*/)
 	}
@@ -116,6 +124,7 @@ func (a *ArtistPage) Save() SavedPage {
 	if a.tracklistCtr != nil {
 		s.trackSort = a.tracklistCtr.Objects[0].(*widgets.Tracklist).Sorting()
 	}
+	a.widgetCache.Release(util.WidgetTypeArtistPageHeader, a.header)
 	return &s
 }
 
@@ -190,7 +199,7 @@ func (a *ArtistPage) showTopTracks() {
 			return
 		}
 		tl := widgets.NewTracklist(ts)
-		tl.AutoNumber = true
+		tl.Options = widgets.TracklistOptions{AutoNumber: true}
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
 		tl.SetSorting(a.trackSort)
 		tl.OnVisibleColumnsChanged = func(cols []string) {
@@ -228,8 +237,10 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return newArtistPage(s.artistID, s.cfg, s.pm, s.mp, s.im, s.contr, s.activeView, s.trackSort)
+	return newArtistPage(s.artistID, s.cfg, s.widgetCache, s.pm, s.mp, s.im, s.contr, s.activeView, s.trackSort)
 }
+
+const artistBioNotAvailableStr = "Artist biography not available."
 
 type ArtistPageHeader struct {
 	widget.BaseWidget
@@ -250,7 +261,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a := &ArtistPageHeader{
 		artistPage:     page,
 		titleDisp:      widget.NewRichTextWithText(""),
-		biographyDisp:  widget.NewRichTextWithText("Artist biography not available."),
+		biographyDisp:  widget.NewRichTextWithText(artistBioNotAvailableStr),
 		similarArtists: container.NewHBox(),
 	}
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
@@ -271,6 +282,15 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.ExtendBaseWidget(a)
 	a.createContainer()
 	return a
+}
+
+func (a *ArtistPageHeader) Clear() {
+	a.artistID = ""
+	a.favoriteBtn.IsFavorited = false
+	a.titleDisp.Segments[0].(*widget.TextSegment).Text = ""
+	a.biographyDisp.Segments[0].(*widget.TextSegment).Text = artistBioNotAvailableStr
+	a.similarArtists.RemoveAll()
+	a.artistImage.SetImage(nil, false)
 }
 
 func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums) {

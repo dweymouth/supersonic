@@ -77,8 +77,10 @@ func newPlaylistPage(
 		fyne.NewMenuItem("Move down", a.onMoveSelectedDown),
 		fyne.NewMenuItem("Move to bottom", a.onMoveSelectedToBottom),
 	}...)
-	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{reorderMenu,
-		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)}
+	a.tracklist.Options = widgets.TracklistOptions{
+		AuxiliaryMenuItems: []*fyne.MenuItem{reorderMenu,
+			fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)},
+	}
 	// connect tracklist actions
 	a.contr.ConnectTracklistActions(a.tracklist)
 

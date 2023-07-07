@@ -47,9 +47,7 @@ type TracklistSort struct {
 	ColumnName string
 }
 
-type Tracklist struct {
-	widget.BaseWidget
-
+type TracklistOptions struct {
 	// AutoNumber sets whether to auto-number the tracks 1..N in display order,
 	// or to use the number from the track's metadata
 	AutoNumber bool
@@ -68,6 +66,12 @@ type Tracklist struct {
 
 	// Disables sorting the tracklist by clicking individual columns.
 	DisableSorting bool
+}
+
+type Tracklist struct {
+	widget.BaseWidget
+
+	Options TracklistOptions
 
 	// user action callbacks
 	OnPlayTrackAt   func(int)
@@ -141,7 +145,7 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 			tr := item.(*TrackRow)
 			tr.trackIdx = itemID
 			i := -1 // signal that we want to display the actual track num.
-			if t.AutoNumber {
+			if t.Options.AutoNumber {
 				i = itemID + 1
 			}
 			tr.Update(t.trackModelAt(itemID), i)
@@ -151,6 +155,13 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 		})
 	t.container = container.NewBorder(t.hdr, nil, nil, nil, t.list)
 	return t
+}
+
+func (t *Tracklist) Reset() {
+	t.Clear()
+	t.Options = TracklistOptions{}
+	t.ctxMenu = nil
+	t.SetSorting(TracklistSort{})
 }
 
 func (t *Tracklist) buildHeader() {
@@ -331,7 +342,7 @@ func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (t *Tracklist) Refresh() {
-	t.hdr.DisableSorting = t.DisableSorting
+	t.hdr.DisableSorting = t.Options.DisableSorting
 	t.BaseWidget.Refresh()
 }
 
@@ -487,7 +498,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	t.list.Refresh()
 	if t.ctxMenu == nil {
 		t.ctxMenu = fyne.NewMenu("")
-		if !t.DisablePlaybackMenu {
+		if !t.Options.DisablePlaybackMenu {
 			t.ctxMenu.Items = append(t.ctxMenu.Items,
 				fyne.NewMenuItem("Play", func() {
 					if t.OnPlaySelection != nil {
@@ -530,9 +541,9 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			t.onSetRatings(t.selectedTracks(), rating, true)
 		})
 		t.ctxMenu.Items = append(t.ctxMenu.Items, ratingMenu)
-		if len(t.AuxiliaryMenuItems) > 0 {
+		if len(t.Options.AuxiliaryMenuItems) > 0 {
 			t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
-			t.ctxMenu.Items = append(t.ctxMenu.Items, t.AuxiliaryMenuItems...)
+			t.ctxMenu.Items = append(t.ctxMenu.Items, t.Options.AuxiliaryMenuItems...)
 		}
 	}
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
@@ -754,7 +765,7 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 		var str string
 		if rowNum < 0 {
 			rowNum = tr.TrackNumber
-			if t.tracklist.ShowDiscNumber {
+			if t.tracklist.Options.ShowDiscNumber {
 				discNum = tr.DiscNumber
 			}
 		}
