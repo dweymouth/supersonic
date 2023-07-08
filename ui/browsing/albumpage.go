@@ -25,6 +25,7 @@ type AlbumPage struct {
 
 	albumPageState
 
+	disposed     bool
 	header       *AlbumPageHeader
 	tracks       []*mediaprovider.Track
 	tracklist    *widgets.Tracklist
@@ -33,32 +34,32 @@ type AlbumPage struct {
 }
 
 type albumPageState struct {
-	albumID     string
-	sort        widgets.TracklistSort
-	cfg         *backend.AlbumPageConfig
-	widgetCache *util.WidgetCache
-	mp          mediaprovider.MediaProvider
-	pm          *backend.PlaybackManager
-	im          *backend.ImageManager
-	contr       *controller.Controller
+	albumID string
+	sort    widgets.TracklistSort
+	cfg     *backend.AlbumPageConfig
+	pool    *util.WidgetPool
+	mp      mediaprovider.MediaProvider
+	pm      *backend.PlaybackManager
+	im      *backend.ImageManager
+	contr   *controller.Controller
 }
 
 func NewAlbumPage(
 	albumID string,
 	cfg *backend.AlbumPageConfig,
-	cache *util.WidgetCache,
+	pool *util.WidgetPool,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
 	contr *controller.Controller,
 ) *AlbumPage {
-	return newAlbumPage(albumID, cfg, cache, pm, mp, im, contr, widgets.TracklistSort{})
+	return newAlbumPage(albumID, cfg, pool, pm, mp, im, contr, widgets.TracklistSort{})
 }
 
 func newAlbumPage(
 	albumID string,
 	cfg *backend.AlbumPageConfig,
-	cache *util.WidgetCache,
+	pool *util.WidgetPool,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
@@ -67,24 +68,29 @@ func newAlbumPage(
 ) *AlbumPage {
 	a := &AlbumPage{
 		albumPageState: albumPageState{
-			albumID:     albumID,
-			cfg:         cfg,
-			widgetCache: cache,
-			pm:          pm,
-			mp:          mp,
-			im:          im,
-			contr:       contr,
+			albumID: albumID,
+			cfg:     cfg,
+			pool:    pool,
+			pm:      pm,
+			mp:      mp,
+			im:      im,
+			contr:   contr,
 		},
 	}
 	a.ExtendBaseWidget(a)
-	if h := a.widgetCache.Obtain(util.WidgetTypeAlbumPageHeader); h != nil {
+	if h := a.pool.Obtain(util.WidgetTypeAlbumPageHeader); h != nil {
 		a.header = h.(*AlbumPageHeader)
 		a.header.Clear()
 	} else {
 		a.header = NewAlbumPageHeader(a)
 	}
 	a.header.page = a
-	a.tracklist = widgets.NewTracklist(nil)
+	if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
+		a.tracklist = t.(*widgets.Tracklist)
+		a.tracklist.Reset()
+	} else {
+		a.tracklist = widgets.NewTracklist(nil)
+	}
 	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 	a.tracklist.SetSorting(sort)
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
@@ -105,9 +111,12 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *AlbumPage) Save() SavedPage {
+	a.disposed = true
 	s := a.albumPageState
 	s.sort = a.tracklist.Sorting()
-	a.widgetCache.Release(util.WidgetTypeAlbumPageHeader, a.header)
+	a.header.page = nil
+	a.pool.Release(util.WidgetTypeAlbumPageHeader, a.header)
+	a.pool.Release(util.WidgetTypeTracklist, a.tracklist)
 	return &s
 }
 
@@ -142,6 +151,9 @@ func (a *AlbumPage) load() {
 	album, err := a.mp.GetAlbum(a.albumID)
 	if err != nil {
 		log.Printf("Failed to get album: %s", err.Error())
+		return
+	}
+	if a.disposed {
 		return
 	}
 	a.header.Update(album, a.im)
@@ -279,6 +291,7 @@ func (a *AlbumPageHeader) Clear() {
 	a.miscLabel.SetText("")
 	a.toggleFavButton.IsFavorited = false
 	a.cover.Image.Image = nil
+	a.cover.Refresh()
 }
 
 func (a *AlbumPageHeader) toggleFavorited() {
@@ -292,7 +305,9 @@ func (a *AlbumPageHeader) showPopUpCover() {
 		log.Printf("error getting full size album cover: %s", err.Error())
 		return
 	}
-	a.page.contr.ShowPopUpImage(cover)
+	if a.page != nil {
+		a.page.contr.ShowPopUpImage(cover)
+	}
 }
 
 func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
@@ -308,5 +323,5 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return newAlbumPage(s.albumID, s.cfg, s.widgetCache, s.pm, s.mp, s.im, s.contr, s.sort)
+	return newAlbumPage(s.albumID, s.cfg, s.pool, s.pm, s.mp, s.im, s.contr, s.sort)
 }

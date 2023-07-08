@@ -7,6 +7,8 @@ import (
 // Component that manages lazily loading more tracks into a Tracklist
 // as the user scrolls near the bottom.
 type TracklistLoader struct {
+	disposed bool
+
 	tracklist *Tracklist
 	iter      mediaprovider.TrackIterator
 
@@ -28,11 +30,17 @@ func NewTracklistLoader(tracklist *Tracklist, iter mediaprovider.TrackIterator) 
 	return t
 }
 
+// Cancels all asynchronous loads so that they will no longer modify the tracklist.
+func (t *TracklistLoader) Dispose() {
+	t.disposed = true
+	t.tracklist.OnTrackShown = nil
+}
+
 func (t *TracklistLoader) onTrackShown(tracknum int) {
 	if tracknum > t.highestShown {
 		t.highestShown = tracknum
 	}
-	if t.highestShown >= t.len-25 && !t.fetching && !t.done {
+	if t.highestShown >= t.len-25 && !t.fetching && !t.done && !t.disposed {
 		t.fetching = true
 		go t.loadMoreTracks(25)
 	}
@@ -52,6 +60,12 @@ func (t *TracklistLoader) loadMoreTracks(num int) {
 				break
 			}
 			t.trackBuffer = append(t.trackBuffer, tr)
+			if t.disposed {
+				break
+			}
+		}
+		if t.disposed {
+			return
 		}
 		t.tracklist.AppendTracks(t.trackBuffer)
 		t.tracklist.Refresh()

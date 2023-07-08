@@ -23,11 +23,13 @@ type FavoritesPage struct {
 	widget.BaseWidget
 
 	cfg   *backend.FavoritesPageConfig
+	pool  *util.WidgetPool
 	contr *controller.Controller
 	pm    *backend.PlaybackManager
 	im    *backend.ImageManager
 	mp    mediaprovider.MediaProvider
 
+	disposed          bool
 	trackSort         widgets.TracklistSort
 	filter            mediaprovider.AlbumFilter
 	searchText        string
@@ -45,10 +47,11 @@ type FavoritesPage struct {
 	container    *fyne.Container
 }
 
-func NewFavoritesPage(cfg *backend.FavoritesPageConfig, contr *controller.Controller, mp mediaprovider.MediaProvider, pm *backend.PlaybackManager, im *backend.ImageManager) *FavoritesPage {
+func NewFavoritesPage(cfg *backend.FavoritesPageConfig, pool *util.WidgetPool, contr *controller.Controller, mp mediaprovider.MediaProvider, pm *backend.PlaybackManager, im *backend.ImageManager) *FavoritesPage {
 	a := &FavoritesPage{
 		filter: mediaprovider.AlbumFilter{ExcludeUnfavorited: true},
 		cfg:    cfg,
+		pool:   pool,
 		contr:  contr,
 		pm:     pm,
 		mp:     mp,
@@ -99,6 +102,7 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	a := &FavoritesPage{
 		cfg:        saved.cfg,
 		contr:      saved.contr,
+		pool:       saved.pool,
 		pm:         saved.pm,
 		mp:         saved.mp,
 		im:         saved.im,
@@ -154,6 +158,9 @@ func (a *FavoritesPage) Reload() {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
+			if a.disposed {
+				return
+			}
 			if a.tracklistCtr != nil {
 				// refresh favorite songs view
 				tr := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
@@ -176,9 +183,11 @@ func (a *FavoritesPage) Reload() {
 }
 
 func (a *FavoritesPage) Save() SavedPage {
+	a.disposed = true
 	sf := &savedFavoritesPage{
 		cfg:             a.cfg,
 		contr:           a.contr,
+		pool:            a.pool,
 		pm:              a.pm,
 		mp:              a.mp,
 		im:              a.im,
@@ -191,7 +200,9 @@ func (a *FavoritesPage) Save() SavedPage {
 		sf.searchGridState = a.searchGrid.SaveToState()
 	}
 	if a.tracklistCtr != nil {
-		sf.trackSort = a.tracklistCtr.Objects[0].(*widgets.Tracklist).Sorting()
+		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		sf.trackSort = tl.Sorting()
+		a.pool.Release(util.WidgetTypeTracklist, tl)
 	}
 	return sf
 }
@@ -277,6 +288,9 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
+			if a.disposed {
+				return
+			}
 			model := buildArtistGridViewModel(fav.Artists)
 			a.artistGrid = widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
 			a.contr.ConnectArtistGridActions(a.artistGrid)
@@ -325,7 +339,17 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 				log.Printf("error getting starred items: %s", err.Error())
 				return
 			}
-			tracklist := widgets.NewTracklist(fav.Tracks)
+			if a.disposed {
+				return
+			}
+			var tracklist *widgets.Tracklist
+			if tl := a.pool.Obtain(util.WidgetTypeTracklist); tl != nil {
+				tracklist = tl.(*widgets.Tracklist)
+				tracklist.Reset()
+				tracklist.SetTracks(fav.Tracks)
+			} else {
+				tracklist = widgets.NewTracklist(fav.Tracks)
+			}
 			tracklist.Options = widgets.TracklistOptions{AutoNumber: true}
 			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 			tracklist.SetSorting(a.trackSort)
@@ -355,6 +379,7 @@ func (a *FavoritesPage) CreateRenderer() fyne.WidgetRenderer {
 type savedFavoritesPage struct {
 	cfg             *backend.FavoritesPageConfig
 	contr           *controller.Controller
+	pool            *util.WidgetPool
 	pm              *backend.PlaybackManager
 	mp              mediaprovider.MediaProvider
 	im              *backend.ImageManager

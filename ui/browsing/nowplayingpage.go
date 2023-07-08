@@ -38,6 +38,7 @@ type NowPlayingPage struct {
 
 type nowPlayingPageState struct {
 	contr *controller.Controller
+	pool  *util.WidgetPool
 	conf  *backend.NowPlayingPageConfig
 	pm    *backend.PlaybackManager
 	p     *player.Player
@@ -46,18 +47,26 @@ type nowPlayingPageState struct {
 func NewNowPlayingPage(
 	highlightedTrackID string,
 	contr *controller.Controller,
+	pool *util.WidgetPool,
 	conf *backend.NowPlayingPageConfig,
 	pm *backend.PlaybackManager,
 	p *player.Player, // TODO: once other player backends are supported (eg uPnP), refactor
 ) *NowPlayingPage {
-	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{contr: contr, conf: conf, pm: pm, p: p}}
+	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
+		contr: contr, pool: pool, conf: conf, pm: pm, p: p,
+	}}
 	a.ExtendBaseWidget(a)
 
 	p.OnPaused(a.formatStatusLine)
 	p.OnPlaying(a.formatStatusLine)
 	p.OnStopped(a.formatStatusLine)
 
-	a.tracklist = widgets.NewTracklist(nil)
+	if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
+		a.tracklist = t.(*widgets.Tracklist)
+		a.tracklist.Reset()
+	} else {
+		a.tracklist = widgets.NewTracklist(nil)
+	}
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		a.conf.TracklistColumns = cols
@@ -90,6 +99,7 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *NowPlayingPage) Save() SavedPage {
+	a.pool.Release(util.WidgetTypeTracklist, a.tracklist)
 	nps := a.nowPlayingPageState
 	return &nps
 }
@@ -207,5 +217,5 @@ func (a *NowPlayingPage) load(highlightedTrackID string) {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage("", s.contr, s.conf, s.pm, s.p)
+	return NewNowPlayingPage("", s.contr, s.pool, s.conf, s.pm, s.p)
 }

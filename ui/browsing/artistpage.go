@@ -28,18 +28,19 @@ type artistPageState struct {
 	activeView int
 	trackSort  widgets.TracklistSort
 
-	widgetCache *util.WidgetCache
-	cfg         *backend.ArtistPageConfig
-	pm          *backend.PlaybackManager
-	mp          mediaprovider.MediaProvider
-	im          *backend.ImageManager
-	contr       *controller.Controller
+	pool  *util.WidgetPool
+	cfg   *backend.ArtistPageConfig
+	pm    *backend.PlaybackManager
+	mp    mediaprovider.MediaProvider
+	im    *backend.ImageManager
+	contr *controller.Controller
 }
 
 type ArtistPage struct {
 	widget.BaseWidget
 
 	artistPageState
+	disposed bool
 
 	artistInfo *mediaprovider.ArtistWithAlbums
 
@@ -50,34 +51,34 @@ type ArtistPage struct {
 	container    *fyne.Container
 }
 
-func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, cache *util.WidgetCache, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
+func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.WidgetPool, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
 	activeView := 0
 	if cfg.InitialView == "Top Tracks" {
 		activeView = 1
 	}
-	return newArtistPage(artistID, cfg, cache, pm, mp, im, contr, activeView, widgets.TracklistSort{})
+	return newArtistPage(artistID, cfg, pool, pm, mp, im, contr, activeView, widgets.TracklistSort{})
 }
 
-func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, cache *util.WidgetCache, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int, sort widgets.TracklistSort) *ArtistPage {
+func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.WidgetPool, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int, sort widgets.TracklistSort) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
-		artistID:    artistID,
-		cfg:         cfg,
-		widgetCache: cache,
-		pm:          pm,
-		mp:          mp,
-		im:          im,
-		contr:       contr,
-		activeView:  activeView,
-		trackSort:   sort,
+		artistID:   artistID,
+		cfg:        cfg,
+		pool:       pool,
+		pm:         pm,
+		mp:         mp,
+		im:         im,
+		contr:      contr,
+		activeView: activeView,
+		trackSort:  sort,
 	}}
 	a.ExtendBaseWidget(a)
-	if h := a.widgetCache.Obtain(util.WidgetTypeArtistPageHeader); h != nil {
+	if h := a.pool.Obtain(util.WidgetTypeArtistPageHeader); h != nil {
 		a.header = h.(*ArtistPageHeader)
+		a.header.Clear()
 	} else {
 		a.header = NewArtistPageHeader(a)
 	}
 	a.header.artistPage = a
-	a.header.Clear()
 	if img, ok := im.GetCachedArtistImage(artistID); ok {
 		a.header.artistImage.SetImage(img, true /*tappable*/)
 	}
@@ -120,11 +121,14 @@ func (a *ArtistPage) Reload() {
 }
 
 func (a *ArtistPage) Save() SavedPage {
+	a.disposed = true
 	s := a.artistPageState
 	if a.tracklistCtr != nil {
-		s.trackSort = a.tracklistCtr.Objects[0].(*widgets.Tracklist).Sorting()
+		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		s.trackSort = tl.Sorting()
+		a.pool.Release(util.WidgetTypeTracklist, tl)
 	}
-	a.widgetCache.Release(util.WidgetTypeArtistPageHeader, a.header)
+	a.pool.Release(util.WidgetTypeArtistPageHeader, a.header)
 	return &s
 }
 
@@ -148,6 +152,9 @@ func (a *ArtistPage) load() {
 	artist, err := a.mp.GetArtist(a.artistID)
 	if err != nil {
 		log.Printf("Failed to get artist: %s", err.Error())
+		return
+	}
+	if a.disposed {
 		return
 	}
 	a.artistInfo = artist
@@ -198,7 +205,17 @@ func (a *ArtistPage) showTopTracks() {
 			log.Printf("error getting top songs: %s", err.Error())
 			return
 		}
-		tl := widgets.NewTracklist(ts)
+		if a.disposed {
+			return
+		}
+		var tl *widgets.Tracklist
+		if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
+			tl = t.(*widgets.Tracklist)
+			tl.Reset()
+			tl.SetTracks(ts)
+		} else {
+			tl = widgets.NewTracklist(ts)
+		}
 		tl.Options = widgets.TracklistOptions{AutoNumber: true}
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
 		tl.SetSorting(a.trackSort)
@@ -237,7 +254,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return newArtistPage(s.artistID, s.cfg, s.widgetCache, s.pm, s.mp, s.im, s.contr, s.activeView, s.trackSort)
+	return newArtistPage(s.artistID, s.cfg, s.pool, s.pm, s.mp, s.im, s.contr, s.activeView, s.trackSort)
 }
 
 const artistBioNotAvailableStr = "Artist biography not available."
