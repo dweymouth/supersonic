@@ -21,20 +21,21 @@ var _ fyne.Widget = (*AlbumsPage)(nil)
 type AlbumsPage struct {
 	widget.BaseWidget
 
-	cfg        *backend.AlbumsPageConfig
-	contr      *controller.Controller
-	pm         *backend.PlaybackManager
-	im         *backend.ImageManager
-	mp         mediaprovider.MediaProvider
-	grid       *widgets.GridView
-	searchGrid *widgets.GridView
-	searcher   *widgets.SearchEntry
-	filterBtn  *widgets.AlbumFilterButton
-	searchText string
-	filter     mediaprovider.AlbumFilter
-	titleDisp  *widget.RichText
-	sortOrder  *selectWidget
-	container  *fyne.Container
+	cfg             *backend.AlbumsPageConfig
+	contr           *controller.Controller
+	pm              *backend.PlaybackManager
+	im              *backend.ImageManager
+	mp              mediaprovider.MediaProvider
+	grid            *widgets.GridView
+	gridState       *widgets.GridViewState
+	searchGridState *widgets.GridViewState
+	searcher        *widgets.SearchEntry
+	filterBtn       *widgets.AlbumFilterButton
+	searchText      string
+	filter          mediaprovider.AlbumFilter
+	titleDisp       *widget.RichText
+	sortOrder       *selectWidget
+	container       *fyne.Container
 }
 
 type selectWidget struct {
@@ -79,7 +80,7 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im, myTheme.AlbumIcon)
 	contr.ConnectAlbumGridActions(a.grid)
 	a.createSearchAndFilter()
-	a.createContainer(false)
+	a.createContainer()
 
 	return a
 }
@@ -92,31 +93,29 @@ func (a *AlbumsPage) createSearchAndFilter() {
 	a.filterBtn.OnChanged = a.Reload
 }
 
-func (a *AlbumsPage) createContainer(searchgrid bool) {
+func (a *AlbumsPage) createContainer() {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
 	sortVbox := container.NewVBox(layout.NewSpacer(), a.sortOrder, layout.NewSpacer())
-	g := a.grid
-	if searchgrid {
-		g = a.searchGrid
-	}
 	a.container = container.NewBorder(
 		container.NewHBox(util.NewHSpace(6), a.titleDisp, sortVbox, layout.NewSpacer(), container.NewCenter(a.filterBtn), searchVbox, util.NewHSpace(12)),
 		nil,
 		nil,
 		nil,
-		g,
+		a.grid,
 	)
 }
 
 func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a := &AlbumsPage{
-		cfg:        saved.cfg,
-		contr:      saved.contr,
-		pm:         saved.pm,
-		mp:         saved.mp,
-		im:         saved.im,
-		searchText: saved.searchText,
-		filter:     saved.filter,
+		cfg:             saved.cfg,
+		contr:           saved.contr,
+		pm:              saved.pm,
+		mp:              saved.mp,
+		im:              saved.im,
+		gridState:       saved.gridState,
+		searchGridState: saved.searchGridState,
+		searchText:      saved.searchText,
+		filter:          saved.filter,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -127,27 +126,28 @@ func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a.sortOrder = NewSelect(a.mp.AlbumSortOrders(), nil)
 	a.sortOrder.Selected = saved.sortOrder
 	a.sortOrder.OnChanged = a.onSortOrderChanged
-	a.grid = widgets.NewGridViewFromState(saved.gridState)
 	if a.searchText != "" {
-		a.searchGrid = widgets.NewGridViewFromState(saved.searchGridState)
+		a.sortOrder.Disable()
+		a.grid = widgets.NewGridViewFromState(saved.searchGridState)
+	} else {
+		a.grid = widgets.NewGridViewFromState(saved.gridState)
 	}
 	a.createSearchAndFilter()
-	a.createContainer(saved.searchText != "")
+	a.createContainer()
 
 	return a
 }
 
 func (a *AlbumsPage) OnSearched(query string) {
-	a.searchText = query
 	if query == "" {
-		a.container.Objects[0] = a.grid
-		if a.searchGrid != nil {
-			a.searchGrid.Clear()
-		}
-		a.Refresh()
-		return
+		a.sortOrder.Enable()
+		a.grid.ResetFromState(a.gridState)
+		a.searchGridState = nil
+	} else {
+		a.sortOrder.Disable()
+		a.doSearch(query)
 	}
-	a.doSearch(query)
+	a.searchText = query
 }
 
 func (a *AlbumsPage) Route() controller.Route {
@@ -166,48 +166,42 @@ func (a *AlbumsPage) Reload() {
 	} else {
 		iter := a.mp.IterateAlbums(a.sortOrder.Selected, a.filter)
 		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
-		a.grid.Refresh()
 	}
 }
 
 func (a *AlbumsPage) Save() SavedPage {
 	sa := &savedAlbumsPage{
-		cfg:        a.cfg,
-		contr:      a.contr,
-		pm:         a.pm,
-		mp:         a.mp,
-		im:         a.im,
-		searchText: a.searchText,
-		filter:     a.filter,
-		sortOrder:  a.sortOrder.Selected,
-		gridState:  a.grid.SaveToState(),
+		cfg:             a.cfg,
+		contr:           a.contr,
+		pm:              a.pm,
+		mp:              a.mp,
+		im:              a.im,
+		searchText:      a.searchText,
+		filter:          a.filter,
+		sortOrder:       a.sortOrder.Selected,
+		gridState:       a.gridState,
+		searchGridState: a.searchGridState,
 	}
-	if a.searchGrid != nil {
-		sa.searchGridState = a.searchGrid.SaveToState()
+	if a.searchText == "" {
+		sa.gridState = a.grid.SaveToState()
+	} else {
+		sa.searchGridState = a.grid.SaveToState()
 	}
 	return sa
 }
 
 func (a *AlbumsPage) doSearch(query string) {
-	iter := widgets.NewGridViewAlbumIterator(a.mp.SearchAlbums(query, a.filter))
-	if a.searchGrid == nil {
-		a.searchGrid = widgets.NewGridView(iter, a.im, myTheme.AlbumIcon)
-		a.contr.ConnectAlbumGridActions(a.searchGrid)
-	} else {
-		a.searchGrid.Reset(iter)
+	if a.searchText == "" {
+		a.gridState = a.grid.SaveToState()
 	}
-	a.container.Objects[0] = a.searchGrid
-	a.Refresh()
+	iter := widgets.NewGridViewAlbumIterator(a.mp.SearchAlbums(query, a.filter))
+	a.grid.Reset(iter)
 }
 
 func (a *AlbumsPage) onSortOrderChanged(order string) {
 	a.cfg.SortOrder = a.sortOrder.Selected
 	iter := a.mp.IterateAlbums(order, a.filter)
 	a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
-	if a.searchText == "" {
-		a.container.Objects[0] = a.grid
-		a.Refresh()
-	}
 }
 
 func (a *AlbumsPage) CreateRenderer() fyne.WidgetRenderer {
@@ -224,8 +218,8 @@ type savedAlbumsPage struct {
 	mp              mediaprovider.MediaProvider
 	im              *backend.ImageManager
 	sortOrder       string
-	gridState       widgets.GridViewState
-	searchGridState widgets.GridViewState
+	gridState       *widgets.GridViewState
+	searchGridState *widgets.GridViewState
 }
 
 func (s *savedAlbumsPage) Restore() Page {

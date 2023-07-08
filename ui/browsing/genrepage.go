@@ -126,7 +126,6 @@ func (g *GenrePage) Reload() {
 	} else {
 		iter := g.mp.IterateAlbums("", g.filter)
 		g.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
-		g.grid.Refresh()
 	}
 }
 
@@ -190,8 +189,8 @@ type savedGenrePage struct {
 	pm              *backend.PlaybackManager
 	mp              mediaprovider.MediaProvider
 	im              *backend.ImageManager
-	gridState       widgets.GridViewState
-	searchGridState widgets.GridViewState
+	gridState       *widgets.GridViewState
+	searchGridState *widgets.GridViewState
 }
 
 func (s *savedGenrePage) Restore() Page {

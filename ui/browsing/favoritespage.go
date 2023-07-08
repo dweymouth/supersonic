@@ -383,8 +383,8 @@ type savedFavoritesPage struct {
 	pm              *backend.PlaybackManager
 	mp              mediaprovider.MediaProvider
 	im              *backend.ImageManager
-	gridState       widgets.GridViewState
-	searchGridState widgets.GridViewState
+	gridState       *widgets.GridViewState
+	searchGridState *widgets.GridViewState
 	filter          mediaprovider.AlbumFilter
 	searchText      string
 	activeToggleBtn int
