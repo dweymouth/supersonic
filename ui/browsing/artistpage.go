@@ -306,7 +306,9 @@ func (a *ArtistPageHeader) Clear() {
 	a.favoriteBtn.IsFavorited = false
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = ""
 	a.biographyDisp.Segments[0].(*widget.TextSegment).Text = artistBioNotAvailableStr
-	a.similarArtists.RemoveAll()
+	for _, obj := range a.similarArtists.Objects {
+		obj.Hide()
+	}
 	a.artistImage.SetImage(nil, false)
 }
 
@@ -336,21 +338,29 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 		}
 	}
 
-	a.similarArtists.RemoveAll()
+	if len(a.similarArtists.Objects) == 0 {
+		a.similarArtists.Add(widget.NewLabel("Similar Artists:"))
+	}
+	for _, obj := range a.similarArtists.Objects {
+		obj.Hide()
+	}
 	for i, art := range info.SimilarArtists {
 		if i == 0 {
-			a.similarArtists.Add(widget.NewLabel("Similar Artists:"))
+			a.similarArtists.Objects[0].Show() // "Similar Artists:" label
 		}
 		if i == 4 {
 			break
 		}
-		h := widgets.NewCustomHyperlink()
+		if len(a.similarArtists.Objects) <= i+1 {
+			a.similarArtists.Add(widgets.NewCustomHyperlink())
+		}
+		h := a.similarArtists.Objects[i+1].(*widgets.CustomHyperlink)
 		h.NoTruncate = true
 		h.SetText(art.Name)
 		h.OnTapped = func(id string) func() {
 			return func() { a.artistPage.contr.NavigateTo(controller.ArtistRoute(id)) }
 		}(art.ID)
-		a.similarArtists.Add(h)
+		h.Show()
 	}
 	a.similarArtists.Refresh()
 
