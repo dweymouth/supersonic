@@ -69,6 +69,7 @@ func newPlaylistPage(
 	a.ExtendBaseWidget(a)
 	if h := a.widgetPool.Obtain(util.WidgetTypePlaylistPageHeader); h != nil {
 		a.header = h.(*PlaylistPageHeader)
+		a.header.page = a
 		a.header.Clear()
 	} else {
 		a.header = NewPlaylistPageHeader(a)

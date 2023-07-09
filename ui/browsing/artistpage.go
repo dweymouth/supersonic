@@ -74,6 +74,7 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 	a.ExtendBaseWidget(a)
 	if h := a.pool.Obtain(util.WidgetTypeArtistPageHeader); h != nil {
 		a.header = h.(*ArtistPageHeader)
+		a.header.artistPage = a
 		a.header.Clear()
 	} else {
 		a.header = NewArtistPageHeader(a)
