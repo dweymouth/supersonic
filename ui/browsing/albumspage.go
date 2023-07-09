@@ -22,6 +22,7 @@ type AlbumsPage struct {
 	widget.BaseWidget
 
 	cfg             *backend.AlbumsPageConfig
+	pool            *util.WidgetPool
 	contr           *controller.Controller
 	pm              *backend.PlaybackManager
 	im              *backend.ImageManager
@@ -57,8 +58,9 @@ func (s *selectWidget) MinSize() fyne.Size {
 	return fyne.NewSize(170, s.Select.MinSize().Height)
 }
 
-func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) *AlbumsPage {
+func NewAlbumsPage(cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) *AlbumsPage {
 	a := &AlbumsPage{
+		pool:  pool,
 		cfg:   cfg,
 		contr: contr,
 		pm:    pm,
@@ -77,7 +79,13 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, contr *controller.Controller, 
 	}
 	a.sortOrder.Selected = cfg.SortOrder
 	iter := mp.IterateAlbums(a.sortOrder.Selected, a.filter)
-	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im, myTheme.AlbumIcon)
+	if g := pool.Obtain(util.WidgetTypeGridView); g != nil {
+		a.grid = g.(*widgets.GridView)
+		a.grid.Placeholder = myTheme.AlbumIcon
+		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
+	} else {
+		a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), im, myTheme.AlbumIcon)
+	}
 	contr.ConnectAlbumGridActions(a.grid)
 	a.createSearchAndFilter()
 	a.createContainer()
@@ -108,6 +116,7 @@ func (a *AlbumsPage) createContainer() {
 func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a := &AlbumsPage{
 		cfg:             saved.cfg,
+		pool:            saved.pool,
 		contr:           saved.contr,
 		pm:              saved.pm,
 		mp:              saved.mp,
@@ -126,11 +135,16 @@ func restoreAlbumsPage(saved *savedAlbumsPage) *AlbumsPage {
 	a.sortOrder = NewSelect(a.mp.AlbumSortOrders(), nil)
 	a.sortOrder.Selected = saved.sortOrder
 	a.sortOrder.OnChanged = a.onSortOrderChanged
+	state := saved.gridState
 	if a.searchText != "" {
 		a.sortOrder.Disable()
-		a.grid = widgets.NewGridViewFromState(saved.searchGridState)
+		state = saved.searchGridState
+	}
+	if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
+		a.grid = g.(*widgets.GridView)
+		a.grid.ResetFromState(state)
 	} else {
-		a.grid = widgets.NewGridViewFromState(saved.gridState)
+		a.grid = widgets.NewGridViewFromState(state)
 	}
 	a.createSearchAndFilter()
 	a.createContainer()
@@ -172,6 +186,7 @@ func (a *AlbumsPage) Reload() {
 func (a *AlbumsPage) Save() SavedPage {
 	sa := &savedAlbumsPage{
 		cfg:             a.cfg,
+		pool:            a.pool,
 		contr:           a.contr,
 		pm:              a.pm,
 		mp:              a.mp,
@@ -187,6 +202,8 @@ func (a *AlbumsPage) Save() SavedPage {
 	} else {
 		sa.searchGridState = a.grid.SaveToState()
 	}
+	a.grid.Clear()
+	a.pool.Release(util.WidgetTypeGridView, a.grid)
 	return sa
 }
 
@@ -213,6 +230,7 @@ type savedAlbumsPage struct {
 	searchText      string
 	filter          mediaprovider.AlbumFilter
 	cfg             *backend.AlbumsPageConfig
+	pool            *util.WidgetPool
 	contr           *controller.Controller
 	pm              *backend.PlaybackManager
 	mp              mediaprovider.MediaProvider

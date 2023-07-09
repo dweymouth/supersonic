@@ -191,6 +191,10 @@ func (g *GridViewItem) Update(model GridViewItemModel) {
 	g.Cover.playbtn.Hidden = true
 }
 
+func (g *GridViewItem) Refresh() {
+	g.BaseWidget.Refresh()
+}
+
 func (g *GridViewItem) ItemID() string {
 	return g.itemID
 }

@@ -129,6 +129,10 @@ func (a *ArtistPage) Save() SavedPage {
 		a.pool.Release(util.WidgetTypeTracklist, tl)
 	}
 	a.pool.Release(util.WidgetTypeArtistPageHeader, a.header)
+	if a.albumGrid != nil {
+		a.albumGrid.Clear()
+		a.pool.Release(util.WidgetTypeGridView, a.albumGrid)
+	}
 	return &s
 }
 
@@ -186,7 +190,13 @@ func (a *ArtistPage) showAlbumGrid() {
 				Secondary:  strconv.Itoa(al.Year),
 			}
 		})
-		a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
+		if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
+			a.albumGrid = g.(*widgets.GridView)
+			a.albumGrid.Placeholder = myTheme.AlbumIcon
+			a.albumGrid.ResetFixed(model)
+		} else {
+			a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
+		}
 		a.contr.ConnectAlbumGridActions(a.albumGrid)
 	}
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid

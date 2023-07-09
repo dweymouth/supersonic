@@ -82,7 +82,7 @@ type GridViewState struct {
 	items        []GridViewItemModel
 	iter         GridViewIterator
 	imageFetcher ImageFetcher
-	placeholder  fyne.Resource
+	Placeholder  fyne.Resource
 	highestShown int
 	done         bool
 
@@ -104,7 +104,7 @@ func NewFixedGridView(items []GridViewItemModel, fetch ImageFetcher, placeholder
 			items:        items,
 			done:         true,
 			imageFetcher: fetch,
-			placeholder:  placeholder,
+			Placeholder:  placeholder,
 		},
 	}
 	g.ExtendBaseWidget(g)
@@ -117,7 +117,7 @@ func NewGridView(iter GridViewIterator, fetch ImageFetcher, placeholder fyne.Res
 		GridViewState: GridViewState{
 			iter:         iter,
 			imageFetcher: fetch,
-			placeholder:  placeholder,
+			Placeholder:  placeholder,
 		},
 	}
 	g.ExtendBaseWidget(g)
@@ -213,7 +213,7 @@ func (g *GridView) createGridWrap() {
 		},
 		// create func
 		func() fyne.CanvasObject {
-			card := NewGridViewItem(g.placeholder)
+			card := NewGridViewItem(g.Placeholder)
 			card.OnPlay = func(shuffle bool) {
 				if g.OnPlay != nil {
 					g.OnPlay(card.ItemID(), shuffle)
@@ -266,6 +266,7 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 		item = g.items[itemIdx]
 	}
 	g.stateMutex.RUnlock()
+	card.Cover.Im.CenterIcon = g.Placeholder
 	if card.PrevID == item.ID {
 		// nothing to do
 		return

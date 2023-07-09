@@ -11,6 +11,7 @@ type WidgetType int
 const (
 	WidgetTypeAlbumPageHeader WidgetType = iota
 	WidgetTypeArtistPageHeader
+	WidgetTypeGridView
 	WidgetTypePlaylistPageHeader
 	WidgetTypeTracklist
 

@@ -78,7 +78,7 @@ func newAlbumPage(
 		},
 	}
 	a.ExtendBaseWidget(a)
-	if h := a.pool.Obtain(util.WidgetTypeAlbumPageHeader); h != nil {
+	if h := pool.Obtain(util.WidgetTypeAlbumPageHeader); h != nil {
 		a.header = h.(*AlbumPageHeader)
 		a.header.Clear()
 	} else {

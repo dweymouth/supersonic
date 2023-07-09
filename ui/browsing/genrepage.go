@@ -20,6 +20,7 @@ type GenrePage struct {
 	widget.BaseWidget
 
 	genre           string
+	pool            *util.WidgetPool
 	contr           *controller.Controller
 	im              *backend.ImageManager
 	pm              *backend.PlaybackManager
@@ -37,9 +38,10 @@ type GenrePage struct {
 	container *fyne.Container
 }
 
-func NewGenrePage(genre string, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) *GenrePage {
+func NewGenrePage(genre string, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) *GenrePage {
 	g := &GenrePage{
 		genre:  genre,
+		pool:   pool,
 		filter: mediaprovider.AlbumFilter{Genres: []string{genre}},
 		contr:  contr,
 		pm:     pm,
@@ -53,8 +55,14 @@ func NewGenrePage(genre string, contr *controller.Controller, pm *backend.Playba
 		SizeName: theme.SizeNameHeadingText,
 	}
 	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
-	iter := g.mp.IterateAlbums("", g.filter)
-	g.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), g.im, myTheme.AlbumIcon)
+	iter := widgets.NewGridViewAlbumIterator(g.mp.IterateAlbums("", g.filter))
+	if gv := pool.Obtain(util.WidgetTypeGridView); gv != nil {
+		g.grid = gv.(*widgets.GridView)
+		g.grid.Placeholder = myTheme.AlbumIcon
+		g.grid.Reset(iter)
+	} else {
+		g.grid = widgets.NewGridView(iter, g.im, myTheme.AlbumIcon)
+	}
 	g.contr.ConnectAlbumGridActions(g.grid)
 	g.createSearchAndFilter()
 	g.createContainer()
@@ -85,6 +93,7 @@ func (g *GenrePage) createContainer() {
 func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 	g := &GenrePage{
 		genre:           saved.genre,
+		pool:            saved.pool,
 		contr:           saved.contr,
 		pm:              saved.pm,
 		mp:              saved.mp,
@@ -101,10 +110,16 @@ func restoreGenrePage(saved *savedGenrePage) *GenrePage {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	g.playRandom = widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, g.playRandomSongs)
+	state := saved.gridState
 	if g.searchText != "" {
-		g.grid = widgets.NewGridViewFromState(saved.searchGridState)
+		state = saved.searchGridState
+	}
+	if gv := g.pool.Obtain(util.WidgetTypeGridView); gv != nil {
+		g.grid = gv.(*widgets.GridView)
+		g.grid.Placeholder = myTheme.AlbumIcon
+		g.grid.ResetFromState(state)
 	} else {
-		g.grid = widgets.NewGridViewFromState(saved.gridState)
+		g.grid = widgets.NewGridViewFromState(state)
 	}
 	g.createSearchAndFilter()
 	g.createContainer()
@@ -132,6 +147,7 @@ func (g *GenrePage) Reload() {
 func (g *GenrePage) Save() SavedPage {
 	sg := &savedGenrePage{
 		genre:           g.genre,
+		pool:            g.pool,
 		filter:          g.filter,
 		searchText:      g.searchText,
 		contr:           g.contr,
@@ -146,6 +162,8 @@ func (g *GenrePage) Save() SavedPage {
 	} else {
 		sg.gridState = g.grid.SaveToState()
 	}
+	g.grid.Clear()
+	g.pool.Release(util.WidgetTypeGridView, g.grid)
 	return sg
 }
 
@@ -179,6 +197,7 @@ func (g *GenrePage) playRandomSongs() {
 type savedGenrePage struct {
 	genre           string
 	searchText      string
+	pool            *util.WidgetPool
 	filter          mediaprovider.AlbumFilter
 	contr           *controller.Controller
 	pm              *backend.PlaybackManager
