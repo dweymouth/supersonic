@@ -99,6 +99,7 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *NowPlayingPage) Save() SavedPage {
+	a.tracklist.Clear()
 	a.pool.Release(util.WidgetTypeTracklist, a.tracklist)
 	nps := a.nowPlayingPageState
 	return &nps

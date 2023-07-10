@@ -117,6 +117,7 @@ func (a *AlbumPage) Save() SavedPage {
 	s.sort = a.tracklist.Sorting()
 	a.header.page = nil
 	a.pool.Release(util.WidgetTypeAlbumPageHeader, a.header)
+	a.tracklist.Clear()
 	a.pool.Release(util.WidgetTypeTracklist, a.tracklist)
 	return &s
 }

@@ -127,6 +127,7 @@ func (a *ArtistPage) Save() SavedPage {
 	if a.tracklistCtr != nil {
 		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
 		s.trackSort = tl.Sorting()
+		tl.Clear()
 		a.pool.Release(util.WidgetTypeTracklist, tl)
 	}
 	a.pool.Release(util.WidgetTypeArtistPageHeader, a.header)

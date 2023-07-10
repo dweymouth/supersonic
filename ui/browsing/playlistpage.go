@@ -116,6 +116,7 @@ func (a *PlaylistPage) Save() SavedPage {
 	p := a.playlistPageState
 	p.trackSort = a.tracklist.Sorting()
 	p.widgetPool.Release(util.WidgetTypePlaylistPageHeader, a.header)
+	a.tracklist.Clear()
 	p.widgetPool.Release(util.WidgetTypeTracklist, a.tracklist)
 	return &p
 }

@@ -151,6 +151,7 @@ func (t *TracksPage) CreateRenderer() fyne.WidgetRenderer {
 
 func (t *TracksPage) Save() SavedPage {
 	t.loader.Dispose()
+	t.tracklist.Clear()
 	t.widgetPool.Release(util.WidgetTypeTracklist, t.tracklist)
 	state := t.tracksPageState
 	return &state
