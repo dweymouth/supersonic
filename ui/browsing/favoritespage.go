@@ -60,8 +60,14 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, pool *util.WidgetPool, c
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(0)
-	iter := mp.IterateAlbums("", a.filter)
-	a.grid = widgets.NewGridView(widgets.NewGridViewAlbumIterator(iter), a.im, myTheme.AlbumIcon)
+	iter := widgets.NewGridViewAlbumIterator(mp.IterateAlbums("", a.filter))
+	if g := pool.Obtain(util.WidgetTypeGridView); g != nil {
+		a.grid = g.(*widgets.GridView)
+		a.grid.Placeholder = myTheme.AlbumIcon
+		a.grid.Reset(iter)
+	} else {
+		a.grid = widgets.NewGridView(iter, a.im, myTheme.AlbumIcon)
+	}
 	a.contr.ConnectAlbumGridActions(a.grid)
 	if cfg.InitialView == "Artists" {
 		a.toggleBtns.SetActivatedButton(1)
@@ -119,7 +125,13 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	if saved.searchText != "" {
 		state = saved.searchGridState
 	}
-	a.grid = widgets.NewGridViewFromState(state)
+	if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
+		a.grid = g.(*widgets.GridView)
+		a.grid.Placeholder = myTheme.AlbumIcon
+		a.grid.ResetFromState(state)
+	} else {
+		a.grid = widgets.NewGridViewFromState(state)
+	}
 	a.toggleBtns.SetActivatedButton(saved.activeToggleBtn)
 
 	if saved.activeToggleBtn == 1 {
@@ -202,6 +214,12 @@ func (a *FavoritesPage) Save() SavedPage {
 		sf.searchGridState = a.grid.SaveToState()
 	} else {
 		sf.gridState = a.grid.SaveToState()
+	}
+	a.grid.Clear()
+	a.pool.Release(util.WidgetTypeGridView, a.grid)
+	if a.artistGrid != nil {
+		a.artistGrid.Clear()
+		a.pool.Release(util.WidgetTypeGridView, a.artistGrid)
 	}
 	if a.tracklistCtr != nil {
 		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
@@ -286,7 +304,13 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				return
 			}
 			model := buildArtistGridViewModel(fav.Artists)
-			a.artistGrid = widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
+			if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
+				a.artistGrid = g.(*widgets.GridView)
+				a.artistGrid.Placeholder = myTheme.ArtistIcon
+				a.artistGrid.ResetFixed(model)
+			} else {
+				a.artistGrid = widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
+			}
 			a.contr.ConnectArtistGridActions(a.artistGrid)
 			a.container.Objects[0] = a.artistGrid
 			a.Refresh()
