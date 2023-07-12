@@ -23,10 +23,16 @@ type coverImage struct {
 
 	Im                *ImagePlaceholder
 	playbtn           *canvas.Image
+	mouseInsideBtn    bool
 	OnPlay            func()
 	OnShowPage        func()
 	OnShowContextMenu func(fyne.Position)
 }
+
+var (
+	playBtnSize        = fyne.NewSize(60, 60)
+	playBtnHoveredSize = fyne.NewSize(65, 65)
+)
 
 func newCoverImage(placeholderResource fyne.Resource) *coverImage {
 	c := &coverImage{}
@@ -35,7 +41,7 @@ func newCoverImage(placeholderResource fyne.Resource) *coverImage {
 	c.Im.OnTappedSecondary = c.TappedSecondary
 	c.Im.ScaleMode = canvas.ImageScaleFastest
 	c.playbtn = &canvas.Image{FillMode: canvas.ImageFillContain, Resource: res.ResPlaybuttonPng}
-	c.playbtn.SetMinSize(fyne.NewSize(60, 60))
+	c.playbtn.SetMinSize(playBtnSize)
 	c.playbtn.Hidden = true
 	c.ExtendBaseWidget(c)
 	return c
@@ -75,17 +81,25 @@ func (a *coverImage) MouseIn(*desktop.MouseEvent) {
 }
 
 func (a *coverImage) MouseOut() {
+	a.mouseInsideBtn = false
 	a.playbtn.Hidden = true
 	a.Refresh()
 }
 
 func (a *coverImage) MouseMoved(e *desktop.MouseEvent) {
 	if isInside(a.center(), a.playbtn.MinSize().Height/2, e.Position) {
-		a.playbtn.SetMinSize(fyne.NewSize(65, 65))
+		if !a.mouseInsideBtn {
+			a.playbtn.SetMinSize(playBtnHoveredSize)
+			a.playbtn.Refresh()
+		}
+		a.mouseInsideBtn = true
 	} else {
-		a.playbtn.SetMinSize(fyne.NewSize(60, 60))
+		if a.mouseInsideBtn {
+			a.playbtn.SetMinSize(playBtnSize)
+			a.playbtn.Refresh()
+		}
+		a.mouseInsideBtn = false
 	}
-	a.Refresh()
 }
 
 func (a *coverImage) center() fyne.Position {
@@ -94,6 +108,12 @@ func (a *coverImage) center() fyne.Position {
 
 func (a *coverImage) SetImage(im image.Image) {
 	a.Im.SetImage(im, true)
+}
+
+func (a *coverImage) ResetPlayButton() {
+	a.playbtn.SetMinSize(playBtnSize)
+	a.mouseInsideBtn = false
+	a.playbtn.Hidden = true
 }
 
 func isInside(origin fyne.Position, radius float32, point fyne.Position) bool {
@@ -188,7 +208,7 @@ func (g *GridViewItem) Update(model GridViewItemModel) {
 	g.secondaryText.SetText(model.Secondary)
 	g.secondaryText.Disabled = model.SecondaryID == ""
 	g.secondaryText.Refresh()
-	g.Cover.playbtn.Hidden = true
+	g.Cover.ResetPlayButton()
 }
 
 func (g *GridViewItem) ItemID() string {
