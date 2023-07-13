@@ -18,8 +18,9 @@ var (
 	_ types.OrgMprisMediaPlayer2Adapter       = (*MPRISHandler)(nil)
 	_ types.OrgMprisMediaPlayer2PlayerAdapter = (*MPRISHandler)(nil)
 )
+
 var (
-	notImplemented = errors.New("not implemented")
+	errNotImplemented = errors.New("not implemented")
 )
 
 type MPRISHandler struct {
@@ -33,6 +34,7 @@ type MPRISHandler struct {
 	// Function to look up the artwork URL for a given track ID
 	ArtURLLookup func(trackID string) (string, error)
 
+	connErr    error
 	playerName string
 	p          *player.Player
 	pm         *PlaybackManager
@@ -41,19 +43,25 @@ type MPRISHandler struct {
 }
 
 func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *MPRISHandler {
-	m := &MPRISHandler{playerName: playerName, p: p, pm: pm}
+	m := &MPRISHandler{playerName: playerName, p: p, pm: pm, connErr: errors.New("not started")}
 	m.s = server.NewServer(playerName, m, m)
 	m.evt = events.NewEventHandler(m.s)
 
 	m.p.OnSeek(func() {
-		pos := secondsToMicroseconds(m.p.GetStatus().TimePos)
-		m.evt.Player.OnSeek(pos)
+		if m.connErr == nil {
+			pos := secondsToMicroseconds(m.p.GetStatus().TimePos)
+			m.evt.Player.OnSeek(pos)
+		}
 	})
 	m.pm.OnSongChange(func(_, _ *mediaprovider.Track) {
-		m.evt.Player.OnTitle()
+		if m.connErr == nil {
+			m.evt.Player.OnTitle()
+		}
 	})
 	emitPlayStatus := func() {
-		m.evt.Player.OnPlayPause()
+		if m.connErr == nil {
+			m.evt.Player.OnPlayPause()
+		}
 	}
 	m.p.OnStopped(emitPlayStatus)
 	m.p.OnPlaying(emitPlayStatus)
@@ -64,12 +72,19 @@ func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *
 
 // Starts listening for MPRIS events.
 func (m *MPRISHandler) Start() {
-	go m.s.Listen()
+	m.connErr = nil
+	go func() {
+		// exits early with err if unable to establish D-Bus connection
+		m.connErr = m.s.Listen()
+	}()
 }
 
 // Stops listening for MPRIS events and releases any D-Bus resources.
 func (m *MPRISHandler) Shutdown() {
-	m.s.Stop()
+	if m.connErr == nil {
+		m.s.Stop()
+		m.connErr = errors.New("stopped")
+	}
 }
 
 // OrgMprisMediaPlayer2Adapter implementation
@@ -152,11 +167,11 @@ func (m *MPRISHandler) Seek(offset types.Microseconds) error {
 }
 
 func (m *MPRISHandler) SetPosition(trackId string, position types.Microseconds) error {
-	return notImplemented
+	return errNotImplemented
 }
 
 func (m *MPRISHandler) OpenUri(uri string) error {
-	return notImplemented
+	return errNotImplemented
 }
 
 func (m *MPRISHandler) PlaybackStatus() (types.PlaybackStatus, error) {
@@ -176,7 +191,7 @@ func (m *MPRISHandler) Rate() (float64, error) {
 }
 
 func (m *MPRISHandler) SetRate(float64) error {
-	return notImplemented
+	return errNotImplemented
 }
 
 func (m *MPRISHandler) Metadata() (types.Metadata, error) {
@@ -214,7 +229,7 @@ func (m *MPRISHandler) Volume() (float64, error) {
 }
 
 func (m *MPRISHandler) SetVolume(float64) error {
-	return notImplemented
+	return errNotImplemented
 }
 
 func (m *MPRISHandler) Position() (int64, error) {
