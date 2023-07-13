@@ -17,6 +17,14 @@ const (
 	ReplayGainTrack = string(player.ReplayGainTrack)
 )
 
+type LoopMode int
+
+const (
+	LoopModeNone LoopMode = LoopMode(player.LoopNone)
+	LoopModeAll  LoopMode = LoopMode(player.LoopAll)
+	LoopModeOne  LoopMode = LoopMode(player.LoopOne)
+)
+
 // A high-level Subsonic-aware playback backend.
 // Manages loading tracks into the Player queue,
 // sending callbacks on play time updates and track changes.
@@ -40,7 +48,7 @@ type PlaybackManager struct {
 
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
-	onLoopModeChange []func(string)
+	onLoopModeChange []func(LoopMode)
 }
 
 func NewPlaybackManager(
@@ -130,7 +138,7 @@ func (p *PlaybackManager) OnPlayTimeUpdate(cb func(float64, float64)) {
 }
 
 // Registers a callback that is notified whenever the loop mode changes.
-func (p *PlaybackManager) OnLoopModeChange(cb func(string)) {
+func (p *PlaybackManager) OnLoopModeChange(cb func(LoopMode)) {
 	p.onLoopModeChange = append(p.onLoopModeChange, cb)
 }
 
@@ -305,10 +313,26 @@ func (p *PlaybackManager) SetNextLoopMode() error {
 	}
 
 	for _, cb := range p.onLoopModeChange {
-		cb(p.player.GetLoopMode().String())
+		cb(LoopMode(p.player.GetLoopMode()))
 	}
 
 	return nil
+}
+
+func (p *PlaybackManager) SetLoopMode(loopMode LoopMode) error {
+	if err := p.player.SetLoopMode(player.LoopMode(loopMode)); err != nil {
+		return err
+	}
+
+	for _, cb := range p.onLoopModeChange {
+		cb(loopMode)
+	}
+
+	return nil
+}
+
+func (p *PlaybackManager) LoopMode() LoopMode {
+	return LoopMode(p.player.GetLoopMode())
 }
 
 // call BEFORE updating p.nowPlayingIdx

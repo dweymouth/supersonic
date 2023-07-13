@@ -15,8 +15,9 @@ import (
 const dbusTrackIDPrefix = "/Supersonic/Track/"
 
 var (
-	_ types.OrgMprisMediaPlayer2Adapter       = (*MPRISHandler)(nil)
-	_ types.OrgMprisMediaPlayer2PlayerAdapter = (*MPRISHandler)(nil)
+	_ types.OrgMprisMediaPlayer2Adapter                 = (*MPRISHandler)(nil)
+	_ types.OrgMprisMediaPlayer2PlayerAdapter           = (*MPRISHandler)(nil)
+	_ types.OrgMprisMediaPlayer2PlayerAdapterLoopStatus = (*MPRISHandler)(nil)
 )
 
 var (
@@ -184,6 +185,30 @@ func (m *MPRISHandler) PlaybackStatus() (types.PlaybackStatus, error) {
 		return types.PlaybackStatusStopped, nil
 	}
 	return "", errors.New("unknown playback status")
+}
+
+func (m *MPRISHandler) LoopStatus() (types.LoopStatus, error) {
+	switch m.pm.LoopMode() {
+	case LoopModeAll:
+		return types.LoopStatusPlaylist, nil
+	case LoopModeOne:
+		return types.LoopStatusTrack, nil
+	case LoopModeNone:
+		return types.LoopStatusNone, nil
+	}
+	return "", errors.New("unknown loop status")
+}
+
+func (m *MPRISHandler) SetLoopStatus(status types.LoopStatus) error {
+	switch status {
+	case types.LoopStatusPlaylist:
+		return m.pm.SetLoopMode(LoopModeAll)
+	case types.LoopStatusTrack:
+		return m.pm.SetLoopMode(LoopModeOne)
+	case types.LoopStatusNone:
+		return m.pm.SetLoopMode(LoopModeNone)
+	}
+	return errors.New("unknown loop status")
 }
 
 func (m *MPRISHandler) Rate() (float64, error) {

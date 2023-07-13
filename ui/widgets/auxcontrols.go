@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/dweymouth/supersonic/backend"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
@@ -67,14 +68,15 @@ func (a *AuxControls) OnChangeLoopMode(f func()) {
 	a.loop.OnTapped = f
 }
 
-func (a *AuxControls) SetLoopMode(mode string) {
-	if mode == "all" {
+func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
+	switch mode {
+	case backend.LoopModeAll:
 		a.loop.Importance = widget.HighImportance
 		a.loop.Icon = myTheme.RepeatIcon
-	} else if mode == "one" {
+	case backend.LoopModeOne:
 		a.loop.Importance = widget.HighImportance
 		a.loop.Icon = myTheme.RepeatOneIcon
-	} else {
+	case backend.LoopModeNone:
 		a.loop.Importance = widget.MediumImportance
 		a.loop.Icon = myTheme.RepeatIcon
 	}
