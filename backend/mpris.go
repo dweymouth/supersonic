@@ -44,19 +44,21 @@ func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *
 	m := &MPRISHandler{playerName: playerName, p: p, pm: pm}
 	m.s = server.NewServer(playerName, m, m)
 	m.evt = events.NewEventHandler(m.s)
-	/*
-		m.p.OnSeek(func() {
-			pos := secondsToMicroseconds(m.p.GetStatus().TimePos)
-			m.evt.Player.OnSeek(pos)
-		})
-		m.pm.OnSongChange(func(_, _ *mediaprovider.Track) {
-			m.evt.Player.OnTitle()
-		})
-		emitPlayStatus := func() { m.evt.Player.OnPlayPause() }
-		m.p.OnStopped(emitPlayStatus)
-		m.p.OnPlaying(emitPlayStatus)
-		m.p.OnPaused(emitPlayStatus)
-	*/
+
+	m.p.OnSeek(func() {
+		pos := secondsToMicroseconds(m.p.GetStatus().TimePos)
+		m.evt.Player.OnSeek(pos)
+	})
+	m.pm.OnSongChange(func(_, _ *mediaprovider.Track) {
+		m.evt.Player.OnTitle()
+	})
+	emitPlayStatus := func() {
+		m.evt.Player.OnPlayPause()
+	}
+	m.p.OnStopped(emitPlayStatus)
+	m.p.OnPlaying(emitPlayStatus)
+	m.p.OnPaused(emitPlayStatus)
+
 	return m
 }
 
@@ -189,7 +191,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	}
 	var artURL string
 	if tr.ID != "" && m.ArtURLLookup != nil {
-		if u, err := m.ArtURLLookup(tr.ID); err == nil {
+		if u, err := m.ArtURLLookup(tr.CoverArtID); err == nil {
 			artURL = u
 		}
 	}
