@@ -75,7 +75,9 @@ type GridView struct {
 	fetchCancel context.CancelFunc
 	GridViewState
 
-	grid *xwidget.GridWrap
+	grid               *xwidget.GridWrap
+	menu               *widget.PopUpMenu
+	menuGridViewItemId string
 }
 
 type GridViewState struct {
@@ -214,16 +216,7 @@ func (g *GridView) createGridWrap() {
 		// create func
 		func() fyne.CanvasObject {
 			card := NewGridViewItem(g.Placeholder)
-			card.OnPlay = func(shuffle bool) {
-				if g.OnPlay != nil {
-					g.OnPlay(card.ItemID(), shuffle)
-				}
-			}
-			card.OnAddToQueue = func() {
-				if g.OnAddToQueue != nil {
-					g.OnAddToQueue(card.ItemID())
-				}
-			}
+			card.OnPlay = func() { g.onPlay(card.ItemID(), false) }
 			card.OnShowSecondaryPage = func() {
 				if g.OnShowSecondaryPage != nil {
 					g.OnShowSecondaryPage(card.SecondaryID())
@@ -234,15 +227,8 @@ func (g *GridView) createGridWrap() {
 					g.OnShowItemPage(card.ItemID())
 				}
 			}
-			card.OnAddToPlaylist = func() {
-				if g.OnAddToPlaylist != nil {
-					g.OnAddToPlaylist(card.ItemID())
-				}
-			}
-			card.OnDownload = func() {
-				if g.OnDownload != nil {
-					g.OnDownload(card.ItemID())
-				}
+			card.OnShowContextMenu = func(p fyne.Position) {
+				g.showContextMenu(card, p)
 			}
 			return card
 		},
@@ -351,6 +337,38 @@ func (g *GridView) fetchMoreItems(count int) {
 		}
 		g.fetchCancel = nil
 	}()
+}
+
+func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
+	g.menuGridViewItemId = card.ItemID()
+	if g.menu == nil {
+		g.menu = widget.NewPopUpMenu(fyne.NewMenu("",
+			fyne.NewMenuItem("Play", func() { g.onPlay(g.menuGridViewItemId, false) }),
+			fyne.NewMenuItem("Shuffle", func() { g.onPlay(g.menuGridViewItemId, true) }),
+			fyne.NewMenuItem("Add to queue", func() {
+				if g.OnAddToQueue != nil {
+					g.OnAddToQueue(g.menuGridViewItemId)
+				}
+			}),
+			fyne.NewMenuItem("Add to playlist...", func() {
+				if g.OnAddToPlaylist != nil {
+					g.OnAddToPlaylist(g.menuGridViewItemId)
+				}
+			}),
+			fyne.NewMenuItem("Download...", func() {
+				if g.OnDownload != nil {
+					g.OnDownload(g.menuGridViewItemId)
+				}
+			})),
+			fyne.CurrentApp().Driver().CanvasForObject(g))
+	}
+	g.menu.ShowAtPosition(pos)
+}
+
+func (g *GridView) onPlay(itemID string, shuffle bool) {
+	if g.OnPlay != nil {
+		g.OnPlay(itemID, false)
+	}
 }
 
 func (g *GridView) CreateRenderer() fyne.WidgetRenderer {

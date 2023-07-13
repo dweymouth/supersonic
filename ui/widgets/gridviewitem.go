@@ -136,7 +136,6 @@ type GridViewItem struct {
 	secondaryID   string
 	primaryText   *CustomHyperlink
 	secondaryText *CustomHyperlink
-	menu          *widget.PopUpMenu
 	container     *fyne.Container
 
 	// updated by GridView
@@ -146,10 +145,8 @@ type GridViewItem struct {
 	PrevID        string
 	ImgLoadCancel context.CancelFunc
 
-	OnPlay              func(shuffle bool)
-	OnAddToQueue        func()
-	OnAddToPlaylist     func()
-	OnDownload          func()
+	OnPlay              func()
+	OnShowContextMenu   func(fyne.Position)
 	OnShowItemPage      func()
 	OnShowSecondaryPage func()
 }
@@ -162,8 +159,16 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	}
 	g.primaryText.SetTextStyle(fyne.TextStyle{Bold: true})
 	g.ExtendBaseWidget(g)
-	g.Cover.OnPlay = func() { g.onPlay(false) }
-	g.Cover.OnShowContextMenu = g.showContextMenu
+	g.Cover.OnPlay = func() {
+		if g.OnPlay != nil {
+			g.OnPlay()
+		}
+	}
+	g.Cover.OnShowContextMenu = func(pos fyne.Position) {
+		if g.OnShowContextMenu != nil {
+			g.OnShowContextMenu(pos)
+		}
+	}
 	showItemFn := func() {
 		if g.OnShowItemPage != nil {
 			g.OnShowItemPage()
@@ -186,19 +191,6 @@ func (g *GridViewItem) createContainer() {
 	c := container.New(&layouts.VboxCustomPadding{ExtraPad: -5}, g.Cover, info)
 	pad := &layouts.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
 	g.container = container.New(pad, c)
-}
-
-func (g *GridViewItem) showContextMenu(pos fyne.Position) {
-	if g.menu == nil {
-		g.menu = widget.NewPopUpMenu(fyne.NewMenu("",
-			fyne.NewMenuItem("Play", func() { g.onPlay(false) }),
-			fyne.NewMenuItem("Shuffle", func() { g.onPlay(true) }),
-			fyne.NewMenuItem("Add to queue", g.onAddToQueue),
-			fyne.NewMenuItem("Add to playlist...", g.onAddToPlaylist),
-			fyne.NewMenuItem("Download...", g.onDownload)),
-			fyne.CurrentApp().Driver().CanvasForObject(g))
-	}
-	g.menu.ShowAtPosition(pos)
 }
 
 func (g *GridViewItem) Update(model GridViewItemModel) {
@@ -225,28 +217,4 @@ func (g *GridViewItem) SecondaryID() string {
 
 func (g *GridViewItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.container)
-}
-
-func (g *GridViewItem) onPlay(shuffle bool) {
-	if g.OnPlay != nil {
-		g.OnPlay(shuffle)
-	}
-}
-
-func (g *GridViewItem) onAddToQueue() {
-	if g.OnAddToQueue != nil {
-		g.OnAddToQueue()
-	}
-}
-
-func (g *GridViewItem) onAddToPlaylist() {
-	if g.OnAddToPlaylist != nil {
-		g.OnAddToPlaylist()
-	}
-}
-
-func (g *GridViewItem) onDownload() {
-	if g.OnDownload != nil {
-		g.OnDownload()
-	}
 }
