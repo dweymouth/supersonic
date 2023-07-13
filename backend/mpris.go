@@ -59,6 +59,11 @@ func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *
 			m.evt.Player.OnTitle()
 		}
 	})
+	m.pm.OnVolumeChange(func(vol int) {
+		if m.connErr == nil {
+			m.evt.Player.OnVolume()
+		}
+	})
 	emitPlayStatus := func() {
 		if m.connErr == nil {
 			m.evt.Player.OnPlayPause()
@@ -253,8 +258,8 @@ func (m *MPRISHandler) Volume() (float64, error) {
 	return float64(m.p.GetVolume()) / 100, nil
 }
 
-func (m *MPRISHandler) SetVolume(float64) error {
-	return errNotImplemented
+func (m *MPRISHandler) SetVolume(v float64) error {
+	return m.pm.SetVolume(int(v * 100))
 }
 
 func (m *MPRISHandler) Position() (int64, error) {

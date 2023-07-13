@@ -54,9 +54,7 @@ func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, contr *contro
 	p.OnStopped(func() {
 		bp.Controls.SetPlaying(false)
 	})
-	pm.OnLoopModeChange(func(mode backend.LoopMode) {
-		bp.AuxControls.SetLoopMode(mode)
-	})
+	pm.OnLoopModeChange(bp.AuxControls.SetLoopMode)
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
 	bp.NowPlaying.OnShowCoverImage = func() {
@@ -100,8 +98,9 @@ func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, contr *contro
 	})
 
 	bp.AuxControls = widgets.NewAuxControls(p.GetVolume())
-	bp.AuxControls.VolumeControl.OnVolumeChanged = func(v int) {
-		_ = p.SetVolume(v)
+	pm.OnVolumeChange(bp.AuxControls.VolumeControl.SetVolume)
+	bp.AuxControls.VolumeControl.OnSetVolume = func(v int) {
+		_ = bp.playbackManager.SetVolume(v)
 	}
 	bp.AuxControls.OnChangeLoopMode(func() {
 		bp.playbackManager.SetNextLoopMode()

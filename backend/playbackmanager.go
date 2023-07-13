@@ -49,6 +49,7 @@ type PlaybackManager struct {
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
 	onLoopModeChange []func(LoopMode)
+	onVolumeChange   []func(int)
 }
 
 func NewPlaybackManager(
@@ -140,6 +141,11 @@ func (p *PlaybackManager) OnPlayTimeUpdate(cb func(float64, float64)) {
 // Registers a callback that is notified whenever the loop mode changes.
 func (p *PlaybackManager) OnLoopModeChange(cb func(LoopMode)) {
 	p.onLoopModeChange = append(p.onLoopModeChange, cb)
+}
+
+// Registers a callback that is notified whenever the volume changes.
+func (p *PlaybackManager) OnVolumeChange(cb func(int)) {
+	p.onVolumeChange = append(p.onVolumeChange, cb)
 }
 
 // Loads the specified album into the play queue.
@@ -333,6 +339,21 @@ func (p *PlaybackManager) SetLoopMode(loopMode LoopMode) error {
 
 func (p *PlaybackManager) LoopMode() LoopMode {
 	return LoopMode(p.player.GetLoopMode())
+}
+
+func (p *PlaybackManager) SetVolume(vol int) error {
+	vol = clamp(vol, 0, 100)
+	if err := p.player.SetVolume(vol); err != nil {
+		return err
+	}
+	for _, cb := range p.onVolumeChange {
+		cb(vol)
+	}
+	return nil
+}
+
+func (p *PlaybackManager) Volume() int {
+	return p.player.GetVolume()
 }
 
 // call BEFORE updating p.nowPlayingIdx

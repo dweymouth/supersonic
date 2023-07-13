@@ -163,15 +163,15 @@ func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
 			}),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Volume +10%", func() {
-				vol := m.App.Player.GetVolume()
+				vol := m.App.PlaybackManager.Volume()
 				vol = vol + int(float64(vol)*0.1)
 				// will clamp to range for us
-				m.BottomPanel.AuxControls.VolumeControl.SetVolume(vol)
+				m.App.PlaybackManager.SetVolume(vol)
 			}),
 			fyne.NewMenuItem("Volume -10%", func() {
-				vol := m.App.Player.GetVolume()
+				vol := m.App.PlaybackManager.Volume()
 				vol = vol - int(float64(vol)*0.1)
-				m.BottomPanel.AuxControls.VolumeControl.SetVolume(vol)
+				m.App.PlaybackManager.SetVolume(vol)
 			}),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Show", m.Window.Show),
