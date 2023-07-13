@@ -7,6 +7,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -34,18 +35,26 @@ type TracksPage struct {
 
 type tracksPageState struct {
 	searchText string
+	widgetPool *util.WidgetPool
 	contr      *controller.Controller
 	conf       *backend.TracksPageConfig
 	mp         mediaprovider.MediaProvider
 }
 
-func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, mp mediaprovider.MediaProvider) *TracksPage {
-	t := &TracksPage{tracksPageState: tracksPageState{contr: contr, conf: conf, mp: mp}}
+func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, pool *util.WidgetPool, mp mediaprovider.MediaProvider) *TracksPage {
+	t := &TracksPage{tracksPageState: tracksPageState{contr: contr, conf: conf, widgetPool: pool, mp: mp}}
 	t.ExtendBaseWidget(t)
 
-	t.tracklist = widgets.NewTracklist(nil)
-	t.tracklist.DisableSorting = true
-	t.tracklist.AutoNumber = true
+	if tl := t.widgetPool.Obtain(util.WidgetTypeTracklist); tl != nil {
+		t.tracklist = tl.(*widgets.Tracklist)
+		t.tracklist.Reset()
+	} else {
+		t.tracklist = widgets.NewTracklist(nil)
+	}
+	t.tracklist.Options = widgets.TracklistOptions{
+		DisableSorting: true,
+		AutoNumber:     true,
+	}
 	t.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	t.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		t.conf.TracklistColumns = cols
@@ -119,7 +128,7 @@ func (t *TracksPage) OnSearched(query string) {
 func (t *TracksPage) doSearch(query string) {
 	if t.searchTracklist == nil {
 		t.searchTracklist = widgets.NewTracklist(nil)
-		t.searchTracklist.AutoNumber = true
+		t.searchTracklist.Options = widgets.TracklistOptions{AutoNumber: true}
 		t.searchTracklist.SetVisibleColumns(t.conf.TracklistColumns)
 		t.searchTracklist.SetNowPlaying(t.nowPlayingID)
 		t.searchTracklist.OnVisibleColumnsChanged = func(cols []string) {
@@ -141,12 +150,15 @@ func (t *TracksPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (t *TracksPage) Save() SavedPage {
+	t.loader.Dispose()
+	t.tracklist.Clear()
+	t.widgetPool.Release(util.WidgetTypeTracklist, t.tracklist)
 	state := t.tracksPageState
 	return &state
 }
 
 func (s *tracksPageState) Restore() Page {
-	t := NewTracksPage(s.contr, s.conf, s.mp)
+	t := NewTracksPage(s.contr, s.conf, s.widgetPool, s.mp)
 	t.searchText = s.searchText
 	if t.searchText != "" {
 		t.searcher.Entry.Text = t.searchText

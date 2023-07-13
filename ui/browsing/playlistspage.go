@@ -13,6 +13,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -25,6 +26,7 @@ import (
 type PlaylistsPage struct {
 	widget.BaseWidget
 
+	pool              *util.WidgetPool
 	cfg               *backend.PlaylistsPageConfig
 	contr             *controller.Controller
 	mp                mediaprovider.MediaProvider
@@ -39,16 +41,17 @@ type PlaylistsPage struct {
 	gridView   *widgets.GridView
 }
 
-func NewPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider) *PlaylistsPage {
+func NewPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider) *PlaylistsPage {
 	activeView := 0
 	if cfg.InitialView == "Grid" {
 		activeView = 1
 	}
-	return newPlaylistsPage(contr, cfg, mp, "", activeView)
+	return newPlaylistsPage(contr, pool, cfg, mp, "", activeView)
 }
 
-func newPlaylistsPage(contr *controller.Controller, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider, searchText string, activeView int) *PlaylistsPage {
+func newPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider, searchText string, activeView int) *PlaylistsPage {
 	a := &PlaylistsPage{
+		pool:      pool,
 		cfg:       cfg,
 		mp:        mp,
 		contr:     contr,
@@ -95,7 +98,13 @@ func (a *PlaylistsPage) createListView() {
 
 func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 	model := createPlaylistGridViewModel(playlists)
-	a.gridView = widgets.NewFixedGridView(model, a.contr.App.ImageManager, myTheme.PlaylistIcon)
+	if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
+		a.gridView = g.(*widgets.GridView)
+		a.gridView.Placeholder = myTheme.PlaylistIcon
+		a.gridView.ResetFixed(model)
+	} else {
+		a.gridView = widgets.NewFixedGridView(model, a.contr.App.ImageManager, myTheme.PlaylistIcon)
+	}
 	a.gridView.OnPlay = func(id string, shuffle bool) {
 		go a.contr.App.PlaybackManager.PlayPlaylist(id, 0, shuffle)
 	}
@@ -103,6 +112,7 @@ func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 		go a.contr.App.PlaybackManager.LoadPlaylist(id, true, false)
 	}
 	a.gridView.OnShowItemPage = a.showPlaylistPage
+	a.gridView.OnShowSecondaryPage = nil
 	a.gridView.OnAddToPlaylist = func(id string) {
 		go func() {
 			pl, err := a.contr.App.ServerManager.Server.GetPlaylist(id)
@@ -221,17 +231,24 @@ func (a *PlaylistsPage) Reload() {
 }
 
 func (a *PlaylistsPage) Save() SavedPage {
-	return &savedPlaylistsPage{
+	s := &savedPlaylistsPage{
 		contr:      a.contr,
+		pool:       a.pool,
 		cfg:        a.cfg,
 		mp:         a.mp,
 		searchText: a.searcher.Entry.Text,
 		activeView: a.viewToggle.ActivatedButtonIndex(),
 	}
+	if a.gridView != nil {
+		a.gridView.Clear()
+		a.pool.Release(util.WidgetTypeGridView, a.gridView)
+	}
+	return s
 }
 
 type savedPlaylistsPage struct {
 	contr      *controller.Controller
+	pool       *util.WidgetPool
 	cfg        *backend.PlaylistsPageConfig
 	mp         mediaprovider.MediaProvider
 	searchText string
@@ -239,7 +256,7 @@ type savedPlaylistsPage struct {
 }
 
 func (s *savedPlaylistsPage) Restore() Page {
-	return newPlaylistsPage(s.contr, s.cfg, s.mp, s.searchText, s.activeView)
+	return newPlaylistsPage(s.contr, s.pool, s.cfg, s.mp, s.searchText, s.activeView)
 }
 
 func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {

@@ -71,6 +71,8 @@ func NewGridViewAlbumIterator(iter mediaprovider.AlbumIterator) GridViewIterator
 type GridView struct {
 	widget.BaseWidget
 
+	stateMutex  sync.RWMutex
+	fetchCancel context.CancelFunc
 	GridViewState
 
 	grid *xwidget.GridWrap
@@ -78,12 +80,10 @@ type GridView struct {
 
 type GridViewState struct {
 	items        []GridViewItemModel
-	itemsMutex   sync.RWMutex
 	iter         GridViewIterator
 	imageFetcher ImageFetcher
-	placeholder  fyne.Resource
+	Placeholder  fyne.Resource
 	highestShown int
-	fetchCancel  context.CancelFunc
 	done         bool
 
 	OnPlay              func(id string, shuffle bool)
@@ -104,7 +104,7 @@ func NewFixedGridView(items []GridViewItemModel, fetch ImageFetcher, placeholder
 			items:        items,
 			done:         true,
 			imageFetcher: fetch,
-			placeholder:  placeholder,
+			Placeholder:  placeholder,
 		},
 	}
 	g.ExtendBaseWidget(g)
@@ -117,7 +117,7 @@ func NewGridView(iter GridViewIterator, fetch ImageFetcher, placeholder fyne.Res
 		GridViewState: GridViewState{
 			iter:         iter,
 			imageFetcher: fetch,
-			placeholder:  placeholder,
+			Placeholder:  placeholder,
 		},
 	}
 	g.ExtendBaseWidget(g)
@@ -128,14 +128,16 @@ func NewGridView(iter GridViewIterator, fetch ImageFetcher, placeholder fyne.Res
 	return g
 }
 
-func (g *GridView) SaveToState() GridViewState {
+func (g *GridView) SaveToState() *GridViewState {
+	g.stateMutex.RLock()
 	s := g.GridViewState
+	g.stateMutex.RUnlock()
 	s.scrollPos = g.grid.GetScrollOffset()
-	return s
+	return &s
 }
 
-func NewGridViewFromState(state GridViewState) *GridView {
-	g := &GridView{GridViewState: state}
+func NewGridViewFromState(state *GridViewState) *GridView {
+	g := &GridView{GridViewState: *state}
 	g.ExtendBaseWidget(g)
 	g.createGridWrap()
 	g.Refresh() // needed to initialize the widget
@@ -144,8 +146,12 @@ func NewGridViewFromState(state GridViewState) *GridView {
 }
 
 func (g *GridView) Clear() {
-	g.itemsMutex.Lock()
-	defer g.itemsMutex.Unlock()
+	if g.fetchCancel != nil {
+		g.fetchCancel()
+		g.fetchCancel = nil
+	}
+	g.stateMutex.Lock()
+	defer g.stateMutex.Unlock()
 	g.items = nil
 	g.done = true
 }
@@ -155,13 +161,27 @@ func (g *GridView) Reset(iter GridViewIterator) {
 		g.fetchCancel()
 		g.fetchCancel = nil
 	}
-	g.itemsMutex.Lock()
+	g.stateMutex.Lock()
 	g.items = nil
 	g.done = false
 	g.highestShown = 0
 	g.iter = iter
-	g.itemsMutex.Unlock()
+	g.stateMutex.Unlock()
 	g.fetchMoreItems(36)
+	g.Refresh()
+}
+
+func (g *GridView) ResetFromState(state *GridViewState) {
+	if g.fetchCancel != nil {
+		g.fetchCancel()
+		g.fetchCancel = nil
+	}
+	g.stateMutex.Lock()
+	g.GridViewState = *state
+	g.stateMutex.Unlock()
+	g.grid.Refresh()
+	g.grid.ScrollToOffset(state.scrollPos)
+	g.grid.Refresh()
 }
 
 func (g *GridView) ResetFixed(items []GridViewItemModel) {
@@ -169,12 +189,13 @@ func (g *GridView) ResetFixed(items []GridViewItemModel) {
 		g.fetchCancel()
 		g.fetchCancel = nil
 	}
-	g.itemsMutex.Lock()
+	g.stateMutex.Lock()
 	g.items = items
-	g.itemsMutex.Unlock()
 	g.done = true
 	g.highestShown = 0
 	g.iter = nil
+	g.stateMutex.Unlock()
+	g.Refresh()
 }
 
 func (g *GridView) GetScrollOffset() float32 {
@@ -192,7 +213,7 @@ func (g *GridView) createGridWrap() {
 		},
 		// create func
 		func() fyne.CanvasObject {
-			card := NewGridViewItem(g.placeholder)
+			card := NewGridViewItem(g.Placeholder)
 			card.OnPlay = func(shuffle bool) {
 				if g.OnPlay != nil {
 					g.OnPlay(card.ItemID(), shuffle)
@@ -220,7 +241,7 @@ func (g *GridView) createGridWrap() {
 			}
 			card.OnDownload = func() {
 				if g.OnDownload != nil {
-					g.OnDownload(card.itemID)
+					g.OnDownload(card.ItemID())
 				}
 			}
 			return card
@@ -238,13 +259,14 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 		g.highestShown = itemIdx
 	}
 	var item GridViewItemModel
-	g.itemsMutex.RLock()
+	g.stateMutex.RLock()
 	// itemIdx can rarely be out of range if the data is being updated
 	// as the view is requested to refresh
 	if itemIdx < len(g.items) {
 		item = g.items[itemIdx]
 	}
-	g.itemsMutex.RUnlock()
+	g.stateMutex.RUnlock()
+	card.Cover.Im.CenterIcon = g.Placeholder
 	if card.PrevID == item.ID {
 		// nothing to do
 		return
@@ -290,8 +312,8 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 }
 
 func (g *GridView) lenItems() int {
-	g.itemsMutex.RLock()
-	defer g.itemsMutex.RUnlock()
+	g.stateMutex.RLock()
+	defer g.stateMutex.RUnlock()
 	return len(g.items)
 }
 
@@ -314,15 +336,15 @@ func (g *GridView) fetchMoreItems(count int) {
 				case <-ctx.Done():
 					return
 				default:
-					g.itemsMutex.Lock()
+					g.stateMutex.Lock()
 					g.items = append(g.items, items...)
-					g.itemsMutex.Unlock()
+					g.stateMutex.Unlock()
 					if len(items) < batchFetchSize {
 						g.done = true
 					}
 					n += len(items)
 					if len(items) > 0 {
-						g.Refresh()
+						g.grid.Refresh()
 					}
 				}
 			}

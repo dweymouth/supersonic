@@ -28,6 +28,7 @@ type artistPageState struct {
 	activeView int
 	trackSort  widgets.TracklistSort
 
+	pool  *util.WidgetPool
 	cfg   *backend.ArtistPageConfig
 	pm    *backend.PlaybackManager
 	mp    mediaprovider.MediaProvider
@@ -39,6 +40,7 @@ type ArtistPage struct {
 	widget.BaseWidget
 
 	artistPageState
+	disposed bool
 
 	artistInfo *mediaprovider.ArtistWithAlbums
 
@@ -49,18 +51,19 @@ type ArtistPage struct {
 	container    *fyne.Container
 }
 
-func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
+func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.WidgetPool, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
 	activeView := 0
 	if cfg.InitialView == "Top Tracks" {
 		activeView = 1
 	}
-	return newArtistPage(artistID, cfg, pm, mp, im, contr, activeView, widgets.TracklistSort{})
+	return newArtistPage(artistID, cfg, pool, pm, mp, im, contr, activeView, widgets.TracklistSort{})
 }
 
-func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int, sort widgets.TracklistSort) *ArtistPage {
+func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.WidgetPool, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int, sort widgets.TracklistSort) *ArtistPage {
 	a := &ArtistPage{artistPageState: artistPageState{
 		artistID:   artistID,
 		cfg:        cfg,
+		pool:       pool,
 		pm:         pm,
 		mp:         mp,
 		im:         im,
@@ -69,7 +72,14 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pm *backend.P
 		trackSort:  sort,
 	}}
 	a.ExtendBaseWidget(a)
-	a.header = NewArtistPageHeader(a)
+	if h := a.pool.Obtain(util.WidgetTypeArtistPageHeader); h != nil {
+		a.header = h.(*ArtistPageHeader)
+		a.header.artistPage = a
+		a.header.Clear()
+	} else {
+		a.header = NewArtistPageHeader(a)
+	}
+	a.header.artistPage = a
 	if img, ok := im.GetCachedArtistImage(artistID); ok {
 		a.header.artistImage.SetImage(img, true /*tappable*/)
 	}
@@ -112,9 +122,18 @@ func (a *ArtistPage) Reload() {
 }
 
 func (a *ArtistPage) Save() SavedPage {
+	a.disposed = true
 	s := a.artistPageState
 	if a.tracklistCtr != nil {
-		s.trackSort = a.tracklistCtr.Objects[0].(*widgets.Tracklist).Sorting()
+		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		s.trackSort = tl.Sorting()
+		tl.Clear()
+		a.pool.Release(util.WidgetTypeTracklist, tl)
+	}
+	a.pool.Release(util.WidgetTypeArtistPageHeader, a.header)
+	if a.albumGrid != nil {
+		a.albumGrid.Clear()
+		a.pool.Release(util.WidgetTypeGridView, a.albumGrid)
 	}
 	return &s
 }
@@ -139,6 +158,9 @@ func (a *ArtistPage) load() {
 	artist, err := a.mp.GetArtist(a.artistID)
 	if err != nil {
 		log.Printf("Failed to get artist: %s", err.Error())
+		return
+	}
+	if a.disposed {
 		return
 	}
 	a.artistInfo = artist
@@ -170,7 +192,13 @@ func (a *ArtistPage) showAlbumGrid() {
 				Secondary:  strconv.Itoa(al.Year),
 			}
 		})
-		a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
+		if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
+			a.albumGrid = g.(*widgets.GridView)
+			a.albumGrid.Placeholder = myTheme.AlbumIcon
+			a.albumGrid.ResetFixed(model)
+		} else {
+			a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
+		}
 		a.contr.ConnectAlbumGridActions(a.albumGrid)
 	}
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
@@ -189,8 +217,18 @@ func (a *ArtistPage) showTopTracks() {
 			log.Printf("error getting top songs: %s", err.Error())
 			return
 		}
-		tl := widgets.NewTracklist(ts)
-		tl.AutoNumber = true
+		if a.disposed {
+			return
+		}
+		var tl *widgets.Tracklist
+		if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
+			tl = t.(*widgets.Tracklist)
+			tl.Reset()
+			tl.SetTracks(ts)
+		} else {
+			tl = widgets.NewTracklist(ts)
+		}
+		tl.Options = widgets.TracklistOptions{AutoNumber: true}
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
 		tl.SetSorting(a.trackSort)
 		tl.OnVisibleColumnsChanged = func(cols []string) {
@@ -228,8 +266,10 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return newArtistPage(s.artistID, s.cfg, s.pm, s.mp, s.im, s.contr, s.activeView, s.trackSort)
+	return newArtistPage(s.artistID, s.cfg, s.pool, s.pm, s.mp, s.im, s.contr, s.activeView, s.trackSort)
 }
+
+const artistBioNotAvailableStr = "Artist biography not available."
 
 type ArtistPageHeader struct {
 	widget.BaseWidget
@@ -250,7 +290,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a := &ArtistPageHeader{
 		artistPage:     page,
 		titleDisp:      widget.NewRichTextWithText(""),
-		biographyDisp:  widget.NewRichTextWithText("Artist biography not available."),
+		biographyDisp:  widget.NewRichTextWithText(artistBioNotAvailableStr),
 		similarArtists: container.NewHBox(),
 	}
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
@@ -271,6 +311,17 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.ExtendBaseWidget(a)
 	a.createContainer()
 	return a
+}
+
+func (a *ArtistPageHeader) Clear() {
+	a.artistID = ""
+	a.favoriteBtn.IsFavorited = false
+	a.titleDisp.Segments[0].(*widget.TextSegment).Text = ""
+	a.biographyDisp.Segments[0].(*widget.TextSegment).Text = artistBioNotAvailableStr
+	for _, obj := range a.similarArtists.Objects {
+		obj.Hide()
+	}
+	a.artistImage.SetImage(nil, false)
 }
 
 func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums) {
@@ -299,21 +350,29 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 		}
 	}
 
-	a.similarArtists.RemoveAll()
+	if len(a.similarArtists.Objects) == 0 {
+		a.similarArtists.Add(widget.NewLabel("Similar Artists:"))
+	}
+	for _, obj := range a.similarArtists.Objects {
+		obj.Hide()
+	}
 	for i, art := range info.SimilarArtists {
 		if i == 0 {
-			a.similarArtists.Add(widget.NewLabel("Similar Artists:"))
+			a.similarArtists.Objects[0].Show() // "Similar Artists:" label
 		}
 		if i == 4 {
 			break
 		}
-		h := widgets.NewCustomHyperlink()
+		if len(a.similarArtists.Objects) <= i+1 {
+			a.similarArtists.Add(widgets.NewCustomHyperlink())
+		}
+		h := a.similarArtists.Objects[i+1].(*widgets.CustomHyperlink)
 		h.NoTruncate = true
 		h.SetText(art.Name)
 		h.OnTapped = func(id string) func() {
 			return func() { a.artistPage.contr.NavigateTo(controller.ArtistRoute(id)) }
 		}(art.ID)
-		a.similarArtists.Add(h)
+		h.Show()
 	}
 	a.similarArtists.Refresh()
 

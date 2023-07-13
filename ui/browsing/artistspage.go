@@ -23,6 +23,7 @@ type ArtistsPage struct {
 	widget.BaseWidget
 
 	contr               *controller.Controller
+	pool                *util.WidgetPool
 	im                  *backend.ImageManager
 	pm                  *backend.PlaybackManager
 	mp                  mediaprovider.MediaProvider
@@ -40,15 +41,17 @@ type ArtistsPage struct {
 
 func NewArtistsPage(
 	contr *controller.Controller,
+	pool *util.WidgetPool,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
 ) *ArtistsPage {
-	return newArtistsPage(contr, pm, mp, im, "", 0, 0)
+	return newArtistsPage(contr, pool, pm, mp, im, "", 0, 0)
 }
 
 func newArtistsPage(
 	contr *controller.Controller,
+	pool *util.WidgetPool,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
@@ -58,6 +61,7 @@ func newArtistsPage(
 ) *ArtistsPage {
 	a := &ArtistsPage{
 		contr:               contr,
+		pool:                pool,
 		pm:                  pm,
 		mp:                  mp,
 		im:                  im,
@@ -74,7 +78,13 @@ func newArtistsPage(
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = func(query string) { a.onSearched(query, false /*firstLoad*/) }
 	a.searcher.Entry.Text = searchText
-	a.grid = widgets.NewFixedGridView(nil, a.im, myTheme.ArtistIcon)
+	if g := pool.Obtain(util.WidgetTypeGridView); g != nil {
+		a.grid = g.(*widgets.GridView)
+		a.grid.Placeholder = myTheme.ArtistIcon
+		a.grid.Clear()
+	} else {
+		a.grid = widgets.NewFixedGridView(nil, a.im, myTheme.ArtistIcon)
+	}
 	a.contr.ConnectArtistGridActions(a.grid)
 
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
@@ -158,6 +168,7 @@ func (a *ArtistsPage) Route() controller.Route {
 func (a *ArtistsPage) Save() SavedPage {
 	s := &savedArtistsPage{
 		contr:             a.contr,
+		pool:              a.pool,
 		im:                a.im,
 		pm:                a.pm,
 		mp:                a.mp,
@@ -169,11 +180,14 @@ func (a *ArtistsPage) Save() SavedPage {
 	} else {
 		s.searchGridScrollPos = a.grid.GetScrollOffset()
 	}
+	a.grid.Clear()
+	a.pool.Release(util.WidgetTypeGridView, a.grid)
 	return s
 }
 
 type savedArtistsPage struct {
 	contr               *controller.Controller
+	pool                *util.WidgetPool
 	im                  *backend.ImageManager
 	pm                  *backend.PlaybackManager
 	mp                  mediaprovider.MediaProvider
@@ -183,5 +197,5 @@ type savedArtistsPage struct {
 }
 
 func (s *savedArtistsPage) Restore() Page {
-	return newArtistsPage(s.contr, s.pm, s.mp, s.im, s.searchText, s.fullGridScrollPos, s.searchGridScrollPos)
+	return newArtistsPage(s.contr, s.pool, s.pm, s.mp, s.im, s.searchText, s.fullGridScrollPos, s.searchGridScrollPos)
 }

@@ -25,6 +25,7 @@ type AlbumPage struct {
 
 	albumPageState
 
+	disposed     bool
 	header       *AlbumPageHeader
 	tracks       []*mediaprovider.Track
 	tracklist    *widgets.Tracklist
@@ -36,6 +37,7 @@ type albumPageState struct {
 	albumID string
 	sort    widgets.TracklistSort
 	cfg     *backend.AlbumPageConfig
+	pool    *util.WidgetPool
 	mp      mediaprovider.MediaProvider
 	pm      *backend.PlaybackManager
 	im      *backend.ImageManager
@@ -45,17 +47,19 @@ type albumPageState struct {
 func NewAlbumPage(
 	albumID string,
 	cfg *backend.AlbumPageConfig,
+	pool *util.WidgetPool,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
 	contr *controller.Controller,
 ) *AlbumPage {
-	return newAlbumPage(albumID, cfg, pm, mp, im, contr, widgets.TracklistSort{})
+	return newAlbumPage(albumID, cfg, pool, pm, mp, im, contr, widgets.TracklistSort{})
 }
 
 func newAlbumPage(
 	albumID string,
 	cfg *backend.AlbumPageConfig,
+	pool *util.WidgetPool,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
@@ -66,6 +70,7 @@ func newAlbumPage(
 		albumPageState: albumPageState{
 			albumID: albumID,
 			cfg:     cfg,
+			pool:    pool,
 			pm:      pm,
 			mp:      mp,
 			im:      im,
@@ -73,8 +78,20 @@ func newAlbumPage(
 		},
 	}
 	a.ExtendBaseWidget(a)
-	a.header = NewAlbumPageHeader(a)
-	a.tracklist = widgets.NewTracklist(nil)
+	if h := pool.Obtain(util.WidgetTypeAlbumPageHeader); h != nil {
+		a.header = h.(*AlbumPageHeader)
+		a.header.page = a
+		a.header.Clear()
+	} else {
+		a.header = NewAlbumPageHeader(a)
+	}
+	a.header.page = a
+	if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
+		a.tracklist = t.(*widgets.Tracklist)
+		a.tracklist.Reset()
+	} else {
+		a.tracklist = widgets.NewTracklist(nil)
+	}
 	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 	a.tracklist.SetSorting(sort)
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
@@ -95,8 +112,13 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *AlbumPage) Save() SavedPage {
+	a.disposed = true
 	s := a.albumPageState
 	s.sort = a.tracklist.Sorting()
+	a.header.page = nil
+	a.pool.Release(util.WidgetTypeAlbumPageHeader, a.header)
+	a.tracklist.Clear()
+	a.pool.Release(util.WidgetTypeTracklist, a.tracklist)
 	return &s
 }
 
@@ -133,8 +155,13 @@ func (a *AlbumPage) load() {
 		log.Printf("Failed to get album: %s", err.Error())
 		return
 	}
+	if a.disposed {
+		return
+	}
 	a.header.Update(album, a.im)
-	a.tracklist.ShowDiscNumber = album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber
+	a.tracklist.Options = widgets.TracklistOptions{
+		ShowDiscNumber: album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber,
+	}
 	a.tracks = album.Tracks
 	a.tracklist.SetTracks(album.Tracks)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
@@ -256,6 +283,19 @@ func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backe
 	}()
 }
 
+func (a *AlbumPageHeader) Clear() {
+	a.albumID = ""
+	a.coverID = ""
+	a.artistID = ""
+	a.titleLabel.Segments[0].(*widget.TextSegment).Text = ""
+	a.artistLabel.SetText("")
+	a.genreLabel.SetText("")
+	a.miscLabel.SetText("")
+	a.toggleFavButton.IsFavorited = false
+	a.cover.Image.Image = nil
+	a.cover.Refresh()
+}
+
 func (a *AlbumPageHeader) toggleFavorited() {
 	params := mediaprovider.RatingFavoriteParameters{AlbumIDs: []string{a.albumID}}
 	a.page.mp.SetFavorite(params, a.toggleFavButton.IsFavorited)
@@ -267,7 +307,9 @@ func (a *AlbumPageHeader) showPopUpCover() {
 		log.Printf("error getting full size album cover: %s", err.Error())
 		return
 	}
-	a.page.contr.ShowPopUpImage(cover)
+	if a.page != nil {
+		a.page.contr.ShowPopUpImage(cover)
+	}
 }
 
 func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
@@ -283,5 +325,5 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return newAlbumPage(s.albumID, s.cfg, s.pm, s.mp, s.im, s.contr, s.sort)
+	return newAlbumPage(s.albumID, s.cfg, s.pool, s.pm, s.mp, s.im, s.contr, s.sort)
 }

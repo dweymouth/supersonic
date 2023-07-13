@@ -24,6 +24,7 @@ type PlaylistPage struct {
 
 	playlistPageState
 
+	disposed     bool
 	header       *PlaylistPageHeader
 	tracklist    *widgets.Tracklist
 	tracks       []*mediaprovider.Track
@@ -35,6 +36,7 @@ type playlistPageState struct {
 	playlistID string
 	conf       *backend.PlaylistPageConfig
 	contr      *controller.Controller
+	widgetPool *util.WidgetPool
 	sm         *backend.ServerManager
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
@@ -44,27 +46,41 @@ type playlistPageState struct {
 func NewPlaylistPage(
 	playlistID string,
 	conf *backend.PlaylistPageConfig,
+	pool *util.WidgetPool,
 	contr *controller.Controller,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
 ) *PlaylistPage {
-	return newPlaylistPage(playlistID, conf, contr, sm, pm, im, widgets.TracklistSort{})
+	return newPlaylistPage(playlistID, conf, contr, pool, sm, pm, im, widgets.TracklistSort{})
 }
 
 func newPlaylistPage(
 	playlistID string,
 	conf *backend.PlaylistPageConfig,
 	contr *controller.Controller,
+	pool *util.WidgetPool,
 	sm *backend.ServerManager,
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
 	trackSort widgets.TracklistSort,
 ) *PlaylistPage {
-	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, conf: conf, contr: contr, sm: sm, pm: pm, im: im}}
+	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, conf: conf, contr: contr, widgetPool: pool, sm: sm, pm: pm, im: im}}
 	a.ExtendBaseWidget(a)
-	a.header = NewPlaylistPageHeader(a)
-	a.tracklist = widgets.NewTracklist(nil)
+	if h := a.widgetPool.Obtain(util.WidgetTypePlaylistPageHeader); h != nil {
+		a.header = h.(*PlaylistPageHeader)
+		a.header.page = a
+		a.header.Clear()
+	} else {
+		a.header = NewPlaylistPageHeader(a)
+	}
+	a.header.page = a
+	if tl := a.widgetPool.Obtain(util.WidgetTypeTracklist); tl != nil {
+		a.tracklist = tl.(*widgets.Tracklist)
+		a.tracklist.Reset()
+	} else {
+		a.tracklist = widgets.NewTracklist(nil)
+	}
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	a.tracklist.SetSorting(trackSort)
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
@@ -77,8 +93,10 @@ func newPlaylistPage(
 		fyne.NewMenuItem("Move down", a.onMoveSelectedDown),
 		fyne.NewMenuItem("Move to bottom", a.onMoveSelectedToBottom),
 	}...)
-	a.tracklist.AuxiliaryMenuItems = []*fyne.MenuItem{reorderMenu,
-		fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)}
+	a.tracklist.Options = widgets.TracklistOptions{
+		AuxiliaryMenuItems: []*fyne.MenuItem{reorderMenu,
+			fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)},
+	}
 	// connect tracklist actions
 	a.contr.ConnectTracklistActions(a.tracklist)
 
@@ -94,8 +112,12 @@ func (a *PlaylistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *PlaylistPage) Save() SavedPage {
+	a.disposed = true
 	p := a.playlistPageState
 	p.trackSort = a.tracklist.Sorting()
+	p.widgetPool.Release(util.WidgetTypePlaylistPageHeader, a.header)
+	a.tracklist.Clear()
+	p.widgetPool.Release(util.WidgetTypeTracklist, a.tracklist)
 	return &p
 }
 
@@ -130,6 +152,9 @@ func (a *PlaylistPage) load() {
 	playlist, err := a.sm.Server.GetPlaylist(a.playlistID)
 	if err != nil {
 		log.Printf("Failed to get playlist: %s", err.Error())
+		return
+	}
+	if a.disposed {
 		return
 	}
 	renumberTracks(playlist.Tracks)
@@ -200,7 +225,7 @@ func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
 	}
 	a.sm.Server.EditPlaylistTracks(a.playlistID, nil, idxs)
 	a.tracklist.UnselectAll()
-	go a.Reload()
+	a.Reload()
 }
 
 type PlaylistPageHeader struct {
@@ -280,6 +305,14 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	return a
 }
 
+func (a *PlaylistPageHeader) Clear() {
+	a.titleLabel.Segments[0].(*widget.TextSegment).Text = ""
+	a.createdAtLabel.Text = ""
+	a.descriptionLabel.Text = ""
+	a.ownerLabel.Text = ""
+	a.image.SetImage(nil, false)
+}
+
 func (a *PlaylistPageHeader) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }
@@ -325,5 +358,5 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *mediaprovider.Playlis
 }
 
 func (s *playlistPageState) Restore() Page {
-	return newPlaylistPage(s.playlistID, s.conf, s.contr, s.sm, s.pm, s.im, s.trackSort)
+	return newPlaylistPage(s.playlistID, s.conf, s.contr, s.widgetPool, s.sm, s.pm, s.im, s.trackSort)
 }

@@ -211,6 +211,10 @@ func (g *GridViewItem) Update(model GridViewItemModel) {
 	g.Cover.ResetPlayButton()
 }
 
+func (g *GridViewItem) Refresh() {
+	g.BaseWidget.Refresh()
+}
+
 func (g *GridViewItem) ItemID() string {
 	return g.itemID
 }
