@@ -37,7 +37,11 @@ type App struct {
 	PlaybackManager *PlaybackManager
 	Player          *player.Player
 	UpdateChecker   UpdateChecker
-	OnReactivate    func()
+	MPRISHandler    *MPRISHandler
+
+	// UI callbacks to be set in main
+	OnReactivate func()
+	OnExit       func()
 
 	appName       string
 	appVersionTag string
@@ -50,7 +54,7 @@ func (a *App) VersionTag() string {
 	return a.appVersionTag
 }
 
-func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*App, error) {
+func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleaseURL string) (*App, error) {
 	sessionPath := configdir.LocalConfig(appName, sessionDir)
 	if _, err := os.Stat(path.Join(sessionPath, sessionLockFile)); err == nil {
 		log.Println("Another instance is running. Reactivating it...")
@@ -103,6 +107,8 @@ func StartupApp(appName, appVersionTag, configFile, latestReleaseURL string) (*A
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
 
+	a.setupMPRIS(displayAppName)
+
 	return a, nil
 }
 
@@ -134,13 +140,17 @@ func (a *App) startSessionWatcher(sessionPath string) {
 					activatePath := path.Join(sessionPath, sessionActivateFile)
 					if _, err := os.Stat(activatePath); err == nil {
 						os.Remove(path.Join(sessionPath, sessionActivateFile))
-						if a.OnReactivate != nil {
-							a.OnReactivate()
-						}
+						a.callOnReactivate()
 					}
 				}
 			}
 		}()
+	}
+}
+
+func (a *App) callOnReactivate() {
+	if a.OnReactivate != nil {
+		a.OnReactivate()
 	}
 }
 
@@ -202,6 +212,23 @@ func (a *App) setupMPV() error {
 	return nil
 }
 
+func (a *App) setupMPRIS(mprisAppName string) {
+	a.MPRISHandler = NewMPRISHandler(mprisAppName, a.Player, a.PlaybackManager)
+	a.MPRISHandler.ArtURLLookup = a.ImageManager.GetCoverArtUrl
+	a.MPRISHandler.OnRaise = func() error { a.callOnReactivate(); return nil }
+	a.MPRISHandler.OnQuit = func() error {
+		if a.OnExit == nil {
+			return errors.New("no quit handler registered")
+		}
+		go func() {
+			time.Sleep(10 * time.Millisecond)
+			a.OnExit()
+		}()
+		return nil
+	}
+	a.MPRISHandler.Start()
+}
+
 func (a *App) LoginToDefaultServer(string) error {
 	serverCfg := a.ServerManager.GetDefaultServer()
 	if serverCfg == nil {
@@ -221,6 +248,7 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 }
 
 func (a *App) Shutdown() {
+	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
 	a.Player.Stop() // will trigger scrobble check
 	a.Config.LocalPlayback.Volume = a.Player.GetVolume()

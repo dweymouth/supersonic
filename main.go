@@ -23,7 +23,7 @@ const (
 )
 
 func main() {
-	myApp, err := backend.StartupApp(appname, appVersionTag, configFile, latestReleaseURL)
+	myApp, err := backend.StartupApp(appname, displayName, appVersionTag, configFile, latestReleaseURL)
 	if err != nil {
 		log.Fatalf("fatal startup error: %v", err.Error())
 	}
@@ -41,6 +41,10 @@ func main() {
 	}
 	mainWindow := ui.NewMainWindow(fyneApp, appname, displayName, appVersion, myApp, fyne.NewSize(w, h))
 	myApp.OnReactivate = mainWindow.Show
+	myApp.OnExit = func() {
+		saveWindowPosition(myApp.Config, mainWindow.Window)
+		fyneApp.Quit()
+	}
 
 	go func() {
 		// TODO: There is a race condition with laying out the window before the
@@ -61,8 +65,7 @@ func main() {
 
 	mainWindow.Show()
 	mainWindow.Window.SetCloseIntercept(func() {
-		myApp.Config.Application.WindowHeight = int(mainWindow.Canvas().Size().Height)
-		myApp.Config.Application.WindowWidth = int(mainWindow.Canvas().Size().Width)
+		saveWindowPosition(myApp.Config, mainWindow.Window)
 		if myApp.Config.Application.CloseToSystemTray &&
 			mainWindow.HaveSystemTray() {
 			mainWindow.Window.Hide()
@@ -74,4 +77,9 @@ func main() {
 
 	log.Println("Running shutdown tasks...")
 	myApp.Shutdown()
+}
+
+func saveWindowPosition(config *backend.Config, window fyne.Window) {
+	config.Application.WindowHeight = int(window.Canvas().Size().Height)
+	config.Application.WindowWidth = int(window.Canvas().Size().Width)
 }

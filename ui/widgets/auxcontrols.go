@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/dweymouth/supersonic/backend"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
@@ -67,14 +68,15 @@ func (a *AuxControls) OnChangeLoopMode(f func()) {
 	a.loop.OnTapped = f
 }
 
-func (a *AuxControls) SetLoopMode(mode string) {
-	if mode == "all" {
+func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
+	switch mode {
+	case backend.LoopModeAll:
 		a.loop.Importance = widget.HighImportance
 		a.loop.Icon = myTheme.RepeatIcon
-	} else if mode == "one" {
+	case backend.LoopModeOne:
 		a.loop.Importance = widget.HighImportance
 		a.loop.Icon = myTheme.RepeatOneIcon
-	} else {
+	case backend.LoopModeNone:
 		a.loop.Importance = widget.MediumImportance
 		a.loop.Icon = myTheme.RepeatIcon
 	}
@@ -160,7 +162,7 @@ type VolumeControl struct {
 	icon   *TappableIcon
 	slider *volumeSlider
 
-	OnVolumeChanged func(int)
+	OnSetVolume func(int)
 
 	muted   bool
 	lastVol int
@@ -183,24 +185,35 @@ func NewVolumeControl(initialVol int) *VolumeControl {
 	return v
 }
 
+// Sets the volume that is displayed in the slider.
+// Does not invoke OnSetVolume callback.
+func (v *VolumeControl) SetVolume(vol int) {
+	if (vol == v.lastVol && !v.muted) || (v.muted && vol == 0) {
+		return
+	}
+	v.lastVol = vol
+	v.muted = false
+	v.setDisplayedVolume(vol)
+}
+
 func (v *VolumeControl) onChanged(volume float64) {
 	vol := int(volume)
 	v.lastVol = vol
 	v.muted = false
 	v.updateIconForVolume(vol)
-	if v.OnVolumeChanged != nil {
-		v.OnVolumeChanged(vol)
-	}
+	v.invokeOnVolumeChange(vol)
 }
 
 func (v *VolumeControl) toggleMute() {
 	if !v.muted {
 		v.muted = true
 		v.lastVol = int(v.slider.Value)
-		v.SetVolume(0)
+		v.setDisplayedVolume(0)
+		v.invokeOnVolumeChange(0)
 	} else {
 		v.muted = false
-		v.SetVolume(v.lastVol)
+		v.setDisplayedVolume(v.lastVol)
+		v.invokeOnVolumeChange(v.lastVol)
 	}
 }
 
@@ -209,12 +222,15 @@ func (v *VolumeControl) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(v.container)
 }
 
-func (v *VolumeControl) SetVolume(vol int) {
+func (v *VolumeControl) setDisplayedVolume(vol int) {
 	v.slider.Value = float64(vol)
 	v.slider.Refresh()
 	v.updateIconForVolume(vol)
-	if v.OnVolumeChanged != nil {
-		v.OnVolumeChanged(vol)
+}
+
+func (v *VolumeControl) invokeOnVolumeChange(vol int) {
+	if v.OnSetVolume != nil {
+		v.OnSetVolume(vol)
 	}
 }
 
