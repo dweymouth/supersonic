@@ -345,8 +345,19 @@ func (p *Player) GetVolume() int {
 	return p.vol
 }
 
+// sets paused status and ensures that audio exlusive is false while paused
+// (releases audio device to other players)
 func (p *Player) setPaused(paused bool) error {
-	return p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, paused)
+	if !paused && p.audioExclusive {
+		if err := p.mpv.SetOptionString("audio-exclusive", "yes"); err != nil {
+			return err
+		}
+	}
+	err := p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, paused)
+	if err == nil && paused && p.audioExclusive {
+		err = p.mpv.SetOptionString("audio-exclusive", "no")
+	}
+	return err
 }
 
 // Start playback from the first track in the play queue.
