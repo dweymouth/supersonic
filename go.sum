@@ -76,6 +76,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5 h1:uXbHzg9HfefA7OVHu9gahobCP5B43df3L1MwU0GbdRs=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5/go.mod h1:X2+NrR+62mvAiAt2fwKT7035zQsE77KVV1NlvWo4vW8=
+github.com/dweymouth/go-mpris-server v0.0.0-20230714011337-8bc0b52618a5 h1:QhBf0iHPPUSxalHjhls+9LFqMuNT12U3Mo/AFw4Ornc=
+github.com/dweymouth/go-mpris-server v0.0.0-20230714011337-8bc0b52618a5/go.mod h1:2b4IdrpnEoEfU+6fQKjYhAgdvsiz4JxmTpDAUrMJVO4=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee h1:ZGyJ6wp7CAfT31BugypcF/TPKEy2RrGR9JFq1JOjOpY=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee/go.mod h1:Ov0ieN90M7i+0k3OxhA/g1dozGs+UcPHDsMKqPgRDk0=
 github.com/dweymouth/go-subsonic v0.0.0-20230614154319-792d18c75fb4 h1:cuyvB4GjTMBHKJwMJ/LFpuKfSVXuCheNj6fgxBa3m1Y=
@@ -265,8 +267,6 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
-github.com/quarckster/go-mpris-server v1.0.1 h1:JAbVBJK1ijjwEH4gfaOtwfElDVuaBPnWyi8rZJEHOxc=
-github.com/quarckster/go-mpris-server v1.0.1/go.mod h1:2b4IdrpnEoEfU+6fQKjYhAgdvsiz4JxmTpDAUrMJVO4=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=

@@ -48,3 +48,5 @@ require (
 )
 
 replace fyne.io/fyne/v2 v2.3.5 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5
+
+replace github.com/quarckster/go-mpris-server v1.0.1 => github.com/dweymouth/go-mpris-server v0.0.0-20230714011337-8bc0b52618a5
