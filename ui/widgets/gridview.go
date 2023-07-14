@@ -367,7 +367,7 @@ func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
 
 func (g *GridView) onPlay(itemID string, shuffle bool) {
 	if g.OnPlay != nil {
-		g.OnPlay(itemID, false)
+		g.OnPlay(itemID, shuffle)
 	}
 }
 
