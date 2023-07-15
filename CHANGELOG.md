@@ -1,6 +1,18 @@
 # Change Log
 
-## Unreleased
+## [0.5.0] - 2023-07-15
+
+### Added
+- [#75](https://github.com/dweymouth/supersonic/issues/75) Add MPRIS integration
+- [#105](https://github.com/dweymouth/supersonic/issues/105) Add dialog to view album description and Last.fm, Musicbrainz links (thanks @natilou!)
+- [#184](https://github.com/dweymouth/supersonic/issues/184) Highlight play icon for currently playing track in tracklist (thanks @adamantike!)
+- [#216](https://github.com/dweymouth/supersonic/issues/216) Release Audio Exclusive mode while paused to allow other applications to play audio
+
+### Fixed
+- [#42](https://github.com/dweymouth/supersonic/issues/42) Substantial improvement to memory use when navigating quickly through pages
+- [#212](https://github.com/dweymouth/supersonic/issues/212) Crash on Wayland with 2x scaling factor
+
+## [0.4.0] - 2023-06-24
 
 ### Fixed
 - [#196](https://github.com/dweymouth/supersonic/pull/196) Track correctly scrobbles if removed from play queue while playing (thanks @adamantike!)
