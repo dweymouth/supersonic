@@ -76,8 +76,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5 h1:uXbHzg9HfefA7OVHu9gahobCP5B43df3L1MwU0GbdRs=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5/go.mod h1:X2+NrR+62mvAiAt2fwKT7035zQsE77KVV1NlvWo4vW8=
-github.com/dweymouth/go-mpris-server v0.0.0-20230714011337-8bc0b52618a5 h1:QhBf0iHPPUSxalHjhls+9LFqMuNT12U3Mo/AFw4Ornc=
-github.com/dweymouth/go-mpris-server v0.0.0-20230714011337-8bc0b52618a5/go.mod h1:2b4IdrpnEoEfU+6fQKjYhAgdvsiz4JxmTpDAUrMJVO4=
+github.com/dweymouth/go-mpris-server v0.0.0-20230715174404-c20bf185e10a h1:My32hUxnu1+Lp9kGgwu1/vwspkmI6YelB0ow29KZNvY=
+github.com/dweymouth/go-mpris-server v0.0.0-20230715174404-c20bf185e10a/go.mod h1:2b4IdrpnEoEfU+6fQKjYhAgdvsiz4JxmTpDAUrMJVO4=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee h1:ZGyJ6wp7CAfT31BugypcF/TPKEy2RrGR9JFq1JOjOpY=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee/go.mod h1:Ov0ieN90M7i+0k3OxhA/g1dozGs+UcPHDsMKqPgRDk0=
 github.com/dweymouth/go-subsonic v0.0.0-20230614154319-792d18c75fb4 h1:cuyvB4GjTMBHKJwMJ/LFpuKfSVXuCheNj6fgxBa3m1Y=
