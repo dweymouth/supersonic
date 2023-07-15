@@ -60,31 +60,28 @@
   </screenshots>
 
  <releases>
-  <release date="2023-06-24" version="0.4.0">
+  <release date="2023-07-15" version="0.5.0">
    <description>
      <p>
-       Version 0.4.0 of Supersonic
+       Version 0.5.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Add 15 band graphic equalizer</li>
-       <li>Add custom theme support</li>
-       <li>Add playback status line to bottom of Now Playing page</li>
-       <li>Add repeat playback modes</li>
-       <li>Add Home button to navigation bar</li>
-       <li>Add ability to download tracks, albums, and playlists</li>
-       <li>Add click-to-set to volume slider</li>
-       <li>Attempting to launch a second instance refocuses the existing window</li>
+       <li>Add MPRIS integration</li>
+       <li>Add dialog to view album description and Last.fm, Musicbrainz links</li>
+       <li>Highlight play icon for currently playing track in tracklist</li>
+       <li>Release Audio Exclusive mode while paused to allow other applications to play audio</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Track correctly scrobbles if removed from play queue while playing</li>
+       <li>Substantial improvement to memory use when navigating quickly through pages</li>
+       <li>Crash on Wayland with 2x scaling factor</li>
      </ul>
 
    </description>
