@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math"
 	"runtime"
 	"time"
 
@@ -42,7 +43,7 @@ func main() {
 	mainWindow := ui.NewMainWindow(fyneApp, appname, displayName, appVersion, myApp, fyne.NewSize(w, h))
 	myApp.OnReactivate = mainWindow.Show
 	myApp.OnExit = func() {
-		saveWindowPosition(myApp.Config, mainWindow.Window)
+		saveWindowSize(myApp.Config, mainWindow.Window)
 		fyneApp.Quit()
 	}
 
@@ -65,7 +66,7 @@ func main() {
 
 	mainWindow.Show()
 	mainWindow.Window.SetCloseIntercept(func() {
-		saveWindowPosition(myApp.Config, mainWindow.Window)
+		saveWindowSize(myApp.Config, mainWindow.Window)
 		if myApp.Config.Application.CloseToSystemTray &&
 			mainWindow.HaveSystemTray() {
 			mainWindow.Window.Hide()
@@ -79,7 +80,9 @@ func main() {
 	myApp.Shutdown()
 }
 
-func saveWindowPosition(config *backend.Config, window fyne.Window) {
-	config.Application.WindowHeight = int(window.Canvas().Size().Height)
-	config.Application.WindowWidth = int(window.Canvas().Size().Width)
+func saveWindowSize(config *backend.Config, window fyne.Window) {
+	// round sizes to even to avoid Wayland issues with 2x scaling factor
+	// https://github.com/dweymouth/supersonic/issues/212
+	config.Application.WindowHeight = int(math.RoundToEven(float64(window.Canvas().Size().Height)))
+	config.Application.WindowWidth = int(math.RoundToEven(float64(window.Canvas().Size().Width)))
 }
