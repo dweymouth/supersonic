@@ -27,6 +27,7 @@ Screenshots of Supersonic running against the Navidrome [demo server](https://ww
 * [x] Light and Dark themes, with optional auto theme switching
 * [x] High-quality gapless audio playback powered by MPV, with optional audio exclusive mode
 * [x] ReplayGain support (depends on files being tagged on server)
+* [x] MPRIS integration on Linux, for media key and remote control 
 * [x] Built-in 15-band graphic equalizer
 * [x] Scrobble plays to server, with configurable criteria
 * [x] Add and switch between multiple servers
@@ -40,9 +41,9 @@ Screenshots of Supersonic running against the Navidrome [demo server](https://ww
 * [x] Sort tracklist views by column and configure visible tracklist columns
 * [x] Set/unset favorite and browse by favorite albums, artists, and songs
 * [x] Set and view track rating (0-5 stars)
-* [x] Download songs, albums or playlists (planned)
+* [x] Download songs, albums or playlists
 * [x] View and edit play queue (add and remove tracks; reorder support coming soon)
-* [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs; repeat all)
+* [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs; repeat one/all)
 * [ ] Browse by folders (planned)
 * [ ] Cast to uPnP/DLNA devices (likely planned)
 * [ ] Offline mode (eventually planned)
