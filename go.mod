@@ -12,7 +12,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml/v2 v2.0.8
-	github.com/quarckster/go-mpris-server v1.0.1
+	github.com/quarckster/go-mpris-server v1.0.2
 	github.com/zalando/go-keyring v0.2.1
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 )
@@ -48,5 +48,3 @@ require (
 )
 
 replace fyne.io/fyne/v2 v2.3.5 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5
-
-replace github.com/quarckster/go-mpris-server v1.0.1 => github.com/dweymouth/go-mpris-server v0.0.0-20230715174404-c20bf185e10a
