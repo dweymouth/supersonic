@@ -12,7 +12,10 @@ import (
 	"github.com/quarckster/go-mpris-server/pkg/types"
 )
 
-const dbusTrackIDPrefix = "/Supersonic/Track/"
+const (
+	dbusTrackIDPrefix = "/Supersonic/Track/"
+	noTrackObjectPath = "/org/mpris/MediaPlayer2/TrackList/NoTrack"
+)
 
 var (
 	_ types.OrgMprisMediaPlayer2Adapter                 = (*MPRISHandler)(nil)
@@ -230,9 +233,9 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	if np := m.pm.NowPlaying(); np != nil && status.State != player.Stopped {
 		tr = *np
 	}
-	var trackID string
+	trackObjPath := noTrackObjectPath
 	if tr.ID != "" {
-		trackID = dbusTrackIDPrefix + tr.ID
+		trackObjPath = dbusTrackIDPrefix + tr.ID
 	}
 	var artURL string
 	if tr.ID != "" && m.ArtURLLookup != nil {
@@ -241,7 +244,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 		}
 	}
 	return types.Metadata{
-		TrackId:     dbus.ObjectPath(trackID),
+		TrackId:     dbus.ObjectPath(trackObjPath),
 		Length:      types.Microseconds(status.Duration),
 		Title:       tr.Name,
 		Album:       tr.Album,
