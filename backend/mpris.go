@@ -24,7 +24,7 @@ var (
 )
 
 var (
-	errNotImplemented = errors.New("not implemented")
+	errNotSupported = errors.New("not supported")
 )
 
 type MPRISHandler struct {
@@ -38,12 +38,13 @@ type MPRISHandler struct {
 	// Function to look up the artwork URL for a given track ID
 	ArtURLLookup func(trackID string) (string, error)
 
-	connErr    error
-	playerName string
-	p          *player.Player
-	pm         *PlaybackManager
-	s          *server.Server
-	evt        *events.EventHandler
+	connErr      error
+	playerName   string
+	curTrackPath string // empty for no track
+	p            *player.Player
+	pm           *PlaybackManager
+	s            *server.Server
+	evt          *events.EventHandler
 }
 
 func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *MPRISHandler {
@@ -57,9 +58,14 @@ func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *
 			m.evt.Player.OnSeek(pos)
 		}
 	})
-	m.pm.OnSongChange(func(_, _ *mediaprovider.Track) {
+	m.pm.OnSongChange(func(tr, _ *mediaprovider.Track) {
 		if m.connErr == nil {
 			m.evt.Player.OnTitle()
+		}
+		if tr == nil {
+			m.curTrackPath = ""
+		} else {
+			m.curTrackPath = dbusTrackIDPrefix + tr.ID
 		}
 	})
 	m.pm.OnVolumeChange(func(vol int) {
@@ -172,15 +178,18 @@ func (m *MPRISHandler) Play() error {
 }
 
 func (m *MPRISHandler) Seek(offset types.Microseconds) error {
-	return m.p.Seek(fmt.Sprintf("%0.2f", float64(offset)/1_000_000), player.SeekRelative)
+	return m.p.Seek(fmt.Sprintf("%0.2f", microsecondsToSeconds(offset)), player.SeekRelative)
 }
 
 func (m *MPRISHandler) SetPosition(trackId string, position types.Microseconds) error {
-	return errNotImplemented
+	if m.curTrackPath == trackId {
+		return m.p.Seek(fmt.Sprintf("%0.2f", microsecondsToSeconds(position)), player.SeekAbsolute)
+	}
+	return nil
 }
 
 func (m *MPRISHandler) OpenUri(uri string) error {
-	return errNotImplemented
+	return errNotSupported
 }
 
 func (m *MPRISHandler) PlaybackStatus() (types.PlaybackStatus, error) {
@@ -224,18 +233,18 @@ func (m *MPRISHandler) Rate() (float64, error) {
 }
 
 func (m *MPRISHandler) SetRate(float64) error {
-	return errNotImplemented
+	return errNotSupported
 }
 
 func (m *MPRISHandler) Metadata() (types.Metadata, error) {
+	trackObjPath := noTrackObjectPath
+	if m.curTrackPath != "" {
+		trackObjPath = m.curTrackPath
+	}
 	status := m.p.GetStatus()
 	var tr mediaprovider.Track
 	if np := m.pm.NowPlaying(); np != nil && status.State != player.Stopped {
 		tr = *np
-	}
-	trackObjPath := noTrackObjectPath
-	if tr.ID != "" {
-		trackObjPath = dbusTrackIDPrefix + tr.ID
 	}
 	var artURL string
 	if tr.ID != "" && m.ArtURLLookup != nil {
@@ -245,7 +254,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	}
 	return types.Metadata{
 		TrackId:     dbus.ObjectPath(trackObjPath),
-		Length:      types.Microseconds(status.Duration),
+		Length:      secondsToMicroseconds(status.Duration),
 		Title:       tr.Name,
 		Album:       tr.Album,
 		Artist:      tr.ArtistNames,
@@ -299,6 +308,10 @@ func (m *MPRISHandler) CanSeek() (bool, error) {
 
 func (m *MPRISHandler) CanControl() (bool, error) {
 	return true, nil
+}
+
+func microsecondsToSeconds(m types.Microseconds) float64 {
+	return float64(m) / 1_000_000
 }
 
 func secondsToMicroseconds(s float64) types.Microseconds {
