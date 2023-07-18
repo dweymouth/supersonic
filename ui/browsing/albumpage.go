@@ -189,6 +189,8 @@ type AlbumPageHeader struct {
 }
 
 func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
+	// due to widget reuse a.page can change so page MUST NOT
+	// be directly captured in a closure throughout this function!
 	a := &AlbumPageHeader{page: page}
 	a.ExtendBaseWidget(a)
 	a.cover = widgets.NewTappableImage(func(*fyne.PointEvent) { go a.showPopUpCover() })
@@ -202,19 +204,19 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	}
 	a.artistLabel = widgets.NewCustomHyperlink()
 	a.artistLabel.OnTapped = func() {
-		page.contr.NavigateTo(controller.ArtistRoute(a.artistID))
+		a.page.contr.NavigateTo(controller.ArtistRoute(a.artistID))
 	}
 	a.genreLabel = widgets.NewCustomHyperlink()
 	a.genreLabel.OnTapped = func() {
-		page.contr.NavigateTo(controller.GenreRoute(a.genre))
+		a.page.contr.NavigateTo(controller.GenreRoute(a.genre))
 	}
 	a.miscLabel = widget.NewLabel("")
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
-		go page.pm.PlayAlbum(page.albumID, 0, false)
+		go a.page.pm.PlayAlbum(a.page.albumID, 0, false)
 	})
 	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", myTheme.ShuffleIcon, func() {
-		page.pm.LoadTracks(page.tracklist.GetTracks(), false, true)
-		page.pm.PlayFromBeginning()
+		a.page.pm.LoadTracks(a.page.tracklist.GetTracks(), false, true)
+		a.page.pm.PlayFromBeginning()
 	})
 	var pop *widget.PopUpMenu
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)

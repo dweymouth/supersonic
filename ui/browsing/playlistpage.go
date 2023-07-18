@@ -246,6 +246,8 @@ type PlaylistPageHeader struct {
 }
 
 func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
+	// due to widget reuse a.page can change so page MUST NOT
+	// be directly captured in a closure throughout this function!
 	a := &PlaylistPageHeader{page: page}
 	a.ExtendBaseWidget(a)
 
@@ -261,18 +263,18 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.trackTimeLabel = widget.NewLabel("")
 	a.editButton = widget.NewButtonWithIcon("Edit", theme.DocumentCreateIcon(), func() {
 		if a.playlistInfo != nil {
-			page.contr.DoEditPlaylistWorkflow(&a.playlistInfo.Playlist)
+			a.page.contr.DoEditPlaylistWorkflow(&a.playlistInfo.Playlist)
 		}
 	})
 	a.editButton.Hidden = true
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
-		page.pm.LoadTracks(page.tracks, false, false)
-		page.pm.PlayFromBeginning()
+		a.page.pm.LoadTracks(a.page.tracks, false, false)
+		a.page.pm.PlayFromBeginning()
 	})
 	// TODO: find way to pad shuffle svg rather than using a space in the label string
 	shuffleBtn := widget.NewButtonWithIcon(" Shuffle", myTheme.ShuffleIcon, func() {
-		page.pm.LoadTracks(page.tracks, false /*append*/, true /*shuffle*/)
-		page.pm.PlayFromBeginning()
+		a.page.pm.LoadTracks(a.page.tracks, false /*append*/, true /*shuffle*/)
+		a.page.pm.PlayFromBeginning()
 	})
 	var pop *widget.PopUpMenu
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)

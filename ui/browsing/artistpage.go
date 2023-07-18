@@ -287,6 +287,8 @@ type ArtistPageHeader struct {
 }
 
 func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
+	// due to widget reuse a.artistPage can change so page MUST NOT
+	// be directly captured in a closure throughout this function!
 	a := &ArtistPageHeader{
 		artistPage:     page,
 		titleDisp:      widget.NewRichTextWithText(""),
@@ -306,7 +308,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), func() {
 		go a.artistPage.contr.PlayArtistDiscography(a.artistID, false /*shuffle*/)
 	})
-	a.playRadioBtn = widget.NewButtonWithIcon(" Play Artist Radio", myTheme.ShuffleIcon, page.playArtistRadio)
+	a.playRadioBtn = widget.NewButtonWithIcon(" Play Artist Radio", myTheme.ShuffleIcon, a.artistPage.playArtistRadio)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.ExtendBaseWidget(a)
 	a.createContainer()
