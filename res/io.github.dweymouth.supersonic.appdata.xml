@@ -60,28 +60,19 @@
   </screenshots>
 
  <releases>
-  <release date="2023-07-15" version="0.5.0">
+  <release date="2023-07-17" version="0.5.1">
    <description>
      <p>
-       Version 0.5.0 of Supersonic
+       Version 0.5.1 of Supersonic
      </p>
-
-     <p>
-       Added
-     </p>
-     <ul>
-       <li>Add MPRIS integration</li>
-       <li>Add dialog to view album description and Last.fm, Musicbrainz links</li>
-       <li>Highlight play icon for currently playing track in tracklist</li>
-       <li>Release Audio Exclusive mode while paused to allow other applications to play audio</li>
-     </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Substantial improvement to memory use when navigating quickly through pages</li>
-       <li>Crash on Wayland with 2x scaling factor</li>
+       <li>Regression: play buttons on album, playlist, artist pages playing incorrect item</li>
+       <li>Incorrect track duration reported through MPRIS</li>
+       <li>MPRIS SetPosition mistakenly left unimplemented</li>
      </ul>
 
    </description>

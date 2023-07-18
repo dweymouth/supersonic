@@ -17,7 +17,7 @@ import (
 const (
 	appname          = "supersonic"
 	displayName      = "Supersonic"
-	appVersion       = "0.5.0"
+	appVersion       = "0.5.1"
 	appVersionTag    = "v" + appVersion
 	configFile       = "config.toml"
 	latestReleaseURL = "https://github.com/dweymouth/supersonic/releases/latest"
