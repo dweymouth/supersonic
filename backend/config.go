@@ -28,6 +28,7 @@ type AppConfig struct {
 	EnableSystemTray   bool
 	CloseToSystemTray  bool
 	StartupPage        string
+	SettingsTab        string
 	AllowMultiInstance bool
 
 	// Experimental - may be removed in future
@@ -124,6 +125,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			EnableSystemTray:   true,
 			CloseToSystemTray:  false,
 			StartupPage:        "Albums",
+			SettingsTab:        "General",
 			AllowMultiInstance: false,
 		},
 		AlbumPage: AlbumPageConfig{

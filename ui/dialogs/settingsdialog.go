@@ -63,9 +63,11 @@ func NewSettingsDialog(
 		s.createEqualizerTab(equalizerBands),
 		s.createExperimentalTab(window),
 	)
+	tabs.SelectIndex(s.getActiveTabNumFromConfig())
 	// workaround issue where inactivated tabs don't fully update when theme setting is changed
 	tabs.OnSelected = func(ti *container.TabItem) {
 		ti.Content.Refresh()
+		s.saveSelectedTab(tabs.SelectedIndex())
 	}
 	s.promptText = widget.NewRichTextWithText("")
 	s.content = container.NewVBox(tabs, widget.NewSeparator(),
@@ -452,4 +454,32 @@ func (s *SettingsDialog) onAudioExclusiveSettingsChanged() {
 
 func (s *SettingsDialog) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(s.content)
+}
+
+func (s *SettingsDialog) saveSelectedTab(tabNum int) {
+	var tabName string
+	switch tabNum {
+	case 0:
+		tabName = "General"
+	case 1:
+		tabName = "Playback"
+	case 2:
+		tabName = "Equalizer"
+	case 3:
+		tabName = "Experimental"
+	}
+	s.config.Application.SettingsTab = tabName
+}
+
+func (s *SettingsDialog) getActiveTabNumFromConfig() int {
+	switch s.config.Application.SettingsTab {
+	case "Playback":
+		return 1
+	case "Equalizer":
+		return 2
+	case "Experimental":
+		return 3
+	default:
+		return 0
+	}
 }
