@@ -20,15 +20,19 @@ import (
 
 const CachedImageValidTime = 24 * time.Hour
 
-const coverArtThumbnailSize = 300
+const (
+	coverArtThumbnailSize = 300
+	fullSizeCoverExpires  = 5 * time.Minute
+)
 
 type ImageManager struct {
 	s              *ServerManager
 	baseCacheDir   string
 	thumbnailCache ImageCache
 
-	cachedFullSizeCover   image.Image
-	cachedFullSizeCoverID string
+	cachedFullSizeCover           image.Image
+	cachedFullSizeCoverID         string
+	cachedFullSizeCoverAccessedAt int64 // unixMillis
 }
 
 func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string) *ImageManager {
@@ -45,6 +49,7 @@ func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string)
 			DefaultTTL: 1 * time.Minute,
 		},
 	}
+	i.thumbnailCache.OnEvictTaskRan = i.clearExpiredFullSizeCover
 	i.thumbnailCache.Init(ctx, 2*time.Minute)
 	return i
 }
@@ -74,6 +79,7 @@ func (i *ImageManager) GetCoverThumbnailWithTTL(coverID string, ttl time.Duratio
 
 func (i *ImageManager) GetFullSizeCoverArt(coverID string) (image.Image, error) {
 	if i.cachedFullSizeCoverID == coverID {
+		i.cachedFullSizeCoverAccessedAt = time.Now().UnixMilli()
 		return i.cachedFullSizeCover, nil
 	}
 	if i.s.Server == nil {
@@ -85,6 +91,7 @@ func (i *ImageManager) GetFullSizeCoverArt(coverID string) (image.Image, error) 
 	}
 	i.cachedFullSizeCover = im
 	i.cachedFullSizeCoverID = coverID
+	i.cachedFullSizeCoverAccessedAt = time.Now().UnixMilli()
 	return im, nil
 }
 
@@ -214,4 +221,12 @@ func (i *ImageManager) loadLocalImage(path string) (image.Image, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (i *ImageManager) clearExpiredFullSizeCover() {
+	now := time.Now().UnixMilli()
+	if now-i.cachedFullSizeCoverAccessedAt > fullSizeCoverExpires.Milliseconds() {
+		i.cachedFullSizeCoverID = ""
+		i.cachedFullSizeCover = nil
+	}
 }

@@ -29,6 +29,12 @@ type ImageCache struct {
 	MaxSize    int
 	DefaultTTL time.Duration
 
+	// Sets a callback that is invoked whenever the periodic
+	// eviction has been run. Allows for "tacking on" extra
+	// cleanup tasks outside of the ImageCache's jurisdiction
+	// that are run on the same schedule.
+	OnEvictTaskRan func()
+
 	mu    sync.RWMutex
 	cache map[string]CacheItem
 }
@@ -157,6 +163,9 @@ func (i *ImageCache) periodicallyEvict(ctx context.Context, interval time.Durati
 			return
 		case <-t.C:
 			i.EvictExpired()
+			if i.OnEvictTaskRan != nil {
+				i.OnEvictTaskRan()
+			}
 		}
 	}
 }
