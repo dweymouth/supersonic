@@ -3,9 +3,11 @@ package theme
 import (
 	"bytes"
 	"errors"
+	"github.com/20after4/configdir"
 	"image/color"
 	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -55,12 +57,19 @@ func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
 	m := &MyTheme{config: config, themeFileDir: themeFileDir}
 	m.defaultThemeFile, _ = DecodeThemeFile(bytes.NewReader(res.ResDefaultToml.StaticContent))
 	m.createThemeIcons()
+	if err := m.createThemeResources(); err != nil {
+		log.Printf("failed to create theme resources: %s", err.Error())
+	}
 	return m
 }
 
 func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Color {
 	// load theme file if necessary
 	if m.loadedThemeFile == nil || m.config.ThemeFile != m.loadedThemeFilename {
+		if m.config.ThemeFile == "" {
+			m.config.ThemeFile = "default.toml"
+		}
+
 		t, err := ReadThemeFile(path.Join(m.themeFileDir, m.config.ThemeFile))
 		if err == nil {
 			m.loadedThemeFile = t
@@ -68,6 +77,7 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 			log.Printf("failed to load theme file %q: %s", m.config.ThemeFile, err.Error())
 			m.loadedThemeFile = m.defaultThemeFile
 		}
+
 		m.loadedThemeFilename = m.config.ThemeFile
 	}
 
@@ -158,6 +168,26 @@ func (m *MyTheme) ListThemeFiles() map[string]string {
 		}
 	}
 	return result
+}
+
+func (m *MyTheme) createThemeResources() error {
+	err := configdir.MakePath(m.themeFileDir)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(path.Join(m.themeFileDir, "default.toml"), os.O_WRONLY|os.O_CREATE, 0o644)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	if _, err = f.Write(res.ResDefaultToml.StaticContent); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type myThemedResource struct {

@@ -81,7 +81,7 @@ func NewSettingsDialog(
 }
 
 func (s *SettingsDialog) createGeneralTab() *container.TabItem {
-	themeNames := []string{"Default"}
+	themeNames := []string{""}
 	themeFileNames := []string{""}
 	i, selIndex := 1, 0
 	for filename, displayname := range s.themeFiles {
