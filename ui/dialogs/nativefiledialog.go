@@ -47,11 +47,16 @@ func (n *NativeFileDialog) SetFilter(filter storage.FileFilter) {
 	// MimeTypeFileFilter is not supported
 	if ext, ok := filter.(*storage.ExtensionFileFilter); ok {
 		exts := make([]string, 0, len(ext.Extensions))
+		desc := ""
 		for _, e := range ext.Extensions {
+			if desc != "" {
+				desc += " "
+			}
+			desc = desc + "*" + e
 			exts = append(exts, strings.TrimPrefix(e, "."))
 		}
 		n.native.Filters = []sqDialog.FileFilter{
-			{Extensions: exts},
+			{Desc: desc, Extensions: exts},
 		}
 	}
 	n.fallback.SetFilter(filter)
