@@ -12,7 +12,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml/v2 v2.0.8
-	github.com/quarckster/go-mpris-server v1.0.2
+	github.com/quarckster/go-mpris-server v1.0.3
 	github.com/zalando/go-keyring v0.2.1
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 )
