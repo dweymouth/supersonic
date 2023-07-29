@@ -128,6 +128,13 @@ func (i *ImageCache) GetWithNewTTL(key string, newTtl time.Duration) (image.Imag
 	return nil, ErrNotFound
 }
 
+func (i *ImageCache) Clear() {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+
+	i.cache = make(map[string]CacheItem)
+}
+
 // must be called when rwmutex is already acquired for writing
 func (i *ImageCache) evictOne() {
 	now := time.Now().Unix()

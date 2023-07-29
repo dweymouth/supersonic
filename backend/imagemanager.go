@@ -49,7 +49,11 @@ func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string)
 			DefaultTTL: 1 * time.Minute,
 		},
 	}
-	i.thumbnailCache.OnEvictTaskRan = i.clearExpiredFullSizeCover
+	s.OnLogout(func() {
+		i.thumbnailCache.Clear()
+		i.clearFullSizeCover()
+	})
+	i.thumbnailCache.OnEvictTaskRan = i.clearFullSizeCoverIfExpired
 	i.thumbnailCache.Init(ctx, 2*time.Minute)
 	return i
 }
@@ -223,10 +227,14 @@ func (i *ImageManager) loadLocalImage(path string) (image.Image, bool) {
 	return nil, false
 }
 
-func (i *ImageManager) clearExpiredFullSizeCover() {
+func (i *ImageManager) clearFullSizeCoverIfExpired() {
 	now := time.Now().UnixMilli()
 	if now-i.cachedFullSizeCoverAccessedAt > fullSizeCoverExpires.Milliseconds() {
-		i.cachedFullSizeCoverID = ""
-		i.cachedFullSizeCover = nil
+		i.clearFullSizeCover()
 	}
+}
+
+func (i *ImageManager) clearFullSizeCover() {
+	i.cachedFullSizeCoverID = ""
+	i.cachedFullSizeCover = nil
 }
