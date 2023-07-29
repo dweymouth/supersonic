@@ -103,6 +103,8 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 	a.ServerManager = NewServerManager(appName, a.Config)
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player, &a.Config.Scrobbling)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, configdir.LocalCache(a.appName))
+	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
+	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})

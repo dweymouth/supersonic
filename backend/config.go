@@ -22,14 +22,15 @@ type ServerConfig struct {
 }
 
 type AppConfig struct {
-	WindowWidth        int
-	WindowHeight       int
-	LastCheckedVersion string
-	EnableSystemTray   bool
-	CloseToSystemTray  bool
-	StartupPage        string
-	SettingsTab        string
-	AllowMultiInstance bool
+	WindowWidth         int
+	WindowHeight        int
+	LastCheckedVersion  string
+	EnableSystemTray    bool
+	CloseToSystemTray   bool
+	StartupPage         string
+	SettingsTab         string
+	AllowMultiInstance  bool
+	MaxImageCacheSizeMB int
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
@@ -119,14 +120,15 @@ var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists"}
 func DefaultConfig(appVersionTag string) *Config {
 	return &Config{
 		Application: AppConfig{
-			WindowWidth:        1000,
-			WindowHeight:       800,
-			LastCheckedVersion: appVersionTag,
-			EnableSystemTray:   true,
-			CloseToSystemTray:  false,
-			StartupPage:        "Albums",
-			SettingsTab:        "General",
-			AllowMultiInstance: false,
+			WindowWidth:         1000,
+			WindowHeight:        800,
+			LastCheckedVersion:  appVersionTag,
+			EnableSystemTray:    true,
+			CloseToSystemTray:   false,
+			StartupPage:         "Albums",
+			SettingsTab:         "General",
+			AllowMultiInstance:  false,
+			MaxImageCacheSizeMB: 50,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},

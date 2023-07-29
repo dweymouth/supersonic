@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
+	"io/fs"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -23,8 +26,13 @@ const CachedImageValidTime = 24 * time.Hour
 const (
 	coverArtThumbnailSize = 300
 	fullSizeCoverExpires  = 5 * time.Minute
+
+	defaultDiskCacheSizeBytes = 50 * 1_048_576
 )
 
+// The ImageManager is responsible for retrieving and serving images to the UI layer.
+// It maintains an in-memory cache of recently used images for immediate future access,
+// and a larger on-disc cache of images that is periodically re-requested from the server.
 type ImageManager struct {
 	s              *ServerManager
 	baseCacheDir   string
@@ -33,6 +41,9 @@ type ImageManager struct {
 	cachedFullSizeCover           image.Image
 	cachedFullSizeCoverID         string
 	cachedFullSizeCoverAccessedAt int64 // unixMillis
+
+	maxOnDiskCacheSizeBytes    int64
+	filesWrittenSinceLastPrune bool
 }
 
 func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string) *ImageManager {
@@ -48,14 +59,22 @@ func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string)
 			MaxSize:    150,
 			DefaultTTL: 1 * time.Minute,
 		},
+		maxOnDiskCacheSizeBytes: defaultDiskCacheSizeBytes,
 	}
 	s.OnLogout(func() {
 		i.thumbnailCache.Clear()
 		i.clearFullSizeCover()
 	})
-	i.thumbnailCache.OnEvictTaskRan = i.clearFullSizeCoverIfExpired
+	i.thumbnailCache.OnEvictTaskRan = func() {
+		i.clearFullSizeCoverIfExpired()
+		i.pruneOnDiskCache()
+	}
 	i.thumbnailCache.Init(ctx, 2*time.Minute)
 	return i
+}
+
+func (i *ImageManager) SetMaxOnDiskCacheSizeBytes(size int64) {
+	i.maxOnDiskCacheSizeBytes = size
 }
 
 func (i *ImageManager) GetCoverThumbnailFromCache(coverID string) (image.Image, bool) {
@@ -214,6 +233,7 @@ func (i *ImageManager) writeJpeg(img image.Image, path string) error {
 			return err
 		}
 	}
+	i.filesWrittenSinceLastPrune = true
 	return err
 }
 
@@ -237,4 +257,48 @@ func (i *ImageManager) clearFullSizeCoverIfExpired() {
 func (i *ImageManager) clearFullSizeCover() {
 	i.cachedFullSizeCoverID = ""
 	i.cachedFullSizeCover = nil
+}
+
+func (im *ImageManager) pruneOnDiskCache() {
+	if !im.filesWrittenSinceLastPrune {
+		return // no new covers cached since last run, no need to walk dir
+	}
+
+	// collect list of all cached covers (across servers)
+	// we use modTime as a proxy for last accessed time
+	// since covers are refreshed from the server after a fixed interval,
+	// modTime is roughly equivalent to last access
+	type fileInfo struct {
+		path    string
+		size    int64
+		modTime int64
+	}
+	var allCovers []fileInfo
+	var totalSize int64
+	filepath.WalkDir(im.baseCacheDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, "jpg") {
+			return nil
+		}
+		if info, err := d.Info(); err == nil {
+			s := info.Size()
+			allCovers = append(allCovers,
+				fileInfo{path: path, size: s, modTime: info.ModTime().UnixMilli()})
+			totalSize += s
+		}
+
+		return nil
+	})
+
+	if totalSize > im.maxOnDiskCacheSizeBytes {
+		// sort and then delete from least recently modified until size is under threshold
+		sort.Slice(allCovers, func(i, j int) bool {
+			return allCovers[i].modTime < allCovers[j].modTime
+		})
+		for i := 0; i < len(allCovers) && totalSize > im.maxOnDiskCacheSizeBytes; i++ {
+			if err := os.Remove(allCovers[i].path); err == nil {
+				totalSize -= allCovers[i].size
+			}
+		}
+	}
+	im.filesWrittenSinceLastPrune = false
 }
