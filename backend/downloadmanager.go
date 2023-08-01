@@ -2,36 +2,50 @@ package backend
 
 import (
 	"archive/zip"
+	"context"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/util"
 )
 
+type DownloadManager struct {
+}
+
+// DownloadStatus represents the status of a download
 type DownloadStatus int
 
 const (
 	DownloadStatusNotStarted DownloadStatus = iota
 	DownloadStatusDownloading
 	DownloadStatusCompleted
+	DownloadStatusCanceled
 	DownloadStatusError
 )
 
-type DownloadManager struct {
-}
-
+// Download represents an individual download task.
 type Download struct {
 	status DownloadStatus
+
+	ctx    context.Context
+	cancel context.CancelFunc
 
 	onStatusChange func(*Download)
 }
 
+// Status returns the download status.
 func (d *Download) Status() DownloadStatus { return d.status }
 
+// OnStatusChange sets a callback that will be invoked when the download status changes.
 func (d *Download) OnStatusChange(cb func(*Download)) {
 	d.onStatusChange = cb
+}
+
+func (d *Download) Cancel() {
+	d.cancel()
 }
 
 func (d *Download) setStatus(s DownloadStatus) {
@@ -48,7 +62,8 @@ func (dm *DownloadManager) DownloadTrack(
 	track *mediaprovider.Track,
 ) *Download {
 	d := &Download{status: DownloadStatusNotStarted}
-	go func() {
+	d.ctx, d.cancel = context.WithCancel(context.Background())
+	go func(d *Download) {
 		reader, err := provider.DownloadTrack(track.ID)
 		if err != nil {
 			log.Println(err)
@@ -64,14 +79,20 @@ func (dm *DownloadManager) DownloadTrack(
 		}
 		defer file.Close()
 
+		reader = util.NewCancellableReader(d.ctx, reader)
 		_, err = io.Copy(file, reader)
+		if d.ctx.Err() == context.Canceled {
+			os.Remove(filePath)
+			d.setStatus(DownloadStatusCanceled)
+			return
+		}
 		if err != nil {
 			log.Println(err)
 			d.setStatus(DownloadStatusError)
 			return
 		}
 		d.setStatus(DownloadStatusCompleted)
-	}()
+	}(d)
 	return d
 }
 
@@ -82,7 +103,7 @@ func (dm *DownloadManager) DownloadTracks(
 	tracks []*mediaprovider.Track,
 ) *Download {
 	d := &Download{status: DownloadStatusNotStarted}
-	go func() {
+	go func(d *Download) {
 		zipFile, err := os.Create(filePath)
 		if err != nil {
 			log.Println(err)
@@ -108,7 +129,13 @@ func (dm *DownloadManager) DownloadTracks(
 				continue
 			}
 
+			reader = util.NewCancellableReader(d.ctx, reader)
 			_, err = io.Copy(fileWriter, reader)
+			if d.ctx.Err() == context.Canceled {
+				os.Remove(filePath)
+				d.setStatus(DownloadStatusCanceled)
+				return
+			}
 			if err != nil {
 				log.Println(err)
 				continue
@@ -117,6 +144,6 @@ func (dm *DownloadManager) DownloadTracks(
 			log.Printf("Saved track %s to: %s\n", track.Name, filePath)
 		}
 		d.setStatus(DownloadStatusCompleted)
-	}()
+	}(d)
 	return d
 }
