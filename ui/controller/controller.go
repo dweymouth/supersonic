@@ -1,12 +1,9 @@
 package controller
 
 import (
-	"archive/zip"
 	"fmt"
 	"image"
-	"io"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -557,6 +554,7 @@ func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track, downloadN
 	var fileName string
 	if numTracks == 1 {
 		fileName = filepath.Base(tracks[0].FilePath)
+		downloadName = tracks[0].Name
 	} else {
 		fileName = "downloaded_tracks.zip"
 	}
@@ -567,82 +565,32 @@ func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track, downloadN
 				log.Println(err)
 				return
 			}
-
 			if file == nil {
 				return
 			}
-			if numTracks == 1 {
-				go c.downloadTrack(tracks[0], file.URI().Path())
-			} else {
-				go c.downloadTracks(tracks, file.URI().Path(), downloadName)
-			}
 
+			filePath := file.URI().Path()
+			var d *backend.Download
+			if numTracks == 1 {
+				d = c.App.DownloadManager.DownloadTrack(
+					downloadName, filePath, c.App.ServerManager.Server, tracks[0])
+			} else {
+				d = c.App.DownloadManager.DownloadTracks(
+					downloadName, filePath, c.App.ServerManager.Server, tracks)
+			}
+			d.OnStatusChange(func(d *backend.Download) {
+				switch d.Status() {
+				case backend.DownloadStatusCompleted:
+					c.sendNotification(fmt.Sprintf("Download completed: %s", downloadName),
+						fmt.Sprintf("Saved at: %s", filePath))
+				case backend.DownloadStatusError:
+					c.sendNotification("Download failed", fmt.Sprintf("Downloading %s failed", filePath))
+				}
+			})
 		},
 		c.MainWindow)
 	dg.SetFileName(fileName)
 	dg.Show()
-}
-
-func (c *Controller) downloadTrack(track *mediaprovider.Track, filePath string) {
-	reader, err := c.App.ServerManager.Server.DownloadTrack(track.ID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, reader)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	log.Printf("Saved song %s to: %s\n", track.Name, filePath)
-	c.sendNotification(fmt.Sprintf("Download completed: %s", track.Name), fmt.Sprintf("Saved at: %s", filePath))
-}
-
-func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath, downloadName string) {
-	zipFile, err := os.Create(filePath)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer zipFile.Close()
-
-	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
-
-	for _, track := range tracks {
-		reader, err := c.App.ServerManager.Server.DownloadTrack(track.ID)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		fileName := filepath.Base(track.FilePath)
-
-		fileWriter, err := zipWriter.Create(fileName)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		_, err = io.Copy(fileWriter, reader)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		log.Printf("Saved song %s to: %s\n", track.Name, filePath)
-	}
-
-	c.sendNotification(fmt.Sprintf("Download completed: %s", downloadName), fmt.Sprintf("Saved at: %s", filePath))
 }
 
 func (c *Controller) sendNotification(title, content string) {

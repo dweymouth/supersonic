@@ -35,6 +35,7 @@ type App struct {
 	ServerManager   *ServerManager
 	ImageManager    *ImageManager
 	PlaybackManager *PlaybackManager
+	DownloadManager DownloadManager
 	Player          *player.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
