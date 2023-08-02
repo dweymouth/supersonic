@@ -40,7 +40,7 @@ func (b *BatchingIterator) NextN(n int) []*mediaprovider.Album {
 
 type ImageFetcher interface {
 	GetCoverThumbnailFromCache(string) (image.Image, bool)
-	GetCoverThumbnail(string) (image.Image, error)
+	GetCoverThumbnailAsync(string, func(image.Image, error)) context.CancelFunc
 }
 
 type GridViewIterator interface {
@@ -126,7 +126,7 @@ func NewGridView(iter GridViewIterator, fetch ImageFetcher, placeholder fyne.Res
 	g.createGridWrap()
 
 	// fetch initial items
-	g.fetchMoreItems(36)
+	g.checkFetchMoreItems(36)
 	return g
 }
 
@@ -148,37 +148,28 @@ func NewGridViewFromState(state *GridViewState) *GridView {
 }
 
 func (g *GridView) Clear() {
-	if g.fetchCancel != nil {
-		g.fetchCancel()
-		g.fetchCancel = nil
-	}
 	g.stateMutex.Lock()
 	defer g.stateMutex.Unlock()
+	g.cancelFetch()
 	g.items = nil
 	g.done = true
 }
 
 func (g *GridView) Reset(iter GridViewIterator) {
-	if g.fetchCancel != nil {
-		g.fetchCancel()
-		g.fetchCancel = nil
-	}
 	g.stateMutex.Lock()
+	g.cancelFetch()
 	g.items = nil
 	g.done = false
 	g.highestShown = 0
 	g.iter = iter
 	g.stateMutex.Unlock()
-	g.fetchMoreItems(36)
+	g.checkFetchMoreItems(36)
 	g.Refresh()
 }
 
 func (g *GridView) ResetFromState(state *GridViewState) {
-	if g.fetchCancel != nil {
-		g.fetchCancel()
-		g.fetchCancel = nil
-	}
 	g.stateMutex.Lock()
+	g.cancelFetch()
 	g.GridViewState = *state
 	g.stateMutex.Unlock()
 	g.grid.Refresh()
@@ -187,11 +178,8 @@ func (g *GridView) ResetFromState(state *GridViewState) {
 }
 
 func (g *GridView) ResetFixed(items []GridViewItemModel) {
-	if g.fetchCancel != nil {
-		g.fetchCancel()
-		g.fetchCancel = nil
-	}
 	g.stateMutex.Lock()
+	g.cancelFetch()
 	g.items = items
 	g.done = true
 	g.highestShown = 0
@@ -259,32 +247,23 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	}
 	card.Update(item)
 	card.PrevID = item.ID
-	// cancel any previous image fetch
+	// cancel any previous image fetch (no issues with possible double-invocations)
 	if card.ImgLoadCancel != nil {
 		card.ImgLoadCancel()
-		card.ImgLoadCancel = nil
 	}
 	if item.CoverArtID != "" {
 		if img, ok := g.imageFetcher.GetCoverThumbnailFromCache(item.CoverArtID); ok {
 			card.Cover.SetImage(img)
 		} else {
 			card.Cover.SetImage(nil)
-			// asynchronously fetch cover image
-			ctx, cancel := context.WithCancel(context.Background())
-			card.ImgLoadCancel = cancel
-			go func(ctx context.Context) {
-				i, err := g.imageFetcher.GetCoverThumbnail(item.CoverArtID)
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					if err == nil {
-						card.Cover.SetImage(i)
-					} else {
-						log.Printf("error fetching image: %s", err.Error())
-					}
+			card.ImgLoadCancel = g.imageFetcher.GetCoverThumbnailAsync(item.CoverArtID, func(i image.Image, err error) {
+				if err == nil {
+					card.Cover.SetImage(i)
+				} else {
+					log.Printf("error fetching image: %s", err.Error())
 				}
-			}(ctx)
+				card.ImgLoadCancel() // done. release resources associated with cancel channel
+			})
 		}
 	} else {
 		// use the placeholder for an item that has no cover art ID
@@ -292,8 +271,8 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	}
 
 	// if user has scrolled near the bottom, fetch more
-	if !g.done && g.fetchCancel == nil && itemIdx > g.lenItems()-10 {
-		g.fetchMoreItems(20)
+	if itemIdx > g.lenItems()-10 {
+		g.checkFetchMoreItems(20)
 	}
 }
 
@@ -303,8 +282,14 @@ func (g *GridView) lenItems() int {
 	return len(g.items)
 }
 
-// fetches at least count more items
-func (g *GridView) fetchMoreItems(count int) {
+// fetches at least count more items if fetch not in progress and not done
+// acquires stateMutex for atomicity
+func (g *GridView) checkFetchMoreItems(count int) {
+	g.stateMutex.Lock()
+	defer g.stateMutex.Unlock()
+	if g.done || g.fetchCancel != nil {
+		return // done, or fetch already in progress
+	}
 	if g.iter == nil {
 		g.done = true
 		return
@@ -335,8 +320,19 @@ func (g *GridView) fetchMoreItems(count int) {
 				}
 			}
 		}
-		g.fetchCancel = nil
+		// call cancelfunc to release Context resources
+		g.stateMutex.Lock()
+		g.cancelFetch()
+		g.stateMutex.Unlock()
 	}()
+}
+
+// must be called with stateMutex locked for writing
+func (g *GridView) cancelFetch() {
+	if g.fetchCancel != nil {
+		g.fetchCancel()
+		g.fetchCancel = nil
+	}
 }
 
 func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
