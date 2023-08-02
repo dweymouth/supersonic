@@ -113,6 +113,12 @@ func (a *ArtistsPage) load() {
 	a.onSearched(a.searcher.Entry.Text, true)
 }
 
+var _ Searchable = (*ArtistsPage)(nil)
+
+func (a *ArtistsPage) SearchWidget() fyne.Focusable {
+	return a.searcher
+}
+
 func (a *ArtistsPage) onSearched(query string, firstLoad bool) {
 	// since the playlist list is returned in full non-paginated, we will do our own
 	// simple search based on the name, description, and owner, rather than calling a server API
