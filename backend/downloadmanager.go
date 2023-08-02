@@ -79,6 +79,7 @@ func (dm *DownloadManager) DownloadTrack(
 		}
 		defer file.Close()
 
+		d.setStatus(DownloadStatusDownloading)
 		reader = util.NewCancellableReader(d.ctx, reader)
 		_, err = io.Copy(file, reader)
 		if d.ctx.Err() == context.Canceled {
