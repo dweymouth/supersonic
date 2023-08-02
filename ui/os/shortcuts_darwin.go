@@ -21,4 +21,5 @@ var (
 		{Modifier: fyne.KeyModifierSuper, KeyName: fyne.KeyRight},
 		{Modifier: fyne.KeyModifierSuper, KeyName: fyne.KeyRightBracket},
 	}
+	SettingsShortcut = &desktop.CustomShortcut{Modifier: fyne.KeyModifierSuper, KeyName: fyne.KeyComma}
 )

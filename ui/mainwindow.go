@@ -126,11 +126,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 			}
 		}()
 	})
-	m.BrowsingPane.AddSettingsMenuItem("Settings...", func() {
-		m.Controller.ShowSettingsDialog(func() {
-			fyneApp.Settings().SetTheme(m.theme)
-		}, m.theme.ListThemeFiles())
-	})
+	m.BrowsingPane.AddSettingsMenuItem("Settings...", m.showSettingsDialog)
 	m.BrowsingPane.AddSettingsMenuItem("About...", m.Controller.ShowAboutDialog)
 	m.addNavigationButtons()
 	m.BrowsingPane.DisableNavigationButtons()
@@ -240,6 +236,11 @@ func (m *MainWindow) addShortcuts() {
 			m.Canvas().Focus(nil)
 		})
 	}
+	if os.SettingsShortcut != nil {
+		m.Canvas().AddShortcut(os.SettingsShortcut, func(_ fyne.Shortcut) {
+			m.showSettingsDialog()
+		})
+	}
 
 	m.Canvas().AddShortcut(&ShortcutReload, func(_ fyne.Shortcut) {
 		m.BrowsingPane.Reload()
@@ -274,6 +275,12 @@ func (m *MainWindow) addShortcuts() {
 			m.App.Player.PlayPause()
 		}
 	})
+}
+
+func (m *MainWindow) showSettingsDialog() {
+	m.Controller.ShowSettingsDialog(func() {
+		fyne.CurrentApp().Settings().SetTheme(m.theme)
+	}, m.theme.ListThemeFiles())
 }
 
 func (m *MainWindow) Show() {

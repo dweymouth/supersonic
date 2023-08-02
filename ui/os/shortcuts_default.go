@@ -19,4 +19,5 @@ var (
 	ForwardShortcuts = []desktop.CustomShortcut{
 		{Modifier: fyne.KeyModifierAlt, KeyName: fyne.KeyRight},
 	}
+	SettingsShortcut *desktop.CustomShortcut = nil // TODO: is there a platform standard for Win/Linux?
 )
