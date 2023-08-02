@@ -241,12 +241,11 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	}
 	g.stateMutex.RUnlock()
 	card.Cover.Im.CenterIcon = g.Placeholder
-	if card.PrevID == item.ID {
+	if !card.NeedsUpdate(item) {
 		// nothing to do
 		return
 	}
 	card.Update(item)
-	card.PrevID = item.ID
 	// cancel any previous image fetch (no issues with possible double-invocations)
 	if card.ImgLoadCancel != nil {
 		card.ImgLoadCancel()

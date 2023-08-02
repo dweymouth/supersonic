@@ -139,10 +139,7 @@ type GridViewItem struct {
 	container     *fyne.Container
 
 	// updated by GridView
-	Cover *coverImage
-
-	// these fields are used by GridView to track async update tasks
-	PrevID        string
+	Cover         *coverImage
 	ImgLoadCancel context.CancelFunc
 
 	OnPlay              func()
@@ -193,13 +190,16 @@ func (g *GridViewItem) createContainer() {
 	g.container = container.New(pad, c)
 }
 
+func (g *GridViewItem) NeedsUpdate(model GridViewItemModel) bool {
+	return g.itemID != model.ID || g.secondaryID != model.SecondaryID
+}
+
 func (g *GridViewItem) Update(model GridViewItemModel) {
 	g.itemID = model.ID
 	g.secondaryID = model.SecondaryID
 	g.primaryText.SetText(model.Name)
-	g.secondaryText.SetText(model.Secondary)
 	g.secondaryText.Disabled = model.SecondaryID == ""
-	g.secondaryText.Refresh()
+	g.secondaryText.SetText(model.Secondary)
 	g.Cover.ResetPlayButton()
 }
 
