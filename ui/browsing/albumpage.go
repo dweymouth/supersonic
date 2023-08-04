@@ -185,6 +185,8 @@ type AlbumPageHeader struct {
 
 	toggleFavButton *widgets.FavoriteButton
 
+	fullSizeCoverFetching bool
+
 	container *fyne.Container
 }
 
@@ -294,6 +296,7 @@ func (a *AlbumPageHeader) Clear() {
 	a.genreLabel.SetText("")
 	a.miscLabel.SetText("")
 	a.toggleFavButton.IsFavorited = false
+	a.fullSizeCoverFetching = false
 	a.cover.Image.Image = nil
 	a.cover.Refresh()
 }
@@ -304,6 +307,11 @@ func (a *AlbumPageHeader) toggleFavorited() {
 }
 
 func (a *AlbumPageHeader) showPopUpCover() {
+	if a.fullSizeCoverFetching {
+		return
+	}
+	a.fullSizeCoverFetching = true
+	defer func() { a.fullSizeCoverFetching = false }()
 	cover, err := a.page.im.GetFullSizeCoverArt(a.coverID)
 	if err != nil {
 		log.Printf("error getting full size album cover: %s", err.Error())
