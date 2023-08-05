@@ -153,6 +153,11 @@ func (t *TracksPage) Save() SavedPage {
 	t.loader.Dispose()
 	t.tracklist.Clear()
 	t.widgetPool.Release(util.WidgetTypeTracklist, t.tracklist)
+	if t.searchTracklist != nil {
+		t.searchLoader.Dispose()
+		t.searchTracklist.Clear()
+		t.widgetPool.Release(util.WidgetTypeTracklist, t.searchTracklist)
+	}
 	state := t.tracksPageState
 	return &state
 }

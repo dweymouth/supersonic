@@ -120,11 +120,7 @@ func (a *NowPlayingPage) SelectAll() {
 var _ CanShowNowPlaying = (*NowPlayingPage)(nil)
 
 func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
-	if song == nil {
-		a.nowPlayingID = ""
-	} else {
-		a.nowPlayingID = song.ID
-	}
+	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 	a.tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
 }

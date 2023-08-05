@@ -6,6 +6,7 @@ import (
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -248,13 +249,12 @@ func (a *FavoritesPage) OnSearched(query string) {
 
 var _ CanShowNowPlaying = (*FavoritesPage)(nil)
 
-func (a *FavoritesPage) OnSongChange(song, _ *mediaprovider.Track) {
-	a.nowPlayingID = ""
-	if song != nil {
-		a.nowPlayingID = song.ID
-	}
+func (a *FavoritesPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
+	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
 	if a.tracklistCtr != nil {
-		a.tracklistCtr.Objects[0].(*widgets.Tracklist).SetNowPlaying(a.nowPlayingID)
+		tracklist := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		tracklist.SetNowPlaying(a.nowPlayingID)
+		tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
 	}
 }
 
