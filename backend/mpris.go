@@ -3,6 +3,7 @@ package backend
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/player"
@@ -253,16 +254,18 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 		}
 	}
 	return types.Metadata{
-		TrackId:     dbus.ObjectPath(trackObjPath),
-		Length:      secondsToMicroseconds(status.Duration),
-		Title:       tr.Name,
-		Album:       tr.Album,
-		Artist:      tr.ArtistNames,
-		DiscNumber:  tr.DiscNumber,
-		TrackNumber: tr.TrackNumber,
-		Genre:       []string{tr.Genre},
-		UserRating:  float64(tr.Rating) / 5,
-		ArtUrl:      artURL,
+		TrackId:        dbus.ObjectPath(trackObjPath),
+		Length:         secondsToMicroseconds(status.Duration),
+		Title:          tr.Name,
+		Album:          tr.Album,
+		Artist:         tr.ArtistNames,
+		DiscNumber:     tr.DiscNumber,
+		TrackNumber:    tr.TrackNumber,
+		Genre:          []string{tr.Genre},
+		UserRating:     float64(tr.Rating) / 5,
+		ContentCreated: strconv.Itoa(tr.Year),
+		UseCount:       tr.PlayCount,
+		ArtUrl:         artURL,
 	}, nil
 }
 
