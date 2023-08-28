@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"encoding/base32"
 	"errors"
 	"fmt"
 	"strconv"
@@ -66,7 +67,7 @@ func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *
 		if tr == nil {
 			m.curTrackPath = ""
 		} else {
-			m.curTrackPath = dbusTrackIDPrefix + tr.ID
+			m.curTrackPath = dbusTrackIDPrefix + encodeTrackId(tr.ID)
 		}
 	})
 	m.pm.OnVolumeChange(func(vol int) {
@@ -320,3 +321,9 @@ func microsecondsToSeconds(m types.Microseconds) float64 {
 func secondsToMicroseconds(s float64) types.Microseconds {
 	return types.Microseconds(s * 1_000_000)
 }
+
+func encodeTrackId(id string) string {
+	data := []byte(id)
+	return base32.StdEncoding.WithPadding('0').EncodeToString(data)
+}
+
