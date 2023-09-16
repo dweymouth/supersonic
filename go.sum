@@ -78,8 +78,8 @@ github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5 h1:uXbHzg9
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5/go.mod h1:X2+NrR+62mvAiAt2fwKT7035zQsE77KVV1NlvWo4vW8=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee h1:ZGyJ6wp7CAfT31BugypcF/TPKEy2RrGR9JFq1JOjOpY=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee/go.mod h1:Ov0ieN90M7i+0k3OxhA/g1dozGs+UcPHDsMKqPgRDk0=
-github.com/dweymouth/go-subsonic v0.0.0-20230614154319-792d18c75fb4 h1:cuyvB4GjTMBHKJwMJ/LFpuKfSVXuCheNj6fgxBa3m1Y=
-github.com/dweymouth/go-subsonic v0.0.0-20230614154319-792d18c75fb4/go.mod h1:fUez6NFiEJiQTZizZ1BThZr5GJXAbigzGYjEPNm4tdI=
+github.com/dweymouth/go-subsonic v0.0.0-20230916175103-b0c94e70225a h1:fCE+UP6Soxb/jmRvKuyS1XuHtbyYZfj2QeWuXMRBzhY=
+github.com/dweymouth/go-subsonic v0.0.0-20230916175103-b0c94e70225a/go.mod h1:fUez6NFiEJiQTZizZ1BThZr5GJXAbigzGYjEPNm4tdI=
 github.com/eclipse/paho.mqtt.golang v1.3.5/go.mod h1:eTzb4gxwwyWpqBUHGQZ4ABAV7+Jgm1PklsYT/eo8Hcc=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=

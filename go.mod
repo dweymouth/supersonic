@@ -7,7 +7,7 @@ require (
 	fyne.io/x/fyne v0.0.0-20230611151101-afdcd6b92cf3
 	github.com/20after4/configdir v0.1.1
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
-	github.com/dweymouth/go-subsonic v0.0.0-20230614154319-792d18c75fb4
+	github.com/dweymouth/go-subsonic v0.0.0-20230916175103-b0c94e70225a
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
