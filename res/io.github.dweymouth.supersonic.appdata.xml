@@ -60,19 +60,33 @@
   </screenshots>
 
  <releases>
-  <release date="2023-07-17" version="0.5.1">
+  <release date="2023-09-18" version="0.5.2">
    <description>
      <p>
-       Version 0.5.1 of Supersonic
+       Version 0.5.2 of Supersonic
      </p>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Regression: play buttons on album, playlist, artist pages playing incorrect item</li>
-       <li>Incorrect track duration reported through MPRIS</li>
-       <li>MPRIS SetPosition mistakenly left unimplemented</li>
+       <li>Album lists were not populating when connecting to Astiga</li>
+       <li>MPRIS SetPosition call failed</li>
+       <li>Album card on artist discography page occasionally showed artist name instead of year</li>
+       <li>MPRIS invalid track object path for some Subsonic servers</li>
+       <li>Play count did not increment on Favorites page tracklist</li>
+       <li>Ctrl+F should focus search bar on Artists page</li>
+       <li>Prevent multiple popup cover images if thumbnail clicked twice</li>
+     </ul>
+
+     <p>
+       Changed
+     </p>
+     <ul>
+       <li>Settings dialog opens to last active tab</li>
+       <li>Add size limit and periodic pruning to on-disc image cache</li>
+       <li>Added Cmd+, shortcut on Mac to launch settings dialog</li>
+       <li>Add ContentCreated, UseCount to the MPRIS metadata</li>
      </ul>
 
    </description>
