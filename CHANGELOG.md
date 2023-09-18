@@ -1,5 +1,29 @@
 # Change Log
 
+## [0.5.2] - 2023-09-18
+
+### Fixed
+- [#248](https://github.com/dweymouth/supersonic/issues/248) Album lists not populating when connecting to Astiga
+- [#230](https://github.com/dweymouth/supersonic/issues/230) MPRIS SetPosition call fails
+- [cf09912](https://github.com/dweymouth/supersonic/commit/cf09912474cc910fbbc23195b496206e3de60d36) Album card on artist discography page occasionally showed artist name instead of year
+- [ce68593](https://github.com/dweymouth/supersonic/commit/ce685933be4ea7632fc9087269246e40c0d0a284) Fix MPRIS invalid track object path for some Subsonic servers
+- [64ec698](https://github.com/dweymouth/supersonic/commit/64ec6982029b7462793fdd32db4aea900f61c6bc) Play count did not increment on Favorites page tracklist
+- [a2a56b3](https://github.com/dweymouth/supersonic/commit/a2a56b3d8caff0a0ad0daba756a92bd083838412) Ctrl+F should focus search bar on Artists page
+- [5c9d338](https://github.com/dweymouth/supersonic/commit/5c9d338b620c6c03b0a732e41e6d9ba5e28e6f6d) Prevent multiple popup cover images if thumbnail clicked twice
+
+### Changed
+- [#223](https://github.com/dweymouth/supersonic/issues/223) Settings dialog opens to last active tab
+- [#227](https://github.com/dweymouth/supersonic/issues/227) Add size limit and periodic pruning to on-disc image cache
+- [1c27a26](https://github.com/dweymouth/supersonic/commit/1c27a267b9bc8c7c0061e6a88161485432035f33) Added Cmd+, shortcut on Mac to launch settings dialog
+- [f2e4805](https://github.com/dweymouth/supersonic/commit/f2e4805b29774db53a1345e5cfde02b0623ec846) Add ContentCreated, UseCount to the MPRIS metadata
+
+## [0.5.1] - 2023-07-17
+
+### Fixed
+- [#222](https://github.com/dweymouth/supersonic/issues/222) Regression: play button on Album and Playlist page playing incorrect album
+- [#221](https://github.com/dweymouth/supersonic/issues/221) MPRIS reported duration is incorrect
+- [#220](https://github.com/dweymouth/supersonic/issues/220) MPRIS SetPosition not implemented
+
 ## [0.5.0] - 2023-07-15
 
 ### Added
