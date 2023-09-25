@@ -267,6 +267,11 @@ func (s *subsonicMediaProvider) DownloadTrack(trackID string) (io.Reader, error)
 	return s.client.Download(trackID)
 }
 
+func (s *subsonicMediaProvider) RescanLibrary() error {
+	_, err := s.client.StartScan()
+	return err
+}
+
 func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 	if ch == nil {
 		return nil

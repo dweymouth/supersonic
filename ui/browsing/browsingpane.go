@@ -120,6 +120,11 @@ func (b *BrowsingPane) AddSettingsMenuItem(label string, action func()) {
 		fyne.NewMenuItem(label, action))
 }
 
+func (b *BrowsingPane) AddSettingsMenuSeparator() {
+	b.settingsMenu.Items = append(b.settingsMenu.Items,
+		fyne.NewMenuItemSeparator())
+}
+
 func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, action func()) {
 	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", icon, action))
 }

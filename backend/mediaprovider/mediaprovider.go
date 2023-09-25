@@ -90,4 +90,6 @@ type MediaProvider interface {
 	Scrobble(trackID string, submission bool) error
 
 	DownloadTrack(trackID string) (io.Reader, error)
+
+	RescanLibrary() error
 }
