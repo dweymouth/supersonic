@@ -11,7 +11,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
-	xwidget "fyne.io/x/fyne/widget"
 )
 
 const batchFetchSize = 6
@@ -75,7 +74,7 @@ type GridView struct {
 	fetchCancel context.CancelFunc
 	GridViewState
 
-	grid               *xwidget.GridWrap
+	grid               *widget.GridWrap
 	menu               *widget.PopUpMenu
 	menuGridViewItemId string
 }
@@ -197,7 +196,7 @@ func (g *GridView) ScrollToOffset(offs float32) {
 }
 
 func (g *GridView) createGridWrap() {
-	g.grid = xwidget.NewGridWrap(
+	g.grid = widget.NewGridWrap(
 		func() int {
 			return g.lenItems()
 		},
@@ -221,7 +220,7 @@ func (g *GridView) createGridWrap() {
 			return card
 		},
 		// update func
-		func(itemID xwidget.GridWrapItemID, obj fyne.CanvasObject) {
+		func(itemID widget.GridWrapItemID, obj fyne.CanvasObject) {
 			ac := obj.(*GridViewItem)
 			g.doUpdateItemCard(int(itemID), ac)
 		},

@@ -30,8 +30,8 @@ func newHyperlinkWrapper() *hyperlinkWrapper {
 func (h *hyperlinkWrapper) MinSize() fyne.Size {
 	if h.textWidthCached < 0 {
 		s := fyne.MeasureText(h.Text, theme.TextSize(), h.TextStyle)
-		// the 2.7 factor is a bit of a magic number but it works ¯\_(ツ)_/¯
-		h.textWidthCached = s.Width + theme.Padding()*2.7
+		// the 4.0 factor is a bit of a magic number but it works ¯\_(ツ)_/¯
+		h.textWidthCached = s.Width + theme.Padding()*4.0
 	}
 	return fyne.NewSize(fyne.Min(h.MaxWidth, h.textWidthCached), h.Hyperlink.MinSize().Height)
 }
