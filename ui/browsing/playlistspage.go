@@ -3,6 +3,7 @@ package browsing
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -38,6 +39,7 @@ type PlaylistsPage struct {
 	titleDisp  *widget.RichText
 	container  *fyne.Container
 	listView   *PlaylistList
+	listSort   widgets.ListHeaderSort
 	gridView   *widgets.GridView
 }
 
@@ -46,15 +48,16 @@ func NewPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *
 	if cfg.InitialView == "Grid" {
 		activeView = 1
 	}
-	return newPlaylistsPage(contr, pool, cfg, mp, "", activeView)
+	return newPlaylistsPage(contr, pool, cfg, mp, "", activeView, widgets.ListHeaderSort{})
 }
 
-func newPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider, searchText string, activeView int) *PlaylistsPage {
+func newPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider, searchText string, activeView int, listSort widgets.ListHeaderSort) *PlaylistsPage {
 	a := &PlaylistsPage{
 		pool:      pool,
 		cfg:       cfg,
 		mp:        mp,
 		contr:     contr,
+		listSort:  listSort,
 		titleDisp: widget.NewRichTextWithText("Playlists"),
 	}
 	a.ExtendBaseWidget(a)
@@ -92,7 +95,7 @@ func (a *PlaylistsPage) load(searchOnLoad bool) {
 }
 
 func (a *PlaylistsPage) createListView() {
-	a.listView = NewPlaylistList()
+	a.listView = NewPlaylistList(a.listSort)
 	a.listView.OnNavTo = a.showPlaylistPage
 }
 
@@ -140,9 +143,9 @@ func (a *PlaylistsPage) showListView() {
 	if a.listView == nil {
 		a.createListView()
 		if a.searcher.Entry.Text != "" {
-			a.listView.Playlists = a.searchedPlaylists
+			a.listView.SetPlaylists(a.searchedPlaylists)
 		} else {
-			a.listView.Playlists = a.playlists
+			a.listView.SetPlaylists(a.playlists)
 		}
 	}
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.listView
@@ -204,7 +207,7 @@ func (a *PlaylistsPage) onSearched(query string) {
 // refresh the active view
 func (a *PlaylistsPage) refreshView(playlists []*mediaprovider.Playlist) {
 	if a.listView != nil {
-		a.listView.Playlists = playlists
+		a.listView.SetPlaylists(playlists)
 	}
 	if a.gridView != nil {
 		a.gridView.ResetFixed(createPlaylistGridViewModel(playlists))
@@ -243,6 +246,9 @@ func (a *PlaylistsPage) Save() SavedPage {
 		a.gridView.Clear()
 		a.pool.Release(util.WidgetTypeGridView, a.gridView)
 	}
+	if a.listView != nil {
+		s.listSort = a.listView.sorting
+	}
 	return s
 }
 
@@ -253,10 +259,11 @@ type savedPlaylistsPage struct {
 	mp         mediaprovider.MediaProvider
 	searchText string
 	activeView int
+	listSort   widgets.ListHeaderSort
 }
 
 func (s *savedPlaylistsPage) Restore() Page {
-	return newPlaylistsPage(s.contr, s.pool, s.cfg, s.mp, s.searchText, s.activeView)
+	return newPlaylistsPage(s.contr, s.pool, s.cfg, s.mp, s.searchText, s.activeView, s.listSort)
 }
 
 func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {
@@ -274,8 +281,11 @@ func (a *PlaylistsPage) CreateRenderer() fyne.WidgetRenderer {
 type PlaylistList struct {
 	widget.BaseWidget
 
-	Playlists []*mediaprovider.Playlist
-	OnNavTo   func(string)
+	OnNavTo func(string)
+
+	playlistsOrigOrder []*mediaprovider.Playlist
+	playlists          []*mediaprovider.Playlist
+	sorting            widgets.ListHeaderSort
 
 	columnsLayout *layouts.ColumnsLayout
 	header        *widgets.ListHeader
@@ -283,14 +293,15 @@ type PlaylistList struct {
 	container     *fyne.Container
 }
 
-func NewPlaylistList() *PlaylistList {
+func NewPlaylistList(initialSort widgets.ListHeaderSort) *PlaylistList {
 	a := &PlaylistList{
+		sorting:       initialSort,
 		columnsLayout: layouts.NewColumnsLayout([]float32{-1, -1, 200, 125}),
 	}
 	a.buildHeader()
 	a.list = widget.NewList(
 		func() int {
-			return len(a.Playlists)
+			return len(a.playlists)
 		},
 		func() fyne.CanvasObject {
 			r := NewPlaylistListRow(a.columnsLayout)
@@ -299,11 +310,11 @@ func NewPlaylistList() *PlaylistList {
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			row := item.(*PlaylistListRow)
-			row.ID = a.Playlists[id].ID
-			row.nameLabel.Text = a.Playlists[id].Name
-			row.descrptionLabel.Text = a.Playlists[id].Description
-			row.ownerLabel.Text = a.Playlists[id].Owner
-			row.trackCountLabel.Text = strconv.Itoa(a.Playlists[id].TrackCount)
+			row.ID = a.playlists[id].ID
+			row.nameLabel.Text = a.playlists[id].Name
+			row.descrptionLabel.Text = a.playlists[id].Description
+			row.ownerLabel.Text = a.playlists[id].Owner
+			row.trackCountLabel.Text = strconv.Itoa(a.playlists[id].TrackCount)
 			row.Refresh()
 		},
 	)
@@ -314,12 +325,18 @@ func NewPlaylistList() *PlaylistList {
 
 func (p *PlaylistList) buildHeader() {
 	p.header = widgets.NewListHeader([]widgets.ListColumn{
-		{"Name", fyne.TextAlignLeading, false},
-		{"Description", fyne.TextAlignLeading, false},
-		{"Owner", fyne.TextAlignLeading, false},
-		{"Track Count", fyne.TextAlignTrailing, false}}, p.columnsLayout)
-	p.header.DisableSorting = true
+		{Text: "Name", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: "Description", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: "Owner", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: "Track Count", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}, p.columnsLayout)
+	p.header.SetSorting(p.sorting)
+	p.header.OnColumnSortChanged = p.onSorted
+}
 
+// Sets the playlists in the list. Does not issue Refresh call.
+func (p *PlaylistList) SetPlaylists(playlists []*mediaprovider.Playlist) {
+	p.playlistsOrigOrder = playlists
+	p.doSortPlaylists()
 }
 
 func (p *PlaylistList) CreateRenderer() fyne.WidgetRenderer {
@@ -330,6 +347,54 @@ func (p *PlaylistList) onRowTapped(id string) {
 	if p.OnNavTo != nil {
 		p.OnNavTo(id)
 	}
+}
+
+func (p *PlaylistList) onSorted(sort widgets.ListHeaderSort) {
+	p.sorting = sort
+	p.doSortPlaylists()
+	p.Refresh()
+}
+
+func (p *PlaylistList) doSortPlaylists() {
+	if p.sorting.Type == widgets.SortNone {
+		p.playlists = p.playlistsOrigOrder
+		return
+	}
+	switch p.sorting.ColNumber {
+	case 0: //Name
+		p.stringSort(func(p *mediaprovider.Playlist) string { return p.Name })
+	case 1: // Description
+		p.stringSort(func(p *mediaprovider.Playlist) string { return p.Description })
+	case 2: // Owner
+		p.stringSort(func(p *mediaprovider.Playlist) string { return p.Owner })
+	case 3: // Track Count
+		p.intSort(func(p *mediaprovider.Playlist) int { return p.TrackCount })
+	}
+}
+
+func (p *PlaylistList) stringSort(fieldFn func(*mediaprovider.Playlist) string) {
+	new := make([]*mediaprovider.Playlist, len(p.playlistsOrigOrder))
+	copy(new, p.playlistsOrigOrder)
+	sort.SliceStable(new, func(i, j int) bool {
+		cmp := strings.Compare(fieldFn(new[i]), fieldFn(new[j]))
+		if p.sorting.Type == widgets.SortDescending {
+			return cmp > 0
+		}
+		return cmp < 0
+	})
+	p.playlists = new
+}
+
+func (p *PlaylistList) intSort(fieldFn func(*mediaprovider.Playlist) int) {
+	new := make([]*mediaprovider.Playlist, len(p.playlistsOrigOrder))
+	copy(new, p.playlistsOrigOrder)
+	sort.SliceStable(new, func(i, j int) bool {
+		if p.sorting.Type == widgets.SortDescending {
+			return fieldFn(new[i]) > fieldFn(new[j])
+		}
+		return fieldFn(new[i]) < fieldFn(new[j])
+	})
+	p.playlists = new
 }
 
 type PlaylistListRow struct {
