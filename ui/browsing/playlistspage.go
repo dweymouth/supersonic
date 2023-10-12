@@ -358,6 +358,7 @@ func (p *PlaylistList) onSorted(sort widgets.ListHeaderSort) {
 func (p *PlaylistList) doSortPlaylists() {
 	if p.sorting.Type == widgets.SortNone {
 		p.playlists = p.playlistsOrigOrder
+		return
 	}
 	switch p.sorting.ColNumber {
 	case 0: //Name

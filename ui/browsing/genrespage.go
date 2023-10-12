@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -34,10 +35,10 @@ type GenresPage struct {
 }
 
 func NewGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider) *GenresPage {
-	return newGenresPage(contr, mp, "")
+	return newGenresPage(contr, mp, "", widgets.ListHeaderSort{})
 }
 
-func newGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider, searchText string) *GenresPage {
+func newGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider, searchText string, sorting widgets.ListHeaderSort) *GenresPage {
 	a := &GenresPage{
 		contr:     contr,
 		mp:        mp,
@@ -45,7 +46,7 @@ func newGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider,
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
-	a.list = NewGenreList(nil)
+	a.list = NewGenreList(sorting)
 	a.list.OnNavTo = func(id string) { a.contr.NavigateTo(controller.GenreRoute(id)) }
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.OnSearched = a.onSearched
@@ -65,7 +66,7 @@ func (a *GenresPage) load(searchOnLoad bool) {
 	if searchOnLoad {
 		a.onSearched(a.searcher.Entry.Text)
 	} else {
-		a.list.Items = genres
+		a.list.SetGenres(a.genres)
 		a.list.Refresh()
 	}
 }
@@ -74,13 +75,13 @@ func (a *GenresPage) onSearched(query string) {
 	// since the artists and genres lists are returned in full non-paginated, we will do our own
 	// simple search based on the artist/genre name, rather than calling a server API
 	if query == "" {
-		a.list.Items = a.genres
+		a.list.SetGenres(a.genres)
 	} else {
 		query = strings.ToLower(query)
 		result := sharedutil.FilterSlice(a.genres, func(x *mediaprovider.Genre) bool {
 			return strings.Contains(strings.ToLower(x.Name), query)
 		})
-		a.list.Items = result
+		a.list.SetGenres(result)
 	}
 	a.list.Refresh()
 }
@@ -100,22 +101,23 @@ func (a *GenresPage) Reload() {
 }
 
 func (a *GenresPage) Save() SavedPage {
-	return &savedArtistsGenresPage{
+	return &savedGenresPage{
 		contr:      a.contr,
 		mp:         a.mp,
 		searchText: a.searcher.Entry.Text,
+		sorting:    a.list.sorting,
 	}
 }
 
-type savedArtistsGenresPage struct {
-	isGenresPage bool
-	contr        *controller.Controller
-	mp           mediaprovider.MediaProvider
-	searchText   string
+type savedGenresPage struct {
+	contr      *controller.Controller
+	mp         mediaprovider.MediaProvider
+	searchText string
+	sorting    widgets.ListHeaderSort
 }
 
-func (s *savedArtistsGenresPage) Restore() Page {
-	return newGenresPage(s.contr, s.mp, s.searchText)
+func (s *savedGenresPage) Restore() Page {
+	return newGenresPage(s.contr, s.mp, s.searchText, s.sorting)
 }
 
 func (a *GenresPage) buildContainer() {
@@ -134,8 +136,11 @@ func (a *GenresPage) CreateRenderer() fyne.WidgetRenderer {
 type GenreList struct {
 	widget.BaseWidget
 
-	Items   []*mediaprovider.Genre
 	OnNavTo func(string)
+
+	sorting         widgets.ListHeaderSort
+	genres          []*mediaprovider.Genre
+	genresOrigOrder []*mediaprovider.Genre
 
 	columnsLayout *layouts.ColumnsLayout
 	hdr           *widgets.ListHeader
@@ -169,17 +174,18 @@ func NewGenreListRow(layout *layouts.ColumnsLayout) *GenreListRow {
 	return a
 }
 
-func NewGenreList(items []*mediaprovider.Genre) *GenreList {
+func NewGenreList(sorting widgets.ListHeaderSort) *GenreList {
 	a := &GenreList{
-		Items:         items,
+		sorting:       sorting,
 		columnsLayout: layouts.NewColumnsLayout([]float32{-1, 125, 125}),
 	}
 	a.ExtendBaseWidget(a)
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
 		{"Name", fyne.TextAlignLeading, false}, {"Album Count", fyne.TextAlignTrailing, false}, {"Track Count", fyne.TextAlignTrailing, false}}, a.columnsLayout)
-	a.hdr.DisableSorting = true
+	a.hdr.SetSorting(sorting)
+	a.hdr.OnColumnSortChanged = a.onSorted
 	a.list = widget.NewList(
-		func() int { return len(a.Items) },
+		func() int { return len(a.genres) },
 		func() fyne.CanvasObject {
 			r := NewGenreListRow(a.columnsLayout)
 			r.OnTapped = func() { a.onRowDoubleTapped(r.Item) }
@@ -187,7 +193,7 @@ func NewGenreList(items []*mediaprovider.Genre) *GenreList {
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			row := item.(*GenreListRow)
-			row.Item = a.Items[id]
+			row.Item = a.genres[id]
 			row.nameLabel.Text = row.Item.Name
 			row.albumCountLabel.Text = strconv.Itoa(row.Item.AlbumCount)
 			row.trackCountLabel.Text = strconv.Itoa(row.Item.TrackCount)
@@ -196,6 +202,58 @@ func NewGenreList(items []*mediaprovider.Genre) *GenreList {
 	)
 	a.container = container.NewBorder(a.hdr, nil, nil, nil, a.list)
 	return a
+}
+
+func (g *GenreList) SetGenres(genres []*mediaprovider.Genre) {
+	g.genresOrigOrder = genres
+	g.doSortGenres()
+	g.Refresh()
+}
+
+func (g *GenreList) onSorted(sort widgets.ListHeaderSort) {
+	g.sorting = sort
+	g.doSortGenres()
+	g.Refresh()
+}
+
+func (g *GenreList) doSortGenres() {
+	if g.sorting.Type == widgets.SortNone {
+		g.genres = g.genresOrigOrder
+		return
+	}
+	switch g.sorting.ColNumber {
+	case 0: //Name
+		g.stringSort(func(g *mediaprovider.Genre) string { return g.Name })
+	case 1: // Album Count
+		g.intSort(func(g *mediaprovider.Genre) int { return g.AlbumCount })
+	case 2: // Track Count
+		g.intSort(func(g *mediaprovider.Genre) int { return g.TrackCount })
+	}
+}
+
+func (g *GenreList) stringSort(fieldFn func(*mediaprovider.Genre) string) {
+	new := make([]*mediaprovider.Genre, len(g.genresOrigOrder))
+	copy(new, g.genresOrigOrder)
+	sort.SliceStable(new, func(i, j int) bool {
+		cmp := strings.Compare(fieldFn(new[i]), fieldFn(new[j]))
+		if g.sorting.Type == widgets.SortDescending {
+			return cmp > 0
+		}
+		return cmp < 0
+	})
+	g.genres = new
+}
+
+func (g *GenreList) intSort(fieldFn func(*mediaprovider.Genre) int) {
+	new := make([]*mediaprovider.Genre, len(g.genresOrigOrder))
+	copy(new, g.genresOrigOrder)
+	sort.SliceStable(new, func(i, j int) bool {
+		if g.sorting.Type == widgets.SortDescending {
+			return fieldFn(new[i]) > fieldFn(new[j])
+		}
+		return fieldFn(new[i]) < fieldFn(new[j])
+	})
+	g.genres = new
 }
 
 func (a *GenreList) onRowDoubleTapped(item *mediaprovider.Genre) {
