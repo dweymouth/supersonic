@@ -38,6 +38,7 @@ type App struct {
 	Player          *player.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
+	MPMediaHandler  *MPMediaHandler
 
 	// UI callbacks to be set in main
 	OnReactivate func()
@@ -110,6 +111,7 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 	})
 
 	a.setupMPRIS(displayAppName)
+	a.setupMPMedia()
 
 	return a, nil
 }
@@ -229,6 +231,11 @@ func (a *App) setupMPRIS(mprisAppName string) {
 		return nil
 	}
 	a.MPRISHandler.Start()
+}
+
+func (a *App) setupMPMedia() {
+	a.MPMediaHandler = NewMPMediaHandler(a.Player, a.PlaybackManager)
+	a.MPMediaHandler.ArtURLLookup = a.ImageManager.GetCoverArtUrl
 }
 
 func (a *App) LoginToDefaultServer(string) error {
