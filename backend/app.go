@@ -235,7 +235,11 @@ func (a *App) setupMPRIS(mprisAppName string) {
 
 func (a *App) setupMPMedia() {
 	a.MPMediaHandler = NewMPMediaHandler(a.Player, a.PlaybackManager)
-	a.MPMediaHandler.ArtURLLookup = a.ImageManager.GetCoverArtUrl
+	a.MPMediaHandler.ArtURLLookup = func(coverID string) (string, error) {
+		// artwork needs to be in cache before playback, so cover is retrieved in advance.
+		a.ImageManager.GetCoverThumbnail(coverID)
+		return a.ImageManager.GetCoverArtUrl(coverID)
+	}
 }
 
 func (a *App) LoginToDefaultServer(string) error {
