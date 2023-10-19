@@ -406,6 +406,9 @@ func (p *Player) PlayPause() error {
 
 // Pause playback and update the player state
 func (p *Player) Pause() error {
+	if p.status.State != Playing {
+		return nil
+	}
 	err := p.setPaused(true)
 	if err == nil {
 		p.prePausedState = p.status.State
