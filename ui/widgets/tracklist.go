@@ -676,8 +676,8 @@ type TrackRow struct {
 
 	num      *widget.RichText
 	name     *widget.RichText
-	artist   *CustomHyperlink
-	album    *CustomHyperlink
+	artist   *DisableableHyperlink
+	album    *widget.Hyperlink
 	dur      *widget.RichText
 	year     *widget.RichText
 	favorite *fyne.Container
@@ -697,9 +697,10 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.ExtendBaseWidget(t)
 	t.num = newTrailingAlignRichText()
 	t.name = newTruncatingRichText()
-	t.artist = NewCustomHyperlink()
+	t.artist = NewDisableableHyperlink()
 	t.artist.OnTapped = func() { tracklist.onArtistTapped(t.artistID) }
-	t.album = NewCustomHyperlink()
+	t.album = widget.NewHyperlink("", nil)
+	t.album.Wrapping = fyne.TextTruncate
 	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
 	t.dur = newTrailingAlignRichText()
 	t.year = newTrailingAlignRichText()

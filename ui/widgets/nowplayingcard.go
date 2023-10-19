@@ -17,9 +17,9 @@ import (
 type NowPlayingCard struct {
 	widget.BaseWidget
 
-	trackName  *CustomHyperlink
-	artistName *CustomHyperlink
-	albumName  *CustomHyperlink
+	trackName  *widget.Hyperlink
+	artistName *DisableableHyperlink
+	albumName  *widget.Hyperlink
 	cover      *TappableImage
 	menu       *widget.PopUpMenu
 
@@ -33,9 +33,9 @@ type NowPlayingCard struct {
 
 func NewNowPlayingCard() *NowPlayingCard {
 	n := &NowPlayingCard{
-		trackName:  NewCustomHyperlink(),
-		artistName: NewCustomHyperlink(),
-		albumName:  NewCustomHyperlink(),
+		trackName:  widget.NewHyperlink("", nil),
+		artistName: NewDisableableHyperlink(),
+		albumName:  widget.NewHyperlink("", nil),
 	}
 	n.ExtendBaseWidget(n)
 	n.cover = NewTappableImage(n.onShowCoverImage)
@@ -43,7 +43,9 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.trackName.Hidden = true
 	n.artistName.Hidden = true
 	n.albumName.Hidden = true
-	n.trackName.SetTextStyle(fyne.TextStyle{Bold: true})
+	n.albumName.Wrapping = fyne.TextTruncate
+	n.trackName.Wrapping = fyne.TextTruncate
+	n.trackName.TextStyle.Bold = true
 	n.cover.SetMinSize(fyne.NewSize(85, 85))
 	n.cover.FillMode = canvas.ImageFillContain
 

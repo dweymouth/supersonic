@@ -175,8 +175,8 @@ type AlbumPageHeader struct {
 
 	cover       *widgets.TappableImage
 	titleLabel  *widget.RichText
-	artistLabel *widgets.CustomHyperlink
-	genreLabel  *widgets.CustomHyperlink
+	artistLabel *widget.Hyperlink
+	genreLabel  *widget.Hyperlink
 	miscLabel   *widget.Label
 
 	toggleFavButton *widgets.FavoriteButton
@@ -200,11 +200,13 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.artistLabel = widgets.NewCustomHyperlink()
+	a.artistLabel = widget.NewHyperlink("", nil)
+	a.artistLabel.Wrapping = fyne.TextTruncate
 	a.artistLabel.OnTapped = func() {
 		a.page.contr.NavigateTo(controller.ArtistRoute(a.artistID))
 	}
-	a.genreLabel = widgets.NewCustomHyperlink()
+	a.genreLabel = widget.NewHyperlink("", nil)
+	a.genreLabel.Wrapping = fyne.TextTruncate
 	a.genreLabel.OnTapped = func() {
 		a.page.contr.NavigateTo(controller.GenreRoute(a.genre))
 	}

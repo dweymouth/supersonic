@@ -134,8 +134,8 @@ type GridViewItem struct {
 
 	itemID        string
 	secondaryID   string
-	primaryText   *CustomHyperlink
-	secondaryText *CustomHyperlink
+	primaryText   *widget.Hyperlink
+	secondaryText *DisableableHyperlink
 	container     *fyne.Container
 
 	// updated by GridView
@@ -150,11 +150,12 @@ type GridViewItem struct {
 
 func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	g := &GridViewItem{
-		primaryText:   NewCustomHyperlink(),
-		secondaryText: NewCustomHyperlink(),
+		primaryText:   widget.NewHyperlink("", nil),
+		secondaryText: NewDisableableHyperlink(),
 		Cover:         newCoverImage(placeholderResource),
 	}
-	g.primaryText.SetTextStyle(fyne.TextStyle{Bold: true})
+	g.primaryText.TextStyle.Bold = true
+	g.primaryText.Wrapping = fyne.TextTruncate
 	g.ExtendBaseWidget(g)
 	g.Cover.OnPlay = func() {
 		if g.OnPlay != nil {
