@@ -1,3 +1,5 @@
+//go:build darwin
+
 #import "mpmediabridge.h"
 
 /**
