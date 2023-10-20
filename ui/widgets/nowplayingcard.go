@@ -18,7 +18,7 @@ type NowPlayingCard struct {
 	widget.BaseWidget
 
 	trackName  *widget.Hyperlink
-	artistName *DisableableHyperlink
+	artistName *MultiHyperlink
 	albumName  *widget.Hyperlink
 	cover      *TappableImage
 	menu       *widget.PopUpMenu
@@ -34,7 +34,7 @@ type NowPlayingCard struct {
 func NewNowPlayingCard() *NowPlayingCard {
 	n := &NowPlayingCard{
 		trackName:  widget.NewHyperlink("", nil),
-		artistName: NewDisableableHyperlink(),
+		artistName: NewMultiHyperlink(),
 		albumName:  widget.NewHyperlink("", nil),
 	}
 	n.ExtendBaseWidget(n)
@@ -88,9 +88,8 @@ func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 func (n *NowPlayingCard) Update(track, artist string, artistNavigable bool, album string, cover image.Image) {
 	n.trackName.SetText(track)
 	n.trackName.Hidden = track == ""
-	n.artistName.SetText(artist)
+	n.artistName.Segments = []MultiHyperlinkSegment{{Text: artist}}
 	n.artistName.Hidden = artist == ""
-	n.artistName.Disabled = !artistNavigable
 	n.albumName.SetText(album)
 	n.albumName.Hidden = album == ""
 	n.cover.Image.Image = cover
@@ -98,7 +97,7 @@ func (n *NowPlayingCard) Update(track, artist string, artistNavigable bool, albu
 }
 
 func (n *NowPlayingCard) OnArtistNameTapped(f func()) {
-	n.artistName.OnTapped = f
+	//n.artistName.OnTapped = f
 }
 
 func (n *NowPlayingCard) OnAlbumNameTapped(f func()) {

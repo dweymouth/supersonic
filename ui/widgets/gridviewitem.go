@@ -135,7 +135,7 @@ type GridViewItem struct {
 	itemID        string
 	secondaryID   string
 	primaryText   *widget.Hyperlink
-	secondaryText *DisableableHyperlink
+	secondaryText *MultiHyperlink
 	container     *fyne.Container
 
 	// updated by GridView
@@ -151,7 +151,7 @@ type GridViewItem struct {
 func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	g := &GridViewItem{
 		primaryText:   widget.NewHyperlink("", nil),
-		secondaryText: NewDisableableHyperlink(),
+		secondaryText: NewMultiHyperlink(),
 		Cover:         newCoverImage(placeholderResource),
 	}
 	g.primaryText.TextStyle.Bold = true
@@ -174,7 +174,7 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	}
 	g.Cover.OnShowPage = showItemFn
 	g.primaryText.OnTapped = showItemFn
-	g.secondaryText.OnTapped = func() {
+	g.secondaryText.OnTapped = func(_ string) { // TODO
 		if g.OnShowSecondaryPage != nil {
 			g.OnShowSecondaryPage()
 		}
@@ -199,8 +199,8 @@ func (g *GridViewItem) Update(model GridViewItemModel) {
 	g.itemID = model.ID
 	g.secondaryID = model.SecondaryID
 	g.primaryText.SetText(model.Name)
-	g.secondaryText.Disabled = model.SecondaryID == ""
-	g.secondaryText.SetText(model.Secondary)
+	g.secondaryText.Segments = []MultiHyperlinkSegment{{Text: model.Secondary, LinkID: model.SecondaryID}}
+	g.secondaryText.Refresh()
 	g.Cover.ResetPlayButton()
 }
 

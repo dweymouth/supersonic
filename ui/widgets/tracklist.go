@@ -676,7 +676,7 @@ type TrackRow struct {
 
 	num      *widget.RichText
 	name     *widget.RichText
-	artist   *DisableableHyperlink
+	artist   *MultiHyperlink
 	album    *widget.Hyperlink
 	dur      *widget.RichText
 	year     *widget.RichText
@@ -697,8 +697,8 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.ExtendBaseWidget(t)
 	t.num = newTrailingAlignRichText()
 	t.name = newTruncatingRichText()
-	t.artist = NewDisableableHyperlink()
-	t.artist.OnTapped = func() { tracklist.onArtistTapped(t.artistID) }
+	t.artist = NewMultiHyperlink()
+	//t.artist.OnTapped = func() { tracklist.onArtistTapped(t.artistID) } // TODO
 	t.album = widget.NewHyperlink("", nil)
 	t.album.Wrapping = fyne.TextTruncate
 	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
@@ -748,8 +748,7 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 		t.albumID = tr.AlbumID
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
-		t.artist.SetText(tr.ArtistNames[0])
-		t.artist.Disabled = tr.ArtistIDs[0] == ""
+		t.artist.Segments = []MultiHyperlinkSegment{{Text: tr.ArtistNames[0], LinkID: tr.ArtistIDs[0]}}
 		t.album.SetText(tr.Album)
 		t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
 		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
@@ -789,12 +788,6 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 	if isPlaying := t.tracklist.nowPlayingID == tr.ID; isPlaying != t.isPlaying {
 		t.isPlaying = isPlaying
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-		t.dur.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-		t.year.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-		t.plays.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-		t.bitrate.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-		t.size.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-		t.path.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 
 		if isPlaying {
 			t.Content.(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
