@@ -20,7 +20,8 @@ typedef enum {
     STOP,
     TOGGLE,
     NEXT_TRACK,
-    PREVIOUS_TRACK
+    PREVIOUS_TRACK,
+    SEEK
 } Command;
 
 /**
@@ -30,15 +31,17 @@ void register_os_remote_commands();
 
 /**
 * Go-backed callback to static function that is called when OS remote commands are received.
+* If a value is anticipated with the specified command, the 'value' argument will be non-zero.
 */
-void os_remote_command_callback(Command command);
+void os_remote_command_callback(Command command, int value);
 
 /**
  * Updates the "Now Playing" information on macOS for media playback
  * using the MPNowPlayingInfoCenter API to set the metadata 
  * for the currently playing media in the system's "Now Playing" interface.
  */
-void set_os_now_playing_info(const char *title, const char *artist, const char *coverArtFileURL);
+void set_os_now_playing_info(const char *title, const char *artist, const char *coverArtFileURL, double trackDuration);
+void update_os_now_playing_info_position(double positionSeconds);
 
 /**
  * Setter functions for updating the global playback state.

@@ -16,6 +16,7 @@ import (
 )
 
 import (
+	"fmt"
 	"log"
 	"unsafe"
 
@@ -26,7 +27,7 @@ import (
 // os_remote_command_callback is called by Objective-C when incoming OS media commands are received.
 //
 //export os_remote_command_callback
-func os_remote_command_callback(command C.Command) {
+func os_remote_command_callback(command C.Command, value C.int) {
 	switch command {
 	case C.PLAY:
 		mpMediaEventRecipient.OnCommandPlay()
@@ -40,6 +41,8 @@ func os_remote_command_callback(command C.Command) {
 		mpMediaEventRecipient.OnCommandPreviousTrack()
 	case C.NEXT_TRACK:
 		mpMediaEventRecipient.OnCommandNextTrack()
+	case C.SEEK:
+		mpMediaEventRecipient.OnCommandSeek(int(value))
 	default:
 		log.Printf("unknown OS command received: %v", command)
 	}
@@ -85,7 +88,9 @@ func NewMPMediaHandler(player *player.Player, playbackManager *PlaybackManager) 
 			cArtURL := C.CString(artURL)
 			defer C.free(unsafe.Pointer(cArtURL))
 
-			C.set_os_now_playing_info(cTitle, cArtist, cArtURL)
+			cTrackDuration := C.double(track.Duration)
+
+			C.set_os_now_playing_info(cTitle, cArtist, cArtURL, cTrackDuration)
 		}
 	})
 
@@ -99,6 +104,10 @@ func NewMPMediaHandler(player *player.Player, playbackManager *PlaybackManager) 
 
 	mp.player.OnPaused(func() {
 		C.set_os_playback_state_paused()
+	})
+
+	mp.player.OnSeek(func() {
+		C.update_os_now_playing_info_position(C.double(mp.player.GetStatus().TimePos))
 	})
 
 	return mp
@@ -158,4 +167,12 @@ func (mp *MPMediaHandler) OnCommandPreviousTrack() {
 		return
 	}
 	mp.player.SeekBackOrPrevious()
+}
+
+// MPMediaHandler instance received OS command to 'seek'
+func (mp *MPMediaHandler) OnCommandSeek(positionSeconds int) {
+	if mp == nil || mp.player == nil {
+		return
+	}
+	mp.player.Seek(fmt.Sprintf("%d", positionSeconds), player.SeekAbsolute)
 }
