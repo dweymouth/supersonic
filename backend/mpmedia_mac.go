@@ -98,15 +98,17 @@ func NewMPMediaHandler(player *player.Player, playbackManager *PlaybackManager) 
 		C.set_os_playback_state_stopped()
 	})
 
+	mp.player.OnSeek(func() {
+		C.update_os_now_playing_info_position(C.double(mp.player.GetStatus().TimePos))
+	})
+
 	mp.player.OnPlaying(func() {
 		C.set_os_playback_state_playing()
+		C.update_os_now_playing_info_position(C.double(mp.player.GetStatus().TimePos))
 	})
 
 	mp.player.OnPaused(func() {
 		C.set_os_playback_state_paused()
-	})
-
-	mp.player.OnSeek(func() {
 		C.update_os_now_playing_info_position(C.double(mp.player.GetStatus().TimePos))
 	})
 

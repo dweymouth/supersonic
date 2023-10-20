@@ -63,6 +63,7 @@ void set_os_now_playing_info(const char *title, const char *artist, const char *
         MPMediaItemPropertyTitle: [NSString stringWithUTF8String:title],
         MPMediaItemPropertyArtist: [NSString stringWithUTF8String:artist],
         MPMediaItemPropertyArtwork: coverArt,
+        MPNowPlayingInfoPropertyElapsedPlaybackTime: @(0),
         MPMediaItemPropertyPlaybackDuration: @(trackDuration) // Expects 'NSNumber'
     };
     
