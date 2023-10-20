@@ -419,11 +419,17 @@ func (p *Player) Pause() error {
 
 // Continue playback and update the player state
 func (p *Player) Continue() error {
-	err := p.setPaused(false)
-	if err == nil {
-		p.setState(p.prePausedState)
+	if p.status.State == Paused {
+		err := p.setPaused(false)
+		if err == nil {
+			p.setState(p.prePausedState)
+		}
+		return err
+	} else if p.status.State == Stopped {
+		return p.PlayFromBeginning()
 	}
-	return err
+
+	return nil
 }
 
 // Get the loop mode of the player.
