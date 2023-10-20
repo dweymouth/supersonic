@@ -12,6 +12,7 @@ supersonic
 *.dll
 *.so
 *.dylib
+Supersonic.app
 
 # Test binary, built with `go test -c`
 *.test
@@ -26,3 +27,6 @@ vendor/
 go.work
 
 # End of https://www.toptal.com/developers/gitignore/api/go
+
+# Platform specific metadata files
+.DS_Store

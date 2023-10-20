@@ -396,21 +396,40 @@ func (p *Player) PlayPause() error {
 		}
 		return nil
 	case Playing:
-		err := p.setPaused(true)
-		if err == nil {
-			p.prePausedState = p.status.State
-			p.setState(Paused)
-		}
-		return err
+		return p.Pause()
 	case Paused:
+		return p.Continue()
+	default:
+		return errors.New("Unknown player state")
+	}
+}
+
+// Pause playback and update the player state
+func (p *Player) Pause() error {
+	if p.status.State != Playing {
+		return nil
+	}
+	err := p.setPaused(true)
+	if err == nil {
+		p.prePausedState = p.status.State
+		p.setState(Paused)
+	}
+	return err
+}
+
+// Continue playback and update the player state
+func (p *Player) Continue() error {
+	if p.status.State == Paused {
 		err := p.setPaused(false)
 		if err == nil {
 			p.setState(p.prePausedState)
 		}
 		return err
-	default:
-		return errors.New("Unknown player state")
+	} else if p.status.State == Stopped {
+		return p.PlayFromBeginning()
 	}
+
+	return nil
 }
 
 // Get the loop mode of the player.
