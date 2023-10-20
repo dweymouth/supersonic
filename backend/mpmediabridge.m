@@ -39,9 +39,7 @@ void register_os_remote_commands() {
 
     [commandCenter.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
         MPChangePlaybackPositionCommandEvent *positionChangeEvent = (MPChangePlaybackPositionCommandEvent *)event;
-        double posSecDouble = positionChangeEvent.positionTime;
-        int posSeconds = (int)posSecDouble; 
-        os_remote_command_callback(SEEK, posSeconds);
+        os_remote_command_callback(SEEK, positionChangeEvent.positionTime);
         return MPRemoteCommandHandlerStatusSuccess;
     }];
 }

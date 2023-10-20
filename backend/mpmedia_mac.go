@@ -27,7 +27,7 @@ import (
 // os_remote_command_callback is called by Objective-C when incoming OS media commands are received.
 //
 //export os_remote_command_callback
-func os_remote_command_callback(command C.Command, value C.int) {
+func os_remote_command_callback(command C.Command, value C.double) {
 	switch command {
 	case C.PLAY:
 		mpMediaEventRecipient.OnCommandPlay()
@@ -42,7 +42,7 @@ func os_remote_command_callback(command C.Command, value C.int) {
 	case C.NEXT_TRACK:
 		mpMediaEventRecipient.OnCommandNextTrack()
 	case C.SEEK:
-		mpMediaEventRecipient.OnCommandSeek(int(value))
+		mpMediaEventRecipient.OnCommandSeek(float64(value))
 	default:
 		log.Printf("unknown OS command received: %v", command)
 	}
@@ -172,9 +172,9 @@ func (mp *MPMediaHandler) OnCommandPreviousTrack() {
 }
 
 // MPMediaHandler instance received OS command to 'seek'
-func (mp *MPMediaHandler) OnCommandSeek(positionSeconds int) {
+func (mp *MPMediaHandler) OnCommandSeek(positionSeconds float64) {
 	if mp == nil || mp.player == nil {
 		return
 	}
-	mp.player.Seek(fmt.Sprintf("%d", positionSeconds), player.SeekAbsolute)
+	mp.player.Seek(fmt.Sprintf("%0.2f", positionSeconds), player.SeekAbsolute)
 }

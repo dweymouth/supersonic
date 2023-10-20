@@ -33,7 +33,7 @@ void register_os_remote_commands();
 * Go-backed callback to static function that is called when OS remote commands are received.
 * If a value is anticipated with the specified command, the 'value' argument will be non-zero.
 */
-void os_remote_command_callback(Command command, int value);
+void os_remote_command_callback(Command command, double value);
 
 /**
  * Updates the "Now Playing" information on macOS for media playback
