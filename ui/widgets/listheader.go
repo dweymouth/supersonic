@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -101,6 +102,7 @@ func (l *ListHeader) SetSorting(sort ListHeaderSort) {
 	}
 	l.sort = sort
 	for i, c := range l.columnsContainer.Objects {
+		c.(*colHeader).hovered = false // reset hovered status
 		if i == sort.ColNumber {
 			c.(*colHeader).Sort = sort.Type
 		} else {
@@ -166,9 +168,10 @@ type colHeader struct {
 
 	sortDisabled *bool
 	columnCfg    ListColumn
+	hovered      bool
 
 	label             *widget.RichText
-	sortIcon          *widget.Icon
+	sortIconContainer *fyne.Container
 	sortIconNegSpacer fyne.CanvasObject
 	container         *fyne.Container
 }
@@ -182,7 +185,9 @@ func newColHeader(columnCfg ListColumn, sortDisabled *bool) *colHeader {
 		TextStyle: fyne.TextStyle{Bold: true},
 		Alignment: columnCfg.Alignment,
 	}
-	c.sortIcon = widget.NewIcon(theme.MenuDropDownIcon())
+	r := myTheme.NewThemedRectangle(myTheme.ColorNameListHeader)
+	r.Translucent = true
+	c.sortIconContainer = container.NewMax(widget.NewIcon(theme.MenuDropDownIcon()), r)
 	// hack to remove extra icon space
 	// should be hidden whenever sortIcon is hidden
 	c.sortIconNegSpacer = util.NewHSpace(0)
@@ -190,20 +195,30 @@ func newColHeader(columnCfg ListColumn, sortDisabled *bool) *colHeader {
 	return c
 }
 
+var _ desktop.Hoverable = (*colHeader)(nil)
+
+func (c *colHeader) MouseIn(*desktop.MouseEvent) {
+	if !*c.sortDisabled {
+		c.hovered = true
+		c.Refresh()
+	}
+}
+
+func (c *colHeader) MouseOut() {
+	c.hovered = false
+	c.Refresh()
+}
+
+func (c *colHeader) MouseMoved(*desktop.MouseEvent) {
+	// intentionally left blank
+}
+
 func (c *colHeader) Tapped(*fyne.PointEvent) {
 	if *c.sortDisabled {
 		return
 	}
-	switch c.Sort {
-	case SortNone:
-		c.Sort = SortAscending
-	case SortAscending:
-		c.Sort = SortDescending
-	case SortDescending:
-		c.Sort = SortNone
-	default:
-		log.Println("notReached colHeader.Tapped")
-	}
+	c.hovered = false // stop showing the next-up sort icon
+	c.Sort = nextSortType(c.Sort)
 	c.Refresh()
 	if c.OnSortChanged != nil {
 		c.OnSortChanged(c.Sort)
@@ -217,17 +232,22 @@ func (c *colHeader) TappedSecondary(e *fyne.PointEvent) {
 }
 
 func (c *colHeader) Refresh() {
-	if c.Sort == SortDescending {
-		c.sortIcon.Resource = theme.MenuDropDownIcon()
-	} else {
-		c.sortIcon.Resource = theme.MenuDropUpIcon()
+	sort := c.Sort
+	if c.hovered {
+		sort = nextSortType(sort)
 	}
+	if sort == SortDescending {
+		c.sortIconContainer.Objects[0].(*widget.Icon).Resource = theme.MenuDropDownIcon()
+	} else {
+		c.sortIconContainer.Objects[0].(*widget.Icon).Resource = theme.MenuDropUpIcon()
+	}
+	c.sortIconContainer.Objects[1].(*myTheme.ThemedRectangle).Hidden = !c.hovered
 
-	if c.Sort > 0 && c.sortIcon.Hidden {
-		c.sortIcon.Show()
+	if sort > 0 && c.sortIconContainer.Hidden {
+		c.sortIconContainer.Hidden = false
 		c.container.Add(c.sortIconNegSpacer)
-	} else if (c.Sort == SortNone || *c.sortDisabled) && !c.sortIcon.Hidden {
-		c.sortIcon.Hide()
+	} else if (sort == SortNone || *c.sortDisabled) && !c.sortIconContainer.Hidden {
+		c.sortIconContainer.Hidden = true
 		c.container.Remove(c.sortIconNegSpacer)
 	}
 
@@ -241,11 +261,25 @@ func (c *colHeader) CreateRenderer() fyne.WidgetRenderer {
 			c.container.Add(layout.NewSpacer())
 		}
 		c.container.Add(c.label)
-		c.container.Add(c.sortIcon)
+		c.container.Add(c.sortIconContainer)
 		c.container.Add(c.sortIconNegSpacer)
 		if c.columnCfg.Alignment == fyne.TextAlignCenter {
 			c.container.Add(layout.NewSpacer())
 		}
 	}
 	return widget.NewSimpleRenderer(c.container)
+}
+
+func nextSortType(in SortType) SortType {
+	switch in {
+	case SortNone:
+		return SortAscending
+	case SortAscending:
+		return SortDescending
+	case SortDescending:
+		return SortNone
+	default:
+		log.Println("Unreachable")
+		return SortNone
+	}
 }
