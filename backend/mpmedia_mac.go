@@ -18,6 +18,7 @@ import (
 import (
 	"fmt"
 	"log"
+	"strings"
 	"unsafe"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -48,16 +49,24 @@ func os_remote_command_callback(command C.Command, value C.double) {
 	}
 }
 
+// MPMediaHandler is the handler for MacOS media controls and system events.
+type MPMediaHandler struct {
+	player          *player.Player
+	playbackManager *PlaybackManager
+	artURLLookup    func(string) (string, error)
+}
+
 // global recipient for Object-C callbacks from command center.
 // This is global so that it can be called from 'os_remote_command_callback' to avoid passing Go pointers into C.
 var mpMediaEventRecipient *MPMediaHandler
 
 // NewMPMediaHandler creates a new MPMediaHandler instances and sets it as the current recipient
 // for incoming system events.
-func NewMPMediaHandler(player *player.Player, playbackManager *PlaybackManager) *MPMediaHandler {
+func InitMPMediaHandler(player *player.Player, playbackManager *PlaybackManager, artURLLookup func(trackID string) (string, error)) error {
 	mp := &MPMediaHandler{
 		player:          player,
 		playbackManager: playbackManager,
+		artURLLookup:    artURLLookup,
 	}
 
 	// register remote commands and set callback target
@@ -65,33 +74,31 @@ func NewMPMediaHandler(player *player.Player, playbackManager *PlaybackManager) 
 	C.register_os_remote_commands()
 
 	mp.playbackManager.OnSongChange(func(track, _ *mediaprovider.Track) {
+		var title, artist, artURL string
+		var duration int
 		if track != nil && track.ID != "" {
-			var artURL string
-			if mp.ArtURLLookup != nil {
-				var err error
-				if artURL, err = mp.ArtURLLookup(track.CoverArtID); err != nil {
-					log.Printf("error fetching art url: %s", err.Error())
-				}
+			var err error
+			if artURL, err = mp.artURLLookup(track.CoverArtID); err != nil {
+				log.Printf("error fetching art url: %s", err.Error())
 			}
-
-			cTitle := C.CString(track.Name)
-			defer C.free(unsafe.Pointer(cTitle))
-
-			var artist string
-			if len(track.ArtistNames) > 0 {
-				artist = track.ArtistNames[0]
-			}
-
-			cArtist := C.CString(artist)
-			defer C.free(unsafe.Pointer(cArtist))
-
-			cArtURL := C.CString(artURL)
-			defer C.free(unsafe.Pointer(cArtURL))
-
-			cTrackDuration := C.double(track.Duration)
-
-			C.set_os_now_playing_info(cTitle, cArtist, cArtURL, cTrackDuration)
+			title = track.Name
+			artist = strings.Join(track.ArtistNames, ", ")
+			duration = track.Duration
 		}
+
+		cTitle := C.CString(title)
+		defer C.free(unsafe.Pointer(cTitle))
+
+		cArtist := C.CString(artist)
+		defer C.free(unsafe.Pointer(cArtist))
+
+		cArtURL := C.CString(artURL)
+		defer C.free(unsafe.Pointer(cArtURL))
+
+		cTrackDuration := C.double(duration)
+
+		C.set_os_now_playing_info(cTitle, cArtist, cArtURL, cTrackDuration)
+
 	})
 
 	mp.player.OnStopped(func() {
@@ -112,7 +119,7 @@ func NewMPMediaHandler(player *player.Player, playbackManager *PlaybackManager) 
 		C.update_os_now_playing_info_position(C.double(mp.player.GetStatus().TimePos))
 	})
 
-	return mp
+	return nil
 }
 
 /**
