@@ -674,18 +674,18 @@ type TrackRow struct {
 	isFavorite bool
 	playCount  int
 
-	num      *widget.RichText
-	name     *widget.RichText
+	num      *widget.Label
+	name     *widget.RichText // for bold support
 	artist   *MultiHyperlink
 	album    *widget.Hyperlink
-	dur      *widget.RichText
-	year     *widget.RichText
+	dur      *widget.Label
+	year     *widget.Label
 	favorite *fyne.Container
 	rating   *StarRating
-	bitrate  *widget.RichText
-	plays    *widget.RichText
-	size     *widget.RichText
-	path     *widget.RichText
+	bitrate  *widget.Label
+	plays    *widget.Label
+	size     *widget.Label
+	path     *widget.Label
 
 	OnTappedSecondary func(e *fyne.PointEvent, trackIdx int)
 
@@ -695,25 +695,25 @@ type TrackRow struct {
 func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow {
 	t := &TrackRow{tracklist: tracklist, playingIcon: playingIcon}
 	t.ExtendBaseWidget(t)
-	t.num = newTrailingAlignRichText()
+	t.num = newTrailingAlignLabel()
 	t.name = newTruncatingRichText()
 	t.artist = NewMultiHyperlink()
 	t.artist.OnTapped = tracklist.onArtistTapped
 	t.album = widget.NewHyperlink("", nil)
 	t.album.Wrapping = fyne.TextTruncate
 	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
-	t.dur = newTrailingAlignRichText()
-	t.year = newTrailingAlignRichText()
+	t.dur = newTrailingAlignLabel()
+	t.year = newTrailingAlignLabel()
 	favorite := NewTappableIcon(myTheme.NotFavoriteIcon)
 	favorite.OnTapped = t.toggleFavorited
 	t.favorite = container.NewCenter(favorite)
 	t.rating = NewStarRating()
 	t.rating.StarSize = 16
 	t.rating.OnRatingChanged = t.setTrackRating
-	t.plays = newTrailingAlignRichText()
-	t.bitrate = newTrailingAlignRichText()
-	t.size = newTrailingAlignRichText()
-	t.path = newTruncatingRichText()
+	t.plays = newTrailingAlignLabel()
+	t.bitrate = newTrailingAlignLabel()
+	t.size = newTrailingAlignLabel()
+	t.path = newTruncatingLabel()
 
 	t.Content = container.New(tracklist.colLayout,
 		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.rating, t.plays, t.bitrate, t.size, t.path)
@@ -726,9 +726,15 @@ func newTruncatingRichText() *widget.RichText {
 	return rt
 }
 
-func newTrailingAlignRichText() *widget.RichText {
-	rt := widget.NewRichTextWithText("")
-	rt.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignTrailing
+func newTruncatingLabel() *widget.Label {
+	rt := widget.NewLabel("")
+	rt.Wrapping = fyne.TextTruncate
+	return rt
+}
+
+func newTrailingAlignLabel() *widget.Label {
+	rt := widget.NewLabel("")
+	rt.Alignment = fyne.TextAlignTrailing
 	return rt
 }
 
@@ -750,12 +756,12 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
 		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		t.album.SetText(tr.Album)
-		t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
-		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
-		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
-		t.bitrate.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.BitRate)
-		t.size.Segments[0].(*widget.TextSegment).Text = util.BytesToSizeString(tr.Size)
-		t.path.Segments[0].(*widget.TextSegment).Text = tr.FilePath
+		t.dur.Text = util.SecondsToTimeString(float64(tr.Duration))
+		t.year.Text = strconv.Itoa(tr.Year)
+		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
+		t.bitrate.Text = strconv.Itoa(tr.BitRate)
+		t.size.Text = util.BytesToSizeString(tr.Size)
+		t.path.Text = tr.FilePath
 	}
 
 	// Update track num if needed
@@ -775,13 +781,13 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 		} else {
 			str = strconv.Itoa(rowNum)
 		}
-		t.num.Segments[0].(*widget.TextSegment).Text = str
+		t.num.Text = str
 	}
 
 	// Update play count if needed
 	if tr.PlayCount != t.playCount {
 		t.playCount = tr.PlayCount
-		t.plays.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(int(tr.PlayCount))
+		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
 	}
 
 	// Render whether track is playing or not
