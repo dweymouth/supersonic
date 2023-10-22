@@ -2,9 +2,13 @@
 
 package backend
 
-import "github.com/dweymouth/supersonic/player"
+import (
+	"errors"
 
-func NewMPMediaHandler(player *player.Player, playbackManager *PlaybackManager) *MPMediaHandler {
+	"github.com/dweymouth/supersonic/player"
+)
+
+func InitMPMediaHandler(player *player.Player, playbackManager *PlaybackManager, artURLLookup func(trackID string) (string, error)) error {
 	// MPMediaHandler only supports macOS.
-	return nil
+	return errors.New("unsupported platform")
 }

@@ -110,8 +110,9 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
 
+	// OS media center integrations
 	a.setupMPRIS(displayAppName)
-	a.setupMPMedia()
+	InitMPMediaHandler(a.Player, a.PlaybackManager, a.ImageManager.GetCoverArtUrl)
 
 	return a, nil
 }
@@ -231,17 +232,6 @@ func (a *App) setupMPRIS(mprisAppName string) {
 		return nil
 	}
 	a.MPRISHandler.Start()
-}
-
-func (a *App) setupMPMedia() {
-	a.MPMediaHandler = NewMPMediaHandler(a.Player, a.PlaybackManager)
-	if a.MPMediaHandler != nil {
-		a.MPMediaHandler.ArtURLLookup = func(coverID string) (string, error) {
-			// artwork needs to be in cache before playback, so cover is retrieved in advance.
-			a.ImageManager.GetCoverThumbnail(coverID)
-			return a.ImageManager.GetCoverArtUrl(coverID)
-		}
-	}
 }
 
 func (a *App) LoginToDefaultServer(string) error {
