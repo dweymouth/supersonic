@@ -158,7 +158,7 @@ func createArtistsGridViewModel(artists []*mediaprovider.Artist) []widgets.GridV
 			Name:       ar.Name,
 			ID:         ar.ID,
 			CoverArtID: ar.CoverArtID,
-			Secondary:  fmt.Sprintf("%d %s", ar.AlbumCount, albums),
+			Secondary:  []string{fmt.Sprintf("%d %s", ar.AlbumCount, albums)},
 		}
 	})
 }

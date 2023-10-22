@@ -38,6 +38,18 @@ func NewMultiHyperlink() *MultiHyperlink {
 	return c
 }
 
+func (m *MultiHyperlink) BuildSegments(texts, links []string) {
+	l := len(links)
+	m.Segments = nil
+	for i, text := range texts {
+		link := ""
+		if l > i {
+			link = links[i]
+		}
+		m.Segments = append(m.Segments, MultiHyperlinkSegment{Text: text, LinkID: link})
+	}
+}
+
 func (c *MultiHyperlink) getMinSegWidth() float32 {
 	if c.minSegWidthCached == 0 {
 		c.minSegWidthCached = fyne.MeasureText(", W", theme.TextSize(), fyne.TextStyle{}).Width
@@ -82,7 +94,7 @@ func (c *MultiHyperlink) layoutObjects() {
 		if seg.LinkID == "" {
 			obj = c.updateOrReplaceLabel(obj, seg.Text)
 		} else {
-			obj = c.updateOrReplaceHyperlink(obj, seg.Text)
+			obj = c.updateOrReplaceHyperlink(obj, seg.Text, seg.LinkID)
 		}
 		if appendingSegments {
 			c.content.Objects = append(c.content.Objects, obj)
@@ -124,15 +136,17 @@ func (c *MultiHyperlink) updateOrReplaceLabel(obj fyne.CanvasObject, text string
 	return l
 }
 
-func (c *MultiHyperlink) updateOrReplaceHyperlink(obj fyne.CanvasObject, text string) fyne.CanvasObject {
+func (c *MultiHyperlink) updateOrReplaceHyperlink(obj fyne.CanvasObject, text, link string) fyne.CanvasObject {
 	if obj != nil {
-		if link, ok := obj.(*widget.Hyperlink); ok {
-			link.Text = text
-			return link
+		if l, ok := obj.(*widget.Hyperlink); ok {
+			l.Text = text
+			l.OnTapped = func() { c.onSegmentTapped(link) }
+			return l
 		}
 	}
 	l := widget.NewHyperlink(text, nil)
 	l.Wrapping = fyne.TextTruncate
+	l.OnTapped = func() { c.onSegmentTapped(link) }
 	return l
 }
 
@@ -200,7 +214,9 @@ func (c *MultiHyperlink) updateOrReplaceHyperlinkSegment(seg widget.RichTextSegm
 */
 
 func (c *MultiHyperlink) onSegmentTapped(linkID string) {
-	// TODO
+	if c.OnTapped != nil {
+		c.OnTapped(linkID)
+	}
 }
 
 func (c *MultiHyperlink) MinSize() fyne.Size {

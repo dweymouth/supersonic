@@ -18,6 +18,7 @@ import (
 import (
 	"fmt"
 	"log"
+	"strings"
 	"unsafe"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -79,7 +80,7 @@ func NewMPMediaHandler(player *player.Player, playbackManager *PlaybackManager) 
 
 			var artist string
 			if len(track.ArtistNames) > 0 {
-				artist = track.ArtistNames[0]
+				artist = strings.Join(track.ArtistNames, ", ")
 			}
 
 			cArtist := C.CString(artist)

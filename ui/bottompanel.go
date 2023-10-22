@@ -76,8 +76,8 @@ func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, contr *contro
 	bp.NowPlaying.OnAlbumNameTapped(func() {
 		contr.NavigateTo(controller.AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
 	})
-	bp.NowPlaying.OnArtistNameTapped(func() {
-		contr.NavigateTo(controller.ArtistRoute(bp.playbackManager.NowPlaying().ArtistIDs[0]))
+	bp.NowPlaying.OnArtistNameTapped(func(artistID string) {
+		contr.NavigateTo(controller.ArtistRoute(artistID))
 	})
 	bp.NowPlaying.OnTrackNameTapped(func() {
 		contr.NavigateTo(controller.NowPlayingRoute(bp.playbackManager.NowPlaying().ID))
@@ -113,7 +113,7 @@ func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, contr *contro
 
 func (bp *BottomPanel) onSongChange(song, _ *mediaprovider.Track) {
 	if song == nil {
-		bp.NowPlaying.Update("", "", false, "", nil)
+		bp.NowPlaying.Update("", []string{}, []string{}, "", nil)
 	} else {
 		bp.coverArtID = song.CoverArtID
 		var im image.Image
@@ -125,7 +125,7 @@ func (bp *BottomPanel) onSongChange(song, _ *mediaprovider.Track) {
 			imgTTLSec := song.Duration + 30
 			im, _ = bp.ImageManager.GetCoverThumbnailWithTTL(song.CoverArtID, time.Duration(imgTTLSec)*time.Second)
 		}
-		bp.NowPlaying.Update(song.Name, song.ArtistNames[0], song.ArtistIDs[0] != "", song.Album, im)
+		bp.NowPlaying.Update(song.Name, song.ArtistNames, song.ArtistIDs, song.Album, im)
 	}
 }
 

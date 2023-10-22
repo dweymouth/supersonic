@@ -41,7 +41,6 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.cover = NewTappableImage(n.onShowCoverImage)
 	n.cover.OnTappedSecondary = n.showMenu
 	n.trackName.Hidden = true
-	n.artistName.Hidden = true
 	n.albumName.Hidden = true
 	n.albumName.Wrapping = fyne.TextTruncate
 	n.trackName.Wrapping = fyne.TextTruncate
@@ -85,19 +84,18 @@ func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(n.c)
 }
 
-func (n *NowPlayingCard) Update(track, artist string, artistNavigable bool, album string, cover image.Image) {
+func (n *NowPlayingCard) Update(track string, artists, artistIDs []string, album string, cover image.Image) {
 	n.trackName.SetText(track)
 	n.trackName.Hidden = track == ""
-	n.artistName.Segments = []MultiHyperlinkSegment{{Text: artist}}
-	n.artistName.Hidden = artist == ""
+	n.artistName.BuildSegments(artists, artistIDs)
 	n.albumName.SetText(album)
 	n.albumName.Hidden = album == ""
 	n.cover.Image.Image = cover
 	n.c.Refresh()
 }
 
-func (n *NowPlayingCard) OnArtistNameTapped(f func()) {
-	//n.artistName.OnTapped = f
+func (n *NowPlayingCard) OnArtistNameTapped(f func(string)) {
+	n.artistName.OnTapped = f
 }
 
 func (n *NowPlayingCard) OnAlbumNameTapped(f func()) {

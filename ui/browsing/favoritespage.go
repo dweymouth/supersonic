@@ -333,7 +333,7 @@ func buildArtistGridViewModel(artists []*mediaprovider.Artist) []widgets.GridVie
 			ID:         ar.ID,
 			CoverArtID: ar.CoverArtID,
 			Name:       ar.Name,
-			Secondary:  fmt.Sprintf("%d %s", ar.AlbumCount, albums),
+			Secondary:  []string{fmt.Sprintf("%d %s", ar.AlbumCount, albums)},
 		})
 	}
 	return model

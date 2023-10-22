@@ -189,7 +189,7 @@ func (a *ArtistPage) showAlbumGrid() {
 				Name:       al.Name,
 				ID:         al.ID,
 				CoverArtID: al.CoverArtID,
-				Secondary:  strconv.Itoa(al.Year),
+				Secondary:  []string{strconv.Itoa(al.Year)},
 			}
 		})
 		if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {

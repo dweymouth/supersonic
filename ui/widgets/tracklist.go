@@ -396,7 +396,7 @@ func (t *Tracklist) doSortTracks() {
 	case ColumnTitle:
 		t.stringSort(func(tr *trackModel) string { return tr.track.Name })
 	case ColumnArtist:
-		t.stringSort(func(tr *trackModel) string { return tr.track.ArtistNames[0] })
+		t.stringSort(func(tr *trackModel) string { return strings.Join(tr.track.ArtistNames, ", ") })
 	case ColumnAlbum:
 		t.stringSort(func(tr *trackModel) string { return tr.track.Album })
 	case ColumnPath:
@@ -698,7 +698,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.num = newTrailingAlignRichText()
 	t.name = newTruncatingRichText()
 	t.artist = NewMultiHyperlink()
-	//t.artist.OnTapped = func() { tracklist.onArtistTapped(t.artistID) } // TODO
+	t.artist.OnTapped = tracklist.onArtistTapped
 	t.album = widget.NewHyperlink("", nil)
 	t.album.Wrapping = fyne.TextTruncate
 	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
@@ -748,7 +748,7 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 		t.albumID = tr.AlbumID
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
-		t.artist.Segments = []MultiHyperlinkSegment{{Text: tr.ArtistNames[0], LinkID: tr.ArtistIDs[0]}}
+		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		t.album.SetText(tr.Album)
 		t.dur.Segments[0].(*widget.TextSegment).Text = util.SecondsToTimeString(float64(tr.Duration))
 		t.year.Segments[0].(*widget.TextSegment).Text = strconv.Itoa(tr.Year)
