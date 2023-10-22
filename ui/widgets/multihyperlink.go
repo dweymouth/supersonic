@@ -226,6 +226,11 @@ func (c *MultiHyperlink) MinSize() fyne.Size {
 	return fyne.NewSize(1, c.minHeightCached)
 }
 
+func (c *MultiHyperlink) Resize(size fyne.Size) {
+	c.BaseWidget.Resize(size)
+	c.layoutObjects()
+}
+
 func (c *MultiHyperlink) Refresh() {
 	//c.syncSegments()
 	c.layoutObjects()
