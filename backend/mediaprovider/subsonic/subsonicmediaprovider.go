@@ -276,6 +276,18 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 	if ch == nil {
 		return nil
 	}
+	var artistNames, artistIDs []string
+	if len(ch.Artists) > 0 {
+		// OpenSubsonic extension
+		for _, a := range ch.Artists {
+			artistIDs = append(artistIDs, a.ID)
+			artistNames = append(artistNames, a.Name)
+		}
+	} else {
+		artistNames = append(artistNames, ch.Artist)
+		artistIDs = append(artistIDs, ch.ArtistID)
+	}
+
 	return &mediaprovider.Track{
 		ID:          ch.ID,
 		CoverArtID:  ch.CoverArt,
@@ -285,8 +297,8 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		TrackNumber: ch.Track,
 		DiscNumber:  ch.DiscNumber,
 		Genre:       ch.Genre,
-		ArtistIDs:   []string{ch.ArtistID},
-		ArtistNames: []string{ch.Artist},
+		ArtistIDs:   artistIDs,
+		ArtistNames: artistNames,
 		Album:       ch.Album,
 		AlbumID:     ch.AlbumID,
 		Year:        ch.Year,
@@ -309,15 +321,37 @@ func toAlbum(al *subsonic.AlbumID3) *mediaprovider.Album {
 }
 
 func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
+	var artistNames, artistIDs []string
+	if len(subAlbum.Artists) > 0 {
+		// OpenSubsonic extension
+		for _, a := range subAlbum.Artists {
+			artistIDs = append(artistIDs, a.ID)
+			artistNames = append(artistNames, a.Name)
+		}
+	} else {
+		artistNames = append(artistNames, subAlbum.Artist)
+		artistIDs = append(artistIDs, subAlbum.ArtistID)
+	}
+
+	var genres []string
+	if len(subAlbum.Genres) > 0 {
+		// OpenSubsonic extension
+		for _, g := range subAlbum.Genres {
+			genres = append(genres, g.Name)
+		}
+	} else {
+		genres = append(genres, subAlbum.Genre)
+	}
+
 	album.ID = subAlbum.ID
 	album.CoverArtID = subAlbum.CoverArt
 	album.Name = subAlbum.Name
 	album.Duration = subAlbum.Duration
-	album.ArtistIDs = []string{subAlbum.ArtistID}
-	album.ArtistNames = []string{subAlbum.Artist}
+	album.ArtistIDs = artistIDs
+	album.ArtistNames = artistNames
 	album.Year = subAlbum.Year
 	album.TrackCount = subAlbum.SongCount
-	album.Genres = []string{subAlbum.Genre}
+	album.Genres = genres
 	album.Favorite = !subAlbum.Starred.IsZero()
 }
 
