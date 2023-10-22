@@ -112,7 +112,10 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 
 	// OS media center integrations
 	a.setupMPRIS(displayAppName)
-	InitMPMediaHandler(a.Player, a.PlaybackManager, a.ImageManager.GetCoverArtUrl)
+	InitMPMediaHandler(a.Player, a.PlaybackManager, func(id string) (string, error) {
+		a.ImageManager.GetCoverThumbnail(id) // ensure image is cached locally
+		return a.ImageManager.GetCoverArtUrl(id)
+	})
 
 	return a, nil
 }

@@ -74,31 +74,8 @@ func InitMPMediaHandler(player *player.Player, playbackManager *PlaybackManager,
 	C.register_os_remote_commands()
 
 	mp.playbackManager.OnSongChange(func(track, _ *mediaprovider.Track) {
-		var title, artist, artURL string
-		var duration int
-		if track != nil && track.ID != "" {
-			var err error
-			if artURL, err = mp.artURLLookup(track.CoverArtID); err != nil {
-				log.Printf("error fetching art url: %s", err.Error())
-			}
-			title = track.Name
-			artist = strings.Join(track.ArtistNames, ", ")
-			duration = track.Duration
-		}
-
-		cTitle := C.CString(title)
-		defer C.free(unsafe.Pointer(cTitle))
-
-		cArtist := C.CString(artist)
-		defer C.free(unsafe.Pointer(cArtist))
-
-		cArtURL := C.CString(artURL)
-		defer C.free(unsafe.Pointer(cArtURL))
-
-		cTrackDuration := C.double(duration)
-
-		C.set_os_now_playing_info(cTitle, cArtist, cArtURL, cTrackDuration)
-
+		// Asynchronously because artwork fetching can take time
+		go mp.updateMetadata(track)
 	})
 
 	mp.player.OnStopped(func() {
@@ -120,6 +97,33 @@ func InitMPMediaHandler(player *player.Player, playbackManager *PlaybackManager,
 	})
 
 	return nil
+}
+
+func (mp *MPMediaHandler) updateMetadata(track *mediaprovider.Track) {
+	var title, artist, artURL string
+	var duration int
+	if track != nil && track.ID != "" {
+		var err error
+		if artURL, err = mp.artURLLookup(track.CoverArtID); err != nil {
+			log.Printf("error fetching art url: %s", err.Error())
+		}
+		title = track.Name
+		artist = strings.Join(track.ArtistNames, ", ")
+		duration = track.Duration
+	}
+
+	cTitle := C.CString(title)
+	defer C.free(unsafe.Pointer(cTitle))
+
+	cArtist := C.CString(artist)
+	defer C.free(unsafe.Pointer(cArtist))
+
+	cArtURL := C.CString(artURL)
+	defer C.free(unsafe.Pointer(cArtURL))
+
+	cTrackDuration := C.double(duration)
+
+	C.set_os_now_playing_info(cTitle, cArtist, cArtURL, cTrackDuration)
 }
 
 /**
