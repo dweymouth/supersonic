@@ -7,7 +7,7 @@ require (
 	fyne.io/x/fyne v0.0.0-20230611151101-afdcd6b92cf3
 	github.com/20after4/configdir v0.1.1
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
-	github.com/dweymouth/go-subsonic v0.0.0-20231013011542-14b66c5a1fff
+	github.com/dweymouth/go-subsonic v0.0.0-20231014003317-6a0c88db38ce
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
@@ -47,4 +47,4 @@ require (
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.3.5 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20230505012127-ca61c153b2a5
+replace fyne.io/fyne/v2 v2.3.5 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20231019154213-5f32d36c2968

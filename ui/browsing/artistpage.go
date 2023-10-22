@@ -189,7 +189,7 @@ func (a *ArtistPage) showAlbumGrid() {
 				Name:       al.Name,
 				ID:         al.ID,
 				CoverArtID: al.CoverArtID,
-				Secondary:  strconv.Itoa(al.Year),
+				Secondary:  []string{strconv.Itoa(al.Year)},
 			}
 		})
 		if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
@@ -366,10 +366,9 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 			break
 		}
 		if len(a.similarArtists.Objects) <= i+1 {
-			a.similarArtists.Add(widgets.NewCustomHyperlink())
+			a.similarArtists.Add(widget.NewHyperlink("", nil))
 		}
-		h := a.similarArtists.Objects[i+1].(*widgets.CustomHyperlink)
-		h.NoTruncate = true
+		h := a.similarArtists.Objects[i+1].(*widget.Hyperlink)
 		h.SetText(art.Name)
 		h.OnTapped = func(id string) func() {
 			return func() { a.artistPage.contr.NavigateTo(controller.ArtistRoute(id)) }

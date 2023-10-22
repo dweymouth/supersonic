@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/20after4/configdir"
 	"github.com/dweymouth/supersonic/backend"
@@ -86,7 +87,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 			m.Window.SetTitle(displayAppName)
 			return
 		}
-		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", song.Name, song.ArtistNames[0], displayAppName))
+		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", song.Name, strings.Join(song.ArtistNames, ", "), displayAppName))
 	})
 	app.ServerManager.OnServerConnected(func() {
 		m.BrowsingPane.EnableNavigationButtons()

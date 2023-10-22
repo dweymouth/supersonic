@@ -5,6 +5,7 @@ import (
 	"image"
 
 	"github.com/dweymouth/supersonic/res"
+	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
@@ -122,20 +123,20 @@ func isInside(origin fyne.Position, radius float32, point fyne.Position) bool {
 }
 
 type GridViewItemModel struct {
-	Name        string
-	ID          string
-	CoverArtID  string
-	Secondary   string
-	SecondaryID string
+	Name         string
+	ID           string
+	CoverArtID   string
+	Secondary    []string
+	SecondaryIDs []string
 }
 
 type GridViewItem struct {
 	widget.BaseWidget
 
 	itemID        string
-	secondaryID   string
-	primaryText   *CustomHyperlink
-	secondaryText *CustomHyperlink
+	secondaryIDs  []string
+	primaryText   *widget.Hyperlink
+	secondaryText *MultiHyperlink
 	container     *fyne.Container
 
 	// updated by GridView
@@ -145,16 +146,17 @@ type GridViewItem struct {
 	OnPlay              func()
 	OnShowContextMenu   func(fyne.Position)
 	OnShowItemPage      func()
-	OnShowSecondaryPage func()
+	OnShowSecondaryPage func(string)
 }
 
 func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	g := &GridViewItem{
-		primaryText:   NewCustomHyperlink(),
-		secondaryText: NewCustomHyperlink(),
+		primaryText:   widget.NewHyperlink("", nil),
+		secondaryText: NewMultiHyperlink(),
 		Cover:         newCoverImage(placeholderResource),
 	}
-	g.primaryText.SetTextStyle(fyne.TextStyle{Bold: true})
+	g.primaryText.TextStyle.Bold = true
+	g.primaryText.Wrapping = fyne.TextTruncate
 	g.ExtendBaseWidget(g)
 	g.Cover.OnPlay = func() {
 		if g.OnPlay != nil {
@@ -173,9 +175,9 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	}
 	g.Cover.OnShowPage = showItemFn
 	g.primaryText.OnTapped = showItemFn
-	g.secondaryText.OnTapped = func() {
+	g.secondaryText.OnTapped = func(s string) {
 		if g.OnShowSecondaryPage != nil {
-			g.OnShowSecondaryPage()
+			g.OnShowSecondaryPage(s)
 		}
 	}
 
@@ -191,15 +193,15 @@ func (g *GridViewItem) createContainer() {
 }
 
 func (g *GridViewItem) NeedsUpdate(model GridViewItemModel) bool {
-	return g.itemID != model.ID || g.secondaryID != model.SecondaryID
+	return g.itemID != model.ID || !sharedutil.SliceEqual(g.secondaryIDs, model.SecondaryIDs)
 }
 
 func (g *GridViewItem) Update(model GridViewItemModel) {
 	g.itemID = model.ID
-	g.secondaryID = model.SecondaryID
+	g.secondaryIDs = model.SecondaryIDs
 	g.primaryText.SetText(model.Name)
-	g.secondaryText.Disabled = model.SecondaryID == ""
-	g.secondaryText.SetText(model.Secondary)
+	g.secondaryText.BuildSegments(model.Secondary, model.SecondaryIDs)
+	g.secondaryText.Refresh()
 	g.Cover.ResetPlayButton()
 }
 
@@ -209,10 +211,6 @@ func (g *GridViewItem) Refresh() {
 
 func (g *GridViewItem) ItemID() string {
 	return g.itemID
-}
-
-func (g *GridViewItem) SecondaryID() string {
-	return g.secondaryID
 }
 
 func (g *GridViewItem) CreateRenderer() fyne.WidgetRenderer {

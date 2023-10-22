@@ -55,11 +55,11 @@ func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
 	albums := g.iter.NextN(n)
 	return sharedutil.MapSlice(albums, func(al *mediaprovider.Album) GridViewItemModel {
 		return GridViewItemModel{
-			Name:        al.Name,
-			ID:          al.ID,
-			CoverArtID:  al.CoverArtID,
-			Secondary:   al.ArtistNames[0],
-			SecondaryID: al.ArtistIDs[0],
+			Name:         al.Name,
+			ID:           al.ID,
+			CoverArtID:   al.CoverArtID,
+			Secondary:    al.ArtistNames,
+			SecondaryIDs: al.ArtistIDs,
 		}
 	})
 }
@@ -205,9 +205,9 @@ func (g *GridView) createGridWrap() {
 		func() fyne.CanvasObject {
 			card := NewGridViewItem(g.Placeholder)
 			card.OnPlay = func() { g.onPlay(card.ItemID(), false) }
-			card.OnShowSecondaryPage = func() {
+			card.OnShowSecondaryPage = func(id string) {
 				if g.OnShowSecondaryPage != nil {
-					g.OnShowSecondaryPage(card.SecondaryID())
+					g.OnShowSecondaryPage(id)
 				}
 			}
 			card.OnShowItemPage = func() {

@@ -7,6 +7,18 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
+func SliceEqual[T comparable](a []T, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func SliceContains[T comparable](ts []T, t T) bool {
 	for _, x := range ts {
 		if x == t {

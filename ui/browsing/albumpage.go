@@ -166,17 +166,15 @@ func (a *AlbumPage) load() {
 type AlbumPageHeader struct {
 	widget.BaseWidget
 
-	albumID  string
-	coverID  string
-	artistID string
-	genre    string
+	albumID string
+	coverID string
 
 	page *AlbumPage
 
 	cover       *widgets.TappableImage
 	titleLabel  *widget.RichText
-	artistLabel *widgets.CustomHyperlink
-	genreLabel  *widgets.CustomHyperlink
+	artistLabel *widgets.MultiHyperlink
+	genreLabel  *widgets.MultiHyperlink
 	miscLabel   *widget.Label
 
 	toggleFavButton *widgets.FavoriteButton
@@ -200,13 +198,13 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.artistLabel = widgets.NewCustomHyperlink()
-	a.artistLabel.OnTapped = func() {
-		a.page.contr.NavigateTo(controller.ArtistRoute(a.artistID))
+	a.artistLabel = widgets.NewMultiHyperlink()
+	a.artistLabel.OnTapped = func(id string) {
+		a.page.contr.NavigateTo(controller.ArtistRoute(id))
 	}
-	a.genreLabel = widgets.NewCustomHyperlink()
-	a.genreLabel.OnTapped = func() {
-		a.page.contr.NavigateTo(controller.GenreRoute(a.genre))
+	a.genreLabel = widgets.NewMultiHyperlink()
+	a.genreLabel.OnTapped = func(genre string) {
+		a.page.contr.NavigateTo(controller.GenreRoute(genre))
 	}
 	a.miscLabel = widget.NewLabel("")
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
@@ -264,11 +262,9 @@ func (a *AlbumPageHeader) CreateRenderer() fyne.WidgetRenderer {
 func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backend.ImageManager) {
 	a.albumID = album.ID
 	a.coverID = album.CoverArtID
-	a.artistID = album.ArtistIDs[0]
 	a.titleLabel.Segments[0].(*widget.TextSegment).Text = album.Name
-	a.artistLabel.SetText(album.ArtistNames[0])
-	a.genre = album.Genres[0]
-	a.genreLabel.SetText(album.Genres[0])
+	a.artistLabel.BuildSegments(album.ArtistNames, album.ArtistIDs)
+	a.genreLabel.BuildSegments(album.Genres, album.Genres)
 	a.miscLabel.SetText(formatMiscLabelStr(album))
 	a.toggleFavButton.IsFavorited = album.Favorite
 	a.Refresh()
@@ -286,10 +282,9 @@ func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backe
 func (a *AlbumPageHeader) Clear() {
 	a.albumID = ""
 	a.coverID = ""
-	a.artistID = ""
 	a.titleLabel.Segments[0].(*widget.TextSegment).Text = ""
-	a.artistLabel.SetText("")
-	a.genreLabel.SetText("")
+	a.artistLabel.Segments = nil
+	a.genreLabel.Segments = nil
 	a.miscLabel.SetText("")
 	a.toggleFavButton.IsFavorited = false
 	a.fullSizeCoverFetching = false

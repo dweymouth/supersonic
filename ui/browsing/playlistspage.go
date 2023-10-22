@@ -175,7 +175,7 @@ func createPlaylistGridViewModel(playlists []*mediaprovider.Playlist) []widgets.
 			Name:       pl.Name,
 			ID:         pl.ID,
 			CoverArtID: pl.CoverArtID,
-			Secondary:  fmt.Sprintf("%d %s", pl.TrackCount, tracks),
+			Secondary:  []string{fmt.Sprintf("%d %s", pl.TrackCount, tracks)},
 		}
 	})
 }
