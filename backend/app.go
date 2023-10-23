@@ -38,7 +38,6 @@ type App struct {
 	Player          *player.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
-	MPMediaHandler  *MPMediaHandler
 
 	// UI callbacks to be set in main
 	OnReactivate func()
