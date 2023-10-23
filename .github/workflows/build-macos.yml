@@ -39,11 +39,26 @@ jobs:
     - name: Install Fyne tool
       run: go install fyne.io/fyne/v2/cmd/fyne@latest
 
-    - name: Package app bundle
-      run: make package_macos && make bundledeps_macos && make zip_macos
+    - name: Package app bundles
+      run: >
+        make package_macos &&
+        cp -r Supersonic.app Supersonic.app.2 &&
+        make bundledeps_macos && make zip_macos &&
+        mv Supersonic.zip Supersonic_BigSur+.zip &&
+        rm -r Supersonic.app &&
+        mv Supersonic.app.2 Supersonic.app &&
+        make bundledeps_macos_highsierra && make zip_macos &&
+        mv Supersonic.zip Supersonic_HighSierra+.zip
 
-    - name: Upload artifact
+    - name: Upload Big Sur+ package
       uses: actions/upload-artifact@v3
       with:
-        name: Supersonic_mac_x64.zip
-        path: Supersonic.zip
+        name: Supersonic_mac_x64_BigSur+.zip
+        path: Supersonic_BigSur+.zip
+
+    - name: Upload High Sierra+ package
+      uses: actions/upload-artifact@v3
+      with:
+        name: Supersonic_mac_x64_HighSierra+.zip
+        path: Supersonic_HighSierra+.zip
+      
