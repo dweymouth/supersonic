@@ -1,0 +1,48 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Build Mac OS
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Xcode
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
+    - name: Setup Homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
+    - name: Install Dependencies
+      run: brew install mpv && brew install dylibbundler
+
+    - name: Setup path
+      run: export C_INCLUDE_PATH=/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH
+
+    - name: Build
+      run: go build
+
+    - name: Install Fyne tool
+      run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+    - name: Package app bundle
+      run: make package_macos && make bundledeps_macos && make zip_macos
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: Supersonic_mac_x64.zip
+        path: Supersonic.zip
