@@ -1,6 +1,6 @@
 icon_path = ./res/appicon-512.png
 app_name = Supersonic
-app_version = 0.5.2
+app_version = 0.6.0
 
 build:
 	go build

@@ -24,6 +24,7 @@
       <li>Light and Dark themes, with optional auto theme switching</li>
       <li>High-quality gapless audio playback powered by MPV, with optional  audio exclusive mode</li>
       <li>ReplayGain support (depends on files being tagged on server)</li>
+      <li>MPRIS and Mac OS media center integration</li>
       <li>Scrobble plays to server, with configurable criteria</li>
       <li>Multi-server support</li>
       <li>Primary and alternate server hostnames, e.g. for internal and external URLs</li>
@@ -60,33 +61,21 @@
   </screenshots>
 
  <releases>
-  <release date="2023-09-18" version="0.5.2">
+  <release date="2023-10-23" version="0.6.0">
    <description>
      <p>
-       Version 0.5.2 of Supersonic
+       Version 0.6.0 of Supersonic
      </p>
 
      <p>
-       Fixed
+       Added
      </p>
      <ul>
-       <li>Album lists were not populating when connecting to Astiga</li>
-       <li>MPRIS SetPosition call failed</li>
-       <li>Album card on artist discography page occasionally showed artist name instead of year</li>
-       <li>MPRIS invalid track object path for some Subsonic servers</li>
-       <li>Play count did not increment on Favorites page tracklist</li>
-       <li>Ctrl+F should focus search bar on Artists page</li>
-       <li>Prevent multiple popup cover images if thumbnail clicked twice</li>
-     </ul>
-
-     <p>
-       Changed
-     </p>
-     <ul>
-       <li>Settings dialog opens to last active tab</li>
-       <li>Add size limit and periodic pruning to on-disc image cache</li>
-       <li>Added Cmd+, shortcut on Mac to launch settings dialog</li>
-       <li>Add ContentCreated, UseCount to the MPRIS metadata</li>
+       <li>Support for multi-valued artists and genres through the new OpenSubsonic API extensions</li>
+       <li>Mac OS media center integration incl. media key support</li>
+       <li>Sorting now enabled on genres and playlists list views</li>
+       <li>Sortable tracklist columns provide a visual indication on hover</li>
+       <li>"Rescan library" option added to settings menu to trigger a library scan on the server</li>
      </ul>
 
    </description>

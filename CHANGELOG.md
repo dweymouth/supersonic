@@ -1,5 +1,15 @@
 # Change Log
 
+## [0.6.0] - 2023-10-23
+
+### Added
+- [#259](https://github.com/dweymouth/supersonic/pull/259) Support for multi-valued artists and genres through the new OpenSubsonic API extensions
+- [#233](https://github.com/dweymouth/supersonic/issues/233) Mac OS media center integration incl. media key support (Thanks @zackslash!)
+- [#77](https://github.com/dweymouth/supersonic/issues/77) Builds off latest `main` branch available via Github Actions for Ubuntu and Intel Macs
+- [#252](https://github.com/dweymouth/supersonic/issues/252) Sorting now enabled on genres and playlists list views
+- [#261](https://github.com/dweymouth/supersonic/issues/261) Sortable tracklist columns provide a visual indication on hover
+- [#249](https://github.com/dweymouth/supersonic/issues/249) "Rescan library" option added to settings menu to trigger a library scan on the server
+
 ## [0.5.2] - 2023-09-18
 
 ### Fixed
