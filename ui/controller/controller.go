@@ -122,10 +122,10 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 
 func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 	grid.OnAddToQueue = func(albumID string) {
-		m.App.PlaybackManager.LoadAlbum(albumID, true, false)
+		go m.App.PlaybackManager.LoadAlbum(albumID, true, false)
 	}
 	grid.OnPlay = func(albumID string, shuffle bool) {
-		m.App.PlaybackManager.PlayAlbum(albumID, 0, shuffle)
+		go m.App.PlaybackManager.PlayAlbum(albumID, 0, shuffle)
 	}
 	grid.OnShowItemPage = func(albumID string) {
 		m.NavigateTo(AlbumRoute(albumID))
