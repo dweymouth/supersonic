@@ -3,9 +3,9 @@ package widgets
 import (
 	"context"
 	"image"
-	"log"
 	"sync"
 
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 
@@ -37,9 +37,8 @@ func (b *BatchingIterator) NextN(n int) []*mediaprovider.Album {
 	return results
 }
 
-type ImageFetcher interface {
-	GetCoverThumbnailFromCache(string) (image.Image, bool)
-	GetCoverThumbnailAsync(string, func(image.Image, error)) context.CancelFunc
+type ThumbnailLoaderFactory interface {
+	NewThumbnailLoader(func(image.Image)) backend.ThumbnailLoader
 }
 
 type GridViewIterator interface {
@@ -82,7 +81,7 @@ type GridView struct {
 type GridViewState struct {
 	items        []GridViewItemModel
 	iter         GridViewIterator
-	imageFetcher ImageFetcher
+	imageFetcher ThumbnailLoaderFactory
 	Placeholder  fyne.Resource
 	highestShown int
 	done         bool
@@ -99,7 +98,7 @@ type GridViewState struct {
 
 var _ fyne.Widget = (*GridView)(nil)
 
-func NewFixedGridView(items []GridViewItemModel, fetch ImageFetcher, placeholder fyne.Resource) *GridView {
+func NewFixedGridView(items []GridViewItemModel, fetch ThumbnailLoaderFactory, placeholder fyne.Resource) *GridView {
 	g := &GridView{
 		GridViewState: GridViewState{
 			items:        items,
@@ -113,7 +112,7 @@ func NewFixedGridView(items []GridViewItemModel, fetch ImageFetcher, placeholder
 	return g
 }
 
-func NewGridView(iter GridViewIterator, fetch ImageFetcher, placeholder fyne.Resource) *GridView {
+func NewGridView(iter GridViewIterator, fetch ThumbnailLoaderFactory, placeholder fyne.Resource) *GridView {
 	g := &GridView{
 		GridViewState: GridViewState{
 			iter:         iter,
@@ -203,6 +202,8 @@ func (g *GridView) createGridWrap() {
 		// create func
 		func() fyne.CanvasObject {
 			card := NewGridViewItem(g.Placeholder)
+			card.ImgLoader = g.imageFetcher.NewThumbnailLoader(card.Cover.SetImage)
+			card.ImgLoader.OnBeforeLoad = func() { card.Cover.SetImage(nil) }
 			card.OnPlay = func() { g.onPlay(card.ItemID(), false) }
 			card.OnShowSecondaryPage = func(id string) {
 				if g.OnShowSecondaryPage != nil {
@@ -245,28 +246,7 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 		return
 	}
 	card.Update(item)
-	// cancel any previous image fetch (no issues with possible double-invocations)
-	if card.ImgLoadCancel != nil {
-		card.ImgLoadCancel()
-	}
-	if item.CoverArtID != "" {
-		if img, ok := g.imageFetcher.GetCoverThumbnailFromCache(item.CoverArtID); ok {
-			card.Cover.SetImage(img)
-		} else {
-			card.Cover.SetImage(nil)
-			card.ImgLoadCancel = g.imageFetcher.GetCoverThumbnailAsync(item.CoverArtID, func(i image.Image, err error) {
-				if err == nil {
-					card.Cover.SetImage(i)
-				} else {
-					log.Printf("error fetching image: %s", err.Error())
-				}
-				card.ImgLoadCancel() // done. release resources associated with cancel channel
-			})
-		}
-	} else {
-		// use the placeholder for an item that has no cover art ID
-		card.Cover.SetImage(nil)
-	}
+	card.ImgLoader.Load(item.CoverArtID)
 
 	// if user has scrolled near the bottom, fetch more
 	if itemIdx > g.lenItems()-10 {

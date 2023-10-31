@@ -1,9 +1,9 @@
 package widgets
 
 import (
-	"context"
 	"image"
 
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -140,8 +140,8 @@ type GridViewItem struct {
 	container     *fyne.Container
 
 	// updated by GridView
-	Cover         *coverImage
-	ImgLoadCancel context.CancelFunc
+	Cover     *coverImage
+	ImgLoader backend.ThumbnailLoader
 
 	OnPlay              func()
 	OnShowContextMenu   func(fyne.Position)
