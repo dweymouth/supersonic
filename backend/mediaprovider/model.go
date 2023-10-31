@@ -87,3 +87,45 @@ type PlaylistWithTracks struct {
 	Playlist
 	Tracks []*Track
 }
+
+type ContentType int
+
+const (
+	ContentTypeAlbum ContentType = iota
+	ContentTypeArtist
+	ContentTypeTrack
+	ContentTypePlaylist
+	ContentTypeGenre
+)
+
+func (c ContentType) String() string {
+	switch c {
+	case ContentTypeAlbum:
+		return "Album"
+	case ContentTypeArtist:
+		return "Artist"
+	case ContentTypeTrack:
+		return "Track"
+	case ContentTypePlaylist:
+		return "Playlist"
+	case ContentTypeGenre:
+		return "Genre"
+	default:
+		return "Unknown"
+	}
+}
+
+type SearchResult struct {
+	Name    string
+	ID      string
+	CoverID string
+	Type    ContentType
+
+	// for Album / Playlist: track count
+	//     Artist / Genre: album count
+	//     Track: length (seconds)
+	Size int
+
+	// Unset for ContentTypes Artist, Playlist, and Genre
+	ArtistName string
+}

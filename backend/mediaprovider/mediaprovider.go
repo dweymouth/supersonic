@@ -57,6 +57,8 @@ type MediaProvider interface {
 
 	SearchAlbums(searchQuery string, filter AlbumFilter) AlbumIterator
 
+	SearchAll(searchQuery string, maxResults int) ([]*SearchResult, error)
+
 	GetRandomTracks(genre string, count int) ([]*Track, error)
 
 	GetSimilarTracks(artistID string, count int) ([]*Track, error)
