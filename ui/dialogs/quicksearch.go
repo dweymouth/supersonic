@@ -7,7 +7,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
@@ -56,11 +55,10 @@ func NewQuickSearch(mp *mediaprovider.MediaProvider, im *backend.ImageManager) *
 			co.(*quickSearchResult).Update(result)
 		},
 	)
+	title := widget.NewRichText(&widget.TextSegment{Text: "Quick Search", Style: boldStyle})
+	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 	q.content = container.NewVBox(
-		container.NewHBox(
-			layout.NewSpacer(),
-			widget.NewRichText(&widget.TextSegment{Text: "Quick Search", Style: boldStyle}),
-			layout.NewSpacer()),
+		title,
 		container.NewBorder(searchEntry, nil, nil, nil, q.list),
 	)
 	return q
