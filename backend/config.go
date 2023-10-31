@@ -98,6 +98,10 @@ type ThemeConfig struct {
 	Appearance string
 }
 
+type TranscodingConfig struct {
+	ForceRawFile bool
+}
+
 type Config struct {
 	Application    AppConfig
 	Servers        []*ServerConfig
@@ -112,6 +116,7 @@ type Config struct {
 	LocalPlayback  LocalPlaybackConfig
 	Scrobbling     ScrobbleConfig
 	ReplayGain     ReplayGainConfig
+	Transcoding    TranscodingConfig
 	Theme          ThemeConfig
 }
 
@@ -175,6 +180,9 @@ func DefaultConfig(appVersionTag string) *Config {
 			Mode:            ReplayGainNone,
 			PreampGainDB:    0.0,
 			PreventClipping: true,
+		},
+		Transcoding: TranscodingConfig{
+			ForceRawFile: false,
 		},
 		Theme: ThemeConfig{
 			Appearance: "Dark",

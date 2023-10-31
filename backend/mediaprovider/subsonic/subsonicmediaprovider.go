@@ -192,8 +192,12 @@ func (s *subsonicMediaProvider) GetSimilarTracks(artistID string, count int) ([]
 	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
-func (s *subsonicMediaProvider) GetStreamURL(trackID string) (string, error) {
-	u, err := s.client.GetStreamURL(trackID, map[string]string{})
+func (s *subsonicMediaProvider) GetStreamURL(trackID string, forceRaw bool) (string, error) {
+	m := make(map[string]string)
+	if forceRaw {
+		m["format"] = "raw"
+	}
+	u, err := s.client.GetStreamURL(trackID, m)
 	if err != nil {
 		return "", err
 	}

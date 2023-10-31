@@ -241,6 +241,7 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 }
 
 func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
+	disableTranscode := widget.NewCheckWithData("Disable server transcoding", binding.BindBool(&s.config.Transcoding.ForceRawFile))
 	deviceList := make([]string, len(s.audioDevices))
 	var selIndex int
 	for i, dev := range s.audioDevices {
@@ -315,6 +316,7 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 	audioExclusive.Checked = s.config.LocalPlayback.AudioExclusive
 
 	return container.NewTabItem("Playback", container.NewVBox(
+		container.NewHBox(disableTranscode),
 		container.New(&layouts.MaxPadLayout{PadTop: 5},
 			container.New(layout.NewFormLayout(),
 				widget.NewLabel("Audio device"), container.NewBorder(nil, nil, nil, util.NewHSpace(70), deviceSelect),

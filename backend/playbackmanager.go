@@ -45,6 +45,7 @@ type PlaybackManager struct {
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
 	scrobbleCfg   *ScrobbleConfig
+	transcodeCfg  *TranscodingConfig
 
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
@@ -57,14 +58,16 @@ func NewPlaybackManager(
 	s *ServerManager,
 	p *player.Player,
 	scrobbleCfg *ScrobbleConfig,
+	transcodeCfg *TranscodingConfig,
 ) *PlaybackManager {
 	// clamp to 99% to avoid any possible rounding issues
 	scrobbleCfg.ThresholdPercent = clamp(scrobbleCfg.ThresholdPercent, 0, 99)
 	pm := &PlaybackManager{
-		ctx:         ctx,
-		sm:          s,
-		player:      p,
-		scrobbleCfg: scrobbleCfg,
+		ctx:          ctx,
+		sm:           s,
+		player:       p,
+		scrobbleCfg:  scrobbleCfg,
+		transcodeCfg: transcodeCfg,
 	}
 	p.OnTrackChange(func(tracknum int64) {
 		if tracknum >= int64(len(pm.playQueue)) {
@@ -177,7 +180,7 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueu
 		util.ShuffleSlice(nums)
 	}
 	for _, i := range nums {
-		url, err := p.sm.Server.GetStreamURL(tracks[i].ID)
+		url, err := p.sm.Server.GetStreamURL(tracks[i].ID, p.transcodeCfg.ForceRawFile)
 		if err != nil {
 			return err
 		}

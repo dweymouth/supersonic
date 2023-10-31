@@ -67,7 +67,7 @@ type MediaProvider interface {
 
 	GetFavorites() (Favorites, error)
 
-	GetStreamURL(trackID string) (string, error)
+	GetStreamURL(trackID string, forceRaw bool) (string, error)
 
 	GetTopTracks(artist Artist, count int) ([]*Track, error)
 
