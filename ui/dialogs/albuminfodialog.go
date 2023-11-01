@@ -55,6 +55,7 @@ func (a *AlbumInfoDialog) buildMainContainer(albumInfo *mediaprovider.AlbumInfo,
 	iconImage := canvas.NewImageFromImage(albumCover)
 	iconImage.FillMode = canvas.ImageFillContain
 	iconImage.SetMinSize(fyne.NewSize(100, 100))
+	iconImage.Hidden = albumCover == nil
 	title := widget.NewRichTextWithText(albumName)
 	title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
 	title.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText

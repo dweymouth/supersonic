@@ -14,7 +14,6 @@ import (
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -171,7 +170,7 @@ type AlbumPageHeader struct {
 
 	page *AlbumPage
 
-	cover       *widgets.TappableImage
+	cover       *widgets.ImagePlaceholder
 	titleLabel  *widget.RichText
 	artistLabel *widgets.MultiHyperlink
 	genreLabel  *widgets.MultiHyperlink
@@ -189,9 +188,8 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	// be directly captured in a closure throughout this function!
 	a := &AlbumPageHeader{page: page}
 	a.ExtendBaseWidget(a)
-	a.cover = widgets.NewTappableImage(func(*fyne.PointEvent) { go a.showPopUpCover() })
-	a.cover.FillMode = canvas.ImageFillContain
-	a.cover.SetMinSize(fyne.NewSize(225, 225))
+	a.cover = widgets.NewImagePlaceholder(myTheme.AlbumIcon, 225)
+	a.cover.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
 
 	a.titleLabel = widget.NewRichTextWithText("")
 	a.titleLabel.Wrapping = fyne.TextTruncate
@@ -230,7 +228,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 					a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
 				}),
 				fyne.NewMenuItem("Show Info...", func() {
-					a.page.contr.ShowAlbumInfoDialog(a.albumID, a.titleLabel.String(), a.cover.Image.Image)
+					a.page.contr.ShowAlbumInfoDialog(a.albumID, a.titleLabel.String(), a.cover.Image())
 				}))
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
@@ -271,7 +269,7 @@ func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backe
 
 	go func() {
 		if cover, err := im.GetCoverThumbnail(album.CoverArtID); err == nil {
-			a.cover.Image.Image = cover
+			a.cover.SetImage(cover, true)
 			a.cover.Refresh()
 		} else {
 			log.Printf("error fetching cover: %v", err)
@@ -288,7 +286,7 @@ func (a *AlbumPageHeader) Clear() {
 	a.miscLabel.SetText("")
 	a.toggleFavButton.IsFavorited = false
 	a.fullSizeCoverFetching = false
-	a.cover.Image.Image = nil
+	a.cover.SetImage(nil, false)
 	a.cover.Refresh()
 }
 
