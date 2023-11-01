@@ -71,6 +71,10 @@ func (m *Controller) QueueShowModalFunc(f func()) {
 	}
 }
 
+func (m *Controller) HaveModal() bool {
+	return m.haveModal
+}
+
 func (m *Controller) ShowPopUpImage(img image.Image) {
 	im := canvas.NewImageFromImage(img)
 	im.FillMode = canvas.ImageFillContain

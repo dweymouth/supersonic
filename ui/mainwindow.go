@@ -23,6 +23,7 @@ import (
 var (
 	ShortcutReload      = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
 	ShortcutSearch      = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
+	ShortcutQuickSearch = desktop.CustomShortcut{KeyName: fyne.KeyG, Modifier: os.ControlModifier}
 	ShortcutCloseWindow = desktop.CustomShortcut{KeyName: fyne.KeyW, Modifier: os.ControlModifier}
 
 	ShortcutNavOne   = desktop.CustomShortcut{KeyName: fyne.Key1, Modifier: os.ControlModifier}
@@ -249,8 +250,17 @@ func (m *MainWindow) addShortcuts() {
 		m.BrowsingPane.Reload()
 	})
 	m.Canvas().AddShortcut(&ShortcutSearch, func(_ fyne.Shortcut) {
+		if m.Controller.HaveModal() {
+			// Do not focus search widget behind modal dialog
+			return
+		}
 		if s := m.BrowsingPane.GetSearchBarIfAny(); s != nil {
 			m.Window.Canvas().Focus(s)
+		}
+	})
+	m.Canvas().AddShortcut(&ShortcutQuickSearch, func(_ fyne.Shortcut) {
+		if !m.Controller.HaveModal() {
+			m.Controller.ShowQuickSearch()
 		}
 	})
 	m.Canvas().AddShortcut(&fyne.ShortcutSelectAll{}, func(_ fyne.Shortcut) {
