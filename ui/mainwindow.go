@@ -53,10 +53,9 @@ type MainWindow struct {
 
 func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App, size fyne.Size) MainWindow {
 	m := MainWindow{
-		App:          app,
-		Window:       fyneApp.NewWindow(displayAppName),
-		BrowsingPane: browsing.NewBrowsingPane(app),
-		theme:        theme.NewMyTheme(&app.Config.Theme, configdir.LocalConfig(appName, "themes")),
+		App:    app,
+		Window: fyneApp.NewWindow(displayAppName),
+		theme:  theme.NewMyTheme(&app.Config.Theme, configdir.LocalConfig(appName, "themes")),
 	}
 
 	m.theme.NormalFont = app.Config.Application.FontNormalTTF
@@ -71,6 +70,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		MainWindow: m.Window,
 		App:        app,
 	}
+	m.BrowsingPane = browsing.NewBrowsingPane(app, m.Controller)
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	// inject controller dependencies
 	m.Controller.NavHandler = m.Router.NavigateTo

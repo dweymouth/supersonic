@@ -91,6 +91,8 @@ func mergeResults(
 	for _, al := range searchResult.Album {
 		results = append(results, &mediaprovider.SearchResult{
 			Type:       mediaprovider.ContentTypeAlbum,
+			ID:         al.ID,
+			CoverID:    al.CoverArt,
 			Name:       al.Name,
 			ArtistName: getNameString(al.Artist, al.Artists),
 			Size:       al.SongCount,
@@ -99,15 +101,19 @@ func mergeResults(
 
 	for _, ar := range searchResult.Artist {
 		results = append(results, &mediaprovider.SearchResult{
-			Type: mediaprovider.ContentTypeArtist,
-			Name: ar.Name,
-			Size: ar.AlbumCount,
+			Type:    mediaprovider.ContentTypeArtist,
+			ID:      ar.ID,
+			CoverID: ar.CoverArt,
+			Name:    ar.Name,
+			Size:    ar.AlbumCount,
 		})
 	}
 
 	for _, tr := range searchResult.Song {
 		results = append(results, &mediaprovider.SearchResult{
 			Type:       mediaprovider.ContentTypeTrack,
+			ID:         tr.ID,
+			CoverID:    tr.CoverArt,
 			Name:       tr.Title,
 			ArtistName: getNameString(tr.Artist, tr.Artists),
 			Size:       tr.Duration,

@@ -483,6 +483,32 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	pop.Show()
 }
 
+func (c *Controller) ShowQuickSearch() {
+	qs := dialogs.NewQuickSearch(c.App.ServerManager.Server, c.App.ImageManager)
+	pop := widget.NewModalPopUp(qs, c.MainWindow.Canvas())
+	qs.OnDismiss = func() {
+		pop.Hide()
+		c.doModalClosed()
+	}
+	qs.OnNavigateTo = func(contentType mediaprovider.ContentType, id string) {
+		pop.Hide()
+		c.doModalClosed()
+		switch contentType {
+		case mediaprovider.ContentTypeAlbum:
+			c.NavigateTo(AlbumRoute(id))
+		case mediaprovider.ContentTypeArtist:
+			c.NavigateTo(ArtistRoute(id))
+		case mediaprovider.ContentTypeTrack:
+			// TODO
+		case mediaprovider.ContentTypePlaylist:
+			c.NavigateTo(PlaylistRoute(id))
+		case mediaprovider.ContentTypeGenre:
+			c.NavigateTo(GenreRoute(id))
+		}
+	}
+	pop.Show()
+}
+
 func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {
 	if err := c.App.ServerManager.SetServerPassword(server, password); err != nil {
 		log.Printf("error setting keyring credentials: %v", err)

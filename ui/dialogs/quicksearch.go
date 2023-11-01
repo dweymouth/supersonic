@@ -2,6 +2,7 @@ package dialogs
 
 import (
 	"image"
+	"log"
 	"sync"
 
 	"fyne.io/fyne/v2"
@@ -18,7 +19,10 @@ import (
 type QuickSearch struct {
 	widget.BaseWidget
 
-	mp *mediaprovider.MediaProvider
+	OnDismiss    func()
+	OnNavigateTo func(mediaprovider.ContentType, string)
+
+	mp mediaprovider.MediaProvider
 	im *backend.ImageManager
 
 	resultsMutex  sync.RWMutex
@@ -29,7 +33,7 @@ type QuickSearch struct {
 	content *fyne.Container
 }
 
-func NewQuickSearch(mp *mediaprovider.MediaProvider, im *backend.ImageManager) *QuickSearch {
+func NewQuickSearch(mp mediaprovider.MediaProvider, im *backend.ImageManager) *QuickSearch {
 	q := &QuickSearch{
 		mp: mp,
 		im: im,
@@ -57,24 +61,41 @@ func NewQuickSearch(mp *mediaprovider.MediaProvider, im *backend.ImageManager) *
 	)
 	title := widget.NewRichText(&widget.TextSegment{Text: "Quick Search", Style: boldStyle})
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
-	q.content = container.NewVBox(
-		title,
-		container.NewBorder(searchEntry, nil, nil, nil, q.list),
-	)
+	q.content = container.NewBorder(
+		container.NewVBox(title, searchEntry), nil, nil, nil, q.list)
 	return q
 }
 
 func (q *QuickSearch) onSearched(query string) {
+	var results []*mediaprovider.SearchResult
+	if query != "" {
+		if res, err := q.mp.SearchAll(query, 20); err != nil {
+			log.Printf("Error searching: %s", err.Error())
+		} else {
+			results = res
+		}
+	}
+	q.resultsMutex.Lock()
+	q.searchResults = results
+	q.resultsMutex.Unlock()
+	q.list.Refresh()
 }
 
 func (q *QuickSearch) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(q.content)
 }
 
+func (q *QuickSearch) MinSize() fyne.Size {
+	return fyne.NewSize(500, 350)
+}
+
 type quickSearchResult struct {
 	widget.BaseWidget
 
 	//	parent *QuickSearch
+
+	id          string
+	contentType mediaprovider.ContentType
 
 	imageLoader backend.ThumbnailLoader
 
@@ -88,7 +109,7 @@ type quickSearchResult struct {
 
 func newQuickSearchResult(im *backend.ImageManager) *quickSearchResult {
 	qs := &quickSearchResult{
-		image:     widgets.NewImagePlaceholder(myTheme.AlbumIcon, 64),
+		image:     widgets.NewImagePlaceholder(myTheme.AlbumIcon, 50),
 		title:     widget.NewLabel(""),
 		secondary: widget.NewRichText(),
 	}
@@ -107,6 +128,11 @@ func (q *quickSearchResult) Update(result *mediaprovider.SearchResult) {
 	if result == nil {
 		return
 	}
+	if q.contentType == result.Type && q.id == result.ID {
+		return // nothing to do
+	}
+	q.id = result.ID
+	q.contentType = result.Type
 	q.image.CenterIcon = placeholderIconForContentType(result.Type)
 	q.imageLoader.Load(result.CoverID)
 	q.title.SetText(result.Name)
