@@ -39,7 +39,7 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 	wg.Add(1)
 	go func() {
 		p, e := s.client.GetPlaylists(nil)
-		if e != nil {
+		if e == nil {
 			playlists = sharedutil.FilterSlice(p, func(p *subsonic.Playlist) bool {
 				return allTermsMatch(strings.ToLower(p.Name), queryLowerWords)
 			})
@@ -50,7 +50,7 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 	wg.Add(1)
 	go func() {
 		g, e := s.client.GetGenres()
-		if e != nil {
+		if e == nil {
 			genres = sharedutil.FilterSlice(g, func(g *subsonic.Genre) bool {
 				return allTermsMatch(strings.ToLower(g.Name), queryLowerWords)
 			})
@@ -117,6 +117,25 @@ func mergeResults(
 			Name:       tr.Title,
 			ArtistName: getNameString(tr.Artist, tr.Artists),
 			Size:       tr.Duration,
+		})
+	}
+
+	for _, pl := range matchingPlaylists {
+		results = append(results, &mediaprovider.SearchResult{
+			Type:    mediaprovider.ContentTypePlaylist,
+			ID:      pl.ID,
+			CoverID: pl.CoverArt,
+			Name:    pl.Name,
+			Size:    pl.SongCount,
+		})
+	}
+
+	for _, g := range matchingGenres {
+		results = append(results, &mediaprovider.SearchResult{
+			Type: mediaprovider.ContentTypeGenre,
+			ID:   g.Name,
+			Name: g.Name,
+			Size: g.AlbumCount,
 		})
 	}
 

@@ -1,6 +1,7 @@
 package dialogs
 
 import (
+	"fmt"
 	"image"
 	"log"
 	"sync"
@@ -48,22 +49,8 @@ func NewQuickSearch(mp mediaprovider.MediaProvider, im *backend.ImageManager) *Q
 	se.OnSubmitted = func(_ string) {
 		q.onSelected(q.selectedIndex)
 	}
-	se.OnTypedDown = func() {
-		q.resultsMutex.RLock()
-		if q.selectedIndex < len(q.searchResults)-1 {
-			q.selectedIndex++
-		}
-		q.resultsMutex.RUnlock()
-		q.list.Select(q.selectedIndex)
-	}
-	se.OnTypedUp = func() {
-		q.resultsMutex.RLock()
-		if q.selectedIndex > 0 {
-			q.selectedIndex--
-		}
-		q.resultsMutex.RUnlock()
-		q.list.Select(q.selectedIndex)
-	}
+	se.OnTypedDown = q.moveSelectionDown
+	se.OnTypedUp = q.moveSelectionUp
 	se.OnTypedEscape = q.onDismiss
 	q.SearchEntry = se
 	q.list = widget.NewList(
@@ -115,6 +102,24 @@ func (q *QuickSearch) onSelected(idx int) {
 	typ := q.searchResults[idx].Type
 	q.resultsMutex.RUnlock()
 	q.OnNavigateTo(typ, id)
+}
+
+func (q *QuickSearch) moveSelectionDown() {
+	q.resultsMutex.RLock()
+	if q.selectedIndex < len(q.searchResults)-1 {
+		q.selectedIndex++
+	}
+	q.resultsMutex.RUnlock()
+	q.list.Select(q.selectedIndex)
+}
+
+func (q *QuickSearch) moveSelectionUp() {
+	q.resultsMutex.RLock()
+	if q.selectedIndex > 0 {
+		q.selectedIndex--
+	}
+	q.resultsMutex.RUnlock()
+	q.list.Select(q.selectedIndex)
 }
 
 func (q *QuickSearch) onSearched(query string) {
@@ -192,7 +197,42 @@ func (q *quickSearchResult) Update(result *mediaprovider.SearchResult) {
 	q.image.CenterIcon = placeholderIconForContentType(result.Type)
 	q.imageLoader.Load(result.CoverID)
 	q.title.SetText(result.Name)
-	q.secondary.Segments = []widget.RichTextSegment{&widget.TextSegment{Text: result.Type.String()}}
+
+	maybePluralize := func(s string, size int) string {
+		if size != 1 {
+			return s + "s"
+		}
+		return s
+	}
+
+	var secondaryText string
+	switch result.Type {
+	case mediaprovider.ContentTypeAlbum:
+		secondaryText = result.ArtistName
+	case mediaprovider.ContentTypeArtist:
+		secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("album", result.Size))
+	case mediaprovider.ContentTypeTrack:
+		secondaryText = result.ArtistName
+	case mediaprovider.ContentTypePlaylist:
+		secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("track", result.Size))
+	case mediaprovider.ContentTypeGenre:
+		secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("album", result.Size))
+	}
+	q.secondary.Segments = []widget.RichTextSegment{
+		&widget.TextSegment{
+			Text:  result.Type.String(),
+			Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, TextStyle: fyne.TextStyle{Bold: true}, Inline: true},
+		},
+		&widget.TextSegment{
+			Text:  " · ",
+			Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
+		},
+		&widget.TextSegment{
+			Text:  secondaryText,
+			Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
+		},
+	}
+
 	q.secondary.Refresh()
 }
 
