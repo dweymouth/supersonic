@@ -506,7 +506,10 @@ func (c *Controller) ShowQuickSearch() {
 			c.NavigateTo(GenreRoute(id))
 		}
 	}
+	c.ClosePopUpOnEscape(pop)
+	c.haveModal = true
 	pop.Show()
+	c.MainWindow.Canvas().Focus(qs.SearchEntry)
 }
 
 func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {
