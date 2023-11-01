@@ -47,6 +47,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.trackName.TextStyle.Bold = true
 	n.cover.SetMinSize(fyne.NewSize(85, 85))
 	n.cover.FillMode = canvas.ImageFillContain
+	n.cover.Hidden = true
 
 	n.c = container.New(&layouts.MaxPadLayout{PadLeft: -5},
 		container.NewBorder(nil, nil, n.cover, nil,
@@ -91,6 +92,7 @@ func (n *NowPlayingCard) Update(track string, artists, artistIDs []string, album
 	n.albumName.SetText(album)
 	n.albumName.Hidden = album == ""
 	n.cover.Image.Image = cover
+	n.cover.Hidden = cover == nil
 	n.c.Refresh()
 }
 
