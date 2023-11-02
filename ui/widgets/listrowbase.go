@@ -75,7 +75,9 @@ func (l *ListRowBase) TypedRune(r rune) {
 }
 
 func (l *ListRowBase) Refresh() {
+	l.focusedRect.FillColor = theme.HoverColor()
 	l.focusedRect.Hidden = !l.Focused
+	l.selectionRect.FillColor = theme.SelectionColor()
 	l.selectionRect.Hidden = !l.Selected
 	l.BaseWidget.Refresh()
 }
