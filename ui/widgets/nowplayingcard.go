@@ -57,6 +57,11 @@ func NewNowPlayingCard() *NowPlayingCard {
 	return n
 }
 
+func (n *NowPlayingCard) MinSize() fyne.Size {
+	// prop up height for when cover image is hidden
+	return fyne.NewSize(n.BaseWidget.MinSize().Width, 85)
+}
+
 func (n *NowPlayingCard) onShowCoverImage(*fyne.PointEvent) {
 	if n.OnShowCoverImage != nil {
 		n.OnShowCoverImage()
