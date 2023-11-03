@@ -74,7 +74,7 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.app.PlaybackManager.OnPlayTimeUpdate(b.onPlayTimeUpdate)
 	bkgrnd := myTheme.NewThemedRectangle(myTheme.ColorNamePageBackground)
-	b.pageContainer = container.NewMax(bkgrnd, layout.NewSpacer())
+	b.pageContainer = container.NewStack(bkgrnd, layout.NewSpacer())
 	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 		p := widget.NewPopUpMenu(b.settingsMenu,
 			fyne.CurrentApp().Driver().CanvasForObject(b.settingsBtn))

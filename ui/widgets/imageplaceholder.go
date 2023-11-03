@@ -43,7 +43,7 @@ func NewImagePlaceholder(centerIcon fyne.Resource, minSize float32) *ImagePlaceh
 	i.border = myTheme.NewThemedRectangle(theme.ColorNameBackground)
 	i.border.BorderColorName = theme.ColorNameForeground
 	i.border.BorderWidth = 3
-	i.content = container.NewMax(
+	i.content = container.NewStack(
 		i.border,
 		container.NewCenter(i.iconImage),
 		i.imageDisp,

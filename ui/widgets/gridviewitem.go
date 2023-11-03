@@ -50,7 +50,7 @@ func newCoverImage(placeholderResource fyne.Resource) *coverImage {
 
 func (c *coverImage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(
-		container.NewMax(c.Im, container.NewCenter(c.playbtn)),
+		container.NewStack(c.Im, container.NewCenter(c.playbtn)),
 	)
 }
 

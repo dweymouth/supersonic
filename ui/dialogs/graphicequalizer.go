@@ -63,7 +63,7 @@ func (g *GraphicEqualizer) buildSliders(preamp float64, bands []string, bandGain
 		c := container.NewBorder(nil, l, nil, nil, s)
 		bandSliders.Add(c)
 	}
-	g.container = container.NewMax(
+	g.container = container.NewStack(
 		container.NewBorder(nil, widget.NewLabel(""), nil, nil,
 			container.NewBorder(nil, nil, util.NewHSpace(5), util.NewHSpace(5),
 				container.NewVBox(
