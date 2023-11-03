@@ -49,11 +49,9 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.cover.FillMode = canvas.ImageFillContain
 	n.cover.Hidden = true
 
-	n.c = container.New(&layouts.MaxPadLayout{PadLeft: -5},
-		container.NewBorder(nil, nil, n.cover, nil,
-			container.New(&layouts.MaxPadLayout{PadBottom: -3},
-				container.New(&layouts.VboxCustomPadding{ExtraPad: -13}, n.trackName, n.artistName, n.albumName))),
-	)
+	n.c = container.NewBorder(nil, nil, n.cover, nil,
+		container.New(&layouts.MaxPadLayout{PadTop: -2},
+			container.New(&layouts.VboxCustomPadding{ExtraPad: -13}, n.trackName, n.artistName, n.albumName)))
 	return n
 }
 
