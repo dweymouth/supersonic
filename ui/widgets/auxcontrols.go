@@ -49,7 +49,6 @@ func NewAuxControls(initialVolume int) *AuxControls {
 	a.container = container.NewHBox(
 		layout.NewSpacer(),
 		container.NewVBox(
-			util.NewHSpace(0), // hack to move everything down a tiny bit
 			layout.NewSpacer(),
 			a.VolumeControl,
 			container.NewHBox(layout.NewSpacer(), a.loop, util.NewHSpace(5)),
@@ -111,7 +110,8 @@ func (v *volumeSlider) Tapped(e *fyne.PointEvent) {
 
 func (v *volumeSlider) MinSize() fyne.Size {
 	h := v.Slider.MinSize().Height
-	return fyne.NewSize(v.Width, h)
+	// give extra space for height to hack around mini button covering part of focus circle
+	return fyne.NewSize(v.Width, h+theme.Padding()*3)
 }
 
 func (v *volumeSlider) Scrolled(e *fyne.ScrollEvent) {
