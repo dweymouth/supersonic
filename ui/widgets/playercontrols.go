@@ -10,15 +10,16 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// TrackPosSlider is a custom slider that doesn't trigger
-// the seek action until drag end.
+// TrackPosSlider is a custom slider that exposes an additional
+// IsDragging() API as well as some other customizations
 type TrackPosSlider struct {
 	widget.Slider
 
-	OnDragEnd func(float64)
+	// to avoid "data echoes" when slider value is updated as
+	// playback position changes
+	IgnoreNextChangeEnded bool
 
-	isDragging       bool
-	lastDraggedValue float64
+	isDragging bool
 }
 
 func NewTrackPosSlider() *TrackPosSlider {
@@ -35,18 +36,41 @@ func NewTrackPosSlider() *TrackPosSlider {
 	return slider
 }
 
+func (t *TrackPosSlider) SetValue(value float64) {
+	t.IgnoreNextChangeEnded = true
+	t.Slider.SetValue(value)
+}
+
+func (t *TrackPosSlider) Tapped(e *fyne.PointEvent) {
+	t.isDragging = false
+	t.IgnoreNextChangeEnded = false
+	t.Slider.Tapped(e)
+
+	// don't keep focus after being tapped
+	fyne.CurrentApp().Driver().CanvasForObject(t).Focus(nil)
+}
+
+// override to increase the distance moved by keyboard control
+func (t *TrackPosSlider) TypedKey(e *fyne.KeyEvent) {
+	switch e.Name {
+	case fyne.KeyLeft:
+		t.Slider.SetValue(t.Value - 0.05)
+	case fyne.KeyRight:
+		t.Slider.SetValue(t.Value + 0.05)
+	default:
+		t.Slider.TypedKey(e)
+	}
+}
+
 func (t *TrackPosSlider) DragEnd() {
 	t.isDragging = false
+	t.IgnoreNextChangeEnded = false
 	t.Slider.DragEnd()
-	if t.OnDragEnd != nil {
-		t.OnDragEnd(t.lastDraggedValue)
-	}
 }
 
 func (t *TrackPosSlider) Dragged(e *fyne.DragEvent) {
 	t.isDragging = true
 	t.Slider.Dragged(e)
-	t.lastDraggedValue = t.Value
 }
 
 func (t *TrackPosSlider) IsDragging() bool {
@@ -116,7 +140,13 @@ func NewPlayerControls() *PlayerControls {
 }
 
 func (pc *PlayerControls) OnSeek(f func(float64)) {
-	pc.slider.OnDragEnd = f
+	pc.slider.OnChangeEnded = func(pos float64) {
+		if pc.slider.IgnoreNextChangeEnded {
+			pc.slider.IgnoreNextChangeEnded = false
+		} else {
+			f(pos)
+		}
+	}
 }
 
 func (pc *PlayerControls) OnSeekPrevious(f func()) {
@@ -167,50 +197,4 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 
 func (p *PlayerControls) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(p.container)
-}
-
-// This code will be OBSOLETE in Fyne 2.4
-// which will natively add Tappable behavior to slider
-// Tapped is called when a pointer tapped event is captured.
-//
-// Since: 2.4
-func (t *TrackPosSlider) Tapped(e *fyne.PointEvent) {
-	ratio := t.getRatio(e)
-	val := t.Min + ratio*(t.Max-t.Min)
-	t.isDragging = true
-	t.SetValue(val)
-	t.lastDraggedValue = val
-	t.isDragging = false
-	t.DragEnd()
-}
-
-func (t *TrackPosSlider) endOffset() float32 {
-	return (theme.IconInlineSize()-4)/2 + theme.InnerPadding() - 1.5 // align with radio icons
-}
-
-func (t *TrackPosSlider) getRatio(e *fyne.PointEvent) float64 {
-	pad := t.endOffset()
-
-	x := e.Position.X
-	y := e.Position.Y
-
-	switch t.Orientation {
-	case widget.Vertical:
-		if y > t.Size().Height-pad {
-			return 0.0
-		} else if y < pad {
-			return 1.0
-		} else {
-			return 1 - float64(y-pad)/float64(t.Size().Height-pad*2)
-		}
-	case widget.Horizontal:
-		if x > t.Size().Width-pad {
-			return 1.0
-		} else if x < pad {
-			return 0.0
-		} else {
-			return float64(x-pad) / float64(t.Size().Width-pad*2)
-		}
-	}
-	return 0.0
 }
