@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	fyne.io/fyne/v2 v2.4.1
-	fyne.io/x/fyne v0.0.0-20230611151101-afdcd6b92cf3
 	github.com/20after4/configdir v0.1.1
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
 	github.com/dweymouth/go-subsonic v0.0.0-20231014003317-6a0c88db38ce
@@ -32,7 +31,6 @@ require (
 	github.com/go-text/typesetting v0.0.0-20230616162802-9c17dd34aa4a // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
-	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect

@@ -216,3 +216,13 @@ func (g *GridViewItem) ItemID() string {
 func (g *GridViewItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.container)
 }
+
+// steal hover events from underlying GridWrap to prevent unwanted
+// hover rectangle backgrounds
+var _ desktop.Hoverable = (*GridViewItem)(nil)
+
+func (g *GridViewItem) MouseIn(e *desktop.MouseEvent) {}
+
+func (g *GridViewItem) MouseOut() {}
+
+func (g *GridViewItem) MouseMoved(e *desktop.MouseEvent) {}
