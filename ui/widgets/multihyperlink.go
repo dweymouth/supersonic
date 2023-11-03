@@ -107,7 +107,7 @@ func (c *MultiHyperlink) layoutObjects() {
 			obj = c.content.Objects[2*i-1]
 			ms := obj.MinSize()
 			obj.Resize(ms)
-			obj.Move(fyne.NewPos(x-ms.Width+c.getSeparatorWidth()+1, 0)) // this is really ugly
+			obj.Move(fyne.NewPos(x-ms.Width+c.getSeparatorWidth()+4, 0)) // this is really ugly
 			x -= theme.Padding() * 2
 		}
 		// move and resize text object
