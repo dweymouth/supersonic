@@ -158,19 +158,16 @@ func (g *GridViewPage) createSearchAndFilter() {
 func (g *GridViewPage) createContainer() {
 	header := container.NewHBox(util.NewHSpace(6), g.title)
 	if g.sortOrder != nil {
-		sortVbox := container.NewVBox(layout.NewSpacer(), g.sortOrder, layout.NewSpacer())
-		header.Add(sortVbox)
+		header.Add(container.NewCenter(g.sortOrder))
 	}
 	if b := g.adapter.ActionButton(); b != nil {
-		btnVbox := container.NewVBox(layout.NewSpacer(), b, layout.NewSpacer())
-		header.Add(btnVbox)
+		header.Add(container.NewCenter(b))
 	}
 	header.Add(layout.NewSpacer())
 	if g.filterBtn != nil {
 		header.Add(container.NewCenter(g.filterBtn))
 	}
-	searchVbox := container.NewVBox(layout.NewSpacer(), g.searcher, layout.NewSpacer())
-	header.Add(searchVbox)
+	header.Add(container.NewCenter(g.searcher))
 	header.Add(util.NewHSpace(12))
 	g.container = container.NewBorder(header, nil, nil, nil, g.grid)
 }
