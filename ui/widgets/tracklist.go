@@ -259,9 +259,9 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 func (t *Tracklist) IncrementPlayCount(trackID string) {
 	t.tracksMutex.RLock()
 	t.tracksMutex.RUnlock()
-	if tr := t.findTrackByID(trackID); tr != nil {
+	if tr, idx := t.findTrackByID(trackID); tr != nil {
 		tr.PlayCount += 1
-		t.list.Refresh()
+		t.list.RefreshItem(idx)
 	}
 }
 
@@ -551,7 +551,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	t.tracksMutex.RLock()
-	tr := t.findTrackByID(trackID)
+	tr, _ := t.findTrackByID(trackID)
 	t.tracksMutex.RUnlock()
 	t.onSetFavorites([]*mediaprovider.Track{tr}, fav, false)
 }
@@ -572,7 +572,7 @@ func (t *Tracklist) onSetFavorites(tracks []*mediaprovider.Track, fav bool, need
 func (t *Tracklist) onSetRating(trackID string, rating int) {
 	// update our own track model
 	t.tracksMutex.RLock()
-	tr := t.findTrackByID(trackID)
+	tr, _ := t.findTrackByID(trackID)
 	t.tracksMutex.RUnlock()
 	t.onSetRatings([]*mediaprovider.Track{tr}, rating, false)
 }
@@ -608,14 +608,14 @@ func (t *Tracklist) onDownload(tracks []*mediaprovider.Track, downloadName strin
 	}
 }
 
-func (t *Tracklist) findTrackByID(id string) *mediaprovider.Track {
+func (t *Tracklist) findTrackByID(id string) (*mediaprovider.Track, int) {
 	idx := sharedutil.Find(t.tracks, func(tr *trackModel) bool {
 		return tr.track.ID == id
 	})
 	if idx >= 0 {
-		return t.tracks[idx].track
+		return t.tracks[idx].track, idx
 	}
-	return nil
+	return nil, -1
 }
 
 func (t *Tracklist) selectedTrackModels() []*trackModel {
