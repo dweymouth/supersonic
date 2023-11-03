@@ -136,6 +136,7 @@ func (q *QuickSearch) onSearched(query string) {
 	q.resultsMutex.Unlock()
 	q.list.Refresh()
 	q.list.ScrollToTop()
+	q.selectedIndex = 0
 	q.list.Select(0)
 }
 

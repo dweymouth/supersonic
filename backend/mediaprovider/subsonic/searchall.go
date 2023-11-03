@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/deluan/sanitize"
 	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -34,14 +35,14 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 		wg.Done()
 	}()
 
-	queryLowerWords := strings.Fields(strings.ToLower(searchQuery))
+	queryLowerWords := strings.Fields(strings.ToLower(sanitize.Accents(searchQuery)))
 
 	wg.Add(1)
 	go func() {
 		p, e := s.client.GetPlaylists(nil)
 		if e == nil {
 			playlists = sharedutil.FilterSlice(p, func(p *subsonic.Playlist) bool {
-				return allTermsMatch(strings.ToLower(p.Name), queryLowerWords)
+				return allTermsMatch(strings.ToLower(sanitize.Accents(p.Name)), queryLowerWords)
 			})
 		}
 		wg.Done()
@@ -52,7 +53,7 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 		g, e := s.client.GetGenres()
 		if e == nil {
 			genres = sharedutil.FilterSlice(g, func(g *subsonic.Genre) bool {
-				return allTermsMatch(strings.ToLower(g.Name), queryLowerWords)
+				return allTermsMatch(strings.ToLower(sanitize.Accents(g.Name)), queryLowerWords)
 			})
 		}
 		wg.Done()
@@ -64,7 +65,7 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 	}
 
 	results := mergeResults(result, playlists, genres)
-	//rankResults(results, queryLowerWords) // TODO
+	rankResults(results, queryLowerWords)
 	if len(results) > maxResults {
 		results = results[:maxResults]
 	}
@@ -143,9 +144,42 @@ func mergeResults(
 }
 
 func rankResults(results []*mediaprovider.SearchResult, queryTerms []string) {
-	// TODO
-	sort.Slice(results, func(a, b int) bool {
-		return false
+	if len(queryTerms) == 0 || len(results) < 2 {
+		return
+	}
+
+	sanitizeMemo := make([]string, len(results))
+	sanitized := func(s string, i int) string {
+		if x := sanitizeMemo[i]; x != "" {
+			return x
+		}
+		x := strings.ToLower(sanitize.Accents(s))
+		sanitizeMemo[i] = x
+		return x
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		// Compare by search query terms
+		a, b := results[i], results[j]
+		aName := sanitized(a.Name, i)
+		bName := sanitized(b.Name, j)
+
+		for _, term := range queryTerms {
+			firstTermIdxA, firstTermIdxB := strings.Index(aName, term), strings.Index(bName, term)
+			if firstTermIdxA >= 0 && firstTermIdxB < 0 {
+				return true // item A has a direct match with the query term and B does not
+			} else if firstTermIdxB >= 0 && firstTermIdxA < 0 {
+				return false // item B matches but not A
+			}
+
+			if firstTermIdxA < firstTermIdxB {
+				return true // item A matches the query term starting at an earlier position
+			} else if firstTermIdxB < firstTermIdxA {
+				return false // item B matches first
+			}
+		}
+		// Defer to item type for priority order
+		return a.Type < b.Type
 	})
 }
 
