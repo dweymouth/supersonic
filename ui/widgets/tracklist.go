@@ -99,7 +99,7 @@ type Tracklist struct {
 	nowPlayingID string
 	colLayout    *layouts.ColumnsLayout
 	hdr          *ListHeader
-	list         *widget.List
+	list         *DisabledList
 	ctxMenu      *fyne.Menu
 	container    *fyne.Container
 }
@@ -132,7 +132,7 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 	playIcon.ColorName = theme.ColorNamePrimary
 	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(playIcon)))
 
-	t.list = widget.NewList(
+	t.list = NewDisabledList(
 		t.lenTracks,
 		func() fyne.CanvasObject {
 			tr := NewTrackRow(t, playingIcon)
