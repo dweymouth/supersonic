@@ -251,15 +251,28 @@ func (t *Tracklist) SetSorting(sorting TracklistSort) {
 	t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(sorting.ColumnName), Type: sorting.SortOrder})
 }
 
+// Sets the currently playing track ID and updates the list rendering
 func (t *Tracklist) SetNowPlaying(trackID string) {
+	prevNowPlaying := t.nowPlayingID
+	t.tracksMutex.RLock()
+	trPrev, idxPrev := t.findTrackByID(prevNowPlaying)
+	tr, idx := t.findTrackByID(trackID)
+	t.tracksMutex.RUnlock()
 	t.nowPlayingID = trackID
-	t.list.Refresh()
+	if trPrev != nil {
+		t.list.RefreshItem(idxPrev)
+	}
+	if tr != nil {
+		t.list.RefreshItem(idx)
+	}
 }
 
+// Increments the play count of the given track and updates the list rendering
 func (t *Tracklist) IncrementPlayCount(trackID string) {
 	t.tracksMutex.RLock()
+	tr, idx := t.findTrackByID(trackID)
 	t.tracksMutex.RUnlock()
-	if tr, idx := t.findTrackByID(trackID); tr != nil {
+	if tr != nil {
 		tr.PlayCount += 1
 		t.list.RefreshItem(idx)
 	}
