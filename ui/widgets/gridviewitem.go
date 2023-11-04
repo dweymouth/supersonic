@@ -156,7 +156,7 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 		Cover:         newCoverImage(placeholderResource),
 	}
 	g.primaryText.TextStyle.Bold = true
-	g.primaryText.Wrapping = fyne.TextTruncate
+	g.primaryText.Truncation = fyne.TextTruncateEllipsis
 	g.ExtendBaseWidget(g)
 	g.Cover.OnPlay = func() {
 		if g.OnPlay != nil {

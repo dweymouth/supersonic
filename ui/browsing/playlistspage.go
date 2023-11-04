@@ -419,7 +419,7 @@ func NewPlaylistListRow(layout *layouts.ColumnsLayout) *PlaylistListRow {
 		trackCountLabel: widget.NewLabel(""),
 	}
 	a.trackCountLabel.Alignment = fyne.TextAlignTrailing
-	a.ownerLabel.Wrapping = fyne.TextTruncate
+	a.ownerLabel.Truncation = fyne.TextTruncateEllipsis
 	a.container = container.New(layout, a.nameLabel, a.descrptionLabel, a.ownerLabel, a.trackCountLabel)
 	a.ExtendBaseWidget(a)
 	return a

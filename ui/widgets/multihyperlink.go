@@ -34,7 +34,7 @@ func NewMultiHyperlink() *MultiHyperlink {
 		content: container.NewWithoutLayout(),
 	}
 	c.ExtendBaseWidget(c)
-	//c.provider.Wrapping = fyne.TextTruncate
+	//c.provider.Truncation = fyne.TextTruncateEllipsis
 	return c
 }
 
@@ -107,11 +107,12 @@ func (c *MultiHyperlink) layoutObjects() {
 			obj = c.content.Objects[2*i-1]
 			ms := obj.MinSize()
 			obj.Resize(ms)
-			obj.Move(fyne.NewPos(x-ms.Width+c.getSeparatorWidth()+4, 0)) // this is really ugly
+			obj.Move(fyne.NewPos(x-ms.Width+c.getSeparatorWidth()+1, 0)) // this is really ugly
 			x -= theme.Padding() * 2
 		}
 		// move and resize text object
-		textW := fyne.MeasureText(seg.Text, theme.TextSize(), fyne.TextStyle{}).Width + theme.Padding()*2 + theme.InnerPadding()
+		// extra +3 to textW gives it just enough space to not trigger ellipsis truncation
+		textW := fyne.MeasureText(seg.Text, theme.TextSize(), fyne.TextStyle{}).Width + theme.Padding()*2 + theme.InnerPadding() + 3
 		obj = c.content.Objects[2*i]
 		ms := obj.MinSize()
 		w := fyne.Min(width-x, textW)
@@ -132,7 +133,7 @@ func (c *MultiHyperlink) updateOrReplaceLabel(obj fyne.CanvasObject, text string
 		}
 	}
 	l := widget.NewLabel(text)
-	l.Wrapping = fyne.TextTruncate
+	l.Truncation = fyne.TextTruncateEllipsis
 	return l
 }
 
@@ -145,7 +146,7 @@ func (c *MultiHyperlink) updateOrReplaceHyperlink(obj fyne.CanvasObject, text, l
 		}
 	}
 	l := widget.NewHyperlink(text, nil)
-	l.Wrapping = fyne.TextTruncate
+	l.Truncation = fyne.TextTruncateEllipsis
 	l.OnTapped = func() { c.onSegmentTapped(link) }
 	return l
 }

@@ -713,7 +713,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.artist = NewMultiHyperlink()
 	t.artist.OnTapped = tracklist.onArtistTapped
 	t.album = widget.NewHyperlink("", nil)
-	t.album.Wrapping = fyne.TextTruncate
+	t.album.Truncation = fyne.TextTruncateEllipsis
 	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
 	t.dur = newTrailingAlignLabel()
 	t.year = newTrailingAlignLabel()
@@ -735,13 +735,13 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 
 func newTruncatingRichText() *widget.RichText {
 	rt := widget.NewRichTextWithText("")
-	rt.Wrapping = fyne.TextTruncate
+	rt.Truncation = fyne.TextTruncateEllipsis
 	return rt
 }
 
 func newTruncatingLabel() *widget.Label {
 	rt := widget.NewLabel("")
-	rt.Wrapping = fyne.TextTruncate
+	rt.Truncation = fyne.TextTruncateEllipsis
 	return rt
 }
 

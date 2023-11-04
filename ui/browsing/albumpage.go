@@ -192,7 +192,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.cover.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
 
 	a.titleLabel = widget.NewRichTextWithText("")
-	a.titleLabel.Wrapping = fyne.TextTruncate
+	a.titleLabel.Truncation = fyne.TextTruncateEllipsis
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}

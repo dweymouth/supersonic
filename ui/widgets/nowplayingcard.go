@@ -42,8 +42,8 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.cover.OnTappedSecondary = n.showMenu
 	n.trackName.Hidden = true
 	n.albumName.Hidden = true
-	n.albumName.Wrapping = fyne.TextTruncate
-	n.trackName.Wrapping = fyne.TextTruncate
+	n.albumName.Truncation = fyne.TextTruncateEllipsis
+	n.trackName.Truncation = fyne.TextTruncateEllipsis
 	n.trackName.TextStyle.Bold = true
 	n.cover.SetMinSize(fyne.NewSize(85, 85))
 	n.cover.FillMode = canvas.ImageFillContain

@@ -249,7 +249,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 
 	a.image = widgets.NewImagePlaceholder(myTheme.PlaylistIcon, 225)
 	a.titleLabel = widget.NewRichTextWithText("")
-	a.titleLabel.Wrapping = fyne.TextTruncate
+	a.titleLabel.Truncation = fyne.TextTruncateEllipsis
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
