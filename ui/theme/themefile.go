@@ -15,6 +15,8 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
+var validThemeVersions = []string{"0.1", "0.2"}
+
 type ThemeFileHeader struct {
 	Name          string
 	Version       string
@@ -53,6 +55,9 @@ type ThemeColors struct {
 	Foreground string
 
 	Hover string
+
+	// since Supersonic theme file version 0.2 (Fyne version 2.4)
+	Hyperlink string
 
 	InputBackground string
 
@@ -97,12 +102,13 @@ func DecodeThemeFile(reader io.Reader) (*ThemeFile, error) {
 		return nil, err
 	}
 
-	if theme.SupersonicTheme.Name == "" || theme.SupersonicTheme.Version != "0.1" {
+	if theme.SupersonicTheme.Name == "" || !sharedutil.SliceContains(validThemeVersions, theme.SupersonicTheme.Version) {
 		return nil, errors.New("invalid theme file name or version")
 	}
 	if !(theme.SupersonicTheme.SupportsDark || theme.SupersonicTheme.SupportsLight) {
 		return nil, errors.New("invalid theme file: must support one or both of light/dark")
 	}
+	updateThemeToLatestVersion(theme)
 
 	return theme, nil
 }
@@ -128,4 +134,13 @@ func ColorStringToColor(colorStr string) (color.Color, error) {
 		colorBytes[3] = 255 // opaque alpha
 	}
 	return color.RGBA{R: colorBytes[0], G: colorBytes[1], B: colorBytes[2], A: colorBytes[3]}, nil
+}
+
+func updateThemeToLatestVersion(themeFile *ThemeFile) {
+	switch themeFile.SupersonicTheme.Version {
+	case "0.1":
+		// in version 0.1, hyperlinks were drawn with the Primary color
+		themeFile.DarkColors.Hyperlink = themeFile.DarkColors.Primary
+		themeFile.LightColors.Hyperlink = themeFile.LightColors.Primary
+	}
 }
