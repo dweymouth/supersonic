@@ -11,7 +11,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
-	xwidget "fyne.io/x/fyne/widget"
 )
 
 const batchFetchSize = 6
@@ -75,7 +74,7 @@ type GridView struct {
 	fetchCancel context.CancelFunc
 	GridViewState
 
-	grid               *xwidget.GridWrap
+	grid               *disabledGridWrap
 	menu               *widget.PopUpMenu
 	menuGridViewItemId string
 }
@@ -197,7 +196,7 @@ func (g *GridView) ScrollToOffset(offs float32) {
 }
 
 func (g *GridView) createGridWrap() {
-	g.grid = xwidget.NewGridWrap(
+	g.grid = NewDisabledGridWrap(
 		func() int {
 			return g.lenItems()
 		},
@@ -221,7 +220,7 @@ func (g *GridView) createGridWrap() {
 			return card
 		},
 		// update func
-		func(itemID xwidget.GridWrapItemID, obj fyne.CanvasObject) {
+		func(itemID widget.GridWrapItemID, obj fyne.CanvasObject) {
 			ac := obj.(*GridViewItem)
 			g.doUpdateItemCard(int(itemID), ac)
 		},
@@ -369,3 +368,28 @@ func (g *GridView) onPlay(itemID string, shuffle bool) {
 func (g *GridView) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.grid)
 }
+
+// a disabled widget is not considered focusable by the focus manager
+type disabledGridWrap struct {
+	widget.GridWrap
+}
+
+func NewDisabledGridWrap(len func() int, create func() fyne.CanvasObject, update func(widget.GridWrapItemID, fyne.CanvasObject)) *disabledGridWrap {
+	g := &disabledGridWrap{
+		GridWrap: widget.GridWrap{
+			Length:     len,
+			CreateItem: create,
+			UpdateItem: update,
+		},
+	}
+	g.ExtendBaseWidget(g)
+	return g
+}
+
+var _ fyne.Disableable = (*disabledGridWrap)(nil)
+
+func (g *disabledGridWrap) Disabled() bool { return true }
+
+func (g *disabledGridWrap) Disable() {}
+
+func (g *disabledGridWrap) Enable() {}

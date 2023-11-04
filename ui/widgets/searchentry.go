@@ -28,21 +28,33 @@ func NewSearchEntry() *SearchEntry {
 	debounceFunc := util.NewDebouncer(200*time.Millisecond, func() {
 		sf.sendSearch(sf.Entry.Text)
 	})
-	sf.Entry.OnChanged = func(_ string) { debounceFunc() }
+	sf.Entry.OnChanged = func(_ string) {
+		if sf.updateActionButton() {
+			sf.ActionItem.Refresh()
+		}
+		debounceFunc()
+	}
 	return sf
 }
 
 func (s *SearchEntry) Refresh() {
-	if s.Text == "" {
-		s.ActionItem.(*clearTextButton).Resource = theme.SearchIcon()
-	} else {
-		s.ActionItem.(*clearTextButton).Resource = theme.ContentClearIcon()
-	}
+	s.updateActionButton()
 	s.Entry.Refresh()
 }
 
 func (s *SearchEntry) MinSize() fyne.Size {
 	return fyne.NewSize(200, s.Entry.MinSize().Height)
+}
+
+func (s *SearchEntry) updateActionButton() bool {
+	btn := s.ActionItem.(*clearTextButton)
+	oldResouce := btn.Resource
+	if s.Text == "" {
+		btn.Resource = theme.SearchIcon()
+	} else {
+		btn.Resource = theme.ContentClearIcon()
+	}
+	return oldResouce != btn.Resource
 }
 
 var _ fyne.Tappable = (*clearTextButton)(nil)

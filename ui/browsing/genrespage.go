@@ -144,7 +144,7 @@ type GenreList struct {
 
 	columnsLayout *layouts.ColumnsLayout
 	hdr           *widgets.ListHeader
-	list          *widget.List
+	list          *widgets.DisabledList
 	container     *fyne.Container
 }
 
@@ -184,7 +184,7 @@ func NewGenreList(sorting widgets.ListHeaderSort) *GenreList {
 		{"Name", fyne.TextAlignLeading, false}, {"Album Count", fyne.TextAlignTrailing, false}, {"Track Count", fyne.TextAlignTrailing, false}}, a.columnsLayout)
 	a.hdr.SetSorting(sorting)
 	a.hdr.OnColumnSortChanged = a.onSorted
-	a.list = widget.NewList(
+	a.list = widgets.NewDisabledList(
 		func() int { return len(a.genres) },
 		func() fyne.CanvasObject {
 			r := NewGenreListRow(a.columnsLayout)

@@ -1,6 +1,6 @@
 [SupersonicTheme]
 Name = "Default"
-Version = "0.1"
+Version = "0.2"
 SupportsDark = true
 SupportsLight = true
 
@@ -20,4 +20,4 @@ ScrollBar = "#565656"
 Button = "#C8C8C8F0"
 DisabledButton = "#CDCDCDF0"
 Foreground = "#0A0A0A"
-Primary = "#1919FA"
+Hyperlink = "#3737FB"

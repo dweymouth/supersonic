@@ -53,7 +53,10 @@ var _ fyne.Theme = (*MyTheme)(nil)
 
 func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
 	m := &MyTheme{config: config, themeFileDir: themeFileDir}
-	m.defaultThemeFile, _ = DecodeThemeFile(bytes.NewReader(res.ResDefaultToml.StaticContent))
+	var err error
+	if m.defaultThemeFile, err = DecodeThemeFile(bytes.NewReader(res.ResDefaultToml.StaticContent)); err != nil {
+		log.Fatalf("Failed to load builtin theme: %v", err.Error())
+	}
 	m.createThemeIcons()
 	return m
 }
@@ -103,6 +106,8 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		return colorOrDefault(colors.Foreground, defColors.Foreground, name, variant)
 	case theme.ColorNameHover:
 		return colorOrDefault(colors.Hover, defColors.Hover, name, variant)
+	case theme.ColorNameHyperlink:
+		return colorOrDefault(colors.Hyperlink, defColors.Hyperlink, name, variant)
 	case theme.ColorNameInputBackground:
 		return colorOrDefault(colors.InputBackground, defColors.InputBackground, name, variant)
 	case theme.ColorNameInputBorder:

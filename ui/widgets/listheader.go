@@ -63,7 +63,9 @@ func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader
 	for i := range l.columnVisible {
 		l.columnVisible[i] = true
 	}
-	l.container = container.NewMax(myTheme.NewThemedRectangle(myTheme.ColorNameListHeader), l.columnsContainer)
+	rect := myTheme.NewThemedRectangle(myTheme.ColorNameListHeader)
+	rect.CornerRadiusName = theme.SizeNameSelectionRadius
+	l.container = container.NewStack(rect, l.columnsContainer)
 	l.ExtendBaseWidget(l)
 	l.buildColumns()
 	return l
@@ -187,7 +189,7 @@ func newColHeader(columnCfg ListColumn, sortDisabled *bool) *colHeader {
 	}
 	r := myTheme.NewThemedRectangle(myTheme.ColorNameListHeader)
 	r.Translucent = true
-	c.sortIconContainer = container.NewMax(widget.NewIcon(theme.MenuDropDownIcon()), r)
+	c.sortIconContainer = container.NewStack(widget.NewIcon(theme.MenuDropDownIcon()), r)
 	// hack to remove extra icon space
 	// should be hidden whenever sortIcon is hidden
 	c.sortIconNegSpacer = util.NewHSpace(0)

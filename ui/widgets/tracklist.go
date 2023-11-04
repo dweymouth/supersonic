@@ -99,7 +99,7 @@ type Tracklist struct {
 	nowPlayingID string
 	colLayout    *layouts.ColumnsLayout
 	hdr          *ListHeader
-	list         *widget.List
+	list         *DisabledList
 	ctxMenu      *fyne.Menu
 	container    *fyne.Container
 }
@@ -132,7 +132,7 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 	playIcon.ColorName = theme.ColorNamePrimary
 	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(playIcon)))
 
-	t.list = widget.NewList(
+	t.list = NewDisabledList(
 		t.lenTracks,
 		func() fyne.CanvasObject {
 			tr := NewTrackRow(t, playingIcon)
@@ -251,17 +251,30 @@ func (t *Tracklist) SetSorting(sorting TracklistSort) {
 	t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(sorting.ColumnName), Type: sorting.SortOrder})
 }
 
+// Sets the currently playing track ID and updates the list rendering
 func (t *Tracklist) SetNowPlaying(trackID string) {
+	prevNowPlaying := t.nowPlayingID
+	t.tracksMutex.RLock()
+	trPrev, idxPrev := t.findTrackByID(prevNowPlaying)
+	tr, idx := t.findTrackByID(trackID)
+	t.tracksMutex.RUnlock()
 	t.nowPlayingID = trackID
-	t.list.Refresh()
+	if trPrev != nil {
+		t.list.RefreshItem(idxPrev)
+	}
+	if tr != nil {
+		t.list.RefreshItem(idx)
+	}
 }
 
+// Increments the play count of the given track and updates the list rendering
 func (t *Tracklist) IncrementPlayCount(trackID string) {
 	t.tracksMutex.RLock()
+	tr, idx := t.findTrackByID(trackID)
 	t.tracksMutex.RUnlock()
-	if tr := t.findTrackByID(trackID); tr != nil {
+	if tr != nil {
 		tr.PlayCount += 1
-		t.list.Refresh()
+		t.list.RefreshItem(idx)
 	}
 }
 
@@ -551,7 +564,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	t.tracksMutex.RLock()
-	tr := t.findTrackByID(trackID)
+	tr, _ := t.findTrackByID(trackID)
 	t.tracksMutex.RUnlock()
 	t.onSetFavorites([]*mediaprovider.Track{tr}, fav, false)
 }
@@ -572,7 +585,7 @@ func (t *Tracklist) onSetFavorites(tracks []*mediaprovider.Track, fav bool, need
 func (t *Tracklist) onSetRating(trackID string, rating int) {
 	// update our own track model
 	t.tracksMutex.RLock()
-	tr := t.findTrackByID(trackID)
+	tr, _ := t.findTrackByID(trackID)
 	t.tracksMutex.RUnlock()
 	t.onSetRatings([]*mediaprovider.Track{tr}, rating, false)
 }
@@ -608,14 +621,14 @@ func (t *Tracklist) onDownload(tracks []*mediaprovider.Track, downloadName strin
 	}
 }
 
-func (t *Tracklist) findTrackByID(id string) *mediaprovider.Track {
+func (t *Tracklist) findTrackByID(id string) (*mediaprovider.Track, int) {
 	idx := sharedutil.Find(t.tracks, func(tr *trackModel) bool {
 		return tr.track.ID == id
 	})
 	if idx >= 0 {
-		return t.tracks[idx].track
+		return t.tracks[idx].track, idx
 	}
-	return nil
+	return nil, -1
 }
 
 func (t *Tracklist) selectedTrackModels() []*trackModel {

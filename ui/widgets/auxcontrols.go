@@ -49,7 +49,6 @@ func NewAuxControls(initialVolume int) *AuxControls {
 	a.container = container.NewHBox(
 		layout.NewSpacer(),
 		container.NewVBox(
-			util.NewHSpace(0), // hack to move everything down a tiny bit
 			layout.NewSpacer(),
 			a.VolumeControl,
 			container.NewHBox(layout.NewSpacer(), a.loop, util.NewHSpace(5)),
@@ -104,56 +103,19 @@ func NewVolumeSlider(width float32) *volumeSlider {
 	return v
 }
 
+func (v *volumeSlider) Tapped(e *fyne.PointEvent) {
+	v.Slider.Tapped(e)
+	fyne.CurrentApp().Driver().CanvasForObject(v).Unfocus()
+}
+
 func (v *volumeSlider) MinSize() fyne.Size {
 	h := v.Slider.MinSize().Height
-	return fyne.NewSize(v.Width, h)
+	// give extra space for height to hack around mini button covering part of focus circle
+	return fyne.NewSize(v.Width, h+theme.Padding()*3)
 }
 
 func (v *volumeSlider) Scrolled(e *fyne.ScrollEvent) {
 	v.SetValue(v.Value + float64(0.5*e.Scrolled.DY))
-}
-
-// This code will be OBSOLETE in Fyne 2.4
-// which will natively add Tappable behavior to slider
-// Tapped is called when a pointer tapped event is captured.
-//
-// Since: 2.4
-func (v *volumeSlider) Tapped(e *fyne.PointEvent) {
-	ratio := v.getRatio(e)
-	val := v.Min + ratio*(v.Max-v.Min)
-	v.SetValue(val)
-	v.DragEnd()
-}
-
-func (v *volumeSlider) endOffset() float32 {
-	return (theme.IconInlineSize()-4)/2 + theme.InnerPadding() - 1.5 // align with radio icons
-}
-
-func (v *volumeSlider) getRatio(e *fyne.PointEvent) float64 {
-	pad := v.endOffset()
-
-	x := e.Position.X
-	y := e.Position.Y
-
-	switch v.Orientation {
-	case widget.Vertical:
-		if y > v.Size().Height-pad {
-			return 0.0
-		} else if y < pad {
-			return 1.0
-		} else {
-			return 1 - float64(y-pad)/float64(v.Size().Height-pad*2)
-		}
-	case widget.Horizontal:
-		if x > v.Size().Width-pad {
-			return 1.0
-		} else if x < pad {
-			return 0.0
-		} else {
-			return float64(x-pad) / float64(v.Size().Width-pad*2)
-		}
-	}
-	return 0.0
 }
 
 type VolumeControl struct {

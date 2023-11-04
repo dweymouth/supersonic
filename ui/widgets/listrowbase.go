@@ -85,13 +85,15 @@ func (l *ListRowBase) Refresh() {
 func (l *ListRowBase) CreateRenderer() fyne.WidgetRenderer {
 	if l.selectionRect == nil {
 		l.selectionRect = canvas.NewRectangle(theme.SelectionColor())
+		l.selectionRect.CornerRadius = theme.SelectionRadiusSize()
 		l.selectionRect.Hidden = !l.Selected
 	}
 	if l.focusedRect == nil {
 		l.focusedRect = canvas.NewRectangle(theme.HoverColor())
+		l.focusedRect.CornerRadius = theme.SelectionRadiusSize()
 		l.focusedRect.Hidden = !l.Focused
 	}
 	return widget.NewSimpleRenderer(
-		container.NewMax(l.selectionRect, l.focusedRect, l.Content),
+		container.NewStack(l.selectionRect, l.focusedRect, l.Content),
 	)
 }
