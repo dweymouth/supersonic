@@ -63,6 +63,7 @@ func newPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
 	a.searcher = widgets.NewSearchEntry()
+	a.searcher.PlaceHolder = "Search page"
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 	a.viewToggle = widgets.NewToggleButtonGroup(0,
