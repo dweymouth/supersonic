@@ -203,6 +203,7 @@ func (a *NowPlayingPage) load(highlightedTrackID string) {
 	a.queue = a.pm.GetPlayQueue()
 	a.tracklist.SetTracks(a.queue)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
+	a.tracklist.Refresh()
 	if highlightedTrackID != "" {
 		a.tracklist.SelectAndScrollToTrack(highlightedTrackID)
 	}
