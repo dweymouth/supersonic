@@ -35,7 +35,8 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 		wg.Done()
 	}()
 
-	queryLowerWords := strings.Fields(strings.ToLower(sanitize.Accents(searchQuery)))
+	querySanitized := strings.ToLower(sanitize.Accents(searchQuery))
+	queryLowerWords := strings.Fields(querySanitized)
 
 	wg.Add(1)
 	go func() {
@@ -65,7 +66,7 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 	}
 
 	results := mergeResults(result, playlists, genres)
-	rankResults(results, queryLowerWords)
+	rankResults(results, querySanitized, queryLowerWords)
 	if len(results) > maxResults {
 		results = results[:maxResults]
 	}
@@ -143,27 +144,35 @@ func mergeResults(
 	return results
 }
 
-func rankResults(results []*mediaprovider.SearchResult, queryTerms []string) {
+func rankResults(results []*mediaprovider.SearchResult, fullQuery string, queryTerms []string) {
 	if len(queryTerms) == 0 || len(results) < 2 {
 		return
 	}
 
-	sanitizeMemo := make([]string, len(results))
-	sanitized := func(s string, i int) string {
-		if x := sanitizeMemo[i]; x != "" {
+	sanitizeMemo := make(map[string]string, len(results))
+	sanitized := func(s string) string {
+		if x, ok := sanitizeMemo[s]; ok {
 			return x
 		}
 		x := strings.ToLower(sanitize.Accents(s))
-		sanitizeMemo[i] = x
+		sanitizeMemo[s] = x
 		return x
 	}
 
 	sort.Slice(results, func(i, j int) bool {
-		// Compare by search query terms
 		a, b := results[i], results[j]
-		aName := sanitized(a.Name, i)
-		bName := sanitized(b.Name, j)
+		aName := sanitized(a.Name)
+		bName := sanitized(b.Name)
 
+		// Compare by entire query
+		matchesA, matchesB := strings.Contains(aName, fullQuery), strings.Contains(bName, fullQuery)
+		if matchesA && !matchesB {
+			return true // item A has a direct match with the full query and B does not
+		} else if matchesB && !matchesA {
+			return false // item B matches but not A
+		}
+
+		// Compare by search query terms
 		for _, term := range queryTerms {
 			firstTermIdxA, firstTermIdxB := strings.Index(aName, term), strings.Index(bName, term)
 			if firstTermIdxA >= 0 && firstTermIdxB < 0 {
