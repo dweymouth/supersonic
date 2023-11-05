@@ -37,6 +37,15 @@ func NewSearchEntry() *SearchEntry {
 	return sf
 }
 
+func (s *SearchEntry) TypedKey(e *fyne.KeyEvent) {
+	if e.Name == fyne.KeyEscape {
+		s.SetText("")
+		fyne.CurrentApp().Driver().CanvasForObject(s).Unfocus()
+		return
+	}
+	s.Entry.TypedKey(e)
+}
+
 func (s *SearchEntry) Refresh() {
 	s.updateActionButton()
 	s.Entry.Refresh()
