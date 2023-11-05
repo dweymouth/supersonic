@@ -23,6 +23,7 @@ import (
 var (
 	ShortcutReload      = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
 	ShortcutSearch      = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
+	ShortcutQuickSearch = desktop.CustomShortcut{KeyName: fyne.KeyG, Modifier: os.ControlModifier}
 	ShortcutCloseWindow = desktop.CustomShortcut{KeyName: fyne.KeyW, Modifier: os.ControlModifier}
 
 	ShortcutNavOne   = desktop.CustomShortcut{KeyName: fyne.Key1, Modifier: os.ControlModifier}
@@ -53,10 +54,9 @@ type MainWindow struct {
 
 func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App, size fyne.Size) MainWindow {
 	m := MainWindow{
-		App:          app,
-		Window:       fyneApp.NewWindow(displayAppName),
-		BrowsingPane: browsing.NewBrowsingPane(app),
-		theme:        theme.NewMyTheme(&app.Config.Theme, configdir.LocalConfig(appName, "themes")),
+		App:    app,
+		Window: fyneApp.NewWindow(displayAppName),
+		theme:  theme.NewMyTheme(&app.Config.Theme, configdir.LocalConfig(appName, "themes")),
 	}
 
 	m.theme.NormalFont = app.Config.Application.FontNormalTTF
@@ -71,6 +71,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		MainWindow: m.Window,
 		App:        app,
 	}
+	m.BrowsingPane = browsing.NewBrowsingPane(app, m.Controller)
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	// inject controller dependencies
 	m.Controller.NavHandler = m.Router.NavigateTo
@@ -249,8 +250,17 @@ func (m *MainWindow) addShortcuts() {
 		m.BrowsingPane.Reload()
 	})
 	m.Canvas().AddShortcut(&ShortcutSearch, func(_ fyne.Shortcut) {
+		if m.Controller.HaveModal() {
+			// Do not focus search widget behind modal dialog
+			return
+		}
 		if s := m.BrowsingPane.GetSearchBarIfAny(); s != nil {
 			m.Window.Canvas().Focus(s)
+		}
+	})
+	m.Canvas().AddShortcut(&ShortcutQuickSearch, func(_ fyne.Shortcut) {
+		if !m.Controller.HaveModal() {
+			m.Controller.ShowQuickSearch()
 		}
 	})
 	m.Canvas().AddShortcut(&fyne.ShortcutSelectAll{}, func(_ fyne.Shortcut) {

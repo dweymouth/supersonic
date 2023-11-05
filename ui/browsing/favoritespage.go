@@ -92,6 +92,7 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int) {
 		widget.NewButtonWithIcon("", myTheme.ArtistIcon, a.onShowFavoriteArtists),
 		widget.NewButtonWithIcon("", myTheme.TracksIcon, a.onShowFavoriteSongs))
 	a.searcher = widgets.NewSearchEntry()
+	a.searcher.PlaceHolder = "Search page"
 	a.searcher.OnSearched = a.OnSearched
 	a.searcher.Entry.Text = a.searchText
 	a.filterBtn = widgets.NewAlbumFilterButton(&a.filter, a.mp.GetGenres)

@@ -21,6 +21,12 @@ type SearchEntry struct {
 func NewSearchEntry() *SearchEntry {
 	sf := &SearchEntry{}
 	sf.ExtendBaseWidget(sf)
+	sf.Init()
+	return sf
+}
+
+// For use only by extending widgets
+func (sf *SearchEntry) Init() {
 	sf.PlaceHolder = "Search"
 	sf.ActionItem = NewClearTextButton(func() {
 		sf.SetText("")
@@ -34,7 +40,6 @@ func NewSearchEntry() *SearchEntry {
 		}
 		debounceFunc()
 	}
-	return sf
 }
 
 func (s *SearchEntry) TypedKey(e *fyne.KeyEvent) {

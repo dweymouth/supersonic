@@ -64,7 +64,7 @@ type BrowsingPane struct {
 	container        *fyne.Container
 }
 
-func NewBrowsingPane(app *backend.App) *BrowsingPane {
+func NewBrowsingPane(app *backend.App, controller *controller.Controller) *BrowsingPane {
 	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
 	b.home = widget.NewButtonWithIcon("", theme.HomeIcon(), b.GoHome)
@@ -81,13 +81,14 @@ func NewBrowsingPane(app *backend.App) *BrowsingPane {
 		p.ShowAtPosition(fyne.NewPos(b.Size().Width-p.MinSize().Width+4,
 			b.navBtnsContainer.MinSize().Height+theme.Padding()))
 	})
+	quickSearchBtn := widget.NewButtonWithIcon("", theme.SearchIcon(), controller.ShowQuickSearch)
 	b.settingsMenu = fyne.NewMenu("")
 	b.navBtnsContainer = container.NewHBox()
 	b.container = container.NewBorder(container.New(
 		&layouts.MaxPadLayout{PadLeft: -5, PadRight: -5},
 		container.New(layouts.NewLeftMiddleRightLayout(0),
 			container.NewHBox(b.home, b.back, b.forward, b.reload), b.navBtnsContainer,
-			container.NewHBox(layout.NewSpacer(), b.settingsBtn))),
+			container.NewHBox(layout.NewSpacer(), quickSearchBtn, b.settingsBtn))),
 		nil, nil, nil, b.pageContainer)
 	b.updateHistoryButtons()
 	return b

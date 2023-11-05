@@ -14,9 +14,17 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
+const cacheValidDurationSeconds = 60
+
 type subsonicMediaProvider struct {
 	client          *subsonic.Client
 	prefetchCoverCB func(coverArtID string)
+
+	genresCached   []*mediaprovider.Genre
+	genresCachedAt int64 // unix
+
+	playlistsCached   []*mediaprovider.Playlist
+	playlistsCachedAt int64 // unix
 }
 
 func SubsonicMediaProvider(subsonicClient *subsonic.Client) mediaprovider.MediaProvider {
@@ -45,6 +53,14 @@ func (s *subsonicMediaProvider) EditPlaylist(id, name, description string, publi
 
 func (s *subsonicMediaProvider) EditPlaylistTracks(id string, trackIDsToAdd []string, trackIndexesToRemove []int) error {
 	return s.client.UpdatePlaylistTracks(id, trackIDsToAdd, trackIndexesToRemove)
+}
+
+func (s *subsonicMediaProvider) GetTrack(trackID string) (*mediaprovider.Track, error) {
+	tr, err := s.client.GetSong(trackID)
+	if err != nil {
+		return nil, err
+	}
+	return toTrack(tr), nil
 }
 
 func (s *subsonicMediaProvider) GetAlbum(albumID string) (*mediaprovider.AlbumWithTracks, error) {
@@ -139,17 +155,23 @@ func (s *subsonicMediaProvider) GetFavorites() (mediaprovider.Favorites, error) 
 }
 
 func (s *subsonicMediaProvider) GetGenres() ([]*mediaprovider.Genre, error) {
+	if s.genresCached != nil && time.Now().Unix()-s.genresCachedAt < cacheValidDurationSeconds {
+		return s.genresCached, nil
+	}
+
 	g, err := s.client.GetGenres()
 	if err != nil {
 		return nil, err
 	}
-	return sharedutil.MapSlice(g, func(g *subsonic.Genre) *mediaprovider.Genre {
+	s.genresCached = sharedutil.MapSlice(g, func(g *subsonic.Genre) *mediaprovider.Genre {
 		return &mediaprovider.Genre{
 			Name:       g.Name,
 			AlbumCount: g.AlbumCount,
 			TrackCount: g.SongCount,
 		}
-	}), nil
+	})
+	s.genresCachedAt = time.Now().Unix()
+	return s.genresCached, nil
 }
 
 func (s *subsonicMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.PlaylistWithTracks, error) {
@@ -165,11 +187,17 @@ func (s *subsonicMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.P
 }
 
 func (s *subsonicMediaProvider) GetPlaylists() ([]*mediaprovider.Playlist, error) {
+	if s.playlistsCached != nil && time.Now().Unix()-s.playlistsCachedAt < cacheValidDurationSeconds {
+		return s.playlistsCached, nil
+	}
+
 	pl, err := s.client.GetPlaylists(map[string]string{})
 	if err != nil {
 		return nil, err
 	}
-	return sharedutil.MapSlice(pl, toPlaylist), nil
+	s.playlistsCached = sharedutil.MapSlice(pl, toPlaylist)
+	s.playlistsCachedAt = time.Now().Unix()
+	return s.playlistsCached, nil
 }
 
 func (s *subsonicMediaProvider) GetRandomTracks(genreName string, count int) ([]*mediaprovider.Track, error) {

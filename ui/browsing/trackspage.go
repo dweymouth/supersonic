@@ -68,6 +68,7 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	t.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
 	t.playRandom = widget.NewButtonWithIcon("Play random", theme.ShuffleIcon, t.playRandomSongs)
 	t.searcher = widgets.NewSearchEntry()
+	t.searcher.PlaceHolder = "Search page"
 	t.searcher.OnSearched = t.OnSearched
 	t.createContainer()
 	t.Reload()

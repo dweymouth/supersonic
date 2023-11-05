@@ -49,6 +49,7 @@ func newGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider,
 	a.list = NewGenreList(sorting)
 	a.list.OnNavTo = func(id string) { a.contr.NavigateTo(controller.GenreRoute(id)) }
 	a.searcher = widgets.NewSearchEntry()
+	a.searcher.PlaceHolder = "Search page"
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 	a.buildContainer()

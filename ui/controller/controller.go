@@ -71,6 +71,10 @@ func (m *Controller) QueueShowModalFunc(f func()) {
 	}
 }
 
+func (m *Controller) HaveModal() bool {
+	return m.haveModal
+}
+
 func (m *Controller) ShowPopUpImage(img image.Image) {
 	im := canvas.NewImageFromImage(img)
 	im.FillMode = canvas.ImageFillContain
@@ -481,6 +485,35 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	c.ClosePopUpOnEscape(pop)
 	c.haveModal = true
 	pop.Show()
+}
+
+func (c *Controller) ShowQuickSearch() {
+	qs := dialogs.NewQuickSearch(c.App.ServerManager.Server, c.App.ImageManager)
+	pop := widget.NewModalPopUp(qs, c.MainWindow.Canvas())
+	qs.OnDismiss = func() {
+		pop.Hide()
+		c.doModalClosed()
+	}
+	qs.OnNavigateTo = func(contentType mediaprovider.ContentType, id string) {
+		pop.Hide()
+		c.doModalClosed()
+		switch contentType {
+		case mediaprovider.ContentTypeAlbum:
+			c.NavigateTo(AlbumRoute(id))
+		case mediaprovider.ContentTypeArtist:
+			c.NavigateTo(ArtistRoute(id))
+		case mediaprovider.ContentTypeTrack:
+			go c.App.PlaybackManager.PlayTrack(id)
+		case mediaprovider.ContentTypePlaylist:
+			c.NavigateTo(PlaylistRoute(id))
+		case mediaprovider.ContentTypeGenre:
+			c.NavigateTo(GenreRoute(id))
+		}
+	}
+	c.ClosePopUpOnEscape(pop)
+	c.haveModal = true
+	pop.Show()
+	c.MainWindow.Canvas().Focus(qs.SearchEntry)
 }
 
 func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {

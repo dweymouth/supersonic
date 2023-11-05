@@ -76,6 +76,7 @@ func newArtistsPage(
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.searcher = widgets.NewSearchEntry()
+	a.searcher.PlaceHolder = "Search page"
 	a.searcher.OnSearched = func(query string) { a.onSearched(query, false /*firstLoad*/) }
 	a.searcher.Entry.Text = searchText
 	if g := pool.Obtain(util.WidgetTypeGridView); g != nil {

@@ -140,6 +140,7 @@ func (g *GridViewPage) createTitleAndSort() {
 
 func (g *GridViewPage) createSearchAndFilter() {
 	g.searcher = widgets.NewSearchEntry()
+	g.searcher.PlaceHolder = "Search page"
 	g.searcher.Text = g.searchText
 	g.searcher.OnSearched = g.OnSearched
 	if g.filter != nil {

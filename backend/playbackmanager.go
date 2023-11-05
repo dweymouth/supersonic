@@ -214,6 +214,15 @@ func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffl
 	return p.player.PlayTrackAt(firstTrack)
 }
 
+func (p *PlaybackManager) PlayTrack(trackID string) error {
+	tr, err := p.sm.Server.GetTrack(trackID)
+	if err != nil {
+		return err
+	}
+	p.LoadTracks([]*mediaprovider.Track{tr}, false, false)
+	return p.PlayFromBeginning()
+}
+
 func (p *PlaybackManager) PlayFromBeginning() error {
 	return p.player.PlayFromBeginning()
 }
