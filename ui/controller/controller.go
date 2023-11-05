@@ -503,7 +503,7 @@ func (c *Controller) ShowQuickSearch() {
 		case mediaprovider.ContentTypeArtist:
 			c.NavigateTo(ArtistRoute(id))
 		case mediaprovider.ContentTypeTrack:
-			// TODO
+			go c.App.PlaybackManager.PlayTrack(id)
 		case mediaprovider.ContentTypePlaylist:
 			c.NavigateTo(PlaylistRoute(id))
 		case mediaprovider.ContentTypeGenre:

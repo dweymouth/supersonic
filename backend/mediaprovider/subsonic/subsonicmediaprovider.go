@@ -55,6 +55,14 @@ func (s *subsonicMediaProvider) EditPlaylistTracks(id string, trackIDsToAdd []st
 	return s.client.UpdatePlaylistTracks(id, trackIDsToAdd, trackIndexesToRemove)
 }
 
+func (s *subsonicMediaProvider) GetTrack(trackID string) (*mediaprovider.Track, error) {
+	tr, err := s.client.GetSong(trackID)
+	if err != nil {
+		return nil, err
+	}
+	return toTrack(tr), nil
+}
+
 func (s *subsonicMediaProvider) GetAlbum(albumID string) (*mediaprovider.AlbumWithTracks, error) {
 	al, err := s.client.GetAlbum(albumID)
 	if err != nil {
