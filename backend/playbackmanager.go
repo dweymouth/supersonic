@@ -121,7 +121,7 @@ func (p *PlaybackManager) DisableCallbacks() {
 
 // Gets the curently playing song, if any.
 func (p *PlaybackManager) NowPlaying() *mediaprovider.Track {
-	if len(p.playQueue) == 0 || p.player.GetStatus().State == player.Stopped {
+	if p.nowPlayingIdx < 0 || len(p.playQueue) == 0 || p.player.GetStatus().State == player.Stopped {
 		return nil
 	}
 	return p.playQueue[p.nowPlayingIdx]
