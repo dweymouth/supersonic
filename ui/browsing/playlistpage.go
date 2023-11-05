@@ -157,7 +157,6 @@ func (a *PlaylistPage) load() {
 	a.tracks = playlist.Tracks
 	a.tracklist.SetTracks(playlist.Tracks)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.tracklist.Refresh()
 	a.header.Update(playlist)
 }
 
@@ -207,7 +206,6 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 		a.tracklist.SetSorting(widgets.TracklistSort{})
 		a.tracklist.SetTracks(newTracks)
 		a.tracklist.UnselectAll()
-		a.tracklist.Refresh()
 	}
 }
 

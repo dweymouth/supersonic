@@ -114,7 +114,7 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 	t.ExtendBaseWidget(t)
 
 	if len(tracks) > 0 {
-		t.SetTracks(tracks)
+		t._setTracks(tracks)
 	}
 
 	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Bitrate, Size, Path
@@ -286,8 +286,13 @@ func (t *Tracklist) Clear() {
 	t.tracksOrigOrder = nil
 }
 
-// Sets the tracks in the tracklist. Does not issue Refresh call. Thread-safe.
+// Sets the tracks in the tracklist. Thread-safe.
 func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
+	t._setTracks(trs)
+	t.Refresh()
+}
+
+func (t *Tracklist) _setTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
 	t.tracksOrigOrder = toTrackModels(trs)
