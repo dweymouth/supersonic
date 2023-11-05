@@ -6,7 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.4.1
 	github.com/20after4/configdir v0.1.1
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
-	github.com/dweymouth/go-subsonic v0.0.0-20231014003317-6a0c88db38ce
+	github.com/dweymouth/go-subsonic v0.0.0-20231105161622-54b5aec28363
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
@@ -37,10 +37,10 @@ require (
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/tevino/abool v1.2.0 // indirect
 	github.com/yuin/goldmark v1.5.5 // indirect
-	golang.org/x/image v0.11.0 // indirect
+	golang.org/x/image v0.13.0 // indirect
 	golang.org/x/mobile v0.0.0-20230531173138-3c911d8e3eda // indirect
 	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
