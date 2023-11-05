@@ -11,10 +11,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 )
 
@@ -26,8 +26,8 @@ type QuickSearch struct {
 
 	SearchEntry fyne.Focusable // exported so it can be focused by the Controller
 
-	mp mediaprovider.MediaProvider
-	im *backend.ImageManager
+	mp        mediaprovider.MediaProvider
+	imgSource util.ImageFetcher
 
 	resultsMutex  sync.RWMutex
 	searchResults []*mediaprovider.SearchResult
@@ -37,10 +37,10 @@ type QuickSearch struct {
 	content *fyne.Container
 }
 
-func NewQuickSearch(mp mediaprovider.MediaProvider, im *backend.ImageManager) *QuickSearch {
+func NewQuickSearch(mp mediaprovider.MediaProvider, im util.ImageFetcher) *QuickSearch {
 	q := &QuickSearch{
-		mp: mp,
-		im: im,
+		mp:        mp,
+		imgSource: im,
 	}
 	q.ExtendBaseWidget(q)
 
@@ -157,7 +157,7 @@ type quickSearchResult struct {
 	index       int
 	contentType mediaprovider.ContentType
 
-	imageLoader backend.ThumbnailLoader
+	imageLoader util.ThumbnailLoader
 
 	image     *widgets.ImagePlaceholder
 	title     *widget.Label
@@ -176,7 +176,7 @@ func newQuickSearchResult(parent *QuickSearch) *quickSearchResult {
 	qs.title.Wrapping = fyne.TextTruncate
 	qs.secondary.Wrapping = fyne.TextTruncate
 	qs.ExtendBaseWidget(qs)
-	qs.imageLoader = parent.im.NewThumbnailLoader(func(im image.Image) {
+	qs.imageLoader = util.NewThumbnailLoader(parent.imgSource, func(im image.Image) {
 		qs.image.SetImage(im, false)
 	})
 	qs.imageLoader.OnBeforeLoad = func() {

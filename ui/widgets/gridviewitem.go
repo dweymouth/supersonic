@@ -3,10 +3,10 @@ package widgets
 import (
 	"image"
 
-	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
+	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -141,7 +141,7 @@ type GridViewItem struct {
 
 	// updated by GridView
 	Cover     *coverImage
-	ImgLoader backend.ThumbnailLoader
+	ImgLoader util.ThumbnailLoader
 
 	OnPlay              func()
 	OnShowContextMenu   func(fyne.Position)

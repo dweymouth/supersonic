@@ -2,12 +2,11 @@ package widgets
 
 import (
 	"context"
-	"image"
 	"sync"
 
-	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -35,10 +34,6 @@ func (b *BatchingIterator) NextN(n int) []*mediaprovider.Album {
 		i++
 	}
 	return results
-}
-
-type ThumbnailLoaderFactory interface {
-	NewThumbnailLoader(func(image.Image)) backend.ThumbnailLoader
 }
 
 type GridViewIterator interface {
@@ -81,7 +76,7 @@ type GridView struct {
 type GridViewState struct {
 	items        []GridViewItemModel
 	iter         GridViewIterator
-	imageFetcher ThumbnailLoaderFactory
+	imageFetcher util.ImageFetcher
 	Placeholder  fyne.Resource
 	highestShown int
 	done         bool
@@ -98,7 +93,7 @@ type GridViewState struct {
 
 var _ fyne.Widget = (*GridView)(nil)
 
-func NewFixedGridView(items []GridViewItemModel, fetch ThumbnailLoaderFactory, placeholder fyne.Resource) *GridView {
+func NewFixedGridView(items []GridViewItemModel, fetch util.ImageFetcher, placeholder fyne.Resource) *GridView {
 	g := &GridView{
 		GridViewState: GridViewState{
 			items:        items,
@@ -112,7 +107,7 @@ func NewFixedGridView(items []GridViewItemModel, fetch ThumbnailLoaderFactory, p
 	return g
 }
 
-func NewGridView(iter GridViewIterator, fetch ThumbnailLoaderFactory, placeholder fyne.Resource) *GridView {
+func NewGridView(iter GridViewIterator, fetch util.ImageFetcher, placeholder fyne.Resource) *GridView {
 	g := &GridView{
 		GridViewState: GridViewState{
 			iter:         iter,
@@ -202,7 +197,7 @@ func (g *GridView) createGridWrap() {
 		// create func
 		func() fyne.CanvasObject {
 			card := NewGridViewItem(g.Placeholder)
-			card.ImgLoader = g.imageFetcher.NewThumbnailLoader(card.Cover.SetImage)
+			card.ImgLoader = util.NewThumbnailLoader(g.imageFetcher, card.Cover.SetImage)
 			card.ImgLoader.OnBeforeLoad = func() { card.Cover.SetImage(nil) }
 			card.OnPlay = func() { g.onPlay(card.ItemID(), false) }
 			card.OnShowSecondaryPage = func(id string) {
