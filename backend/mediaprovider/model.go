@@ -93,8 +93,8 @@ type ContentType int
 const (
 	ContentTypeAlbum ContentType = iota
 	ContentTypeArtist
-	ContentTypeTrack
 	ContentTypePlaylist
+	ContentTypeTrack
 	ContentTypeGenre
 )
 
