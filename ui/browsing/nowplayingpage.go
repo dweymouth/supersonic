@@ -31,7 +31,7 @@ type NowPlayingPage struct {
 
 	title        *widget.RichText
 	tracklist    *widgets.Tracklist
-	statusLabel  *widget.RichText
+	statusLabel  *widget.Label
 	nowPlayingID string
 	container    *fyne.Container
 }
@@ -83,7 +83,7 @@ func NewNowPlayingPage(
 	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
 	a.title = widget.NewRichTextWithText("Now Playing")
 	a.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
-	a.statusLabel = widget.NewRichTextWithText("Stopped")
+	a.statusLabel = widget.NewLabel("Stopped")
 	statusLabelCtr := container.New(&layouts.VboxCustomPadding{ExtraPad: -5},
 		myTheme.NewThemedRectangle(theme.ColorNameInputBorder),
 		a.statusLabel,
@@ -133,8 +133,7 @@ func (a *NowPlayingPage) OnPlayTimeUpdate(_, _ float64) {
 
 func (a *NowPlayingPage) formatStatusLine() {
 	playerStats := a.p.GetStatus()
-	ts := a.statusLabel.Segments[0].(*widget.TextSegment)
-	lastStatus := ts.Text
+	lastStatus := a.statusLabel.Text
 	state := "Stopped"
 	switch playerStats.State {
 	case player.Paused:
@@ -159,7 +158,7 @@ func (a *NowPlayingPage) formatStatusLine() {
 		len(a.queue), statusSuffix)
 
 	if state == "Stopped" {
-		ts.Text = fmt.Sprintf("%s | Total time: %s", status, util.SecondsToTimeString(a.totalTime))
+		a.statusLabel.Text = fmt.Sprintf("%s | Total time: %s", status, util.SecondsToTimeString(a.totalTime))
 	} else {
 		audioInfo, err := a.p.GetMediaInfo()
 		if err != nil {
@@ -172,14 +171,14 @@ func (a *NowPlayingPage) formatStatusLine() {
 
 		// Note: bit depth intentionally omitted since MPV reports the decoded bit depth
 		// i.e. 24 bit files get reported as 32 bit. Also b/c bit depth isn't meaningful for lossy.
-		ts.Text = fmt.Sprintf("%s · %s %g kHz, %d kbps | Total time: %s",
+		a.statusLabel.Text = fmt.Sprintf("%s · %s %g kHz, %d kbps | Total time: %s",
 			status,
 			codec,
 			float64(audioInfo.Samplerate)/1000,
 			audioInfo.Bitrate/1000,
 			util.SecondsToTimeString(a.totalTime))
 	}
-	if lastStatus != ts.Text {
+	if lastStatus != a.statusLabel.Text {
 		a.statusLabel.Refresh()
 	}
 }
