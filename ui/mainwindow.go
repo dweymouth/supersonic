@@ -10,6 +10,7 @@ import (
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui/browsing"
 	"github.com/dweymouth/supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/ui/dialogs"
 	"github.com/dweymouth/supersonic/ui/os"
 	"github.com/dweymouth/supersonic/ui/theme"
 
@@ -93,8 +94,13 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	app.ServerManager.OnServerConnected(func() {
 		m.BrowsingPane.EnableNavigationButtons()
 		m.Router.NavigateTo(m.StartupPage())
-		// check if found new version on startup
-		if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
+		// check if launching new version, else if found available update on startup
+		if l := app.Config.Application.LastLaunchedVersion; app.VersionTag() != l {
+			if !app.IsFirstLaunch() {
+				m.ShowWhatsNewDialog()
+			}
+			m.App.Config.Application.LastLaunchedVersion = app.VersionTag()
+		} else if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
 			if t != app.VersionTag() {
 				m.ShowNewVersionDialog(displayAppName, t)
 			}
@@ -200,6 +206,10 @@ func (m *MainWindow) ShowNewVersionDialog(appName, versionTag string) {
 				m.App.Config.Application.LastCheckedVersion = versionTag
 			}, m.Window)
 	})
+}
+
+func (m *MainWindow) ShowWhatsNewDialog() {
+	dialog.ShowCustom("What's new in "+res.AppVersion, "Close", dialogs.NewWhatsNewDialog(), m.Window)
 }
 
 func (m *MainWindow) addNavigationButtons() {

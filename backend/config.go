@@ -25,6 +25,7 @@ type AppConfig struct {
 	WindowWidth         int
 	WindowHeight        int
 	LastCheckedVersion  string
+	LastLaunchedVersion string
 	EnableSystemTray    bool
 	CloseToSystemTray   bool
 	StartupPage         string
@@ -128,6 +129,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			WindowWidth:         1000,
 			WindowHeight:        800,
 			LastCheckedVersion:  appVersionTag,
+			LastLaunchedVersion: "",
 			EnableSystemTray:    true,
 			CloseToSystemTray:   false,
 			StartupPage:         "Albums",

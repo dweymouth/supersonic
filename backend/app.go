@@ -46,6 +46,8 @@ type App struct {
 	appName       string
 	appVersionTag string
 	configFile    string
+
+	isFirstLaunch bool // set by config file reader
 	bgrndCtx      context.Context
 	cancel        context.CancelFunc
 }
@@ -119,14 +121,23 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 	return a, nil
 }
 
+func (a *App) IsFirstLaunch() bool {
+	return a.isFirstLaunch
+}
+
 func (a *App) readConfig() {
 	configdir.MakePath(configdir.LocalConfig(a.appName))
 	cfgPath := a.configPath()
+	var cfgExists bool
+	if _, err := os.Stat(cfgPath); err == nil {
+		cfgExists = true
+	}
+	a.isFirstLaunch = !cfgExists
 	cfg, err := ReadConfigFile(cfgPath, a.appVersionTag)
 	if err != nil {
 		log.Printf("Error reading app config file: %v", err)
 		cfg = DefaultConfig(a.appVersionTag)
-		if _, err := os.Stat(cfgPath); err == nil {
+		if cfgExists {
 			backupCfgName := fmt.Sprintf("%s.bak", a.configFile)
 			log.Printf("Config file may be malformed: copying to %s", backupCfgName)
 			_ = util.CopyFile(cfgPath, path.Join(configdir.LocalConfig(a.appName), backupCfgName))

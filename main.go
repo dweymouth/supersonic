@@ -14,17 +14,10 @@ import (
 	"fyne.io/fyne/v2/app"
 )
 
-const (
-	appname          = "supersonic"
-	displayName      = "Supersonic"
-	appVersion       = "0.6.0"
-	appVersionTag    = "v" + appVersion
-	configFile       = "config.toml"
-	latestReleaseURL = "https://github.com/dweymouth/supersonic/releases/latest"
-)
+const configFile = "config.toml"
 
 func main() {
-	myApp, err := backend.StartupApp(appname, displayName, appVersionTag, configFile, latestReleaseURL)
+	myApp, err := backend.StartupApp(res.AppName, res.DisplayName, res.AppVersionTag, configFile, res.LatestReleaseURL)
 	if err != nil {
 		log.Fatalf("fatal startup error: %v", err.Error())
 	}
@@ -40,7 +33,7 @@ func main() {
 	if h <= 1 {
 		h = 800
 	}
-	mainWindow := ui.NewMainWindow(fyneApp, appname, displayName, appVersion, myApp, fyne.NewSize(w, h))
+	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp, fyne.NewSize(w, h))
 	myApp.OnReactivate = mainWindow.Show
 	myApp.OnExit = func() {
 		saveWindowSize(myApp.Config, mainWindow.Window)

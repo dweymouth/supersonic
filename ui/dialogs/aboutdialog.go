@@ -66,8 +66,8 @@ func (a *AboutDialog) buildMainTabContainer(version string) *fyne.Container {
 	ts := license.Segments[0].(*widget.TextSegment)
 	ts.Style.TextStyle.Bold = true
 	ts.Style.Alignment = fyne.TextAlignCenter
-	ghUrl, _ := url.Parse("https://github.com/dweymouth/supersonic")
-	kofiUrl, _ := url.Parse("https://ko-fi.com/dweymouth")
+	ghUrl, _ := url.Parse(res.GithubURL)
+	kofiUrl, _ := url.Parse(res.KofiURL)
 	githubKofi := container.NewCenter(
 		container.New(&layouts.HboxCustomPadding{DisableThemePad: true, ExtraPad: -10},
 			widget.NewHyperlink("Github page", ghUrl),
