@@ -153,7 +153,7 @@ var ResRepeatoneSvg = &fyne.StaticResource{
 var ResDefaultToml = &fyne.StaticResource{
 	StaticName: "default.toml",
 	StaticContent: []byte(
-		"[SupersonicTheme]\nName = \"Default\"\nVersion = \"0.2\"\nSupportsDark = true\nSupportsLight = true\n\n[DarkColors]\nPageBackground = \"#0F0F0F\"\nListHeader = \"#232323\"\nBackground = \"#232323\"\nScrollBar = \"#F3F3F3\"\nButton = \"#14141432\"\nInputBackground = \"#14141432\"\n\n[LightColors]\nPageBackground = \"#FAFAFA\"\nListHeader = \"#E1DFE1\"\nBackground = \"#E1DFE1\"\nScrollBar = \"#565656\"\nButton = \"#C8C8C8F0\"\nDisabledButton = \"#CDCDCDF0\"\nForeground = \"#0A0A0A\"\nHyperlink = \"#3737FB\""),
+		"[SupersonicTheme]\nName = \"Default\"\nVersion = \"0.2\"\nSupportsDark = true\nSupportsLight = true\n\n[DarkColors]\nPageBackground = \"#0F0F0F\"\nListHeader = \"#232323\"\nPageHeader = \"#181d25\"\nBackground = \"#232323\"\nScrollBar = \"#F3F3F3\"\nButton = \"#14141432\"\nInputBackground = \"#14141432\"\n\n[LightColors]\nPageBackground = \"#FAFAFA\"\nListHeader = \"#E1DFE1\"\nPageHeader = \"#e1dfe1\"\nBackground = \"#E1DFE1\"\nScrollBar = \"#565656\"\nButton = \"#C8C8C8F0\"\nDisabledButton = \"#CDCDCDF0\"\nForeground = \"#0A0A0A\"\nHyperlink = \"#3737FB\""),
 }
 var ResLICENSE = &fyne.StaticResource{
 	StaticName: "LICENSE",

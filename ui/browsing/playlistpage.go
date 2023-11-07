@@ -291,13 +291,14 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+menuBtn.Size().Height))
 	}
 
-	a.container = container.NewBorder(nil, nil, a.image, nil,
-		container.NewVBox(a.titleLabel, container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
-			a.descriptionLabel,
-			a.ownerLabel,
-			a.trackTimeLabel),
-			container.NewHBox(a.editButton, playButton, shuffleBtn, menuBtn),
-		))
+	a.container = util.AddHeaderBackground(
+		container.NewBorder(nil, nil, a.image, nil,
+			container.NewVBox(a.titleLabel, container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
+				a.descriptionLabel,
+				a.ownerLabel,
+				a.trackTimeLabel),
+				container.NewHBox(a.editButton, playButton, shuffleBtn, menuBtn),
+			)))
 	return a
 }
 

@@ -10,8 +10,12 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/ui/layouts"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"golang.org/x/net/html"
 )
 
@@ -126,6 +130,14 @@ func NewRatingSubmenu(onSetRating func(int)) *fyne.MenuItem {
 		newRatingMenuItem(5),
 	}...)
 	return ratingMenu
+}
+
+func AddHeaderBackground(obj fyne.CanvasObject) *fyne.Container {
+	bgrnd := myTheme.NewThemedRectangle(myTheme.ColorNamePageHeader)
+	bgrnd.CornerRadiusName = theme.SizeNameInputRadius
+	return container.NewStack(bgrnd,
+		container.New(&layouts.MaxPadLayout{PadLeft: 10, PadRight: 10, PadTop: 10, PadBottom: 10},
+			obj))
 }
 
 type HSpace struct {

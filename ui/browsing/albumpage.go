@@ -238,18 +238,19 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.toggleFavButton = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 
 	// Todo: there's got to be a way to make this less convoluted. Custom layout?
-	a.container = container.NewBorder(nil, nil, a.cover, nil,
-		container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
-			a.titleLabel,
-			container.NewVBox(
-				container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, a.artistLabel, a.genreLabel, a.miscLabel),
+	a.container = util.AddHeaderBackground(
+		container.NewBorder(nil, nil, a.cover, nil,
+			container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
+				a.titleLabel,
 				container.NewVBox(
-					container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn, menuBtn),
-					container.NewHBox(util.NewHSpace(2), a.toggleFavButton),
+					container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, a.artistLabel, a.genreLabel, a.miscLabel),
+					container.NewVBox(
+						container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn, menuBtn),
+						container.NewHBox(util.NewHSpace(2), a.toggleFavButton),
+					),
 				),
 			),
-		),
-	)
+		))
 	return a
 }
 

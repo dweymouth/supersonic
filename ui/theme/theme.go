@@ -21,6 +21,7 @@ import (
 const (
 	ColorNameListHeader     fyne.ThemeColorName = "ListHeader"
 	ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
+	ColorNamePageHeader     fyne.ThemeColorName = "PageHeader"
 )
 
 type AppearanceMode string
@@ -90,6 +91,8 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		return colorOrDefault(colors.ListHeader, defColors.ListHeader, name, variant)
 	case ColorNamePageBackground:
 		return colorOrDefault(colors.PageBackground, defColors.PageBackground, name, variant)
+	case ColorNamePageHeader:
+		return colorOrDefault(colors.PageHeader, defColors.PageHeader, name, variant)
 	case theme.ColorNameBackground:
 		return colorOrDefault(colors.Background, defColors.Background, name, variant)
 	case theme.ColorNameButton:

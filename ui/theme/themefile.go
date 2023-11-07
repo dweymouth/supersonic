@@ -34,9 +34,16 @@ type ThemeFile struct {
 type ThemeColors struct {
 	// Supersonic-specific colors
 
+	// Background color of the header row in list views.
 	ListHeader string
 
+	// Background color for each page. The main color in the app.
 	PageBackground string
+
+	// Color of the background rectangle around the Album, Artist, Playlist page headers.
+	//
+	// Since: Supersonic theme file version 0.2
+	PageHeader string
 
 	// Fyne colors
 

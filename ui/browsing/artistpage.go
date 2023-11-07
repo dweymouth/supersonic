@@ -395,11 +395,13 @@ func (a *ArtistPageHeader) toggleFavorited() {
 }
 
 func (a *ArtistPageHeader) createContainer() {
-	a.container = container.NewBorder(nil, nil, a.artistImage, nil,
-		container.NewVBox(
-			container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
-				a.titleDisp, a.biographyDisp, a.similarArtists),
-			container.NewHBox(util.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn)))
+	a.container = util.AddHeaderBackground(
+		container.NewBorder(nil, nil, a.artistImage, nil,
+			container.NewVBox(
+				container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
+					a.titleDisp, a.biographyDisp, a.similarArtists),
+				container.NewHBox(util.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn)),
+		))
 }
 
 func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {
