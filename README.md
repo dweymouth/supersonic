@@ -8,7 +8,7 @@
 [![Last Release](https://img.shields.io/github/v/release/dweymouth/supersonic?logo=github&label=latest&style=flat)](https://github.com/dweymouth/supersonic/releases)
 [![Downloads](https://img.shields.io/github/downloads/dweymouth/supersonic/total?logo=github&style=flat)](https://github.com/dweymouth/supersonic/releases/latest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dweymouth/supersonic)](https://goreportcard.com/report/github.com/dweymouth/supersonic)
-<a href="https://discord.gg/5KSJs4Cfw"><img src="https://dcbadge.vercel.app/api/server/5KSJs4Cfw" width="20%"/></a>
+<a href="https://discord.gg/xuhcMuFj"><img src="https://dcbadge.vercel.app/api/server/5KSJs4Cfw" width="20%"/></a>
 
 A lightweight cross-platform desktop client for Subsonic music servers (Navidrome, Gonic, Airsonic, etc).
 
