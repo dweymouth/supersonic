@@ -1,13 +1,12 @@
 package dialogs
 
 import (
-	"net/url"
+	"fmt"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/res"
-	"github.com/dweymouth/supersonic/ui/layouts"
 )
 
 type WhatsNewDialog struct {
@@ -20,8 +19,15 @@ func NewWhatsNewDialog() *WhatsNewDialog {
 	return w
 }
 
+const donationTextTemplate = `Thank you for using Supersonic!
+If you're enjoying the app and want to [show your support](%s),
+donations are always appreciated and help motivate me to continue
+delivering new features and improvements!`
+
 func (w *WhatsNewDialog) CreateRenderer() fyne.WidgetRenderer {
-	objects := container.NewVBox()
+	donationPrompt := widget.NewRichTextFromMarkdown(fmt.Sprintf(donationTextTemplate, res.KofiURL))
+	donationPrompt.Wrapping = fyne.TextWrapWord
+	objects := container.NewVBox(donationPrompt)
 	if res.WhatsAdded != "" {
 		added := widget.NewRichTextFromMarkdown(res.WhatsAdded)
 		added.Wrapping = fyne.TextWrapWord
@@ -33,19 +39,10 @@ func (w *WhatsNewDialog) CreateRenderer() fyne.WidgetRenderer {
 		objects.Add(fixed)
 	}
 
-	ghUrl, _ := url.Parse(res.GithubURL)
-	kofiUrl, _ := url.Parse(res.KofiURL)
-	githubKofi := container.NewCenter(
-		container.New(&layouts.HboxCustomPadding{DisableThemePad: true, ExtraPad: -10},
-			widget.NewHyperlink("Github page", ghUrl),
-			widget.NewLabel("·"),
-			widget.NewHyperlink("Support the project", kofiUrl)))
-	objects.Add(githubKofi)
-
 	c := container.NewVScroll(objects)
 	return widget.NewSimpleRenderer(c)
 }
 
 func (w *WhatsNewDialog) MinSize() fyne.Size {
-	return fyne.NewSize(400, 250)
+	return fyne.NewSize(425, 275)
 }

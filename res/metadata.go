@@ -25,7 +25,7 @@ func shortcutKey() string {
 
 var (
 	WhatsAdded = fmt.Sprintf(`
-### Added
+## Added
 * New "Quick search" feature to search entire library from anywhere (%s+G shortcut)
 * Support for loading WEBP images
 * UI Refresh from migrating to Fyne 2.4
@@ -33,7 +33,7 @@ var (
 * Added playback setting to force-disable server transcoding`, shortcutKey())
 
 	WhatsFixed = `
-### Fixed
+## Fixed
 * UI hang when playback slow to begin after clicking on grid view play buttons
 * Crash when removing from the currently playing track to end of play queue`
 )
