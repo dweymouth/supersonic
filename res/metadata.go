@@ -8,7 +8,7 @@ import (
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.6.0"
+	AppVersion       = "0.7.0"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"

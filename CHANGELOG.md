@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.7.0] - 2023-11-07
+
+### Added
+- [#263](https://github.com/dweymouth/supersonic/issues/263) "Quick Search" popup dialog to search entire library from any page
+- [#245](https://github.com/dweymouth/supersonic/issues/245) UI Refresh and misc. internal improvements from moving to Fyne 2.4
+- New [custom theme](https://github.com/dweymouth/supersonic/wiki/Custom-Themes) colors - Hyperlink and PageHeader
+- Added support for displaying WEBP images (Thanks @adamantike!)
+- Added playback setting to force disable server transcoding
+
+### Fixed
+- [#270](https://github.com/dweymouth/supersonic/issues/270) Crash when removing from the currently playing track to the end of the play queue
+- UI hang if playback slow to begin after clicking on green play button on cover images
+
 ## [0.6.0] - 2023-10-23
 
 ### Added

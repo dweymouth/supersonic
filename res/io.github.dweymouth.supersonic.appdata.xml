@@ -61,21 +61,29 @@
   </screenshots>
 
  <releases>
-  <release date="2023-10-23" version="0.6.0">
+  <release date="2023-11-07" version="0.7.0">
    <description>
      <p>
-       Version 0.6.0 of Supersonic
+       Version 0.7.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Support for multi-valued artists and genres through the new OpenSubsonic API extensions</li>
-       <li>Mac OS media center integration incl. media key support</li>
-       <li>Sorting now enabled on genres and playlists list views</li>
-       <li>Sortable tracklist columns provide a visual indication on hover</li>
-       <li>"Rescan library" option added to settings menu to trigger a library scan on the server</li>
+       <li>"Quick Search" popup dialog to search entire library from any page</li>
+       <li>UI Refresh and misc. internal improvements from moving to Fyne 2.4</li>
+       <li>New custom theme colors - Hyperlink and PageHeader</li>
+       <li>Added support for displaying WEBP images</li>
+       <li>Added playback setting to force disable server transcoding</li>
+     </ul>
+
+     <p>
+       Fixed
+     </p>
+     <ul>
+       <li>Crash when removing from the currently playing track to the end of the play queue</li>
+       <li>UI hang if playback slow to begin after clicking on green play button on cover images</li>
      </ul>
 
    </description>
