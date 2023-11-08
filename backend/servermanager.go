@@ -39,7 +39,7 @@ func (s *ServerManager) SetPrefetchAlbumCoverCallback(cb func(string)) {
 }
 
 func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) error {
-	cli, err := s.testConnectionAndCreateClient(conf.ServerConnection, password)
+	cli, err := s.connect(conf.ServerConnection, password)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (s *ServerManager) TestConnectionAndAuth(
 	err := ErrUnreachable
 	done := make(chan bool)
 	go func() {
-		_, err = s.testConnectionAndCreateClient(connection, password)
+		_, err = s.connect(connection, password)
 		close(done)
 	}()
 	t := time.NewTimer(timeout)
@@ -156,17 +156,6 @@ func (s *ServerManager) SetServerPassword(server *ServerConfig, password string)
 	return keyring.Set(s.appName, server.ID.String(), password)
 }
 
-func (s *ServerManager) testConnectionAndCreateClient(connection ServerConnection, password string) (*subsonic.Client, error) {
-	cli, err := s.connect(connection, password)
-	if err != nil {
-		return nil, err
-	}
-	if err := cli.Authenticate(password); err != nil {
-		return nil, err
-	}
-	return cli, nil
-}
-
 func (s *ServerManager) connect(connection ServerConnection, password string) (*subsonic.Client, error) {
 	cli := &subsonic.Client{
 		Client:       &http.Client{Timeout: 10 * time.Second},
@@ -185,7 +174,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (*
 	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
 	pingFunc := func(delay time.Duration, cli *subsonic.Client, val bool) {
 		<-time.After(delay)
-		if cli.Ping() {
+		if err := cli.Authenticate(password); err == nil {
 			pingChan <- val
 		}
 	}
