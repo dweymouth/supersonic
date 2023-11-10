@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"reflect"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/util"
@@ -50,6 +51,8 @@ type App struct {
 	isFirstLaunch bool // set by config file reader
 	bgrndCtx      context.Context
 	cancel        context.CancelFunc
+
+	lastWrittenCfg Config
 }
 
 func (a *App) VersionTag() string {
@@ -80,6 +83,7 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 	a := &App{appName: appName, appVersionTag: appVersionTag, configFile: configFile}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 	a.readConfig()
+	a.startConfigWriter(a.bgrndCtx)
 
 	if !a.Config.Application.AllowMultiInstance {
 		log.Println("Creating session lock file")
@@ -164,6 +168,23 @@ func (a *App) startSessionWatcher(sessionPath string) {
 			}
 		}()
 	}
+}
+
+// periodically save config file so abnormal exit won't lose settings
+func (a *App) startConfigWriter(ctx context.Context) {
+	tick := time.NewTicker(2 * time.Minute)
+	go func() {
+		select {
+		case <-ctx.Done():
+			tick.Stop()
+			return
+		case <-tick.C:
+			if !reflect.DeepEqual(&a.lastWrittenCfg, a.Config) {
+				a.Config.WriteConfigFile(a.configPath())
+				a.lastWrittenCfg = *a.Config
+			}
+		}
+	}()
 }
 
 func (a *App) callOnReactivate() {
@@ -274,6 +295,11 @@ func (a *App) Shutdown() {
 	a.Player.Destroy()
 	a.Config.WriteConfigFile(a.configPath())
 	os.RemoveAll(configdir.LocalConfig(a.appName, sessionDir))
+}
+
+func (a *App) SaveConfigFile() {
+	a.Config.WriteConfigFile(a.configPath())
+	a.lastWrittenCfg = *a.Config
 }
 
 func (a *App) configPath() string {

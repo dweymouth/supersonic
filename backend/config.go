@@ -2,6 +2,7 @@ package backend
 
 import (
 	"os"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/pelletier/go-toml/v2"
@@ -206,7 +207,14 @@ func ReadConfigFile(filepath, appVersionTag string) (*Config, error) {
 	return c, nil
 }
 
+var writeLock sync.Mutex
+
 func (c *Config) WriteConfigFile(filepath string) error {
+	if !writeLock.TryLock() {
+		return nil // another write in progress
+	}
+	defer writeLock.Unlock()
+
 	b, err := toml.Marshal(c)
 	if err != nil {
 		return err

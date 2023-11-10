@@ -100,11 +100,13 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 				m.ShowWhatsNewDialog()
 			}
 			m.App.Config.Application.LastLaunchedVersion = app.VersionTag()
+			m.App.SaveConfigFile()
 		} else if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
 			if t != app.VersionTag() {
 				m.ShowNewVersionDialog(displayAppName, t)
 			}
 			m.App.Config.Application.LastCheckedVersion = t
+			m.App.SaveConfigFile()
 		}
 		// register callback for the ongoing periodic update check
 		m.App.UpdateChecker.OnUpdatedVersionFound = func() {
