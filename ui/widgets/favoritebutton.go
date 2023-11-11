@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui/theme"
 
 	"fyne.io/fyne/v2"
@@ -18,7 +17,7 @@ func NewFavoriteButton(onTapped func()) *FavoriteButton {
 	f := &FavoriteButton{
 		Button: widget.Button{
 			OnTapped: onTapped,
-			Icon:     res.ResHeartOutlineInvertPng,
+			Icon:     theme.NotFavoriteIcon,
 		},
 	}
 	f.ExtendBaseWidget(f)
