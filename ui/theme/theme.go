@@ -24,6 +24,21 @@ const (
 	ColorNamePageHeader     fyne.ThemeColorName = "PageHeader"
 )
 
+var (
+	AlbumIcon       fyne.Resource = theme.NewThemedResource(res.ResDiscSvg)
+	ArtistIcon      fyne.Resource = theme.NewThemedResource(res.ResPeopleSvg)
+	FavoriteIcon    fyne.Resource = theme.NewThemedResource(res.ResHeartFilledSvg)
+	NotFavoriteIcon fyne.Resource = theme.NewThemedResource(res.ResHeartOutlineSvg)
+	NowPlayingIcon  fyne.Resource = theme.NewThemedResource(res.ResHeadphonesSvg)
+	PlaylistIcon    fyne.Resource = theme.NewThemedResource(res.ResPlaylistSvg)
+	ShuffleIcon     fyne.Resource = theme.NewThemedResource(res.ResShuffleSvg)
+	TracksIcon      fyne.Resource = theme.NewThemedResource(res.ResMusicnotesSvg)
+	GenreIcon       fyne.Resource = theme.NewThemedResource(res.ResTheatermasksSvg)
+	FilterIcon      fyne.Resource = theme.NewThemedResource(res.ResFilterSvg)
+	RepeatIcon      fyne.Resource = theme.NewThemedResource(res.ResRepeatSvg)
+	RepeatOneIcon   fyne.Resource = theme.NewThemedResource(res.ResRepeatoneSvg)
+)
+
 type AppearanceMode string
 
 const (
@@ -58,7 +73,6 @@ func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
 	if m.defaultThemeFile, err = DecodeThemeFile(bytes.NewReader(res.ResDefaultToml.StaticContent)); err != nil {
 		log.Fatalf("Failed to load builtin theme: %v", err.Error())
 	}
-	m.createThemeIcons()
 	return m
 }
 
@@ -166,56 +180,6 @@ func (m *MyTheme) ListThemeFiles() map[string]string {
 		}
 	}
 	return result
-}
-
-type myThemedResource struct {
-	myTheme      MyTheme
-	darkVariant  *fyne.StaticResource
-	lightVariant *fyne.StaticResource
-}
-
-var _ fyne.Resource = myThemedResource{}
-
-func (p myThemedResource) Content() []byte {
-	if p.myTheme.getVariant() == theme.VariantDark {
-		return p.darkVariant.StaticContent
-	}
-	return p.lightVariant.StaticContent
-}
-
-func (p myThemedResource) Name() string {
-	if p.myTheme.getVariant() == theme.VariantDark {
-		return p.darkVariant.StaticName
-	}
-	return p.lightVariant.StaticName
-}
-
-var (
-	AlbumIcon       fyne.Resource
-	ArtistIcon      fyne.Resource
-	FavoriteIcon    fyne.Resource
-	NotFavoriteIcon fyne.Resource
-	GenreIcon       fyne.Resource
-	NowPlayingIcon  fyne.Resource
-	PlaylistIcon    fyne.Resource
-	ShuffleIcon     fyne.Resource
-	TracksIcon      fyne.Resource
-	FilterIcon      fyne.Resource = theme.NewThemedResource(res.ResFilterSvg)
-	RepeatIcon      fyne.Resource = theme.NewThemedResource(res.ResRepeatSvg)
-	RepeatOneIcon   fyne.Resource = theme.NewThemedResource(res.ResRepeatoneSvg)
-)
-
-// MUST be called at startup!
-func (m MyTheme) createThemeIcons() {
-	AlbumIcon = myThemedResource{myTheme: m, darkVariant: res.ResDiscInvertPng, lightVariant: res.ResDiscPng}
-	ArtistIcon = myThemedResource{myTheme: m, darkVariant: res.ResPeopleInvertPng, lightVariant: res.ResPeoplePng}
-	FavoriteIcon = myThemedResource{myTheme: m, darkVariant: res.ResHeartFilledInvertPng, lightVariant: res.ResHeartFilledPng}
-	NotFavoriteIcon = myThemedResource{myTheme: m, darkVariant: res.ResHeartOutlineInvertPng, lightVariant: res.ResHeartOutlinePng}
-	GenreIcon = myThemedResource{myTheme: m, darkVariant: res.ResTheatermasksInvertPng, lightVariant: res.ResTheatermasksPng}
-	NowPlayingIcon = myThemedResource{myTheme: m, darkVariant: res.ResHeadphonesInvertPng, lightVariant: res.ResHeadphonesPng}
-	PlaylistIcon = myThemedResource{myTheme: m, darkVariant: res.ResPlaylistInvertPng, lightVariant: res.ResPlaylistPng}
-	ShuffleIcon = myThemedResource{myTheme: m, darkVariant: res.ResShuffleInvertSvg, lightVariant: res.ResShuffleSvg}
-	TracksIcon = myThemedResource{myTheme: m, darkVariant: res.ResMusicnotesInvertPng, lightVariant: res.ResMusicnotesPng}
 }
 
 func (m *MyTheme) Font(style fyne.TextStyle) fyne.Resource {
