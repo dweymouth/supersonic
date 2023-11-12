@@ -61,31 +61,49 @@ func filterMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3, ignore
 
 func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
 	if sortOrder == "" && len(filter.Genres) == 1 {
-		return s.newBaseIter("byGenre", filter, s.prefetchCoverCB, map[string]string{"genre": filter.Genres[0]})
+		genre := filter.Genres[0]
+		// The Subsonic API (non-OpenSubsonic) returns only the first genre for multi-genre albums,
+		// but servers do internally match against all the genres the album is categorized with.
+		// So we must not additionally filter by genre to avoid excluding results where
+		// the single genre returned by Subsonic isn't the one we're iterating on.
+		filter.Genres = nil
+		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
+			return s.client.GetAlbumList2("byGenre",
+				map[string]string{"genre": genre, "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
+		}
+		return helpers.NewBaseIter(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	}
 	if sortOrder == "" && filter.ExcludeUnfavorited {
-		return s.newBaseIter("starred", filter, s.prefetchCoverCB, make(map[string]string))
+		return s.baseIterFromSimpleSortOrder("starred", filter)
 	}
 	if sortOrder == "" {
 		sortOrder = AlbumSortRecentlyAdded // default
 	}
 	switch sortOrder {
 	case AlbumSortRecentlyAdded:
-		return s.newBaseIter("newest", filter, s.prefetchCoverCB, make(map[string]string))
+		return s.baseIterFromSimpleSortOrder("newest", filter)
 	case AlbumSortRecentlyPlayed:
-		return s.newBaseIter("recent", filter, s.prefetchCoverCB, make(map[string]string))
+		return s.baseIterFromSimpleSortOrder("recent", filter)
 	case AlbumSortFrequentlyPlayed:
-		return s.newBaseIter("frequent", filter, s.prefetchCoverCB, make(map[string]string))
+		return s.baseIterFromSimpleSortOrder("frequent", filter)
 	case AlbumSortRandom:
 		return s.newRandomIter(filter, s.prefetchCoverCB)
 	case AlbumSortTitleAZ:
-		return s.newBaseIter("alphabeticalByName", filter, s.prefetchCoverCB, make(map[string]string))
+		return s.baseIterFromSimpleSortOrder("alphabeticalByName", filter)
 	case AlbumSortArtistAZ:
-		return s.newBaseIter("alphabeticalByArtist", filter, s.prefetchCoverCB, make(map[string]string))
+		return s.baseIterFromSimpleSortOrder("alphabeticalByArtist", filter)
 	case AlbumSortYearAscending:
-		return s.newBaseIter("byYear", filter, s.prefetchCoverCB, map[string]string{"fromYear": "0", "toYear": "3000"})
+		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
+			return s.client.GetAlbumList2("byYear",
+				map[string]string{"fromYear": "0", "toYear": "3000", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
+		}
+		return helpers.NewBaseIter(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	case AlbumSortYearDescending:
-		return s.newBaseIter("byYear", filter, s.prefetchCoverCB, map[string]string{"fromYear": "3000", "toYear": "0"})
+		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
+			return s.client.GetAlbumList2("byYear",
+				map[string]string{"fromYear": "3000", "toYear": "0", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
+		}
+		return helpers.NewBaseIter(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	default:
 		log.Printf("Undefined album sort order: %s", sortOrder)
 		return nil
@@ -94,71 +112,6 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 
 func (s *subsonicMediaProvider) SearchAlbums(searchQuery string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
 	return s.newSearchIter(searchQuery, filter, s.prefetchCoverCB)
-}
-
-type baseIter struct {
-	listType      string
-	filter        mediaprovider.AlbumFilter
-	prefetchCB    func(string)
-	serverPos     int
-	s             *subsonic.Client
-	opts          map[string]string
-	prefetched    []*mediaprovider.Album
-	prefetchedPos int
-	done          bool
-}
-
-func (s *subsonicMediaProvider) newBaseIter(listType string, filter mediaprovider.AlbumFilter, cb func(string), opts map[string]string) *baseIter {
-	return &baseIter{
-		prefetchCB: cb,
-		listType:   listType,
-		filter:     filter,
-		s:          s.client,
-		opts:       opts,
-	}
-}
-
-func (r *baseIter) Next() *mediaprovider.Album {
-	if r.done {
-		return nil
-	}
-	if r.prefetched != nil && r.prefetchedPos < len(r.prefetched) {
-		a := r.prefetched[r.prefetchedPos]
-		r.prefetchedPos++
-		return a
-	}
-	r.prefetched = nil
-	for { // keep fetching until we are done or have mathcing results
-		r.opts["offset"] = strconv.Itoa(r.serverPos)
-		albums, err := r.s.GetAlbumList2(r.listType, r.opts)
-		if err != nil {
-			log.Printf("error fetching albums: %s", err.Error())
-			albums = nil
-		}
-		if len(albums) == 0 {
-			r.done = true
-			return nil
-		}
-		r.serverPos += len(albums)
-		albums = sharedutil.FilterSlice(albums, func(al *subsonic.AlbumID3) bool {
-			// The Subsonic API returns only the first genre for multi-genre albums,
-			// but servers do internally match against all the genres the album is categorized with.
-			// So we must not additionally filter by genre to avoid excluding results where
-			// the single genre returned by Subsonic isn't the one we're iterating on.
-			return filterMatches(r.filter, al, r.listType == "byGenre" /*ignoreGenre*/)
-		})
-		r.prefetched = sharedutil.MapSlice(albums, toAlbum)
-		if len(albums) > 0 {
-			break
-		}
-	}
-	r.prefetchedPos = 1
-	if r.prefetchCB != nil {
-		for _, album := range r.prefetched {
-			go r.prefetchCB(album.CoverArtID)
-		}
-	}
-	return r.prefetched[0]
 }
 
 type searchIter struct {
@@ -259,39 +212,31 @@ func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 	}
 }
 
-type randomIter struct {
-	filter        mediaprovider.AlbumFilter
-	prefetchCB    func(coverArtID string)
-	albumIDSet    map[string]bool
-	s             *subsonic.Client
-	prefetched    []*subsonic.AlbumID3
-	prefetchedPos int
-	// Random iter works in two phases - phase 1 by requesting random
-	// albums from the server. Since the Subsonic API provides no way
-	// of paginating a single random sort, we may get albums back twice.
-	// We use albumIDSet to keep track of which albums have already been returned.
-	// Once we start getting back too many already-returned albums,
-	// switch to requesting more albums from a deterministic sort order.
-	phaseTwo bool
-	offset   int
-	done     bool
-}
-
 func (s *subsonicMediaProvider) newRandomIter(filter mediaprovider.AlbumFilter, cb func(string)) mediaprovider.AlbumIterator {
 	return helpers.NewRandomIter(
-		func(offset, limit int) ([]*mediaprovider.Album, error) {
-			al, err := s.client.GetAlbumList2("newest", map[string]string{"size": strconv.Itoa(limit), "offset": strconv.Itoa(offset)})
-			if err != nil {
-				return nil, err
-			}
-			return sharedutil.MapSlice(al, toAlbum), nil
-		},
-		func(_, limit int) ([]*mediaprovider.Album, error) {
-			al, err := s.client.GetAlbumList2("random", map[string]string{"size": strconv.Itoa(limit)})
-			if err != nil {
-				return nil, err
-			}
-			return sharedutil.MapSlice(al, toAlbum), nil
-		},
+		s.fetchFnFromStandardSort("newest"),
+		makeFetchFn(func(offset, limit int) ([]*subsonic.AlbumID3, error) {
+			return s.client.GetAlbumList2("random", map[string]string{"size": strconv.Itoa(limit)})
+		}),
 		filter, s.prefetchCoverCB)
+}
+
+func (s *subsonicMediaProvider) baseIterFromSimpleSortOrder(sort string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
+	return helpers.NewBaseIter(s.fetchFnFromStandardSort(sort), filter, s.prefetchCoverCB)
+}
+
+func (s *subsonicMediaProvider) fetchFnFromStandardSort(sort string) helpers.AlbumFetchFn {
+	return makeFetchFn(func(offset, limit int) ([]*subsonic.AlbumID3, error) {
+		return s.client.GetAlbumList2(sort, map[string]string{"size": strconv.Itoa(limit), "offset": strconv.Itoa(offset)})
+	})
+}
+
+func makeFetchFn(subsonicFetchFn func(offset, limit int) ([]*subsonic.AlbumID3, error)) helpers.AlbumFetchFn {
+	return func(offset, limit int) ([]*mediaprovider.Album, error) {
+		al, err := subsonicFetchFn(offset, limit)
+		if err != nil {
+			return nil, err
+		}
+		return sharedutil.MapSlice(al, toAlbum), nil
+	}
 }

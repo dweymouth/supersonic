@@ -265,7 +265,7 @@ func (j *jellyfinMediaProvider) Scrobble(trackID string, submission bool) error 
 }
 
 func (s *jellyfinMediaProvider) RescanLibrary() error {
-	return errors.ErrUnsupported
+	return errors.New("unimplemented")
 }
 
 func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
