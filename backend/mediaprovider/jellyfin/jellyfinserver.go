@@ -12,7 +12,3 @@ type JellyfinServer struct {
 func (j *JellyfinServer) MediaProvider() mediaprovider.MediaProvider {
 	return newJellyfinMediaProvider(&j.Client)
 }
-
-func (j *JellyfinServer) Ping() bool {
-	return false // TODO: unimplemented
-}
