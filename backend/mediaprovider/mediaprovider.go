@@ -34,6 +34,12 @@ type Favorites struct {
 	Tracks  []*Track
 }
 
+type Server interface {
+	Ping() bool
+	Login(username, password string) error
+	MediaProvider() MediaProvider
+}
+
 type MediaProvider interface {
 	SetPrefetchCoverCallback(cb func(coverArtID string))
 

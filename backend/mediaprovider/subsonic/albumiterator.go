@@ -7,6 +7,7 @@ import (
 
 	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/mediaprovider/helpers"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
@@ -276,85 +277,21 @@ type randomIter struct {
 	done     bool
 }
 
-func (s *subsonicMediaProvider) newRandomIter(filter mediaprovider.AlbumFilter, cb func(string)) *randomIter {
-	return &randomIter{
-		filter:     filter,
-		prefetchCB: cb,
-		s:          s.client,
-		albumIDSet: make(map[string]bool),
-	}
-}
-
-func (r *randomIter) Next() *mediaprovider.Album {
-	if r.done {
-		return nil
-	}
-
-	// repeat fetch task until we have matching results
-	// or we reach the end (handled via short circuit return)
-	for len(r.prefetched) == 0 {
-		if r.phaseTwo {
-			// fetch albums from deterministic order
-			albums, err := r.s.GetAlbumList2("newest", map[string]string{"size": "25", "offset": strconv.Itoa(r.offset)})
+func (s *subsonicMediaProvider) newRandomIter(filter mediaprovider.AlbumFilter, cb func(string)) mediaprovider.AlbumIterator {
+	return helpers.NewRandomIter(
+		func(offset, limit int) ([]*mediaprovider.Album, error) {
+			al, err := s.client.GetAlbumList2("newest", map[string]string{"size": strconv.Itoa(limit), "offset": strconv.Itoa(offset)})
 			if err != nil {
-				log.Printf("error fetching albums: %s", err.Error())
-				albums = nil
+				return nil, err
 			}
-			if len(albums) == 0 {
-				r.done = true
-				r.albumIDSet = nil
-				return nil
-			}
-			r.offset += len(albums)
-			for _, album := range albums {
-				if _, ok := r.albumIDSet[album.ID]; !ok && filterMatches(r.filter, album, false) {
-					r.prefetched = append(r.prefetched, album)
-					if r.prefetchCB != nil {
-						go r.prefetchCB(album.CoverArt)
-					}
-					r.albumIDSet[album.ID] = true
-				}
-			}
-		} else {
-			albums, err := r.s.GetAlbumList2("random", map[string]string{"size": "25"})
+			return sharedutil.MapSlice(al, toAlbum), nil
+		},
+		func(_, limit int) ([]*mediaprovider.Album, error) {
+			al, err := s.client.GetAlbumList2("random", map[string]string{"size": strconv.Itoa(limit)})
 			if err != nil {
-				log.Println(err)
-				r.done = true
-				r.albumIDSet = nil
-				return nil
+				return nil, err
 			}
-			var hitCount int
-			for _, album := range albums {
-				if _, ok := r.albumIDSet[album.ID]; !ok {
-					// still need to keep track even if album is not matched
-					// by the filter because we need to know when to move to phase two
-					hitCount++
-					r.albumIDSet[album.ID] = true
-					if filterMatches(r.filter, album, false) {
-						r.prefetched = append(r.prefetched, album)
-						if r.prefetchCB != nil {
-							go r.prefetchCB(album.CoverArt)
-						}
-					}
-				}
-			}
-			if successRatio := float64(hitCount) / float64(25); successRatio < 0.3 {
-				r.phaseTwo = true
-			}
-		}
-	}
-
-	// return from prefetched results
-	if len(r.prefetched) > 0 {
-		a := r.prefetched[r.prefetchedPos]
-		r.prefetchedPos++
-		if r.prefetchedPos == len(r.prefetched) {
-			r.prefetched = nil
-			r.prefetchedPos = 0
-		}
-
-		return toAlbum(a)
-	}
-
-	return nil
+			return sharedutil.MapSlice(al, toAlbum), nil
+		},
+		filter, s.prefetchCoverCB)
 }
