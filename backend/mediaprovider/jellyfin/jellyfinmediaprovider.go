@@ -74,16 +74,46 @@ func (s *jellyfinMediaProvider) GetAlbumInfo(albumID string) (*mediaprovider.Alb
 	return nil, errors.New("unimplemented")
 }
 
-func (s *jellyfinMediaProvider) GetArtist(artistID string) (*mediaprovider.ArtistWithAlbums, error) {
-	return nil, errors.New("unimplemented")
+func (j *jellyfinMediaProvider) GetArtist(artistID string) (*mediaprovider.ArtistWithAlbums, error) {
+	ar, err := j.client.GetArtist(artistID)
+	if err != nil {
+		return nil, err
+	}
+	var opts jellyfin.QueryOpts
+	opts.Filter.ArtistID = artistID
+	al, err := j.client.GetAlbums(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	artist := &mediaprovider.ArtistWithAlbums{
+		Albums: sharedutil.MapSlice(al, toAlbum),
+	}
+	fillArtist(ar, &artist.Artist)
+	return artist, nil
 }
 
-func (s *jellyfinMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.ArtistInfo, error) {
-	return nil, errors.New("unimplemented")
+func (j *jellyfinMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.ArtistInfo, error) {
+	ar, err := j.client.GetArtist(artistID)
+	if err != nil {
+		return nil, err
+	}
+	similar, err := j.client.GetSimilarArtists(artistID)
+	if err != nil {
+		return nil, err
+	}
+	return &mediaprovider.ArtistInfo{
+		SimilarArtists: sharedutil.MapSlice(similar, toArtist),
+		Biography:      ar.Overview,
+	}, nil
 }
 
-func (s *jellyfinMediaProvider) GetArtists() ([]*mediaprovider.Artist, error) {
-	return nil, errors.New("unimplemented")
+func (j *jellyfinMediaProvider) GetArtists() ([]*mediaprovider.Artist, error) {
+	ar, err := j.client.GetAlbumArtists(jellyfin.QueryOpts{})
+	if err != nil {
+		return nil, err
+	}
+	return sharedutil.MapSlice(ar, toArtist), nil
 }
 
 func (j *jellyfinMediaProvider) GetTrack(trackID string) (*mediaprovider.Track, error) {
@@ -272,6 +302,20 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		t.BitRate = ch.MediaSources[0].Bitrate
 	}
 	return t
+}
+
+func toArtist(a *jellyfin.Artist) *mediaprovider.Artist {
+	art := &mediaprovider.Artist{}
+	fillArtist(a, art)
+	return art
+}
+
+func fillArtist(a *jellyfin.Artist, artist *mediaprovider.Artist) {
+	artist.AlbumCount = a.AlbumCount
+	artist.Favorite = a.UserData.IsFavorite
+	artist.ID = a.ID
+	artist.Name = a.Name
+	artist.CoverArtID = a.ID
 }
 
 func toAlbum(a *jellyfin.Album) *mediaprovider.Album {
