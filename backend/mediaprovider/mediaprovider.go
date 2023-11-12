@@ -3,6 +3,7 @@ package mediaprovider
 import (
 	"image"
 	"io"
+	"strings"
 )
 
 type AlbumFilter struct {
@@ -15,10 +16,29 @@ type AlbumFilter struct {
 }
 
 // Returns true if the filter is the nil filter - i.e. matches everything
-func (a *AlbumFilter) IsNil() bool {
+func (a AlbumFilter) IsNil() bool {
 	return a.MinYear == 0 && a.MaxYear == 0 &&
 		len(a.Genres) == 0 &&
 		!a.ExcludeFavorited && !a.ExcludeUnfavorited
+}
+
+func (f AlbumFilter) Matches(album *Album) bool {
+	if album == nil {
+		return false
+	}
+	if f.ExcludeFavorited && album.Favorite {
+		return false
+	}
+	if f.ExcludeUnfavorited && !album.Favorite {
+		return false
+	}
+	if y := album.Year; y < f.MinYear || (f.MaxYear > 0 && y > f.MaxYear) {
+		return false
+	}
+	if len(f.Genres) == 0 {
+		return true
+	}
+	return genresMatch(f.Genres, album.Genres)
 }
 
 type AlbumIterator interface {
@@ -108,4 +128,15 @@ type MediaProvider interface {
 	DownloadTrack(trackID string) (io.Reader, error)
 
 	RescanLibrary() error
+}
+
+func genresMatch(filterGenres, albumGenres []string) bool {
+	for _, g1 := range filterGenres {
+		for _, g2 := range albumGenres {
+			if strings.EqualFold(g1, g2) {
+				return true
+			}
+		}
+	}
+	return false
 }

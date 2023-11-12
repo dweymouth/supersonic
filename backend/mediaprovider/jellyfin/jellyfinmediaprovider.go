@@ -149,7 +149,7 @@ func (j *jellyfinMediaProvider) GetTopTracks(artist mediaprovider.Artist, limit 
 func (j *jellyfinMediaProvider) GetRandomTracks(genreName string, limit int) ([]*mediaprovider.Track, error) {
 	var opts jellyfin.QueryOpts
 	opts.Paging.Limit = limit
-	opts.Filter.Genres = []jellyfin.NameID{{Name: genreName}}
+	opts.Filter.Genres = []string{genreName}
 	opts.Sort.Field = "Random"
 	tr, err := j.client.GetSongs(opts)
 	if err != nil {
@@ -341,13 +341,13 @@ func fillAlbum(a *jellyfin.Album, album *mediaprovider.Album) {
 	}
 
 	album.ID = a.ID
-	//album.CoverArtID = a.CoverArt
+	album.CoverArtID = a.ID
 	album.Name = a.Name
 	album.Duration = int(a.RunTimeTicks / 10_000_000)
 	album.ArtistIDs = artistIDs
 	album.ArtistNames = artistNames
 	album.Year = a.Year
-	//album.TrackCount = a.
+	album.TrackCount = a.ChildCount
 	album.Genres = a.Genres
 	album.Favorite = a.UserData.IsFavorite
 }

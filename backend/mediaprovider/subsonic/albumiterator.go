@@ -71,7 +71,7 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 			return s.client.GetAlbumList2("byGenre",
 				map[string]string{"genre": genre, "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
 		}
-		return helpers.NewBaseIter(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
+		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	}
 	if sortOrder == "" && filter.ExcludeUnfavorited {
 		filter.ExcludeUnfavorited = false // we're already filtering by this
@@ -98,13 +98,13 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 			return s.client.GetAlbumList2("byYear",
 				map[string]string{"fromYear": "0", "toYear": "3000", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
 		}
-		return helpers.NewBaseIter(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
+		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	case AlbumSortYearDescending:
 		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
 			return s.client.GetAlbumList2("byYear",
 				map[string]string{"fromYear": "3000", "toYear": "0", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
 		}
-		return helpers.NewBaseIter(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
+		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	default:
 		log.Printf("Undefined album sort order: %s", sortOrder)
 		return nil
@@ -214,7 +214,7 @@ func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
 }
 
 func (s *subsonicMediaProvider) newRandomIter(filter mediaprovider.AlbumFilter, cb func(string)) mediaprovider.AlbumIterator {
-	return helpers.NewRandomIter(
+	return helpers.NewRandomAlbumIter(
 		s.fetchFnFromStandardSort("newest"),
 		makeFetchFn(func(offset, limit int) ([]*subsonic.AlbumID3, error) {
 			return s.client.GetAlbumList2("random", map[string]string{"size": strconv.Itoa(limit)})
@@ -223,7 +223,7 @@ func (s *subsonicMediaProvider) newRandomIter(filter mediaprovider.AlbumFilter, 
 }
 
 func (s *subsonicMediaProvider) baseIterFromSimpleSortOrder(sort string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
-	return helpers.NewBaseIter(s.fetchFnFromStandardSort(sort), filter, s.prefetchCoverCB)
+	return helpers.NewAlbumIterator(s.fetchFnFromStandardSort(sort), filter, s.prefetchCoverCB)
 }
 
 func (s *subsonicMediaProvider) fetchFnFromStandardSort(sort string) helpers.AlbumFetchFn {

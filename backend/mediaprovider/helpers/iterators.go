@@ -2,33 +2,47 @@ package helpers
 
 import (
 	"log"
-	"strings"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-type AlbumFetchFn func(offset, limit int) ([]*mediaprovider.Album, error)
+type Filter[T any] interface {
+	IsNil() bool
+	Matches(*T) bool
+}
 
-type baseIter struct {
-	filter        mediaprovider.AlbumFilter
-	prefetchCB    func(string)
+type baseIter[T any] struct {
+	filter        Filter[T]
+	prefetchCB    func(*T)
 	serverPos     int
-	fetchFn       AlbumFetchFn
-	prefetched    []*mediaprovider.Album
+	fetcher       func(offset, limit int) ([]*T, error)
+	prefetched    []*T
 	prefetchedPos int
 	done          bool
 }
 
-func NewBaseIter(fetchFn AlbumFetchFn, filter mediaprovider.AlbumFilter, cb func(string)) *baseIter {
-	return &baseIter{
-		prefetchCB: cb,
+type AlbumFetchFn func(offset, limit int) ([]*mediaprovider.Album, error)
+
+func NewAlbumIterator(fetchFn AlbumFetchFn, filter mediaprovider.AlbumFilter, cb func(string)) mediaprovider.AlbumIterator {
+	return &baseIter[mediaprovider.Album]{
+		prefetchCB: func(a *mediaprovider.Album) { cb(a.CoverArtID) },
 		filter:     filter,
-		fetchFn:    fetchFn,
+		fetcher:    fetchFn,
 	}
 }
 
-func (r *baseIter) Next() *mediaprovider.Album {
+type TrackFetchFn func(offset, limit int) ([]*mediaprovider.Track, error)
+
+func NewTrackIterator(fetchFn TrackFetchFn, cb func(string)) mediaprovider.TrackIterator {
+	return &baseIter[mediaprovider.Track]{
+		prefetchCB: func(a *mediaprovider.Track) { cb(a.CoverArtID) },
+		filter:     nilFilter[mediaprovider.Track]{},
+		fetcher:    fetchFn,
+	}
+}
+
+func (r *baseIter[T]) Next() *T {
 	if r.done {
 		return nil
 	}
@@ -39,30 +53,30 @@ func (r *baseIter) Next() *mediaprovider.Album {
 	}
 	r.prefetched = nil
 	for { // keep fetching until we are done or have mathcing results
-		albums, err := r.fetchFn(r.serverPos, 20)
+		items, err := r.fetcher(r.serverPos, 20)
 		if err != nil {
-			log.Printf("error fetching albums: %s", err.Error())
-			albums = nil
+			log.Printf("error fetching items: %s", err.Error())
+			items = nil
 		}
-		if len(albums) == 0 {
+		if len(items) == 0 {
 			r.done = true
 			return nil
 		}
-		r.serverPos += len(albums)
+		r.serverPos += len(items)
 		if !r.filter.IsNil() {
-			albums = sharedutil.FilterSlice(albums, func(al *mediaprovider.Album) bool {
-				return filterMatches(r.filter, al)
+			items = sharedutil.FilterSlice(items, func(al *T) bool {
+				return r.filter.Matches(al)
 			})
 		}
-		r.prefetched = albums
-		if len(albums) > 0 {
+		r.prefetched = items
+		if len(items) > 0 {
 			break
 		}
 	}
 	r.prefetchedPos = 1
 	if r.prefetchCB != nil {
 		for _, album := range r.prefetched {
-			go r.prefetchCB(album.CoverArtID)
+			go r.prefetchCB(album)
 		}
 	}
 	return r.prefetched[0]
@@ -87,7 +101,7 @@ type randomIter struct {
 	done                 bool
 }
 
-func NewRandomIter(deterministicFetcher, randomFetcher AlbumFetchFn, filter mediaprovider.AlbumFilter, prefetchCoverCB func(string)) *randomIter {
+func NewRandomAlbumIter(deterministicFetcher, randomFetcher AlbumFetchFn, filter mediaprovider.AlbumFilter, prefetchCoverCB func(string)) *randomIter {
 	return &randomIter{
 		filter:               filter,
 		prefetchCB:           prefetchCoverCB,
@@ -119,7 +133,7 @@ func (r *randomIter) Next() *mediaprovider.Album {
 			}
 			r.offset += len(albums)
 			for _, album := range albums {
-				if _, ok := r.albumIDSet[album.ID]; !ok && filterMatches(r.filter, album) {
+				if _, ok := r.albumIDSet[album.ID]; !ok && r.filter.Matches(album) {
 					r.prefetched = append(r.prefetched, album)
 					if r.prefetchCB != nil {
 						go r.prefetchCB(album.CoverArtID)
@@ -142,7 +156,7 @@ func (r *randomIter) Next() *mediaprovider.Album {
 					// by the filter because we need to know when to move to phase two
 					hitCount++
 					r.albumIDSet[album.ID] = true
-					if filterMatches(r.filter, album) {
+					if r.filter.Matches(album) {
 						r.prefetched = append(r.prefetched, album)
 						if r.prefetchCB != nil {
 							go r.prefetchCB(album.CoverArtID)
@@ -171,32 +185,8 @@ func (r *randomIter) Next() *mediaprovider.Album {
 	return nil
 }
 
-func filterMatches(f mediaprovider.AlbumFilter, album *mediaprovider.Album) bool {
-	if album == nil {
-		return false
-	}
-	if f.ExcludeFavorited && album.Favorite {
-		return false
-	}
-	if f.ExcludeUnfavorited && !album.Favorite {
-		return false
-	}
-	if y := album.Year; y < f.MinYear || (f.MaxYear > 0 && y > f.MaxYear) {
-		return false
-	}
-	if len(f.Genres) == 0 {
-		return true
-	}
-	return genresMatch(f.Genres, album.Genres)
-}
+type nilFilter[T any] struct{}
 
-func genresMatch(filterGenres, albumGenres []string) bool {
-	for _, g1 := range filterGenres {
-		for _, g2 := range albumGenres {
-			if strings.EqualFold(g1, g2) {
-				return true
-			}
-		}
-	}
-	return false
-}
+func (n nilFilter[T]) IsNil() bool { return true }
+
+func (n nilFilter[T]) Matches(*T) bool { return true }
