@@ -155,7 +155,7 @@ func (a *AlbumPage) load() {
 	}
 	a.header.Update(album, a.im)
 	a.tracklist.Options = widgets.TracklistOptions{
-		ShowDiscNumber: album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber,
+		ShowDiscNumber: len(album.Tracks) > 0 && album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber,
 	}
 	a.tracks = album.Tracks
 	a.tracklist.SetTracks(album.Tracks)
