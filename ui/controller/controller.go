@@ -222,6 +222,7 @@ func (m *Controller) PromptForFirstServer() {
 				pop.Hide()
 				m.doModalClosed()
 				conn := backend.ServerConnection{
+					ServerType:  d.ServerType,
 					Hostname:    d.Host,
 					AltHostname: d.AltHost,
 					Username:    d.Username,
@@ -398,6 +399,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 					// connection is good
 					newPop.Hide()
 					conn := backend.ServerConnection{
+						ServerType:  newD.ServerType,
 						Hostname:    newD.Host,
 						AltHostname: newD.AltHost,
 						Username:    newD.Username,
@@ -539,6 +541,7 @@ func (c *Controller) tryConnectToServer(server *backend.ServerConfig, password s
 func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
 	dlg.SetInfoText("Testing connection...")
 	conn := backend.ServerConnection{
+		ServerType:  dlg.ServerType,
 		Hostname:    dlg.Host,
 		AltHostname: dlg.AltHost,
 		Username:    dlg.Username,
