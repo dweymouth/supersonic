@@ -159,7 +159,18 @@ func (j *jellyfinMediaProvider) GetRandomTracks(genreName string, limit int) ([]
 }
 
 func (j *jellyfinMediaProvider) GetSimilarTracks(artistID string, limit int) ([]*mediaprovider.Track, error) {
-	tr, err := j.client.GetSimilarSongs(artistID, limit)
+	// Jellyfin can only get similar songs based on an album
+	var opts jellyfin.QueryOpts
+	opts.Paging.Limit = 1
+	opts.Filter.ArtistID = artistID
+	als, err := j.client.GetAlbums(opts)
+	if err != nil {
+		return nil, err
+	}
+	if len(als) == 0 {
+		return nil, nil
+	}
+	tr, err := j.client.GetSimilarSongs(als[0].ID, limit)
 	if err != nil {
 		return nil, err
 	}
