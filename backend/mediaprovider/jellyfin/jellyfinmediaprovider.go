@@ -292,7 +292,7 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		//CoverArtID:  ch.CoverArt,
 		ParentID:    ch.AlbumID,
 		Name:        ch.Name,
-		Duration:    int(ch.RunTimeTicks / 1_000_000),
+		Duration:    int(ch.RunTimeTicks / 10_000_000),
 		TrackNumber: ch.IndexNumber,
 		DiscNumber:  ch.DiscNumber,
 		//Genre:       ch.Genres,
@@ -308,7 +308,7 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 	if len(ch.MediaSources) > 0 {
 		t.FilePath = ch.MediaSources[0].Path
 		t.Size = int64(ch.MediaSources[0].Size)
-		t.BitRate = ch.MediaSources[0].Bitrate
+		t.BitRate = ch.MediaSources[0].Bitrate / 1000
 	}
 	return t
 }
@@ -343,7 +343,7 @@ func fillAlbum(a *jellyfin.Album, album *mediaprovider.Album) {
 	album.ID = a.ID
 	//album.CoverArtID = a.CoverArt
 	album.Name = a.Name
-	album.Duration = int(a.RunTimeTicks / 1_000_000)
+	album.Duration = int(a.RunTimeTicks / 10_000_000)
 	album.ArtistIDs = artistIDs
 	album.ArtistNames = artistNames
 	album.Year = a.Year
