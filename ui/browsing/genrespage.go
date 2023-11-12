@@ -196,8 +196,16 @@ func NewGenreList(sorting widgets.ListHeaderSort) *GenreList {
 			row := item.(*GenreListRow)
 			row.Item = a.genres[id]
 			row.nameLabel.Text = row.Item.Name
-			row.albumCountLabel.Text = strconv.Itoa(row.Item.AlbumCount)
-			row.trackCountLabel.Text = strconv.Itoa(row.Item.TrackCount)
+			if row.Item.AlbumCount >= 0 {
+				row.albumCountLabel.Text = strconv.Itoa(row.Item.AlbumCount)
+			} else {
+				row.albumCountLabel.Text = ""
+			}
+			if row.Item.TrackCount >= 0 {
+				row.trackCountLabel.Text = strconv.Itoa(row.Item.TrackCount)
+			} else {
+				row.trackCountLabel.Text = ""
+			}
 			row.Refresh()
 		},
 	)
