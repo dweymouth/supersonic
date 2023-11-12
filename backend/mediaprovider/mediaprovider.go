@@ -14,6 +14,13 @@ type AlbumFilter struct {
 	ExcludeUnfavorited bool // mut. exc. with ExcludeFavorited
 }
 
+// Returns true if the filter is the nil filter - i.e. matches everything
+func (a *AlbumFilter) IsNil() bool {
+	return a.MinYear == 0 && a.MaxYear == 0 &&
+		len(a.Genres) == 0 &&
+		!a.ExcludeFavorited && !a.ExcludeUnfavorited
+}
+
 type AlbumIterator interface {
 	Next() *Album
 }

@@ -49,9 +49,11 @@ func (r *baseIter) Next() *mediaprovider.Album {
 			return nil
 		}
 		r.serverPos += len(albums)
-		albums = sharedutil.FilterSlice(albums, func(al *mediaprovider.Album) bool {
-			return filterMatches(r.filter, al)
-		})
+		if !r.filter.IsNil() {
+			albums = sharedutil.FilterSlice(albums, func(al *mediaprovider.Album) bool {
+				return filterMatches(r.filter, al)
+			})
+		}
 		r.prefetched = albums
 		if len(albums) > 0 {
 			break

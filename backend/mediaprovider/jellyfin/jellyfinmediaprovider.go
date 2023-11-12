@@ -9,11 +9,20 @@ import (
 	"time"
 
 	"github.com/dweymouth/go-jellyfin"
+	jellyfinCli "github.com/dweymouth/go-jellyfin"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
 const cacheValidDurationSeconds = 60
+
+type JellyfinServer struct {
+	jellyfinCli.Client
+}
+
+func (j *JellyfinServer) MediaProvider() mediaprovider.MediaProvider {
+	return newJellyfinMediaProvider(&j.Client)
+}
 
 var _ mediaprovider.MediaProvider = (*jellyfinMediaProvider)(nil)
 

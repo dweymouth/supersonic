@@ -74,6 +74,7 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 		return helpers.NewBaseIter(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	}
 	if sortOrder == "" && filter.ExcludeUnfavorited {
+		filter.ExcludeUnfavorited = false // we're already filtering by this
 		return s.baseIterFromSimpleSortOrder("starred", filter)
 	}
 	if sortOrder == "" {
