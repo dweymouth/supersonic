@@ -693,7 +693,6 @@ type TrackRow struct {
 	trackIdx   int
 	trackNum   int
 	trackID    string
-	artistID   string
 	albumID    string
 	isPlaying  bool
 	isFavorite bool
@@ -775,7 +774,6 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 			t.Focused = false
 		}
 		t.trackID = tr.ID
-		t.artistID = tr.ArtistIDs[0]
 		t.albumID = tr.AlbumID
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
