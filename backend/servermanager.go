@@ -43,7 +43,7 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 	if err != nil {
 		return err
 	}
-	s.Server = subsonicMP.SubsonicMediaProvider(cli)
+	s.Server = cli.MediaProvider()
 	s.Server.SetPrefetchCoverCallback(s.prefetchCoverCB)
 	s.LoggedInUser = conf.Username
 	s.ServerID = conf.ID
@@ -156,25 +156,31 @@ func (s *ServerManager) SetServerPassword(server *ServerConfig, password string)
 	return keyring.Set(s.appName, server.ID.String(), password)
 }
 
-func (s *ServerManager) connect(connection ServerConnection, password string) (*subsonic.Client, error) {
-	cli := &subsonic.Client{
-		Client:       &http.Client{Timeout: 10 * time.Second},
-		BaseUrl:      connection.Hostname,
-		User:         connection.Username,
-		PasswordAuth: connection.LegacyAuth,
-		ClientName:   "supersonic",
+func (s *ServerManager) connect(connection ServerConnection, password string) (mediaprovider.Server, error) {
+	var cli, altCli mediaprovider.Server
+
+	cli = &subsonicMP.SubsonicServer{
+		Client: subsonic.Client{
+			Client:       &http.Client{Timeout: 10 * time.Second},
+			BaseUrl:      connection.Hostname,
+			User:         connection.Username,
+			PasswordAuth: connection.LegacyAuth,
+			ClientName:   "supersonic",
+		},
 	}
-	altCli := &subsonic.Client{
-		Client:       &http.Client{Timeout: 10 * time.Second},
-		BaseUrl:      connection.AltHostname,
-		User:         connection.Username,
-		PasswordAuth: connection.LegacyAuth,
-		ClientName:   "supersonic",
+	altCli = &subsonicMP.SubsonicServer{
+		Client: subsonic.Client{
+			Client:       &http.Client{Timeout: 10 * time.Second},
+			BaseUrl:      connection.AltHostname,
+			User:         connection.Username,
+			PasswordAuth: connection.LegacyAuth,
+			ClientName:   "supersonic",
+		},
 	}
 	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
-	pingFunc := func(delay time.Duration, cli *subsonic.Client, val bool) {
+	pingFunc := func(delay time.Duration, cli mediaprovider.Server, val bool) {
 		<-time.After(delay)
-		if err := cli.Authenticate(password); err == nil {
+		if err := cli.Login(connection.Username, password); err == nil {
 			pingChan <- val
 		}
 	}

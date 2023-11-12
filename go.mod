@@ -22,6 +22,7 @@ require (
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/danieljoos/wincred v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dweymouth/go-jellyfin v0.0.0-20231112010253-d93b76137091 // indirect
 	github.com/fredbi/uri v1.0.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
@@ -38,10 +39,10 @@ require (
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/tevino/abool v1.2.0 // indirect
 	github.com/yuin/goldmark v1.5.5 // indirect
-	golang.org/x/image v0.13.0 // indirect
+	golang.org/x/image v0.14.0 // indirect
 	golang.org/x/mobile v0.0.0-20230531173138-3c911d8e3eda // indirect
 	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )

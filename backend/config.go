@@ -8,7 +8,15 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
+type ServerType string
+
+const (
+	ServerTypeSubsonic ServerType = "Subsonic"
+	ServerTypeJellyfin ServerType = "Jellyfin"
+)
+
 type ServerConnection struct {
+	ServerType  ServerType
 	Hostname    string
 	AltHostname string
 	Username    string
