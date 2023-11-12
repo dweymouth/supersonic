@@ -314,8 +314,10 @@ func (a *AlbumPageHeader) showPopUpCover() {
 
 func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 	var discs string
-	if discCount := a.Tracks[len(a.Tracks)-1].DiscNumber; discCount > 1 {
-		discs = fmt.Sprintf("%d discs · ", discCount)
+	if len(a.Tracks) > 0 {
+		if discCount := a.Tracks[len(a.Tracks)-1].DiscNumber; discCount > 1 {
+			discs = fmt.Sprintf("%d discs · ", discCount)
+		}
 	}
 	tracks := "tracks"
 	if a.TrackCount == 1 {
