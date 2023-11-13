@@ -577,7 +577,11 @@ func (c *Controller) SetTrackFavorites(trackIDs []string, favorite bool) {
 }
 
 func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
-	go c.App.ServerManager.Server.SetRating(mediaprovider.RatingFavoriteParameters{
+	r, ok := c.App.ServerManager.Server.(mediaprovider.SupportsRating)
+	if !ok {
+		return
+	}
+	go r.SetRating(mediaprovider.RatingFavoriteParameters{
 		TrackIDs: trackIDs,
 	}, rating)
 

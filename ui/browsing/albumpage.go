@@ -93,6 +93,8 @@ func newAlbumPage(
 	}
 	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 	a.tracklist.SetSorting(sort)
+	_, canRate := a.mp.(mediaprovider.SupportsRating)
+	a.tracklist.Options.DisableRating = !canRate
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		a.cfg.TracklistColumns = cols
 	}
@@ -154,9 +156,7 @@ func (a *AlbumPage) load() {
 		return
 	}
 	a.header.Update(album, a.im)
-	a.tracklist.Options = widgets.TracklistOptions{
-		ShowDiscNumber: len(album.Tracks) > 0 && album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber,
-	}
+	a.tracklist.Options.ShowDiscNumber = len(album.Tracks) > 0 && album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber
 	a.tracks = album.Tracks
 	a.tracklist.SetTracks(album.Tracks)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)

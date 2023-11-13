@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/util"
 )
@@ -45,7 +46,8 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	case controller.Genres:
 		return NewGenresPage(r.Controller, r.App.ServerManager.Server)
 	case controller.NowPlaying:
-		return NewNowPlayingPage(rte.Arg, r.Controller, r.widgetPool, &r.App.Config.NowPlayingPage, r.App.PlaybackManager, r.App.Player)
+		_, canRate := r.App.ServerManager.Server.(mediaprovider.SupportsRating)
+		return NewNowPlayingPage(rte.Arg, r.Controller, r.widgetPool, &r.App.Config.NowPlayingPage, r.App.PlaybackManager, r.App.Player, canRate)
 	case controller.Playlist:
 		return NewPlaylistPage(rte.Arg, &r.App.Config.PlaylistPage, r.widgetPool, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager)
 	case controller.Playlists:

@@ -229,6 +229,8 @@ func (a *ArtistPage) showTopTracks() {
 			tl = widgets.NewTracklist(ts)
 		}
 		tl.Options = widgets.TracklistOptions{AutoNumber: true}
+		_, canRate := a.mp.(mediaprovider.SupportsRating)
+		tl.Options.DisableRating = !canRate
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
 		tl.SetSorting(a.trackSort)
 		tl.OnVisibleColumnsChanged = func(cols []string) {

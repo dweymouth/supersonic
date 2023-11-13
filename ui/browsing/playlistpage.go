@@ -93,7 +93,9 @@ func newPlaylistPage(
 		fyne.NewMenuItem("Move down", a.onMoveSelectedDown),
 		fyne.NewMenuItem("Move to bottom", a.onMoveSelectedToBottom),
 	}...)
+	_, canRate := a.sm.Server.(mediaprovider.SupportsRating)
 	a.tracklist.Options = widgets.TracklistOptions{
+		DisableRating: !canRate,
 		AuxiliaryMenuItems: []*fyne.MenuItem{reorderMenu,
 			fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)},
 	}

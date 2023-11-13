@@ -37,11 +37,12 @@ type NowPlayingPage struct {
 }
 
 type nowPlayingPageState struct {
-	contr *controller.Controller
-	pool  *util.WidgetPool
-	conf  *backend.NowPlayingPageConfig
-	pm    *backend.PlaybackManager
-	p     *player.Player
+	contr   *controller.Controller
+	pool    *util.WidgetPool
+	conf    *backend.NowPlayingPageConfig
+	pm      *backend.PlaybackManager
+	p       *player.Player
+	canRate bool
 }
 
 func NewNowPlayingPage(
@@ -51,9 +52,10 @@ func NewNowPlayingPage(
 	conf *backend.NowPlayingPageConfig,
 	pm *backend.PlaybackManager,
 	p *player.Player, // TODO: once other player backends are supported (eg uPnP), refactor
+	canRate bool,
 ) *NowPlayingPage {
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
-		contr: contr, pool: pool, conf: conf, pm: pm, p: p,
+		contr: contr, pool: pool, conf: conf, pm: pm, p: p, canRate: canRate,
 	}}
 	a.ExtendBaseWidget(a)
 
@@ -74,6 +76,7 @@ func NewNowPlayingPage(
 	a.tracklist.Options = widgets.TracklistOptions{
 		AutoNumber:          true,
 		DisablePlaybackMenu: true,
+		DisableRating:       !canRate,
 		AuxiliaryMenuItems: []*fyne.MenuItem{
 			fyne.NewMenuItem("Remove from queue", a.onRemoveSelectedFromQueue),
 		},
@@ -213,5 +216,5 @@ func (a *NowPlayingPage) load(highlightedTrackID string) {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage("", s.contr, s.pool, s.conf, s.pm, s.p)
+	return NewNowPlayingPage("", s.contr, s.pool, s.conf, s.pm, s.p, s.canRate)
 }

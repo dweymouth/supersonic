@@ -15,15 +15,19 @@ import (
 )
 
 var (
-	themedResStarFilled  = theme.NewThemedResource(res.ResStarFilledSvg)
-	themedResStarOutline = theme.NewThemedResource(res.ResStarOutlineSvg)
+	themedResStarFilled       = theme.NewThemedResource(res.ResStarFilledSvg)
+	themedResStarOutline      = theme.NewThemedResource(res.ResStarOutlineSvg)
+	themedDisabledStarOutline = theme.NewDisabledResource(res.ResStarOutlineSvg)
 )
+
+var _ fyne.Disableable = (*StarRating)(nil)
 
 type StarRating struct {
 	widget.BaseWidget
 
-	Rating   int
-	StarSize float32
+	IsDisabled bool
+	Rating     int
+	StarSize   float32
 
 	OnRatingChanged func(int)
 
@@ -44,7 +48,9 @@ func (s *StarRating) createContainer() {
 	})
 	var im *canvas.Image
 	for i := 0; i < 5; i++ {
-		if s.Rating > i {
+		if s.IsDisabled {
+			im = canvas.NewImageFromResource(themedDisabledStarOutline)
+		} else if s.Rating > i {
 			im = canvas.NewImageFromResource(themedResStarFilled)
 		} else {
 			im = canvas.NewImageFromResource(themedResStarOutline)
@@ -61,6 +67,9 @@ func (s *StarRating) MouseIn(e *desktop.MouseEvent) {
 }
 
 func (s *StarRating) MouseMoved(e *desktop.MouseEvent) {
+	if s.IsDisabled {
+		return
+	}
 	hoverRating := int(math.Ceil(5 * float64(e.Position.X/s.Size().Width)))
 	if s.mouseHoverRating != hoverRating {
 		s.holdRating = false
@@ -69,7 +78,24 @@ func (s *StarRating) MouseMoved(e *desktop.MouseEvent) {
 	}
 }
 
+func (s *StarRating) Disable() {
+	s.IsDisabled = true
+	s.Refresh()
+}
+
+func (s *StarRating) Enable() {
+	s.IsDisabled = false
+	s.Refresh()
+}
+
+func (s *StarRating) Disabled() bool {
+	return s.IsDisabled
+}
+
 func (s *StarRating) MouseOut() {
+	if s.IsDisabled {
+		return
+	}
 	s.mouseHoverRating = 0
 	s.holdRating = false
 	s.Refresh()
@@ -105,7 +131,9 @@ func (s *StarRating) Refresh() {
 	for i := 0; i < 5; i++ {
 		im := s.container.Objects[i].(*canvas.Image)
 		im.SetMinSize(fyne.NewSize(s.StarSize, s.StarSize))
-		if rating > i {
+		if s.IsDisabled {
+			im.Resource = themedDisabledStarOutline
+		} else if rating > i {
 			im.Resource = themedResStarFilled
 		} else {
 			im.Resource = themedResStarOutline

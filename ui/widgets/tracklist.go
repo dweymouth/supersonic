@@ -66,6 +66,9 @@ type TracklistOptions struct {
 
 	// Disables sorting the tracklist by clicking individual columns.
 	DisableSorting bool
+
+	// Disables the five star rating widget.
+	DisableRating bool
 }
 
 type Tracklist struct {
@@ -732,6 +735,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	favorite.OnTapped = t.toggleFavorited
 	t.favorite = container.NewCenter(favorite)
 	t.rating = NewStarRating()
+	t.rating.IsDisabled = t.tracklist.Options.DisableRating
 	t.rating.StarSize = 16
 	t.rating.OnRatingChanged = t.setTrackRating
 	t.plays = newTrailingAlignLabel()
@@ -842,6 +846,7 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 	t.dur.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnTime)]
 	t.year.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnYear)]
 	t.favorite.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnFavorite)]
+	t.rating.IsDisabled = t.tracklist.Options.DisableRating
 	t.rating.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnRating)]
 	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
 	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]

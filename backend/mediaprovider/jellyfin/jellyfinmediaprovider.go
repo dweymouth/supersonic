@@ -312,10 +312,6 @@ func (j *jellyfinMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteP
 	return err
 }
 
-func (j *jellyfinMediaProvider) SetRating(params mediaprovider.RatingFavoriteParameters, rating int) error {
-	return errors.New("unimplemented")
-}
-
 func (j *jellyfinMediaProvider) GetStreamURL(trackID string, forceRaw bool) (string, error) {
 	return j.client.GetStreamURL(trackID)
 }

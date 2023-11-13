@@ -109,8 +109,6 @@ type MediaProvider interface {
 
 	SetFavorite(params RatingFavoriteParameters, favorite bool) error
 
-	SetRating(params RatingFavoriteParameters, rating int) error
-
 	GetPlaylists() ([]*Playlist, error)
 
 	CreatePlaylist(name string, trackIDs []string) error
@@ -128,6 +126,10 @@ type MediaProvider interface {
 	DownloadTrack(trackID string) (io.Reader, error)
 
 	RescanLibrary() error
+}
+
+type SupportsRating interface {
+	SetRating(params RatingFavoriteParameters, rating int) error
 }
 
 func genresMatch(filterGenres, albumGenres []string) bool {

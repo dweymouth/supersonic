@@ -51,8 +51,10 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	} else {
 		t.tracklist = widgets.NewTracklist(nil)
 	}
+	_, canRate := mp.(mediaprovider.SupportsRating)
 	t.tracklist.Options = widgets.TracklistOptions{
 		DisableSorting: true,
+		DisableRating:  !canRate,
 		AutoNumber:     true,
 	}
 	t.tracklist.SetVisibleColumns(conf.TracklistColumns)
