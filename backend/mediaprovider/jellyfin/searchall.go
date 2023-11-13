@@ -1,11 +1,140 @@
 package jellyfin
 
 import (
-	"errors"
+	"strings"
+	"sync"
 
+	"github.com/deluan/sanitize"
+	"github.com/dweymouth/go-jellyfin"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/mediaprovider/helpers"
+	"github.com/dweymouth/supersonic/sharedutil"
 )
 
 func (s *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([]*mediaprovider.SearchResult, error) {
-	return nil, errors.New("unimplemented")
+	limit := maxResults / 3
+	var wg sync.WaitGroup
+	var albums []*jellyfin.Album
+	var artists []*jellyfin.Artist
+	var songs []*jellyfin.Song
+	var genres []jellyfin.NameID
+	var playlists []*jellyfin.Playlist
+
+	wg.Add(1)
+	go func() {
+		albumResult, _ := s.client.Search(searchQuery, jellyfin.TypeAlbum, jellyfin.Paging{Limit: limit})
+		albums = albumResult.Albums
+		wg.Done()
+	}()
+	wg.Add(1)
+	go func() {
+		artistResult, _ := s.client.Search(searchQuery, jellyfin.TypeArtist, jellyfin.Paging{Limit: limit})
+		artists = artistResult.Artists
+		wg.Done()
+	}()
+	wg.Add(1)
+	go func() {
+		songResult, _ := s.client.Search(searchQuery, jellyfin.TypeSong, jellyfin.Paging{Limit: limit})
+		songs = songResult.Songs
+		wg.Done()
+	}()
+
+	querySanitized := strings.ToLower(sanitize.Accents(searchQuery))
+	queryLowerWords := strings.Fields(querySanitized)
+
+	wg.Add(1)
+	go func() {
+		p, e := s.client.GetPlaylists()
+		if e == nil {
+			playlists = sharedutil.FilterSlice(p, func(p *jellyfin.Playlist) bool {
+				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(p.Name)), queryLowerWords)
+			})
+		}
+		wg.Done()
+	}()
+
+	wg.Add(1)
+	go func() {
+		g, e := s.client.GetGenres(jellyfin.Paging{})
+		if e == nil {
+			genres = sharedutil.FilterSlice(g, func(g jellyfin.NameID) bool {
+				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(g.Name)), queryLowerWords)
+			})
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	results := mergeResults(albums, artists, songs, playlists, genres)
+	helpers.RankSearchResults(results, searchQuery, queryLowerWords)
+
+	return results, nil
+}
+
+func mergeResults(
+	albums []*jellyfin.Album,
+	artists []*jellyfin.Artist,
+	songs []*jellyfin.Song,
+	matchingPlaylists []*jellyfin.Playlist,
+	matchingGenres []jellyfin.NameID,
+) []*mediaprovider.SearchResult {
+	var results []*mediaprovider.SearchResult
+
+	getArtistNames := func(artist jellyfin.NameID) string {
+		return artist.Name
+	}
+
+	for _, al := range albums {
+		results = append(results, &mediaprovider.SearchResult{
+			Type:       mediaprovider.ContentTypeAlbum,
+			ID:         al.ID,
+			CoverID:    al.ID,
+			Name:       al.Name,
+			ArtistName: strings.Join(sharedutil.MapSlice(al.Artists, getArtistNames), ","),
+			Size:       al.ChildCount,
+		})
+	}
+
+	for _, ar := range artists {
+		results = append(results, &mediaprovider.SearchResult{
+			Type:    mediaprovider.ContentTypeArtist,
+			ID:      ar.ID,
+			CoverID: ar.ID,
+			Name:    ar.Name,
+			Size:    ar.AlbumCount,
+		})
+	}
+
+	for _, tr := range songs {
+		results = append(results, &mediaprovider.SearchResult{
+			Type:       mediaprovider.ContentTypeTrack,
+			ID:         tr.Id,
+			CoverID:    tr.Id,
+			Name:       tr.Name,
+			ArtistName: strings.Join(sharedutil.MapSlice(tr.Artists, getArtistNames), ","),
+			Size:       int(tr.RunTimeTicks / 10_000_000),
+		})
+	}
+
+	for _, pl := range matchingPlaylists {
+		results = append(results, &mediaprovider.SearchResult{
+			Type:    mediaprovider.ContentTypePlaylist,
+			ID:      pl.ID,
+			CoverID: pl.ID,
+			Name:    pl.Name,
+			Size:    pl.SongCount,
+		})
+	}
+
+	for _, g := range matchingGenres {
+		results = append(results, &mediaprovider.SearchResult{
+			Type: mediaprovider.ContentTypeGenre,
+			ID:   g.Name,
+			Name: g.Name,
+			Size: -1,
+		})
+	}
+
+	return results
 }

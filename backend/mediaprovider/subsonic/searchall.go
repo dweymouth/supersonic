@@ -1,7 +1,6 @@
 package subsonic
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -9,6 +8,7 @@ import (
 	"github.com/deluan/sanitize"
 	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/mediaprovider/helpers"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
@@ -43,7 +43,7 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 		p, e := s.client.GetPlaylists(nil)
 		if e == nil {
 			playlists = sharedutil.FilterSlice(p, func(p *subsonic.Playlist) bool {
-				return allTermsMatch(strings.ToLower(sanitize.Accents(p.Name)), queryLowerWords)
+				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(p.Name)), queryLowerWords)
 			})
 		}
 		wg.Done()
@@ -54,7 +54,7 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 		g, e := s.client.GetGenres()
 		if e == nil {
 			genres = sharedutil.FilterSlice(g, func(g *subsonic.Genre) bool {
-				return allTermsMatch(strings.ToLower(sanitize.Accents(g.Name)), queryLowerWords)
+				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(g.Name)), queryLowerWords)
 			})
 		}
 		wg.Done()
@@ -66,21 +66,11 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 	}
 
 	results := mergeResults(result, playlists, genres)
-	rankResults(results, querySanitized, queryLowerWords)
+	helpers.RankSearchResults(results, querySanitized, queryLowerWords)
 	if len(results) > maxResults {
 		results = results[:maxResults]
 	}
 	return results, nil
-}
-
-// name and terms should be pre-converted to the same case
-func allTermsMatch(name string, terms []string) bool {
-	for _, t := range terms {
-		if !strings.Contains(name, t) {
-			return false
-		}
-	}
-	return true
 }
 
 func mergeResults(
@@ -142,54 +132,6 @@ func mergeResults(
 	}
 
 	return results
-}
-
-func rankResults(results []*mediaprovider.SearchResult, fullQuery string, queryTerms []string) {
-	if len(queryTerms) == 0 || len(results) < 2 {
-		return
-	}
-
-	sanitizeMemo := make(map[string]string, len(results))
-	sanitized := func(s string) string {
-		if x, ok := sanitizeMemo[s]; ok {
-			return x
-		}
-		x := strings.ToLower(sanitize.Accents(s))
-		sanitizeMemo[s] = x
-		return x
-	}
-
-	sort.Slice(results, func(i, j int) bool {
-		a, b := results[i], results[j]
-		aName := sanitized(a.Name)
-		bName := sanitized(b.Name)
-
-		// Compare by entire query
-		matchesA, matchesB := strings.Contains(aName, fullQuery), strings.Contains(bName, fullQuery)
-		if matchesA && !matchesB {
-			return true // item A has a direct match with the full query and B does not
-		} else if matchesB && !matchesA {
-			return false // item B matches but not A
-		}
-
-		// Compare by search query terms
-		for _, term := range queryTerms {
-			firstTermIdxA, firstTermIdxB := strings.Index(aName, term), strings.Index(bName, term)
-			if firstTermIdxA >= 0 && firstTermIdxB < 0 {
-				return true // item A has a direct match with the query term and B does not
-			} else if firstTermIdxB >= 0 && firstTermIdxA < 0 {
-				return false // item B matches but not A
-			}
-
-			if firstTermIdxA < firstTermIdxB {
-				return true // item A matches the query term starting at an earlier position
-			} else if firstTermIdxB < firstTermIdxA {
-				return false // item B matches first
-			}
-		}
-		// Defer to item type for priority order
-		return a.Type < b.Type
-	})
 }
 
 // select Subsonic single-valued name or join OpenSubsonic multi-valued names

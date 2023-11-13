@@ -217,21 +217,29 @@ func (q *quickSearchResult) Update(result *mediaprovider.SearchResult) {
 	case mediaprovider.ContentTypePlaylist:
 		secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("track", result.Size))
 	case mediaprovider.ContentTypeGenre:
-		secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("album", result.Size))
+		if result.Size > 0 {
+			secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("album", result.Size))
+		} else {
+			secondaryText = ""
+		}
 	}
 	q.secondary.Segments = []widget.RichTextSegment{
 		&widget.TextSegment{
 			Text:  result.Type.String(),
 			Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, TextStyle: fyne.TextStyle{Bold: true}, Inline: true},
 		},
-		&widget.TextSegment{
-			Text:  " · ",
-			Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
-		},
-		&widget.TextSegment{
-			Text:  secondaryText,
-			Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
-		},
+	}
+	if secondaryText != "" {
+		q.secondary.Segments = append(q.secondary.Segments,
+			&widget.TextSegment{
+				Text:  " · ",
+				Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
+			},
+			&widget.TextSegment{
+				Text:  secondaryText,
+				Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
+			},
+		)
 	}
 
 	q.secondary.Refresh()

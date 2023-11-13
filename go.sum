@@ -71,8 +71,8 @@ github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1 h1:mGvOb3zxl4vCLv+
 github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1/go.mod h1:ZNCLJfehvEf34B7BbLKjgpsL9lyW7q938w/GY1XgV4E=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20231110162149-a0e470497555 h1:8S+d0LuwdTUEipEzFeXp8rNwTQD47dBdDOg9+FI1+Vw=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20231110162149-a0e470497555/go.mod h1:AWM1iPM2YfliduZ4u/kQzP9E6ARIWm0gg+57GpYzWro=
-github.com/dweymouth/go-jellyfin v0.0.0-20231112233951-e56feff35fc6 h1:lM/wEw/WL9PQHRvBF5FLNNDkbwIU8txThl9Y+Jxv9s4=
-github.com/dweymouth/go-jellyfin v0.0.0-20231112233951-e56feff35fc6/go.mod h1:BMwS4vdjEYf1gmjPGSKCzWP/I6YlI6fkefJ9nsjBjaU=
+github.com/dweymouth/go-jellyfin v0.0.0-20231113004204-96b092385986 h1:5yZgruDoqH2Z09ZTHJckF7qHCGW2JrgutwyWpsIdpWI=
+github.com/dweymouth/go-jellyfin v0.0.0-20231113004204-96b092385986/go.mod h1:BMwS4vdjEYf1gmjPGSKCzWP/I6YlI6fkefJ9nsjBjaU=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee h1:ZGyJ6wp7CAfT31BugypcF/TPKEy2RrGR9JFq1JOjOpY=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee/go.mod h1:Ov0ieN90M7i+0k3OxhA/g1dozGs+UcPHDsMKqPgRDk0=
 github.com/dweymouth/go-subsonic v0.0.0-20231105161622-54b5aec28363 h1:MIH7MAWWPPVRKEKxz+RJubn+ycyQPimHn1Zvoxs1KRI=
