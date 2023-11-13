@@ -279,7 +279,8 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 }
 
 func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
-	dlg := dialogs.NewEditPlaylistDialog(playlist)
+	canMakePublic := m.App.ServerManager.Server.CanMakePublicPlaylist()
+	dlg := dialogs.NewEditPlaylistDialog(playlist, canMakePublic)
 	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
 	m.ClosePopUpOnEscape(pop)
 	dlg.OnCanceled = func() {

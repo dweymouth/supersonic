@@ -43,6 +43,10 @@ func (s *subsonicMediaProvider) DeletePlaylist(id string) error {
 	return s.client.DeletePlaylist(id)
 }
 
+func (s *subsonicMediaProvider) CanMakePublicPlaylist() bool {
+	return true
+}
+
 func (s *subsonicMediaProvider) EditPlaylist(id, name, description string, public bool) error {
 	return s.client.UpdatePlaylist(id, map[string]string{
 		"name":    name,

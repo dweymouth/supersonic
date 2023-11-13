@@ -23,7 +23,7 @@ type EditPlaylistDialog struct {
 	container *fyne.Container
 }
 
-func NewEditPlaylistDialog(playlist *mediaprovider.Playlist) *EditPlaylistDialog {
+func NewEditPlaylistDialog(playlist *mediaprovider.Playlist, showPublicCheck bool) *EditPlaylistDialog {
 	e := &EditPlaylistDialog{
 		IsPublic:    playlist.Public,
 		Name:        playlist.Name,
@@ -32,6 +32,7 @@ func NewEditPlaylistDialog(playlist *mediaprovider.Playlist) *EditPlaylistDialog
 	e.ExtendBaseWidget(e)
 
 	isPublicCheck := widget.NewCheckWithData("Public", binding.BindBool(&e.IsPublic))
+	isPublicCheck.Hidden = !showPublicCheck
 	nameEntry := widget.NewEntryWithData(binding.BindString(&e.Name))
 	descriptionEntry := widget.NewEntryWithData(binding.BindString(&e.Description))
 	deleteBtn := widget.NewButton("Delete Playlist", func() {

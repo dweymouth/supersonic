@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/dweymouth/go-jellyfin"
-	jellyfinCli "github.com/dweymouth/go-jellyfin"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
@@ -18,7 +17,7 @@ import (
 const cacheValidDurationSeconds = 60
 
 type JellyfinServer struct {
-	jellyfinCli.Client
+	jellyfin.Client
 }
 
 func (j *JellyfinServer) MediaProvider() mediaprovider.MediaProvider {
@@ -54,8 +53,12 @@ func (j *jellyfinMediaProvider) DeletePlaylist(id string) error {
 	return j.client.DeletePlaylist(id)
 }
 
-func (s *jellyfinMediaProvider) EditPlaylist(id, name, description string, public bool) error {
-	return errors.New("unimplemented")
+func (j *jellyfinMediaProvider) CanMakePublicPlaylist() bool {
+	return false
+}
+
+func (j *jellyfinMediaProvider) EditPlaylist(id, name, description string, public bool) error {
+	return j.client.UpdatePlaylistMetadata(id, name, description)
 }
 
 func (j *jellyfinMediaProvider) AddPlaylistTracks(id string, trackIDsToAdd []string) error {
@@ -271,7 +274,7 @@ func (j *jellyfinMediaProvider) GetPlaylists() ([]*mediaprovider.Playlist, error
 	if err != nil {
 		return nil, err
 	}
-	return sharedutil.MapSlice(pl, toPlaylist), nil
+	return sharedutil.MapSlice(pl, j.toPlaylist), nil
 }
 
 func (j *jellyfinMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.PlaylistWithTracks, error) {
@@ -287,7 +290,7 @@ func (j *jellyfinMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.P
 	playlist := &mediaprovider.PlaylistWithTracks{
 		Tracks: sharedutil.MapSlice(tr, toTrack),
 	}
-	fillPlaylist(pl, &playlist.Playlist)
+	j.fillPlaylist(pl, &playlist.Playlist)
 	return playlist, nil
 }
 
@@ -345,8 +348,8 @@ func (j *jellyfinMediaProvider) Scrobble(trackID string, submission bool) error 
 	return errors.New("unimplemented")
 }
 
-func (s *jellyfinMediaProvider) RescanLibrary() error {
-	return errors.New("unimplemented")
+func (j *jellyfinMediaProvider) RescanLibrary() error {
+	return j.client.RefreshLibrary()
 }
 
 func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
@@ -359,9 +362,14 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		artistNames = append(artistNames, a.Name)
 	}
 
+	coverArtID := ch.AlbumID
+	if ch.ImageTags.Primary != "" {
+		coverArtID = ch.Id
+	}
+
 	t := &mediaprovider.Track{
-		ID: ch.Id,
-		//CoverArtID:  ch.CoverArt,
+		ID:          ch.Id,
+		CoverArtID:  coverArtID,
 		ParentID:    ch.AlbumID,
 		Name:        ch.Name,
 		Duration:    int(ch.RunTimeTicks / 10_000_000),
@@ -424,19 +432,20 @@ func fillAlbum(a *jellyfin.Album, album *mediaprovider.Album) {
 	album.Favorite = a.UserData.IsFavorite
 }
 
-func toPlaylist(p *jellyfin.Playlist) *mediaprovider.Playlist {
+func (j *jellyfinMediaProvider) toPlaylist(p *jellyfin.Playlist) *mediaprovider.Playlist {
 	pl := &mediaprovider.Playlist{}
-	fillPlaylist(p, pl)
+	j.fillPlaylist(p, pl)
 	return pl
 }
 
-func fillPlaylist(p *jellyfin.Playlist, pl *mediaprovider.Playlist) {
+func (j *jellyfinMediaProvider) fillPlaylist(p *jellyfin.Playlist, pl *mediaprovider.Playlist) {
 	pl.Name = p.Name
 	pl.ID = p.ID
 	pl.CoverArtID = p.ID
 	pl.Description = p.Overview
-	//Owner = pl.Owner
-	//Public = pl.Public
 	pl.TrackCount = p.SongCount
 	pl.Duration = int(p.RunTimeTicks / 1_000_000)
+	// Jellyfin does not have public playlists
+	pl.Owner = j.client.LoggedInUser()
+	pl.Public = false
 }

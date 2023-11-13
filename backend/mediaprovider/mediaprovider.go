@@ -118,6 +118,8 @@ type MediaProvider interface {
 
 	CreatePlaylist(name string, trackIDs []string) error
 
+	CanMakePublicPlaylist() bool
+
 	EditPlaylist(id, name, description string, public bool) error
 
 	AddPlaylistTracks(id string, trackIDsToAdd []string) error
