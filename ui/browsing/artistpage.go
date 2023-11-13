@@ -337,6 +337,14 @@ func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums) {
 	a.artistID = artist.ID
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
 	a.titleDisp.Refresh()
+	if artist.CoverArtID == "" {
+		return
+	}
+	if im, err := a.artistPage.im.GetCoverThumbnail(artist.CoverArtID); err != nil {
+		log.Printf("failed to load artist image: %v", err)
+	} else {
+		a.artistImage.SetImage(im, true /*tappable*/)
+	}
 }
 
 func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
