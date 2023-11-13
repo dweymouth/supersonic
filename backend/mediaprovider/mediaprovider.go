@@ -66,6 +66,11 @@ type Server interface {
 	MediaProvider() MediaProvider
 }
 
+type IDAndIndex struct {
+	ID    string
+	Index int
+}
+
 type MediaProvider interface {
 	SetPrefetchCoverCallback(cb func(coverArtID string))
 
@@ -115,7 +120,11 @@ type MediaProvider interface {
 
 	EditPlaylist(id, name, description string, public bool) error
 
-	EditPlaylistTracks(id string, trackIDsToAdd []string, trackIndexesToRemove []int) error
+	AddPlaylistTracks(id string, trackIDsToAdd []string) error
+
+	// Some MediaProviders use ids and others indexes for removing tracks,
+	// so need to supply both.
+	RemovePlaylistTracks(id string, trackRemoveInfo []IDAndIndex) error
 
 	ReplacePlaylistTracks(id string, trackIDs []string) error
 

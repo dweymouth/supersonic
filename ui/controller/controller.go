@@ -269,8 +269,8 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 			if playlistChoice < 0 {
 				go m.App.ServerManager.Server.CreatePlaylist(newPlaylistName, trackIDs)
 			} else {
-				go m.App.ServerManager.Server.EditPlaylistTracks(
-					pls[playlistChoice].ID, trackIDs, nil /*tracksToRemove*/)
+				go m.App.ServerManager.Server.AddPlaylistTracks(
+					pls[playlistChoice].ID, trackIDs)
 			}
 		}
 		m.haveModal = true

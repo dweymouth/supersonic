@@ -51,8 +51,13 @@ func (s *subsonicMediaProvider) EditPlaylist(id, name, description string, publi
 	})
 }
 
-func (s *subsonicMediaProvider) EditPlaylistTracks(id string, trackIDsToAdd []string, trackIndexesToRemove []int) error {
-	return s.client.UpdatePlaylistTracks(id, trackIDsToAdd, trackIndexesToRemove)
+func (s *subsonicMediaProvider) AddPlaylistTracks(id string, trackIDsToAdd []string) error {
+	return s.client.UpdatePlaylistTracks(id, trackIDsToAdd, nil)
+}
+
+func (s *subsonicMediaProvider) RemovePlaylistTracks(id string, removeInfo []mediaprovider.IDAndIndex) error {
+	idx := sharedutil.MapSlice(removeInfo, func(x mediaprovider.IDAndIndex) int { return x.Index })
+	return s.client.UpdatePlaylistTracks(id, nil, idx)
 }
 
 func (s *subsonicMediaProvider) GetTrack(trackID string) (*mediaprovider.Track, error) {

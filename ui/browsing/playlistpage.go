@@ -212,14 +212,19 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
-	sel := sharedutil.ToSet(a.tracklist.SelectedTrackIDs())
+	ids := a.tracklist.SelectedTrackIDs()
+	sel := sharedutil.ToSet(ids)
 	idxs := make([]int, 0, len(sel))
 	for i, tr := range a.tracks {
 		if _, ok := sel[tr.ID]; ok {
 			idxs = append(idxs, i)
 		}
 	}
-	a.sm.Server.EditPlaylistTracks(a.playlistID, nil, idxs)
+	idIndex := make([]mediaprovider.IDAndIndex, 0, len(ids))
+	for i := 0; i < len(ids); i++ {
+		idIndex = append(idIndex, mediaprovider.IDAndIndex{ID: ids[i], Index: idxs[i]})
+	}
+	a.sm.Server.RemovePlaylistTracks(a.playlistID, idIndex)
 	a.tracklist.UnselectAll()
 	a.Reload()
 }
@@ -285,6 +290,9 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 						sharedutil.TracksToIDs(a.page.tracks))
 				}),
 				fyne.NewMenuItem("Download...", func() {
+					if a.playlistInfo == nil {
+						return
+					}
 					a.page.contr.ShowDownloadDialog(a.page.tracks, a.playlistInfo.Name)
 				}))
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))

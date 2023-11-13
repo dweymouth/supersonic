@@ -46,8 +46,8 @@ func (j *jellyfinMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID stri
 	j.prefetchCoverCB = cb
 }
 
-func (jellyfinMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
-	return errors.New("unimplemented")
+func (j *jellyfinMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
+	return j.client.CreatePlaylist(name, trackIDs)
 }
 
 func (j *jellyfinMediaProvider) DeletePlaylist(id string) error {
@@ -58,12 +58,25 @@ func (s *jellyfinMediaProvider) EditPlaylist(id, name, description string, publi
 	return errors.New("unimplemented")
 }
 
-func (s *jellyfinMediaProvider) EditPlaylistTracks(id string, trackIDsToAdd []string, trackIndexesToRemove []int) error {
-	return errors.New("unimplemented")
+func (j *jellyfinMediaProvider) AddPlaylistTracks(id string, trackIDsToAdd []string) error {
+	return j.client.AddSongsToPlaylist(id, trackIDsToAdd)
 }
 
-func (s *jellyfinMediaProvider) ReplacePlaylistTracks(playlistID string, trackIDs []string) error {
-	return errors.New("unimplemented")
+func (j *jellyfinMediaProvider) RemovePlaylistTracks(playlistID string, removeInfo []mediaprovider.IDAndIndex) error {
+	ids := sharedutil.MapSlice(removeInfo, func(x mediaprovider.IDAndIndex) string { return x.ID })
+	return j.client.RemoveSongsFromPlaylist(playlistID, ids)
+}
+
+func (j *jellyfinMediaProvider) ReplacePlaylistTracks(playlistID string, trackIDs []string) error {
+	trs, err := j.client.GetPlaylistSongs(playlistID)
+	if err != nil {
+		return err
+	}
+	idsToDelete := sharedutil.MapSlice(trs, func(t *jellyfin.Song) string { return t.Id })
+	if err = j.client.RemoveSongsFromPlaylist(playlistID, idsToDelete); err != nil {
+		return err
+	}
+	return j.client.AddSongsToPlaylist(playlistID, trackIDs)
 }
 
 func (j *jellyfinMediaProvider) GetAlbum(albumID string) (*mediaprovider.AlbumWithTracks, error) {
@@ -420,9 +433,9 @@ func toPlaylist(p *jellyfin.Playlist) *mediaprovider.Playlist {
 func fillPlaylist(p *jellyfin.Playlist, pl *mediaprovider.Playlist) {
 	pl.Name = p.Name
 	pl.ID = p.ID
-	//CoverArtID = pl.CoverArt
+	pl.CoverArtID = p.ID
 	pl.Description = p.Overview
-	//.Owner = pl.Owner
+	//Owner = pl.Owner
 	//Public = pl.Public
 	pl.TrackCount = p.SongCount
 	pl.Duration = int(p.RunTimeTicks / 1_000_000)
