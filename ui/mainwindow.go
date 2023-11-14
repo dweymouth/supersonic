@@ -94,6 +94,8 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	app.ServerManager.OnServerConnected(func() {
 		m.BrowsingPane.EnableNavigationButtons()
 		m.Router.NavigateTo(m.StartupPage())
+		_, canRate := m.App.ServerManager.Server.(mediaprovider.SupportsRating)
+		m.BottomPanel.NowPlaying.DisableRating = !canRate
 		// check if launching new version, else if found available update on startup
 		if l := app.Config.Application.LastLaunchedVersion; app.VersionTag() != l {
 			if !app.IsFirstLaunch() {

@@ -99,12 +99,13 @@ type Tracklist struct {
 	tracks          []*trackModel
 	tracksOrigOrder []*trackModel
 
-	nowPlayingID string
-	colLayout    *layouts.ColumnsLayout
-	hdr          *ListHeader
-	list         *DisabledList
-	ctxMenu      *fyne.Menu
-	container    *fyne.Container
+	nowPlayingID  string
+	colLayout     *layouts.ColumnsLayout
+	hdr           *ListHeader
+	list          *DisabledList
+	ctxMenu       *fyne.Menu
+	ratingSubmenu *fyne.MenuItem
+	container     *fyne.Container
 }
 
 type trackModel struct {
@@ -565,15 +566,16 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			fyne.NewMenuItem("Unset favorite", func() {
 				t.onSetFavorites(t.selectedTracks(), false, true)
 			}))
-		ratingMenu := util.NewRatingSubmenu(func(rating int) {
+		t.ratingSubmenu = util.NewRatingSubmenu(func(rating int) {
 			t.onSetRatings(t.selectedTracks(), rating, true)
 		})
-		t.ctxMenu.Items = append(t.ctxMenu.Items, ratingMenu)
+		t.ctxMenu.Items = append(t.ctxMenu.Items, t.ratingSubmenu)
 		if len(t.Options.AuxiliaryMenuItems) > 0 {
 			t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
 			t.ctxMenu.Items = append(t.ctxMenu.Items, t.Options.AuxiliaryMenuItems...)
 		}
 	}
+	t.ratingSubmenu.Disabled = t.Options.DisableRating
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
 }
 
