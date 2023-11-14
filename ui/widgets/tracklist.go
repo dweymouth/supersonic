@@ -142,13 +142,24 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 			return tr
 		},
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
+			t.tracksMutex.RLock()
+			// we could have removed tracks from the list in between
+			// Fyne calling the length callback and this update callback
+			// so the itemID may be out of bounds. if so, do nothing.
+			if itemID >= len(t.tracks) {
+				t.tracksMutex.RUnlock()
+				return
+			}
+			model := t.tracks[itemID]
+			t.tracksMutex.RUnlock()
+
 			tr := item.(*TrackRow)
 			tr.trackIdx = itemID
 			i := -1 // signal that we want to display the actual track num.
 			if t.Options.AutoNumber {
 				i = itemID + 1
 			}
-			tr.Update(t.trackModelAt(itemID), i)
+			tr.Update(model, i)
 			if t.OnTrackShown != nil {
 				t.OnTrackShown(itemID)
 			}
@@ -183,17 +194,13 @@ func (t *Tracklist) buildHeader() {
 
 // Gets the track at the given index. Thread-safe.
 func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
-	return t.trackModelAt(idx).track
-}
-
-func (t *Tracklist) trackModelAt(idx int) *trackModel {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
 	if idx >= len(t.tracks) {
-		log.Println("error: Tracklist.trackModelAt: index out of range")
+		log.Println("error: Tracklist.TrackAt: index out of range")
 		return nil
 	}
-	return t.tracks[idx]
+	return t.tracks[idx].track
 }
 
 func (t *Tracklist) SetVisibleColumns(cols []string) {
