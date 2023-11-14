@@ -73,15 +73,15 @@ func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, contr *contro
 	bp.NowPlaying.OnAddToPlaylist = func() {
 		contr.DoAddTracksToPlaylistWorkflow([]string{bp.playbackManager.NowPlaying().ID})
 	}
-	bp.NowPlaying.OnAlbumNameTapped(func() {
+	bp.NowPlaying.OnAlbumNameTapped = func() {
 		contr.NavigateTo(controller.AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
-	})
-	bp.NowPlaying.OnArtistNameTapped(func(artistID string) {
+	}
+	bp.NowPlaying.OnArtistNameTapped = func(artistID string) {
 		contr.NavigateTo(controller.ArtistRoute(artistID))
-	})
-	bp.NowPlaying.OnTrackNameTapped(func() {
+	}
+	bp.NowPlaying.OnTrackNameTapped = func() {
 		contr.NavigateTo(controller.NowPlayingRoute(bp.playbackManager.NowPlaying().ID))
-	})
+	}
 	bp.Controls = widgets.NewPlayerControls()
 	bp.Controls.OnPlayPause(func() {
 		p.PlayPause()

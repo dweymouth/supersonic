@@ -23,10 +23,13 @@ type NowPlayingCard struct {
 	cover      *TappableImage
 	menu       *widget.PopUpMenu
 
-	OnShowCoverImage func()
-	OnSetRating      func(rating int)
-	OnSetFavorite    func(favorite bool)
-	OnAddToPlaylist  func()
+	OnTrackNameTapped  func()
+	OnArtistNameTapped func(artistID string)
+	OnAlbumNameTapped  func()
+	OnShowCoverImage   func()
+	OnSetRating        func(rating int)
+	OnSetFavorite      func(favorite bool)
+	OnAddToPlaylist    func()
 }
 
 func NewNowPlayingCard() *NowPlayingCard {
@@ -46,6 +49,9 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.cover.SetMinSize(fyne.NewSize(85, 85))
 	n.cover.FillMode = canvas.ImageFillContain
 	n.cover.Hidden = true
+	n.albumName.OnTapped = n.onAlbumNameTapped
+	n.artistName.OnTapped = n.onArtistNameTapped
+	n.trackName.OnTapped = n.onTrackNameTapped
 
 	return n
 }
@@ -53,6 +59,24 @@ func NewNowPlayingCard() *NowPlayingCard {
 func (n *NowPlayingCard) MinSize() fyne.Size {
 	// prop up height for when cover image is hidden
 	return fyne.NewSize(n.BaseWidget.MinSize().Width, 85)
+}
+
+func (n *NowPlayingCard) onAlbumNameTapped() {
+	if n.OnAlbumNameTapped != nil {
+		n.OnAlbumNameTapped()
+	}
+}
+
+func (n *NowPlayingCard) onArtistNameTapped(artistID string) {
+	if n.OnArtistNameTapped != nil {
+		n.OnArtistNameTapped(artistID)
+	}
+}
+
+func (n *NowPlayingCard) onTrackNameTapped() {
+	if n.OnTrackNameTapped != nil {
+		n.OnTrackNameTapped()
+	}
 }
 
 func (n *NowPlayingCard) onShowCoverImage(*fyne.PointEvent) {
@@ -97,18 +121,6 @@ func (n *NowPlayingCard) Update(track string, artists, artistIDs []string, album
 	n.cover.Image.Image = cover
 	n.cover.Hidden = cover == nil
 	n.Refresh()
-}
-
-func (n *NowPlayingCard) OnArtistNameTapped(f func(string)) {
-	n.artistName.OnTapped = f
-}
-
-func (n *NowPlayingCard) OnAlbumNameTapped(f func()) {
-	n.albumName.OnTapped = f
-}
-
-func (n *NowPlayingCard) OnTrackNameTapped(f func()) {
-	n.trackName.OnTapped = f
 }
 
 func (n *NowPlayingCard) showMenu(e *fyne.PointEvent) {
