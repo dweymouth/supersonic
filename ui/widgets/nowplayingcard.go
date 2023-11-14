@@ -27,8 +27,6 @@ type NowPlayingCard struct {
 	OnSetRating      func(rating int)
 	OnSetFavorite    func(favorite bool)
 	OnAddToPlaylist  func()
-
-	c fyne.CanvasObject
 }
 
 func NewNowPlayingCard() *NowPlayingCard {
@@ -49,11 +47,6 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.cover.FillMode = canvas.ImageFillContain
 	n.cover.Hidden = true
 
-	n.c = container.New(&layouts.MaxPadLayout{PadLeft: -4},
-		container.NewBorder(nil, nil, n.cover, nil,
-			container.New(&layouts.MaxPadLayout{PadTop: -2},
-				container.New(&layouts.VboxCustomPadding{ExtraPad: -13}, n.trackName, n.artistName, n.albumName))),
-	)
 	return n
 }
 
@@ -87,7 +80,12 @@ func (n *NowPlayingCard) onAddToPlaylist() {
 }
 
 func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(n.c)
+	c := container.New(&layouts.MaxPadLayout{PadLeft: -4},
+		container.NewBorder(nil, nil, n.cover, nil,
+			container.New(&layouts.MaxPadLayout{PadTop: -2},
+				container.New(&layouts.VboxCustomPadding{ExtraPad: -13}, n.trackName, n.artistName, n.albumName))),
+	)
+	return widget.NewSimpleRenderer(c)
 }
 
 func (n *NowPlayingCard) Update(track string, artists, artistIDs []string, album string, cover image.Image) {
@@ -98,7 +96,7 @@ func (n *NowPlayingCard) Update(track string, artists, artistIDs []string, album
 	n.albumName.Hidden = album == ""
 	n.cover.Image.Image = cover
 	n.cover.Hidden = cover == nil
-	n.c.Refresh()
+	n.Refresh()
 }
 
 func (n *NowPlayingCard) OnArtistNameTapped(f func(string)) {
