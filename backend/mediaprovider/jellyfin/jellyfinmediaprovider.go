@@ -14,7 +14,10 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-const cacheValidDurationSeconds = 60
+const (
+	cacheValidDurationSeconds = 60
+	runTimeTicksPerSecond     = 10_000_000
+)
 
 type JellyfinServer struct {
 	jellyfin.Client
@@ -65,18 +68,20 @@ func (j *jellyfinMediaProvider) AddPlaylistTracks(id string, trackIDsToAdd []str
 	return j.client.AddSongsToPlaylist(id, trackIDsToAdd)
 }
 
-func (j *jellyfinMediaProvider) RemovePlaylistTracks(playlistID string, removeInfo []mediaprovider.IDAndIndex) error {
-	ids := sharedutil.MapSlice(removeInfo, func(x mediaprovider.IDAndIndex) string { return x.ID })
-	return j.client.RemoveSongsFromPlaylist(playlistID, ids)
+func (j *jellyfinMediaProvider) RemovePlaylistTracks(playlistID string, removeIdxs []int) error {
+	return j.client.RemoveSongsFromPlaylist(playlistID, removeIdxs)
 }
 
 func (j *jellyfinMediaProvider) ReplacePlaylistTracks(playlistID string, trackIDs []string) error {
-	trs, err := j.client.GetPlaylistSongs(playlistID)
+	pl, err := j.client.GetPlaylist(playlistID)
 	if err != nil {
 		return err
 	}
-	idsToDelete := sharedutil.MapSlice(trs, func(t *jellyfin.Song) string { return t.Id })
-	if err = j.client.RemoveSongsFromPlaylist(playlistID, idsToDelete); err != nil {
+	allIndexes := make([]int, pl.SongCount)
+	for i := range allIndexes {
+		allIndexes[i] = i
+	}
+	if err = j.client.RemoveSongsFromPlaylist(playlistID, allIndexes); err != nil {
 		return err
 	}
 	return j.client.AddSongsToPlaylist(playlistID, trackIDs)
@@ -372,7 +377,7 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		CoverArtID:  coverArtID,
 		ParentID:    ch.AlbumID,
 		Name:        ch.Name,
-		Duration:    int(ch.RunTimeTicks / 10_000_000),
+		Duration:    int(ch.RunTimeTicks / runTimeTicksPerSecond),
 		TrackNumber: ch.IndexNumber,
 		DiscNumber:  ch.DiscNumber,
 		//Genre:       ch.Genres,
@@ -423,7 +428,7 @@ func fillAlbum(a *jellyfin.Album, album *mediaprovider.Album) {
 	album.ID = a.ID
 	album.CoverArtID = a.ID
 	album.Name = a.Name
-	album.Duration = int(a.RunTimeTicks / 10_000_000)
+	album.Duration = int(a.RunTimeTicks / runTimeTicksPerSecond)
 	album.ArtistIDs = artistIDs
 	album.ArtistNames = artistNames
 	album.Year = a.Year
@@ -444,7 +449,7 @@ func (j *jellyfinMediaProvider) fillPlaylist(p *jellyfin.Playlist, pl *mediaprov
 	pl.CoverArtID = p.ID
 	pl.Description = p.Overview
 	pl.TrackCount = p.SongCount
-	pl.Duration = int(p.RunTimeTicks / 1_000_000)
+	pl.Duration = int(p.RunTimeTicks / runTimeTicksPerSecond)
 	// Jellyfin does not have public playlists
 	pl.Owner = j.client.LoggedInUser()
 	pl.Public = false

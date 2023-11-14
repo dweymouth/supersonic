@@ -220,11 +220,7 @@ func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
 			idxs = append(idxs, i)
 		}
 	}
-	idIndex := make([]mediaprovider.IDAndIndex, 0, len(ids))
-	for i := 0; i < len(ids); i++ {
-		idIndex = append(idIndex, mediaprovider.IDAndIndex{ID: ids[i], Index: idxs[i]})
-	}
-	a.sm.Server.RemovePlaylistTracks(a.playlistID, idIndex)
+	a.sm.Server.RemovePlaylistTracks(a.playlistID, idxs)
 	a.tracklist.UnselectAll()
 	a.Reload()
 }
