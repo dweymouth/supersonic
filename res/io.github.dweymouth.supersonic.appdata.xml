@@ -5,15 +5,15 @@
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0+</project_license>
   <name>Supersonic</name>
-  <summary> A lightweight cross-platform desktop client for Subsonic music servers</summary>
+  <summary> A lightweight cross-platform desktop client for Subsonic and Jellyfin music servers</summary>
   <content_rating type="oars-1.0">
     <content_attribute id="social-audio">intense</content_attribute>
   </content_rating>
 
   <description>
     <p>
-      A lightweight cross-platform desktop client for Subsonic music
-      servers (Navidrome, Gonic, Airsonic, etc).
+      A lightweight cross-platform desktop client for Subsonic and Jellyfin music
+      servers.
     </p>
 
     <p>
@@ -61,29 +61,30 @@
   </screenshots>
 
  <releases>
-  <release date="2023-11-07" version="0.7.0">
+  <release date="2023-11-15" version="0.8.0">
    <description>
      <p>
-       Version 0.7.0 of Supersonic
+       Version 0.8.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>"Quick Search" popup dialog to search entire library from any page</li>
-       <li>UI Refresh and misc. internal improvements from moving to Fyne 2.4</li>
-       <li>New custom theme colors - Hyperlink and PageHeader</li>
-       <li>Added support for displaying WEBP images</li>
-       <li>Added playback setting to force disable server transcoding</li>
+       <li>Add support for connecting to Jellyfin servers</li>
+       <li>Add "Auto" ReplayGain option to auto-choose between Track and Album mode</li>
+       <li>Add experimental setting for changing UI scaling</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Crash when removing from the currently playing track to the end of the play queue</li>
-       <li>UI hang if playback slow to begin after clicking on green play button on cover images</li>
+       <li>Crash when repeatedly searching the All Tracks page quickly</li>
+       <li>What's New dialog sometimes continuing to re-show on subsequent launches</li>
+       <li>Config settings sometimes not being saved due to abnormal exits</li>
+       <li>Don't crash with zero-track albums or tracks with no artists</li>
+       <li>Slightly improved the time it takes to check server connectivity</li>
      </ul>
 
    </description>

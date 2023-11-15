@@ -1,14 +1,9 @@
 package res
 
-import (
-	"fmt"
-	"runtime"
-)
-
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.7.0"
+	AppVersion       = "0.8.0"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -16,24 +11,18 @@ const (
 	KofiURL          = "https://ko-fi.com/dweymouth"
 )
 
-func shortcutKey() string {
-	if runtime.GOOS == "darwin" {
-		return "Cmd"
-	}
-	return "Ctrl"
-}
-
 var (
-	WhatsAdded = fmt.Sprintf(`
+	WhatsAdded = `
 ## Added
-* New "Quick search" feature to search entire library from anywhere (%s+G shortcut)
-* Support for loading WEBP images
-* UI Refresh from migrating to Fyne 2.4
-* New [custom theme](https://github.com/dweymouth/supersonic/wiki/Custom-Themes) color keys: Hyperlink and PageHeader (theme file syntax "0.2")
-* Added playback setting to force-disable server transcoding`, shortcutKey())
+* Add support for connecting to Jellyfin servers
+* Add "Auto" ReplayGain option to auto-choose between Track and Album mode
+* Add experimental setting for changing UI scaling`
 
 	WhatsFixed = `
 ## Fixed
-* UI hang when playback slow to begin after clicking on grid view play buttons
-* Crash when removing from the currently playing track to end of play queue`
+* Crash when repeatedly searching the All Tracks page quickly
+* What's New dialog sometimes continuing to re-show on subsequent launches
+* Config settings sometimes not being saved due to abnormal exits
+* Don't crash with zero-track albums or tracks with no artists
+* Slightly improved the time it takes to check server connectivity`
 )

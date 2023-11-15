@@ -1,5 +1,19 @@
 # Change Log
 
+## [0.8.0] - 2023-11-15
+
+### Added
+- [#98](https://github.com/dweymouth/supersonic/issues/98) Add support for connecting to Jellyfin servers
+- [#157](https://github.com/dweymouth/supersonic/issues/157) Add "Auto" ReplayGain option to auto-choose between Track and Album mode
+- [#179](https://github.com/dweymouth/supersonic/issues/179) Add experimental setting for changing UI scaling
+
+### Fixed
+- [#282](https://github.com/dweymouth/supersonic/issues/282) Crash when repeatedly searching the All Tracks page quickly 
+- [#275](https://github.com/dweymouth/supersonic/issues/275) What's New dialog sometimes continuing to re-show on subsequent launches
+- [#277](https://github.com/dweymouth/supersonic/issues/277) Config settings sometimes not being saved due to abnormal exits
+- Don't crash with zero-track albums or tracks with no artists
+- Slightly improved the time it takes to check server connectivity
+
 ## [0.7.0] - 2023-11-07
 
 ### Added
