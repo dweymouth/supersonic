@@ -35,11 +35,12 @@ func (a *albumsPageAdapter) PlaceholderResource() fyne.Resource { return myTheme
 func (a *albumsPageAdapter) Route() controller.Route { return controller.AlbumsRoute() }
 
 func (a *albumsPageAdapter) SortOrders() ([]string, string) {
-	orders := a.contr.App.ServerManager.Server.AlbumSortOrders()
-	if !sharedutil.SliceContains(a.mp.AlbumSortOrders(), a.cfg.SortOrder) {
-		a.cfg.SortOrder = string(a.mp.AlbumSortOrders()[0])
+	orders := a.mp.AlbumSortOrders()
+	sortOrder := a.cfg.SortOrder
+	if !sharedutil.SliceContains(orders, sortOrder) {
+		sortOrder = string(orders[0])
 	}
-	return orders, a.cfg.SortOrder
+	return orders, sortOrder
 }
 
 func (a *albumsPageAdapter) SaveSortOrder(order string) {

@@ -10,21 +10,17 @@ import (
 )
 
 const (
-	AlbumSortRecentlyAdded    string = "Recently Added"
-	AlbumSortRecentlyPlayed   string = "Recently Played"
-	AlbumSortFrequentlyPlayed string = "Frequently Played"
-	AlbumSortRandom           string = "Random"
-	AlbumSortTitleAZ          string = "Title (A-Z)"
-	AlbumSortArtistAZ         string = "Artist (A-Z)"
-	AlbumSortYearAscending    string = "Year (ascending)"
-	AlbumSortYearDescending   string = "Year (descending)"
+	AlbumSortRecentlyAdded  string = "Recently Added"
+	AlbumSortRandom         string = "Random"
+	AlbumSortTitleAZ        string = "Title (A-Z)"
+	AlbumSortArtistAZ       string = "Artist (A-Z)"
+	AlbumSortYearAscending  string = "Year (ascending)"
+	AlbumSortYearDescending string = "Year (descending)"
 )
 
 func (j *jellyfinMediaProvider) AlbumSortOrders() []string {
 	return []string{
 		AlbumSortRecentlyAdded,
-		AlbumSortRecentlyPlayed,
-		AlbumSortFrequentlyPlayed,
 		AlbumSortRandom,
 		AlbumSortTitleAZ,
 		AlbumSortArtistAZ,
@@ -39,9 +35,6 @@ func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 	case AlbumSortRecentlyAdded:
 		jfSort.Field = jellyfin.SortByDateCreated
 		jfSort.Mode = jellyfin.SortDesc
-	case AlbumSortFrequentlyPlayed:
-		jfSort.Field = jellyfin.SortByPlayCount
-		jfSort.Mode = jellyfin.SortDesc
 	case AlbumSortRandom:
 		jfSort.Field = jellyfin.SortByRandom
 	case AlbumSortArtistAZ:
@@ -50,9 +43,6 @@ func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 	case AlbumSortTitleAZ:
 		jfSort.Field = jellyfin.SortByName
 		jfSort.Mode = jellyfin.SortAsc
-	case AlbumSortRecentlyPlayed:
-		jfSort.Field = jellyfin.SortByDatePlayed
-		jfSort.Mode = jellyfin.SortDesc
 	case AlbumSortYearAscending:
 		jfSort.Field = jellyfin.SortByYear
 		jfSort.Mode = jellyfin.SortAsc
