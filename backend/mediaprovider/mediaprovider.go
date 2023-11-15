@@ -130,7 +130,14 @@ type MediaProvider interface {
 
 	DeletePlaylist(id string) error
 
-	Scrobble(trackID string, submission bool) error
+	// True if the `submission` parameter to TrackEndedPlayback will be respected
+	// If false, the begin playback scrobble registers a play count immediately
+	// when TrackBeganPlayback is invoked.
+	ClientDecidesScrobble() bool
+
+	TrackBeganPlayback(trackID string) error
+
+	TrackEndedPlayback(trackID string, positionSecs int, submission bool) error
 
 	DownloadTrack(trackID string) (io.Reader, error)
 

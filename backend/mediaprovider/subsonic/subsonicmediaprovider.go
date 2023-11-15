@@ -256,10 +256,21 @@ func (s *subsonicMediaProvider) ReplacePlaylistTracks(playlistID string, trackID
 	return s.client.CreatePlaylistWithTracks(trackIDs, map[string]string{"playlistId": playlistID})
 }
 
-func (s *subsonicMediaProvider) Scrobble(trackID string, submission bool) error {
+func (s *subsonicMediaProvider) ClientDecidesScrobble() bool { return true }
+
+func (s *subsonicMediaProvider) TrackBeganPlayback(trackID string) error {
 	return s.client.Scrobble(trackID, map[string]string{
 		"time":       strconv.FormatInt(time.Now().UnixMilli(), 10),
-		"submission": strconv.FormatBool(submission)})
+		"submission": "false"})
+}
+
+func (s *subsonicMediaProvider) TrackEndedPlayback(trackID string, _ int, submission bool) error {
+	if !submission {
+		return nil
+	}
+	return s.client.Scrobble(trackID, map[string]string{
+		"time":       strconv.FormatInt(time.Now().UnixMilli(), 10),
+		"submission": "true"})
 }
 
 func (s *subsonicMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteParameters, favorite bool) error {

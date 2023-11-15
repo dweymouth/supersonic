@@ -461,7 +461,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	}
 
 	bands := c.App.Player.Equalizer().BandFrequencies()
-	dlg := dialogs.NewSettingsDialog(c.App.Config, devs, themeFiles, bands, c.MainWindow)
+	dlg := dialogs.NewSettingsDialog(c.App.Config, devs, themeFiles, bands, c.App.ServerManager.Server.ClientDecidesScrobble(), c.MainWindow)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
 	}

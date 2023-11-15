@@ -1,7 +1,6 @@
 package jellyfin
 
 import (
-	"errors"
 	"image"
 	"io"
 	"math"
@@ -360,8 +359,14 @@ func (j *jellyfinMediaProvider) DownloadTrack(trackID string) (io.Reader, error)
 	return resp.Body, nil
 }
 
-func (j *jellyfinMediaProvider) Scrobble(trackID string, submission bool) error {
-	return errors.New("unimplemented")
+func (j *jellyfinMediaProvider) ClientDecidesScrobble() bool { return false }
+
+func (j *jellyfinMediaProvider) TrackBeganPlayback(trackID string) error {
+	return j.client.UpdatePlayStatus(trackID, jellyfin.Start, 0)
+}
+
+func (j *jellyfinMediaProvider) TrackEndedPlayback(trackID string, position int, submission bool) error {
+	return j.client.UpdatePlayStatus(trackID, jellyfin.Stop, int64(position)*runTimeTicksPerSecond)
 }
 
 func (j *jellyfinMediaProvider) RescanLibrary() error {
