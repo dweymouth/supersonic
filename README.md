@@ -10,7 +10,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/dweymouth/supersonic)](https://goreportcard.com/report/github.com/dweymouth/supersonic)
 <a href="https://discord.gg/xuhcMuFj"><img src="https://dcbadge.vercel.app/api/server/5KSJs4Cfw" width="20%"/></a>
 
-A lightweight cross-platform desktop client for Subsonic music servers (Navidrome, Gonic, Airsonic, etc).
+A lightweight cross-platform desktop client for Subsonic and Jellyfin music servers.
 
 [Jump to installation instructions](https://github.com/dweymouth/supersonic#installation)
 
