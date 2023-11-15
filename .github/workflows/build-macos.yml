@@ -5,6 +5,7 @@ name: Build Mac OS
 
 on:
   push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -25,11 +26,8 @@ jobs:
       with:
         go-version: '1.20'
 
-    - name: Setup Homebrew
-      uses: Homebrew/actions/setup-homebrew@master
-
     - name: Install Dependencies
-      run: brew install mpv && brew install dylibbundler
+      run: brew install --force mpv && brew install dylibbundler
 
     - name: Setup path
       run: export C_INCLUDE_PATH=/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH
