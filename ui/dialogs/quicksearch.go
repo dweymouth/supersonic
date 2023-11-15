@@ -173,8 +173,8 @@ func newQuickSearchResult(parent *QuickSearch) *quickSearchResult {
 		title:     widget.NewLabel(""),
 		secondary: widget.NewRichText(),
 	}
-	qs.title.Wrapping = fyne.TextTruncate
-	qs.secondary.Wrapping = fyne.TextTruncate
+	qs.title.Truncation = fyne.TextTruncateEllipsis
+	qs.secondary.Truncation = fyne.TextTruncateEllipsis
 	qs.ExtendBaseWidget(qs)
 	qs.imageLoader = util.NewThumbnailLoader(parent.imgSource, func(im image.Image) {
 		qs.image.SetImage(im, false)
