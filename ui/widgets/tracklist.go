@@ -66,6 +66,9 @@ type TracklistOptions struct {
 
 	// Disables sorting the tracklist by clicking individual columns.
 	DisableSorting bool
+
+	// Disables the five star rating widget.
+	DisableRating bool
 }
 
 type Tracklist struct {
@@ -96,12 +99,13 @@ type Tracklist struct {
 	tracks          []*trackModel
 	tracksOrigOrder []*trackModel
 
-	nowPlayingID string
-	colLayout    *layouts.ColumnsLayout
-	hdr          *ListHeader
-	list         *DisabledList
-	ctxMenu      *fyne.Menu
-	container    *fyne.Container
+	nowPlayingID  string
+	colLayout     *layouts.ColumnsLayout
+	hdr           *ListHeader
+	list          *DisabledList
+	ctxMenu       *fyne.Menu
+	ratingSubmenu *fyne.MenuItem
+	container     *fyne.Container
 }
 
 type trackModel struct {
@@ -562,15 +566,16 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			fyne.NewMenuItem("Unset favorite", func() {
 				t.onSetFavorites(t.selectedTracks(), false, true)
 			}))
-		ratingMenu := util.NewRatingSubmenu(func(rating int) {
+		t.ratingSubmenu = util.NewRatingSubmenu(func(rating int) {
 			t.onSetRatings(t.selectedTracks(), rating, true)
 		})
-		t.ctxMenu.Items = append(t.ctxMenu.Items, ratingMenu)
+		t.ctxMenu.Items = append(t.ctxMenu.Items, t.ratingSubmenu)
 		if len(t.Options.AuxiliaryMenuItems) > 0 {
 			t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
 			t.ctxMenu.Items = append(t.ctxMenu.Items, t.Options.AuxiliaryMenuItems...)
 		}
 	}
+	t.ratingSubmenu.Disabled = t.Options.DisableRating
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
 }
 
@@ -693,7 +698,6 @@ type TrackRow struct {
 	trackIdx   int
 	trackNum   int
 	trackID    string
-	artistID   string
 	albumID    string
 	isPlaying  bool
 	isFavorite bool
@@ -733,6 +737,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	favorite.OnTapped = t.toggleFavorited
 	t.favorite = container.NewCenter(favorite)
 	t.rating = NewStarRating()
+	t.rating.IsDisabled = t.tracklist.Options.DisableRating
 	t.rating.StarSize = 16
 	t.rating.OnRatingChanged = t.setTrackRating
 	t.plays = newTrailingAlignLabel()
@@ -775,7 +780,6 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 			t.Focused = false
 		}
 		t.trackID = tr.ID
-		t.artistID = tr.ArtistIDs[0]
 		t.albumID = tr.AlbumID
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
@@ -844,6 +848,7 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 	t.dur.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnTime)]
 	t.year.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnYear)]
 	t.favorite.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnFavorite)]
+	t.rating.IsDisabled = t.tracklist.Options.DisableRating
 	t.rating.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnRating)]
 	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
 	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]

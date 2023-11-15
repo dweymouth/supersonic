@@ -39,20 +39,18 @@ type tracksPageState struct {
 	contr      *controller.Controller
 	conf       *backend.TracksPageConfig
 	mp         mediaprovider.MediaProvider
+	canRate    bool
 }
 
 func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, pool *util.WidgetPool, mp mediaprovider.MediaProvider) *TracksPage {
 	t := &TracksPage{tracksPageState: tracksPageState{contr: contr, conf: conf, widgetPool: pool, mp: mp}}
 	t.ExtendBaseWidget(t)
 
-	if tl := t.widgetPool.Obtain(util.WidgetTypeTracklist); tl != nil {
-		t.tracklist = tl.(*widgets.Tracklist)
-		t.tracklist.Reset()
-	} else {
-		t.tracklist = widgets.NewTracklist(nil)
-	}
+	t.tracklist = t.obtainTracklist()
+	_, t.canRate = mp.(mediaprovider.SupportsRating)
 	t.tracklist.Options = widgets.TracklistOptions{
 		DisableSorting: true,
+		DisableRating:  !t.canRate,
 		AutoNumber:     true,
 	}
 	t.tracklist.SetVisibleColumns(conf.TracklistColumns)
@@ -128,8 +126,12 @@ func (t *TracksPage) OnSearched(query string) {
 
 func (t *TracksPage) doSearch(query string) {
 	if t.searchTracklist == nil {
-		t.searchTracklist = widgets.NewTracklist(nil)
-		t.searchTracklist.Options = widgets.TracklistOptions{AutoNumber: true}
+		t.searchTracklist = t.obtainTracklist()
+		t.searchTracklist.Options = widgets.TracklistOptions{
+			AutoNumber:     true,
+			DisableSorting: true,
+			DisableRating:  !t.canRate,
+		}
 		t.searchTracklist.SetVisibleColumns(t.conf.TracklistColumns)
 		t.searchTracklist.SetNowPlaying(t.nowPlayingID)
 		t.searchTracklist.OnVisibleColumnsChanged = func(cols []string) {
@@ -175,4 +177,13 @@ func (s *tracksPageState) Restore() Page {
 
 func (t *TracksPage) playRandomSongs() {
 	t.contr.App.PlaybackManager.PlayRandomSongs("")
+}
+
+func (t *TracksPage) obtainTracklist() *widgets.Tracklist {
+	if tl := t.widgetPool.Obtain(util.WidgetTypeTracklist); tl != nil {
+		tracklist := tl.(*widgets.Tracklist)
+		tracklist.Reset()
+		return tracklist
+	}
+	return widgets.NewTracklist(nil)
 }

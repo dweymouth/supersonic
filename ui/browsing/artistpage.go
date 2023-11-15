@@ -229,6 +229,8 @@ func (a *ArtistPage) showTopTracks() {
 			tl = widgets.NewTracklist(ts)
 		}
 		tl.Options = widgets.TracklistOptions{AutoNumber: true}
+		_, canRate := a.mp.(mediaprovider.SupportsRating)
+		tl.Options.DisableRating = !canRate
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
 		tl.SetSorting(a.trackSort)
 		tl.OnVisibleColumnsChanged = func(cols []string) {
@@ -335,6 +337,14 @@ func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums) {
 	a.artistID = artist.ID
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
 	a.titleDisp.Refresh()
+	if artist.CoverArtID == "" {
+		return
+	}
+	if im, err := a.artistPage.im.GetCoverThumbnail(artist.CoverArtID); err != nil {
+		log.Printf("failed to load artist image: %v", err)
+	} else {
+		a.artistImage.SetImage(im, true /*tappable*/)
+	}
 }
 
 func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {

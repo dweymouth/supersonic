@@ -93,7 +93,9 @@ func newPlaylistPage(
 		fyne.NewMenuItem("Move down", a.onMoveSelectedDown),
 		fyne.NewMenuItem("Move to bottom", a.onMoveSelectedToBottom),
 	}...)
+	_, canRate := a.sm.Server.(mediaprovider.SupportsRating)
 	a.tracklist.Options = widgets.TracklistOptions{
+		DisableRating: !canRate,
 		AuxiliaryMenuItems: []*fyne.MenuItem{reorderMenu,
 			fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)},
 	}
@@ -210,14 +212,15 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
-	sel := sharedutil.ToSet(a.tracklist.SelectedTrackIDs())
+	ids := a.tracklist.SelectedTrackIDs()
+	sel := sharedutil.ToSet(ids)
 	idxs := make([]int, 0, len(sel))
 	for i, tr := range a.tracks {
 		if _, ok := sel[tr.ID]; ok {
 			idxs = append(idxs, i)
 		}
 	}
-	a.sm.Server.EditPlaylistTracks(a.playlistID, nil, idxs)
+	a.sm.Server.RemovePlaylistTracks(a.playlistID, idxs)
 	a.tracklist.UnselectAll()
 	a.Reload()
 }
@@ -283,6 +286,9 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 						sharedutil.TracksToIDs(a.page.tracks))
 				}),
 				fyne.NewMenuItem("Download...", func() {
+					if a.playlistInfo == nil {
+						return
+					}
 					a.page.contr.ShowDownloadDialog(a.page.tracks, a.playlistInfo.Name)
 				}))
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))

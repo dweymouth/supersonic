@@ -35,9 +35,10 @@ type PlaybackManager struct {
 	sm            *ServerManager
 	player        *player.Player
 
-	playTimeStopwatch util.Stopwatch
-	curTrackTime      float64
-	callbacksDisabled bool
+	playTimeStopwatch   util.Stopwatch
+	curTrackTime        float64
+	latestTrackPosition float64 // cleared by checkScrobble
+	callbacksDisabled   bool
 
 	playQueue     []*mediaprovider.Track
 	nowPlayingIdx int64
@@ -73,15 +74,15 @@ func NewPlaybackManager(
 		if tracknum >= int64(len(pm.playQueue)) {
 			return
 		}
-		pm.checkScrobble()
+		pm.checkScrobble() // scrobble the previous song if needed
 		if pm.player.GetStatus().State == player.Playing {
 			pm.playTimeStopwatch.Start()
 		}
 		pm.nowPlayingIdx = tracknum
 		pm.curTrackTime = float64(pm.playQueue[pm.nowPlayingIdx].Duration)
+		pm.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 		pm.invokeOnSongChangeCallbacks()
 		pm.doUpdateTimePos()
-		pm.sendNowPlayingScrobble()
 	})
 	p.OnSeek(func() {
 		pm.doUpdateTimePos()
@@ -380,13 +381,17 @@ func (p *PlaybackManager) checkScrobble() {
 	pcnt := playDur.Seconds() / p.curTrackTime * 100
 	timeThresholdMet := p.scrobbleCfg.ThresholdTimeSeconds >= 0 &&
 		playDur.Seconds() >= float64(p.scrobbleCfg.ThresholdTimeSeconds)
-	if timeThresholdMet || pcnt >= float64(p.scrobbleCfg.ThresholdPercent) {
-		song := p.playQueue[p.nowPlayingIdx]
-		log.Printf("Scrobbling %q", song.Name)
-		song.PlayCount += 1
-		p.lastScrobbled = song
-		go p.sm.Server.Scrobble(song.ID, true)
+
+	track := p.playQueue[p.nowPlayingIdx]
+	var submission bool
+	server := p.sm.Server
+	if server.ClientDecidesScrobble() && (timeThresholdMet || pcnt >= float64(p.scrobbleCfg.ThresholdPercent)) {
+		track.PlayCount += 1
+		p.lastScrobbled = track
+		submission = true
 	}
+	go server.TrackEndedPlayback(track.ID, int(p.latestTrackPosition), submission)
+	p.latestTrackPosition = 0
 	p.playTimeStopwatch.Reset()
 }
 
@@ -394,8 +399,14 @@ func (p *PlaybackManager) sendNowPlayingScrobble() {
 	if !p.scrobbleCfg.Enabled || len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
 		return
 	}
-	song := p.playQueue[p.nowPlayingIdx]
-	go p.sm.Server.Scrobble(song.ID, false)
+	track := p.playQueue[p.nowPlayingIdx]
+	server := p.sm.Server
+	if !server.ClientDecidesScrobble() {
+		// server will count track as scrobbled as soon as it starts playing
+		p.lastScrobbled = track
+		track.PlayCount += 1
+	}
+	go p.sm.Server.TrackBeganPlayback(track.ID)
 }
 
 func (p *PlaybackManager) invokeOnSongChangeCallbacks() {
@@ -433,6 +444,9 @@ func (p *PlaybackManager) doUpdateTimePos() {
 		return
 	}
 	s := p.player.GetStatus()
+	if s.TimePos > p.latestTrackPosition {
+		p.latestTrackPosition = s.TimePos
+	}
 	for _, cb := range p.onPlayTimeUpdate {
 		cb(s.TimePos, s.Duration)
 	}

@@ -222,6 +222,7 @@ func (m *Controller) PromptForFirstServer() {
 				pop.Hide()
 				m.doModalClosed()
 				conn := backend.ServerConnection{
+					ServerType:  d.ServerType,
 					Hostname:    d.Host,
 					AltHostname: d.AltHost,
 					Username:    d.Username,
@@ -268,8 +269,8 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 			if playlistChoice < 0 {
 				go m.App.ServerManager.Server.CreatePlaylist(newPlaylistName, trackIDs)
 			} else {
-				go m.App.ServerManager.Server.EditPlaylistTracks(
-					pls[playlistChoice].ID, trackIDs, nil /*tracksToRemove*/)
+				go m.App.ServerManager.Server.AddPlaylistTracks(
+					pls[playlistChoice].ID, trackIDs)
 			}
 		}
 		m.haveModal = true
@@ -278,7 +279,8 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 }
 
 func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
-	dlg := dialogs.NewEditPlaylistDialog(playlist)
+	canMakePublic := m.App.ServerManager.Server.CanMakePublicPlaylist()
+	dlg := dialogs.NewEditPlaylistDialog(playlist, canMakePublic)
 	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
 	m.ClosePopUpOnEscape(pop)
 	dlg.OnCanceled = func() {
@@ -398,6 +400,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 					// connection is good
 					newPop.Hide()
 					conn := backend.ServerConnection{
+						ServerType:  newD.ServerType,
 						Hostname:    newD.Host,
 						AltHostname: newD.AltHost,
 						Username:    newD.Username,
@@ -458,7 +461,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	}
 
 	bands := c.App.Player.Equalizer().BandFrequencies()
-	dlg := dialogs.NewSettingsDialog(c.App.Config, devs, themeFiles, bands, c.MainWindow)
+	dlg := dialogs.NewSettingsDialog(c.App.Config, devs, themeFiles, bands, c.App.ServerManager.Server.ClientDecidesScrobble(), c.MainWindow)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
 	}
@@ -539,6 +542,7 @@ func (c *Controller) tryConnectToServer(server *backend.ServerConfig, password s
 func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
 	dlg.SetInfoText("Testing connection...")
 	conn := backend.ServerConnection{
+		ServerType:  dlg.ServerType,
 		Hostname:    dlg.Host,
 		AltHostname: dlg.AltHost,
 		Username:    dlg.Username,
@@ -574,7 +578,11 @@ func (c *Controller) SetTrackFavorites(trackIDs []string, favorite bool) {
 }
 
 func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
-	go c.App.ServerManager.Server.SetRating(mediaprovider.RatingFavoriteParameters{
+	r, ok := c.App.ServerManager.Server.(mediaprovider.SupportsRating)
+	if !ok {
+		return
+	}
+	go r.SetRating(mediaprovider.RatingFavoriteParameters{
 		TrackIDs: trackIDs,
 	}, rating)
 

@@ -8,7 +8,15 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
+type ServerType string
+
+const (
+	ServerTypeSubsonic ServerType = "Subsonic"
+	ServerTypeJellyfin ServerType = "Jellyfin"
+)
+
 type ServerConnection struct {
+	ServerType  ServerType
 	Hostname    string
 	AltHostname string
 	Username    string
@@ -204,6 +212,15 @@ func ReadConfigFile(filepath, appVersionTag string) (*Config, error) {
 	if err := toml.NewDecoder(f).Decode(c); err != nil {
 		return nil, err
 	}
+
+	// Backfill Subsonic to empty ServerType fields
+	// for updating configs created before multiple MediaProviders were added
+	for _, s := range c.Servers {
+		if s.ServerType == "" {
+			s.ServerType = ServerTypeSubsonic
+		}
+	}
+
 	return c, nil
 }
 

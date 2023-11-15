@@ -17,11 +17,14 @@ import (
 type NowPlayingCard struct {
 	widget.BaseWidget
 
+	DisableRating bool
+
 	trackName  *widget.Hyperlink
 	artistName *MultiHyperlink
 	albumName  *widget.Hyperlink
 	cover      *TappableImage
 	menu       *widget.PopUpMenu
+	ratingMenu *fyne.MenuItem
 
 	OnTrackNameTapped  func()
 	OnArtistNameTapped func(artistID string)
@@ -125,13 +128,14 @@ func (n *NowPlayingCard) Update(track string, artists, artistIDs []string, album
 
 func (n *NowPlayingCard) showMenu(e *fyne.PointEvent) {
 	if n.menu == nil {
-		ratingMenu := util.NewRatingSubmenu(n.onSetRating)
+		n.ratingMenu = util.NewRatingSubmenu(n.onSetRating)
 		m := fyne.NewMenu("",
 			fyne.NewMenuItem("Set favorite", func() { n.onSetFavorite(true) }),
 			fyne.NewMenuItem("Unset favorite", func() { n.onSetFavorite(false) }),
-			ratingMenu,
+			n.ratingMenu,
 			fyne.NewMenuItem("Add to playlist...", func() { n.onAddToPlaylist() }))
 		n.menu = widget.NewPopUpMenu(m, fyne.CurrentApp().Driver().CanvasForObject(n))
 	}
+	n.ratingMenu.Disabled = n.DisableRating
 	n.menu.ShowAtPosition(e.AbsolutePosition)
 }

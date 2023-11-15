@@ -14,6 +14,7 @@ import (
 type AddEditServerDialog struct {
 	widget.BaseWidget
 
+	ServerType backend.ServerType
 	Nickname   string
 	Host       string
 	AltHost    string
@@ -35,6 +36,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 	a := &AddEditServerDialog{}
 	a.ExtendBaseWidget(a)
 	if prefillServer != nil {
+		a.ServerType = prefillServer.ServerType
 		a.Nickname = prefillServer.Nickname
 		a.Host = prefillServer.Hostname
 		a.AltHost = prefillServer.AltHostname
@@ -44,6 +46,21 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 
 	titleLabel := widget.NewLabel(title)
 	titleLabel.TextStyle.Bold = true
+	legacyAuthCheck := widget.NewCheckWithData("Use legacy authentication", binding.BindBool(&a.LegacyAuth))
+	serverTypeChoice := widget.NewRadioGroup([]string{"Subsonic", "Jellyfin"}, func(s string) {
+		a.ServerType = backend.ServerType(s)
+		if s == string(backend.ServerTypeSubsonic) {
+			legacyAuthCheck.Show()
+		} else {
+			legacyAuthCheck.Hide()
+		}
+	})
+	serverTypeChoice.Horizontal = true
+	selected := backend.ServerTypeSubsonic
+	if a.ServerType == backend.ServerTypeJellyfin {
+		selected = backend.ServerTypeJellyfin
+	}
+	serverTypeChoice.Selected = string(selected)
 	a.passField = widget.NewPasswordEntry()
 	a.passField.OnSubmitted = func(_ string) { a.doSubmit() }
 	userField := widget.NewEntryWithData(binding.BindString(&a.Username))
@@ -62,8 +79,6 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 	a.promptText = widget.NewRichTextWithText("")
 	a.promptText.Hidden = true
 
-	legacyAuthCheck := widget.NewCheckWithData("Use legacy authentication", binding.BindBool(&a.LegacyAuth))
-
 	var bottomRow *fyne.Container
 	if cancelable {
 		bottomRow = container.NewHBox(
@@ -81,6 +96,8 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 	a.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
 		container.New(layout.NewFormLayout(),
+			widget.NewLabel("Type"),
+			serverTypeChoice,
 			widget.NewLabel("Nickname"),
 			nickField,
 			widget.NewLabel("Hostname"),

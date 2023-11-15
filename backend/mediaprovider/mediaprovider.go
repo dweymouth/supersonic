@@ -3,6 +3,7 @@ package mediaprovider
 import (
 	"image"
 	"io"
+	"strings"
 )
 
 type AlbumFilter struct {
@@ -12,6 +13,32 @@ type AlbumFilter struct {
 
 	ExcludeFavorited   bool // mut. exc. with ExcludeUnfavorited
 	ExcludeUnfavorited bool // mut. exc. with ExcludeFavorited
+}
+
+// Returns true if the filter is the nil filter - i.e. matches everything
+func (a AlbumFilter) IsNil() bool {
+	return a.MinYear == 0 && a.MaxYear == 0 &&
+		len(a.Genres) == 0 &&
+		!a.ExcludeFavorited && !a.ExcludeUnfavorited
+}
+
+func (f AlbumFilter) Matches(album *Album) bool {
+	if album == nil {
+		return false
+	}
+	if f.ExcludeFavorited && album.Favorite {
+		return false
+	}
+	if f.ExcludeUnfavorited && !album.Favorite {
+		return false
+	}
+	if y := album.Year; y < f.MinYear || (f.MaxYear > 0 && y > f.MaxYear) {
+		return false
+	}
+	if len(f.Genres) == 0 {
+		return true
+	}
+	return genresMatch(f.Genres, album.Genres)
 }
 
 type AlbumIterator interface {
@@ -32,6 +59,16 @@ type Favorites struct {
 	Albums  []*Album
 	Artists []*Artist
 	Tracks  []*Track
+}
+
+type LoginResponse struct {
+	Error       error
+	IsAuthError bool
+}
+
+type Server interface {
+	Login(username, password string) LoginResponse
+	MediaProvider() MediaProvider
 }
 
 type MediaProvider interface {
@@ -77,23 +114,47 @@ type MediaProvider interface {
 
 	SetFavorite(params RatingFavoriteParameters, favorite bool) error
 
-	SetRating(params RatingFavoriteParameters, rating int) error
-
 	GetPlaylists() ([]*Playlist, error)
 
 	CreatePlaylist(name string, trackIDs []string) error
 
+	CanMakePublicPlaylist() bool
+
 	EditPlaylist(id, name, description string, public bool) error
 
-	EditPlaylistTracks(id string, trackIDsToAdd []string, trackIndexesToRemove []int) error
+	AddPlaylistTracks(id string, trackIDsToAdd []string) error
+
+	RemovePlaylistTracks(id string, trackIdxsToRemove []int) error
 
 	ReplacePlaylistTracks(id string, trackIDs []string) error
 
 	DeletePlaylist(id string) error
 
-	Scrobble(trackID string, submission bool) error
+	// True if the `submission` parameter to TrackEndedPlayback will be respected
+	// If false, the begin playback scrobble registers a play count immediately
+	// when TrackBeganPlayback is invoked.
+	ClientDecidesScrobble() bool
+
+	TrackBeganPlayback(trackID string) error
+
+	TrackEndedPlayback(trackID string, positionSecs int, submission bool) error
 
 	DownloadTrack(trackID string) (io.Reader, error)
 
 	RescanLibrary() error
+}
+
+type SupportsRating interface {
+	SetRating(params RatingFavoriteParameters, rating int) error
+}
+
+func genresMatch(filterGenres, albumGenres []string) bool {
+	for _, g1 := range filterGenres {
+		for _, g2 := range albumGenres {
+			if strings.EqualFold(g1, g2) {
+				return true
+			}
+		}
+	}
+	return false
 }

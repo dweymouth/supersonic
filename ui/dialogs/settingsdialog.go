@@ -43,6 +43,8 @@ type SettingsDialog struct {
 	themeFiles   map[string]string // filename -> displayName
 	promptText   *widget.RichText
 
+	clientDecidesScrobble bool
+
 	content fyne.CanvasObject
 }
 
@@ -52,9 +54,10 @@ func NewSettingsDialog(
 	audioDeviceList []player.AudioDevice,
 	themeFileList map[string]string,
 	equalizerBands []string,
+	clientDecidesScrobble bool,
 	window fyne.Window,
 ) *SettingsDialog {
-	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList}
+	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList, clientDecidesScrobble: clientDecidesScrobble}
 	s.ExtendBaseWidget(s)
 
 	tabs := container.NewAppTabs(
@@ -188,13 +191,19 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 			durationEntry.Disable()
 		} else {
 			durationEntry.Text = lastScrobbleText
-			durationEntry.Enable()
+			if s.clientDecidesScrobble {
+				durationEntry.Enable()
+			}
 			durationEntry.Refresh()
 			durationEntry.OnChanged(durationEntry.Text)
 		}
 	})
 	durationEnabled.Checked = s.config.Scrobbling.ThresholdTimeSeconds >= 0
 	if !s.config.Scrobbling.Enabled {
+		durationEnabled.Disable()
+	}
+	if !s.clientDecidesScrobble {
+		percentEntry.Disable()
 		durationEnabled.Disable()
 	}
 
@@ -205,9 +214,11 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 			durationEnabled.Disable()
 			durationEntry.Disable()
 		} else {
-			percentEntry.Enable()
-			durationEnabled.Enable()
-			if durationEnabled.Checked {
+			if s.clientDecidesScrobble {
+				percentEntry.Enable()
+				durationEnabled.Enable()
+			}
+			if durationEnabled.Checked && s.clientDecidesScrobble {
 				durationEntry.Enable()
 			}
 		}

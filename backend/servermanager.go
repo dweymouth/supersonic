@@ -6,9 +6,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dweymouth/go-jellyfin"
 	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	jellyfinMP "github.com/dweymouth/supersonic/backend/mediaprovider/jellyfin"
 	subsonicMP "github.com/dweymouth/supersonic/backend/mediaprovider/subsonic"
+	"github.com/dweymouth/supersonic/res"
 	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 )
@@ -43,7 +46,7 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 	if err != nil {
 		return err
 	}
-	s.Server = subsonicMP.SubsonicMediaProvider(cli)
+	s.Server = cli.MediaProvider()
 	s.Server.SetPrefetchCoverCallback(s.prefetchCoverCB)
 	s.LoggedInUser = conf.Username
 	s.ServerID = conf.ID
@@ -156,27 +159,56 @@ func (s *ServerManager) SetServerPassword(server *ServerConfig, password string)
 	return keyring.Set(s.appName, server.ID.String(), password)
 }
 
-func (s *ServerManager) connect(connection ServerConnection, password string) (*subsonic.Client, error) {
-	cli := &subsonic.Client{
-		Client:       &http.Client{Timeout: 10 * time.Second},
-		BaseUrl:      connection.Hostname,
-		User:         connection.Username,
-		PasswordAuth: connection.LegacyAuth,
-		ClientName:   "supersonic",
-	}
-	altCli := &subsonic.Client{
-		Client:       &http.Client{Timeout: 10 * time.Second},
-		BaseUrl:      connection.AltHostname,
-		User:         connection.Username,
-		PasswordAuth: connection.LegacyAuth,
-		ClientName:   "supersonic",
-	}
-	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
-	pingFunc := func(delay time.Duration, cli *subsonic.Client, val bool) {
-		<-time.After(delay)
-		if err := cli.Authenticate(password); err == nil {
-			pingChan <- val
+func (s *ServerManager) connect(connection ServerConnection, password string) (mediaprovider.Server, error) {
+	var cli, altCli mediaprovider.Server
+
+	if connection.ServerType == ServerTypeJellyfin {
+		cli = &jellyfinMP.JellyfinServer{
+			Client: jellyfin.Client{
+				HTTPClient:    &http.Client{Timeout: 10 * time.Second},
+				BaseURL:       connection.Hostname,
+				ClientName:    res.AppName,
+				ClientVersion: res.AppVersion,
+			},
 		}
+		altCli = &jellyfinMP.JellyfinServer{
+			Client: jellyfin.Client{
+				HTTPClient:    &http.Client{Timeout: 10 * time.Second},
+				BaseURL:       connection.AltHostname,
+				ClientName:    res.AppName,
+				ClientVersion: res.AppVersion,
+			},
+		}
+	} else {
+		cli = &subsonicMP.SubsonicServer{
+			Client: subsonic.Client{
+				Client:       &http.Client{Timeout: 10 * time.Second},
+				BaseUrl:      connection.Hostname,
+				User:         connection.Username,
+				PasswordAuth: connection.LegacyAuth,
+				ClientName:   res.AppName,
+			},
+		}
+		altCli = &subsonicMP.SubsonicServer{
+			Client: subsonic.Client{
+				Client:       &http.Client{Timeout: 10 * time.Second},
+				BaseUrl:      connection.AltHostname,
+				User:         connection.Username,
+				PasswordAuth: connection.LegacyAuth,
+				ClientName:   res.AppName,
+			},
+		}
+	}
+	var authError error
+	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
+	pingFunc := func(delay time.Duration, cli mediaprovider.Server, val bool) {
+		<-time.After(delay)
+		resp := cli.Login(connection.Username, password)
+		if resp.Error != nil && !resp.IsAuthError {
+			return
+		}
+		authError = resp.Error
+		pingChan <- val // reached the server
 	}
 	go pingFunc(0, cli, false)
 	if connection.AltHostname != "" {
@@ -190,8 +222,8 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (*
 		return nil, ErrUnreachable
 	case altPing := <-pingChan:
 		if altPing {
-			return altCli, nil
+			return altCli, authError
 		}
-		return cli, nil
+		return cli, authError
 	}
 }
