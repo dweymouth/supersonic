@@ -484,6 +484,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	dlg.OnDismiss = func() {
 		pop.Hide()
 		c.doModalClosed()
+		c.App.SaveConfigFile()
 	}
 	c.ClosePopUpOnEscape(pop)
 	c.haveModal = true
