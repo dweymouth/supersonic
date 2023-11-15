@@ -23,6 +23,17 @@ type JellyfinServer struct {
 	jellyfin.Client
 }
 
+func (j *JellyfinServer) Login(user, pass string) mediaprovider.LoginResponse {
+	if _, err := j.Ping(); err != nil {
+		return mediaprovider.LoginResponse{Error: err}
+	}
+	err := j.Client.Login(user, pass)
+	return mediaprovider.LoginResponse{
+		Error:       err,
+		IsAuthError: err != nil,
+	}
+}
+
 func (j *JellyfinServer) MediaProvider() mediaprovider.MediaProvider {
 	return newJellyfinMediaProvider(&j.Client)
 }

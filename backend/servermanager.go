@@ -199,12 +199,16 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 			},
 		}
 	}
+	var authError error
 	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
 	pingFunc := func(delay time.Duration, cli mediaprovider.Server, val bool) {
 		<-time.After(delay)
-		if err := cli.Login(connection.Username, password); err == nil {
-			pingChan <- val
+		resp := cli.Login(connection.Username, password)
+		if resp.Error != nil && !resp.IsAuthError {
+			return
 		}
+		authError = resp.Error
+		pingChan <- val // reached the server
 	}
 	go pingFunc(0, cli, false)
 	if connection.AltHostname != "" {
@@ -218,8 +222,8 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 		return nil, ErrUnreachable
 	case altPing := <-pingChan:
 		if altPing {
-			return altCli, nil
+			return altCli, authError
 		}
-		return cli, nil
+		return cli, authError
 	}
 }

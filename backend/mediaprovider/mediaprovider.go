@@ -61,8 +61,13 @@ type Favorites struct {
 	Tracks  []*Track
 }
 
+type LoginResponse struct {
+	Error       error
+	IsAuthError bool
+}
+
 type Server interface {
-	Login(username, password string) error
+	Login(username, password string) LoginResponse
 	MediaProvider() MediaProvider
 }
 
