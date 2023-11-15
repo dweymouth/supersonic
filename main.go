@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"math"
+	"os"
 	"runtime"
 	"time"
 
@@ -20,6 +21,12 @@ func main() {
 	myApp, err := backend.StartupApp(res.AppName, res.DisplayName, res.AppVersionTag, configFile, res.LatestReleaseURL)
 	if err != nil {
 		log.Fatalf("fatal startup error: %v", err.Error())
+	}
+
+	if myApp.Config.Application.UIScaleSize == "Smaller" {
+		os.Setenv("FYNE_SCALE", "0.85")
+	} else if myApp.Config.Application.UIScaleSize == "Larger" {
+		os.Setenv("FYNE_SCALE", "1.1")
 	}
 
 	fyneApp := app.New()

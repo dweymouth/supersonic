@@ -406,8 +406,21 @@ func (s *SettingsDialog) createExperimentalTab(window fyne.Window) *container.Ta
 		s.doChooseTTFFile(window, boldFontEntry)
 	})
 
+	uiScaleRadio := widget.NewRadioGroup([]string{"Smaller", "Normal", "Larger"}, func(choice string) {
+		s.config.Application.UIScaleSize = choice
+		s.setRestartRequired()
+	})
+	uiScaleRadio.Horizontal = true
+	if s.config.Application.UIScaleSize == "Smaller" || s.config.Application.UIScaleSize == "Larger" {
+		uiScaleRadio.Selected = s.config.Application.UIScaleSize
+	} else {
+		uiScaleRadio.Selected = "Normal"
+	}
 	return container.NewTabItem("Experimental", container.NewVBox(
 		warningLabel,
+		s.newSectionSeparator(),
+		widget.NewRichText(&widget.TextSegment{Text: "UI Scaling", Style: boldStyle}),
+		uiScaleRadio,
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: "Application Font", Style: boldStyle}),
 		container.New(layout.NewFormLayout(),

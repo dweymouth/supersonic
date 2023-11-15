@@ -45,6 +45,7 @@ type AppConfig struct {
 	// Experimental - may be removed in future
 	FontNormalTTF string
 	FontBoldTTF   string
+	UIScaleSize   string
 }
 
 type AlbumPageConfig struct {
@@ -145,6 +146,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			SettingsTab:         "General",
 			AllowMultiInstance:  false,
 			MaxImageCacheSizeMB: 50,
+			UIScaleSize:         "Normal",
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},
