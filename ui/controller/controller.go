@@ -97,17 +97,31 @@ func (m *Controller) ShowPopUpImage(img image.Image) {
 	))
 }
 
+func (m *Controller) ConnectTracklistActionsWithReplayGainAlbum(tracklist *widgets.Tracklist) {
+	m.connectTracklistActionsWithReplayGainMode(tracklist, player.ReplayGainAlbum)
+}
+
 func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
+	m.connectTracklistActionsWithReplayGainMode(tracklist, player.ReplayGainTrack)
+}
+
+func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widgets.Tracklist, mode player.ReplayGainMode) {
 	tracklist.OnAddToPlaylist = m.DoAddTracksToPlaylistWorkflow
 	tracklist.OnAddToQueue = func(tracks []*mediaprovider.Track) {
 		m.App.PlaybackManager.LoadTracks(tracks, true, false)
 	}
 	tracklist.OnPlayTrackAt = func(idx int) {
 		m.App.PlaybackManager.LoadTracks(tracklist.GetTracks(), false, false)
+		if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
+			m.App.PlaybackManager.SetReplayGainMode(mode)
+		}
 		m.App.PlaybackManager.PlayTrackAt(idx)
 	}
 	tracklist.OnPlaySelection = func(tracks []*mediaprovider.Track, shuffle bool) {
 		m.App.PlaybackManager.LoadTracks(tracks, false, shuffle)
+		if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
+			m.App.PlaybackManager.SetReplayGainMode(mode)
+		}
 		m.App.PlaybackManager.PlayFromBeginning()
 	}
 	tracklist.OnSetFavorite = m.SetTrackFavorites
@@ -208,6 +222,9 @@ func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {
 
 func (m *Controller) PlayArtistDiscography(artistID string, shuffle bool) {
 	m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), false, shuffle)
+	if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
+		m.App.PlaybackManager.SetReplayGainMode(player.ReplayGainAlbum)
+	}
 	m.App.PlaybackManager.PlayFromBeginning()
 }
 

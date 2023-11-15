@@ -98,7 +98,7 @@ func newAlbumPage(
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		a.cfg.TracklistColumns = cols
 	}
-	a.contr.ConnectTracklistActions(a.tracklist)
+	a.contr.ConnectTracklistActionsWithReplayGainAlbum(a.tracklist)
 
 	a.container = container.NewBorder(
 		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),

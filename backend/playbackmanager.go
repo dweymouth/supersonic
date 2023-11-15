@@ -15,6 +15,7 @@ const (
 	ReplayGainNone  = string(player.ReplayGainNone)
 	ReplayGainAlbum = string(player.ReplayGainAlbum)
 	ReplayGainTrack = string(player.ReplayGainTrack)
+	ReplayGainAuto  = "Auto"
 )
 
 type LoopMode int
@@ -47,6 +48,7 @@ type PlaybackManager struct {
 	lastScrobbled *mediaprovider.Track
 	scrobbleCfg   *ScrobbleConfig
 	transcodeCfg  *TranscodingConfig
+	replayGainCfg ReplayGainConfig
 
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
@@ -199,6 +201,9 @@ func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool
 	if err := p.LoadAlbum(albumID, false, shuffle); err != nil {
 		return err
 	}
+	if p.replayGainCfg.Mode == ReplayGainAuto {
+		p.SetReplayGainMode(player.ReplayGainAlbum)
+	}
 	if firstTrack <= 0 {
 		return p.player.PlayFromBeginning()
 	}
@@ -208,6 +213,9 @@ func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool
 func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffle bool) error {
 	if err := p.LoadPlaylist(playlistID, false, shuffle); err != nil {
 		return err
+	}
+	if p.replayGainCfg.Mode == ReplayGainAuto {
+		p.SetReplayGainMode(player.ReplayGainTrack)
 	}
 	if firstTrack <= 0 {
 		return p.player.PlayFromBeginning()
@@ -221,6 +229,9 @@ func (p *PlaybackManager) PlayTrack(trackID string) error {
 		return err
 	}
 	p.LoadTracks([]*mediaprovider.Track{tr}, false, false)
+	if p.replayGainCfg.Mode == ReplayGainAuto {
+		p.SetReplayGainMode(player.ReplayGainTrack)
+	}
 	return p.PlayFromBeginning()
 }
 
@@ -237,6 +248,9 @@ func (p *PlaybackManager) PlayRandomSongs(genreName string) {
 		log.Printf("error getting random songs: %s", err.Error())
 	} else {
 		p.LoadTracks(songs, false, false)
+		if p.replayGainCfg.Mode == ReplayGainAuto {
+			p.SetReplayGainMode(player.ReplayGainTrack)
+		}
 		p.PlayFromBeginning()
 	}
 }
@@ -246,6 +260,9 @@ func (p *PlaybackManager) PlaySimilarSongs(id string) {
 		log.Printf("error getting similar songs: %s", err.Error())
 	} else {
 		p.LoadTracks(songs, false, false)
+		if p.replayGainCfg.Mode == ReplayGainAuto {
+			p.SetReplayGainMode(player.ReplayGainTrack)
+		}
 		p.PlayFromBeginning()
 	}
 }
@@ -317,10 +334,23 @@ func (p *PlaybackManager) StopAndClearPlayQueue() {
 }
 
 func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
+	p.replayGainCfg = config
+	mode := player.ReplayGainMode(config.Mode)
+	if config.Mode == ReplayGainAuto {
+		mode = player.ReplayGainTrack
+	}
 	p.player.SetReplayGainOptions(player.ReplayGainOptions{
-		Mode:            player.ReplayGainMode(config.Mode),
+		Mode:            mode,
 		PreventClipping: config.PreventClipping,
 		PreampGain:      config.PreampGainDB,
+	})
+}
+
+func (p *PlaybackManager) SetReplayGainMode(mode player.ReplayGainMode) {
+	p.player.SetReplayGainOptions(player.ReplayGainOptions{
+		PreventClipping: p.replayGainCfg.PreventClipping,
+		PreampGain:      p.replayGainCfg.PreampGainDB,
+		Mode:            mode,
 	})
 }
 

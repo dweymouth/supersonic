@@ -271,7 +271,7 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 		}
 	}
 
-	replayGainSelect := widget.NewSelect([]string{"None", "Album", "Track"}, nil)
+	replayGainSelect := widget.NewSelect([]string{"None", "Album", "Track", "Auto"}, nil)
 	replayGainSelect.OnChanged = func(_ string) {
 		switch replayGainSelect.SelectedIndex() {
 		case 0:
@@ -280,6 +280,8 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 			s.config.ReplayGain.Mode = backend.ReplayGainAlbum
 		case 2:
 			s.config.ReplayGain.Mode = backend.ReplayGainTrack
+		case 3:
+			s.config.ReplayGain.Mode = backend.ReplayGainAuto
 		}
 		s.onReplayGainSettingsChanged()
 	}
@@ -290,6 +292,8 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 		replayGainSelect.SetSelectedIndex(1)
 	case backend.ReplayGainTrack:
 		replayGainSelect.SetSelectedIndex(2)
+	case backend.ReplayGainAuto:
+		replayGainSelect.SetSelectedIndex(3)
 	default:
 		replayGainSelect.SetSelectedIndex(0)
 	}
