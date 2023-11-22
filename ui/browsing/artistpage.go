@@ -3,7 +3,6 @@ package browsing
 import (
 	"log"
 	"strconv"
-	"strings"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -280,7 +279,7 @@ type ArtistPageHeader struct {
 	artistPage     *ArtistPage
 	artistImage    *widgets.ImagePlaceholder
 	titleDisp      *widget.RichText
-	biographyDisp  *widget.RichText
+	biographyDisp  *widgets.MaxRowsLabel
 	similarArtists *fyne.Container
 	favoriteBtn    *widgets.FavoriteButton
 	playBtn        *widget.Button
@@ -294,7 +293,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a := &ArtistPageHeader{
 		artistPage:     page,
 		titleDisp:      widget.NewRichTextWithText(""),
-		biographyDisp:  widget.NewRichTextWithText(artistBioNotAvailableStr),
+		biographyDisp:  widgets.NewMaxRowsLabel(5, artistBioNotAvailableStr),
 		similarArtists: container.NewHBox(),
 	}
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
@@ -312,6 +311,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	})
 	a.playRadioBtn = widget.NewButtonWithIcon(" Play Artist Radio", myTheme.ShuffleIcon, a.artistPage.playArtistRadio)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
+	a.biographyDisp.Truncation = fyne.TextTruncateEllipsis
 	a.ExtendBaseWidget(a)
 	a.createContainer()
 	return a
@@ -321,7 +321,7 @@ func (a *ArtistPageHeader) Clear() {
 	a.artistID = ""
 	a.favoriteBtn.IsFavorited = false
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = ""
-	a.biographyDisp.Segments[0].(*widget.TextSegment).Text = artistBioNotAvailableStr
+	a.biographyDisp.Text = artistBioNotAvailableStr
 	for _, obj := range a.similarArtists.Objects {
 		obj.Hide()
 	}
@@ -352,14 +352,8 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 		return
 	}
 
-	if info.Biography != "" {
-		segs := util.RichTextSegsFromHTMLString(info.Biography)
-		if len(segs) > 0 {
-			if ts, ok := segs[0].(*widget.TextSegment); ok && strings.TrimSpace(ts.Text) != "" {
-				a.biographyDisp.Segments = segs
-				a.biographyDisp.Refresh()
-			}
-		}
+	if text := util.PlaintextFromHTMLString(info.Biography); text != "" {
+		a.biographyDisp.SetText(text)
 	}
 
 	if len(a.similarArtists.Objects) == 0 {

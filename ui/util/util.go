@@ -82,10 +82,10 @@ func NewDebouncer(dur time.Duration, callOnDone func()) func() {
 	}
 }
 
-func RichTextSegsFromHTMLString(s string) []widget.RichTextSegment {
+func PlaintextFromHTMLString(s string) string {
 	tokr := html.NewTokenizer(strings.NewReader(s))
-	var segs []widget.RichTextSegment
 
+	var text string
 	var isLink bool
 	var done bool
 	for !done {
@@ -102,12 +102,11 @@ func RichTextSegsFromHTMLString(s string) []widget.RichTextSegment {
 			t := tokr.Token()
 			// for now, skip displaying Navidrome's "Read more on Last.FM" link
 			if !isLink {
-				segs = append(segs, &widget.TextSegment{Text: t.Data})
+				text = text + t.Data
 			}
 		}
 	}
-
-	return segs
+	return text
 }
 
 func NewRatingSubmenu(onSetRating func(int)) *fyne.MenuItem {
