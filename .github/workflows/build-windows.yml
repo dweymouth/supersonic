@@ -34,7 +34,7 @@ jobs:
         pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-mpv
 
     - name: Build
-      run: /c/Program\ Files/Go/bin/go.exe build
+      run: $GOROOT/bin/go.exe build
 
     - name: Install Fyne tool
-      run: /c/Program\ Files/Go/bin/go.exe install fyne.io/fyne/v2/cmd/fyne@latest
+      run: $GOROOT/bin/go.exe install fyne.io/fyne/v2/cmd/fyne@latest
