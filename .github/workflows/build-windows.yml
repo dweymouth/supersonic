@@ -21,8 +21,9 @@ jobs:
         path-type: inherit
         update: true
         install: >-
-          wget
           make
+          wget
+          zip
     - uses: actions/checkout@v3
 
     - name: Set up Go
