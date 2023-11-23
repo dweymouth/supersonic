@@ -18,6 +18,7 @@ jobs:
     steps:
     - uses: msys2/setup-msys2@v2
       with:
+        path-type: inherit
         update: true
         install: >-
           wget
@@ -34,7 +35,7 @@ jobs:
         pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-mpv
 
     - name: Build
-      run: $GOROOT/bin/go.exe build
+      run: go build
 
     - name: Install Fyne tool
-      run: $GOROOT/bin/go.exe install fyne.io/fyne/v2/cmd/fyne@latest
+      run: go install fyne.io/fyne/v2/cmd/fyne@latest
