@@ -47,7 +47,10 @@ jobs:
     - name: Download mpv dll
       run: >
         wget https://github.com/dweymouth/supersonic/releases/download/v0.8.0/Supersonic-0.8.0-windows-x64.zip &&
-        unzip Supersonic-0.8.0-windows-x64.zip
+        mv Supersonic.exe Supersonic-newbuild.exe &&
+        unzip Supersonic-0.8.0-windows-x64.zip &&
+        rm Supersonic.exe &&
+        mv Supersonic-newbuild.exe Supersonic.exe
 
     - name: Generate zip bundle
       run: zip Supersonic-windows.zip Supersonic.exe libmpv-2.dll
