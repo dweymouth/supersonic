@@ -15,11 +15,11 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.8
 	github.com/quarckster/go-mpris-server v1.0.3
 	github.com/zalando/go-keyring v0.2.1
-	golang.org/x/net v0.14.0
+	golang.org/x/net v0.17.0
 )
 
 require (
-	fyne.io/systray v1.10.1-0.20230722100817-88df1e0ffa9a // indirect
+	fyne.io/systray v1.10.1-0.20231115130155-104f5ef7839e // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/danieljoos/wincred v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -41,10 +41,10 @@ require (
 	github.com/yuin/goldmark v1.5.5 // indirect
 	golang.org/x/image v0.14.0 // indirect
 	golang.org/x/mobile v0.0.0-20230531173138-3c911d8e3eda // indirect
-	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.4.1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20231110162149-a0e470497555
+replace fyne.io/fyne/v2 v2.4.1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20231123175732-3df0aca47d36
