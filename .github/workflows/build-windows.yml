@@ -22,6 +22,7 @@ jobs:
         update: true
         install: >-
           wget
+          make
     - uses: actions/checkout@v3
 
     - name: Set up Go
@@ -39,3 +40,20 @@ jobs:
 
     - name: Install Fyne tool
       run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+    - name: Package
+      run: make package_windows
+
+    - name: Download mpv dll
+      run: >
+        wget https://github.com/dweymouth/supersonic/releases/download/v0.8.0/Supersonic-0.8.0-windows-x64.zip &&
+        unzip Supersonic-0.8.0-windows-x64.zip
+
+    - name: Generate zip bundle
+      run: zip Supersonic-windows.zip Supersonic.exe libmpv-2.dll
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: Supersonic_windows_x64.zip
+        path: Supersonic-windows.zip
