@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.8.0"
+	AppVersion       = "0.8.1"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -12,17 +12,12 @@ const (
 )
 
 var (
-	WhatsAdded = `
-## Added
-* Add support for connecting to Jellyfin servers
-* Add "Auto" ReplayGain option to auto-choose between Track and Album mode
-* Add experimental setting for changing UI scaling`
+	WhatsAdded = ``
 
 	WhatsFixed = `
 ## Fixed
-* Crash when repeatedly searching the All Tracks page quickly
-* What's New dialog sometimes continuing to re-show on subsequent launches
-* Config settings sometimes not being saved due to abnormal exits
-* Don't crash with zero-track albums or tracks with no artists
-* Slightly improved the time it takes to check server connectivity`
+* Artist Radio on Jellyfin not generating a fresh mix if clicked a second time
+* On Jellyfin, a long artist biography could overflow the page header
+* Systray icon missing on Linux since 0.7.0
+`
 )

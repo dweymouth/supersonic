@@ -61,30 +61,19 @@
   </screenshots>
 
  <releases>
-  <release date="2023-11-15" version="0.8.0">
+  <release date="2023-12-06" version="0.8.1">
    <description>
      <p>
-       Version 0.8.0 of Supersonic
+       Version 0.8.1 of Supersonic
      </p>
-
-     <p>
-       Added
-     </p>
-     <ul>
-       <li>Add support for connecting to Jellyfin servers</li>
-       <li>Add "Auto" ReplayGain option to auto-choose between Track and Album mode</li>
-       <li>Add experimental setting for changing UI scaling</li>
-     </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Crash when repeatedly searching the All Tracks page quickly</li>
-       <li>What's New dialog sometimes continuing to re-show on subsequent launches</li>
-       <li>Config settings sometimes not being saved due to abnormal exits</li>
-       <li>Don't crash with zero-track albums or tracks with no artists</li>
-       <li>Slightly improved the time it takes to check server connectivity</li>
+       <li>Artist Radio on Jellyfin not generating a fresh mix if clicked a second time</li>
+       <li>On Jellyfin, a long artist biography could overflow the page header</li>
+       <li>Systray icon missing on Linux since 0.7.0</li>
      </ul>
 
    </description>

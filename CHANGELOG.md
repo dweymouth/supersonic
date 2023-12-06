@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.8.1] - 2023-12-06
+
+### Fixed
+- [#284](https://github.com/dweymouth/supersonic/issues/284) Artist Radio on Jellyfin not generating a fresh mix if clicked a second time
+- [#283](https://github.com/dweymouth/supersonic/issues/283) On Jellyfin, a long artist biography could overflow the page header
+- [#288](https://github.com/dweymouth/supersonic/issues/288) Systray icon missing on Linux since 0.7.0
+
 ## [0.8.0] - 2023-11-15
 
 ### Added
