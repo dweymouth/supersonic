@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.8.2] - 2023-12-16
+
+### Fixed
+- [#295](https://github.com/dweymouth/supersonic/issues/295) Occasional crash when showing album info dialog, especially on Jellyfin
+- [#294](https://github.com/dweymouth/supersonic/issues/294) Unable to connect to Airsonic servers not supporting latest Subsonic API
+- [#293](https://github.com/dweymouth/supersonic/issues/293) Long album titles overflow the bounds of info dialog
+- [#292](https://github.com/dweymouth/supersonic/issues/292) ReplayGain "prevent clipping" setting was reversed
+
 ## [0.8.1] - 2023-12-06
 
 ### Fixed

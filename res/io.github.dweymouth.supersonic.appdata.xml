@@ -28,14 +28,12 @@
       <li>Scrobble plays to server, with configurable criteria</li>
       <li>Multi-server support</li>
       <li>Primary and alternate server hostnames, e.g. for internal and external URLs</li>
-      <li>Browse by albums, artists, genres, playlists</li>
       <li>Set filters in albums browsing view</li>
       <li>Album and playlist views with tracklist and cover image</li>
       <li>Artist view with biography, image, similar artists, and discography</li>
       <li>Create, play, and update playlists</li>
       <li>Sort tracklist views by column and configure visible tracklist columns</li>
       <li>Set/unset favorite and browse by favorite albums, artists, and songs</li>
-      <li>View and edit play queue (add and remove tracks; reorder support  coming soon)</li>
       <li>Shuffle and repeat playback modes (partial; shuffle album,  playlist, artist radio, random songs)</li>
     </ul>
   </description>
@@ -61,19 +59,20 @@
   </screenshots>
 
  <releases>
-  <release date="2023-12-06" version="0.8.1">
+  <release date="2023-12-16" version="0.8.2">
    <description>
      <p>
-       Version 0.8.1 of Supersonic
+       Version 0.8.2 of Supersonic
      </p>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Artist Radio on Jellyfin not generating a fresh mix if clicked a second time</li>
-       <li>On Jellyfin, a long artist biography could overflow the page header</li>
-       <li>Systray icon missing on Linux since 0.7.0</li>
+       <li>Occasional crash when showing album info dialog, especially on Jellyfin</li>
+       <li>Unable to connect to Airsonic servers not supporting latest Subsonic API</li>
+       <li>Long album titles overflow the bounds of info dialog</li>
+       <li>ReplayGain "prevent clipping" setting was reversed</li>
      </ul>
 
    </description>

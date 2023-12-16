@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.8.1"
+	AppVersion       = "0.8.2"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -16,8 +16,9 @@ var (
 
 	WhatsFixed = `
 ## Fixed
-* Artist Radio on Jellyfin not generating a fresh mix if clicked a second time
-* On Jellyfin, a long artist biography could overflow the page header
-* Systray icon missing on Linux since 0.7.0
+* Occasional crash when showing album info dialog, especially on Jellyfin
+* Unable to connect to Airsonic servers not supporting latest Subsonic API
+* Long album titles overflow the bounds of info dialog
+* ReplayGain "prevent clipping" setting was reversed
 `
 )
