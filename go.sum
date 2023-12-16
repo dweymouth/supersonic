@@ -75,8 +75,6 @@ github.com/dweymouth/go-jellyfin v0.0.0-20231116161116-e800860bdacc h1:wJy4U12Ys
 github.com/dweymouth/go-jellyfin v0.0.0-20231116161116-e800860bdacc/go.mod h1:BMwS4vdjEYf1gmjPGSKCzWP/I6YlI6fkefJ9nsjBjaU=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee h1:ZGyJ6wp7CAfT31BugypcF/TPKEy2RrGR9JFq1JOjOpY=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee/go.mod h1:Ov0ieN90M7i+0k3OxhA/g1dozGs+UcPHDsMKqPgRDk0=
-github.com/dweymouth/go-subsonic v0.0.0-20231115012731-a3d1f90274c1 h1:1I5/hlV4lQ0B0NdBZvwWSqL8hvvKhRRbJK6fGsxFSLs=
-github.com/dweymouth/go-subsonic v0.0.0-20231115012731-a3d1f90274c1/go.mod h1:OWtcumdQsan8uM6wmx6PqKhldaCthH10CQ+vb+94kzo=
 github.com/dweymouth/go-subsonic v0.0.0-20231216015633-3797c9b3d94d h1:E9heA09mvlF+i+fH8Cow7NgRpQ+cbJQkdFL0OtFo624=
 github.com/dweymouth/go-subsonic v0.0.0-20231216015633-3797c9b3d94d/go.mod h1:OWtcumdQsan8uM6wmx6PqKhldaCthH10CQ+vb+94kzo=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
