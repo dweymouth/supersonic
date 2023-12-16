@@ -440,6 +440,7 @@ func fillAlbum(a *jellyfin.Album, album *mediaprovider.Album) {
 	album.TrackCount = a.ChildCount
 	album.Genres = a.Genres
 	album.Favorite = a.UserData.IsFavorite
+	album.ReleaseTypes = mediaprovider.ReleaseTypeAlbum
 }
 
 func (j *jellyfinMediaProvider) toPlaylist(p *jellyfin.Playlist) *mediaprovider.Playlist {
