@@ -101,6 +101,7 @@ type Track struct {
 	PlayCount   int
 	FilePath    string
 	BitRate     int
+	Comment     string
 }
 
 type Playlist struct {

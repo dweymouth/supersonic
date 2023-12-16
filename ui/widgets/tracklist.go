@@ -32,14 +32,17 @@ const (
 	ColumnFavorite = "Favorite"
 	ColumnRating   = "Rating"
 	ColumnPlays    = "Plays"
+	ColumnComment  = "Comment"
 	ColumnBitrate  = "Bitrate"
 	ColumnSize     = "Size"
 	ColumnPath     = "Path"
+
+	numColumns = 13
 )
 
 var columns = []string{
-	ColumnNum, ColumnTitle, ColumnArtist, ColumnAlbum, ColumnTime, ColumnYear,
-	ColumnFavorite, ColumnRating, ColumnPlays, ColumnBitrate, ColumnSize, ColumnPath,
+	ColumnNum, ColumnTitle, ColumnArtist, ColumnAlbum, ColumnTime, ColumnYear, ColumnFavorite,
+	ColumnRating, ColumnPlays, ColumnComment, ColumnBitrate, ColumnSize, ColumnPath,
 }
 
 type TracklistSort struct {
@@ -114,15 +117,15 @@ type trackModel struct {
 }
 
 func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
-	t := &Tracklist{visibleColumns: make([]bool, 12)}
+	t := &Tracklist{visibleColumns: make([]bool, numColumns)}
 	t.ExtendBaseWidget(t)
 
 	if len(tracks) > 0 {
 		t._setTracks(tracks)
 	}
 
-	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Bitrate, Size, Path
-	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 55, 100, 65, 75, 75, -1})
+	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
+	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1})
 	t.buildHeader()
 	t.hdr.OnColumnSortChanged = t.onSorted
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
@@ -190,6 +193,7 @@ func (t *Tracklist) buildHeader() {
 		{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true},
 		{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
 		{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		{Text: "Comment", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
 		{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
 		{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
 		{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
@@ -440,6 +444,8 @@ func (t *Tracklist) doSortTracks() {
 		t.intSort(func(tr *trackModel) int64 { return tr.track.Size })
 	case ColumnPlays:
 		t.intSort(func(tr *trackModel) int64 { return int64(tr.track.PlayCount) })
+	case ColumnComment:
+		t.stringSort(func(tr *trackModel) string { return tr.track.Comment })
 	case ColumnBitrate:
 		t.intSort(func(tr *trackModel) int64 { return int64(tr.track.BitRate) })
 	case ColumnFavorite:
@@ -713,6 +719,7 @@ type TrackRow struct {
 	rating   *StarRating
 	bitrate  *widget.Label
 	plays    *widget.Label
+	comment  *widget.Label
 	size     *widget.Label
 	path     *widget.Label
 
@@ -741,12 +748,13 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.rating.StarSize = 16
 	t.rating.OnRatingChanged = t.setTrackRating
 	t.plays = newTrailingAlignLabel()
+	t.comment = newTruncatingLabel()
 	t.bitrate = newTrailingAlignLabel()
 	t.size = newTrailingAlignLabel()
 	t.path = newTruncatingLabel()
 
 	t.Content = container.New(tracklist.colLayout,
-		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.rating, t.plays, t.bitrate, t.size, t.path)
+		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.rating, t.plays, t.comment, t.bitrate, t.size, t.path)
 	return t
 }
 
@@ -788,6 +796,7 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 		t.dur.Text = util.SecondsToTimeString(float64(tr.Duration))
 		t.year.Text = strconv.Itoa(tr.Year)
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
+		t.comment.Text = tr.Comment
 		t.bitrate.Text = strconv.Itoa(tr.BitRate)
 		t.size.Text = util.BytesToSizeString(tr.Size)
 		t.path.Text = tr.FilePath
@@ -851,6 +860,7 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 	t.rating.IsDisabled = t.tracklist.Options.DisableRating
 	t.rating.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnRating)]
 	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
+	t.comment.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnComment)]
 	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]
 	t.size.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnSize)]
 	t.path.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPath)]

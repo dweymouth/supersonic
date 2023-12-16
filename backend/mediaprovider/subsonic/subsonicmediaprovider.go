@@ -360,6 +360,7 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		FilePath:    ch.Path,
 		Size:        ch.Size,
 		BitRate:     ch.BitRate,
+		Comment:     ch.Comment,
 	}
 }
 
