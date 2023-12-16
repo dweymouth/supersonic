@@ -87,9 +87,10 @@ func (a *AlbumInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *AlbumInfoDialog) infoLabel(info string) *widget.Label {
-	last := strings.LastIndex(info, "<a href")
-	infoWithoutLink := strings.TrimSpace(info[:last])
-	lbl := widget.NewLabel(infoWithoutLink)
+	if last := strings.LastIndex(info, "<a href"); last > 0 {
+		info = strings.TrimSpace(info[:last])
+	}
+	lbl := widget.NewLabel(info)
 	lbl.Wrapping = fyne.TextWrapWord
 	lbl.Alignment = fyne.TextAlignLeading
 	return lbl
