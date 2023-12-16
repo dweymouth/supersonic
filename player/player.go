@@ -315,9 +315,9 @@ func (p *Player) SetReplayGainOptions(options ReplayGainOptions) error {
 		if err := p.mpv.SetProperty("replaygain-preamp", mpv.FORMAT_DOUBLE, options.PreampGain); err != nil {
 			return err
 		}
-		clip := "no"
+		clip := "yes"
 		if options.PreventClipping {
-			clip = "yes"
+			clip = "no"
 		}
 		if err := p.mpv.SetPropertyString("replaygain-clip", clip); err != nil {
 			return err
