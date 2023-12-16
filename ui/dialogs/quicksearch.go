@@ -74,7 +74,7 @@ func NewQuickSearch(mp mediaprovider.MediaProvider, im util.ImageFetcher) *Quick
 	)
 
 	dismissBtn := widget.NewButton("Close", q.onDismiss)
-	title := widget.NewRichText(&widget.TextSegment{Text: "Quick Search", Style: boldStyle})
+	title := widget.NewRichText(&widget.TextSegment{Text: "Quick Search", Style: util.BoldRichTextStyle})
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 	q.content = container.NewBorder(
 		container.NewVBox(title, se),

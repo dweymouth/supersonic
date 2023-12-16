@@ -14,10 +14,13 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"golang.org/x/net/html"
 )
+
+var BoldRichTextStyle = widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}, Inline: true}
 
 func SecondsToTimeString(s float64) string {
 	if s < 0 {
@@ -107,6 +110,52 @@ func PlaintextFromHTMLString(s string) string {
 		}
 	}
 	return text
+}
+
+func DisplayReleaseType(releaseTypes mediaprovider.ReleaseTypes) string {
+	baseType := "Album"
+	switch {
+	case releaseTypes&mediaprovider.ReleaseTypeAudiobook > 0:
+		baseType = "Audiobook"
+	case releaseTypes&mediaprovider.ReleaseTypeAudioDrama > 0:
+		baseType = "Audio Drama"
+	case releaseTypes&mediaprovider.ReleaseTypeBroadcast > 0:
+		baseType = "Broadcast"
+	case releaseTypes&mediaprovider.ReleaseTypeDJMix > 0:
+		baseType = "DJ-Mix"
+	case releaseTypes&mediaprovider.ReleaseTypeEP > 0:
+		baseType = "EP"
+	case releaseTypes&mediaprovider.ReleaseTypeFieldRecording > 0:
+		baseType = "Field Recording"
+	case releaseTypes&mediaprovider.ReleaseTypeInterview > 0:
+		baseType = "Interview"
+	case releaseTypes&mediaprovider.ReleaseTypeMixtape > 0:
+		baseType = "Mixtape"
+	case releaseTypes&mediaprovider.ReleaseTypeSingle > 0:
+		baseType = "Single"
+	case releaseTypes&mediaprovider.ReleaseTypeSoundtrack > 0:
+		baseType = "Soundtrack"
+	}
+
+	var modifiers []string
+	if releaseTypes&mediaprovider.ReleaseTypeLive > 0 {
+		modifiers = append(modifiers, "Live")
+	}
+	if releaseTypes&mediaprovider.ReleaseTypeDemo > 0 {
+		modifiers = append(modifiers, "Demo")
+	}
+	if releaseTypes&mediaprovider.ReleaseTypeRemix > 0 {
+		modifiers = append(modifiers, "Remix")
+	}
+	if releaseTypes&mediaprovider.ReleaseTypeSpokenWord > 0 {
+		modifiers = append(modifiers, "Spoken Word")
+	}
+	if releaseTypes&mediaprovider.ReleaseTypeCompilation > 0 {
+		modifiers = append(modifiers, "Compilation")
+	}
+
+	modifiers = append(modifiers, baseType)
+	return strings.Join(modifiers, " ")
 }
 
 func NewRatingSubmenu(onSetRating func(int)) *fyne.MenuItem {

@@ -1,16 +1,47 @@
 package mediaprovider
 
+// Bit field flag for the ReleaseTypes property
+type ReleaseType = int32
+
+// Bit field of release types
+type ReleaseTypes = int32
+
+// Set of possible release types
+// Taken from Picard:
+//
+//	(a) https://picard-docs.musicbrainz.org/en/config/options_releases.html
+//	(b) https://musicbrainz.org/doc/Release_Group/Type
+const (
+	ReleaseTypeAlbum          ReleaseType = 0x0001
+	ReleaseTypeAudiobook      ReleaseType = 0x0002
+	ReleaseTypeAudioDrama     ReleaseType = 0x0004
+	ReleaseTypeBroadcast      ReleaseType = 0x0008
+	ReleaseTypeCompilation    ReleaseType = 0x0010
+	ReleaseTypeDemo           ReleaseType = 0x0020
+	ReleaseTypeDJMix          ReleaseType = 0x0040
+	ReleaseTypeEP             ReleaseType = 0x0080
+	ReleaseTypeFieldRecording ReleaseType = 0x0100
+	ReleaseTypeInterview      ReleaseType = 0x0200
+	ReleaseTypeLive           ReleaseType = 0x0400
+	ReleaseTypeMixtape        ReleaseType = 0x0800
+	ReleaseTypeRemix          ReleaseType = 0x1000
+	ReleaseTypeSingle         ReleaseType = 0x2000
+	ReleaseTypeSoundtrack     ReleaseType = 0x4000
+	ReleaseTypeSpokenWord     ReleaseType = 0x8000
+)
+
 type Album struct {
-	ID          string
-	CoverArtID  string
-	Name        string
-	Duration    int
-	ArtistIDs   []string
-	ArtistNames []string
-	Year        int
-	Genres      []string
-	TrackCount  int
-	Favorite    bool
+	ID           string
+	CoverArtID   string
+	Name         string
+	Duration     int
+	ArtistIDs    []string
+	ArtistNames  []string
+	Year         int
+	Genres       []string
+	TrackCount   int
+	Favorite     bool
+	ReleaseTypes ReleaseTypes
 }
 
 type AlbumWithTracks struct {

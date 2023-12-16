@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -404,6 +405,54 @@ func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
 	album.TrackCount = subAlbum.SongCount
 	album.Genres = genres
 	album.Favorite = !subAlbum.Starred.IsZero()
+	album.ReleaseTypes = normalizeReleaseTypes(subAlbum.ReleaseTypes)
+	if subAlbum.IsCompilation {
+		album.ReleaseTypes |= mediaprovider.ReleaseTypeCompilation
+	}
+}
+
+func normalizeReleaseTypes(releaseTypes []string) mediaprovider.ReleaseTypes {
+	var mpReleaseTypes mediaprovider.ReleaseTypes
+	for _, t := range releaseTypes {
+		switch strings.ToLower(strings.ReplaceAll(t, " ", "")) {
+		case "album":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeAlbum
+		case "audiobook":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeAudiobook
+		case "audiodrama":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeAudioDrama
+		case "broadcast":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeBroadcast
+		case "compilation":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeCompilation
+		case "demo":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeDemo
+		case "djmix":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeDJMix
+		case "ep":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeEP
+		case "fieldrecording":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeFieldRecording
+		case "interview":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeInterview
+		case "live":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeLive
+		case "mixtape":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeMixtape
+		case "remix":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeRemix
+		case "single":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeSingle
+		case "soundtrack":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeSoundtrack
+		case "spokenword":
+			mpReleaseTypes |= mediaprovider.ReleaseTypeSpokenWord
+		}
+	}
+	if mpReleaseTypes == 0 {
+		return mediaprovider.ReleaseTypeAlbum
+	}
+	return mpReleaseTypes
 }
 
 func toArtistFromID3(ar *subsonic.ArtistID3) *mediaprovider.Artist {
