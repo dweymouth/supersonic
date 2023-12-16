@@ -26,8 +26,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-var boldStyle = widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}}
-
 type SettingsDialog struct {
 	widget.BaseWidget
 
@@ -236,7 +234,7 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 		container.NewHBox(systemTrayEnable, closeToTray),
 		s.newSectionSeparator(),
 
-		widget.NewRichText(&widget.TextSegment{Text: "Scrobbling", Style: boldStyle}),
+		widget.NewRichText(&widget.TextSegment{Text: "Scrobbling", Style: util.BoldRichTextStyle}),
 		scrobbleEnabled,
 		container.NewHBox(
 			widget.NewLabel("Scrobble when"),
@@ -339,7 +337,7 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 			)),
 		s.newSectionSeparator(),
 
-		widget.NewRichText(&widget.TextSegment{Text: "ReplayGain", Style: boldStyle}),
+		widget.NewRichText(&widget.TextSegment{Text: "ReplayGain", Style: util.BoldRichTextStyle}),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel("ReplayGain mode"), container.NewGridWithColumns(2, replayGainSelect),
 			widget.NewLabel("ReplayGain preamp"), container.NewHBox(preampGain, widget.NewLabel("dB")),
@@ -423,10 +421,10 @@ func (s *SettingsDialog) createExperimentalTab(window fyne.Window) *container.Ta
 	return container.NewTabItem("Experimental", container.NewVBox(
 		warningLabel,
 		s.newSectionSeparator(),
-		widget.NewRichText(&widget.TextSegment{Text: "UI Scaling", Style: boldStyle}),
+		widget.NewRichText(&widget.TextSegment{Text: "UI Scaling", Style: util.BoldRichTextStyle}),
 		uiScaleRadio,
 		s.newSectionSeparator(),
-		widget.NewRichText(&widget.TextSegment{Text: "Application Font", Style: boldStyle}),
+		widget.NewRichText(&widget.TextSegment{Text: "Application Font", Style: util.BoldRichTextStyle}),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel("Normal font"), container.NewBorder(nil, nil, nil, normalFontBrowse, normalFontEntry),
 			widget.NewLabel("Bold font"), container.NewBorder(nil, nil, nil, boldFontBrowse, boldFontEntry),

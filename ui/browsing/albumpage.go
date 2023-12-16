@@ -170,11 +170,13 @@ type AlbumPageHeader struct {
 
 	page *AlbumPage
 
-	cover       *widgets.ImagePlaceholder
-	titleLabel  *widget.RichText
-	artistLabel *widgets.MultiHyperlink
-	genreLabel  *widgets.MultiHyperlink
-	miscLabel   *widget.Label
+	cover            *widgets.ImagePlaceholder
+	titleLabel       *widget.RichText
+	releaseTypeLabel *widget.RichText
+	artistLabel      *widgets.MultiHyperlink
+	artistLabelSpace *util.HSpace // TODO: remove when no longer needed
+	genreLabel       *widgets.MultiHyperlink
+	miscLabel        *widget.Label
 
 	toggleFavButton *widgets.FavoriteButton
 
@@ -196,10 +198,15 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
+	a.releaseTypeLabel = widget.NewRichText(
+		&widget.TextSegment{Text: "Album", Style: util.BoldRichTextStyle},
+		&widget.TextSegment{Text: " by", Style: widget.RichTextStyle{Inline: true}},
+	)
 	a.artistLabel = widgets.NewMultiHyperlink()
 	a.artistLabel.OnTapped = func(id string) {
 		a.page.contr.NavigateTo(controller.ArtistRoute(id))
 	}
+	a.artistLabelSpace = util.NewHSpace(0) // updated in Update
 	a.genreLabel = widgets.NewMultiHyperlink()
 	a.genreLabel.OnTapped = func(genre string) {
 		a.page.contr.NavigateTo(controller.GenreRoute(genre))
@@ -237,13 +244,21 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	}
 	a.toggleFavButton = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 
-	// Todo: there's got to be a way to make this less convoluted. Custom layout?
+	// TODO: Create a nicer custom layout to set this up properly
+	//   OR once TODO in MultiHyperlink to use RichText as a provider is solved,
+	//   extend MultiHyperlink to support prepending rich text segments and
+	//   don't use two separate widgets here at all.
+	// n.b. cannot place MultiHyperlink in a HBox or it collapses in width
+	artistReleaseTypeLine := container.NewStack(
+		a.releaseTypeLabel,
+		container.NewBorder(nil, nil, a.artistLabelSpace, nil, a.artistLabel))
+	// TODO: there's got to be a way to make this less convoluted. Custom layout?
 	a.container = util.AddHeaderBackground(
 		container.NewBorder(nil, nil, a.cover, nil,
 			container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 				a.titleLabel,
 				container.NewVBox(
-					container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, a.artistLabel, a.genreLabel, a.miscLabel),
+					container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, artistReleaseTypeLine, a.genreLabel, a.miscLabel),
 					container.NewVBox(
 						container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn, menuBtn),
 						container.NewHBox(util.NewHSpace(2), a.toggleFavButton),
@@ -262,6 +277,9 @@ func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backe
 	a.albumID = album.ID
 	a.coverID = album.CoverArtID
 	a.titleLabel.Segments[0].(*widget.TextSegment).Text = album.Name
+	a.releaseTypeLabel.Segments[0].(*widget.TextSegment).Text = util.DisplayReleaseType(album.ReleaseTypes)
+	a.releaseTypeLabel.Refresh() // needed so MinSize returns correct width below
+	a.artistLabelSpace.Width = a.releaseTypeLabel.MinSize().Width - 16
 	a.artistLabel.BuildSegments(album.ArtistNames, album.ArtistIDs)
 	a.genreLabel.BuildSegments(album.Genres, album.Genres)
 	a.miscLabel.SetText(formatMiscLabelStr(album))
