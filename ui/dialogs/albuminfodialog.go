@@ -60,6 +60,7 @@ func (a *AlbumInfoDialog) buildMainContainer(albumInfo *mediaprovider.AlbumInfo,
 	title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
 	title.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
+	title.Truncation = fyne.TextTruncateEllipsis
 
 	infoContent := widget.NewLabel("Album info not available")
 
