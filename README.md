@@ -33,17 +33,10 @@ Screenshots of Supersonic running against the Navidrome demo server, showcasing 
 * [x] Scrobble plays to server, with configurable criteria
 * [x] Add and switch between multiple servers
 * [x] Primary and alternate server hostnames, e.g. for internal and external URLs
-* [x] Browse by albums, artists, genres, playlists
 * [x] Set filters in albums browsing view
-* [x] Album and playlist views with tracklist and cover image
-* [x] Artist view with biography, image, similar artists, and discography
 * [x] Play "artist radio" (mix of songs from given artist and similar artists, depends on your server's support)
-* [x] Create, play, and update playlists
 * [x] Sort tracklist views by column and configure visible tracklist columns
-* [x] Set/unset favorite and browse by favorite albums, artists, and songs
-* [x] Set and view track rating (0-5 stars)
 * [x] Download songs, albums or playlists
-* [x] View and edit play queue (add and remove tracks; reorder support coming soon)
 * [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs; repeat one/all)
 * [ ] Browse by folders (planned)
 * [ ] Cast to uPnP/DLNA devices (likely planned)
