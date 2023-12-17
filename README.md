@@ -38,6 +38,7 @@ Screenshots of Supersonic running against the Navidrome demo server, showcasing 
 * [x] Sort tracklist views by column and configure visible tracklist columns
 * [x] Download songs, albums or playlists
 * [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs; repeat one/all)
+* [ ] Server jukebox control (planned)
 * [ ] Browse by folders (planned)
 * [ ] Cast to uPnP/DLNA devices (likely planned)
 * [ ] Offline mode (eventually planned)
