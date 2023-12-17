@@ -8,7 +8,7 @@ import (
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/widgets"
@@ -34,7 +34,7 @@ type BottomPanel struct {
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, contr *controller.Controller) *BottomPanel {
+func NewBottomPanel(p *mpv.Player, pm *backend.PlaybackManager, contr *controller.Controller) *BottomPanel {
 	bp := &BottomPanel{playbackManager: pm}
 	bp.ExtendBaseWidget(bp)
 
@@ -93,7 +93,7 @@ func NewBottomPanel(p *player.Player, pm *backend.PlaybackManager, contr *contro
 		p.SeekBackOrPrevious()
 	})
 	bp.Controls.OnSeek(func(f float64) {
-		p.Seek(fmt.Sprintf("%d", int(f*100)), player.SeekAbsolutePercent)
+		p.Seek(fmt.Sprintf("%d", int(f*100)), mpv.SeekAbsolutePercent)
 	})
 
 	bp.AuxControls = widgets.NewAuxControls(p.GetVolume())

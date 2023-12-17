@@ -8,6 +8,7 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/godbus/dbus/v5"
 	"github.com/quarckster/go-mpris-server/pkg/events"
 	"github.com/quarckster/go-mpris-server/pkg/server"
@@ -43,13 +44,13 @@ type MPRISHandler struct {
 	connErr      error
 	playerName   string
 	curTrackPath string // empty for no track
-	p            *player.Player
+	p            *mpv.Player
 	pm           *PlaybackManager
 	s            *server.Server
 	evt          *events.EventHandler
 }
 
-func NewMPRISHandler(playerName string, p *player.Player, pm *PlaybackManager) *MPRISHandler {
+func NewMPRISHandler(playerName string, p *mpv.Player, pm *PlaybackManager) *MPRISHandler {
 	m := &MPRISHandler{playerName: playerName, p: p, pm: pm, connErr: errors.New("not started")}
 	m.s = server.NewServer(playerName, m, m)
 	m.evt = events.NewEventHandler(m.s)
@@ -180,12 +181,12 @@ func (m *MPRISHandler) Play() error {
 }
 
 func (m *MPRISHandler) Seek(offset types.Microseconds) error {
-	return m.p.Seek(fmt.Sprintf("%0.2f", microsecondsToSeconds(offset)), player.SeekRelative)
+	return m.p.Seek(fmt.Sprintf("%0.2f", microsecondsToSeconds(offset)), mpv.SeekRelative)
 }
 
 func (m *MPRISHandler) SetPosition(trackId string, position types.Microseconds) error {
 	if m.curTrackPath == trackId {
-		return m.p.Seek(fmt.Sprintf("%0.2f", microsecondsToSeconds(position)), player.SeekAbsolute)
+		return m.p.Seek(fmt.Sprintf("%0.2f", microsecondsToSeconds(position)), mpv.SeekAbsolute)
 	}
 	return nil
 }
@@ -326,4 +327,3 @@ func encodeTrackId(id string) string {
 	data := []byte(id)
 	return base32.StdEncoding.WithPadding('0').EncodeToString(data)
 }
-

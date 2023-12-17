@@ -23,6 +23,7 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 )
 
 // os_remote_command_callback is called by Objective-C when incoming OS media commands are received.
@@ -51,7 +52,7 @@ func os_remote_command_callback(command C.Command, value C.double) {
 
 // MPMediaHandler is the handler for MacOS media controls and system events.
 type MPMediaHandler struct {
-	player          *player.Player
+	player          *mpv.Player
 	playbackManager *PlaybackManager
 	artURLLookup    func(string) (string, error)
 }
@@ -62,7 +63,7 @@ var mpMediaEventRecipient *MPMediaHandler
 
 // NewMPMediaHandler creates a new MPMediaHandler instances and sets it as the current recipient
 // for incoming system events.
-func InitMPMediaHandler(player *player.Player, playbackManager *PlaybackManager, artURLLookup func(trackID string) (string, error)) error {
+func InitMPMediaHandler(player *mpv.Player, playbackManager *PlaybackManager, artURLLookup func(trackID string) (string, error)) error {
 	mp := &MPMediaHandler{
 		player:          player,
 		playbackManager: playbackManager,
@@ -187,5 +188,5 @@ func (mp *MPMediaHandler) OnCommandSeek(positionSeconds float64) {
 	if mp == nil || mp.player == nil {
 		return
 	}
-	mp.player.Seek(fmt.Sprintf("%0.2f", positionSeconds), player.SeekAbsolute)
+	mp.player.Seek(fmt.Sprintf("%0.2f", positionSeconds), mpv.SeekAbsolute)
 }

@@ -10,7 +10,7 @@ import (
 	"unicode"
 
 	"github.com/dweymouth/supersonic/backend"
-	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -37,7 +37,7 @@ type SettingsDialog struct {
 	OnEqualizerSettingsChanged     func()
 
 	config       *backend.Config
-	audioDevices []player.AudioDevice
+	audioDevices []mpv.AudioDevice
 	themeFiles   map[string]string // filename -> displayName
 	promptText   *widget.RichText
 
@@ -49,7 +49,7 @@ type SettingsDialog struct {
 // TODO: having this depend on the player package for the AudioDevice type is kinda gross. Refactor.
 func NewSettingsDialog(
 	config *backend.Config,
-	audioDeviceList []player.AudioDevice,
+	audioDeviceList []mpv.AudioDevice,
 	themeFileList map[string]string,
 	equalizerBands []string,
 	clientDecidesScrobble bool,

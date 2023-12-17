@@ -8,13 +8,14 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-const (
-	ReplayGainNone  = string(player.ReplayGainNone)
-	ReplayGainAlbum = string(player.ReplayGainAlbum)
-	ReplayGainTrack = string(player.ReplayGainTrack)
+var (
+	ReplayGainNone  = player.ReplayGainNone.String()
+	ReplayGainAlbum = player.ReplayGainAlbum.String()
+	ReplayGainTrack = player.ReplayGainTrack.String()
 	ReplayGainAuto  = "Auto"
 )
 
@@ -34,7 +35,7 @@ type PlaybackManager struct {
 	cancelPollPos context.CancelFunc
 	pollingTick   *time.Ticker
 	sm            *ServerManager
-	player        *player.Player
+	player        *mpv.Player
 
 	playTimeStopwatch   util.Stopwatch
 	curTrackTime        float64
@@ -59,7 +60,7 @@ type PlaybackManager struct {
 func NewPlaybackManager(
 	ctx context.Context,
 	s *ServerManager,
-	p *player.Player,
+	p *mpv.Player,
 	scrobbleCfg *ScrobbleConfig,
 	transcodeCfg *TranscodingConfig,
 ) *PlaybackManager {
@@ -335,7 +336,16 @@ func (p *PlaybackManager) StopAndClearPlayQueue() {
 
 func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
 	p.replayGainCfg = config
-	mode := player.ReplayGainMode(config.Mode)
+	mode := player.ReplayGainNone
+	switch config.Mode {
+	case ReplayGainAuto:
+		mode = player.ReplayGainTrack
+	case ReplayGainTrack:
+		mode = player.ReplayGainTrack
+	case ReplayGainAlbum:
+		mode = player.ReplayGainAlbum
+	}
+
 	if config.Mode == ReplayGainAuto {
 		mode = player.ReplayGainTrack
 	}

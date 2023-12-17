@@ -12,6 +12,7 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
@@ -36,7 +37,7 @@ type App struct {
 	ServerManager   *ServerManager
 	ImageManager    *ImageManager
 	PlaybackManager *PlaybackManager
-	Player          *player.Player
+	Player          *mpv.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
 
@@ -194,7 +195,7 @@ func (a *App) callOnReactivate() {
 }
 
 func (a *App) initMPV() error {
-	p := player.NewWithClientName(a.appName)
+	p := mpv.NewWithClientName(a.appName)
 	c := a.Config.LocalPlayback
 	c.InMemoryCacheSizeMB = clamp(c.InMemoryCacheSizeMB, 10, 500)
 	if err := p.Init(c.InMemoryCacheSizeMB); err != nil {
@@ -234,10 +235,16 @@ func (a *App) setupMPV() error {
 	if !sharedutil.SliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
 		a.Config.ReplayGain.Mode = ReplayGainNone
 	}
-	mode := player.ReplayGainMode(a.Config.ReplayGain.Mode)
-	if a.Config.ReplayGain.Mode == ReplayGainAuto {
+	mode := player.ReplayGainNone
+	switch a.Config.ReplayGain.Mode {
+	case ReplayGainAlbum:
+		mode = player.ReplayGainAlbum
+	case ReplayGainTrack:
+		mode = player.ReplayGainTrack
+	case ReplayGainAuto:
 		mode = player.ReplayGainTrack
 	}
+
 	a.Player.SetReplayGainOptions(player.ReplayGainOptions{
 		Mode:            mode,
 		PreventClipping: a.Config.ReplayGain.PreventClipping,
@@ -245,7 +252,7 @@ func (a *App) setupMPV() error {
 	})
 	a.Player.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
 
-	eq := &player.ISO15BandEqualizer{
+	eq := &mpv.ISO15BandEqualizer{
 		EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
 		Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
 	}

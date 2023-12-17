@@ -13,6 +13,7 @@ import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/dialogs"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -474,7 +475,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	devs, err := c.App.Player.ListAudioDevices()
 	if err != nil {
 		log.Printf("error listing audio devices: %v", err)
-		devs = []player.AudioDevice{{Name: "auto", Description: "Autoselect device"}}
+		devs = []mpv.AudioDevice{{Name: "auto", Description: "Autoselect device"}}
 	}
 
 	bands := c.App.Player.Equalizer().BandFrequencies()
@@ -491,7 +492,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	dlg.OnThemeSettingChanged = themeUpdateCallbk
 	dlg.OnEqualizerSettingsChanged = func() {
 		// currently we only have one equalizer type
-		eq := c.App.Player.Equalizer().(*player.ISO15BandEqualizer)
+		eq := c.App.Player.Equalizer().(*mpv.ISO15BandEqualizer)
 		eq.Disabled = !c.App.Config.LocalPlayback.EqualizerEnabled
 		eq.EQPreamp = c.App.Config.LocalPlayback.EqualizerPreamp
 		copy(eq.BandGains[:], c.App.Config.LocalPlayback.GraphicEqualizerBands)

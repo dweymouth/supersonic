@@ -8,6 +8,7 @@ import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -41,7 +42,7 @@ type nowPlayingPageState struct {
 	pool    *util.WidgetPool
 	conf    *backend.NowPlayingPageConfig
 	pm      *backend.PlaybackManager
-	p       *player.Player
+	p       *mpv.Player
 	canRate bool
 }
 
@@ -51,7 +52,7 @@ func NewNowPlayingPage(
 	pool *util.WidgetPool,
 	conf *backend.NowPlayingPageConfig,
 	pm *backend.PlaybackManager,
-	p *player.Player, // TODO: once other player backends are supported (eg uPnP), refactor
+	p *mpv.Player, // TODO: once other player backends are supported (eg uPnP), refactor
 	canRate bool,
 ) *NowPlayingPage {
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
