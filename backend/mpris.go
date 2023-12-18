@@ -3,12 +3,10 @@ package backend
 import (
 	"encoding/base32"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/player"
-	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/godbus/dbus/v5"
 	"github.com/quarckster/go-mpris-server/pkg/events"
 	"github.com/quarckster/go-mpris-server/pkg/server"
@@ -44,24 +42,23 @@ type MPRISHandler struct {
 	connErr      error
 	playerName   string
 	curTrackPath string // empty for no track
-	p            *mpv.Player
 	pm           *PlaybackManager
 	s            *server.Server
 	evt          *events.EventHandler
 }
 
-func NewMPRISHandler(playerName string, p *mpv.Player, pm *PlaybackManager) *MPRISHandler {
-	m := &MPRISHandler{playerName: playerName, p: p, pm: pm, connErr: errors.New("not started")}
+func NewMPRISHandler(playerName string, pm *PlaybackManager) *MPRISHandler {
+	m := &MPRISHandler{playerName: playerName, pm: pm, connErr: errors.New("not started")}
 	m.s = server.NewServer(playerName, m, m)
 	m.evt = events.NewEventHandler(m.s)
 
-	m.p.OnSeek(func() {
+	pm.OnSeek(func() {
 		if m.connErr == nil {
-			pos := secondsToMicroseconds(m.p.GetStatus().TimePos)
+			pos := secondsToMicroseconds(pm.PlayerStatus().TimePos)
 			m.evt.Player.OnSeek(pos)
 		}
 	})
-	m.pm.OnSongChange(func(tr, _ *mediaprovider.Track) {
+	pm.OnSongChange(func(tr, _ *mediaprovider.Track) {
 		if m.connErr == nil {
 			m.evt.Player.OnTitle()
 		}
@@ -71,7 +68,7 @@ func NewMPRISHandler(playerName string, p *mpv.Player, pm *PlaybackManager) *MPR
 			m.curTrackPath = dbusTrackIDPrefix + encodeTrackId(tr.ID)
 		}
 	})
-	m.pm.OnVolumeChange(func(vol int) {
+	pm.OnVolumeChange(func(vol int) {
 		if m.connErr == nil {
 			m.evt.Player.OnVolume()
 		}
@@ -81,9 +78,9 @@ func NewMPRISHandler(playerName string, p *mpv.Player, pm *PlaybackManager) *MPR
 			m.evt.Player.OnPlayPause()
 		}
 	}
-	m.p.OnStopped(emitPlayStatus)
-	m.p.OnPlaying(emitPlayStatus)
-	m.p.OnPaused(emitPlayStatus)
+	m.pm.OnStopped(emitPlayStatus)
+	m.pm.OnPlaying(emitPlayStatus)
+	m.pm.OnPaused(emitPlayStatus)
 
 	return m
 }
@@ -148,45 +145,47 @@ func (m *MPRISHandler) SupportedMimeTypes() ([]string, error) {
 // OrgMprisMediaPlayer2PlayerAdapter implementation
 
 func (m *MPRISHandler) Next() error {
-	return m.p.SeekNext()
+	return m.pm.SeekNext()
 }
 
 func (m *MPRISHandler) Previous() error {
-	return m.p.SeekBackOrPrevious()
+	return m.pm.SeekBackOrPrevious()
 }
 
 func (m *MPRISHandler) Pause() error {
-	if m.p.GetStatus().State == player.Playing {
-		return m.p.PlayPause()
+	if m.pm.PlayerStatus().State == player.Playing {
+		return m.pm.PlayPause()
 	}
 	return nil
 }
 
 func (m *MPRISHandler) PlayPause() error {
-	return m.p.PlayPause()
+	return m.pm.PlayPause()
 }
 
 func (m *MPRISHandler) Stop() error {
-	return m.p.Stop()
+	return m.pm.Stop()
 }
 
 func (m *MPRISHandler) Play() error {
-	switch m.p.GetStatus().State {
+	switch m.pm.PlayerStatus().State {
 	case player.Paused:
-		return m.p.PlayPause()
+		return m.pm.PlayPause()
 	case player.Stopped:
-		return m.p.PlayFromBeginning()
+		return m.pm.PlayFromBeginning()
 	}
 	return nil
 }
 
 func (m *MPRISHandler) Seek(offset types.Microseconds) error {
-	return m.p.Seek(fmt.Sprintf("%0.2f", microsecondsToSeconds(offset)), mpv.SeekRelative)
+	// MPRIS seek command is relative to current position
+	pos := m.pm.PlayerStatus().TimePos + microsecondsToSeconds(offset)
+	return m.pm.SeekSeconds(pos)
 }
 
 func (m *MPRISHandler) SetPosition(trackId string, position types.Microseconds) error {
 	if m.curTrackPath == trackId {
-		return m.p.Seek(fmt.Sprintf("%0.2f", microsecondsToSeconds(position)), mpv.SeekAbsolute)
+		return m.pm.SeekSeconds(microsecondsToSeconds(position))
 	}
 	return nil
 }
@@ -196,7 +195,7 @@ func (m *MPRISHandler) OpenUri(uri string) error {
 }
 
 func (m *MPRISHandler) PlaybackStatus() (types.PlaybackStatus, error) {
-	switch m.p.GetStatus().State {
+	switch m.pm.PlayerStatus().State {
 	case player.Playing:
 		return types.PlaybackStatusPlaying, nil
 	case player.Paused:
@@ -244,7 +243,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	if m.curTrackPath != "" {
 		trackObjPath = m.curTrackPath
 	}
-	status := m.p.GetStatus()
+	status := m.pm.PlayerStatus()
 	var tr mediaprovider.Track
 	if np := m.pm.NowPlaying(); np != nil && status.State != player.Stopped {
 		tr = *np
@@ -272,7 +271,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 }
 
 func (m *MPRISHandler) Volume() (float64, error) {
-	return float64(m.p.GetVolume()) / 100, nil
+	return float64(m.pm.Volume()) / 100, nil
 }
 
 func (m *MPRISHandler) SetVolume(v float64) error {
@@ -280,7 +279,7 @@ func (m *MPRISHandler) SetVolume(v float64) error {
 }
 
 func (m *MPRISHandler) Position() (int64, error) {
-	return int64(secondsToMicroseconds(m.p.GetStatus().TimePos)), nil
+	return int64(secondsToMicroseconds(m.pm.PlayerStatus().TimePos)), nil
 }
 
 func (m *MPRISHandler) MinimumRate() (float64, error) {

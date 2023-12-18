@@ -118,7 +118,7 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 
 	// OS media center integrations
 	a.setupMPRIS(displayAppName)
-	InitMPMediaHandler(a.Player, a.PlaybackManager, func(id string) (string, error) {
+	InitMPMediaHandler(a.PlaybackManager, func(id string) (string, error) {
 		a.ImageManager.GetCoverThumbnail(id) // ensure image is cached locally
 		return a.ImageManager.GetCoverArtUrl(id)
 	})
@@ -263,7 +263,7 @@ func (a *App) setupMPV() error {
 }
 
 func (a *App) setupMPRIS(mprisAppName string) {
-	a.MPRISHandler = NewMPRISHandler(mprisAppName, a.Player, a.PlaybackManager)
+	a.MPRISHandler = NewMPRISHandler(mprisAppName, a.PlaybackManager)
 	a.MPRISHandler.ArtURLLookup = a.ImageManager.GetCoverArtUrl
 	a.MPRISHandler.OnRaise = func() error { a.callOnReactivate(); return nil }
 	a.MPRISHandler.OnQuit = func() error {

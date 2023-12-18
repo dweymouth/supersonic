@@ -25,15 +25,6 @@ const (
 	SeekRelativePercent
 )
 
-// One of "no", "track", or "album"
-type ReplayGainMode string
-
-const (
-	ReplayGainNone  ReplayGainMode = "no"
-	ReplayGainTrack ReplayGainMode = "track"
-	ReplayGainAlbum ReplayGainMode = "album"
-)
-
 // Information about a specific audio device.
 // Returned by ListAudioDevices.
 type AudioDevice struct {

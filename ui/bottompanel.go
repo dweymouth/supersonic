@@ -1,14 +1,12 @@
 package ui
 
 import (
-	"fmt"
 	"image"
 	"log"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/widgets"
@@ -21,8 +19,7 @@ import (
 type BottomPanel struct {
 	widget.BaseWidget
 
-	ImageManager    *backend.ImageManager
-	playbackManager *backend.PlaybackManager
+	ImageManager *backend.ImageManager
 
 	NowPlaying  *widgets.NowPlayingCard
 	Controls    *widgets.PlayerControls
@@ -34,24 +31,24 @@ type BottomPanel struct {
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(p *mpv.Player, pm *backend.PlaybackManager, contr *controller.Controller) *BottomPanel {
-	bp := &BottomPanel{playbackManager: pm}
+func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *BottomPanel {
+	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
 
-	bp.playbackManager.OnSongChange(bp.onSongChange)
-	bp.playbackManager.OnPlayTimeUpdate(func(cur, total float64) {
-		if !bp.playbackManager.IsSeeking() {
+	pm.OnSongChange(bp.onSongChange)
+	pm.OnPlayTimeUpdate(func(cur, total float64) {
+		if !pm.IsSeeking() {
 			bp.Controls.UpdatePlayTime(cur, total)
 		}
 	})
 
-	p.OnPaused(func() {
+	pm.OnPaused(func() {
 		bp.Controls.SetPlaying(false)
 	})
-	p.OnPlaying(func() {
+	pm.OnPlaying(func() {
 		bp.Controls.SetPlaying(true)
 	})
-	p.OnStopped(func() {
+	pm.OnStopped(func() {
 		bp.Controls.SetPlaying(false)
 	})
 
@@ -65,45 +62,45 @@ func NewBottomPanel(p *mpv.Player, pm *backend.PlaybackManager, contr *controlle
 		}
 	}
 	bp.NowPlaying.OnSetFavorite = func(fav bool) {
-		contr.SetTrackFavorites([]string{bp.playbackManager.NowPlaying().ID}, fav)
+		contr.SetTrackFavorites([]string{pm.NowPlaying().ID}, fav)
 	}
 	bp.NowPlaying.OnSetRating = func(rating int) {
-		contr.SetTrackRatings([]string{bp.playbackManager.NowPlaying().ID}, rating)
+		contr.SetTrackRatings([]string{pm.NowPlaying().ID}, rating)
 	}
 	bp.NowPlaying.OnAddToPlaylist = func() {
-		contr.DoAddTracksToPlaylistWorkflow([]string{bp.playbackManager.NowPlaying().ID})
+		contr.DoAddTracksToPlaylistWorkflow([]string{pm.NowPlaying().ID})
 	}
 	bp.NowPlaying.OnAlbumNameTapped = func() {
-		contr.NavigateTo(controller.AlbumRoute(bp.playbackManager.NowPlaying().AlbumID))
+		contr.NavigateTo(controller.AlbumRoute(pm.NowPlaying().AlbumID))
 	}
 	bp.NowPlaying.OnArtistNameTapped = func(artistID string) {
 		contr.NavigateTo(controller.ArtistRoute(artistID))
 	}
 	bp.NowPlaying.OnTrackNameTapped = func() {
-		contr.NavigateTo(controller.NowPlayingRoute(bp.playbackManager.NowPlaying().ID))
+		contr.NavigateTo(controller.NowPlayingRoute(pm.NowPlaying().ID))
 	}
 	bp.Controls = widgets.NewPlayerControls()
 	bp.Controls.OnPlayPause(func() {
-		p.PlayPause()
+		pm.PlayPause()
 	})
 	bp.Controls.OnSeekNext(func() {
-		p.SeekNext()
+		pm.SeekNext()
 	})
 	bp.Controls.OnSeekPrevious(func() {
-		p.SeekBackOrPrevious()
+		pm.SeekBackOrPrevious()
 	})
 	bp.Controls.OnSeek(func(f float64) {
-		p.Seek(fmt.Sprintf("%d", int(f*100)), mpv.SeekAbsolutePercent)
+		pm.SeekFraction(f)
 	})
 
-	bp.AuxControls = widgets.NewAuxControls(p.GetVolume())
+	bp.AuxControls = widgets.NewAuxControls(pm.Volume())
 	pm.OnLoopModeChange(bp.AuxControls.SetLoopMode)
 	pm.OnVolumeChange(bp.AuxControls.VolumeControl.SetVolume)
 	bp.AuxControls.VolumeControl.OnSetVolume = func(v int) {
-		_ = bp.playbackManager.SetVolume(v)
+		_ = pm.SetVolume(v)
 	}
 	bp.AuxControls.OnChangeLoopMode(func() {
-		bp.playbackManager.SetNextLoopMode()
+		pm.SetNextLoopMode()
 	})
 
 	bp.container = container.New(layouts.NewLeftMiddleRightLayout(500),

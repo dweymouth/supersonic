@@ -79,7 +79,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.ReloadFunc = m.BrowsingPane.Reload
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
 
-	m.BottomPanel = NewBottomPanel(app.Player, app.PlaybackManager, m.Controller)
+	m.BottomPanel = NewBottomPanel(app.PlaybackManager, m.Controller)
 	m.BottomPanel.ImageManager = app.ImageManager
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
 	m.Window.SetContent(m.container)

@@ -16,14 +16,11 @@ import (
 )
 
 import (
-	"fmt"
 	"log"
 	"strings"
 	"unsafe"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/player"
-	"github.com/dweymouth/supersonic/player/mpv"
 )
 
 // os_remote_command_callback is called by Objective-C when incoming OS media commands are received.
@@ -52,7 +49,6 @@ func os_remote_command_callback(command C.Command, value C.double) {
 
 // MPMediaHandler is the handler for MacOS media controls and system events.
 type MPMediaHandler struct {
-	player          *mpv.Player
 	playbackManager *PlaybackManager
 	artURLLookup    func(string) (string, error)
 }
@@ -63,9 +59,8 @@ var mpMediaEventRecipient *MPMediaHandler
 
 // NewMPMediaHandler creates a new MPMediaHandler instances and sets it as the current recipient
 // for incoming system events.
-func InitMPMediaHandler(player *mpv.Player, playbackManager *PlaybackManager, artURLLookup func(trackID string) (string, error)) error {
+func InitMPMediaHandler(playbackManager *PlaybackManager, artURLLookup func(trackID string) (string, error)) error {
 	mp := &MPMediaHandler{
-		player:          player,
 		playbackManager: playbackManager,
 		artURLLookup:    artURLLookup,
 	}
@@ -79,22 +74,22 @@ func InitMPMediaHandler(player *mpv.Player, playbackManager *PlaybackManager, ar
 		go mp.updateMetadata(track)
 	})
 
-	mp.player.OnStopped(func() {
+	mp.playbackManager.OnStopped(func() {
 		C.set_os_playback_state_stopped()
 	})
 
-	mp.player.OnSeek(func() {
-		C.update_os_now_playing_info_position(C.double(mp.player.GetStatus().TimePos))
+	mp.playbackManager.OnSeek(func() {
+		C.update_os_now_playing_info_position(C.double(mp.playbackManager.PlayerStatus().TimePos))
 	})
 
-	mp.player.OnPlaying(func() {
+	mp.playbackManager.OnPlaying(func() {
 		C.set_os_playback_state_playing()
-		C.update_os_now_playing_info_position(C.double(mp.player.GetStatus().TimePos))
+		C.update_os_now_playing_info_position(C.double(mp.playbackManager.PlayerStatus().TimePos))
 	})
 
-	mp.player.OnPaused(func() {
+	mp.playbackManager.OnPaused(func() {
 		C.set_os_playback_state_paused()
-		C.update_os_now_playing_info_position(C.double(mp.player.GetStatus().TimePos))
+		C.update_os_now_playing_info_position(C.double(mp.playbackManager.PlayerStatus().TimePos))
 	})
 
 	return nil
@@ -133,60 +128,56 @@ func (mp *MPMediaHandler) updateMetadata(track *mediaprovider.Track) {
 
 // MPMediaHandler instance received OS command 'pause'
 func (mp *MPMediaHandler) OnCommandPause() {
-	if mp == nil || mp.player == nil {
+	if mp == nil || mp.playbackManager == nil {
 		return
 	}
-	mp.player.Pause()
+	mp.playbackManager.Pause()
 }
 
 // MPMediaHandler instance received OS command 'play'
 func (mp *MPMediaHandler) OnCommandPlay() {
-	if mp == nil || mp.player == nil {
+	if mp == nil || mp.playbackManager == nil {
 		return
 	}
-	mp.player.Continue()
+	mp.playbackManager.Continue()
 }
 
 // MPMediaHandler instance received OS command 'stop'
 func (mp *MPMediaHandler) OnCommandStop() {
-	if mp == nil || mp.player == nil {
+	if mp == nil || mp.playbackManager == nil {
 		return
 	}
-	mp.player.Stop()
+	mp.playbackManager.Stop()
 }
 
 // MPMediaHandler instance received OS command 'toggle'
 func (mp *MPMediaHandler) OnCommandTogglePlayPause() {
-	if mp == nil || mp.player == nil {
+	if mp == nil || mp.playbackManager == nil {
 		return
 	}
-	if mp.player.GetStatus().State == player.Playing {
-		mp.OnCommandPause()
-	} else {
-		mp.OnCommandPlay()
-	}
+	mp.playbackManager.PlayPause()
 }
 
 // MPMediaHandler instance received OS command 'next track'
 func (mp *MPMediaHandler) OnCommandNextTrack() {
-	if mp == nil || mp.player == nil {
+	if mp == nil || mp.playbackManager == nil {
 		return
 	}
-	mp.player.SeekNext()
+	mp.playbackManager.SeekNext()
 }
 
 // MPMediaHandler instance received OS command 'previous track'
 func (mp *MPMediaHandler) OnCommandPreviousTrack() {
-	if mp == nil || mp.player == nil {
+	if mp == nil || mp.playbackManager == nil {
 		return
 	}
-	mp.player.SeekBackOrPrevious()
+	mp.playbackManager.SeekBackOrPrevious()
 }
 
 // MPMediaHandler instance received OS command to 'seek'
 func (mp *MPMediaHandler) OnCommandSeek(positionSeconds float64) {
-	if mp == nil || mp.player == nil {
+	if mp == nil || mp.playbackManager == nil {
 		return
 	}
-	mp.player.Seek(fmt.Sprintf("%0.2f", positionSeconds), mpv.SeekAbsolute)
+	mp.playbackManager.SeekSeconds(positionSeconds)
 }

@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -51,10 +52,15 @@ type PlaybackManager struct {
 	transcodeCfg  *TranscodingConfig
 	replayGainCfg ReplayGainConfig
 
+	// registered callbacks
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
 	onLoopModeChange []func(LoopMode)
 	onVolumeChange   []func(int)
+	onSeek           []func()
+	onPaused         []func()
+	onStopped        []func()
+	onPlaying        []func()
 }
 
 func NewPlaybackManager(
@@ -89,6 +95,7 @@ func NewPlaybackManager(
 	})
 	p.OnSeek(func() {
 		pm.doUpdateTimePos()
+		pm.invokeNoArgCallbacks(pm.onSeek)
 	})
 	p.OnStopped(func() {
 		pm.playTimeStopwatch.Stop()
@@ -96,14 +103,17 @@ func NewPlaybackManager(
 		pm.stopPollTimePos()
 		pm.doUpdateTimePos()
 		pm.invokeOnSongChangeCallbacks()
+		pm.invokeNoArgCallbacks(pm.onStopped)
 	})
 	p.OnPaused(func() {
 		pm.playTimeStopwatch.Stop()
 		pm.stopPollTimePos()
+		pm.invokeNoArgCallbacks(pm.onPaused)
 	})
 	p.OnPlaying(func() {
 		pm.playTimeStopwatch.Start()
 		pm.startPollTimePos()
+		pm.invokeNoArgCallbacks(pm.onPlaying)
 	})
 
 	s.OnLogout(func() {
@@ -111,6 +121,15 @@ func NewPlaybackManager(
 	})
 
 	return pm
+}
+
+func (pm *PlaybackManager) invokeNoArgCallbacks(cbs []func()) {
+	if pm.callbacksDisabled {
+		return
+	}
+	for _, cb := range cbs {
+		cb()
+	}
 }
 
 func (p *PlaybackManager) IsSeeking() bool {
@@ -153,6 +172,26 @@ func (p *PlaybackManager) OnLoopModeChange(cb func(LoopMode)) {
 // Registers a callback that is notified whenever the volume changes.
 func (p *PlaybackManager) OnVolumeChange(cb func(int)) {
 	p.onVolumeChange = append(p.onVolumeChange, cb)
+}
+
+// Registers a callback that is notified whenever the player has been seeked.
+func (p *PlaybackManager) OnSeek(cb func()) {
+	p.onSeek = append(p.onSeek, cb)
+}
+
+// Registers a callback that is notified whenever the player has been paused.
+func (p *PlaybackManager) OnPaused(cb func()) {
+	p.onPaused = append(p.onPaused, cb)
+}
+
+// Registers a callback that is notified whenever the player is stopped.
+func (p *PlaybackManager) OnStopped(cb func()) {
+	p.onStopped = append(p.onStopped, cb)
+}
+
+// Registers a callback that is notified whenever the player begins playing.
+func (p *PlaybackManager) OnPlaying(cb func()) {
+	p.onPlaying = append(p.onPlaying, cb)
 }
 
 // Loads the specified album into the play queue.
@@ -394,6 +433,10 @@ func (p *PlaybackManager) LoopMode() LoopMode {
 	return LoopMode(p.player.GetLoopMode())
 }
 
+func (p *PlaybackManager) PlayerStatus() player.Status {
+	return p.player.GetStatus()
+}
+
 func (p *PlaybackManager) SetVolume(vol int) error {
 	vol = clamp(vol, 0, 100)
 	if err := p.player.SetVolume(vol); err != nil {
@@ -407,6 +450,45 @@ func (p *PlaybackManager) SetVolume(vol int) error {
 
 func (p *PlaybackManager) Volume() int {
 	return p.player.GetVolume()
+}
+
+func (p *PlaybackManager) SeekNext() error {
+	return p.player.SeekNext()
+}
+
+func (p *PlaybackManager) SeekBackOrPrevious() error {
+	return p.player.SeekBackOrPrevious()
+}
+
+// Seek to given absolute position in the current track by seconds.
+func (p *PlaybackManager) SeekSeconds(sec float64) error {
+	return p.player.Seek(fmt.Sprintf("%0.2f", sec), mpv.SeekAbsolute)
+}
+
+// Seek to a fractional position in the current track [0..1]
+func (p *PlaybackManager) SeekFraction(fraction float64) error {
+	if fraction < 0 {
+		fraction = 0
+	} else if fraction > 1 {
+		fraction = 1
+	}
+	return p.player.Seek(fmt.Sprintf("%0.1f", fraction*100), mpv.SeekAbsolutePercent)
+}
+
+func (p *PlaybackManager) Stop() error {
+	return p.player.Stop()
+}
+
+func (p *PlaybackManager) Pause() error {
+	return p.player.Pause()
+}
+
+func (p *PlaybackManager) Continue() error {
+	return p.player.Continue()
+}
+
+func (p *PlaybackManager) PlayPause() error {
+	return p.player.PlayPause()
 }
 
 // call BEFORE updating p.nowPlayingIdx
