@@ -207,12 +207,12 @@ func (m *MPRISHandler) PlaybackStatus() (types.PlaybackStatus, error) {
 }
 
 func (m *MPRISHandler) LoopStatus() (types.LoopStatus, error) {
-	switch m.pm.LoopMode() {
-	case LoopModeAll:
+	switch m.pm.GetLoopMode() {
+	case player.LoopAll:
 		return types.LoopStatusPlaylist, nil
-	case LoopModeOne:
+	case player.LoopOne:
 		return types.LoopStatusTrack, nil
-	case LoopModeNone:
+	case player.LoopNone:
 		return types.LoopStatusNone, nil
 	}
 	return "", errors.New("unknown loop status")
@@ -221,11 +221,11 @@ func (m *MPRISHandler) LoopStatus() (types.LoopStatus, error) {
 func (m *MPRISHandler) SetLoopStatus(status types.LoopStatus) error {
 	switch status {
 	case types.LoopStatusPlaylist:
-		return m.pm.SetLoopMode(LoopModeAll)
+		return m.pm.SetLoopMode(player.LoopAll)
 	case types.LoopStatusTrack:
-		return m.pm.SetLoopMode(LoopModeOne)
+		return m.pm.SetLoopMode(player.LoopOne)
 	case types.LoopStatusNone:
-		return m.pm.SetLoopMode(LoopModeNone)
+		return m.pm.SetLoopMode(player.LoopNone)
 	}
 	return errors.New("unknown loop status")
 }

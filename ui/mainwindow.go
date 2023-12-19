@@ -162,13 +162,13 @@ func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
 	if desk, ok := fyneApp.(desktop.App); ok {
 		menu := fyne.NewMenu(appName,
 			fyne.NewMenuItem("Play/Pause", func() {
-				_ = m.App.Player.PlayPause()
+				_ = m.App.PlaybackManager.PlayPause()
 			}),
 			fyne.NewMenuItem("Previous", func() {
-				_ = m.App.Player.SeekBackOrPrevious()
+				_ = m.App.PlaybackManager.SeekBackOrPrevious()
 			}),
 			fyne.NewMenuItem("Next", func() {
-				_ = m.App.Player.SeekNext()
+				_ = m.App.PlaybackManager.SeekNext()
 			}),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Volume +10%", func() {
@@ -298,7 +298,7 @@ func (m *MainWindow) addShortcuts() {
 		case fyne.KeyEscape:
 			m.Controller.CloseEscapablePopUp()
 		case fyne.KeySpace:
-			m.App.Player.PlayPause()
+			m.App.PlaybackManager.PlayPause()
 		}
 	})
 }

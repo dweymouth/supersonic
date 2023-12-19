@@ -1,5 +1,52 @@
 package player
 
+type URLPlayer interface {
+	BasePlayer
+	AppendFile(url string) error
+	PlayFile(url string) error
+}
+
+type TrackIDPlayer interface {
+	BasePlayer
+	AppendTrack(trackID string) error
+	PlayTrack(trackID string) error
+}
+
+type BasePlayer interface {
+	// Transport
+	PlayTrackAt(idx int) error
+	Continue() error
+	Pause() error
+	PlayPause() error
+	Stop() error
+	SeekPrevious() error
+	SeekNext() error
+	SeekSeconds(secs float64) error
+	IsSeeking() bool
+
+	SetVolume(int) error
+	GetVolume() int
+
+	GetStatus() Status
+
+	ClearPlayQueue() error
+	RemoveTrackAt(idx int) error
+
+	SetLoopMode(LoopMode) error
+	GetLoopMode() LoopMode
+
+	// Event API
+	OnPaused(func())
+	OnStopped(func())
+	OnPlaying(func())
+	OnSeek(func())
+	OnTrackChange(func(int))
+}
+
+type ReplayGainPlayer interface {
+	SetReplayGainOptions(ReplayGainOptions) error
+}
+
 // The playback state (Stopped, Paused, or Playing).
 type State int
 
@@ -15,7 +62,7 @@ type Status struct {
 	State       State
 	TimePos     float64
 	Duration    float64
-	PlaylistPos int64
+	PlaylistPos int
 }
 
 // The playback loop mode (LoopNone, LoopAll, LoopOne).

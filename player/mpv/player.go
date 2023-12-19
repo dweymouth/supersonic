@@ -15,16 +15,6 @@ import (
 // Error returned by many Player functions if called before the player has not been initialized.
 var ErrUnitialized error = errors.New("mpv player uninitialized")
 
-// Argument to Seek function (SeekAbsolute, SeekRelative, SeekAbsolutePercent, SeekRelativePercent).
-type SeekMode int
-
-const (
-	SeekAbsolute SeekMode = iota
-	SeekRelative
-	SeekAbsolutePercent
-	SeekRelativePercent
-)
-
 // Information about a specific audio device.
 // Returned by ListAudioDevices.
 type AudioDevice struct {
@@ -56,6 +46,8 @@ type MediaInfo struct {
 	Bitrate int
 }
 
+var _ player.URLPlayer = (*Player)(nil)
+
 // Player encapsulates the mpv instance and provides functions
 // to control it and to check its status.
 type Player struct {
@@ -80,7 +72,7 @@ type Player struct {
 	onStopped     []func()
 	onPlaying     []func()
 	onSeek        []func()
-	onTrackChange []func(int64)
+	onTrackChange []func(int)
 }
 
 // Returns a new player.
@@ -203,30 +195,25 @@ func (p *Player) ClearPlayQueue() error {
 
 // Seeks within the currently playing track.
 // See MPV seek command documentation for more details.
-func (p *Player) Seek(target string, mode SeekMode) error {
+func (p *Player) SeekSeconds(secs float64) error {
 	if !p.initialized {
 		return ErrUnitialized
 	}
+	target := fmt.Sprintf("%0.1f", secs)
 	p.seeking = true
-	err := p.mpv.Command([]string{"seek", target, mode.String()})
+	err := p.mpv.Command([]string{"seek", target, "absolute"})
 	return err
 }
 
-// Seeks to the beginning of the current track if:
-//   - The current track is the first track in the play queue, or
-//   - The current time is more than 3 seconds past the beginning of the track.
-//
-// Else seeks to the beginning of the previous track.
-func (p *Player) SeekBackOrPrevious() error {
+// Seeks to the beginning of the previous track,
+// or if no previous track, seeks to the beginning of the current track.
+func (p *Player) SeekPrevious() error {
 	if !p.initialized {
 		return ErrUnitialized
 	}
 
-	if pos, err := p.getInt64Property("time-pos"); err == nil && pos > 3 {
-		return p.Seek("0", SeekAbsolutePercent)
-	}
 	if pos, err := p.getInt64Property("playlist-pos"); err == nil && pos == 0 {
-		return p.Seek("0", SeekAbsolutePercent)
+		return p.SeekSeconds(0)
 	}
 	return p.mpv.Command([]string{"playlist-prev"})
 }
@@ -445,21 +432,6 @@ func (p *Player) SetLoopMode(mode player.LoopMode) error {
 	return nil
 }
 
-// Change the loop mode of the player to the next one.
-// Useful for toggling UI elements, to change modes without knowing the current player mode.
-func (p *Player) SetNextLoopMode() error {
-	switch p.loopMode {
-	case player.LoopNone:
-		return p.SetLoopMode(player.LoopAll)
-	case player.LoopAll:
-		return p.SetLoopMode(player.LoopOne)
-	case player.LoopOne:
-		return p.SetLoopMode(player.LoopNone)
-	default:
-		return nil
-	}
-}
-
 // Get the current status of the player.
 func (p *Player) GetStatus() player.Status {
 	if !p.initialized {
@@ -475,7 +447,7 @@ func (p *Player) GetStatus() player.Status {
 		p.status.Duration = dur.(float64)
 	}
 	if playpos, err := p.getInt64Property("playlist-pos"); err == nil {
-		p.status.PlaylistPos = playpos
+		p.status.PlaylistPos = int(playpos)
 	}
 	return p.status
 }
@@ -586,7 +558,7 @@ func (p *Player) OnSeek(cb func()) {
 // Registers a callback which is invoked when the currently playing track changes,
 // or when playback begins at any time from the Stopped state.
 // Callback is invoked with the index of the currently playing track (zero-based).
-func (p *Player) OnTrackChange(cb func(int64)) {
+func (p *Player) OnTrackChange(cb func(int)) {
 	p.onTrackChange = append(p.onTrackChange, cb)
 }
 
@@ -657,7 +629,7 @@ func (p *Player) eventHandler(ctx context.Context) {
 				if pos, err := p.getInt64Property("playlist-pos"); err == nil {
 					p.curPlaylistPos = pos
 					for _, cb := range p.onTrackChange {
-						cb(pos)
+						cb(int(pos))
 					}
 				}
 			case mpv.EVENT_IDLE:
@@ -667,18 +639,4 @@ func (p *Player) eventHandler(ctx context.Context) {
 			}
 		}
 	}
-}
-
-func (s SeekMode) String() string {
-	switch s {
-	case SeekAbsolute:
-		return "absolute"
-	case SeekRelative:
-		return "relative"
-	case SeekAbsolutePercent:
-		return "absolute-percent"
-	case SeekRelativePercent:
-		return "relative-percent"
-	}
-	return "UNKNOWN_SEEK_MODE"
 }

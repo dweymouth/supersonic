@@ -2,14 +2,12 @@ package backend
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/player"
-	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
@@ -20,14 +18,6 @@ var (
 	ReplayGainAuto  = "Auto"
 )
 
-type LoopMode int
-
-const (
-	LoopModeNone LoopMode = LoopMode(player.LoopNone)
-	LoopModeAll  LoopMode = LoopMode(player.LoopAll)
-	LoopModeOne  LoopMode = LoopMode(player.LoopOne)
-)
-
 // A high-level Subsonic-aware playback backend.
 // Manages loading tracks into the Player queue,
 // sending callbacks on play time updates and track changes.
@@ -36,7 +26,7 @@ type PlaybackManager struct {
 	cancelPollPos context.CancelFunc
 	pollingTick   *time.Ticker
 	sm            *ServerManager
-	player        *mpv.Player
+	player        player.BasePlayer
 
 	playTimeStopwatch   util.Stopwatch
 	curTrackTime        float64
@@ -44,7 +34,7 @@ type PlaybackManager struct {
 	callbacksDisabled   bool
 
 	playQueue     []*mediaprovider.Track
-	nowPlayingIdx int64
+	nowPlayingIdx int
 
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
@@ -55,7 +45,7 @@ type PlaybackManager struct {
 	// registered callbacks
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
-	onLoopModeChange []func(LoopMode)
+	onLoopModeChange []func(player.LoopMode)
 	onVolumeChange   []func(int)
 	onSeek           []func()
 	onPaused         []func()
@@ -66,7 +56,7 @@ type PlaybackManager struct {
 func NewPlaybackManager(
 	ctx context.Context,
 	s *ServerManager,
-	p *mpv.Player,
+	p player.BasePlayer,
 	scrobbleCfg *ScrobbleConfig,
 	transcodeCfg *TranscodingConfig,
 ) *PlaybackManager {
@@ -79,8 +69,8 @@ func NewPlaybackManager(
 		scrobbleCfg:  scrobbleCfg,
 		transcodeCfg: transcodeCfg,
 	}
-	p.OnTrackChange(func(tracknum int64) {
-		if tracknum >= int64(len(pm.playQueue)) {
+	p.OnTrackChange(func(tracknum int) {
+		if tracknum >= len(pm.playQueue) {
 			return
 		}
 		pm.checkScrobble() // scrobble the previous song if needed
@@ -165,7 +155,7 @@ func (p *PlaybackManager) OnPlayTimeUpdate(cb func(float64, float64)) {
 }
 
 // Registers a callback that is notified whenever the loop mode changes.
-func (p *PlaybackManager) OnLoopModeChange(cb func(LoopMode)) {
+func (p *PlaybackManager) OnLoopModeChange(cb func(player.LoopMode)) {
 	p.onLoopModeChange = append(p.onLoopModeChange, cb)
 }
 
@@ -223,11 +213,18 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueu
 		util.ShuffleSlice(nums)
 	}
 	for _, i := range nums {
-		url, err := p.sm.Server.GetStreamURL(tracks[i].ID, p.transcodeCfg.ForceRawFile)
-		if err != nil {
-			return err
+
+		if urlP, ok := p.player.(player.URLPlayer); ok {
+			url, err := p.sm.Server.GetStreamURL(tracks[i].ID, p.transcodeCfg.ForceRawFile)
+			if err != nil {
+				return err
+			}
+			urlP.AppendFile(url)
+		} else if trP, ok := p.player.(player.TrackIDPlayer); ok {
+			trP.AppendTrack(tracks[i].ID)
+		} else {
+			panic("unsupported player type")
 		}
-		p.player.AppendFile(url)
 		// ensure a deep copy of the track info so that we can maintain our own state
 		// (tracking play count increases, favorite, and rating) without messing up
 		// other views' track models
@@ -245,7 +242,7 @@ func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool
 		p.SetReplayGainMode(player.ReplayGainAlbum)
 	}
 	if firstTrack <= 0 {
-		return p.player.PlayFromBeginning()
+		return p.player.PlayTrackAt(0)
 	}
 	return p.player.PlayTrackAt(firstTrack)
 }
@@ -258,7 +255,7 @@ func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffl
 		p.SetReplayGainMode(player.ReplayGainTrack)
 	}
 	if firstTrack <= 0 {
-		return p.player.PlayFromBeginning()
+		return p.player.PlayTrackAt(0)
 	}
 	return p.player.PlayTrackAt(firstTrack)
 }
@@ -276,7 +273,7 @@ func (p *PlaybackManager) PlayTrack(trackID string) error {
 }
 
 func (p *PlaybackManager) PlayFromBeginning() error {
-	return p.player.PlayFromBeginning()
+	return p.player.PlayTrackAt(0)
 }
 
 func (p *PlaybackManager) PlayTrackAt(idx int) error {
@@ -374,6 +371,12 @@ func (p *PlaybackManager) StopAndClearPlayQueue() {
 }
 
 func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
+	rGainPlayer, ok := p.player.(player.ReplayGainPlayer)
+	if !ok {
+		log.Println("Error: player doesn't support ReplayGain")
+		return
+	}
+
 	p.replayGainCfg = config
 	mode := player.ReplayGainNone
 	switch config.Mode {
@@ -388,7 +391,7 @@ func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
 	if config.Mode == ReplayGainAuto {
 		mode = player.ReplayGainTrack
 	}
-	p.player.SetReplayGainOptions(player.ReplayGainOptions{
+	rGainPlayer.SetReplayGainOptions(player.ReplayGainOptions{
 		Mode:            mode,
 		PreventClipping: config.PreventClipping,
 		PreampGain:      config.PreampGainDB,
@@ -396,7 +399,12 @@ func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
 }
 
 func (p *PlaybackManager) SetReplayGainMode(mode player.ReplayGainMode) {
-	p.player.SetReplayGainOptions(player.ReplayGainOptions{
+	rGainPlayer, ok := p.player.(player.ReplayGainPlayer)
+	if !ok {
+		log.Println("Error: player doesn't support ReplayGain")
+		return
+	}
+	rGainPlayer.SetReplayGainOptions(player.ReplayGainOptions{
 		PreventClipping: p.replayGainCfg.PreventClipping,
 		PreampGain:      p.replayGainCfg.PreampGainDB,
 		Mode:            mode,
@@ -406,18 +414,29 @@ func (p *PlaybackManager) SetReplayGainMode(mode player.ReplayGainMode) {
 // Changes the loop mode of the player to the next one.
 // Useful for toggling UI elements, to change modes without knowing the current player mode.
 func (p *PlaybackManager) SetNextLoopMode() error {
-	if err := p.player.SetNextLoopMode(); err != nil {
-		return err
+	var err error
+	switch p.GetLoopMode() {
+	case player.LoopNone:
+		err = p.SetLoopMode(player.LoopAll)
+	case player.LoopAll:
+		err = p.SetLoopMode(player.LoopOne)
+	case player.LoopOne:
+		err = p.SetLoopMode(player.LoopNone)
+	default:
+		return nil
 	}
 
+	if err != nil {
+		return err
+	}
 	for _, cb := range p.onLoopModeChange {
-		cb(LoopMode(p.player.GetLoopMode()))
+		cb(p.player.GetLoopMode())
 	}
 
 	return nil
 }
 
-func (p *PlaybackManager) SetLoopMode(loopMode LoopMode) error {
+func (p *PlaybackManager) SetLoopMode(loopMode player.LoopMode) error {
 	if err := p.player.SetLoopMode(player.LoopMode(loopMode)); err != nil {
 		return err
 	}
@@ -429,8 +448,8 @@ func (p *PlaybackManager) SetLoopMode(loopMode LoopMode) error {
 	return nil
 }
 
-func (p *PlaybackManager) LoopMode() LoopMode {
-	return LoopMode(p.player.GetLoopMode())
+func (p *PlaybackManager) GetLoopMode() player.LoopMode {
+	return p.player.GetLoopMode()
 }
 
 func (p *PlaybackManager) PlayerStatus() player.Status {
@@ -457,12 +476,15 @@ func (p *PlaybackManager) SeekNext() error {
 }
 
 func (p *PlaybackManager) SeekBackOrPrevious() error {
-	return p.player.SeekBackOrPrevious()
+	if p.player.GetStatus().TimePos > 3 {
+		return p.player.SeekSeconds(0)
+	}
+	return p.player.SeekPrevious()
 }
 
 // Seek to given absolute position in the current track by seconds.
 func (p *PlaybackManager) SeekSeconds(sec float64) error {
-	return p.player.Seek(fmt.Sprintf("%0.2f", sec), mpv.SeekAbsolute)
+	return p.player.SeekSeconds(sec)
 }
 
 // Seek to a fractional position in the current track [0..1]
@@ -472,7 +494,8 @@ func (p *PlaybackManager) SeekFraction(fraction float64) error {
 	} else if fraction > 1 {
 		fraction = 1
 	}
-	return p.player.Seek(fmt.Sprintf("%0.1f", fraction*100), mpv.SeekAbsolutePercent)
+	target := p.curTrackTime * fraction
+	return p.player.SeekSeconds(target)
 }
 
 func (p *PlaybackManager) Stop() error {
