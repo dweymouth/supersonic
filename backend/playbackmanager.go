@@ -51,6 +51,7 @@ type PlaybackManager struct {
 	onPaused         []func()
 	onStopped        []func()
 	onPlaying        []func()
+	onPlayerChange   []func()
 }
 
 func NewPlaybackManager(
@@ -120,6 +121,14 @@ func (pm *PlaybackManager) invokeNoArgCallbacks(cbs []func()) {
 	for _, cb := range cbs {
 		cb()
 	}
+}
+
+func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
+	return p.player
+}
+
+func (p *PlaybackManager) OnPlayerChange(cb func()) {
+	p.onPlayerChange = append(p.onPlayerChange, cb)
 }
 
 func (p *PlaybackManager) IsSeeking() bool {
