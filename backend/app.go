@@ -37,7 +37,7 @@ type App struct {
 	ServerManager   *ServerManager
 	ImageManager    *ImageManager
 	PlaybackManager *PlaybackManager
-	Player          *mpv.Player
+	LocalPlayer     *mpv.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
 
@@ -108,7 +108,7 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 	}
 
 	a.ServerManager = NewServerManager(appName, a.Config)
-	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player, &a.Config.Scrobbling, &a.Config.Transcoding)
+	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Scrobbling, &a.Config.Transcoding)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, configdir.LocalCache(a.appName))
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
@@ -201,15 +201,15 @@ func (a *App) initMPV() error {
 	if err := p.Init(c.InMemoryCacheSizeMB); err != nil {
 		return fmt.Errorf("failed to initialize mpv player: %s", err.Error())
 	}
-	a.Player = p
+	a.LocalPlayer = p
 	return nil
 }
 
 func (a *App) setupMPV() error {
 	a.Config.LocalPlayback.Volume = clamp(a.Config.LocalPlayback.Volume, 0, 100)
-	a.Player.SetVolume(a.Config.LocalPlayback.Volume)
+	a.LocalPlayer.SetVolume(a.Config.LocalPlayback.Volume)
 
-	devs, err := a.Player.ListAudioDevices()
+	devs, err := a.LocalPlayer.ListAudioDevices()
 	if err != nil {
 		return err
 	}
@@ -229,7 +229,7 @@ func (a *App) setupMPV() error {
 		// (e.g. a USB audio device that is currently unplugged)
 		desiredDevice = "auto"
 	}
-	a.Player.SetAudioDevice(desiredDevice)
+	a.LocalPlayer.SetAudioDevice(desiredDevice)
 
 	rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack, ReplayGainAuto}
 	if !sharedutil.SliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
@@ -245,19 +245,19 @@ func (a *App) setupMPV() error {
 		mode = player.ReplayGainTrack
 	}
 
-	a.Player.SetReplayGainOptions(player.ReplayGainOptions{
+	a.LocalPlayer.SetReplayGainOptions(player.ReplayGainOptions{
 		Mode:            mode,
 		PreventClipping: a.Config.ReplayGain.PreventClipping,
 		PreampGain:      a.Config.ReplayGain.PreampGainDB,
 	})
-	a.Player.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
+	a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
 
 	eq := &mpv.ISO15BandEqualizer{
 		EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
 		Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
 	}
 	copy(eq.BandGains[:], a.Config.LocalPlayback.GraphicEqualizerBands)
-	a.Player.SetEqualizer(eq)
+	a.LocalPlayer.SetEqualizer(eq)
 
 	return nil
 }
@@ -300,10 +300,10 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 func (a *App) Shutdown() {
 	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
-	a.Player.Stop() // will trigger scrobble check
-	a.Config.LocalPlayback.Volume = a.Player.GetVolume()
+	a.PlaybackManager.Stop() // will trigger scrobble check
+	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
 	a.cancel()
-	a.Player.Destroy()
+	a.LocalPlayer.Destroy()
 	a.Config.WriteConfigFile(a.configPath())
 	os.RemoveAll(configdir.LocalConfig(a.appName, sessionDir))
 }
