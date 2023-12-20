@@ -229,8 +229,8 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueu
 				return err
 			}
 			urlP.AppendFile(url)
-		} else if trP, ok := p.player.(player.TrackIDPlayer); ok {
-			trP.AppendTrack(tracks[i].ID)
+		} else if trP, ok := p.player.(player.TrackPlayer); ok {
+			trP.AppendTrack(tracks[i])
 		} else {
 			panic("unsupported player type")
 		}

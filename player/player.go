@@ -1,15 +1,15 @@
 package player
 
+import "github.com/dweymouth/supersonic/backend/mediaprovider"
+
 type URLPlayer interface {
 	BasePlayer
 	AppendFile(url string) error
-	PlayFile(url string) error
 }
 
-type TrackIDPlayer interface {
+type TrackPlayer interface {
 	BasePlayer
-	AppendTrack(trackID string) error
-	PlayTrack(trackID string) error
+	AppendTrack(track *mediaprovider.Track) error
 }
 
 type BasePlayer interface {
