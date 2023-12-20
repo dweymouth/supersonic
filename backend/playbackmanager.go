@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -180,7 +181,7 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueu
 	}
 	nums := util.Range(len(tracks))
 	if shuffle {
-		util.ShuffleSlice(nums)
+		rand.Shuffle(len(nums), func(i, j int) { nums[i], nums[j] = nums[j], nums[i] })
 	}
 	for _, i := range nums {
 		url, err := p.sm.Server.GetStreamURL(tracks[i].ID, p.transcodeCfg.ForceRawFile)
