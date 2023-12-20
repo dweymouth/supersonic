@@ -38,6 +38,10 @@
     </ul>
   </description>
 
+  <categories>
+    <category>Audio</category>
+  </categories>
+
   <launchable type="desktop-id">io.github.dweymouth.supersonic.desktop</launchable>
 
   <url type="homepage">https://github.com/dweymouth/supersonic</url>
