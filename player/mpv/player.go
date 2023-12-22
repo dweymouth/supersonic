@@ -312,11 +312,6 @@ func (p *Player) setPaused(paused bool) error {
 	return err
 }
 
-// Start playback from the first track in the play queue.
-func (p *Player) PlayFromBeginning() error {
-	return p.PlayTrackAt(0)
-}
-
 // Start playback from the specified track index in the play queue.
 func (p *Player) PlayTrackAt(idx int) error {
 	// check if we have anything to play
@@ -331,33 +326,6 @@ func (p *Player) PlayTrackAt(idx int) error {
 		p.setState(player.Playing)
 	}
 	return err
-}
-
-// Begins playback if there is anything in the play queue and player is stopped or paused.
-// If player is playing, pauses playback.
-func (p *Player) PlayPause() error {
-	if !p.initialized {
-		return ErrUnitialized
-	}
-
-	switch p.status.State {
-	case player.Stopped:
-		// check if we have anything to play
-		if c, err := p.getInt64Property("playlist-count"); err == nil && c > 0 {
-			err := p.mpv.Command([]string{"playlist-play-index", "0"})
-			if err == nil {
-				p.setState(player.Playing)
-			}
-			return err
-		}
-		return nil
-	case player.Playing:
-		return p.Pause()
-	case player.Paused:
-		return p.Continue()
-	default:
-		return errors.New("Unknown player state")
-	}
 }
 
 // Pause playback and update the player state
@@ -382,7 +350,7 @@ func (p *Player) Continue() error {
 		}
 		return err
 	} else if p.status.State == player.Stopped {
-		return p.PlayFromBeginning()
+		return p.PlayTrackAt(0)
 	}
 
 	return nil

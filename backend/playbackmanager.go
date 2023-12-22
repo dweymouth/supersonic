@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -24,7 +25,6 @@ var (
 type PlaybackManager struct {
 	ctx           context.Context
 	cancelPollPos context.CancelFunc
-	pollingTick   *time.Ticker
 	sm            *ServerManager
 	player        player.BasePlayer
 
@@ -112,15 +112,6 @@ func NewPlaybackManager(
 	})
 
 	return pm
-}
-
-func (pm *PlaybackManager) invokeNoArgCallbacks(cbs []func()) {
-	if pm.callbacksDisabled {
-		return
-	}
-	for _, cb := range cbs {
-		cb()
-	}
 }
 
 func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
@@ -250,9 +241,6 @@ func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool
 	if p.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainAlbum)
 	}
-	if firstTrack <= 0 {
-		return p.player.PlayTrackAt(0)
-	}
 	return p.player.PlayTrackAt(firstTrack)
 }
 
@@ -262,9 +250,6 @@ func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffl
 	}
 	if p.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainTrack)
-	}
-	if firstTrack <= 0 {
-		return p.player.PlayTrackAt(0)
 	}
 	return p.player.PlayTrackAt(firstTrack)
 }
@@ -290,20 +275,20 @@ func (p *PlaybackManager) PlayTrackAt(idx int) error {
 }
 
 func (p *PlaybackManager) PlayRandomSongs(genreName string) {
-	if songs, err := p.sm.Server.GetRandomTracks(genreName, 100); err != nil {
-		log.Printf("error getting random songs: %s", err.Error())
-	} else {
-		p.LoadTracks(songs, false, false)
-		if p.replayGainCfg.Mode == ReplayGainAuto {
-			p.SetReplayGainMode(player.ReplayGainTrack)
-		}
-		p.PlayFromBeginning()
-	}
+	p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
+		return p.sm.Server.GetRandomTracks(genreName, 100)
+	})
 }
 
 func (p *PlaybackManager) PlaySimilarSongs(id string) {
-	if songs, err := p.sm.Server.GetSimilarTracks(id, 100); err != nil {
-		log.Printf("error getting similar songs: %s", err.Error())
+	p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
+		return p.sm.Server.GetSimilarTracks(id, 100)
+	})
+}
+
+func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Track, error)) {
+	if songs, err := fetchFn(); err != nil {
+		log.Printf("error fetching tracks: %s", err.Error())
 	} else {
 		p.LoadTracks(songs, false, false)
 		if p.replayGainCfg.Mode == ReplayGainAuto {
@@ -520,7 +505,15 @@ func (p *PlaybackManager) Continue() error {
 }
 
 func (p *PlaybackManager) PlayPause() error {
-	return p.player.PlayPause()
+	switch p.player.GetStatus().State {
+	case player.Playing:
+		return p.player.Pause()
+	case player.Paused:
+		return p.player.Continue()
+	case player.Stopped:
+		return p.PlayFromBeginning()
+	}
+	return errors.New("unreached - invalid player state")
 }
 
 // call BEFORE updating p.nowPlayingIdx
@@ -573,24 +566,38 @@ func (p *PlaybackManager) invokeOnSongChangeCallbacks() {
 	p.lastScrobbled = nil
 }
 
+func (pm *PlaybackManager) invokeNoArgCallbacks(cbs []func()) {
+	if pm.callbacksDisabled {
+		return
+	}
+	for _, cb := range cbs {
+		cb()
+	}
+}
+
 func (p *PlaybackManager) startPollTimePos() {
 	ctx, cancel := context.WithCancel(p.ctx)
 	p.cancelPollPos = cancel
-	p.pollingTick = time.NewTicker(250 * time.Millisecond)
+	pollingTick := time.NewTicker(250 * time.Millisecond)
 
-	// TODO: fix occasional nil pointer dereference on app quit
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
-				p.pollingTick.Stop()
-				p.pollingTick = nil
+				pollingTick.Stop()
 				return
-			case <-p.pollingTick.C:
+			case <-pollingTick.C:
 				p.doUpdateTimePos()
 			}
 		}
 	}()
+}
+
+func (p *PlaybackManager) stopPollTimePos() {
+	if p.cancelPollPos != nil {
+		p.cancelPollPos()
+		p.cancelPollPos = nil
+	}
 }
 
 func (p *PlaybackManager) doUpdateTimePos() {
@@ -603,15 +610,5 @@ func (p *PlaybackManager) doUpdateTimePos() {
 	}
 	for _, cb := range p.onPlayTimeUpdate {
 		cb(s.TimePos, s.Duration)
-	}
-}
-
-func (p *PlaybackManager) stopPollTimePos() {
-	if p.cancelPollPos != nil {
-		p.cancelPollPos()
-		p.cancelPollPos = nil
-	}
-	if p.pollingTick != nil {
-		p.pollingTick.Stop()
 	}
 }

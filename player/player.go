@@ -17,7 +17,6 @@ type BasePlayer interface {
 	PlayTrackAt(idx int) error
 	Continue() error
 	Pause() error
-	PlayPause() error
 	Stop() error
 	SeekPrevious() error
 	SeekNext() error
