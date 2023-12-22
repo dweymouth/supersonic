@@ -64,25 +64,26 @@ func NewPlaybackManager(
 	// clamp to 99% to avoid any possible rounding issues
 	scrobbleCfg.ThresholdPercent = clamp(scrobbleCfg.ThresholdPercent, 0, 99)
 	pm := &PlaybackManager{
-		ctx:          ctx,
-		sm:           s,
-		player:       p,
-		scrobbleCfg:  scrobbleCfg,
-		transcodeCfg: transcodeCfg,
+		ctx:           ctx,
+		sm:            s,
+		player:        p,
+		scrobbleCfg:   scrobbleCfg,
+		transcodeCfg:  transcodeCfg,
+		nowPlayingIdx: -1,
 	}
-	p.OnTrackChange(func(tracknum int) {
-		if tracknum >= len(pm.playQueue) {
-			return
-		}
+	p.OnTrackChange(func() {
 		pm.checkScrobble() // scrobble the previous song if needed
 		if pm.player.GetStatus().State == player.Playing {
 			pm.playTimeStopwatch.Start()
 		}
-		pm.nowPlayingIdx = tracknum
+		pm.nowPlayingIdx++
 		pm.curTrackTime = float64(pm.playQueue[pm.nowPlayingIdx].Duration)
 		pm.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 		pm.invokeOnSongChangeCallbacks()
 		pm.doUpdateTimePos()
+		if pm.nowPlayingIdx < len(pm.playQueue)-1 {
+			pm.setTrack(pm.nowPlayingIdx+1, true)
+		}
 	})
 	p.OnSeek(func() {
 		pm.doUpdateTimePos()
@@ -95,6 +96,7 @@ func NewPlaybackManager(
 		pm.doUpdateTimePos()
 		pm.invokeOnSongChangeCallbacks()
 		pm.invokeNoArgCallbacks(pm.onStopped)
+		pm.nowPlayingIdx = -1
 	})
 	p.OnPaused(func() {
 		pm.playTimeStopwatch.Stop()
@@ -205,31 +207,23 @@ func (p *PlaybackManager) LoadPlaylist(playlistID string, appendToQueue bool, sh
 func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueue, shuffle bool) error {
 	if !appendToQueue {
 		p.player.Stop()
-		p.nowPlayingIdx = 0
+		p.nowPlayingIdx = -1
 		p.playQueue = nil
 	}
 	nums := util.Range(len(tracks))
 	if shuffle {
 		util.ShuffleSlice(nums)
 	}
+	needToSetNext := appendToQueue && len(tracks) > 0 && p.nowPlayingIdx == len(p.playQueue)-1
 	for _, i := range nums {
-
-		if urlP, ok := p.player.(player.URLPlayer); ok {
-			url, err := p.sm.Server.GetStreamURL(tracks[i].ID, p.transcodeCfg.ForceRawFile)
-			if err != nil {
-				return err
-			}
-			urlP.AppendFile(url)
-		} else if trP, ok := p.player.(player.TrackPlayer); ok {
-			trP.AppendTrack(tracks[i])
-		} else {
-			panic("unsupported player type")
-		}
 		// ensure a deep copy of the track info so that we can maintain our own state
 		// (tracking play count increases, favorite, and rating) without messing up
 		// other views' track models
 		tr := *tracks[i]
 		p.playQueue = append(p.playQueue, &tr)
+	}
+	if needToSetNext {
+		p.setTrack(p.nowPlayingIdx+1, true)
 	}
 	return nil
 }
@@ -241,7 +235,7 @@ func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool
 	if p.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainAlbum)
 	}
-	return p.player.PlayTrackAt(firstTrack)
+	return p.PlayTrackAt(firstTrack)
 }
 
 func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffle bool) error {
@@ -251,7 +245,7 @@ func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffl
 	if p.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainTrack)
 	}
-	return p.player.PlayTrackAt(firstTrack)
+	return p.PlayTrackAt(firstTrack)
 }
 
 func (p *PlaybackManager) PlayTrack(trackID string) error {
@@ -267,11 +261,15 @@ func (p *PlaybackManager) PlayTrack(trackID string) error {
 }
 
 func (p *PlaybackManager) PlayFromBeginning() error {
-	return p.player.PlayTrackAt(0)
+	return p.PlayTrackAt(0)
 }
 
 func (p *PlaybackManager) PlayTrackAt(idx int) error {
-	return p.player.PlayTrackAt(idx)
+	if idx < 0 || idx >= len(p.playQueue) {
+		return errors.New("track index out of range")
+	}
+	p.nowPlayingIdx = idx - 1
+	return p.setTrack(idx, false)
 }
 
 func (p *PlaybackManager) PlayRandomSongs(genreName string) {
@@ -325,7 +323,7 @@ func (p *PlaybackManager) OnTrackRatingChanged(id string, rating int) {
 
 func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIDs))
-	rmCount := 0
+	//rmCount := 0
 	idSet := sharedutil.ToSet(trackIDs)
 	isPlayingTrackRemoved := false
 	for i, tr := range p.playQueue {
@@ -336,13 +334,14 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 				// If we are removing the currently playing track, we need to scrobble it
 				p.checkScrobble()
 			}
-			if err := p.player.RemoveTrackAt(i - rmCount); err == nil {
-				rmCount++
-			} else {
-				log.Printf("error removing track: %v", err.Error())
-				// did not remove this track
-				newQueue = append(newQueue, tr)
-			}
+			// if err := p.player.RemoveTrackAt(i - rmCount); err == nil {
+			//	rmCount++
+			//} else {
+			var err error
+			log.Printf("error removing track: %v", err.Error())
+			// did not remove this track
+			newQueue = append(newQueue, tr)
+			//}
 		} else {
 			// not removing this track
 			newQueue = append(newQueue, tr)
@@ -359,9 +358,9 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 // Stop playback and clear the play queue.
 func (p *PlaybackManager) StopAndClearPlayQueue() {
 	p.player.Stop()
-	p.player.ClearPlayQueue()
 	p.doUpdateTimePos()
 	p.playQueue = nil
+	p.nowPlayingIdx = -1
 }
 
 func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
@@ -423,17 +422,17 @@ func (p *PlaybackManager) SetNextLoopMode() error {
 	if err != nil {
 		return err
 	}
-	for _, cb := range p.onLoopModeChange {
-		cb(p.player.GetLoopMode())
-	}
+	//for _, cb := range p.onLoopModeChange {
+	//	cb(p.player.GetLoopMode())
+	//}
 
 	return nil
 }
 
 func (p *PlaybackManager) SetLoopMode(loopMode player.LoopMode) error {
-	if err := p.player.SetLoopMode(player.LoopMode(loopMode)); err != nil {
-		return err
-	}
+	//if err := p.player.SetLoopMode(player.LoopMode(loopMode)); err != nil {
+	//	return err
+	//}
 
 	for _, cb := range p.onLoopModeChange {
 		cb(loopMode)
@@ -443,7 +442,8 @@ func (p *PlaybackManager) SetLoopMode(loopMode player.LoopMode) error {
 }
 
 func (p *PlaybackManager) GetLoopMode() player.LoopMode {
-	return p.player.GetLoopMode()
+	return 0
+	//return p.player.GetLoopMode()
 }
 
 func (p *PlaybackManager) PlayerStatus() player.Status {
@@ -466,14 +466,17 @@ func (p *PlaybackManager) Volume() int {
 }
 
 func (p *PlaybackManager) SeekNext() error {
-	return p.player.SeekNext()
+	if p.CurrentPlayer().GetStatus().State == player.Stopped {
+		return nil
+	}
+	return p.PlayTrackAt(p.nowPlayingIdx + 1)
 }
 
 func (p *PlaybackManager) SeekBackOrPrevious() error {
-	if p.player.GetStatus().TimePos > 3 {
+	if p.nowPlayingIdx == 0 || p.player.GetStatus().TimePos > 3 {
 		return p.player.SeekSeconds(0)
 	}
-	return p.player.SeekPrevious()
+	return p.PlayTrackAt(p.nowPlayingIdx - 1)
 }
 
 // Seek to given absolute position in the current track by seconds.
@@ -501,6 +504,9 @@ func (p *PlaybackManager) Pause() error {
 }
 
 func (p *PlaybackManager) Continue() error {
+	if p.player.GetStatus().State == player.Stopped {
+		return p.PlayFromBeginning()
+	}
 	return p.player.Continue()
 }
 
@@ -514,6 +520,25 @@ func (p *PlaybackManager) PlayPause() error {
 		return p.PlayFromBeginning()
 	}
 	return errors.New("unreached - invalid player state")
+}
+
+func (p *PlaybackManager) setTrack(idx int, next bool) error {
+	if urlP, ok := p.player.(player.URLPlayer); ok {
+		url, err := p.sm.Server.GetStreamURL(p.playQueue[idx].ID, p.transcodeCfg.ForceRawFile)
+		if err != nil {
+			return err
+		}
+		if next {
+			return urlP.SetNextFile(url)
+		}
+		return urlP.PlayFile(url)
+	} else if trP, ok := p.player.(player.TrackPlayer); ok {
+		if next {
+			return trP.SetNextTrack(p.playQueue[idx])
+		}
+		return trP.PlayTrack(p.playQueue[idx])
+	}
+	panic("Unsupported player type")
 }
 
 // call BEFORE updating p.nowPlayingIdx

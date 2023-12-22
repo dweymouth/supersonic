@@ -4,57 +4,17 @@ import "github.com/dweymouth/supersonic/backend/mediaprovider"
 
 type URLPlayer interface {
 	BasePlayer
-	AppendFile(url string) error
-}
-
-type URLPlayerNew interface {
-	BasePlayer
-	SetFile(url string)
-	SetNextFile(url string)
+	PlayFile(url string) error
+	SetNextFile(url string) error
 }
 
 type TrackPlayer interface {
 	BasePlayer
-	AppendTrack(track *mediaprovider.Track) error
-}
-
-type TrackPlayerNew interface {
-	BasePlayer
-	SetTrack(track *mediaprovider.Track) error
+	PlayTrack(track *mediaprovider.Track) error
 	SetNextTrack(track *mediaprovider.Track) error
 }
 
 type BasePlayer interface {
-	// Transport
-	PlayTrackAt(idx int) error
-	Continue() error
-	Pause() error
-	Stop() error
-	SeekPrevious() error
-	SeekNext() error
-	SeekSeconds(secs float64) error
-	IsSeeking() bool
-
-	SetVolume(int) error
-	GetVolume() int
-
-	GetStatus() Status
-
-	ClearPlayQueue() error
-	RemoveTrackAt(idx int) error
-
-	SetLoopMode(LoopMode) error
-	GetLoopMode() LoopMode
-
-	// Event API
-	OnPaused(func())
-	OnStopped(func())
-	OnPlaying(func())
-	OnSeek(func())
-	OnTrackChange(func(int))
-}
-
-type BasePlayerNew interface {
 	Continue() error
 	Pause() error
 	Stop() error
@@ -72,7 +32,7 @@ type BasePlayerNew interface {
 	OnStopped(func())
 	OnPlaying(func())
 	OnSeek(func())
-	OnTrackChange(func(int))
+	OnTrackChange(func())
 }
 
 type ReplayGainPlayer interface {
