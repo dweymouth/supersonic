@@ -7,9 +7,21 @@ type URLPlayer interface {
 	AppendFile(url string) error
 }
 
+type URLPlayerNew interface {
+	BasePlayer
+	SetFile(url string)
+	SetNextFile(url string)
+}
+
 type TrackPlayer interface {
 	BasePlayer
 	AppendTrack(track *mediaprovider.Track) error
+}
+
+type TrackPlayerNew interface {
+	BasePlayer
+	SetTrack(track *mediaprovider.Track) error
+	SetNextTrack(track *mediaprovider.Track) error
 }
 
 type BasePlayer interface {
@@ -33,6 +45,27 @@ type BasePlayer interface {
 
 	SetLoopMode(LoopMode) error
 	GetLoopMode() LoopMode
+
+	// Event API
+	OnPaused(func())
+	OnStopped(func())
+	OnPlaying(func())
+	OnSeek(func())
+	OnTrackChange(func(int))
+}
+
+type BasePlayerNew interface {
+	Continue() error
+	Pause() error
+	Stop() error
+
+	SeekSeconds(secs float64) error
+	IsSeeking() bool
+
+	SetVolume(int) error
+	GetVolume() int
+
+	GetStatus() Status
 
 	// Event API
 	OnPaused(func())

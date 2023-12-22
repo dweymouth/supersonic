@@ -193,6 +193,19 @@ func (p *Player) ClearPlayQueue() error {
 	return p.mpv.Command([]string{"playlist-clear"})
 }
 
+func (p *Player) SetFile(url string) error {
+	if !p.initialized {
+		return ErrUnitialized
+	}
+	if err := p.mpv.Command([]string{"stop"}); err != nil {
+		return err
+	}
+	if err := p.mpv.Command([]string{"playlist-clear"}); err != nil {
+		return err
+	}
+	return p.mpv.Command([]string{"loadfile", url, "append"})
+}
+
 // Seeks within the currently playing track.
 // See MPV seek command documentation for more details.
 func (p *Player) SeekSeconds(secs float64) error {
