@@ -80,33 +80,12 @@ func NewPlaybackManager(
 		transcodeCfg:  transcodeCfg,
 		nowPlayingIdx: -1,
 	}
-	p.OnTrackChange(func() {
-		pm.checkScrobble() // scrobble the previous song if needed
-		if pm.player.GetStatus().State == player.Playing {
-			pm.playTimeStopwatch.Start()
-		}
-		pm.nowPlayingIdx++
-		pm.curTrackTime = float64(pm.playQueue[pm.nowPlayingIdx].Duration)
-		pm.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
-		pm.invokeOnSongChangeCallbacks()
-		pm.doUpdateTimePos()
-		if pm.nowPlayingIdx < len(pm.playQueue)-1 {
-			pm.setTrack(pm.nowPlayingIdx+1, true)
-		}
-	})
+	p.OnTrackChange(pm.handleOnTrackChange)
 	p.OnSeek(func() {
 		pm.doUpdateTimePos()
 		pm.invokeNoArgCallbacks(pm.onSeek)
 	})
-	p.OnStopped(func() {
-		pm.playTimeStopwatch.Stop()
-		pm.checkScrobble()
-		pm.stopPollTimePos()
-		pm.doUpdateTimePos()
-		pm.invokeOnSongChangeCallbacks()
-		pm.invokeNoArgCallbacks(pm.onStopped)
-		pm.nowPlayingIdx = -1
-	})
+	p.OnStopped(pm.handleOnStopped)
 	p.OnPaused(func() {
 		pm.playTimeStopwatch.Stop()
 		pm.stopPollTimePos()
@@ -232,7 +211,7 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueu
 		p.playQueue = append(p.playQueue, &tr)
 	}
 	if needToSetNext {
-		p.setTrack(p.nowPlayingIdx+1, true)
+		p.setNextTrack(p.nowPlayingIdx + 1)
 	}
 	return nil
 }
@@ -330,6 +309,7 @@ func (p *PlaybackManager) OnTrackRatingChanged(id string, rating int) {
 	}
 }
 
+// TODO: fixme!!
 func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIDs))
 	//rmCount := 0
@@ -429,7 +409,7 @@ func (p *PlaybackManager) SetNextLoopMode() {
 
 func (p *PlaybackManager) SetLoopMode(loopMode LoopMode) {
 	p.loopMode = loopMode
-	// TODO: update next track if needed
+	p.setNextTrackBasedOnLoopMode()
 
 	for _, cb := range p.onLoopModeChange {
 		cb(loopMode)
@@ -516,6 +496,51 @@ func (p *PlaybackManager) PlayPause() error {
 	return errors.New("unreached - invalid player state")
 }
 
+func (p *PlaybackManager) handleOnTrackChange() {
+	p.checkScrobble() // scrobble the previous song if needed
+	if p.player.GetStatus().State == player.Playing {
+		p.playTimeStopwatch.Start()
+	}
+	if p.loopMode != LoopOne {
+		p.nowPlayingIdx++
+		if p.loopMode == LoopAll && p.nowPlayingIdx == len(p.playQueue) {
+			p.nowPlayingIdx = 0 // wrapped around
+		}
+	}
+	p.curTrackTime = float64(p.playQueue[p.nowPlayingIdx].Duration)
+	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
+	p.invokeOnSongChangeCallbacks()
+	p.doUpdateTimePos()
+	p.setNextTrackBasedOnLoopMode()
+}
+
+func (p *PlaybackManager) handleOnStopped() {
+	p.playTimeStopwatch.Stop()
+	p.checkScrobble()
+	p.stopPollTimePos()
+	p.doUpdateTimePos()
+	p.invokeOnSongChangeCallbacks()
+	p.invokeNoArgCallbacks(p.onStopped)
+	p.nowPlayingIdx = -1
+}
+
+func (p *PlaybackManager) setNextTrackBasedOnLoopMode() {
+	switch p.loopMode {
+	case LoopNone:
+		if p.nowPlayingIdx < len(p.playQueue)-1 {
+			p.setNextTrack(p.nowPlayingIdx + 1)
+		}
+	case LoopOne:
+		p.setNextTrack(p.nowPlayingIdx)
+	case LoopAll:
+		if p.nowPlayingIdx >= len(p.playQueue)-1 {
+			p.setNextTrack(0)
+		} else {
+			p.setNextTrack(p.nowPlayingIdx + 1)
+		}
+	}
+}
+
 func (p *PlaybackManager) setTrack(idx int, next bool) error {
 	if urlP, ok := p.player.(player.URLPlayer); ok {
 		url, err := p.sm.Server.GetStreamURL(p.playQueue[idx].ID, p.transcodeCfg.ForceRawFile)
@@ -533,6 +558,10 @@ func (p *PlaybackManager) setTrack(idx int, next bool) error {
 		return trP.PlayTrack(p.playQueue[idx])
 	}
 	panic("Unsupported player type")
+}
+
+func (p *PlaybackManager) setNextTrack(idx int) error {
+	return p.setTrack(idx, true)
 }
 
 // call BEFORE updating p.nowPlayingIdx
