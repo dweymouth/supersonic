@@ -19,9 +19,17 @@ var (
 	ReplayGainAuto  = "Auto"
 )
 
-// A high-level Subsonic-aware playback backend.
-// Manages loading tracks into the Player queue,
-// sending callbacks on play time updates and track changes.
+// The playback loop mode (LoopNone, LoopAll, LoopOne).
+type LoopMode int
+
+const (
+	LoopNone LoopMode = iota
+	LoopAll
+	LoopOne
+)
+
+// A high-level MediaProvider-aware playback engine, serves as an
+// intermediary between the frontend and various Player backends.
 type PlaybackManager struct {
 	ctx           context.Context
 	cancelPollPos context.CancelFunc
@@ -35,6 +43,7 @@ type PlaybackManager struct {
 
 	playQueue     []*mediaprovider.Track
 	nowPlayingIdx int
+	loopMode      LoopMode
 
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
@@ -45,7 +54,7 @@ type PlaybackManager struct {
 	// registered callbacks
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
-	onLoopModeChange []func(player.LoopMode)
+	onLoopModeChange []func(LoopMode)
 	onVolumeChange   []func(int)
 	onSeek           []func()
 	onPaused         []func()
@@ -157,7 +166,7 @@ func (p *PlaybackManager) OnPlayTimeUpdate(cb func(float64, float64)) {
 }
 
 // Registers a callback that is notified whenever the loop mode changes.
-func (p *PlaybackManager) OnLoopModeChange(cb func(player.LoopMode)) {
+func (p *PlaybackManager) OnLoopModeChange(cb func(LoopMode)) {
 	p.onLoopModeChange = append(p.onLoopModeChange, cb)
 }
 
@@ -406,44 +415,29 @@ func (p *PlaybackManager) SetReplayGainMode(mode player.ReplayGainMode) {
 
 // Changes the loop mode of the player to the next one.
 // Useful for toggling UI elements, to change modes without knowing the current player mode.
-func (p *PlaybackManager) SetNextLoopMode() error {
-	var err error
-	switch p.GetLoopMode() {
-	case player.LoopNone:
-		err = p.SetLoopMode(player.LoopAll)
-	case player.LoopAll:
-		err = p.SetLoopMode(player.LoopOne)
-	case player.LoopOne:
-		err = p.SetLoopMode(player.LoopNone)
-	default:
-		return nil
-	}
+func (p *PlaybackManager) SetNextLoopMode() {
+	switch p.loopMode {
+	case LoopNone:
+		p.SetLoopMode(LoopAll)
+	case LoopAll:
+		p.SetLoopMode(LoopOne)
+	case LoopOne:
+		p.SetLoopMode(LoopNone)
 
-	if err != nil {
-		return err
 	}
-	//for _, cb := range p.onLoopModeChange {
-	//	cb(p.player.GetLoopMode())
-	//}
-
-	return nil
 }
 
-func (p *PlaybackManager) SetLoopMode(loopMode player.LoopMode) error {
-	//if err := p.player.SetLoopMode(player.LoopMode(loopMode)); err != nil {
-	//	return err
-	//}
+func (p *PlaybackManager) SetLoopMode(loopMode LoopMode) {
+	p.loopMode = loopMode
+	// TODO: update next track if needed
 
 	for _, cb := range p.onLoopModeChange {
 		cb(loopMode)
 	}
-
-	return nil
 }
 
-func (p *PlaybackManager) GetLoopMode() player.LoopMode {
-	return 0
-	//return p.player.GetLoopMode()
+func (p *PlaybackManager) GetLoopMode() LoopMode {
+	return p.loopMode
 }
 
 func (p *PlaybackManager) PlayerStatus() player.Status {

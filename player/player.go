@@ -57,15 +57,6 @@ type Status struct {
 	PlaylistPos int
 }
 
-// The playback loop mode (LoopNone, LoopAll, LoopOne).
-type LoopMode int
-
-const (
-	LoopNone LoopMode = iota
-	LoopAll
-	LoopOne
-)
-
 type ReplayGainMode int
 
 const (
@@ -91,16 +82,4 @@ func (r ReplayGainMode) String() string {
 	default:
 		return "no"
 	}
-}
-
-func (l LoopMode) String() string {
-	switch l {
-	case LoopNone:
-		return "no"
-	case LoopAll:
-		return "all"
-	case LoopOne:
-		return "one"
-	}
-	return "UNKNOWN_LOOP_MODE"
 }
