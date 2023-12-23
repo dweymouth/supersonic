@@ -173,6 +173,10 @@ func (p *Player) SetNextFile(url string) error {
 		}
 		p.lenPlaylist--
 	}
+	if url == "" {
+		return nil
+	}
+
 	err := p.mpv.Command([]string{"loadfile", url, "append"})
 	if err == nil {
 		p.lenPlaylist++

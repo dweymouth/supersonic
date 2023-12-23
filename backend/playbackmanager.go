@@ -406,7 +406,7 @@ func (p *PlaybackManager) SetNextLoopMode() {
 
 func (p *PlaybackManager) SetLoopMode(loopMode LoopMode) {
 	p.loopMode = loopMode
-	p.setNextTrackBasedOnLoopMode()
+	p.setNextTrackBasedOnLoopMode(true)
 
 	for _, cb := range p.onLoopModeChange {
 		cb(loopMode)
@@ -508,7 +508,7 @@ func (p *PlaybackManager) handleOnTrackChange() {
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
 	p.doUpdateTimePos()
-	p.setNextTrackBasedOnLoopMode()
+	p.setNextTrackBasedOnLoopMode(false)
 }
 
 func (p *PlaybackManager) handleOnStopped() {
@@ -521,18 +521,22 @@ func (p *PlaybackManager) handleOnStopped() {
 	p.nowPlayingIdx = -1
 }
 
-func (p *PlaybackManager) setNextTrackBasedOnLoopMode() {
+func (p *PlaybackManager) setNextTrackBasedOnLoopMode(onLoopModeChange bool) {
 	switch p.loopMode {
 	case LoopNone:
 		if p.nowPlayingIdx < len(p.playQueue)-1 {
 			p.setNextTrack(p.nowPlayingIdx + 1)
+		} else if onLoopModeChange {
+			// prev was LoopOne - need to erase next track
+			p.setNextTrack(-1)
 		}
 	case LoopOne:
 		p.setNextTrack(p.nowPlayingIdx)
 	case LoopAll:
 		if p.nowPlayingIdx >= len(p.playQueue)-1 {
 			p.setNextTrack(0)
-		} else {
+		} else if !onLoopModeChange {
+			// if onloopmodechange, prev mode was LoopNone and next track is already set
 			p.setNextTrack(p.nowPlayingIdx + 1)
 		}
 	}
@@ -540,19 +544,27 @@ func (p *PlaybackManager) setNextTrackBasedOnLoopMode() {
 
 func (p *PlaybackManager) setTrack(idx int, next bool) error {
 	if urlP, ok := p.player.(player.URLPlayer); ok {
-		url, err := p.sm.Server.GetStreamURL(p.playQueue[idx].ID, p.transcodeCfg.ForceRawFile)
-		if err != nil {
-			return err
+		url := ""
+		if idx >= 0 {
+			var err error
+			url, err = p.sm.Server.GetStreamURL(p.playQueue[idx].ID, p.transcodeCfg.ForceRawFile)
+			if err != nil {
+				return err
+			}
 		}
 		if next {
 			return urlP.SetNextFile(url)
 		}
 		return urlP.PlayFile(url)
 	} else if trP, ok := p.player.(player.TrackPlayer); ok {
-		if next {
-			return trP.SetNextTrack(p.playQueue[idx])
+		var track *mediaprovider.Track
+		if idx >= 0 {
+			track = p.playQueue[idx]
 		}
-		return trP.PlayTrack(p.playQueue[idx])
+		if next {
+			return trP.SetNextTrack(track)
+		}
+		return trP.PlayTrack(track)
 	}
 	panic("Unsupported player type")
 }
