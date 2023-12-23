@@ -370,9 +370,6 @@ func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
 		mode = player.ReplayGainAlbum
 	}
 
-	if config.Mode == ReplayGainAuto {
-		mode = player.ReplayGainTrack
-	}
 	rGainPlayer.SetReplayGainOptions(player.ReplayGainOptions{
 		Mode:            mode,
 		PreventClipping: config.PreventClipping,
