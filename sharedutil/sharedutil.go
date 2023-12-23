@@ -78,10 +78,10 @@ func Reversed[T any](ts []T) []T {
 	return new
 }
 
-func ToSet[T comparable](ts []T) map[T]interface{} {
-	set := make(map[T]interface{}, len(ts))
+func ToSet[T comparable](ts []T) map[T]struct{} {
+	set := make(map[T]struct{}, len(ts))
 	for _, t := range ts {
-		set[t] = nil
+		set[t] = struct{}{}
 	}
 	return set
 }

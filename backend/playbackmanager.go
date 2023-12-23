@@ -192,6 +192,8 @@ func (p *PlaybackManager) LoadPlaylist(playlistID string, appendToQueue bool, sh
 	return p.LoadTracks(playlist.Tracks, appendToQueue, shuffle)
 }
 
+// Load tracks into the play queue.
+// If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueue, shuffle bool) error {
 	if !appendToQueue {
 		p.player.Stop()
@@ -309,38 +311,50 @@ func (p *PlaybackManager) OnTrackRatingChanged(id string, rating int) {
 	}
 }
 
-// TODO: fixme!!
 func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIDs))
-	//rmCount := 0
 	idSet := sharedutil.ToSet(trackIDs)
 	isPlayingTrackRemoved := false
+	isNextPlayingTrackremoved := false
+	nowPlaying := p.NowPlayingIndex()
+	newNowPlaying := nowPlaying
 	for i, tr := range p.playQueue {
 		if _, ok := idSet[tr.ID]; ok {
-			// removing this track
-			if i == p.NowPlayingIndex() {
+			if i < nowPlaying {
+				// if removing a track earlier than the currently playing one (if any),
+				// decrement new now playing index by one to account for new position in queue
+				newNowPlaying--
+			} else if i == nowPlaying {
 				isPlayingTrackRemoved = true
 				// If we are removing the currently playing track, we need to scrobble it
 				p.checkScrobble()
+			} else if nowPlaying >= 0 && i == nowPlaying+1 {
+				isNextPlayingTrackremoved = true
 			}
-			// if err := p.player.RemoveTrackAt(i - rmCount); err == nil {
-			//	rmCount++
-			//} else {
-			var err error
-			log.Printf("error removing track: %v", err.Error())
-			// did not remove this track
-			newQueue = append(newQueue, tr)
-			//}
 		} else {
 			// not removing this track
 			newQueue = append(newQueue, tr)
 		}
 	}
 	p.playQueue = newQueue
-	p.nowPlayingIdx = p.player.GetStatus().PlaylistPos
-	// fire on song change callbacks in case the playing track was removed
+	p.nowPlayingIdx = newNowPlaying
 	if isPlayingTrackRemoved {
-		p.invokeOnSongChangeCallbacks()
+		if newNowPlaying == len(newQueue) {
+			// we had been playing the last track, and removed it
+			p.Stop()
+		} else {
+			p.nowPlayingIdx -= 1 // will be incremented in newtrack callback from player
+			p.setTrack(newNowPlaying, false)
+		}
+		// setNextTrack and onSongChange callbacks will be handled
+		// when we receive new track event from player
+	} else if isNextPlayingTrackremoved {
+		if newNowPlaying < len(newQueue)-1 {
+			p.setNextTrack(p.nowPlayingIdx + 1)
+		} else {
+			// no next track to play
+			p.setNextTrack(-1)
+		}
 	}
 }
 
