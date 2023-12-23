@@ -51,10 +51,9 @@ const (
 // The current status of the player.
 // Includes playback state, current time, total track time, and playlist position.
 type Status struct {
-	State       State
-	TimePos     float64
-	Duration    float64
-	PlaylistPos int
+	State    State
+	TimePos  float64
+	Duration float64
 }
 
 type ReplayGainMode int

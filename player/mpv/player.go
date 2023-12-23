@@ -322,9 +322,6 @@ func (p *Player) GetStatus() player.Status {
 	if dur != nil {
 		p.status.Duration = dur.(float64)
 	}
-	if playpos, err := p.getInt64Property("playlist-pos"); err == nil {
-		p.status.PlaylistPos = int(playpos)
-	}
 	return p.status
 }
 
