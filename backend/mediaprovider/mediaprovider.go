@@ -148,6 +148,25 @@ type SupportsRating interface {
 	SetRating(params RatingFavoriteParameters, rating int) error
 }
 
+type JukeboxProvider interface {
+	JukeboxStart() error
+	JukeboxStop() error
+	JukeboxSeek(idx, seconds int) error
+	JukeboxClear() error
+	JukeboxSet(trackID string) error
+	JukeboxAdd(trackID string) error
+	JukeboxRemove(idx int) error
+	JukeboxSetVolume(vol int) error
+	JukeboxGetStatus() (*JukeboxStatus, error)
+}
+
+type JukeboxStatus struct {
+	Volume          int
+	CurrentTrack    int
+	Playing         bool
+	PositionSeconds float64
+}
+
 func genresMatch(filterGenres, albumGenres []string) bool {
 	for _, g1 := range filterGenres {
 		for _, g2 := range albumGenres {

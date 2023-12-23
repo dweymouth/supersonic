@@ -1,4 +1,4 @@
-package player
+package mpv
 
 // Equalizer implementations based on the ffmpeg 'equalizer' filter
 

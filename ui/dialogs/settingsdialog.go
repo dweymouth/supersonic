@@ -10,7 +10,7 @@ import (
 	"unicode"
 
 	"github.com/dweymouth/supersonic/backend"
-	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -37,7 +37,7 @@ type SettingsDialog struct {
 	OnEqualizerSettingsChanged     func()
 
 	config       *backend.Config
-	audioDevices []player.AudioDevice
+	audioDevices []mpv.AudioDevice
 	themeFiles   map[string]string // filename -> displayName
 	promptText   *widget.RichText
 
@@ -46,24 +46,39 @@ type SettingsDialog struct {
 	content fyne.CanvasObject
 }
 
-// TODO: having this depend on the player package for the AudioDevice type is kinda gross. Refactor.
+// TODO: having this depend on the mpv package for the AudioDevice type is kinda gross. Refactor.
 func NewSettingsDialog(
 	config *backend.Config,
-	audioDeviceList []player.AudioDevice,
+	audioDeviceList []mpv.AudioDevice,
 	themeFileList map[string]string,
 	equalizerBands []string,
 	clientDecidesScrobble bool,
+	isLocalPlayer bool,
+	isReplayGainPlayer bool,
+	isEqualizerPlayer bool,
 	window fyne.Window,
 ) *SettingsDialog {
 	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList, clientDecidesScrobble: clientDecidesScrobble}
 	s.ExtendBaseWidget(s)
 
-	tabs := container.NewAppTabs(
-		s.createGeneralTab(),
-		s.createPlaybackTab(),
-		s.createEqualizerTab(equalizerBands),
-		s.createExperimentalTab(window),
-	)
+	// TODO: Once Fyne supports disableable sliders, it's probably a nicer UX
+	// to create the equalizer tab but disable it if we are not using an equalizer player
+	var tabs *container.AppTabs
+	if isEqualizerPlayer {
+		tabs = container.NewAppTabs(
+			s.createGeneralTab(),
+			s.createPlaybackTab(isLocalPlayer, isReplayGainPlayer),
+			s.createEqualizerTab(equalizerBands),
+			s.createExperimentalTab(window),
+		)
+	} else {
+		tabs = container.NewAppTabs(
+			s.createGeneralTab(),
+			s.createPlaybackTab(isLocalPlayer, isReplayGainPlayer),
+			s.createExperimentalTab(window),
+		)
+	}
+
 	tabs.SelectIndex(s.getActiveTabNumFromConfig())
 	// workaround issue where inactivated tabs don't fully update when theme setting is changed
 	tabs.OnSelected = func(ti *container.TabItem) {
@@ -249,7 +264,7 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 	))
 }
 
-func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
+func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer bool) *container.TabItem {
 	disableTranscode := widget.NewCheckWithData("Disable server transcoding", binding.BindBool(&s.config.Transcoding.ForceRawFile))
 	deviceList := make([]string, len(s.audioDevices))
 	var selIndex int
@@ -327,6 +342,16 @@ func (s *SettingsDialog) createPlaybackTab() *container.TabItem {
 		s.onAudioExclusiveSettingsChanged()
 	})
 	audioExclusive.Checked = s.config.LocalPlayback.AudioExclusive
+
+	if !isLocalPlayer {
+		deviceSelect.Disable()
+		audioExclusive.Disable()
+	}
+	if !isReplayGainPlayer {
+		replayGainSelect.Disable()
+		preventClipping.Disable()
+		preampGain.Disable()
+	}
 
 	return container.NewTabItem("Playback", container.NewVBox(
 		container.NewHBox(disableTranscode),

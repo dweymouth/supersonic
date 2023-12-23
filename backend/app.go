@@ -12,6 +12,7 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
@@ -36,7 +37,7 @@ type App struct {
 	ServerManager   *ServerManager
 	ImageManager    *ImageManager
 	PlaybackManager *PlaybackManager
-	Player          *player.Player
+	LocalPlayer     *mpv.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
 
@@ -107,7 +108,7 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 	}
 
 	a.ServerManager = NewServerManager(appName, a.Config)
-	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.Player, &a.Config.Scrobbling, &a.Config.Transcoding)
+	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Scrobbling, &a.Config.Transcoding)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, configdir.LocalCache(a.appName))
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
@@ -117,7 +118,7 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 
 	// OS media center integrations
 	a.setupMPRIS(displayAppName)
-	InitMPMediaHandler(a.Player, a.PlaybackManager, func(id string) (string, error) {
+	InitMPMediaHandler(a.PlaybackManager, func(id string) (string, error) {
 		a.ImageManager.GetCoverThumbnail(id) // ensure image is cached locally
 		return a.ImageManager.GetCoverArtUrl(id)
 	})
@@ -194,21 +195,21 @@ func (a *App) callOnReactivate() {
 }
 
 func (a *App) initMPV() error {
-	p := player.NewWithClientName(a.appName)
+	p := mpv.NewWithClientName(a.appName)
 	c := a.Config.LocalPlayback
 	c.InMemoryCacheSizeMB = clamp(c.InMemoryCacheSizeMB, 10, 500)
 	if err := p.Init(c.InMemoryCacheSizeMB); err != nil {
 		return fmt.Errorf("failed to initialize mpv player: %s", err.Error())
 	}
-	a.Player = p
+	a.LocalPlayer = p
 	return nil
 }
 
 func (a *App) setupMPV() error {
 	a.Config.LocalPlayback.Volume = clamp(a.Config.LocalPlayback.Volume, 0, 100)
-	a.Player.SetVolume(a.Config.LocalPlayback.Volume)
+	a.LocalPlayer.SetVolume(a.Config.LocalPlayback.Volume)
 
-	devs, err := a.Player.ListAudioDevices()
+	devs, err := a.LocalPlayer.ListAudioDevices()
 	if err != nil {
 		return err
 	}
@@ -228,35 +229,41 @@ func (a *App) setupMPV() error {
 		// (e.g. a USB audio device that is currently unplugged)
 		desiredDevice = "auto"
 	}
-	a.Player.SetAudioDevice(desiredDevice)
+	a.LocalPlayer.SetAudioDevice(desiredDevice)
 
 	rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack, ReplayGainAuto}
 	if !sharedutil.SliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
 		a.Config.ReplayGain.Mode = ReplayGainNone
 	}
-	mode := player.ReplayGainMode(a.Config.ReplayGain.Mode)
-	if a.Config.ReplayGain.Mode == ReplayGainAuto {
+	mode := player.ReplayGainNone
+	switch a.Config.ReplayGain.Mode {
+	case ReplayGainAlbum:
+		mode = player.ReplayGainAlbum
+	case ReplayGainTrack:
+		mode = player.ReplayGainTrack
+	case ReplayGainAuto:
 		mode = player.ReplayGainTrack
 	}
-	a.Player.SetReplayGainOptions(player.ReplayGainOptions{
+
+	a.LocalPlayer.SetReplayGainOptions(player.ReplayGainOptions{
 		Mode:            mode,
 		PreventClipping: a.Config.ReplayGain.PreventClipping,
 		PreampGain:      a.Config.ReplayGain.PreampGainDB,
 	})
-	a.Player.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
+	a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
 
-	eq := &player.ISO15BandEqualizer{
+	eq := &mpv.ISO15BandEqualizer{
 		EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
 		Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
 	}
 	copy(eq.BandGains[:], a.Config.LocalPlayback.GraphicEqualizerBands)
-	a.Player.SetEqualizer(eq)
+	a.LocalPlayer.SetEqualizer(eq)
 
 	return nil
 }
 
 func (a *App) setupMPRIS(mprisAppName string) {
-	a.MPRISHandler = NewMPRISHandler(mprisAppName, a.Player, a.PlaybackManager)
+	a.MPRISHandler = NewMPRISHandler(mprisAppName, a.PlaybackManager)
 	a.MPRISHandler.ArtURLLookup = a.ImageManager.GetCoverArtUrl
 	a.MPRISHandler.OnRaise = func() error { a.callOnReactivate(); return nil }
 	a.MPRISHandler.OnQuit = func() error {
@@ -293,10 +300,10 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 func (a *App) Shutdown() {
 	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
-	a.Player.Stop() // will trigger scrobble check
-	a.Config.LocalPlayback.Volume = a.Player.GetVolume()
+	a.PlaybackManager.Stop() // will trigger scrobble check
+	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
 	a.cancel()
-	a.Player.Destroy()
+	a.LocalPlayer.Destroy()
 	a.Config.WriteConfigFile(a.configPath())
 	os.RemoveAll(configdir.LocalConfig(a.appName, sessionDir))
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -41,7 +42,6 @@ type nowPlayingPageState struct {
 	pool    *util.WidgetPool
 	conf    *backend.NowPlayingPageConfig
 	pm      *backend.PlaybackManager
-	p       *player.Player
 	canRate bool
 }
 
@@ -51,17 +51,16 @@ func NewNowPlayingPage(
 	pool *util.WidgetPool,
 	conf *backend.NowPlayingPageConfig,
 	pm *backend.PlaybackManager,
-	p *player.Player, // TODO: once other player backends are supported (eg uPnP), refactor
 	canRate bool,
 ) *NowPlayingPage {
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
-		contr: contr, pool: pool, conf: conf, pm: pm, p: p, canRate: canRate,
+		contr: contr, pool: pool, conf: conf, pm: pm, canRate: canRate,
 	}}
 	a.ExtendBaseWidget(a)
 
-	p.OnPaused(a.formatStatusLine)
-	p.OnPlaying(a.formatStatusLine)
-	p.OnStopped(a.formatStatusLine)
+	pm.OnPaused(a.formatStatusLine)
+	pm.OnPlaying(a.formatStatusLine)
+	pm.OnStopped(a.formatStatusLine)
 
 	if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
 		a.tracklist = t.(*widgets.Tracklist)
@@ -135,7 +134,8 @@ func (a *NowPlayingPage) OnPlayTimeUpdate(_, _ float64) {
 }
 
 func (a *NowPlayingPage) formatStatusLine() {
-	playerStats := a.p.GetStatus()
+	curPlayer := a.pm.CurrentPlayer()
+	playerStats := curPlayer.GetStatus()
 	lastStatus := a.statusLabel.Text
 	state := "Stopped"
 	switch playerStats.State {
@@ -160,30 +160,38 @@ func (a *NowPlayingPage) formatStatusLine() {
 	status := fmt.Sprintf("%s (%d/%d)%s", state, trackNum,
 		len(a.queue), statusSuffix)
 
-	if state == "Stopped" {
-		a.statusLabel.Text = fmt.Sprintf("%s | Total time: %s", status, util.SecondsToTimeString(a.totalTime))
-	} else {
-		audioInfo, err := a.p.GetMediaInfo()
-		if err != nil {
-			log.Printf("error getting playback status: %s", err.Error())
-		}
-		codec := audioInfo.Codec
-		if len(codec) <= 4 && !strings.EqualFold(codec, "opus") {
-			codec = strings.ToUpper(codec) // FLAC, MP3, AAC, etc
-		}
-
-		// Note: bit depth intentionally omitted since MPV reports the decoded bit depth
-		// i.e. 24 bit files get reported as 32 bit. Also b/c bit depth isn't meaningful for lossy.
-		a.statusLabel.Text = fmt.Sprintf("%s · %s %g kHz, %d kbps | Total time: %s",
-			status,
-			codec,
-			float64(audioInfo.Samplerate)/1000,
-			audioInfo.Bitrate/1000,
-			util.SecondsToTimeString(a.totalTime))
+	mediaInfo := ""
+	if state != "Stopped" {
+		mediaInfo = a.formatMediaInfoStr(curPlayer)
 	}
+	if mediaInfo != "" {
+		mediaInfo = " · " + mediaInfo
+	}
+
+	a.statusLabel.Text = fmt.Sprintf("%s%s | Total time: %s", status, mediaInfo, util.SecondsToTimeString(a.totalTime))
 	if lastStatus != a.statusLabel.Text {
 		a.statusLabel.Refresh()
 	}
+}
+
+func (a *NowPlayingPage) formatMediaInfoStr(player player.BasePlayer) string {
+	mpv, ok := player.(*mpv.Player)
+	if !ok {
+		return ""
+	}
+	audioInfo, err := mpv.GetMediaInfo()
+	if err != nil {
+		log.Printf("error getting playback status: %s", err.Error())
+		return ""
+	}
+	codec := audioInfo.Codec
+	if len(codec) <= 4 && !strings.EqualFold(codec, "opus") {
+		codec = strings.ToUpper(codec) // FLAC, MP3, AAC, etc
+	}
+
+	// Note: bit depth intentionally omitted since MPV reports the decoded bit depth
+	// i.e. 24 bit files get reported as 32 bit. Also b/c bit depth isn't meaningful for lossy.
+	return fmt.Sprintf("%s %g kHz, %d kbps", codec, float64(audioInfo.Samplerate)/1000, audioInfo.Bitrate/1000)
 }
 
 func (a *NowPlayingPage) Reload() {
@@ -216,5 +224,5 @@ func (a *NowPlayingPage) load(highlightedTrackID string) {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage("", s.contr, s.pool, s.conf, s.pm, s.p, s.canRate)
+	return NewNowPlayingPage("", s.contr, s.pool, s.conf, s.pm, s.canRate)
 }

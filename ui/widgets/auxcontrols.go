@@ -69,13 +69,13 @@ func (a *AuxControls) OnChangeLoopMode(f func()) {
 
 func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 	switch mode {
-	case backend.LoopModeAll:
+	case backend.LoopAll:
 		a.loop.Importance = widget.HighImportance
 		a.loop.Icon = myTheme.RepeatIcon
-	case backend.LoopModeOne:
+	case backend.LoopOne:
 		a.loop.Importance = widget.HighImportance
 		a.loop.Icon = myTheme.RepeatOneIcon
-	case backend.LoopModeNone:
+	case backend.LoopNone:
 		a.loop.Importance = widget.MediumImportance
 		a.loop.Icon = myTheme.RepeatIcon
 	}
