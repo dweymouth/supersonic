@@ -55,6 +55,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 			legacyAuthCheck.Hide()
 		}
 	})
+	serverTypeChoice.Required = true
 	serverTypeChoice.Horizontal = true
 	selected := backend.ServerTypeSubsonic
 	if a.ServerType == backend.ServerTypeJellyfin {
