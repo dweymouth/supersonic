@@ -102,6 +102,7 @@ func (b *BrowsingPane) SetPage(p Page) {
 		b.pageContainer.Objects[1] = layout.NewSpacer()
 		b.curPage = nil
 		b.pageContainer.Refresh()
+		b.updateNavBtnsColor(p)
 	} else {
 		oldPage := b.curPage
 		if b.doSetPage(p) && oldPage != nil {
@@ -282,10 +283,10 @@ func (b *BrowsingPane) CreateRenderer() fyne.WidgetRenderer {
 
 func (b *BrowsingPane) updateNavBtnsColor(p Page) {
 	for pageName, icon := range b.navBtnsPageMap {
-		if pageName == p.Route().Page {
+		if p != nil && pageName == p.Route().Page {
 			icon.(*theme.ThemedResource).ColorName = theme.ColorNamePrimary
 		} else {
-			icon.(*theme.ThemedResource).ColorName = ""
+			icon.(*theme.ThemedResource).ColorName = theme.ColorNameForeground
 		}
 	}
 }
