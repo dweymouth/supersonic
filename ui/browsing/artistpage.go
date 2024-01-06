@@ -309,7 +309,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), func() {
 		go a.artistPage.contr.PlayArtistDiscography(a.artistID, false /*shuffle*/)
 	})
-	a.playRadioBtn = widget.NewButtonWithIcon(" Play Artist Radio", myTheme.ShuffleIcon, a.artistPage.playArtistRadio)
+	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", myTheme.ShuffleIcon, a.artistPage.playArtistRadio)
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.biographyDisp.Truncation = fyne.TextTruncateEllipsis
 	a.ExtendBaseWidget(a)

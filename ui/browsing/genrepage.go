@@ -40,7 +40,7 @@ func (g *genrePageAdapter) Route() controller.Route {
 
 func (g *genrePageAdapter) ActionButton() *widget.Button {
 	fn := func() { go g.pm.PlayRandomSongs(g.genre) }
-	return widget.NewButtonWithIcon(" Play random", myTheme.ShuffleIcon, fn)
+	return widget.NewButtonWithIcon("Play random", myTheme.ShuffleIcon, fn)
 }
 
 func (a *genrePageAdapter) Iter(sortOrder string, filter mediaprovider.AlbumFilter) widgets.GridViewIterator {
