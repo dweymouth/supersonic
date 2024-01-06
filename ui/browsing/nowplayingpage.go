@@ -77,6 +77,7 @@ func NewNowPlayingPage(
 		DisablePlaybackMenu: true,
 		DisableRating:       !canRate,
 		AuxiliaryMenuItems: []*fyne.MenuItem{
+			util.NewReorderTracksSubmenu(a.doSetNewTrackOrder),
 			fyne.NewMenuItem("Remove from queue", a.onRemoveSelectedFromQueue),
 		},
 	}
@@ -206,6 +207,26 @@ func (a *NowPlayingPage) onRemoveSelectedFromQueue() {
 	a.pm.RemoveTracksFromQueue(a.tracklist.SelectedTrackIDs())
 	a.tracklist.UnselectAll()
 	a.Reload()
+}
+
+func (a *NowPlayingPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
+	// Since the tracklist view may be sorted in a different order than the
+	// actual running order, we need to get the IDs of the selected tracks
+	// from the tracklist and convert them to indices in the *original* run order
+	ids := a.tracklist.SelectedTrackIDs()
+	idxs := make([]int, 0, len(ids))
+	for i, tr := range a.queue {
+		if sharedutil.SliceContains(ids, tr.ID) {
+			idxs = append(idxs, i)
+		}
+	}
+	newTracks := sharedutil.ReorderTracks(a.queue, idxs, op)
+	a.pm.UpdatePlayQueue(newTracks)
+
+	// force-switch back to unsorted view to show new track order
+	a.tracklist.SetSorting(widgets.TracklistSort{})
+	a.tracklist.SetTracks(newTracks)
+	a.tracklist.UnselectAll()
 }
 
 // does not make calls to server - can safely be run in UI callbacks

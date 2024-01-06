@@ -221,6 +221,42 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueu
 	return nil
 }
 
+// Replaces the play queue with the given set of tracks.
+// Does not stop playback if the currently playing track is in the new queue,
+// but updates the now playing index to point to the first instance of the track in the new queue.
+func (p *PlaybackManager) UpdatePlayQueue(tracks []*mediaprovider.Track) error {
+	newQueue := make([]*mediaprovider.Track, len(tracks))
+	for i, tr := range tracks {
+		// ensure a deep copy of the track info so that we can maintain our own state
+		// (tracking play count increases, favorite, and rating) without messing up
+		// other views' track models
+		track := *tr
+		newQueue[i] = &track
+	}
+	newNowPlayingIdx := -1
+	if p.nowPlayingIdx >= 0 {
+		nowPlayingID := p.playQueue[p.nowPlayingIdx].ID
+		for i, tr := range newQueue {
+			if tr.ID == nowPlayingID {
+				newNowPlayingIdx = i
+				break
+			}
+		}
+	}
+
+	p.playQueue = newQueue
+	if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
+		return p.Stop()
+	}
+	needToUpdateNext := p.nowPlayingIdx >= 0
+	p.nowPlayingIdx = newNowPlayingIdx
+	if needToUpdateNext {
+		p.setNextTrackAfterQueueUpdate()
+	}
+
+	return nil
+}
+
 func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool) error {
 	if err := p.LoadAlbum(albumID, false, shuffle); err != nil {
 		return err
@@ -558,6 +594,26 @@ func (p *PlaybackManager) setNextTrackBasedOnLoopMode(onLoopModeChange bool) {
 			p.setNextTrack(0)
 		} else if !onLoopModeChange {
 			// if onloopmodechange, prev mode was LoopNone and next track is already set
+			p.setNextTrack(p.nowPlayingIdx + 1)
+		}
+	}
+}
+
+func (p *PlaybackManager) setNextTrackAfterQueueUpdate() {
+	switch p.loopMode {
+	case LoopNone:
+		if p.nowPlayingIdx < len(p.playQueue)-1 {
+			p.setNextTrack(p.nowPlayingIdx + 1)
+		} else {
+			// need to erase next track
+			p.setNextTrack(-1)
+		}
+	case LoopOne:
+		p.setNextTrack(p.nowPlayingIdx)
+	case LoopAll:
+		if p.nowPlayingIdx >= len(p.playQueue)-1 {
+			p.setNextTrack(0)
+		} else {
 			p.setNextTrack(p.nowPlayingIdx + 1)
 		}
 	}

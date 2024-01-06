@@ -86,18 +86,13 @@ func newPlaylistPage(
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		conf.TracklistColumns = cols
 	}
-	reorderMenu := fyne.NewMenuItem("Reorder tracks", nil)
-	reorderMenu.ChildMenu = fyne.NewMenu("", []*fyne.MenuItem{
-		fyne.NewMenuItem("Move to top", a.onMoveSelectedToTop),
-		fyne.NewMenuItem("Move up", a.onMoveSelectedUp),
-		fyne.NewMenuItem("Move down", a.onMoveSelectedDown),
-		fyne.NewMenuItem("Move to bottom", a.onMoveSelectedToBottom),
-	}...)
 	_, canRate := a.sm.Server.(mediaprovider.SupportsRating)
 	a.tracklist.Options = widgets.TracklistOptions{
 		DisableRating: !canRate,
-		AuxiliaryMenuItems: []*fyne.MenuItem{reorderMenu,
-			fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)},
+		AuxiliaryMenuItems: []*fyne.MenuItem{
+			util.NewReorderTracksSubmenu(a.doSetNewTrackOrder),
+			fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist),
+		},
 	}
 	// connect tracklist actions
 	a.contr.ConnectTracklistActions(a.tracklist)
@@ -169,22 +164,6 @@ func renumberTracks(tracks []*mediaprovider.Track) {
 	for i, tr := range tracks {
 		tr.TrackNumber = i + 1
 	}
-}
-
-func (a *PlaylistPage) onMoveSelectedToTop() {
-	a.doSetNewTrackOrder(sharedutil.MoveToTop)
-}
-
-func (a *PlaylistPage) onMoveSelectedUp() {
-	a.doSetNewTrackOrder(sharedutil.MoveUp)
-}
-
-func (a *PlaylistPage) onMoveSelectedDown() {
-	a.doSetNewTrackOrder(sharedutil.MoveDown)
-}
-
-func (a *PlaylistPage) onMoveSelectedToBottom() {
-	a.doSetNewTrackOrder(sharedutil.MoveToBottom)
 }
 
 func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
