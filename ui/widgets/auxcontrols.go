@@ -12,6 +12,11 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
+var (
+	repeatThemedResource    = theme.NewThemedResource(myTheme.RepeatIcon)
+	repeatOneThemedResource = theme.NewThemedResource(myTheme.RepeatOneIcon)
+)
+
 // The "aux" controls for playback, positioned to the right
 // of the BottomPanel. Currently only volume control.
 type AuxControls struct {
@@ -70,11 +75,11 @@ func (a *AuxControls) OnChangeLoopMode(f func()) {
 func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 	switch mode {
 	case backend.LoopAll:
-		a.loop.Importance = widget.HighImportance
-		a.loop.Icon = myTheme.RepeatIcon
+		a.loop.Icon = repeatThemedResource
+		repeatThemedResource.ColorName = theme.ColorNamePrimary
 	case backend.LoopOne:
-		a.loop.Importance = widget.HighImportance
-		a.loop.Icon = myTheme.RepeatOneIcon
+		a.loop.Icon = repeatOneThemedResource
+		repeatOneThemedResource.ColorName = theme.ColorNamePrimary
 	case backend.LoopNone:
 		a.loop.Importance = widget.MediumImportance
 		a.loop.Icon = myTheme.RepeatIcon

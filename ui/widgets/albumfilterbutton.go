@@ -38,7 +38,7 @@ func NewAlbumFilterButton(filter *mediaprovider.AlbumFilter, fetchGenresFunc fun
 	a := &AlbumFilterButton{
 		filter: filter,
 		Button: widget.Button{
-			Icon: myTheme.FilterIcon,
+			Icon: theme.NewThemedResource(myTheme.FilterIcon),
 		},
 	}
 	a.OnTapped = a.showFilterDialog
@@ -57,10 +57,11 @@ func NewAlbumFilterButton(filter *mediaprovider.AlbumFilter, fetchGenresFunc fun
 }
 
 func (a *AlbumFilterButton) Refresh() {
+	themedIcon := a.Icon.(*theme.ThemedResource)
 	if a.filterEmpty() {
-		a.Importance = widget.MediumImportance
+		themedIcon.ColorName = theme.ColorNameForeground
 	} else {
-		a.Importance = widget.HighImportance
+		themedIcon.ColorName = theme.ColorNamePrimary
 	}
 	a.Button.Refresh()
 }
