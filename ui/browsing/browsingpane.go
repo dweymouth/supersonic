@@ -1,17 +1,16 @@
 package browsing
 
 import (
-	"github.com/dweymouth/supersonic/backend"
-	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/ui/controller"
-	"github.com/dweymouth/supersonic/ui/layouts"
-	myTheme "github.com/dweymouth/supersonic/ui/theme"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/ui/layouts"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 )
 
 type Page interface {
@@ -62,9 +61,10 @@ type BrowsingPane struct {
 	navBtnsContainer *fyne.Container
 	pageContainer    *fyne.Container
 	container        *fyne.Container
+	navBtnsPageMap   map[controller.PageName]fyne.Resource
 }
 
-func NewBrowsingPane(app *backend.App, controller *controller.Controller) *BrowsingPane {
+func NewBrowsingPane(app *backend.App, contr *controller.Controller) *BrowsingPane {
 	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
 	b.home = widget.NewButtonWithIcon("", theme.HomeIcon(), b.GoHome)
@@ -81,9 +81,10 @@ func NewBrowsingPane(app *backend.App, controller *controller.Controller) *Brows
 		p.ShowAtPosition(fyne.NewPos(b.Size().Width-p.MinSize().Width+4,
 			b.navBtnsContainer.MinSize().Height+theme.Padding()))
 	})
-	quickSearchBtn := widget.NewButtonWithIcon("", theme.SearchIcon(), controller.ShowQuickSearch)
+	quickSearchBtn := widget.NewButtonWithIcon("", theme.SearchIcon(), contr.ShowQuickSearch)
 	b.settingsMenu = fyne.NewMenu("")
 	b.navBtnsContainer = container.NewHBox()
+	b.navBtnsPageMap = map[controller.PageName]fyne.Resource{}
 	b.container = container.NewBorder(container.New(
 		&layouts.MaxPadLayout{PadLeft: -5, PadRight: -5},
 		container.New(layouts.NewLeftMiddleRightLayout(0),
@@ -101,6 +102,7 @@ func (b *BrowsingPane) SetPage(p Page) {
 		b.pageContainer.Objects[1] = layout.NewSpacer()
 		b.curPage = nil
 		b.pageContainer.Refresh()
+		b.updateNavBtnsColor(p)
 	} else {
 		oldPage := b.curPage
 		if b.doSetPage(p) && oldPage != nil {
@@ -126,8 +128,11 @@ func (b *BrowsingPane) AddSettingsMenuSeparator() {
 		fyne.NewMenuItemSeparator())
 }
 
-func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, action func()) {
-	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", icon, action))
+func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, pageName controller.PageName, action func()) {
+	// make a copy of the icon, because it can change the color
+	browsingPaneIcon := theme.NewThemedResource(icon)
+	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", browsingPaneIcon, action))
+	b.navBtnsPageMap[pageName] = browsingPaneIcon
 }
 
 func (b *BrowsingPane) DisableNavigationButtons() {
@@ -175,6 +180,7 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	}
 	b.pageContainer.Remove(b.curPage)
 	b.pageContainer.Objects[1] = p
+	b.updateNavBtnsColor(p)
 	b.Refresh()
 	return true
 }
@@ -273,4 +279,14 @@ func (b *BrowsingPane) CurrentPage() controller.Route {
 
 func (b *BrowsingPane) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(b.container)
+}
+
+func (b *BrowsingPane) updateNavBtnsColor(p Page) {
+	for pageName, icon := range b.navBtnsPageMap {
+		if p != nil && pageName == p.Route().Page {
+			icon.(*theme.ThemedResource).ColorName = theme.ColorNamePrimary
+		} else {
+			icon.(*theme.ThemedResource).ColorName = theme.ColorNameForeground
+		}
+	}
 }

@@ -216,25 +216,25 @@ func (m *MainWindow) ShowWhatsNewDialog() {
 }
 
 func (m *MainWindow) addNavigationButtons() {
-	m.BrowsingPane.AddNavigationButton(theme.NowPlayingIcon, func() {
+	m.BrowsingPane.AddNavigationButton(theme.NowPlayingIcon, controller.NowPlaying, func() {
 		m.Router.NavigateTo(controller.NowPlayingRoute(""))
 	})
-	m.BrowsingPane.AddNavigationButton(theme.FavoriteIcon, func() {
+	m.BrowsingPane.AddNavigationButton(theme.FavoriteIcon, controller.Favorites, func() {
 		m.Router.NavigateTo(controller.FavoritesRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(theme.AlbumIcon, func() {
+	m.BrowsingPane.AddNavigationButton(theme.AlbumIcon, controller.Albums, func() {
 		m.Router.NavigateTo(controller.AlbumsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(theme.ArtistIcon, func() {
+	m.BrowsingPane.AddNavigationButton(theme.ArtistIcon, controller.Artists, func() {
 		m.Router.NavigateTo(controller.ArtistsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(theme.GenreIcon, func() {
+	m.BrowsingPane.AddNavigationButton(theme.GenreIcon, controller.Genres, func() {
 		m.Router.NavigateTo(controller.GenresRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(theme.PlaylistIcon, func() {
+	m.BrowsingPane.AddNavigationButton(theme.PlaylistIcon, controller.Playlists, func() {
 		m.Router.NavigateTo(controller.PlaylistsRoute())
 	})
-	m.BrowsingPane.AddNavigationButton(theme.TracksIcon, func() {
+	m.BrowsingPane.AddNavigationButton(theme.TracksIcon, controller.Tracks, func() {
 		m.Router.NavigateTo(controller.TracksRoute())
 	})
 }
