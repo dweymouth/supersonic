@@ -44,6 +44,7 @@ type PlaybackManager struct {
 
 	playQueue     []*mediaprovider.Track
 	nowPlayingIdx int
+	wasStopped    bool // true iff player was stopped before handleOnTrackChange invocation
 	loopMode      LoopMode
 
 	// to pass to onSongChange listeners; clear once listeners have been called
@@ -80,6 +81,7 @@ func NewPlaybackManager(
 		scrobbleCfg:   scrobbleCfg,
 		transcodeCfg:  transcodeCfg,
 		nowPlayingIdx: -1,
+		wasStopped:    true,
 	}
 	p.OnTrackChange(pm.handleOnTrackChange)
 	p.OnSeek(func() {
@@ -421,7 +423,9 @@ func (p *PlaybackManager) SetNextLoopMode() {
 
 func (p *PlaybackManager) SetLoopMode(loopMode LoopMode) {
 	p.loopMode = loopMode
-	p.setNextTrackBasedOnLoopMode(true)
+	if p.nowPlayingIdx >= 0 {
+		p.setNextTrackBasedOnLoopMode(true)
+	}
 
 	for _, cb := range p.onLoopModeChange {
 		cb(loopMode)
@@ -513,12 +517,13 @@ func (p *PlaybackManager) handleOnTrackChange() {
 	if p.player.GetStatus().State == player.Playing {
 		p.playTimeStopwatch.Start()
 	}
-	if p.loopMode != LoopOne {
+	if p.wasStopped || p.loopMode != LoopOne {
 		p.nowPlayingIdx++
 		if p.loopMode == LoopAll && p.nowPlayingIdx == len(p.playQueue) {
 			p.nowPlayingIdx = 0 // wrapped around
 		}
 	}
+	p.wasStopped = false
 	p.curTrackTime = float64(p.playQueue[p.nowPlayingIdx].Duration)
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
@@ -533,6 +538,7 @@ func (p *PlaybackManager) handleOnStopped() {
 	p.doUpdateTimePos()
 	p.invokeOnSongChangeCallbacks()
 	p.invokeNoArgCallbacks(p.onStopped)
+	p.wasStopped = true
 	p.nowPlayingIdx = -1
 }
 
