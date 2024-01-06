@@ -139,8 +139,11 @@ func (p *Player) PlayFile(url string) error {
 	}
 	err := p.mpv.Command([]string{"loadfile", url, "replace"})
 	if err == nil {
-		p.setState(player.Playing)
 		p.lenPlaylist = 1
+		if p.status.State == player.Paused {
+			return p.Continue()
+		}
+		p.setState(player.Playing)
 	}
 	return err
 }
