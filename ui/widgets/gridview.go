@@ -6,9 +6,11 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -311,24 +313,30 @@ func (g *GridView) cancelFetch() {
 func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
 	g.menuGridViewItemId = card.ItemID()
 	if g.menu == nil {
-		g.menu = widget.NewPopUpMenu(fyne.NewMenu("",
-			fyne.NewMenuItem("Play", func() { g.onPlay(g.menuGridViewItemId, false) }),
-			fyne.NewMenuItem("Shuffle", func() { g.onPlay(g.menuGridViewItemId, true) }),
-			fyne.NewMenuItem("Add to queue", func() {
-				if g.OnAddToQueue != nil {
-					g.OnAddToQueue(g.menuGridViewItemId)
-				}
-			}),
-			fyne.NewMenuItem("Add to playlist...", func() {
-				if g.OnAddToPlaylist != nil {
-					g.OnAddToPlaylist(g.menuGridViewItemId)
-				}
-			}),
-			fyne.NewMenuItem("Download...", func() {
-				if g.OnDownload != nil {
-					g.OnDownload(g.menuGridViewItemId)
-				}
-			})),
+		play := fyne.NewMenuItem("Play", func() { g.onPlay(g.menuGridViewItemId, false) })
+		play.Icon = theme.MediaPlayIcon()
+		shuffle := fyne.NewMenuItem("Shuffle", func() { g.onPlay(g.menuGridViewItemId, true) })
+		shuffle.Icon = myTheme.ShuffleIcon
+		queue := fyne.NewMenuItem("Add to queue", func() {
+			if g.OnAddToQueue != nil {
+				g.OnAddToQueue(g.menuGridViewItemId)
+			}
+		})
+		queue.Icon = theme.ContentAddIcon()
+		playlist := fyne.NewMenuItem("Add to playlist...", func() {
+			if g.OnAddToPlaylist != nil {
+				g.OnAddToPlaylist(g.menuGridViewItemId)
+			}
+		})
+		playlist.Icon = myTheme.PlaylistIcon
+		download := fyne.NewMenuItem("Download...", func() {
+			if g.OnDownload != nil {
+				g.OnDownload(g.menuGridViewItemId)
+			}
+		})
+		download.Icon = theme.DownloadIcon()
+
+		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", play, shuffle, queue, playlist, download),
 			fyne.CurrentApp().Driver().CanvasForObject(g))
 	}
 	g.menu.ShowAtPosition(pos)

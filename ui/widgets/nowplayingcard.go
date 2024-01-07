@@ -4,6 +4,7 @@ import (
 	"image"
 
 	"github.com/dweymouth/supersonic/ui/layouts"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
@@ -129,11 +130,14 @@ func (n *NowPlayingCard) Update(track string, artists, artistIDs []string, album
 func (n *NowPlayingCard) showMenu(e *fyne.PointEvent) {
 	if n.menu == nil {
 		n.ratingMenu = util.NewRatingSubmenu(n.onSetRating)
-		m := fyne.NewMenu("",
-			fyne.NewMenuItem("Set favorite", func() { n.onSetFavorite(true) }),
-			fyne.NewMenuItem("Unset favorite", func() { n.onSetFavorite(false) }),
-			n.ratingMenu,
-			fyne.NewMenuItem("Add to playlist...", func() { n.onAddToPlaylist() }))
+		favorite := fyne.NewMenuItem("Set favorite", func() { n.onSetFavorite(true) })
+		favorite.Icon = myTheme.FavoriteIcon
+		unfavorite := fyne.NewMenuItem("Unset favorite", func() { n.onSetFavorite(false) })
+		unfavorite.Icon = myTheme.NotFavoriteIcon
+		playlist := fyne.NewMenuItem("Add to playlist...", func() { n.onAddToPlaylist() })
+		playlist.Icon = myTheme.PlaylistIcon
+
+		m := fyne.NewMenu("", favorite, unfavorite, n.ratingMenu, playlist)
 		n.menu = widget.NewPopUpMenu(m, fyne.CurrentApp().Driver().CanvasForObject(n))
 	}
 	n.ratingMenu.Disabled = n.DisableRating

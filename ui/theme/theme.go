@@ -37,6 +37,7 @@ var (
 	FilterIcon      fyne.Resource = theme.NewThemedResource(res.ResFilterSvg)
 	RepeatIcon      fyne.Resource = theme.NewThemedResource(res.ResRepeatSvg)
 	RepeatOneIcon   fyne.Resource = theme.NewThemedResource(res.ResRepeatoneSvg)
+	SortIcon        fyne.Resource = theme.NewThemedResource(res.ResUpdownarrowSvg)
 )
 
 type AppearanceMode string

@@ -223,20 +223,24 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	menuBtn.OnTapped = func() {
 		if pop == nil {
-			menu := fyne.NewMenu("",
-				fyne.NewMenuItem("Add to queue", func() {
-					go a.page.pm.LoadAlbum(a.albumID, true /*append*/, false /*shuffle*/)
-				}),
-				fyne.NewMenuItem("Add to playlist...", func() {
-					a.page.contr.DoAddTracksToPlaylistWorkflow(
-						sharedutil.TracksToIDs(a.page.tracks))
-				}),
-				fyne.NewMenuItem("Download...", func() {
-					a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
-				}),
-				fyne.NewMenuItem("Show Info...", func() {
-					a.page.contr.ShowAlbumInfoDialog(a.albumID, a.titleLabel.String(), a.cover.Image())
-				}))
+			queue := fyne.NewMenuItem("Add to queue", func() {
+				go a.page.pm.LoadAlbum(a.albumID, true /*append*/, false /*shuffle*/)
+			})
+			queue.Icon = theme.ContentAddIcon()
+			playlist := fyne.NewMenuItem("Add to playlist...", func() {
+				a.page.contr.DoAddTracksToPlaylistWorkflow(
+					sharedutil.TracksToIDs(a.page.tracks))
+			})
+			playlist.Icon = myTheme.PlaylistIcon
+			download := fyne.NewMenuItem("Download...", func() {
+				a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
+			})
+			download.Icon = theme.DownloadIcon()
+			info := fyne.NewMenuItem("Show Info...", func() {
+				a.page.contr.ShowAlbumInfoDialog(a.albumID, a.titleLabel.String(), a.cover.Image())
+			})
+			info.Icon = theme.InfoIcon()
+			menu := fyne.NewMenu("", queue, playlist, download, info)
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
 		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)

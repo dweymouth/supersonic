@@ -72,13 +72,15 @@ func NewNowPlayingPage(
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		a.conf.TracklistColumns = cols
 	}
+	remove := fyne.NewMenuItem("Remove from queue", a.onRemoveSelectedFromQueue)
+	remove.Icon = theme.ContentRemoveIcon()
 	a.tracklist.Options = widgets.TracklistOptions{
 		AutoNumber:          true,
 		DisablePlaybackMenu: true,
 		DisableRating:       !canRate,
 		AuxiliaryMenuItems: []*fyne.MenuItem{
 			util.NewReorderTracksSubmenu(a.doSetNewTrackOrder),
-			fyne.NewMenuItem("Remove from queue", a.onRemoveSelectedFromQueue),
+			remove,
 		},
 	}
 	contr.ConnectTracklistActions(a.tracklist)

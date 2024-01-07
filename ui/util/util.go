@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -170,6 +171,7 @@ func NewRatingSubmenu(onSetRating func(int)) *fyne.MenuItem {
 		})
 	}
 	ratingMenu := fyne.NewMenuItem("Set rating", nil)
+	ratingMenu.Icon = theme.NewThemedResource(res.ResStarOutlineSvg)
 	ratingMenu.ChildMenu = fyne.NewMenu("", []*fyne.MenuItem{
 		newRatingMenuItem(0),
 		newRatingMenuItem(1),
@@ -183,6 +185,7 @@ func NewRatingSubmenu(onSetRating func(int)) *fyne.MenuItem {
 
 func NewReorderTracksSubmenu(onReorderTracks func(sharedutil.TrackReorderOp)) *fyne.MenuItem {
 	reorderMenu := fyne.NewMenuItem("Reorder tracks", nil)
+	reorderMenu.Icon = myTheme.SortIcon
 	reorderMenu.ChildMenu = fyne.NewMenu("", []*fyne.MenuItem{
 		fyne.NewMenuItem("Move to top", func() { onReorderTracks(sharedutil.MoveToTop) }),
 		fyne.NewMenuItem("Move up", func() { onReorderTracks(sharedutil.MoveUp) }),

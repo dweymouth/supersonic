@@ -87,11 +87,13 @@ func newPlaylistPage(
 		conf.TracklistColumns = cols
 	}
 	_, canRate := a.sm.Server.(mediaprovider.SupportsRating)
+	remove := fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)
+	remove.Icon = theme.ContentClearIcon()
 	a.tracklist.Options = widgets.TracklistOptions{
 		DisableRating: !canRate,
 		AuxiliaryMenuItems: []*fyne.MenuItem{
 			util.NewReorderTracksSubmenu(a.doSetNewTrackOrder),
-			fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist),
+			remove,
 		},
 	}
 	// connect tracklist actions
@@ -256,20 +258,20 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	menuBtn.OnTapped = func() {
 		if pop == nil {
-			menu := fyne.NewMenu("",
-				fyne.NewMenuItem("Add to queue", func() {
-					a.page.pm.LoadPlaylist(a.page.playlistID, true /*append*/, false /*shuffle*/)
-				}),
-				fyne.NewMenuItem("Add to playlist...", func() {
-					a.page.contr.DoAddTracksToPlaylistWorkflow(
-						sharedutil.TracksToIDs(a.page.tracks))
-				}),
-				fyne.NewMenuItem("Download...", func() {
-					if a.playlistInfo == nil {
-						return
-					}
-					a.page.contr.ShowDownloadDialog(a.page.tracks, a.playlistInfo.Name)
-				}))
+			queue := fyne.NewMenuItem("Add to queue", func() {
+				go a.page.pm.LoadPlaylist(a.page.playlistID, true /*append*/, false /*shuffle*/)
+			})
+			queue.Icon = theme.ContentAddIcon()
+			playlist := fyne.NewMenuItem("Add to playlist...", func() {
+				a.page.contr.DoAddTracksToPlaylistWorkflow(
+					sharedutil.TracksToIDs(a.page.tracks))
+			})
+			playlist.Icon = myTheme.PlaylistIcon
+			download := fyne.NewMenuItem("Download...", func() {
+				a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
+			})
+			download.Icon = theme.DownloadIcon()
+			menu := fyne.NewMenu("", queue, playlist, download)
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
 		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)

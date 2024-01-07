@@ -534,44 +534,48 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	if t.ctxMenu == nil {
 		t.ctxMenu = fyne.NewMenu("")
 		if !t.Options.DisablePlaybackMenu {
-			t.ctxMenu.Items = append(t.ctxMenu.Items,
-				fyne.NewMenuItem("Play", func() {
-					if t.OnPlaySelection != nil {
-						t.OnPlaySelection(t.selectedTracks(), false)
-					}
-				}))
-			t.ctxMenu.Items = append(t.ctxMenu.Items,
-				fyne.NewMenuItem("Shuffle", func() {
-					if t.OnPlaySelection != nil {
-						t.OnPlaySelection(t.selectedTracks(), true)
-					}
-				}))
-			t.ctxMenu.Items = append(t.ctxMenu.Items,
-				fyne.NewMenuItem("Add to queue", func() {
-					if t.OnPlaySelection != nil {
-						t.OnAddToQueue(t.selectedTracks())
-					}
-				}))
-		}
-		t.ctxMenu.Items = append(t.ctxMenu.Items,
-			fyne.NewMenuItem("Add to playlist...", func() {
-				if t.OnAddToPlaylist != nil {
-					t.OnAddToPlaylist(t.SelectedTrackIDs())
+			play := fyne.NewMenuItem("Play", func() {
+				if t.OnPlaySelection != nil {
+					t.OnPlaySelection(t.selectedTracks(), false)
 				}
-			}))
-		t.ctxMenu.Items = append(t.ctxMenu.Items,
-			fyne.NewMenuItem("Download...", func() {
-				t.onDownload(t.selectedTracks(), "Selected tracks")
-			}))
+			})
+			play.Icon = theme.MediaPlayIcon()
+			shuffle := fyne.NewMenuItem("Shuffle", func() {
+				if t.OnPlaySelection != nil {
+					t.OnPlaySelection(t.selectedTracks(), true)
+				}
+			})
+			shuffle.Icon = myTheme.ShuffleIcon
+			add := fyne.NewMenuItem("Add to queue", func() {
+				if t.OnPlaySelection != nil {
+					t.OnAddToQueue(t.selectedTracks())
+				}
+			})
+			add.Icon = theme.ContentAddIcon()
+			t.ctxMenu.Items = append(t.ctxMenu.Items,
+				play, shuffle, add)
+		}
+		playlist := fyne.NewMenuItem("Add to playlist...", func() {
+			if t.OnAddToPlaylist != nil {
+				t.OnAddToPlaylist(t.SelectedTrackIDs())
+			}
+		})
+		playlist.Icon = myTheme.PlaylistIcon
+		download := fyne.NewMenuItem("Download...", func() {
+			t.onDownload(t.selectedTracks(), "Selected tracks")
+		})
+		download.Icon = theme.DownloadIcon()
+		favorite := fyne.NewMenuItem("Set favorite", func() {
+			t.onSetFavorites(t.selectedTracks(), true, true)
+		})
+		favorite.Icon = myTheme.FavoriteIcon
+		unfavorite := fyne.NewMenuItem("Unset favorite", func() {
+			t.onSetFavorites(t.selectedTracks(), false, true)
+		})
+		unfavorite.Icon = myTheme.NotFavoriteIcon
+		t.ctxMenu.Items = append(t.ctxMenu.Items, playlist, download)
 		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
-		t.ctxMenu.Items = append(t.ctxMenu.Items,
-			fyne.NewMenuItem("Set favorite", func() {
-				t.onSetFavorites(t.selectedTracks(), true, true)
-			}))
-		t.ctxMenu.Items = append(t.ctxMenu.Items,
-			fyne.NewMenuItem("Unset favorite", func() {
-				t.onSetFavorites(t.selectedTracks(), false, true)
-			}))
+		t.ctxMenu.Items = append(t.ctxMenu.Items, favorite, unfavorite)
 		t.ratingSubmenu = util.NewRatingSubmenu(func(rating int) {
 			t.onSetRatings(t.selectedTracks(), rating, true)
 		})
