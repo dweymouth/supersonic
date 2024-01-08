@@ -159,6 +159,9 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 	})
 	systemTrayEnable.Checked = s.config.Application.EnableSystemTray
 
+	saveQueue := widget.NewCheckWithData("Save play queue on exit",
+		binding.BindBool(&s.config.Application.SavePlayQueue))
+
 	// Scrobble settings
 
 	twoDigitValidator := func(text, selText string, r rune) bool {
@@ -247,6 +250,7 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 			widget.NewLabel("Startup page"), container.NewGridWithColumns(2, startupPage),
 		),
 		container.NewHBox(systemTrayEnable, closeToTray),
+		container.NewHBox(saveQueue),
 		s.newSectionSeparator(),
 
 		widget.NewRichText(&widget.TextSegment{Text: "Scrobbling", Style: util.BoldRichTextStyle}),
