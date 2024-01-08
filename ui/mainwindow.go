@@ -142,9 +142,11 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 	m.BottomPanel.NowPlaying.DisableRating = !canRate
 
 	if app.Config.Application.SavePlayQueue {
-		if err := app.LoadSavedPlayQueue(); err != nil {
-			log.Printf("failed to load saved play queue: %s", err.Error())
-		}
+		go func() {
+			if err := app.LoadSavedPlayQueue(); err != nil {
+				log.Printf("failed to load saved play queue: %s", err.Error())
+			}
+		}()
 	}
 
 	// check if launching new version, else if found available update on startup

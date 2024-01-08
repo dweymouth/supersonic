@@ -317,7 +317,21 @@ func (a *App) LoadSavedPlayQueue() error {
 	if err != nil {
 		return err
 	}
-	return a.PlaybackManager.LoadTracks(queue.Tracks, false, false)
+	if len(queue.Tracks) == 0 {
+		return nil
+	}
+
+	if err := a.PlaybackManager.LoadTracks(queue.Tracks, false, false); err != nil {
+		return err
+	}
+	if queue.TrackIndex >= 0 {
+		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
+		a.PlaybackManager.PlayTrackAt(queue.TrackIndex)
+		a.PlaybackManager.Pause()
+		time.Sleep(50 * time.Millisecond) // MPV seek fails if run immediately after
+		a.PlaybackManager.SeekSeconds(queue.TimePos)
+	}
+	return nil
 }
 
 func (a *App) SaveConfigFile() {
