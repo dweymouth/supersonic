@@ -64,13 +64,16 @@ func LoadPlayQueue(filepath string, sm *ServerManager) (*SavedPlayQueue, error) 
 		return nil, errors.New("saved play queue was from a different server")
 	}
 
-	tracks := make([]*mediaprovider.Track, len(savedData.TrackIDs))
+	tracks := make([]*mediaprovider.Track, 0, len(savedData.TrackIDs))
 	mp := sm.Server
 	for i, id := range savedData.TrackIDs {
 		if tr, err := mp.GetTrack(id); err != nil {
-			return nil, err
+			// ignore/skip individual track failures
+			if i < savedData.TrackIndex {
+				savedData.TrackIndex--
+			}
 		} else {
-			tracks[i] = tr
+			tracks = append(tracks, tr)
 		}
 	}
 
