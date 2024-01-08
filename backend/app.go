@@ -25,6 +25,7 @@ const (
 	sessionDir          = "session"
 	sessionLockFile     = ".lock"
 	sessionActivateFile = ".activate"
+	savedQueueFile      = "saved_queue.json"
 )
 
 var (
@@ -300,12 +301,23 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 func (a *App) Shutdown() {
 	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
+	if a.Config.Application.SavePlayQueue {
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, configdir.LocalConfig(a.appName, savedQueueFile))
+	}
 	a.PlaybackManager.Stop() // will trigger scrobble check
 	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
 	a.cancel()
 	a.LocalPlayer.Destroy()
 	a.Config.WriteConfigFile(a.configPath())
 	os.RemoveAll(configdir.LocalConfig(a.appName, sessionDir))
+}
+
+func (a *App) LoadSavedPlayQueue() error {
+	queue, err := LoadPlayQueue(configdir.LocalConfig(a.appName, savedQueueFile), a.ServerManager)
+	if err != nil {
+		return err
+	}
+	return a.PlaybackManager.LoadTracks(queue.Tracks, false, false)
 }
 
 func (a *App) SaveConfigFile() {

@@ -41,6 +41,7 @@ type AppConfig struct {
 	SettingsTab         string
 	AllowMultiInstance  bool
 	MaxImageCacheSizeMB int
+	SavePlayQueue       bool
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
@@ -147,6 +148,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			AllowMultiInstance:  false,
 			MaxImageCacheSizeMB: 50,
 			UIScaleSize:         "Normal",
+			SavePlayQueue:       false,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},

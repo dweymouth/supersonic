@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/20after4/configdir"
@@ -92,31 +93,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", song.Name, strings.Join(song.ArtistNames, ", "), displayAppName))
 	})
 	app.ServerManager.OnServerConnected(func() {
-		m.BrowsingPane.EnableNavigationButtons()
-		m.Router.NavigateTo(m.StartupPage())
-		_, canRate := m.App.ServerManager.Server.(mediaprovider.SupportsRating)
-		m.BottomPanel.NowPlaying.DisableRating = !canRate
-		// check if launching new version, else if found available update on startup
-		if l := app.Config.Application.LastLaunchedVersion; app.VersionTag() != l {
-			if !app.IsFirstLaunch() {
-				m.ShowWhatsNewDialog()
-			}
-			m.App.Config.Application.LastLaunchedVersion = app.VersionTag()
-		} else if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
-			if t != app.VersionTag() {
-				m.ShowNewVersionDialog(displayAppName, t)
-			}
-			m.App.Config.Application.LastCheckedVersion = t
-		}
-		// register callback for the ongoing periodic update check
-		m.App.UpdateChecker.OnUpdatedVersionFound = func() {
-			t := m.App.UpdateChecker.VersionTagFound()
-			if t != app.VersionTag() {
-				m.ShowNewVersionDialog(displayAppName, t)
-			}
-			m.App.Config.Application.LastCheckedVersion = t
-		}
-		m.App.SaveConfigFile()
+		m.RunOnServerConnectedTasks(app, displayAppName)
 	})
 	app.ServerManager.OnLogout(func() {
 		m.BrowsingPane.DisableNavigationButtons()
@@ -156,6 +133,41 @@ func (m *MainWindow) StartupPage() controller.Route {
 	default:
 		return controller.AlbumsRoute()
 	}
+}
+
+func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName string) {
+	m.BrowsingPane.EnableNavigationButtons()
+	m.Router.NavigateTo(m.StartupPage())
+	_, canRate := m.App.ServerManager.Server.(mediaprovider.SupportsRating)
+	m.BottomPanel.NowPlaying.DisableRating = !canRate
+
+	if app.Config.Application.SavePlayQueue {
+		if err := app.LoadSavedPlayQueue(); err != nil {
+			log.Printf("failed to load saved play queue: %s", err.Error())
+		}
+	}
+
+	// check if launching new version, else if found available update on startup
+	if l := app.Config.Application.LastLaunchedVersion; app.VersionTag() != l {
+		if !app.IsFirstLaunch() {
+			m.ShowWhatsNewDialog()
+		}
+		m.App.Config.Application.LastLaunchedVersion = app.VersionTag()
+	} else if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
+		if t != app.VersionTag() {
+			m.ShowNewVersionDialog(displayAppName, t)
+		}
+		m.App.Config.Application.LastCheckedVersion = t
+	}
+	// register callback for the ongoing periodic update check
+	m.App.UpdateChecker.OnUpdatedVersionFound = func() {
+		t := m.App.UpdateChecker.VersionTagFound()
+		if t != app.VersionTag() {
+			m.ShowNewVersionDialog(displayAppName, t)
+		}
+		m.App.Config.Application.LastCheckedVersion = t
+	}
+	m.App.SaveConfigFile()
 }
 
 func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
