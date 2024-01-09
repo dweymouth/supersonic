@@ -12,8 +12,8 @@ import (
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/player"
-	"github.com/dweymouth/supersonic/player/mpv"
+	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/dialogs"
 	"github.com/dweymouth/supersonic/ui/util"

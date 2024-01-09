@@ -25,8 +25,8 @@ At this time, the `main` branch is intended to be 'shippable' at any time, meani
 As this application is in early development, major refactorings and re-organization of the code structure may occur frequently as needed. As a rough guide to newcomers, the high-level project structure is as follows:
 
 * `backend` - To the extent possible all backend logic should reside in this package
-  - `playbackmanager.go` - Subsonic-aware high level playback APIs. (e.g. manipulating play queue)
-* `player` - A low-level player API atop libmpv. This may be moved to its own repo under a more permissive license in the future
+  - `playbackmanager.go` - Subsonic-aware high level playback APIs. Manages play queue and communication between the UI and various player backends.
+  - `player` - Interface and package for different player backends, currently MPV (local), and Jukebox, and in the future, DLNA and Chromecast
 * `res` - Application resource files
 * `sharedutil` - Utility functions shared between the backend and UI layers
 * `ui` - The UI and UI business logic

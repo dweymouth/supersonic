@@ -10,7 +10,7 @@ import (
 	"unicode"
 
 	"github.com/dweymouth/supersonic/backend"
-	"github.com/dweymouth/supersonic/player/mpv"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"

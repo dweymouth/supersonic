@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/util"
-	"github.com/dweymouth/supersonic/player"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 

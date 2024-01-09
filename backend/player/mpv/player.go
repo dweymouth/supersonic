@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/dweymouth/go-mpv"
-	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/backend/player"
 )
 
 // Error returned by many Player functions if called before the player has not been initialized.

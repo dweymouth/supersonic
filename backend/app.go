@@ -10,9 +10,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
-	"github.com/dweymouth/supersonic/player"
-	"github.com/dweymouth/supersonic/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"

@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/godbus/dbus/v5"
 	"github.com/quarckster/go-mpris-server/pkg/events"
 	"github.com/quarckster/go-mpris-server/pkg/server"
