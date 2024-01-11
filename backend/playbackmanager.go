@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"math"
 	"math/rand"
 	"time"
 
@@ -53,6 +54,10 @@ type PlaybackManager struct {
 	transcodeCfg  *TranscodingConfig
 	replayGainCfg ReplayGainConfig
 
+	// OpenSubsonic transcodeOffset extension support
+	serverCanStreamWithOffset bool
+	streamOffsetSeconds       int
+
 	// registered callbacks
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64)
@@ -83,6 +88,18 @@ func NewPlaybackManager(
 		nowPlayingIdx: -1,
 		wasStopped:    true,
 	}
+
+	// keep track of whether we can use OpenSubsonic's transcodeOffset extension when seeking
+	updateCanStreamWithOffset := func() {
+		if so, ok := s.Server.(mediaprovider.SupportsStreamOffset); ok {
+			pm.serverCanStreamWithOffset = so.CanStreamWithOffset()
+		} else {
+			pm.serverCanStreamWithOffset = false
+		}
+	}
+	updateCanStreamWithOffset()
+	s.OnServerConnected(updateCanStreamWithOffset)
+
 	p.OnTrackChange(pm.handleOnTrackChange)
 	p.OnSeek(func() {
 		pm.doUpdateTimePos()
@@ -283,11 +300,15 @@ func (p *PlaybackManager) PlayFromBeginning() error {
 }
 
 func (p *PlaybackManager) PlayTrackAt(idx int) error {
+	return p.playTrackAtWithOffset(idx, 0)
+}
+
+func (p *PlaybackManager) playTrackAtWithOffset(idx, timeOffsetSeconds int) error {
 	if idx < 0 || idx >= len(p.playQueue) {
 		return errors.New("track index out of range")
 	}
 	p.nowPlayingIdx = idx - 1
-	return p.setTrack(idx, false)
+	return p.setTrack(idx, false, timeOffsetSeconds)
 }
 
 func (p *PlaybackManager) PlayRandomSongs(genreName string) {
@@ -367,7 +388,7 @@ func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
 			p.Stop()
 		} else {
 			p.nowPlayingIdx -= 1 // will be incremented in newtrack callback from player
-			p.setTrack(newNowPlaying, false)
+			p.setTrack(newNowPlaying, false, 0)
 		}
 		// setNextTrack and onSongChange callbacks will be handled
 		// when we receive new track event from player
@@ -457,7 +478,10 @@ func (p *PlaybackManager) GetLoopMode() LoopMode {
 }
 
 func (p *PlaybackManager) PlayerStatus() player.Status {
-	return p.player.GetStatus()
+	s := p.player.GetStatus()
+	s.Duration = p.curTrackTime // don't use duration reported by player
+	s.TimePos = s.TimePos + float64(p.streamOffsetSeconds)
+	return s
 }
 
 func (p *PlaybackManager) SetVolume(vol int) error {
@@ -484,13 +508,16 @@ func (p *PlaybackManager) SeekNext() error {
 
 func (p *PlaybackManager) SeekBackOrPrevious() error {
 	if p.nowPlayingIdx == 0 || p.player.GetStatus().TimePos > 3 {
-		return p.player.SeekSeconds(0)
+		return p.SeekSeconds(0)
 	}
 	return p.PlayTrackAt(p.nowPlayingIdx - 1)
 }
 
 // Seek to given absolute position in the current track by seconds.
 func (p *PlaybackManager) SeekSeconds(sec float64) error {
+	if p.serverCanStreamWithOffset && !p.transcodeCfg.ForceRawFile {
+		return p.playTrackAtWithOffset(p.nowPlayingIdx, int(math.Floor(sec)))
+	}
 	return p.player.SeekSeconds(sec)
 }
 
@@ -502,7 +529,7 @@ func (p *PlaybackManager) SeekFraction(fraction float64) error {
 		fraction = 1
 	}
 	target := p.curTrackTime * fraction
-	return p.player.SeekSeconds(target)
+	return p.SeekSeconds(target)
 }
 
 func (p *PlaybackManager) Stop() error {
@@ -603,12 +630,16 @@ func (p *PlaybackManager) setNextTrackAfterQueueUpdate() {
 	}
 }
 
-func (p *PlaybackManager) setTrack(idx int, next bool) error {
+func (p *PlaybackManager) setTrack(idx int, next bool, timeOffset int) error {
 	if urlP, ok := p.player.(player.URLPlayer); ok {
 		url := ""
 		if idx >= 0 {
 			var err error
-			url, err = p.sm.Server.GetStreamURL(p.playQueue[idx].ID, p.transcodeCfg.ForceRawFile)
+			if so, ok := p.sm.Server.(mediaprovider.SupportsStreamOffset); ok && timeOffset > 0 {
+				url, err = so.GetStreamURLWithOffset(p.playQueue[idx].ID, timeOffset)
+			} else {
+				url, err = p.sm.Server.GetStreamURL(p.playQueue[idx].ID, p.transcodeCfg.ForceRawFile)
+			}
 			if err != nil {
 				return err
 			}
@@ -631,7 +662,7 @@ func (p *PlaybackManager) setTrack(idx int, next bool) error {
 }
 
 func (p *PlaybackManager) setNextTrack(idx int) error {
-	return p.setTrack(idx, true)
+	return p.setTrack(idx, true, 0)
 }
 
 // call BEFORE updating p.nowPlayingIdx
@@ -738,6 +769,6 @@ func (p *PlaybackManager) doUpdateTimePos() {
 		p.latestTrackPosition = s.TimePos
 	}
 	for _, cb := range p.onPlayTimeUpdate {
-		cb(s.TimePos, s.Duration)
+		cb(s.TimePos, p.curTrackTime)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"image"
 	"io"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -27,6 +28,13 @@ type subsonicMediaProvider struct {
 	playlistsCached   []*mediaprovider.Playlist
 	playlistsCachedAt int64 // unix
 }
+
+// assert compliance with interfaces
+var (
+	_ mediaprovider.MediaProvider        = (*subsonicMediaProvider)(nil)
+	_ mediaprovider.SupportsRating       = (*subsonicMediaProvider)(nil)
+	_ mediaprovider.SupportsStreamOffset = (*subsonicMediaProvider)(nil)
+)
 
 func SubsonicMediaProvider(subsonicClient *subsonic.Client) mediaprovider.MediaProvider {
 	return &subsonicMediaProvider{client: subsonicClient}
@@ -322,6 +330,28 @@ func (s *subsonicMediaProvider) DownloadTrack(trackID string) (io.Reader, error)
 func (s *subsonicMediaProvider) RescanLibrary() error {
 	_, err := s.client.StartScan()
 	return err
+}
+
+func (s *subsonicMediaProvider) CanStreamWithOffset() bool {
+	extensions, err := s.client.GetOpenSubsonicExtensions()
+	if err != nil {
+		return false
+	}
+	log.Printf("OpenSubsonic extensions: %v", extensions)
+	for _, ext := range extensions {
+		if ext.Name == subsonic.TranscodeOffset {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *subsonicMediaProvider) GetStreamURLWithOffset(trackID string, offsetSeconds int) (string, error) {
+	u, err := s.client.GetStreamURL(trackID, map[string]string{"timeOffset": strconv.Itoa(offsetSeconds)})
+	if err != nil {
+		return "", err
+	}
+	return u.String(), nil
 }
 
 func toTrack(ch *subsonic.Child) *mediaprovider.Track {

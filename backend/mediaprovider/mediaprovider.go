@@ -144,6 +144,12 @@ type MediaProvider interface {
 	RescanLibrary() error
 }
 
+type SupportsStreamOffset interface {
+	CanStreamWithOffset() bool
+
+	GetStreamURLWithOffset(trackID string, timeOffsetSeconds int) (string, error)
+}
+
 type SupportsRating interface {
 	SetRating(params RatingFavoriteParameters, rating int) error
 }
