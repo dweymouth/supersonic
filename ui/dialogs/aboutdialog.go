@@ -61,7 +61,7 @@ func (a *AboutDialog) buildMainTabContainer(version string) *fyne.Container {
 	title.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 	versionLbl := newCenterAlignLabel(fmt.Sprintf("version %s", version))
-	copyright := newCenterAlignLabel("Copyright © 2022–2023 Drew Weymouth and contributors")
+	copyright := newCenterAlignLabel(res.Copyright)
 	license := widget.NewRichTextWithText("GNU General Public License version 3 (GPL v3)")
 	ts := license.Segments[0].(*widget.TextSegment)
 	ts.Style.TextStyle.Bold = true
