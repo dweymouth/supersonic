@@ -2,7 +2,7 @@ package jukebox
 
 import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/player"
+	"github.com/dweymouth/supersonic/backend/player"
 )
 
 const (
