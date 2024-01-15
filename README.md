@@ -109,14 +109,28 @@ Supersonic is available in the AUR and can be built either manually with `makepk
   - ``export PATH="/Users/<yourname>/go/bin:$PATH"``
 * install the ``fyne`` packaging tool ``go install fyne.io/fyne/v2/cmd/fyne@latest``
 * install Xcode command-line tools (``xcode-select --install``)
+
+#### Homebrew
 * install libmpv (``brew install mpv``)
 * install dylibbundler (``brew install dylibbundler``) - needed only the bundledeps step, see below
 
+#### Macports
+* install mpv with the libmpv (and optionally vapoursynth, for bundledeps) variants (``sudo port install mpv +libmpv +vapoursynth``)
+* install dylibbundler (``sudo port install dylibbundler``) - needed only the bundledeps step, see below
+
 ### Build
+
+#### Homebrew setup
 * Make sure header and library include paths include the dir in which homebrew installs headers/dylibs (may differ dep. on OS/Homebrew version)
   - ``export C_INCLUDE_PATH=/opt/homebrew/include:$C_INCLUDE_PATH``
   - ``export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH``
+ 
+#### Macports setup
+* Make sure header and library include paths include the dir in which macports installs headers/dylibs
+  - ``export C_INCLUDE_PATH=/opt/local/include:$C_INCLUDE_PATH``
+  - ``export LIBRARY_PATH=/opt/local/lib:$LIBRARY_PATH``
 
+#### Building the application
 * clone the repo, CD into the repo root, and run ``go build``
 * (note that the first build will take some time as it will download and build the UI library)
 * run ``make package_macos`` to generate the .app bundle
