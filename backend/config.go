@@ -31,18 +31,19 @@ type ServerConfig struct {
 }
 
 type AppConfig struct {
-	WindowWidth         int
-	WindowHeight        int
-	LastCheckedVersion  string
-	LastLaunchedVersion string
-	EnableSystemTray    bool
-	CloseToSystemTray   bool
-	StartupPage         string
-	SettingsTab         string
-	AllowMultiInstance  bool
-	MaxImageCacheSizeMB int
-	SavePlayQueue       bool
-	DefaultPlaylistID   string
+	WindowWidth                 int
+	WindowHeight                int
+	LastCheckedVersion          string
+	LastLaunchedVersion         string
+	EnableSystemTray            bool
+	CloseToSystemTray           bool
+	StartupPage                 string
+	SettingsTab                 string
+	AllowMultiInstance          bool
+	MaxImageCacheSizeMB         int
+	SavePlayQueue               bool
+	DefaultPlaylistID           string
+	ShowTrackChangeNotification bool
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
@@ -138,18 +139,19 @@ var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists"}
 func DefaultConfig(appVersionTag string) *Config {
 	return &Config{
 		Application: AppConfig{
-			WindowWidth:         1000,
-			WindowHeight:        800,
-			LastCheckedVersion:  appVersionTag,
-			LastLaunchedVersion: "",
-			EnableSystemTray:    true,
-			CloseToSystemTray:   false,
-			StartupPage:         "Albums",
-			SettingsTab:         "General",
-			AllowMultiInstance:  false,
-			MaxImageCacheSizeMB: 50,
-			UIScaleSize:         "Normal",
-			SavePlayQueue:       false,
+			WindowWidth:                 1000,
+			WindowHeight:                800,
+			LastCheckedVersion:          appVersionTag,
+			LastLaunchedVersion:         "",
+			EnableSystemTray:            true,
+			CloseToSystemTray:           false,
+			StartupPage:                 "Albums",
+			SettingsTab:                 "General",
+			AllowMultiInstance:          false,
+			MaxImageCacheSizeMB:         50,
+			UIScaleSize:                 "Normal",
+			SavePlayQueue:               false,
+			ShowTrackChangeNotification: false,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},

@@ -161,6 +161,8 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 
 	saveQueue := widget.NewCheckWithData("Save play queue on exit",
 		binding.BindBool(&s.config.Application.SavePlayQueue))
+	trackNotif := widget.NewCheckWithData("Show notification on track change",
+		binding.BindBool(&s.config.Application.ShowTrackChangeNotification))
 
 	// Scrobble settings
 
@@ -251,6 +253,7 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 		),
 		container.NewHBox(systemTrayEnable, closeToTray),
 		container.NewHBox(saveQueue),
+		container.NewHBox(trackNotif),
 		s.newSectionSeparator(),
 
 		widget.NewRichText(&widget.TextSegment{Text: "Scrobbling", Style: util.BoldRichTextStyle}),

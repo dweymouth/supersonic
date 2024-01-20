@@ -85,12 +85,20 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
 	m.Window.SetContent(m.container)
 	m.Window.Resize(size)
-	app.PlaybackManager.OnSongChange(func(song, _ *mediaprovider.Track) {
-		if song == nil {
+	app.PlaybackManager.OnSongChange(func(track, _ *mediaprovider.Track) {
+		if track == nil {
 			m.Window.SetTitle(displayAppName)
 			return
 		}
-		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", song.Name, strings.Join(song.ArtistNames, ", "), displayAppName))
+		artistDisp := strings.Join(track.ArtistNames, ", ")
+		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", track.Name, artistDisp, displayAppName))
+		if m.App.Config.Application.ShowTrackChangeNotification {
+			// TODO: Once Fyne issue #2935 is resolved, show album cover
+			fyne.CurrentApp().SendNotification(&fyne.Notification{
+				Title:   track.Name,
+				Content: artistDisp,
+			})
+		}
 	})
 	app.ServerManager.OnServerConnected(func() {
 		m.RunOnServerConnectedTasks(app, displayAppName)
