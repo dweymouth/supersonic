@@ -1,6 +1,8 @@
 package dialogs
 
 import (
+	"time"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
@@ -23,7 +25,7 @@ type AddToPlaylistDialog struct {
 
 var _ fyne.Widget = (*AddToPlaylistDialog)(nil)
 
-func NewAddToPlaylistDialog(title string, existingPlaylistNames []string) *AddToPlaylistDialog {
+func NewAddToPlaylistDialog(title string, existingPlaylistNames []string, selectedIdx int) *AddToPlaylistDialog {
 	a := &AddToPlaylistDialog{}
 	a.ExtendBaseWidget(a)
 
@@ -35,6 +37,14 @@ func NewAddToPlaylistDialog(title string, existingPlaylistNames []string) *AddTo
 		a.onSelectionChanged()
 	})
 	a.playlistSelect.PlaceHolder = "(Choose playlist)"
+	if selectedIdx >= 0 {
+		// calling SetSelectedIndex before showing the Select crashes...
+		go func() {
+			time.Sleep(10 * time.Millisecond)
+			// add 1 to selectedIdx to account for "(Choose playlist)" entry
+			a.playlistSelect.SetSelectedIndex(selectedIdx + 1)
+		}()
+	}
 	a.newPlaylistName = widget.NewEntry()
 	a.newPlaylistName.Hidden = true
 	a.newPlaylistName.OnChanged = func(text string) {

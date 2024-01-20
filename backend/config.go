@@ -42,6 +42,7 @@ type AppConfig struct {
 	AllowMultiInstance  bool
 	MaxImageCacheSizeMB int
 	SavePlayQueue       bool
+	DefaultPlaylistID   string
 
 	// Experimental - may be removed in future
 	FontNormalTTF string

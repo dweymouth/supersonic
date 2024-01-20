@@ -272,12 +272,17 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 			log.Printf("error getting user-owned playlists: %s", err.Error())
 			return
 		}
+
+		selectedIdx := -1
 		plNames := make([]string, 0, len(pls))
-		for _, pl := range pls {
+		for i, pl := range pls {
 			plNames = append(plNames, pl.Name)
+			if defId := m.App.Config.Application.DefaultPlaylistID; defId != "" && pl.ID == defId {
+				selectedIdx = i
+			}
 		}
 
-		dlg := dialogs.NewAddToPlaylistDialog("Add to Playlist", plNames)
+		dlg := dialogs.NewAddToPlaylistDialog("Add to Playlist", plNames, selectedIdx)
 		pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
 		m.ClosePopUpOnEscape(pop)
 		dlg.OnCanceled = pop.Hide
@@ -287,8 +292,10 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 			if playlistChoice < 0 {
 				go m.App.ServerManager.Server.CreatePlaylist(newPlaylistName, trackIDs)
 			} else {
+				playlist := pls[playlistChoice]
+				m.App.Config.Application.DefaultPlaylistID = playlist.ID
 				go m.App.ServerManager.Server.AddPlaylistTracks(
-					pls[playlistChoice].ID, trackIDs)
+					playlist.ID, trackIDs)
 			}
 		}
 		m.haveModal = true
