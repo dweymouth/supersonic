@@ -115,7 +115,7 @@ Supersonic is available in the AUR and can be built either manually with `makepk
 * install dylibbundler (``brew install dylibbundler``) - needed only the bundledeps step, see below
 
 #### Macports
-* install mpv with the libmpv (and optionally vapoursynth, for bundledeps) variants (``sudo port install mpv +libmpv +vapoursynth``)
+* install mpv with the libmpv variant (``sudo port install mpv +libmpv``)
 * install dylibbundler (``sudo port install dylibbundler``) - needed only the bundledeps step, see below
 
 ### Build
