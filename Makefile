@@ -11,9 +11,13 @@ build:
 package_macos:
 	fyne package -os darwin -name $(app_name) -appVersion $(app_version) -icon $(icon_path)
 
-bundledeps_macos:
+bundledeps_macos_homebrew:
 	dylibbundler -od -b -x ./Supersonic.app/Contents/MacOS/supersonic -d ./Supersonic.app/Contents/Frameworks/ -p @executable_path/../Frameworks/
 	./copy_python_dep_osx.sh
+	codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "./Supersonic.app/Contents/MacOS/supersonic"
+
+bundledeps_macos_macports:
+	dylibbundler -od -b -x ./Supersonic.app/Contents/MacOS/supersonic -d ./Supersonic.app/Contents/Frameworks/ -p @executable_path/../Frameworks/
 	codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "./Supersonic.app/Contents/MacOS/supersonic"
 
 bundledeps_macos_highsierra:
