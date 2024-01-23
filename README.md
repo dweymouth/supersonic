@@ -109,20 +109,36 @@ Supersonic is available in the AUR and can be built either manually with `makepk
   - ``export PATH="/Users/<yourname>/go/bin:$PATH"``
 * install the ``fyne`` packaging tool ``go install fyne.io/fyne/v2/cmd/fyne@latest``
 * install Xcode command-line tools (``xcode-select --install``)
+
+#### Homebrew
 * install libmpv (``brew install mpv``)
 * install dylibbundler (``brew install dylibbundler``) - needed only the bundledeps step, see below
 
+#### Macports
+* install mpv with the libmpv variant (``sudo port install mpv +libmpv``)
+* install dylibbundler (``sudo port install dylibbundler``) - needed only the bundledeps step, see below
+
 ### Build
+
+#### Homebrew setup
 * Make sure header and library include paths include the dir in which homebrew installs headers/dylibs (may differ dep. on OS/Homebrew version)
   - ``export C_INCLUDE_PATH=/opt/homebrew/include:$C_INCLUDE_PATH``
   - ``export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH``
+ 
+#### Macports setup
+* Make sure header and library include paths include the dir in which macports installs headers/dylibs
+  - ``export C_INCLUDE_PATH=/opt/local/include:$C_INCLUDE_PATH``
+  - ``export LIBRARY_PATH=/opt/local/lib:$LIBRARY_PATH``
 
+#### Building the application
 * clone the repo, CD into the repo root, and run ``go build``
 * (note that the first build will take some time as it will download and build the UI library)
 * run ``make package_macos`` to generate the .app bundle
 * **If** you are on Mac OS **High Sierra** through **Catalina**, run ``make bundledeps_macos_highsierra`` and you are done! Otherwise, continue reaading.
 * At this point, the Supersonic.app bundle can be copied to Applications and it will run on your machine, but it depends on the brew installation of mpv
-* To copy the dependencies into the app bundle, and make it truly portable, run ``make bundledeps_macos``
+* To copy the dependencies into the app bundle, and make it truly portable, run the appopriate command for your package manager:
+  - **Homebrew**: ``make bundledeps_macos_homebrew``
+  - **Macports**: ``make bundledeps_macos_macports``
 
 ## Build instructions (Windows)
 
