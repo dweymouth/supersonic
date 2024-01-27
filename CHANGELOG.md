@@ -1,5 +1,19 @@
 # Change Log
 
+## [0.9.0] - 2024-01-27
+
+### Added
+- [#33](https://github.com/dweymouth/supersonic/issues/33) Allow reordering of tracks in the play queue
+- [#218](https://github.com/dweymouth/supersonic/issues/218) Highlight the icon of the current page's navigation button (thanks @natilou!)
+- [#273](https://github.com/dweymouth/supersonic/issues/273) Show release type in album page header (for OpenSubsonic servers)
+- [#309](https://github.com/dweymouth/supersonic/issues/309) Setting to save and reload play queue on exit/startup
+- [#315](https://github.com/dweymouth/supersonic/issues/315) Use most recent playlist as default in "Add to playlist" dialog
+- [#316](https://github.com/dweymouth/supersonic/issues/316) Option to show desktop notifications on track change
+- Added icons to context menu items
+
+### Fixed
+- [#313](https://github.com/dweymouth/supersonic/issues/313) OpenGL startup error on some hardware
+
 ## [0.8.2] - 2023-12-16
 
 ### Fixed

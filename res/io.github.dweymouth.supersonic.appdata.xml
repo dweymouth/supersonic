@@ -29,9 +29,6 @@
       <li>Multi-server support</li>
       <li>Primary and alternate server hostnames, e.g. for internal and external URLs</li>
       <li>Set filters in albums browsing view</li>
-      <li>Album and playlist views with tracklist and cover image</li>
-      <li>Artist view with biography, image, similar artists, and discography</li>
-      <li>Create, play, and update playlists</li>
       <li>Sort tracklist views by column and configure visible tracklist columns</li>
       <li>Set/unset favorite and browse by favorite albums, artists, and songs</li>
       <li>Shuffle and repeat playback modes (partial; shuffle album,  playlist, artist radio, random songs)</li>
@@ -63,20 +60,30 @@
   </screenshots>
 
  <releases>
-  <release date="2023-12-16" version="0.8.2">
+  <release date="2024-01-27" version="0.9.0">
    <description>
      <p>
-       Version 0.8.2 of Supersonic
+       Version 0.9.0 of Supersonic
      </p>
+
+     <p>
+       Added
+     </p>
+     <ul>
+       <li>Allow reordering of tracks in the play queue</li>
+       <li>Highlight the icon of the current page's navigation button</li>
+       <li>Show release type in album page header (for OpenSubsonic servers)</li>
+       <li>Setting to save and reload play queue on exit/startup</li>
+       <li>Use most recent playlist as default in "Add to playlist" dialog</li>
+       <li>Option to show desktop notifications on track change</li>
+       <li>Added icons to context menu items</li>
+     </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Occasional crash when showing album info dialog, especially on Jellyfin</li>
-       <li>Unable to connect to Airsonic servers not supporting latest Subsonic API</li>
-       <li>Long album titles overflow the bounds of info dialog</li>
-       <li>ReplayGain "prevent clipping" setting was reversed</li>
+       <li>OpenGL startup error on some hardware</li>
      </ul>
 
    </description>
