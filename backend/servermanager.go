@@ -28,7 +28,10 @@ type ServerManager struct {
 	onLogout          []func()
 }
 
-var ErrUnreachable = errors.New("server is unreachable")
+var (
+	ErrUnreachable = errors.New("server is unreachable")
+	ErrNilServer   = errors.New("nil server provided")
+)
 
 func NewServerManager(appName string, config *Config) *ServerManager {
 	return &ServerManager{appName: appName, config: config}
@@ -156,6 +159,9 @@ func (s *ServerManager) GetServerPassword(serverID uuid.UUID) (string, error) {
 }
 
 func (s *ServerManager) SetServerPassword(server *ServerConfig, password string) error {
+	if server == nil {
+		return ErrNilServer
+	}
 	return keyring.Set(s.appName, server.ID.String(), password)
 }
 
