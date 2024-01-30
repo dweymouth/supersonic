@@ -5,6 +5,7 @@
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0+</project_license>
   <name>Supersonic</name>
+  <developer_name>Drew Weymouth</developer_name>
   <summary> A lightweight cross-platform desktop client for Subsonic and Jellyfin music servers</summary>
   <content_rating type="oars-1.0">
     <content_attribute id="social-audio">intense</content_attribute>
