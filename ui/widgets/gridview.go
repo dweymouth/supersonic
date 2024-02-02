@@ -225,9 +225,7 @@ func (g *GridView) createGridWrap() {
 		// update func
 		func(itemID widget.GridWrapItemID, obj fyne.CanvasObject) {
 			ac := obj.(*GridViewItem)
-			if itemID != ac.ItemIndex {
-				g.doUpdateItemCard(int(itemID), ac)
-			} // else nothing to do
+			g.doUpdateItemCard(int(itemID), ac)
 		},
 	)
 }
@@ -276,30 +274,29 @@ func (g *GridView) createNewItemCard() fyne.CanvasObject {
 }
 
 func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
+	if itemIdx > g.highestShown {
+		g.highestShown = itemIdx
+	}
+	var item GridViewItemModel
 	g.stateMutex.Lock()
+	// itemIdx can rarely be out of range if the data is being updated
+	// as the view is requested to refresh
+	if itemIdx < len(g.items) {
+		item = g.items[itemIdx]
+	}
+	card.Cover.Im.CenterIcon = g.Placeholder
+	if !card.NeedsUpdate(item) && card.ItemIndex == itemIdx {
+		// nothing to do
+		g.stateMutex.Unlock()
+		return
+	}
+	// update itemForIndex map
 	if c, ok := g.itemForIndex[card.ItemIndex]; ok && c == card {
 		delete(g.itemForIndex, card.ItemIndex)
 	}
 	card.ItemIndex = itemIdx
 	g.itemForIndex[itemIdx] = card
 	g.stateMutex.Unlock()
-
-	if itemIdx > g.highestShown {
-		g.highestShown = itemIdx
-	}
-	var item GridViewItemModel
-	g.stateMutex.RLock()
-	// itemIdx can rarely be out of range if the data is being updated
-	// as the view is requested to refresh
-	if itemIdx < len(g.items) {
-		item = g.items[itemIdx]
-	}
-	g.stateMutex.RUnlock()
-	card.Cover.Im.CenterIcon = g.Placeholder
-	if !card.NeedsUpdate(item) {
-		// nothing to do
-		return
-	}
 	card.Update(item)
 	card.ImgLoader.Load(item.CoverArtID)
 
