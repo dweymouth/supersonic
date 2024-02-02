@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"image"
+	"image/color"
 
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -12,10 +13,12 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 var _ fyne.Widget = (*GridViewItem)(nil)
+var _ fyne.Focusable = (*GridViewItem)(nil)
 
 var _ fyne.Widget = (*coverImage)(nil)
 
@@ -138,15 +141,21 @@ type GridViewItem struct {
 	primaryText   *widget.Hyperlink
 	secondaryText *MultiHyperlink
 	container     *fyne.Container
+	focused       bool
+	focusRect     *canvas.Rectangle
 
 	// updated by GridView
 	Cover     *coverImage
 	ImgLoader util.ThumbnailLoader
+	ItemIndex int
 
 	OnPlay              func()
 	OnShowContextMenu   func(fyne.Position)
 	OnShowItemPage      func()
 	OnShowSecondaryPage func(string)
+
+	// Invoked with arg 0-3 when left, right, up, or down neighbor should be focused, respectively
+	OnFocusNeighbor func(int)
 }
 
 func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
@@ -187,7 +196,10 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 
 func (g *GridViewItem) createContainer() {
 	info := container.New(&layouts.VboxCustomPadding{ExtraPad: -16}, g.primaryText, g.secondaryText)
-	c := container.New(&layouts.VboxCustomPadding{ExtraPad: -5}, g.Cover, info)
+	g.focusRect = canvas.NewRectangle(color.Transparent)
+	g.focusRect.StrokeWidth = 3
+	coverStack := container.NewStack(g.Cover, g.focusRect)
+	c := container.New(&layouts.VboxCustomPadding{ExtraPad: -5}, coverStack, info)
 	pad := &layouts.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
 	g.container = container.New(pad, c)
 }
@@ -203,14 +215,61 @@ func (g *GridViewItem) Update(model GridViewItemModel) {
 	g.secondaryText.BuildSegments(model.Secondary, model.SecondaryIDs)
 	g.secondaryText.Refresh()
 	g.Cover.ResetPlayButton()
+	if g.focused {
+		fyne.CurrentApp().Driver().CanvasForObject(g).Focus(nil)
+		g.FocusLost()
+	}
 }
 
 func (g *GridViewItem) Refresh() {
+	g.focusRect.StrokeColor = util.MakeOpaque(theme.FocusColor())
+	g.focusRect.Hidden = !g.focused
 	g.BaseWidget.Refresh()
 }
 
 func (g *GridViewItem) ItemID() string {
 	return g.itemID
+}
+
+func (g *GridViewItem) FocusGained() {
+	g.focused = true
+	g.Refresh()
+}
+
+func (g *GridViewItem) FocusLost() {
+	g.focused = false
+	g.Refresh()
+}
+
+func (g *GridViewItem) TypedKey(e *fyne.KeyEvent) {
+	if !g.focused {
+		return
+	}
+	focusArg := -1
+	switch e.Name {
+	case fyne.KeyLeft:
+		focusArg = 0
+	case fyne.KeyRight:
+		focusArg = 1
+	case fyne.KeyUp:
+		focusArg = 2
+	case fyne.KeyDown:
+		focusArg = 3
+	case fyne.KeyEnter:
+		fallthrough
+	case fyne.KeySpace:
+		if g.OnShowItemPage != nil {
+			g.OnShowItemPage()
+			return
+		}
+	}
+	if focusArg >= 0 && g.OnFocusNeighbor != nil {
+		g.OnFocusNeighbor(focusArg)
+	}
+}
+
+func (g *GridViewItem) TypedRune(rune) {
+	// intentionally blank
 }
 
 func (g *GridViewItem) CreateRenderer() fyne.WidgetRenderer {

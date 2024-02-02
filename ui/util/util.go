@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"math"
 	"strconv"
 	"strings"
@@ -23,6 +24,14 @@ import (
 )
 
 var BoldRichTextStyle = widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}, Inline: true}
+
+func MakeOpaque(c color.Color) color.Color {
+	if nrgba, ok := c.(color.NRGBA); ok {
+		nrgba.A = 255
+		return nrgba
+	}
+	return c
+}
 
 func SecondsToTimeString(s float64) string {
 	if s < 0 {

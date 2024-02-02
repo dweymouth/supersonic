@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"context"
+	"math"
 	"sync"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -73,6 +74,9 @@ type GridView struct {
 	grid               *disabledGridWrap
 	menu               *widget.PopUpMenu
 	menuGridViewItemId string
+	itemForIndex       map[int]*GridViewItem
+	itemWidth          float32
+	numColsCached      int
 }
 
 type GridViewState struct {
@@ -103,6 +107,8 @@ func NewFixedGridView(items []GridViewItemModel, fetch util.ImageFetcher, placeh
 			imageFetcher: fetch,
 			Placeholder:  placeholder,
 		},
+		itemWidth:    NewGridViewItem(nil).MinSize().Width,
+		itemForIndex: make(map[int]*GridViewItem),
 	}
 	g.ExtendBaseWidget(g)
 	g.createGridWrap()
@@ -116,6 +122,8 @@ func NewGridView(iter GridViewIterator, fetch util.ImageFetcher, placeholder fyn
 			imageFetcher: fetch,
 			Placeholder:  placeholder,
 		},
+		itemWidth:    NewGridViewItem(nil).MinSize().Width,
+		itemForIndex: make(map[int]*GridViewItem),
 	}
 	g.ExtendBaseWidget(g)
 	g.createGridWrap()
@@ -191,41 +199,91 @@ func (g *GridView) ScrollToOffset(offs float32) {
 	g.grid.ScrollToOffset(offs)
 }
 
+func (g *GridView) Resize(size fyne.Size) {
+	g.numColsCached = -1
+	g.BaseWidget.Resize(size)
+}
+
+func (g *GridView) numCols() int {
+	if g.numColsCached == -1 {
+		// logic here taken from gridwrap.go in Fyne codebase
+		colCount := 1
+		width := g.Size().Width
+		if width > g.itemWidth {
+			pad := theme.Padding()
+			colCount = int(math.Floor(float64(width+pad) / float64(g.itemWidth+pad)))
+		}
+		g.numColsCached = colCount
+	}
+	return g.numColsCached
+}
+
 func (g *GridView) createGridWrap() {
 	g.grid = NewDisabledGridWrap(
-		func() int {
-			return g.lenItems()
-		},
-		// create func
-		func() fyne.CanvasObject {
-			card := NewGridViewItem(g.Placeholder)
-			card.ImgLoader = util.NewThumbnailLoader(g.imageFetcher, card.Cover.SetImage)
-			card.ImgLoader.OnBeforeLoad = func() { card.Cover.SetImage(nil) }
-			card.OnPlay = func() { g.onPlay(card.ItemID(), false) }
-			card.OnShowSecondaryPage = func(id string) {
-				if g.OnShowSecondaryPage != nil {
-					g.OnShowSecondaryPage(id)
-				}
-			}
-			card.OnShowItemPage = func() {
-				if g.OnShowItemPage != nil {
-					g.OnShowItemPage(card.ItemID())
-				}
-			}
-			card.OnShowContextMenu = func(p fyne.Position) {
-				g.showContextMenu(card, p)
-			}
-			return card
-		},
+		g.lenItems,
+		g.createNewItemCard,
 		// update func
 		func(itemID widget.GridWrapItemID, obj fyne.CanvasObject) {
 			ac := obj.(*GridViewItem)
-			g.doUpdateItemCard(int(itemID), ac)
+			if itemID != ac.ItemIndex {
+				g.doUpdateItemCard(int(itemID), ac)
+			} // else nothing to do
 		},
 	)
 }
 
+func (g *GridView) createNewItemCard() fyne.CanvasObject {
+	card := NewGridViewItem(g.Placeholder)
+	card.ItemIndex = -1
+	card.ImgLoader = util.NewThumbnailLoader(g.imageFetcher, card.Cover.SetImage)
+	card.ImgLoader.OnBeforeLoad = func() { card.Cover.SetImage(nil) }
+	card.OnPlay = func() { g.onPlay(card.ItemID(), false) }
+	card.OnShowSecondaryPage = func(id string) {
+		if g.OnShowSecondaryPage != nil {
+			g.OnShowSecondaryPage(id)
+		}
+	}
+	card.OnShowItemPage = func() {
+		if g.OnShowItemPage != nil {
+			g.OnShowItemPage(card.ItemID())
+		}
+	}
+	card.OnShowContextMenu = func(p fyne.Position) {
+		g.showContextMenu(card, p)
+	}
+	card.OnFocusNeighbor = func(neighbor int) {
+		focusIndex := -1
+		switch neighbor {
+		case 0: // left
+			focusIndex = card.ItemIndex - 1
+		case 1: // right
+			focusIndex = card.ItemIndex + 1
+		case 2: // up
+			focusIndex = card.ItemIndex - g.numCols()
+		case 3: // down
+			focusIndex = card.ItemIndex + g.numCols()
+		}
+		if focusIndex >= 0 && focusIndex < g.lenItems() {
+			g.grid.ScrollTo(focusIndex)
+			g.stateMutex.RLock()
+			if item, ok := g.itemForIndex[focusIndex]; ok {
+				fyne.CurrentApp().Driver().CanvasForObject(g).Focus(item)
+			}
+			g.stateMutex.RUnlock()
+		}
+	}
+	return card
+}
+
 func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
+	g.stateMutex.Lock()
+	if c, ok := g.itemForIndex[card.ItemIndex]; ok && c == card {
+		delete(g.itemForIndex, card.ItemIndex)
+	}
+	card.ItemIndex = itemIdx
+	g.itemForIndex[itemIdx] = card
+	g.stateMutex.Unlock()
+
 	if itemIdx > g.highestShown {
 		g.highestShown = itemIdx
 	}
