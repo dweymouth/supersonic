@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	QuitShortcut  = &desktop.CustomShortcut{Modifier: KeyModifierControl, KeyName: fyne.KeyQ}
+	QuitShortcut  = &desktop.CustomShortcut{Modifier: fyne.KeyModifierControl, KeyName: fyne.KeyQ}
 	BackShortcuts = []desktop.CustomShortcut{
 		{Modifier: fyne.KeyModifierAlt, KeyName: fyne.KeyLeft},
 	}
