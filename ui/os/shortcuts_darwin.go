@@ -13,7 +13,8 @@ const (
 )
 
 var (
-	BackShortcuts = []desktop.CustomShortcut{
+	QuitShortcut  *desktop.CustomShortcut = nil // Fyne already adds Cmd+Q
+	BackShortcuts                         = []desktop.CustomShortcut{
 		{Modifier: fyne.KeyModifierSuper, KeyName: fyne.KeyLeft},
 		{Modifier: fyne.KeyModifierSuper, KeyName: fyne.KeyLeftBracket},
 	}

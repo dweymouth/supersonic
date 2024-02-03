@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"math"
 	"os"
 	"runtime"
 	"time"
@@ -42,10 +41,7 @@ func main() {
 	}
 	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp, fyne.NewSize(w, h))
 	myApp.OnReactivate = mainWindow.Show
-	myApp.OnExit = func() {
-		saveWindowSize(myApp.Config, mainWindow.Window)
-		fyneApp.Quit()
-	}
+	myApp.OnExit = mainWindow.Quit
 
 	go func() {
 		// TODO: There is a race condition with laying out the window before the
@@ -66,7 +62,7 @@ func main() {
 
 	mainWindow.Show()
 	mainWindow.Window.SetCloseIntercept(func() {
-		saveWindowSize(myApp.Config, mainWindow.Window)
+		mainWindow.SaveWindowSize()
 		if myApp.Config.Application.CloseToSystemTray &&
 			mainWindow.HaveSystemTray() {
 			mainWindow.Window.Hide()
@@ -78,11 +74,4 @@ func main() {
 
 	log.Println("Running shutdown tasks...")
 	myApp.Shutdown()
-}
-
-func saveWindowSize(config *backend.Config, window fyne.Window) {
-	// round sizes to even to avoid Wayland issues with 2x scaling factor
-	// https://github.com/dweymouth/supersonic/issues/212
-	config.Application.WindowHeight = int(math.RoundToEven(float64(window.Canvas().Size().Height)))
-	config.Application.WindowWidth = int(math.RoundToEven(float64(window.Canvas().Size().Width)))
 }

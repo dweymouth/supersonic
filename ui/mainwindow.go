@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"log"
+	"math"
 	"strings"
 
 	"github.com/20after4/configdir"
@@ -280,6 +281,11 @@ func (m *MainWindow) addShortcuts() {
 			m.showSettingsDialog()
 		})
 	}
+	if os.QuitShortcut != nil {
+		m.Canvas().AddShortcut(os.QuitShortcut, func(_ fyne.Shortcut) {
+			m.Quit()
+		})
+	}
 
 	m.Canvas().AddShortcut(&ShortcutReload, func(_ fyne.Shortcut) {
 		m.BrowsingPane.Reload()
@@ -345,4 +351,16 @@ func (m *MainWindow) SetTitle(title string) {
 
 func (m *MainWindow) SetContent(c fyne.CanvasObject) {
 	m.Window.SetContent(c)
+}
+
+func (m *MainWindow) Quit() {
+	m.SaveWindowSize()
+	fyne.CurrentApp().Quit()
+}
+
+func (m *MainWindow) SaveWindowSize() {
+	// round sizes to even to avoid Wayland issues with 2x scaling factor
+	// https://github.com/dweymouth/supersonic/issues/212
+	m.App.Config.Application.WindowHeight = int(math.RoundToEven(float64(m.Window.Canvas().Size().Height)))
+	m.App.Config.Application.WindowWidth = int(math.RoundToEven(float64(m.Window.Canvas().Size().Width)))
 }
