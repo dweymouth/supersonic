@@ -79,6 +79,8 @@ github.com/dweymouth/go-subsonic v0.0.0-20231217175944-9b48c9ffc002 h1:DhWQZJObk
 github.com/dweymouth/go-subsonic v0.0.0-20231217175944-9b48c9ffc002/go.mod h1:OWtcumdQsan8uM6wmx6PqKhldaCthH10CQ+vb+94kzo=
 github.com/dweymouth/go-subsonic v0.0.0-20240110030314-8df30080ab8d h1:8Lre3j3AYq9S53dcToWm7X21V5A2Z+g4ONSCI7hsWxc=
 github.com/dweymouth/go-subsonic v0.0.0-20240110030314-8df30080ab8d/go.mod h1:OWtcumdQsan8uM6wmx6PqKhldaCthH10CQ+vb+94kzo=
+github.com/dweymouth/go-subsonic v0.0.0-20240209011949-13593bcf2811 h1:TgDyZFMtcl38ql2Mj4t0lowftWmw9ZnPE2GbXsY0nx4=
+github.com/dweymouth/go-subsonic v0.0.0-20240209011949-13593bcf2811/go.mod h1:OWtcumdQsan8uM6wmx6PqKhldaCthH10CQ+vb+94kzo=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
