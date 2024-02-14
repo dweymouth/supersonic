@@ -80,9 +80,7 @@ func NewSettingsDialog(
 	}
 
 	tabs.SelectIndex(s.getActiveTabNumFromConfig())
-	// workaround issue where inactivated tabs don't fully update when theme setting is changed
 	tabs.OnSelected = func(ti *container.TabItem) {
-		ti.Content.Refresh()
 		s.saveSelectedTab(tabs.SelectedIndex())
 	}
 	s.promptText = widget.NewRichTextWithText("")
