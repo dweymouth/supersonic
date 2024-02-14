@@ -252,8 +252,8 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 			widget.NewLabel("Startup page"), container.NewGridWithColumns(2, startupPage),
 		),
 		container.NewHBox(systemTrayEnable, closeToTray),
-		container.NewHBox(saveQueue),
-		container.NewHBox(trackNotif),
+		saveQueue,
+		trackNotif,
 		s.newSectionSeparator(),
 
 		widget.NewRichText(&widget.TextSegment{Text: "Scrobbling", Style: util.BoldRichTextStyle}),
@@ -361,11 +361,11 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 	}
 
 	return container.NewTabItem("Playback", container.NewVBox(
-		container.NewHBox(disableTranscode),
+		disableTranscode,
 		container.New(&layouts.MaxPadLayout{PadTop: 5},
 			container.New(layout.NewFormLayout(),
 				widget.NewLabel("Audio device"), container.NewBorder(nil, nil, nil, util.NewHSpace(70), deviceSelect),
-				layout.NewSpacer(), container.NewHBox(audioExclusive, layout.NewSpacer()),
+				layout.NewSpacer(), audioExclusive,
 			)),
 		s.newSectionSeparator(),
 
@@ -373,7 +373,7 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel("ReplayGain mode"), container.NewGridWithColumns(2, replayGainSelect),
 			widget.NewLabel("ReplayGain preamp"), container.NewHBox(preampGain, widget.NewLabel("dB")),
-			widget.NewLabel("Prevent clipping"), container.NewHBox(preventClipping, layout.NewSpacer()),
+			widget.NewLabel("Prevent clipping"), preventClipping,
 		),
 	))
 }
@@ -402,7 +402,7 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 		s.config.LocalPlayback.EqualizerPreamp = g
 		debouncer()
 	}
-	cont := container.NewBorder(container.NewHBox(enabled), nil, nil, nil, geq)
+	cont := container.NewBorder(enabled, nil, nil, nil, geq)
 	return container.NewTabItem("Equalizer", cont)
 }
 
