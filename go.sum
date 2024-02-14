@@ -69,8 +69,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1 h1:mGvOb3zxl4vCLv+dbf7JA6CAaM2UH/AGP1KX4DsJmTI=
 github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1/go.mod h1:ZNCLJfehvEf34B7BbLKjgpsL9lyW7q938w/GY1XgV4E=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240112164109-5bc86600a24f h1:33cgkue5rtXn22ZjfxAqD7/Iyu1ZRrbKeU2SElHf4AQ=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240112164109-5bc86600a24f/go.mod h1:1h3BKxmQYRJlr2g+RGVxedzr6vLVQ/AJmFWcF9CJnoQ=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240214155216-5dbf9d4fbd58 h1:0E0PTW6VUEwrw9WK3PTjzhF9dkuVh14J7JIPzsqNMFE=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240214155216-5dbf9d4fbd58/go.mod h1:VyrxAOZ3NRZRWBvNIJbfqoKOG4DdbewoPk7ozqJKNPY=
 github.com/dweymouth/go-jellyfin v0.0.0-20231116161116-e800860bdacc h1:wJy4U12Ys5Jgt08dgh5AW4suRZgKTwI1PUEmDu8aOmY=
 github.com/dweymouth/go-jellyfin v0.0.0-20231116161116-e800860bdacc/go.mod h1:BMwS4vdjEYf1gmjPGSKCzWP/I6YlI6fkefJ9nsjBjaU=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee h1:ZGyJ6wp7CAfT31BugypcF/TPKEy2RrGR9JFq1JOjOpY=
@@ -107,9 +107,9 @@ github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b h1:GgabKamyOY
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-text/render v0.0.0-20230619120952-35bccb6164b8 h1:VkKnvzbvHqgEfm351rfr8Uclu5fnwq8HP2ximUzJsBM=
 github.com/go-text/render v0.0.0-20230619120952-35bccb6164b8/go.mod h1:h29xCucjNsDcYb7+0rJokxVwYAq+9kQ19WiFuBKkYtc=
-github.com/go-text/typesetting v0.0.0-20230616162802-9c17dd34aa4a h1:VjN8ttdfklC0dnAdKbZqGNESdERUxtE3l8a/4Grgarc=
-github.com/go-text/typesetting v0.0.0-20230616162802-9c17dd34aa4a/go.mod h1:evDBbvNR/KaVFZ2ZlDSOWWXIUKq0wCOEtzLxRM8SG3k=
-github.com/go-text/typesetting-utils v0.0.0-20230616150549-2a7df14b6a22 h1:LBQTFxP2MfsyEDqSKmUBZaDuDHN1vpqDyOZjcqS7MYI=
+github.com/go-text/typesetting v0.1.0 h1:vioSaLPYcHwPEPLT7gsjCGDCoYSbljxoHJzMnKwVvHw=
+github.com/go-text/typesetting v0.1.0/go.mod h1:d22AnmeKq/on0HNv73UFriMKc4Ez6EqZAofLhAzpSzI=
+github.com/go-text/typesetting-utils v0.0.0-20231211103740-d9332ae51f04 h1:zBx+p/W2aQYtNuyZNcTfinWvXBQwYtDfme051PR/lAY=
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/godbus/dbus/v5 v5.0.6/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/godbus/dbus/v5 v5.1.0 h1:4KLkAxT3aOY8Li4FRJe/KvhoNFFxo0m6fNuFUO8QJUk=
