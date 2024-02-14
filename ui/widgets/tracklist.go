@@ -781,7 +781,11 @@ func newTrailingAlignLabel() *widget.Label {
 }
 
 func (t *TrackRow) Update(tm *trackModel, rowNum int) {
-	t.Selected = tm.selected
+	changed := false
+	if tm.selected != t.Selected {
+		t.Selected = tm.selected
+		changed = true
+	}
 
 	// Update info that can change if this row is bound to
 	// a new track (*mediaprovider.Track)
@@ -804,6 +808,7 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 		t.bitrate.Text = strconv.Itoa(tr.BitRate)
 		t.size.Text = util.BytesToSizeString(tr.Size)
 		t.path.Text = tr.FilePath
+		changed = true
 	}
 
 	// Update track num if needed
@@ -824,12 +829,14 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 			str = strconv.Itoa(rowNum)
 		}
 		t.num.Text = str
+		changed = true
 	}
 
 	// Update play count if needed
 	if tr.PlayCount != t.playCount {
 		t.playCount = tr.PlayCount
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
+		changed = true
 	}
 
 	// Render whether track is playing or not
@@ -842,34 +849,54 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 		} else {
 			t.Content.(*fyne.Container).Objects[0] = t.num
 		}
+		changed = true
 	}
 
-	// Render favorite column
-	if tr.Favorite {
-		t.isFavorite = true
-		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.FavoriteIcon
-	} else {
-		t.isFavorite = false
-		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.NotFavoriteIcon
+	// Update favorite column
+	if tr.Favorite != t.isFavorite {
+		if tr.Favorite {
+			t.isFavorite = true
+			t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.FavoriteIcon
+		} else {
+			t.isFavorite = false
+			t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.NotFavoriteIcon
+		}
+		changed = true
 	}
 
-	t.rating.Rating = tr.Rating
+	// Update rating column
+	if t.rating.Rating != tr.Rating {
+		t.rating.Rating = tr.Rating
+		t.rating.Refresh()
+	}
+	if t.rating.IsDisabled != t.tracklist.Options.DisableRating {
+		t.rating.IsDisabled = t.tracklist.Options.DisableRating
+		t.rating.Refresh()
+	}
 
 	// Show only columns configured to be visible
-	t.artist.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnArtist)]
-	t.album.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnAlbum)]
-	t.dur.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnTime)]
-	t.year.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnYear)]
-	t.favorite.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnFavorite)]
-	t.rating.IsDisabled = t.tracklist.Options.DisableRating
-	t.rating.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnRating)]
-	t.plays.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPlays)]
-	t.comment.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnComment)]
-	t.bitrate.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnBitrate)]
-	t.size.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnSize)]
-	t.path.Hidden = !t.tracklist.visibleColumns[ColNumber(ColumnPath)]
+	updateHidden := func(hiddenPtr *bool, colName string) {
+		colHidden := !t.tracklist.visibleColumns[ColNumber(colName)]
+		if colHidden != *hiddenPtr {
+			*hiddenPtr = colHidden
+			changed = true
+		}
+	}
+	updateHidden(&t.artist.Hidden, ColumnArtist)
+	updateHidden(&t.album.Hidden, ColumnAlbum)
+	updateHidden(&t.dur.Hidden, ColumnTime)
+	updateHidden(&t.year.Hidden, ColumnYear)
+	updateHidden(&t.favorite.Hidden, ColumnFavorite)
+	updateHidden(&t.rating.Hidden, ColumnRating)
+	updateHidden(&t.plays.Hidden, ColumnPlays)
+	updateHidden(&t.comment.Hidden, ColumnComment)
+	updateHidden(&t.bitrate.Hidden, ColumnBitrate)
+	updateHidden(&t.size.Hidden, ColumnSize)
+	updateHidden(&t.path.Hidden, ColumnPath)
 
-	t.Refresh()
+	if changed {
+		t.Refresh()
+	}
 }
 
 func (t *TrackRow) toggleFavorited() {
