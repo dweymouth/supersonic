@@ -366,8 +366,6 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 }
 
 func (m *Controller) PromptForLoginAndConnect() {
-	// TODO: this will need to be rewritten a bit when we support multi servers
-	// need to make sure the intended server is first in the list passed to NewLoginDialog
 	d := dialogs.NewLoginDialog(m.App.Config.Servers, m.App.ServerManager.GetServerPassword)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func(server *backend.ServerConfig, password string) {
