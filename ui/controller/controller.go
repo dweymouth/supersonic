@@ -2,6 +2,7 @@ package controller
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"image"
 	"io"
@@ -348,13 +349,35 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 	pop.Show()
 }
 
+// DoConnectToServerWorkflow does the workflow for connecting to the last active server on startup
 func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	pass, err := c.App.ServerManager.GetServerPassword(server.ID)
 	if err != nil {
 		log.Printf("error getting password from keyring: %v", err)
 		c.PromptForLoginAndConnect()
-	} else {
-		if err := c.tryConnectToServer(server, pass); err != nil {
+		return
+	}
+
+	// try connecting to last used server - set up cancelable modal dialog
+	canceled := false
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	dlg := dialog.NewCustom("Connecting", "Cancel",
+		widget.NewLabel(fmt.Sprintf("Connecting to %s", server.Nickname)), c.MainWindow)
+	dlg.SetOnClosed(func() {
+		canceled = true
+		cancel()
+	})
+	c.haveModal = true
+	dlg.Show()
+	// try to connect
+	if err := c.tryConnectToServer(ctx, server, pass); err != nil {
+		dlg.Hide()
+		c.haveModal = false
+		if canceled {
+			c.PromptForLoginAndConnect()
+		} else {
+			// connection failure
 			dlg := dialog.NewError(err, c.MainWindow)
 			dlg.SetOnClosed(func() {
 				c.PromptForLoginAndConnect()
@@ -362,6 +385,9 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 			c.haveModal = true
 			dlg.Show()
 		}
+	} else {
+		dlg.Hide()
+		c.haveModal = false
 	}
 }
 
@@ -372,7 +398,10 @@ func (m *Controller) PromptForLoginAndConnect() {
 		d.DisableSubmit()
 		d.SetInfoText("Testing connection...")
 		go func() {
-			err := m.App.ServerManager.TestConnectionAndAuth(server.ServerConnection, password, 5*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			err := m.App.ServerManager.TestConnectionAndAuth(ctx, server.ServerConnection, password)
 			if err == backend.ErrUnreachable {
 				d.SetErrorText("Server unreachable")
 			} else if err != nil {
@@ -560,11 +589,14 @@ func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConf
 		// Don't return an error; fall back to just using the password in-memory
 		// User will need to log in with the password on subsequent runs.
 	}
-	return c.tryConnectToServer(server, password)
+	return c.tryConnectToServer(context.Background(), server, password)
 }
 
-func (c *Controller) tryConnectToServer(server *backend.ServerConfig, password string) error {
-	if err := c.App.ServerManager.TestConnectionAndAuth(server.ServerConnection, password, 10*time.Second); err != nil {
+// try to connect to the given server, with a 10 second timeout added to the context
+func (c *Controller) tryConnectToServer(ctx context.Context, server *backend.ServerConfig, password string) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if err := c.App.ServerManager.TestConnectionAndAuth(ctx, server.ServerConnection, password); err != nil {
 		return err
 	}
 	if err := c.App.ServerManager.ConnectToServer(server, password); err != nil {
@@ -583,7 +615,9 @@ func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServe
 		Username:    dlg.Username,
 		LegacyAuth:  dlg.LegacyAuth,
 	}
-	err := c.App.ServerManager.TestConnectionAndAuth(conn, dlg.Password, 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := c.App.ServerManager.TestConnectionAndAuth(ctx, conn, dlg.Password)
 	if err == backend.ErrUnreachable {
 		dlg.SetErrorText("Could not reach server (wrong hostname?)")
 		return false

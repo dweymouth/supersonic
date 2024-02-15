@@ -58,7 +58,7 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 }
 
 func (s *ServerManager) TestConnectionAndAuth(
-	connection ServerConnection, password string, timeout time.Duration,
+	ctx context.Context, connection ServerConnection, password string,
 ) error {
 	err := ErrUnreachable
 	done := make(chan bool)
@@ -66,10 +66,8 @@ func (s *ServerManager) TestConnectionAndAuth(
 		_, err = s.connect(connection, password)
 		close(done)
 	}()
-	t := time.NewTimer(timeout)
-	defer t.Stop()
 	select {
-	case <-t.C:
+	case <-ctx.Done():
 		return err
 	case <-done:
 		return err
