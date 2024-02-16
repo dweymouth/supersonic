@@ -101,6 +101,7 @@ type Tracklist struct {
 	tracksMutex     sync.RWMutex
 	tracks          []*trackModel
 	tracksOrigOrder []*trackModel
+	itemForIndex    map[int]*TrackRow
 
 	nowPlayingID  string
 	colLayout     *layouts.ColumnsLayout
@@ -117,7 +118,7 @@ type trackModel struct {
 }
 
 func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
-	t := &Tracklist{visibleColumns: make([]bool, numColumns)}
+	t := &Tracklist{visibleColumns: make([]bool, numColumns), itemForIndex: make(map[int]*TrackRow)}
 	t.ExtendBaseWidget(t)
 
 	if len(tracks) > 0 {
@@ -143,9 +144,28 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 		t.lenTracks,
 		func() fyne.CanvasObject {
 			tr := NewTrackRow(t, playingIcon)
-			tr.OnTapped = func() { t.onSelectTrack(tr.trackIdx) }
+			tr.OnTapped = func() {
+				t.onSelectTrack(tr.trackIdx)
+			}
 			tr.OnTappedSecondary = t.onShowContextMenu
-			tr.OnDoubleTapped = func() { t.onPlayTrackAt(tr.trackIdx) }
+			tr.OnDoubleTapped = func() {
+				t.onPlayTrackAt(tr.trackIdx)
+			}
+			tr.OnFocusNeighbor = func(up bool) {
+				focusIdx := tr.trackIdx + 1
+				if up {
+					focusIdx = tr.trackIdx - 1
+				}
+				if focusIdx >= 0 && focusIdx < t.lenTracks() {
+					t.list.ScrollTo(focusIdx)
+				}
+				t.tracksMutex.RLock()
+				other, ok := t.itemForIndex[focusIdx]
+				t.tracksMutex.RUnlock()
+				if ok {
+					fyne.CurrentApp().Driver().CanvasForObject(t).Focus(other)
+				}
+			}
 			return tr
 		},
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
@@ -161,7 +181,15 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 			t.tracksMutex.RUnlock()
 
 			tr := item.(*TrackRow)
-			tr.trackIdx = itemID
+			if tr.trackID != model.track.ID || tr.trackIdx != itemID {
+				t.tracksMutex.Lock()
+				if other, ok := t.itemForIndex[itemID]; ok && other == tr {
+					delete(t.itemForIndex, other.trackIdx)
+				}
+				t.itemForIndex[itemID] = tr
+				t.tracksMutex.Unlock()
+				tr.trackIdx = itemID
+			}
 			i := -1 // signal that we want to display the actual track num.
 			if t.Options.AutoNumber {
 				i = itemID + 1
@@ -299,6 +327,7 @@ func (t *Tracklist) Clear() {
 	defer t.tracksMutex.Unlock()
 	t.tracks = nil
 	t.tracksOrigOrder = nil
+	t.itemForIndex = make(map[int]*TrackRow)
 }
 
 // Sets the tracks in the tracklist. Thread-safe.
@@ -310,6 +339,7 @@ func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
 func (t *Tracklist) _setTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
+	t.itemForIndex = make(map[int]*TrackRow)
 	t.tracksOrigOrder = toTrackModels(trs)
 	t.doSortTracks()
 }

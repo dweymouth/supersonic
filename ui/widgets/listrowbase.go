@@ -22,8 +22,9 @@ type ListRowBase struct {
 	Selected bool
 	Focused  bool
 
-	OnTapped       func()
-	OnDoubleTapped func()
+	OnTapped        func()
+	OnDoubleTapped  func()
+	OnFocusNeighbor func(up bool) //TODO: func(up, selecting bool)
 
 	tappedAt      int64 // unixMillis
 	focusedRect   *canvas.Rectangle
@@ -57,7 +58,22 @@ func (l *ListRowBase) FocusLost() {
 }
 
 func (l *ListRowBase) TypedKey(e *fyne.KeyEvent) {
+	/**
+	// TODO: enable shift+arrows for selection, but it's complicated to implement in the widgets
+	desktop, ok := fyne.CurrentApp().Driver().(desktop.Driver)
+	isSelecting := func() bool {
+		return ok && desktop.CurrentKeyModifiers()&fyne.KeyModifierShift != 0
+	}
+	*/
 	switch {
+	case e.Name == fyne.KeyUp:
+		if l.OnFocusNeighbor != nil {
+			l.OnFocusNeighbor(true)
+		}
+	case e.Name == fyne.KeyDown:
+		if l.OnFocusNeighbor != nil {
+			l.OnFocusNeighbor(false)
+		}
 	case e.Name == fyne.KeySpace:
 		if l.OnTapped != nil {
 			l.OnTapped()

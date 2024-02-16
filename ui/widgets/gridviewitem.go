@@ -257,6 +257,8 @@ func (g *GridViewItem) TypedKey(e *fyne.KeyEvent) {
 		focusArg = 3
 	case fyne.KeyEnter:
 		fallthrough
+	case fyne.KeyReturn:
+		fallthrough
 	case fyne.KeySpace:
 		if g.OnShowItemPage != nil {
 			g.OnShowItemPage()
