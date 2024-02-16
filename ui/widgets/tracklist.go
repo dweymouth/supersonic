@@ -101,12 +101,11 @@ type Tracklist struct {
 	tracksMutex     sync.RWMutex
 	tracks          []*trackModel
 	tracksOrigOrder []*trackModel
-	itemForIndex    map[int]*TrackRow
 
 	nowPlayingID  string
 	colLayout     *layouts.ColumnsLayout
 	hdr           *ListHeader
-	list          *DisabledList
+	list          *FocusList
 	ctxMenu       *fyne.Menu
 	ratingSubmenu *fyne.MenuItem
 	container     *fyne.Container
@@ -118,7 +117,7 @@ type trackModel struct {
 }
 
 func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
-	t := &Tracklist{visibleColumns: make([]bool, numColumns), itemForIndex: make(map[int]*TrackRow)}
+	t := &Tracklist{visibleColumns: make([]bool, numColumns)}
 	t.ExtendBaseWidget(t)
 
 	if len(tracks) > 0 {
@@ -140,31 +139,19 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 	playIcon.ColorName = theme.ColorNamePrimary
 	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(playIcon)))
 
-	t.list = NewDisabledList(
+	t.list = NewFocusList(
 		t.lenTracks,
 		func() fyne.CanvasObject {
 			tr := NewTrackRow(t, playingIcon)
 			tr.OnTapped = func() {
-				t.onSelectTrack(tr.trackIdx)
+				t.onSelectTrack(tr.ListItemID)
 			}
 			tr.OnTappedSecondary = t.onShowContextMenu
 			tr.OnDoubleTapped = func() {
-				t.onPlayTrackAt(tr.trackIdx)
+				t.onPlayTrackAt(tr.ListItemID)
 			}
 			tr.OnFocusNeighbor = func(up bool) {
-				focusIdx := tr.trackIdx + 1
-				if up {
-					focusIdx = tr.trackIdx - 1
-				}
-				if focusIdx >= 0 && focusIdx < t.lenTracks() {
-					t.list.ScrollTo(focusIdx)
-				}
-				t.tracksMutex.RLock()
-				other, ok := t.itemForIndex[focusIdx]
-				t.tracksMutex.RUnlock()
-				if ok {
-					fyne.CurrentApp().Driver().CanvasForObject(t).Focus(other)
-				}
+				t.list.FocusNeighbor(tr.ListItemID, up)
 			}
 			return tr
 		},
@@ -181,14 +168,9 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 			t.tracksMutex.RUnlock()
 
 			tr := item.(*TrackRow)
-			if tr.trackID != model.track.ID || tr.trackIdx != itemID {
-				t.tracksMutex.Lock()
-				if other, ok := t.itemForIndex[itemID]; ok && other == tr {
-					delete(t.itemForIndex, other.trackIdx)
-				}
-				t.itemForIndex[itemID] = tr
-				t.tracksMutex.Unlock()
-				tr.trackIdx = itemID
+			if tr.trackID != model.track.ID || tr.ListItemID != itemID {
+				t.list.SetItemForID(itemID, tr)
+				tr.ListItemID = itemID
 			}
 			i := -1 // signal that we want to display the actual track num.
 			if t.Options.AutoNumber {
@@ -327,7 +309,7 @@ func (t *Tracklist) Clear() {
 	defer t.tracksMutex.Unlock()
 	t.tracks = nil
 	t.tracksOrigOrder = nil
-	t.itemForIndex = make(map[int]*TrackRow)
+	t.list.ClearItemForIDMap()
 }
 
 // Sets the tracks in the tracklist. Thread-safe.
@@ -339,7 +321,7 @@ func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
 func (t *Tracklist) _setTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	t.itemForIndex = make(map[int]*TrackRow)
+	t.list.ClearItemForIDMap()
 	t.tracksOrigOrder = toTrackModels(trs)
 	t.doSortTracks()
 }
@@ -731,11 +713,10 @@ func colName(i int) string {
 }
 
 type TrackRow struct {
-	ListRowBase
+	FocusListRowBase
 
 	// internal state
 	tracklist  *Tracklist
-	trackIdx   int
 	trackNum   int
 	trackID    string
 	albumID    string
@@ -821,10 +802,7 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 	// a new track (*mediaprovider.Track)
 	tr := tm.track
 	if tr.ID != t.trackID {
-		if t.Focused {
-			fyne.CurrentApp().Driver().CanvasForObject(t).Focus(nil)
-			t.Focused = false
-		}
+		t.EnsureUnfocused()
 		t.trackID = tr.ID
 		t.albumID = tr.AlbumID
 
@@ -949,7 +927,7 @@ func (t *TrackRow) setTrackRating(rating int) {
 
 func (t *TrackRow) TappedSecondary(e *fyne.PointEvent) {
 	if t.OnTappedSecondary != nil {
-		t.OnTappedSecondary(e, t.trackIdx)
+		t.OnTappedSecondary(e, t.ListItemID)
 	}
 }
 

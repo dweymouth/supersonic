@@ -145,21 +145,18 @@ type GenreList struct {
 
 	columnsLayout *layouts.ColumnsLayout
 	hdr           *widgets.ListHeader
-	list          *widgets.DisabledList
+	list          *widgets.FocusList
 	container     *fyne.Container
 }
 
 type GenreListRow struct {
-	widget.BaseWidget
+	widgets.FocusListRowBase
 
-	Item     *mediaprovider.Genre
-	OnTapped func()
+	Item *mediaprovider.Genre
 
 	nameLabel       *widget.Label
 	albumCountLabel *widget.Label
 	trackCountLabel *widget.Label
-
-	container *fyne.Container
 }
 
 func NewGenreListRow(layout *layouts.ColumnsLayout) *GenreListRow {
@@ -171,7 +168,7 @@ func NewGenreListRow(layout *layouts.ColumnsLayout) *GenreListRow {
 	a.ExtendBaseWidget(a)
 	a.albumCountLabel.Alignment = fyne.TextAlignTrailing
 	a.trackCountLabel.Alignment = fyne.TextAlignTrailing
-	a.container = container.New(layout, a.nameLabel, a.albumCountLabel, a.trackCountLabel)
+	a.Content = container.New(layout, a.nameLabel, a.albumCountLabel, a.trackCountLabel)
 	return a
 }
 
@@ -182,31 +179,42 @@ func NewGenreList(sorting widgets.ListHeaderSort) *GenreList {
 	}
 	a.ExtendBaseWidget(a)
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
-		{"Name", fyne.TextAlignLeading, false}, {"Album Count", fyne.TextAlignTrailing, false}, {"Track Count", fyne.TextAlignTrailing, false}}, a.columnsLayout)
+		{Text: "Name", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: "Album Count", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
+		{Text: "Track Count", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
+		a.columnsLayout)
 	a.hdr.SetSorting(sorting)
 	a.hdr.OnColumnSortChanged = a.onSorted
-	a.list = widgets.NewDisabledList(
+	a.list = widgets.NewFocusList(
 		func() int { return len(a.genres) },
 		func() fyne.CanvasObject {
 			r := NewGenreListRow(a.columnsLayout)
-			r.OnTapped = func() { a.onRowDoubleTapped(r.Item) }
+			r.OnTapped = func() { a.onGoToGenre(r.Item) }
+			r.OnFocusNeighbor = func(up bool) {
+				a.list.FocusNeighbor(r.ListItemID, up)
+			}
 			return r
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			row := item.(*GenreListRow)
-			row.Item = a.genres[id]
-			row.nameLabel.Text = row.Item.Name
-			if row.Item.AlbumCount >= 0 {
-				row.albumCountLabel.Text = strconv.Itoa(row.Item.AlbumCount)
-			} else {
-				row.albumCountLabel.Text = ""
+			if row.Item != a.genres[id] {
+				row.EnsureUnfocused()
+				a.list.SetItemForID(id, row)
+				row.ListItemID = id
+				row.Item = a.genres[id]
+				row.nameLabel.Text = row.Item.Name
+				if row.Item.AlbumCount >= 0 {
+					row.albumCountLabel.Text = strconv.Itoa(row.Item.AlbumCount)
+				} else {
+					row.albumCountLabel.Text = ""
+				}
+				if row.Item.TrackCount >= 0 {
+					row.trackCountLabel.Text = strconv.Itoa(row.Item.TrackCount)
+				} else {
+					row.trackCountLabel.Text = ""
+				}
+				row.Refresh()
 			}
-			if row.Item.TrackCount >= 0 {
-				row.trackCountLabel.Text = strconv.Itoa(row.Item.TrackCount)
-			} else {
-				row.trackCountLabel.Text = ""
-			}
-			row.Refresh()
 		},
 	)
 	a.container = container.NewBorder(a.hdr, nil, nil, nil, a.list)
@@ -265,22 +273,12 @@ func (g *GenreList) intSort(fieldFn func(*mediaprovider.Genre) int) {
 	g.genres = new
 }
 
-func (a *GenreList) onRowDoubleTapped(item *mediaprovider.Genre) {
+func (a *GenreList) onGoToGenre(item *mediaprovider.Genre) {
 	if a.OnNavTo != nil {
 		a.OnNavTo(item.Name)
 	}
 }
 
-func (a *GenreListRow) Tapped(*fyne.PointEvent) {
-	if a.OnTapped != nil {
-		a.OnTapped()
-	}
-}
-
 func (a *GenreList) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(a.container)
-}
-
-func (a *GenreListRow) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }

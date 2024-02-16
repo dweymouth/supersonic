@@ -290,7 +290,7 @@ type PlaylistList struct {
 
 	columnsLayout *layouts.ColumnsLayout
 	header        *widgets.ListHeader
-	list          *widgets.DisabledList
+	list          *widgets.FocusList
 	container     *fyne.Container
 }
 
@@ -300,7 +300,7 @@ func NewPlaylistList(initialSort widgets.ListHeaderSort) *PlaylistList {
 		columnsLayout: layouts.NewColumnsLayout([]float32{-1, -1, 200, 125}),
 	}
 	a.buildHeader()
-	a.list = widgets.NewDisabledList(
+	a.list = widgets.NewFocusList(
 		func() int {
 			return len(a.playlists)
 		},

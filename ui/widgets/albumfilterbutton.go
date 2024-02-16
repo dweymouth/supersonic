@@ -218,7 +218,7 @@ type GenreFilterSubsection struct {
 	noneBtn            *widget.Button
 	listModelMutex     sync.RWMutex
 	genreListViewModel []string
-	genreListView      *DisabledList
+	genreListView      *FocusList
 
 	container *fyne.Container
 }
@@ -234,7 +234,7 @@ func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []
 		g.selectedGenres[genre] = nil
 	}
 
-	g.genreListView = NewDisabledList(
+	g.genreListView = NewFocusList(
 		func() int {
 			g.listModelMutex.RLock()
 			defer g.listModelMutex.RUnlock()
