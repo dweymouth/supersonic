@@ -306,17 +306,25 @@ func NewPlaylistList(initialSort widgets.ListHeaderSort) *PlaylistList {
 		},
 		func() fyne.CanvasObject {
 			r := NewPlaylistListRow(a.columnsLayout)
-			r.OnTapped = func() { a.onRowTapped(r.ID) }
+			r.OnTapped = func() { a.onRowTapped(r.PlaylistID) }
+			r.OnFocusNeighbor = func(up bool) {
+				a.list.FocusNeighbor(r.ItemID(), up)
+			}
 			return r
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			row := item.(*PlaylistListRow)
-			row.ID = a.playlists[id].ID
-			row.nameLabel.Text = a.playlists[id].Name
-			row.descrptionLabel.Text = a.playlists[id].Description
-			row.ownerLabel.Text = a.playlists[id].Owner
-			row.trackCountLabel.Text = strconv.Itoa(a.playlists[id].TrackCount)
-			row.Refresh()
+			if row.PlaylistID != a.playlists[id].ID {
+				row.EnsureUnfocused()
+				a.list.SetItemForID(id, row)
+				row.ListItemID = id
+				row.PlaylistID = a.playlists[id].ID
+				row.nameLabel.Text = a.playlists[id].Name
+				row.descrptionLabel.Text = a.playlists[id].Description
+				row.ownerLabel.Text = a.playlists[id].Owner
+				row.trackCountLabel.Text = strconv.Itoa(a.playlists[id].TrackCount)
+				row.Refresh()
+			}
 		},
 	)
 	a.container = container.NewBorder(a.header, nil, nil, nil, a.list)
@@ -399,17 +407,14 @@ func (p *PlaylistList) intSort(fieldFn func(*mediaprovider.Playlist) int) {
 }
 
 type PlaylistListRow struct {
-	widget.BaseWidget
+	widgets.FocusListRowBase
 
-	ID       string
-	OnTapped func()
+	PlaylistID string
 
 	nameLabel       *widget.Label
 	descrptionLabel *widget.Label
 	ownerLabel      *widget.Label
 	trackCountLabel *widget.Label
-
-	container *fyne.Container
 }
 
 func NewPlaylistListRow(layout *layouts.ColumnsLayout) *PlaylistListRow {
@@ -421,7 +426,7 @@ func NewPlaylistListRow(layout *layouts.ColumnsLayout) *PlaylistListRow {
 	}
 	a.trackCountLabel.Alignment = fyne.TextAlignTrailing
 	a.ownerLabel.Truncation = fyne.TextTruncateEllipsis
-	a.container = container.New(layout, a.nameLabel, a.descrptionLabel, a.ownerLabel, a.trackCountLabel)
+	a.Content = container.New(layout, a.nameLabel, a.descrptionLabel, a.ownerLabel, a.trackCountLabel)
 	a.ExtendBaseWidget(a)
 	return a
 }
@@ -430,8 +435,4 @@ func (a *PlaylistListRow) Tapped(*fyne.PointEvent) {
 	if a.OnTapped != nil {
 		a.OnTapped()
 	}
-}
-
-func (a *PlaylistListRow) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(a.container)
 }

@@ -191,7 +191,7 @@ func NewGenreList(sorting widgets.ListHeaderSort) *GenreList {
 			r := NewGenreListRow(a.columnsLayout)
 			r.OnTapped = func() { a.onGoToGenre(r.Item) }
 			r.OnFocusNeighbor = func(up bool) {
-				a.list.FocusNeighbor(r.ListItemID, up)
+				a.list.FocusNeighbor(r.ItemID(), up)
 			}
 			return r
 		},
