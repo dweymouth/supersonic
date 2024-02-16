@@ -99,16 +99,20 @@ type GridViewState struct {
 
 var _ fyne.Widget = (*GridView)(nil)
 
-func NewFixedGridView(items []GridViewItemModel, fetch util.ImageFetcher, placeholder fyne.Resource) *GridView {
-	g := &GridView{
-		GridViewState: GridViewState{
-			items:        items,
-			done:         true,
-			imageFetcher: fetch,
-			Placeholder:  placeholder,
-		},
+func newGridView() *GridView {
+	return &GridView{
 		itemWidth:    NewGridViewItem(nil).MinSize().Width,
 		itemForIndex: make(map[int]*GridViewItem),
+	}
+}
+
+func NewFixedGridView(items []GridViewItemModel, fetch util.ImageFetcher, placeholder fyne.Resource) *GridView {
+	g := newGridView()
+	g.GridViewState = GridViewState{
+		items:        items,
+		done:         true,
+		imageFetcher: fetch,
+		Placeholder:  placeholder,
 	}
 	g.ExtendBaseWidget(g)
 	g.createGridWrap()
@@ -116,14 +120,11 @@ func NewFixedGridView(items []GridViewItemModel, fetch util.ImageFetcher, placeh
 }
 
 func NewGridView(iter GridViewIterator, fetch util.ImageFetcher, placeholder fyne.Resource) *GridView {
-	g := &GridView{
-		GridViewState: GridViewState{
-			iter:         iter,
-			imageFetcher: fetch,
-			Placeholder:  placeholder,
-		},
-		itemWidth:    NewGridViewItem(nil).MinSize().Width,
-		itemForIndex: make(map[int]*GridViewItem),
+	g := newGridView()
+	g.GridViewState = GridViewState{
+		iter:         iter,
+		imageFetcher: fetch,
+		Placeholder:  placeholder,
 	}
 	g.ExtendBaseWidget(g)
 	g.createGridWrap()
@@ -142,7 +143,8 @@ func (g *GridView) SaveToState() *GridViewState {
 }
 
 func NewGridViewFromState(state *GridViewState) *GridView {
-	g := &GridView{GridViewState: *state}
+	g := newGridView()
+	g.GridViewState = *state
 	g.ExtendBaseWidget(g)
 	g.createGridWrap()
 	g.Refresh() // needed to initialize the widget
