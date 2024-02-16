@@ -164,6 +164,7 @@ func (g *GridView) Reset(iter GridViewIterator) {
 	g.stateMutex.Lock()
 	g.cancelFetch()
 	g.items = nil
+	g.itemForIndex = make(map[int]*GridViewItem)
 	g.done = false
 	g.highestShown = 0
 	g.iter = iter
@@ -176,6 +177,7 @@ func (g *GridView) ResetFromState(state *GridViewState) {
 	g.stateMutex.Lock()
 	g.cancelFetch()
 	g.GridViewState = *state
+	g.itemForIndex = make(map[int]*GridViewItem)
 	g.stateMutex.Unlock()
 	g.grid.Refresh()
 	g.grid.ScrollToOffset(state.scrollPos)
@@ -186,6 +188,7 @@ func (g *GridView) ResetFixed(items []GridViewItemModel) {
 	g.stateMutex.Lock()
 	g.cancelFetch()
 	g.items = items
+	g.itemForIndex = make(map[int]*GridViewItem)
 	g.done = true
 	g.highestShown = 0
 	g.iter = nil
