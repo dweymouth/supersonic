@@ -241,7 +241,11 @@ func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []
 			return len(g.genreListViewModel)
 		},
 		func() fyne.CanvasObject {
-			return newGenreListViewRow(g.onGenreSelected)
+			row := newGenreListViewRow(g.onGenreSelected)
+			row.OnFocusNeighbor = func(up bool) {
+				g.genreListView.FocusNeighbor(row.ItemID(), up)
+			}
+			return row
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
 			g.listModelMutex.RLock()
@@ -251,9 +255,10 @@ func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []
 			_, selected := g.selectedGenres[genre]
 			g.selectedGenresMutex.RUnlock()
 			row := obj.(*genreListViewRow)
-			row.ID = id
-			row.Text = genre
-			row.Checked = selected
+			g.genreListView.SetItemForID(id, row)
+			row.ListItemID = id
+			row.Content.(*widget.Check).Text = genre
+			row.Content.(*widget.Check).Checked = selected
 			row.Refresh()
 		},
 	)
@@ -361,16 +366,18 @@ func (g *GenreFilterSubsection) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type genreListViewRow struct {
-	widget.Check
-
-	ID widget.ListItemID
+	FocusListRowBase
 }
 
 func newGenreListViewRow(onChanged func(widget.ListItemID, bool)) *genreListViewRow {
 	g := &genreListViewRow{}
 	g.ExtendBaseWidget(g)
-	g.OnChanged = func(b bool) {
-		onChanged(g.ID, b)
+	g.Content = widget.NewCheck("", func(b bool) {
+		onChanged(g.ItemID(), b)
+	})
+	g.OnTapped = func() {
+		chk := g.Content.(*widget.Check)
+		chk.SetChecked(!chk.Checked)
 	}
 	return g
 }
