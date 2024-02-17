@@ -11,6 +11,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -72,6 +73,7 @@ type GridView struct {
 	GridViewState
 
 	grid               *disabledGridWrap
+	loadingDots        *LoadingDots
 	menu               *widget.PopUpMenu
 	menuGridViewItemId string
 	itemForIndex       map[int]*GridViewItem
@@ -100,10 +102,12 @@ type GridViewState struct {
 var _ fyne.Widget = (*GridView)(nil)
 
 func newGridView() *GridView {
-	return &GridView{
+	g := &GridView{
+		loadingDots:  NewLoadingDots(),
 		itemWidth:    NewGridViewItem(nil).MinSize().Width,
 		itemForIndex: make(map[int]*GridViewItem),
 	}
+	return g
 }
 
 func NewFixedGridView(items []GridViewItemModel, fetch util.ImageFetcher, placeholder fyne.Resource) *GridView {
@@ -128,6 +132,7 @@ func NewGridView(iter GridViewIterator, fetch util.ImageFetcher, placeholder fyn
 	}
 	g.ExtendBaseWidget(g)
 	g.createGridWrap()
+	g.loadingDots.Start()
 
 	// fetch initial items
 	g.checkFetchMoreItems(36)
@@ -170,6 +175,7 @@ func (g *GridView) Reset(iter GridViewIterator) {
 	g.iter = iter
 	g.stateMutex.Unlock()
 	g.checkFetchMoreItems(36)
+	g.loadingDots.Start()
 	g.Refresh()
 }
 
@@ -345,6 +351,7 @@ func (g *GridView) checkFetchMoreItems(count int) {
 					g.stateMutex.Lock()
 					g.items = append(g.items, items...)
 					g.stateMutex.Unlock()
+					g.loadingDots.Stop()
 					if len(items) < batchFetchSize {
 						g.done = true
 					}
@@ -409,7 +416,9 @@ func (g *GridView) onPlay(itemID string, shuffle bool) {
 }
 
 func (g *GridView) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(g.grid)
+	return widget.NewSimpleRenderer(container.NewStack(
+		g.grid, container.NewCenter(g.loadingDots),
+	))
 }
 
 // a disabled widget is not considered focusable by the focus manager

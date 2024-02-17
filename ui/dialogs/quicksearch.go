@@ -31,6 +31,7 @@ type QuickSearch struct {
 
 	resultsMutex  sync.RWMutex
 	searchResults []*mediaprovider.SearchResult
+	loadingDots   *widgets.LoadingDots
 	list          *widget.List
 	selectedIndex int
 
@@ -39,8 +40,9 @@ type QuickSearch struct {
 
 func NewQuickSearch(mp mediaprovider.MediaProvider, im util.ImageFetcher) *QuickSearch {
 	q := &QuickSearch{
-		mp:        mp,
-		imgSource: im,
+		mp:          mp,
+		imgSource:   im,
+		loadingDots: widgets.NewLoadingDots(),
 	}
 	q.ExtendBaseWidget(q)
 
@@ -76,10 +78,13 @@ func NewQuickSearch(mp mediaprovider.MediaProvider, im util.ImageFetcher) *Quick
 	dismissBtn := widget.NewButton("Close", q.onDismiss)
 	title := widget.NewRichText(&widget.TextSegment{Text: "Quick Search", Style: util.BoldRichTextStyle})
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
-	q.content = container.NewBorder(
-		container.NewVBox(title, se),
-		container.NewVBox(widget.NewSeparator(), container.NewHBox(layout.NewSpacer(), dismissBtn)),
-		nil, nil, q.list)
+	q.content = container.NewStack(
+		container.NewBorder(
+			container.NewVBox(title, se),
+			container.NewVBox(widget.NewSeparator(), container.NewHBox(layout.NewSpacer(), dismissBtn)),
+			nil, nil, q.list),
+		container.NewCenter(q.loadingDots),
+	)
 	return q
 }
 
@@ -123,6 +128,7 @@ func (q *QuickSearch) moveSelectionUp() {
 }
 
 func (q *QuickSearch) onSearched(query string) {
+	q.loadingDots.Start()
 	var results []*mediaprovider.SearchResult
 	if query != "" {
 		if res, err := q.mp.SearchAll(query, 20); err != nil {
@@ -131,6 +137,7 @@ func (q *QuickSearch) onSearched(query string) {
 			results = res
 		}
 	}
+	q.loadingDots.Stop()
 	q.resultsMutex.Lock()
 	q.searchResults = results
 	q.resultsMutex.Unlock()
