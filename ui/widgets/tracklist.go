@@ -168,8 +168,8 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 			t.tracksMutex.RUnlock()
 
 			tr := item.(*TrackRow)
+			t.list.SetItemForID(itemID, tr)
 			if tr.trackID != model.track.ID || tr.ListItemID != itemID {
-				t.list.SetItemForID(itemID, tr)
 				tr.ListItemID = itemID
 			}
 			i := -1 // signal that we want to display the actual track num.

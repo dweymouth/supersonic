@@ -289,18 +289,18 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	if itemIdx < len(g.items) {
 		item = g.items[itemIdx]
 	}
-	card.Cover.Im.CenterIcon = g.Placeholder
-	if !card.NeedsUpdate(item) && card.ItemIndex == itemIdx {
-		// nothing to do
-		g.stateMutex.Unlock()
-		return
-	}
 	// update itemForIndex map
 	if c, ok := g.itemForIndex[card.ItemIndex]; ok && c == card {
 		delete(g.itemForIndex, card.ItemIndex)
 	}
 	card.ItemIndex = itemIdx
 	g.itemForIndex[itemIdx] = card
+	card.Cover.Im.CenterIcon = g.Placeholder
+	if !card.NeedsUpdate(item) && card.ItemIndex == itemIdx {
+		// nothing to do
+		g.stateMutex.Unlock()
+		return
+	}
 	g.stateMutex.Unlock()
 	card.Update(item)
 	card.ImgLoader.Load(item.CoverArtID)

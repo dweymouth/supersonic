@@ -197,9 +197,9 @@ func NewGenreList(sorting widgets.ListHeaderSort) *GenreList {
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			row := item.(*GenreListRow)
+			a.list.SetItemForID(id, row)
 			if row.Item != a.genres[id] {
 				row.EnsureUnfocused()
-				a.list.SetItemForID(id, row)
 				row.ListItemID = id
 				row.Item = a.genres[id]
 				row.nameLabel.Text = row.Item.Name
