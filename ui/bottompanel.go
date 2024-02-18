@@ -2,7 +2,6 @@ package ui
 
 import (
 	"image"
-	"log"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -53,13 +52,8 @@ func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *
 	})
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
-	bp.NowPlaying.OnShowCoverImage = func() {
-		im, err := bp.ImageManager.GetFullSizeCoverArt(bp.coverArtID)
-		if err != nil {
-			log.Printf("error getting full size cover image: %s", err.Error())
-		} else {
-			contr.ShowPopUpImage(im)
-		}
+	bp.NowPlaying.OnCoverTapped = func() {
+		contr.NavigateTo(controller.FullscreenRoute())
 	}
 	bp.NowPlaying.OnSetFavorite = func(fav bool) {
 		contr.SetTrackFavorites([]string{pm.NowPlaying().ID}, fav)

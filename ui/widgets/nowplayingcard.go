@@ -30,7 +30,7 @@ type NowPlayingCard struct {
 	OnTrackNameTapped  func()
 	OnArtistNameTapped func(artistID string)
 	OnAlbumNameTapped  func()
-	OnShowCoverImage   func()
+	OnCoverTapped      func()
 	OnSetRating        func(rating int)
 	OnSetFavorite      func(favorite bool)
 	OnAddToPlaylist    func()
@@ -84,8 +84,8 @@ func (n *NowPlayingCard) onTrackNameTapped() {
 }
 
 func (n *NowPlayingCard) onShowCoverImage(*fyne.PointEvent) {
-	if n.OnShowCoverImage != nil {
-		n.OnShowCoverImage()
+	if n.OnCoverTapped != nil {
+		n.OnCoverTapped()
 	}
 }
 
