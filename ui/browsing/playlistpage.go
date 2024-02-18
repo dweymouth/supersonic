@@ -142,6 +142,12 @@ func (a *PlaylistPage) SelectAll() {
 	a.tracklist.SelectAll()
 }
 
+var _ Scrollable = (*PlaylistPage)(nil)
+
+func (a *PlaylistPage) Scroll(scrollAmt float32) {
+	a.tracklist.Scroll(scrollAmt)
+}
+
 // should be called asynchronously
 func (a *PlaylistPage) load() {
 	playlist, err := a.sm.Server.GetPlaylist(a.playlistID)

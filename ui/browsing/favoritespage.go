@@ -157,10 +157,15 @@ func (a *FavoritesPage) Scroll(amount float32) {
 	case 1: // artists
 		grid = a.artistGrid
 	default:
+		if tr := a.tracklistOrNil(); tr != nil {
+			tr.Scroll(amount)
+		}
 		return
 	}
-	grid.ScrollToOffset(grid.GetScrollOffset() + amount)
-	grid.Refresh()
+	if grid != nil {
+		grid.ScrollToOffset(grid.GetScrollOffset() + amount)
+		grid.Refresh()
+	}
 }
 
 func (a *FavoritesPage) Route() controller.Route {
@@ -168,8 +173,8 @@ func (a *FavoritesPage) Route() controller.Route {
 }
 
 func (a *FavoritesPage) Tapped(*fyne.PointEvent) {
-	if a.tracklistCtr != nil {
-		a.tracklistCtr.Objects[0].(*widgets.Tracklist).UnselectAll()
+	if tr := a.tracklistOrNil(); tr != nil {
+		tr.UnselectAll()
 	}
 }
 
@@ -192,9 +197,8 @@ func (a *FavoritesPage) Reload() {
 			if a.disposed {
 				return
 			}
-			if a.tracklistCtr != nil {
+			if tr := a.tracklistOrNil(); tr != nil {
 				// refresh favorite songs view
-				tr := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
 				tr.SetTracks(starred.Tracks)
 				if a.toggleBtns.ActivatedButtonIndex() == 2 {
 					// favorite songs view is visible
@@ -239,8 +243,7 @@ func (a *FavoritesPage) Save() SavedPage {
 		a.artistGrid.Clear()
 		a.pool.Release(util.WidgetTypeGridView, a.artistGrid)
 	}
-	if a.tracklistCtr != nil {
-		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+	if tl := a.tracklistOrNil(); tl != nil {
 		sf.trackSort = tl.Sorting()
 		tl.Clear()
 		a.pool.Release(util.WidgetTypeTracklist, tl)
@@ -268,8 +271,7 @@ var _ CanShowNowPlaying = (*FavoritesPage)(nil)
 
 func (a *FavoritesPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
 	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
-	if a.tracklistCtr != nil {
-		tracklist := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+	if tracklist := a.tracklistOrNil(); tracklist != nil {
 		tracklist.SetNowPlaying(a.nowPlayingID)
 		tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
 	}
@@ -279,8 +281,15 @@ var _ CanSelectAll = (*FavoritesPage)(nil)
 
 func (a *FavoritesPage) SelectAll() {
 	if a.toggleBtns.ActivatedButtonIndex() == 2 /*songs*/ && a.tracklistCtr != nil {
-		a.tracklistCtr.Objects[0].(*widgets.Tracklist).SelectAll()
+		a.tracklistOrNil().SelectAll() // can't be nil in this case
 	}
+}
+
+func (a *FavoritesPage) tracklistOrNil() *widgets.Tracklist {
+	if a.tracklistCtr != nil {
+		return a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+	}
+	return nil
 }
 
 func (a *FavoritesPage) doSearchAlbums(query string) {

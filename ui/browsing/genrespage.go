@@ -93,6 +93,13 @@ func (a *GenresPage) SearchWidget() fyne.Focusable {
 	return a.searcher
 }
 
+var _ Scrollable = (*GenresPage)(nil)
+
+func (a *GenresPage) Scroll(amount float32) {
+	a.list.list.ScrollToOffset(a.list.list.GetScrollOffset() + amount)
+	a.list.list.Refresh()
+}
+
 func (a *GenresPage) Route() controller.Route {
 	return controller.GenresRoute()
 }

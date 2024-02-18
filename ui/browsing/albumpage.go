@@ -145,6 +145,12 @@ func (a *AlbumPage) SelectAll() {
 	a.tracklist.SelectAll()
 }
 
+var _ Scrollable = (*AlbumPage)(nil)
+
+func (a *AlbumPage) Scroll(scrollAmt float32) {
+	a.tracklist.Scroll(scrollAmt)
+}
+
 // should be called asynchronously
 func (a *AlbumPage) load() {
 	album, err := a.mp.GetAlbum(a.albumID)

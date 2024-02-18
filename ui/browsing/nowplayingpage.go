@@ -201,6 +201,12 @@ func (a *NowPlayingPage) Reload() {
 	a.load("")
 }
 
+var _ Scrollable = (*NowPlayingPage)(nil)
+
+func (a *NowPlayingPage) Scroll(scrollAmt float32) {
+	a.tracklist.Scroll(scrollAmt)
+}
+
 func (a *NowPlayingPage) onPlayTrackAt(tracknum int) {
 	_ = a.pm.PlayTrackAt(tracknum)
 }

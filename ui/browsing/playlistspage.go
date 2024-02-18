@@ -88,6 +88,9 @@ func (p *PlaylistsPage) Scroll(scrollAmt float32) {
 	if p.viewToggle.ActivatedButtonIndex() == 1 && p.gridView != nil {
 		p.gridView.ScrollToOffset(p.gridView.GetScrollOffset() + scrollAmt)
 		p.gridView.Refresh()
+	} else if p.viewToggle.ActivatedButtonIndex() == 0 && p.listView != nil {
+		p.listView.list.ScrollToOffset(p.listView.list.GetScrollOffset() + scrollAmt)
+		p.listView.list.Refresh()
 	}
 }
 

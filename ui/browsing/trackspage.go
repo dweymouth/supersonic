@@ -105,6 +105,12 @@ func (t *TracksPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track
 	}
 }
 
+var _ Scrollable = (*TracksPage)(nil)
+
+func (g *TracksPage) Scroll(scrollAmt float32) {
+	g.tracklist.Scroll(scrollAmt)
+}
+
 var _ Searchable = (*TracksPage)(nil)
 
 func (t *TracksPage) SearchWidget() fyne.Focusable {
