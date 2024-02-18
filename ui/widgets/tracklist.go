@@ -321,7 +321,9 @@ func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
 func (t *Tracklist) _setTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	t.list.ClearItemForIDMap()
+	if t.list != nil {
+		t.list.ClearItemForIDMap()
+	}
 	t.tracksOrigOrder = toTrackModels(trs)
 	t.doSortTracks()
 }
