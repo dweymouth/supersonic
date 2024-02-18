@@ -164,6 +164,13 @@ func createArtistsGridViewModel(artists []*mediaprovider.Artist) []widgets.GridV
 	})
 }
 
+var _ Scrollable = (*ArtistsPage)(nil)
+
+func (a *ArtistsPage) Scroll(scrollAmt float32) {
+	a.grid.ScrollToOffset(a.grid.GetScrollOffset() + scrollAmt)
+	a.grid.Refresh()
+}
+
 func (a *ArtistsPage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }

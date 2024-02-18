@@ -30,8 +30,15 @@ type Searchable interface {
 	SearchWidget() fyne.Focusable
 }
 
+// Pages with selection should implement this interface to receive Ctrl+A events
 type CanSelectAll interface {
 	SelectAll()
+}
+
+// Pages that have one main scrollable view should implement this interface
+// to receive callbacks from window-level keyboard scrolling (up/down)
+type Scrollable interface {
+	Scroll(amount float32)
 }
 
 type CanShowNowPlaying interface {
@@ -166,6 +173,18 @@ func (b *BrowsingPane) GetSearchBarIfAny() fyne.Focusable {
 func (b *BrowsingPane) SelectAll() {
 	if s, ok := b.curPage.(CanSelectAll); ok {
 		s.SelectAll()
+	}
+}
+
+func (b *BrowsingPane) ScrollUp() {
+	if s, ok := b.curPage.(Scrollable); ok {
+		s.Scroll(-75)
+	}
+}
+
+func (b *BrowsingPane) ScrollDown() {
+	if s, ok := b.curPage.(Scrollable); ok {
+		s.Scroll(75)
 	}
 }
 

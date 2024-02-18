@@ -148,6 +148,15 @@ func (a *ArtistPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track
 	}
 }
 
+var _ Scrollable = (*ArtistPage)(nil)
+
+func (g *ArtistPage) Scroll(scrollAmt float32) {
+	if g.activeView == 0 && g.albumGrid != nil {
+		g.albumGrid.ScrollToOffset(g.albumGrid.GetScrollOffset() + scrollAmt)
+		g.albumGrid.Refresh()
+	}
+}
+
 func (a *ArtistPage) playArtistRadio() {
 	go a.pm.PlaySimilarSongs(a.artistID)
 }

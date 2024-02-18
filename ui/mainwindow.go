@@ -323,6 +323,10 @@ func (m *MainWindow) addShortcuts() {
 
 	m.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {
 		switch e.Name {
+		case fyne.KeyUp:
+			m.BrowsingPane.ScrollUp()
+		case fyne.KeyDown:
+			m.BrowsingPane.ScrollDown()
 		case fyne.KeyEscape:
 			m.Controller.CloseEscapablePopUp()
 		case fyne.KeySpace:

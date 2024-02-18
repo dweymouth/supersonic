@@ -82,6 +82,15 @@ func newPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *
 	return a
 }
 
+var _ Scrollable = (*PlaylistsPage)(nil)
+
+func (p *PlaylistsPage) Scroll(scrollAmt float32) {
+	if p.viewToggle.ActivatedButtonIndex() == 1 && p.gridView != nil {
+		p.gridView.ScrollToOffset(p.gridView.GetScrollOffset() + scrollAmt)
+		p.gridView.Refresh()
+	}
+}
+
 func (a *PlaylistsPage) load(searchOnLoad bool) {
 	playlists, err := a.mp.GetPlaylists()
 	if err != nil {

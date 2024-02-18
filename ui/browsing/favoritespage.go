@@ -37,7 +37,7 @@ type FavoritesPage struct {
 	nowPlayingID      string
 	pendingViewSwitch bool
 
-	grid            *widgets.GridView
+	albumGrid       *widgets.GridView
 	gridState       *widgets.GridViewState
 	searchGridState *widgets.GridViewState
 	artistGrid      *widgets.GridView
@@ -63,13 +63,13 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, pool *util.WidgetPool, c
 	a.createHeader(0)
 	iter := widgets.NewGridViewAlbumIterator(mp.IterateAlbums("", a.filter))
 	if g := pool.Obtain(util.WidgetTypeGridView); g != nil {
-		a.grid = g.(*widgets.GridView)
-		a.grid.Placeholder = myTheme.AlbumIcon
-		a.grid.Reset(iter)
+		a.albumGrid = g.(*widgets.GridView)
+		a.albumGrid.Placeholder = myTheme.AlbumIcon
+		a.albumGrid.Reset(iter)
 	} else {
-		a.grid = widgets.NewGridView(iter, a.im, myTheme.AlbumIcon)
+		a.albumGrid = widgets.NewGridView(iter, a.im, myTheme.AlbumIcon)
 	}
-	a.contr.ConnectAlbumGridActions(a.grid)
+	a.contr.ConnectAlbumGridActions(a.albumGrid)
 	if cfg.InitialView == "Artists" {
 		a.toggleBtns.SetActivatedButton(1)
 		a.onShowFavoriteArtists()
@@ -77,7 +77,7 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, pool *util.WidgetPool, c
 		a.toggleBtns.SetActivatedButton(2)
 		a.onShowFavoriteSongs()
 	} else { // Albums view
-		a.createContainer(a.grid)
+		a.createContainer(a.albumGrid)
 	}
 	return a
 }
@@ -128,11 +128,11 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 		state = saved.searchGridState
 	}
 	if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
-		a.grid = g.(*widgets.GridView)
-		a.grid.Placeholder = myTheme.AlbumIcon
-		a.grid.ResetFromState(state)
+		a.albumGrid = g.(*widgets.GridView)
+		a.albumGrid.Placeholder = myTheme.AlbumIcon
+		a.albumGrid.ResetFromState(state)
 	} else {
-		a.grid = widgets.NewGridViewFromState(state)
+		a.albumGrid = widgets.NewGridViewFromState(state)
 	}
 	a.toggleBtns.SetActivatedButton(saved.activeToggleBtn)
 
@@ -141,10 +141,26 @@ func restoreFavoritesPage(saved *savedFavoritesPage) *FavoritesPage {
 	} else if saved.activeToggleBtn == 2 {
 		a.onShowFavoriteSongs()
 	} else {
-		a.createContainer(a.grid)
+		a.createContainer(a.albumGrid)
 	}
 
 	return a
+}
+
+var _ Scrollable = (*FavoritesPage)(nil)
+
+func (a *FavoritesPage) Scroll(amount float32) {
+	var grid *widgets.GridView
+	switch a.toggleBtns.ActivatedButtonIndex() {
+	case 0: // albums
+		grid = a.albumGrid
+	case 1: // artists
+		grid = a.artistGrid
+	default:
+		return
+	}
+	grid.ScrollToOffset(grid.GetScrollOffset() + amount)
+	grid.Refresh()
 }
 
 func (a *FavoritesPage) Route() controller.Route {
@@ -163,7 +179,7 @@ func (a *FavoritesPage) Reload() {
 		a.doSearchAlbums(a.searchText)
 	} else {
 		iter := a.mp.IterateAlbums("", a.filter)
-		a.grid.Reset(widgets.NewGridViewAlbumIterator(iter))
+		a.albumGrid.Reset(widgets.NewGridViewAlbumIterator(iter))
 	}
 	if a.tracklistCtr != nil || a.artistGrid != nil {
 		go func() {
@@ -213,12 +229,12 @@ func (a *FavoritesPage) Save() SavedPage {
 		activeToggleBtn: a.toggleBtns.ActivatedButtonIndex(),
 	}
 	if a.searchText != "" {
-		sf.searchGridState = a.grid.SaveToState()
+		sf.searchGridState = a.albumGrid.SaveToState()
 	} else {
-		sf.gridState = a.grid.SaveToState()
+		sf.gridState = a.albumGrid.SaveToState()
 	}
-	a.grid.Clear()
-	a.pool.Release(util.WidgetTypeGridView, a.grid)
+	a.albumGrid.Clear()
+	a.pool.Release(util.WidgetTypeGridView, a.albumGrid)
 	if a.artistGrid != nil {
 		a.artistGrid.Clear()
 		a.pool.Release(util.WidgetTypeGridView, a.artistGrid)
@@ -240,7 +256,7 @@ func (a *FavoritesPage) SearchWidget() fyne.Focusable {
 
 func (a *FavoritesPage) OnSearched(query string) {
 	if query == "" {
-		a.grid.ResetFromState(a.gridState)
+		a.albumGrid.ResetFromState(a.gridState)
 		a.searchGridState = nil
 	} else {
 		a.doSearchAlbums(query)
@@ -269,17 +285,17 @@ func (a *FavoritesPage) SelectAll() {
 
 func (a *FavoritesPage) doSearchAlbums(query string) {
 	if a.searchText == "" {
-		a.gridState = a.grid.SaveToState()
+		a.gridState = a.albumGrid.SaveToState()
 	}
 	iter := widgets.NewGridViewAlbumIterator(a.mp.SearchAlbums(query, a.filter))
-	a.grid.Reset(iter)
+	a.albumGrid.Reset(iter)
 }
 
 func (a *FavoritesPage) onShowFavoriteAlbums() {
 	a.cfg.InitialView = "Albums" // save setting
 	a.searcher.Entry.Show()
 	a.filterBtn.Show()
-	a.container.Objects[0] = a.grid
+	a.container.Objects[0] = a.albumGrid
 	a.Refresh()
 }
 
