@@ -215,6 +215,12 @@ func (g *GridView) Resize(size fyne.Size) {
 	g.BaseWidget.Resize(size)
 }
 
+var _ fyne.Tappable = (*GridView)(nil)
+
+func (g *GridView) Tapped(*fyne.PointEvent) {
+	fyne.CurrentApp().Driver().CanvasForObject(g).Unfocus()
+}
+
 func (g *GridView) numCols() int {
 	if g.numColsCached == -1 {
 		// logic here taken from gridwrap.go in Fyne codebase

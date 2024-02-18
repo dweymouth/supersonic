@@ -274,6 +274,12 @@ func (g *GridViewItem) TypedRune(rune) {
 	// intentionally blank
 }
 
+var _ fyne.Tappable = (*GridViewItem)(nil)
+
+func (g *GridViewItem) Tapped(*fyne.PointEvent) {
+	fyne.CurrentApp().Driver().CanvasForObject(g).Unfocus()
+}
+
 func (g *GridViewItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.container)
 }
