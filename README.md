@@ -52,10 +52,11 @@ Supersonic supports any music server with a Subsonic (or OpenSubsonic) API, or J
 * [x] Download songs, albums or playlists
 * [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs; repeat one/all)
 * [ ] Server jukebox control (planned)
+* [ ] Internet radio station support (Subsonic) (planned)
+* [ ] Lyrics support (planned)
 * [ ] Browse by folders (planned)
 * [ ] Cast to uPnP/DLNA devices (likely planned)
 * [ ] Offline mode (eventually planned)
-* [ ] Lyrics support (eventually planned)
 * [ ] iOS/Android support (maybe eventually planned)
 
 ## Installation
