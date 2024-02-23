@@ -43,7 +43,7 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	case controller.Favorites:
 		return NewFavoritesPage(&r.App.Config.FavoritesPage, r.widgetPool, r.Controller, r.App.ServerManager.Server, r.App.PlaybackManager, r.App.ImageManager)
 	case controller.Fullscreen:
-		return NewFullscreenPage(r.Controller, r.widgetPool, r.App.PlaybackManager, canRate)
+		return NewFullscreenPage(r.Controller, r.widgetPool, r.App.ImageManager, r.App.PlaybackManager, canRate)
 	case controller.Genre:
 		return NewGenrePage(rte.Arg, r.widgetPool, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager)
 	case controller.Genres:

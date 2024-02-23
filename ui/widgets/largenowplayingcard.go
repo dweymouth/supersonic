@@ -50,11 +50,6 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	return n
 }
 
-func (n *LargeNowPlayingCard) MinSize() fyne.Size {
-	// prop up height for when cover image is hidden
-	return fyne.NewSize(n.BaseWidget.MinSize().Width, 85)
-}
-
 func (n *LargeNowPlayingCard) onAlbumNameTapped() {
 	if n.OnAlbumNameTapped != nil {
 		n.OnAlbumNameTapped()
@@ -97,7 +92,8 @@ func (n *LargeNowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 		n.albumName,
 		n.artistName,
 	)
-	c := container.NewBorder(nil, vbox, nil, nil, n.cover)
+	c := container.NewCenter(
+		container.NewBorder(nil, vbox, nil, nil, n.cover))
 	return widget.NewSimpleRenderer(c)
 }
 

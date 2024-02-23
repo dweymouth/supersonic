@@ -10,6 +10,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -28,12 +29,14 @@ type fullscreenPageState struct {
 	contr   *controller.Controller
 	pool    *util.WidgetPool
 	pm      *backend.PlaybackManager
+	im      *backend.ImageManager
 	canRate bool
 }
 
 func NewFullscreenPage(
 	contr *controller.Controller,
 	pool *util.WidgetPool,
+	im *backend.ImageManager,
 	pm *backend.PlaybackManager,
 	canRate bool,
 ) *FullscreenPage {
@@ -49,7 +52,10 @@ func NewFullscreenPage(
 }
 
 func (a *FullscreenPage) CreateRenderer() fyne.WidgetRenderer {
-	container := container.NewPadded()
+	container := container.NewGridWithColumns(2,
+		a.card,
+		layout.NewSpacer(),
+	)
 	return widget.NewSimpleRenderer(container)
 }
 
@@ -74,5 +80,5 @@ func (a *FullscreenPage) Reload() {
 }
 
 func (s *fullscreenPageState) Restore() Page {
-	return NewFullscreenPage(s.contr, s.pool, s.pm, s.canRate)
+	return NewFullscreenPage(s.contr, s.pool, s.im, s.pm, s.canRate)
 }
