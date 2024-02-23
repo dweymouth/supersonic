@@ -194,7 +194,6 @@ func (t *Tracklist) Reset() {
 
 func (t *Tracklist) Scroll(amount float32) {
 	t.list.ScrollToOffset(t.list.GetScrollOffset() + amount)
-	t.list.Refresh()
 }
 
 func (t *Tracklist) buildHeader() {

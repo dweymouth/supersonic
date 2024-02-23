@@ -164,7 +164,6 @@ func (a *FavoritesPage) Scroll(amount float32) {
 	}
 	if grid != nil {
 		grid.ScrollToOffset(grid.GetScrollOffset() + amount)
-		grid.Refresh()
 	}
 }
 

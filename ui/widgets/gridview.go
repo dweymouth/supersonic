@@ -187,7 +187,6 @@ func (g *GridView) ResetFromState(state *GridViewState) {
 	g.stateMutex.Unlock()
 	g.grid.Refresh()
 	g.grid.ScrollToOffset(state.scrollPos)
-	g.grid.Refresh()
 }
 
 func (g *GridView) ResetFixed(items []GridViewItemModel) {

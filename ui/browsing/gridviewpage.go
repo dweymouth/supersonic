@@ -195,7 +195,6 @@ var _ Scrollable = (*GridViewPage)(nil)
 
 func (g *GridViewPage) Scroll(scrollAmt float32) {
 	g.grid.ScrollToOffset(g.grid.GetScrollOffset() + scrollAmt)
-	g.grid.Refresh()
 }
 
 func (g *GridViewPage) OnSearched(query string) {
