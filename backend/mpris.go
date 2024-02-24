@@ -73,6 +73,11 @@ func NewMPRISHandler(playerName string, pm *PlaybackManager) *MPRISHandler {
 			m.evt.Player.OnVolume()
 		}
 	})
+	pm.OnLoopModeChange(func(loopMode LoopMode) {
+		if m.connErr == nil {
+			m.evt.Player.OnOptions()
+		}
+	})
 	emitPlayStatus := func() {
 		if m.connErr == nil {
 			m.evt.Player.OnPlayPause()
