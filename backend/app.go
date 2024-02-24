@@ -265,7 +265,10 @@ func (a *App) setupMPV() error {
 
 func (a *App) setupMPRIS(mprisAppName string) {
 	a.MPRISHandler = NewMPRISHandler(mprisAppName, a.PlaybackManager)
-	a.MPRISHandler.ArtURLLookup = a.ImageManager.GetCoverArtUrl
+	a.MPRISHandler.ArtURLLookup = func(id string) (string, error) {
+		a.ImageManager.GetCoverThumbnail(id) // ensure image is cached locally
+		return a.ImageManager.GetCoverArtUrl(id)
+	}
 	a.MPRISHandler.OnRaise = func() error { a.callOnReactivate(); return nil }
 	a.MPRISHandler.OnQuit = func() error {
 		if a.OnExit == nil {
