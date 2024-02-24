@@ -59,13 +59,13 @@ func NewMPRISHandler(playerName string, pm *PlaybackManager) *MPRISHandler {
 		}
 	})
 	pm.OnSongChange(func(tr, _ *mediaprovider.Track) {
-		if m.connErr == nil {
-			m.evt.Player.OnTitle()
-		}
 		if tr == nil {
 			m.curTrackPath = ""
 		} else {
 			m.curTrackPath = dbusTrackIDPrefix + encodeTrackId(tr.ID)
+		}
+		if m.connErr == nil {
+			m.evt.Player.OnTitle()
 		}
 	})
 	pm.OnVolumeChange(func(vol int) {
