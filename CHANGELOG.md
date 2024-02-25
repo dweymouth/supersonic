@@ -1,5 +1,19 @@
 # Change Log
 
+## [0.9.1] - 2024-02-25
+
+### Added
+- [#327](https://github.com/dweymouth/supersonic/issues/327) Show visual loading cue when searching and no results yet
+- [#22](https://github.com/dweymouth/supersonic/issues/22) Arrow key scrolling and focus keyboard traversal to grid and list views
+- Ctrl+Q keyboard shortcut to quit app on Windows and Linux
+
+### Fixed
+- A few MPRIS bugs (thanks @adamantike!)
+- [#319](https://github.com/dweymouth/supersonic/issues/319) Show modal dialog when connecting to server to block UI interaction which could cause crash
+- [#321](https://github.com/dweymouth/supersonic/issues/321) High CPU use when certain dialogs were shown
+- [#326](https://github.com/dweymouth/supersonic/issues/326) Make tracklist widget more efficient
+- Lower CPU use when text entry fields are focused
+
 ## [0.9.0] - 2024-01-27
 
 ### Added

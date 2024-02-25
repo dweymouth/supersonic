@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.9.0"
+	AppVersion       = "0.9.1"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,17 +15,17 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* Allow reordering of tracks in the play queue
-* Highlight the icon of the current page's navigation button (thanks @natilou!)
-* Show release type in album page header (for OpenSubsonic servers)
-* Setting to save and reload play queue on exit/startup
-* Use most recent playlist as default in "Add to playlist" dialog
-* Option to show desktop notifications on track change
-* Added icons to context menu items
+* Show visual loading cue when searching and no results yet
+* Arrow key scrolling and focus keyboard traversal to grid and list views
+* Ctrl+Q keyboard shortcut to quit app on Windows and Linux
 `
 
 	WhatsFixed = `
 ## Fixed
-* OpenGL startup error on some hardware
+* A few MPRIS bugs (thanks @adamantike!)
+* Show modal dialog when connecting to server to block UI interaction which could cause crash
+* High CPU use when certain dialogs were shown
+* Make tracklist widget more efficient
+* Lower CPU use when text entry fields are focused
 `
 )

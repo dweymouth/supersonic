@@ -61,30 +61,30 @@
   </screenshots>
 
  <releases>
-  <release date="2024-01-27" version="0.9.0">
+  <release date="2024-02-25" version="0.9.1">
    <description>
      <p>
-       Version 0.9.0 of Supersonic
+       Version 0.9.1 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Allow reordering of tracks in the play queue</li>
-       <li>Highlight the icon of the current page's navigation button</li>
-       <li>Show release type in album page header (for OpenSubsonic servers)</li>
-       <li>Setting to save and reload play queue on exit/startup</li>
-       <li>Use most recent playlist as default in "Add to playlist" dialog</li>
-       <li>Option to show desktop notifications on track change</li>
-       <li>Added icons to context menu items</li>
+       <li>Show visual loading cue when searching and no results yet</li>
+       <li>Arrow key scrolling and focus keyboard traversal to grid and list views</li>
+       <li>Ctrl+Q keyboard shortcut to quit app on Windows and Linux</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>OpenGL startup error on some hardware</li>
+       <li>A few MPRIS bugs</li>
+       <li>Show modal dialog when connecting to server to block UI interaction which could cause crash</li>
+       <li>High CPU use when certain dialogs were shown</li>
+       <li>Make tracklist widget more efficient</li>
+       <li>Lower CPU use when text entry fields are focused</li>
      </ul>
 
    </description>
