@@ -94,7 +94,9 @@ func newAlbumPage(
 	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 	a.tracklist.SetSorting(sort)
 	_, canRate := a.mp.(mediaprovider.SupportsRating)
+	_, canShare := a.mp.(mediaprovider.SupportsRating)
 	a.tracklist.Options.DisableRating = !canRate
+	a.tracklist.Options.HideSharing = !canShare
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		a.cfg.TracklistColumns = cols
 	}
@@ -246,7 +248,17 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 				a.page.contr.ShowAlbumInfoDialog(a.albumID, a.titleLabel.String(), a.cover.Image())
 			})
 			info.Icon = theme.InfoIcon()
-			menu := fyne.NewMenu("", queue, playlist, download, info)
+			menuItems := []*fyne.MenuItem{queue, playlist, download, info}
+
+			_, canShare := page.mp.(mediaprovider.SupportsSharing)
+			if canShare {
+				share := fyne.NewMenuItem("Share...", func() {
+					a.page.contr.CreateShareURL(a.albumID)
+				})
+				share.Icon = myTheme.ShareIcon
+				menuItems = append(menuItems, share)
+			}
+			menu := fyne.NewMenu("", menuItems...)
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
 		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)

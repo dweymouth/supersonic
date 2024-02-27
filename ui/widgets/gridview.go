@@ -93,6 +93,7 @@ type GridViewState struct {
 	OnAddToQueue        func(id string)
 	OnAddToPlaylist     func(id string)
 	OnDownload          func(id string)
+	OnShare             func(id string)
 	OnShowItemPage      func(id string)
 	OnShowSecondaryPage func(id string)
 
@@ -407,8 +408,17 @@ func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
 			}
 		})
 		download.Icon = theme.DownloadIcon()
+		menuItems := []*fyne.MenuItem{play, shuffle, queue, playlist, download}
 
-		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", play, shuffle, queue, playlist, download),
+		if g.OnShare != nil {
+			share := fyne.NewMenuItem("Share...", func() {
+				g.OnShare(g.menuGridViewItemId)
+			})
+			share.Icon = myTheme.ShareIcon
+			menuItems = append(menuItems, share)
+		}
+
+		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", menuItems...),
 			fyne.CurrentApp().Driver().CanvasForObject(g))
 	}
 	g.menu.ShowAtPosition(pos)

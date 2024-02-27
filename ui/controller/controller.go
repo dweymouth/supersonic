@@ -22,8 +22,10 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -138,6 +140,13 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 		m.ClosePopUpOnEscape(pop)
 	}
 	tracklist.OnDownload = m.ShowDownloadDialog
+
+	_, canShare := m.App.ServerManager.Server.(mediaprovider.SupportsSharing)
+	if canShare {
+		tracklist.OnShare = func(trackID string) {
+			go m.CreateShareURL(trackID)
+		}
+	}
 }
 
 func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
@@ -172,6 +181,13 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 			}
 			m.ShowDownloadDialog(album.Tracks, album.Name)
 		}()
+	}
+
+	_, canShare := m.App.ServerManager.Server.(mediaprovider.SupportsSharing)
+	if canShare {
+		grid.OnShare = func(albumID string) {
+			go m.CreateShareURL(albumID)
+		}
 	}
 }
 
@@ -660,6 +676,44 @@ func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
 	for _, id := range trackIDs {
 		c.App.PlaybackManager.OnTrackRatingChanged(id, rating)
 	}
+}
+
+func (c *Controller) CreateShareURL(id string) {
+	go func() {
+		r, ok := c.App.ServerManager.Server.(mediaprovider.SupportsSharing)
+		if !ok {
+			return
+		}
+
+		shareUrl, err := r.CreateShareURL(id)
+		if err != nil {
+			log.Printf("error creating share URL: %v", err)
+			return
+		}
+
+		hyperlink := widget.NewHyperlink(shareUrl.String(), shareUrl)
+		dlg := dialog.NewCustom("Share content", "OK",
+			container.NewHBox(
+				hyperlink,
+				widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+					c.MainWindow.Clipboard().SetContent(hyperlink.Text)
+				}),
+				widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+					shareUrl, err := r.CreateShareURL(id)
+					if err != nil {
+						log.Printf("error creating share URL: %v", err)
+						return
+					}
+
+					hyperlink.Text = shareUrl.String()
+					hyperlink.URL = shareUrl
+					hyperlink.Refresh()
+				}),
+			),
+			c.MainWindow,
+		)
+		dlg.Show()
+	}()
 }
 
 func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track, downloadName string) {
