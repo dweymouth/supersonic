@@ -59,14 +59,14 @@ func (c *captionedImageRenderer) Layout(s fyne.Size) {
 	// aspect ratio of Content if it were maxed out
 	maxedAspect := s.Width / contentMaxedHeight
 	if maxedAspect > aspect {
-		// Content will use full height, but not full width
-		contentW := contentMaxedHeight * aspect
-		content.Resize(fyne.NewSize(contentW, contentMaxedHeight))
-		contentX := (s.Width - contentW) / 2
-		content.Move(fyne.NewPos(contentX, 0))
+		// Will use full height, but not full width
+		width := contentMaxedHeight * aspect
+		content.Resize(fyne.NewSize(width, contentMaxedHeight))
+		xStart := (s.Width - width) / 2
+		content.Move(fyne.NewPos(xStart, 0))
 		if caption != nil {
-			caption.Resize(fyne.NewSize(s.Width, captionHeight))
-			caption.Move(fyne.NewPos(0, contentMaxedHeight))
+			caption.Resize(fyne.NewSize(width, captionHeight))
+			caption.Move(fyne.NewPos(xStart, contentMaxedHeight))
 		}
 		return
 	}

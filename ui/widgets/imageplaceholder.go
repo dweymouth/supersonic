@@ -51,6 +51,13 @@ func NewImagePlaceholder(centerIcon fyne.Resource, minSize float32) *ImagePlaceh
 	return i
 }
 
+func (i *ImagePlaceholder) Aspect() float32 {
+	if i.image != nil {
+		return i.imageDisp.Aspect()
+	}
+	return 1.0
+}
+
 func (i *ImagePlaceholder) HaveImage() bool {
 	return i.image != nil
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
+	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
@@ -53,7 +54,10 @@ func NewFullscreenPage(
 
 func (a *FullscreenPage) CreateRenderer() fyne.WidgetRenderer {
 	container := container.NewGridWithColumns(2,
-		a.card,
+		container.New(&layouts.PercentPadLayout{
+			LeftRightObjectPercent: .8,
+			TopBottomObjectPercent: .8,
+		}, a.card),
 		layout.NewSpacer(),
 	)
 	return widget.NewSimpleRenderer(container)

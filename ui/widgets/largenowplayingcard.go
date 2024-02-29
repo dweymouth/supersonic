@@ -6,13 +6,14 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/theme"
 )
 
 // Shows the current album art, track name, artist name, and album name
 // for the currently playing track. Placed into the left side of the BottomPanel.
 type LargeNowPlayingCard struct {
-	widget.BaseWidget
+	CaptionedImage
 
 	DisableRating bool
 
@@ -35,9 +36,17 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 		trackName:  widget.NewHyperlink("", nil),
 		artistName: NewMultiHyperlink(),
 		albumName:  widget.NewHyperlink("", nil),
+		cover:      NewImagePlaceholder(theme.TracksIcon, 300),
 	}
 	n.ExtendBaseWidget(n)
-	n.cover = NewImagePlaceholder(theme.TracksIcon, 300)
+	// set up the layout
+	n.Content = n.cover
+	n.Caption = container.New(&layouts.VboxCustomPadding{ExtraPad: -13},
+		n.trackName,
+		n.albumName,
+		n.artistName,
+	)
+
 	n.trackName.Hidden = true
 	n.albumName.Hidden = true
 	n.albumName.Truncation = fyne.TextTruncateEllipsis
@@ -84,17 +93,6 @@ func (n *LargeNowPlayingCard) onSetRating(rating int) {
 	if n.OnSetRating != nil {
 		n.OnSetRating(rating)
 	}
-}
-
-func (n *LargeNowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
-	vbox := container.NewVBox(
-		n.trackName,
-		n.albumName,
-		n.artistName,
-	)
-	c := container.NewCenter(
-		container.NewBorder(nil, vbox, nil, nil, n.cover))
-	return widget.NewSimpleRenderer(c)
 }
 
 func (n *LargeNowPlayingCard) Update(track string, artists, artistIDs []string, album string) {
