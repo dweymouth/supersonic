@@ -1,6 +1,10 @@
 package browsing
 
 import (
+	"context"
+	"image"
+	"log"
+
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -20,10 +24,11 @@ type FullscreenPage struct {
 
 	fullscreenPageState
 
-	queue []*mediaprovider.Track
-
-	card         *widgets.LargeNowPlayingCard
-	nowPlayingID string
+	queue           []*mediaprovider.Track
+	imageLoadCancel context.CancelFunc
+	card            *widgets.LargeNowPlayingCard
+	nowPlayingID    string
+	albumID         string
 }
 
 type fullscreenPageState struct {
@@ -42,28 +47,39 @@ func NewFullscreenPage(
 	canRate bool,
 ) *FullscreenPage {
 	a := &FullscreenPage{fullscreenPageState: fullscreenPageState{
-		contr: contr, pool: pool, pm: pm, canRate: canRate,
+		contr: contr, pool: pool, im: im, pm: pm, canRate: canRate,
 	}}
 	a.ExtendBaseWidget(a)
 
 	a.card = widgets.NewLargeNowPlayingCard()
+	a.card.OnAlbumNameTapped = func() { contr.NavigateTo(controller.AlbumRoute(a.albumID)) }
+	a.card.OnArtistNameTapped = func(artistID string) { contr.NavigateTo(controller.ArtistRoute(artistID)) }
 
 	a.Reload()
 	return a
 }
 
 func (a *FullscreenPage) CreateRenderer() fyne.WidgetRenderer {
+	paddedLayout := &layouts.PercentPadLayout{
+		LeftRightObjectPercent: .8,
+		TopBottomObjectPercent: .8,
+	}
 	container := container.NewGridWithColumns(2,
-		container.New(&layouts.PercentPadLayout{
-			LeftRightObjectPercent: .8,
-			TopBottomObjectPercent: .8,
-		}, a.card),
-		layout.NewSpacer(),
+		container.New(paddedLayout, a.card),
+		container.New(paddedLayout,
+			util.AddHeaderBackground(
+				container.NewAppTabs(
+					container.NewTabItem("Up Next", layout.NewSpacer()),
+					container.NewTabItem("Lyrics", layout.NewSpacer()),
+				))),
 	)
 	return widget.NewSimpleRenderer(container)
 }
 
 func (a *FullscreenPage) Save() SavedPage {
+	if a.imageLoadCancel != nil {
+		a.imageLoadCancel()
+	}
 	nps := a.fullscreenPageState
 	return &nps
 }
@@ -75,8 +91,19 @@ func (a *FullscreenPage) Route() controller.Route {
 var _ CanShowNowPlaying = (*FullscreenPage)(nil)
 
 func (a *FullscreenPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
+	if a.imageLoadCancel != nil {
+		a.imageLoadCancel()
+	}
+	a.albumID = song.AlbumID
 	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
 	a.card.Update(song.Name, song.ArtistNames, song.ArtistIDs, song.Album)
+	a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, func(img image.Image, err error) {
+		if err != nil {
+			log.Printf("error loading cover art: %v\n", err)
+		} else {
+			a.card.SetCoverImage(img)
+		}
+	})
 }
 
 func (a *FullscreenPage) Reload() {
