@@ -96,7 +96,7 @@ func (a *FullscreenPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 	}
 	a.albumID = song.AlbumID
 	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
-	a.card.Update(song.Name, song.ArtistNames, song.ArtistIDs, song.Album)
+	a.card.Update(song)
 	a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, func(img image.Image, err error) {
 		if err != nil {
 			log.Printf("error loading cover art: %v\n", err)

@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 )
@@ -23,7 +24,7 @@ type LargeNowPlayingCard struct {
 	artistName *MultiHyperlink
 	albumName  *widget.Hyperlink
 	rating     *StarRating
-	favorite   *widget.Icon
+	favorite   *FavoriteIcon
 	cover      *ImagePlaceholder
 
 	OnArtistNameTapped func(artistID string)
@@ -40,11 +41,13 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 		artistName: NewMultiHyperlink(),
 		albumName:  widget.NewHyperlink("", nil),
 		rating:     NewStarRating(),
-		favorite:   widget.NewIcon(myTheme.NotFavoriteIcon),
+		favorite:   NewFavoriteIcon(),
 		cover:      NewImagePlaceholder(myTheme.TracksIcon, 300),
 	}
 	n.ExtendBaseWidget(n)
 	n.rating.StarSize = theme.IconInlineSize() + theme.InnerPadding()/2
+	n.rating.OnRatingChanged = n.onSetRating
+	n.favorite.OnTapped = n.onToggleFavorite
 	// set up the layout
 	n.Content = n.cover
 	n.Caption = container.New(&layouts.VboxCustomPadding{ExtraPad: -13},
@@ -90,9 +93,11 @@ func (n *LargeNowPlayingCard) onShowCoverImage(*fyne.PointEvent) {
 	}
 }
 
-func (n *LargeNowPlayingCard) onSetFavorite(fav bool) {
+func (n *LargeNowPlayingCard) onToggleFavorite() {
+	n.favorite.Favorite = !n.favorite.Favorite
+	n.favorite.Refresh()
 	if n.OnSetFavorite != nil {
-		n.OnSetFavorite(fav)
+		n.OnSetFavorite(n.favorite.Favorite)
 	}
 }
 
@@ -102,12 +107,15 @@ func (n *LargeNowPlayingCard) onSetRating(rating int) {
 	}
 }
 
-func (n *LargeNowPlayingCard) Update(track string, artists, artistIDs []string, album string) {
-	n.trackName.Segments[0].(*widget.TextSegment).Text = track
-	n.trackName.Hidden = track == ""
-	n.artistName.BuildSegments(artists, artistIDs)
-	n.albumName.SetText(album)
-	n.albumName.Hidden = album == ""
+func (n *LargeNowPlayingCard) Update(track *mediaprovider.Track) {
+	n.trackName.Segments[0].(*widget.TextSegment).Text = track.Name
+	n.trackName.Hidden = track.Name == ""
+	n.artistName.BuildSegments(track.ArtistNames, track.ArtistIDs)
+	n.albumName.Text = track.Album
+	n.albumName.Hidden = track.Album == ""
+	n.rating.Rating = track.Rating
+	n.favorite.Favorite = track.Favorite
+
 	n.Refresh()
 }
 

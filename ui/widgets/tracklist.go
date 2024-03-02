@@ -761,7 +761,7 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
 	t.dur = newTrailingAlignLabel()
 	t.year = newTrailingAlignLabel()
-	favorite := NewTappableIcon(myTheme.NotFavoriteIcon)
+	favorite := NewFavoriteIcon()
 	favorite.OnTapped = t.toggleFavorited
 	t.favorite = container.NewCenter(favorite)
 	t.rating = NewStarRating()
@@ -868,13 +868,8 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 
 	// Update favorite column
 	if tr.Favorite != t.isFavorite {
-		if tr.Favorite {
-			t.isFavorite = true
-			t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.FavoriteIcon
-		} else {
-			t.isFavorite = false
-			t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.NotFavoriteIcon
-		}
+		t.isFavorite = tr.Favorite
+		t.favorite.Objects[0].(*FavoriteIcon).Favorite = tr.Favorite
 		changed = true
 	}
 
@@ -914,17 +909,11 @@ func (t *TrackRow) Update(tm *trackModel, rowNum int) {
 }
 
 func (t *TrackRow) toggleFavorited() {
-	if t.isFavorite {
-		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.NotFavoriteIcon
-		t.favorite.Refresh()
-		t.isFavorite = false
-		t.tracklist.onSetFavorite(t.trackID, false)
-	} else {
-		t.favorite.Objects[0].(*TappableIcon).Resource = myTheme.FavoriteIcon
-		t.favorite.Refresh()
-		t.isFavorite = true
-		t.tracklist.onSetFavorite(t.trackID, true)
-	}
+	t.isFavorite = !t.isFavorite
+	favIcon := t.favorite.Objects[0].(*FavoriteIcon)
+	favIcon.Favorite = t.isFavorite
+	t.favorite.Refresh()
+	t.tracklist.onSetFavorite(t.trackID, t.isFavorite)
 }
 
 func (t *TrackRow) setTrackRating(rating int) {
