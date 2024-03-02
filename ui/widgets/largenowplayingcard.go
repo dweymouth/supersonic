@@ -29,10 +29,8 @@ type LargeNowPlayingCard struct {
 
 	OnArtistNameTapped func(artistID string)
 	OnAlbumNameTapped  func()
-	OnShowCoverImage   func()
 	OnSetRating        func(rating int)
 	OnSetFavorite      func(favorite bool)
-	OnAddToPlaylist    func()
 }
 
 func NewLargeNowPlayingCard() *LargeNowPlayingCard {
@@ -84,12 +82,6 @@ func (n *LargeNowPlayingCard) onAlbumNameTapped() {
 func (n *LargeNowPlayingCard) onArtistNameTapped(artistID string) {
 	if n.OnArtistNameTapped != nil {
 		n.OnArtistNameTapped(artistID)
-	}
-}
-
-func (n *LargeNowPlayingCard) onShowCoverImage(*fyne.PointEvent) {
-	if n.OnShowCoverImage != nil {
-		n.OnShowCoverImage()
 	}
 }
 

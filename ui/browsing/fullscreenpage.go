@@ -52,8 +52,19 @@ func NewFullscreenPage(
 	a.ExtendBaseWidget(a)
 
 	a.card = widgets.NewLargeNowPlayingCard()
-	a.card.OnAlbumNameTapped = func() { contr.NavigateTo(controller.AlbumRoute(a.albumID)) }
-	a.card.OnArtistNameTapped = func(artistID string) { contr.NavigateTo(controller.ArtistRoute(artistID)) }
+	a.card.DisableRating = !canRate
+	a.card.OnAlbumNameTapped = func() {
+		contr.NavigateTo(controller.AlbumRoute(a.albumID))
+	}
+	a.card.OnArtistNameTapped = func(artistID string) {
+		contr.NavigateTo(controller.ArtistRoute(artistID))
+	}
+	a.card.OnSetFavorite = func(fav bool) {
+		a.contr.SetTrackFavorites([]string{a.nowPlayingID}, fav)
+	}
+	a.card.OnSetRating = func(rating int) {
+		a.contr.SetTrackRatings([]string{a.nowPlayingID}, rating)
+	}
 
 	a.Reload()
 	return a
