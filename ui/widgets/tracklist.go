@@ -810,7 +810,7 @@ func (t *TrackRow) Update(tm *util.TrackListModel, rowNum int) {
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 
 		if isPlaying {
-			t.Content.(*fyne.Container).Objects[0] = container.NewCenter(t.playingIcon)
+			t.Content.(*fyne.Container).Objects[0] = t.playingIcon
 		} else {
 			t.Content.(*fyne.Container).Objects[0] = t.num
 		}
