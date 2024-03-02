@@ -323,7 +323,7 @@ func (t *Tracklist) _setTracks(trs []*mediaprovider.Track) {
 	if t.list != nil {
 		t.list.ClearItemForIDMap()
 	}
-	t.tracksOrigOrder = toTrackModels(trs)
+	t.tracksOrigOrder = util.ToTrackListModels(trs)
 	t.doSortTracks()
 }
 
@@ -340,7 +340,7 @@ func (t *Tracklist) GetTracks() []*mediaprovider.Track {
 func (t *Tracklist) AppendTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	t.tracksOrigOrder = append(t.tracks, toTrackModels(trs)...)
+	t.tracksOrigOrder = append(t.tracks, util.ToTrackListModels(trs)...)
 	t.doSortTracks()
 }
 
@@ -386,12 +386,6 @@ func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
 func (t *Tracklist) Refresh() {
 	t.hdr.DisableSorting = t.Options.DisableSorting
 	t.BaseWidget.Refresh()
-}
-
-func toTrackModels(trs []*mediaprovider.Track) []*util.TrackListModel {
-	return sharedutil.MapSlice(trs, func(tr *mediaprovider.Track) *util.TrackListModel {
-		return &util.TrackListModel{Track: tr, Selected: false}
-	})
 }
 
 // do nothing Tapped handler so that tapping the separator between rows

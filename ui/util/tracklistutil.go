@@ -1,10 +1,19 @@
 package util
 
-import "github.com/dweymouth/supersonic/backend/mediaprovider"
+import (
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/sharedutil"
+)
 
 type TrackListModel struct {
 	Track    *mediaprovider.Track
 	Selected bool
+}
+
+func ToTrackListModels(trs []*mediaprovider.Track) []*TrackListModel {
+	return sharedutil.MapSlice(trs, func(tr *mediaprovider.Track) *TrackListModel {
+		return &TrackListModel{Track: tr, Selected: false}
+	})
 }
 
 func SelectTrack(tracks []*TrackListModel, idx int) {
