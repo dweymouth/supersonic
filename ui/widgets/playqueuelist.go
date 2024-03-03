@@ -196,6 +196,7 @@ func NewPlayQueueListRow(playQueueList *PlayQueueList, im *backend.ImageManager,
 	}
 	p.ExtendBaseWidget(p)
 
+	p.cover.ScaleMode = canvas.ImageScaleFastest
 	p.artist.OnTapped = playQueueList.onArtistTapped
 	p.OnDoubleTapped = func() {
 		playQueueList.onPlayTrackAt(p.ItemID())
