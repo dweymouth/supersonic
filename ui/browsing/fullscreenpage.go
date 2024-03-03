@@ -103,6 +103,7 @@ func (a *FullscreenPage) Save() SavedPage {
 		a.imageLoadCancel()
 	}
 	nps := a.fullscreenPageState
+	a.pool.Release(util.WidgetTypeFullscreenPage, a)
 	return &nps
 }
 
@@ -140,5 +141,9 @@ func (a *FullscreenPage) Reload() {
 }
 
 func (s *fullscreenPageState) Restore() Page {
+	if page := s.pool.Obtain(util.WidgetTypeFullscreenPage).(*FullscreenPage); page != nil {
+		page.Reload()
+		return page
+	}
 	return NewFullscreenPage(s.contr, s.pool, s.im, s.pm, s.canRate)
 }

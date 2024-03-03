@@ -15,6 +15,7 @@ const (
 	WidgetTypeGridView
 	WidgetTypePlaylistPageHeader
 	WidgetTypeTracklist
+	WidgetTypeFullscreenPage
 
 	// keep at bottom
 	numWidgetTypes
