@@ -25,10 +25,10 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type FullscreenPage struct {
+type NowPlayingPage struct {
 	widget.BaseWidget
 
-	fullscreenPageState
+	nowPlayingPageState
 
 	queue           []*mediaprovider.Track
 	queueList       *widgets.PlayQueueList
@@ -41,7 +41,7 @@ type FullscreenPage struct {
 	container       *fyne.Container
 }
 
-type fullscreenPageState struct {
+type nowPlayingPageState struct {
 	contr   *controller.Controller
 	pool    *util.WidgetPool
 	pm      *backend.PlaybackManager
@@ -49,14 +49,14 @@ type fullscreenPageState struct {
 	canRate bool
 }
 
-func NewFullscreenPage(
+func NewNowPlayingPage(
 	contr *controller.Controller,
 	pool *util.WidgetPool,
 	im *backend.ImageManager,
 	pm *backend.PlaybackManager,
 	canRate bool,
-) *FullscreenPage {
-	a := &FullscreenPage{fullscreenPageState: fullscreenPageState{
+) *NowPlayingPage {
+	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
 		contr: contr, pool: pool, im: im, pm: pm, canRate: canRate,
 	}}
 	a.ExtendBaseWidget(a)
@@ -81,19 +81,29 @@ func NewFullscreenPage(
 	}
 
 	a.queueList = widgets.NewPlayQueueList(a.im)
+	a.queueList.OnReorderTracks = a.doSetNewTrackOrder
+	a.queueList.OnDownload = contr.ShowDownloadDialog
+	a.queueList.OnSetRating = contr.SetTrackRatings
+	a.queueList.OnSetFavorite = contr.SetTrackFavorites
+	a.queueList.OnAddToPlaylist = contr.DoAddTracksToPlaylistWorkflow
 	a.queueList.OnPlayTrackAt = func(tracknum int) {
 		_ = a.pm.PlayTrackAt(tracknum)
 	}
 	a.queueList.OnShowArtistPage = func(artistID string) {
 		a.contr.NavigateTo(controller.ArtistRoute(artistID))
 	}
+	a.queueList.OnRemoveFromQueue = func(trackIDs []string) {
+		a.queueList.UnselectAll()
+		a.pm.RemoveTracksFromQueue(trackIDs)
+	}
+
 	a.statusLabel = widget.NewLabel("Stopped")
 
 	a.Reload()
 	return a
 }
 
-func (a *FullscreenPage) CreateRenderer() fyne.WidgetRenderer {
+func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 	if a.container == nil {
 		paddedLayout := &layouts.PercentPadLayout{
 			LeftRightObjectPercent: .8,
@@ -121,22 +131,22 @@ func (a *FullscreenPage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(a.container)
 }
 
-func (a *FullscreenPage) Save() SavedPage {
+func (a *NowPlayingPage) Save() SavedPage {
 	if a.imageLoadCancel != nil {
 		a.imageLoadCancel()
 	}
-	nps := a.fullscreenPageState
-	a.pool.Release(util.WidgetTypeFullscreenPage, a)
+	nps := a.nowPlayingPageState
+	a.pool.Release(util.WidgetTypeNowPlayingPage, a)
 	return &nps
 }
 
-func (a *FullscreenPage) Route() controller.Route {
+func (a *NowPlayingPage) Route() controller.Route {
 	return controller.NowPlayingRoute("")
 }
 
-var _ CanShowNowPlaying = (*FullscreenPage)(nil)
+var _ CanShowNowPlaying = (*NowPlayingPage)(nil)
 
-func (a *FullscreenPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
+func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
 	if a.imageLoadCancel != nil {
 		a.imageLoadCancel()
 	}
@@ -158,11 +168,11 @@ func (a *FullscreenPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 	})
 }
 
-func (a *FullscreenPage) OnPlayQueueChange() {
+func (a *NowPlayingPage) OnPlayQueueChange() {
 	a.Reload()
 }
 
-func (a *FullscreenPage) Reload() {
+func (a *NowPlayingPage) Reload() {
 	a.queue = a.pm.GetPlayQueue()
 	a.queueList.SetTracks(a.queue)
 	a.totalTime = 0.0
@@ -172,21 +182,35 @@ func (a *FullscreenPage) Reload() {
 	a.formatStatusLine()
 }
 
-func (s *fullscreenPageState) Restore() Page {
-	if page := s.pool.Obtain(util.WidgetTypeFullscreenPage).(*FullscreenPage); page != nil {
+func (s *nowPlayingPageState) Restore() Page {
+	if page := s.pool.Obtain(util.WidgetTypeNowPlayingPage).(*NowPlayingPage); page != nil {
 		page.Reload()
 		return page
 	}
-	return NewFullscreenPage(s.contr, s.pool, s.im, s.pm, s.canRate)
+	return NewNowPlayingPage(s.contr, s.pool, s.im, s.pm, s.canRate)
 }
 
-var _ CanShowPlayTime = (*FullscreenPage)(nil)
+var _ CanShowPlayTime = (*NowPlayingPage)(nil)
 
-func (a *FullscreenPage) OnPlayTimeUpdate(_, _ float64) {
+func (a *NowPlayingPage) OnPlayTimeUpdate(_, _ float64) {
 	a.formatStatusLine()
 }
 
-func (a *FullscreenPage) formatStatusLine() {
+func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.TrackReorderOp) {
+	// Since the tracklist view may be sorted in a different order than the
+	// actual running order, we need to get the IDs of the selected tracks
+	// from the tracklist and convert them to indices in the *original* run order
+	idxs := make([]int, 0, len(trackIDs))
+	for i, tr := range a.queue {
+		if sharedutil.SliceContains(trackIDs, tr.ID) {
+			idxs = append(idxs, i)
+		}
+	}
+	newTracks := sharedutil.ReorderTracks(a.queue, idxs, op)
+	a.pm.UpdatePlayQueue(newTracks)
+}
+
+func (a *NowPlayingPage) formatStatusLine() {
 	curPlayer := a.pm.CurrentPlayer()
 	playerStats := curPlayer.GetStatus()
 	lastStatus := a.statusLabel.Text
@@ -227,7 +251,7 @@ func (a *FullscreenPage) formatStatusLine() {
 	}
 }
 
-func (a *FullscreenPage) formatMediaInfoStr(player player.BasePlayer) string {
+func (a *NowPlayingPage) formatMediaInfoStr(player player.BasePlayer) string {
 	mpv, ok := player.(*mpv.Player)
 	if !ok {
 		return ""

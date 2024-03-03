@@ -43,13 +43,13 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	case controller.Favorites:
 		return NewFavoritesPage(&r.App.Config.FavoritesPage, r.widgetPool, r.Controller, r.App.ServerManager.Server, r.App.PlaybackManager, r.App.ImageManager)
 	case controller.Fullscreen:
-		return NewFullscreenPage(r.Controller, r.widgetPool, r.App.ImageManager, r.App.PlaybackManager, canRate)
+		return NewNowPlayingPage(r.Controller, r.widgetPool, r.App.ImageManager, r.App.PlaybackManager, canRate)
 	case controller.Genre:
 		return NewGenrePage(rte.Arg, r.widgetPool, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager)
 	case controller.Genres:
 		return NewGenresPage(r.Controller, r.App.ServerManager.Server)
 	case controller.NowPlaying:
-		return NewNowPlayingPage(rte.Arg, r.Controller, r.widgetPool, &r.App.Config.NowPlayingPage, r.App.PlaybackManager, canRate)
+		return NewNowPlayingPage(r.Controller, r.widgetPool, r.App.ImageManager, r.App.PlaybackManager, canRate)
 	case controller.Playlist:
 		return NewPlaylistPage(rte.Arg, &r.App.Config.PlaylistPage, r.widgetPool, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager)
 	case controller.Playlists:

@@ -118,6 +118,13 @@ func (p *PlayQueueList) SetNowPlaying(trackID string) {
 	}
 }
 
+func (p *PlayQueueList) UnselectAll() {
+	p.tracksMutex.RLock()
+	util.UnselectAllTracks(p.tracks)
+	p.tracksMutex.RUnlock()
+	p.Refresh()
+}
+
 func (p *PlayQueueList) lenTracks() int {
 	p.tracksMutex.RLock()
 	defer p.tracksMutex.RUnlock()

@@ -39,10 +39,6 @@ func FavoritesRoute() Route {
 	return Route{Page: Favorites}
 }
 
-func FullscreenRoute() Route {
-	return Route{Page: Fullscreen}
-}
-
 func GenreRoute(genre string) Route {
 	return Route{Page: Genre, Arg: genre}
 }

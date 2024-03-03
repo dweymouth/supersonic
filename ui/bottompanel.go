@@ -53,7 +53,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
 	bp.NowPlaying.OnCoverTapped = func() {
-		contr.NavigateTo(controller.FullscreenRoute())
+		contr.NavigateTo(controller.NowPlayingRoute(""))
 	}
 	bp.NowPlaying.OnSetFavorite = func(fav bool) {
 		contr.SetTrackFavorites([]string{pm.NowPlaying().ID}, fav)
