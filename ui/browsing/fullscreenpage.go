@@ -25,10 +25,12 @@ type FullscreenPage struct {
 	fullscreenPageState
 
 	queue           []*mediaprovider.Track
+	queueList       *widgets.PlayQueueList
 	imageLoadCancel context.CancelFunc
 	card            *widgets.LargeNowPlayingCard
 	nowPlayingID    string
 	albumID         string
+	container       *fyne.Container
 }
 
 type fullscreenPageState struct {
@@ -66,25 +68,28 @@ func NewFullscreenPage(
 		a.contr.SetTrackRatings([]string{a.nowPlayingID}, rating)
 	}
 
+	a.queueList = widgets.NewPlayQueueList(a.im)
+	paddedLayout := &layouts.PercentPadLayout{
+		LeftRightObjectPercent: .8,
+		TopBottomObjectPercent: .8,
+	}
+	a.container = container.NewGridWithColumns(2,
+		container.New(paddedLayout, a.card),
+		container.New(paddedLayout,
+			util.AddHeaderBackground(
+				container.NewAppTabs(
+					container.NewTabItem("Play Queue",
+						container.NewBorder(layout.NewSpacer(), nil, nil, nil, a.queueList)),
+					container.NewTabItem("Lyrics", layout.NewSpacer()),
+				))),
+	)
+
 	a.Reload()
 	return a
 }
 
 func (a *FullscreenPage) CreateRenderer() fyne.WidgetRenderer {
-	paddedLayout := &layouts.PercentPadLayout{
-		LeftRightObjectPercent: .8,
-		TopBottomObjectPercent: .8,
-	}
-	container := container.NewGridWithColumns(2,
-		container.New(paddedLayout, a.card),
-		container.New(paddedLayout,
-			util.AddHeaderBackground(
-				container.NewAppTabs(
-					container.NewTabItem("Up Next", layout.NewSpacer()),
-					container.NewTabItem("Lyrics", layout.NewSpacer()),
-				))),
-	)
-	return widget.NewSimpleRenderer(container)
+	return widget.NewSimpleRenderer(a.container)
 }
 
 func (a *FullscreenPage) Save() SavedPage {
@@ -115,10 +120,12 @@ func (a *FullscreenPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 			a.card.SetCoverImage(img)
 		}
 	})
+	a.queueList.SetNowPlaying(song.ID)
 }
 
 func (a *FullscreenPage) Reload() {
 	a.queue = a.pm.GetPlayQueue()
+	a.queueList.SetTracks(a.queue)
 }
 
 func (s *fullscreenPageState) Restore() Page {

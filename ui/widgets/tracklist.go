@@ -279,8 +279,8 @@ func (t *Tracklist) SetSorting(sorting TracklistSort) {
 func (t *Tracklist) SetNowPlaying(trackID string) {
 	prevNowPlaying := t.nowPlayingID
 	t.tracksMutex.RLock()
-	trPrev, idxPrev := t.findTrackByID(prevNowPlaying)
-	tr, idx := t.findTrackByID(trackID)
+	trPrev, idxPrev := util.FindTrackByID(t.tracks, prevNowPlaying)
+	tr, idx := util.FindTrackByID(t.tracks, trackID)
 	t.tracksMutex.RUnlock()
 	t.nowPlayingID = trackID
 	if trPrev != nil {
@@ -294,7 +294,7 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 // Increments the play count of the given track and updates the list rendering
 func (t *Tracklist) IncrementPlayCount(trackID string) {
 	t.tracksMutex.RLock()
-	tr, idx := t.findTrackByID(trackID)
+	tr, idx := util.FindTrackByID(t.tracks, trackID)
 	t.tracksMutex.RUnlock()
 	if tr != nil {
 		tr.PlayCount += 1
@@ -572,7 +572,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	t.tracksMutex.RLock()
-	tr, _ := t.findTrackByID(trackID)
+	tr, _ := util.FindTrackByID(t.tracks, trackID)
 	t.tracksMutex.RUnlock()
 	t.onSetFavorites([]*mediaprovider.Track{tr}, fav, false)
 }
@@ -593,7 +593,7 @@ func (t *Tracklist) onSetFavorites(tracks []*mediaprovider.Track, fav bool, need
 func (t *Tracklist) onSetRating(trackID string, rating int) {
 	// update our own track model
 	t.tracksMutex.RLock()
-	tr, _ := t.findTrackByID(trackID)
+	tr, _ := util.FindTrackByID(t.tracks, trackID)
 	t.tracksMutex.RUnlock()
 	t.onSetRatings([]*mediaprovider.Track{tr}, rating, false)
 }
@@ -627,16 +627,6 @@ func (t *Tracklist) onDownload(tracks []*mediaprovider.Track, downloadName strin
 	if t.OnDownload != nil {
 		t.OnDownload(tracks, downloadName)
 	}
-}
-
-func (t *Tracklist) findTrackByID(id string) (*mediaprovider.Track, int) {
-	idx := sharedutil.Find(t.tracks, func(tr *util.TrackListModel) bool {
-		return tr.Track.ID == id
-	})
-	if idx >= 0 {
-		return t.tracks[idx].Track, idx
-	}
-	return nil, -1
 }
 
 func (t *Tracklist) selectedTrackModels() []*util.TrackListModel {

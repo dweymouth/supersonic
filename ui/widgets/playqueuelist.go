@@ -1,20 +1,30 @@
 package widgets
 
 import (
+	"image"
+	"strconv"
 	"sync"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/os"
-	"github.com/dweymouth/supersonic/ui/theme"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
+const thumbnailSize = 60
+
 type PlayQueueList struct {
-	FocusList
+	widget.BaseWidget
+
+	list *FocusList
 
 	OnShowArtistPage func(artistID string)
 	OnPlayTrackAt    func(idx int)
@@ -22,8 +32,82 @@ type PlayQueueList struct {
 	nowPlayingID string
 	colLayout    *layouts.ColumnsLayout
 
-	tracksMutex sync.Mutex
+	tracksMutex sync.RWMutex
 	tracks      []*util.TrackListModel
+}
+
+func NewPlayQueueList(im *backend.ImageManager) *PlayQueueList {
+	p := &PlayQueueList{}
+	p.ExtendBaseWidget(p)
+
+	// #, Cover, Title/Artist, Time
+	p.colLayout = layouts.NewColumnsLayout([]float32{40, thumbnailSize, -1, 60})
+
+	playIconResource := theme.NewThemedResource(theme.MediaPlayIcon())
+	playIconResource.ColorName = theme.ColorNamePrimary
+	playIconImg := canvas.NewImageFromResource(playIconResource)
+	playIconImg.FillMode = canvas.ImageFillContain
+	playIconImg.SetMinSize(fyne.NewSquareSize(theme.IconInlineSize() * 1.5))
+
+	playingIcon := container.NewCenter(playIconImg)
+
+	p.list = NewFocusList(
+		p.lenTracks,
+		func() fyne.CanvasObject {
+			return NewPlayQueueListRow(p, im, playingIcon)
+		},
+		func(itemID widget.ListItemID, item fyne.CanvasObject) {
+			p.tracksMutex.RLock()
+			// we could have removed tracks from the list in between
+			// Fyne calling the length callback and this update callback
+			// so the itemID may be out of bounds. if so, do nothing.
+			if itemID >= len(p.tracks) {
+				p.tracksMutex.RUnlock()
+				return
+			}
+			model := p.tracks[itemID]
+			p.tracksMutex.RUnlock()
+
+			tr := item.(*PlayQueueListRow)
+			p.list.SetItemForID(itemID, tr)
+			if tr.trackID != model.Track.ID || tr.ListItemID != itemID {
+				tr.ListItemID = itemID
+			}
+			tr.Update(model, itemID+1)
+		},
+	)
+
+	return p
+}
+
+func (p *PlayQueueList) SetTracks(trs []*mediaprovider.Track) {
+	p.tracksMutex.Lock()
+	p.list.ClearItemForIDMap()
+	p.tracks = util.ToTrackListModels(trs)
+	p.tracksMutex.Unlock()
+	p.Refresh()
+}
+
+// Sets the currently playing track ID and updates the list rendering
+func (p *PlayQueueList) SetNowPlaying(trackID string) {
+	prevNowPlaying := p.nowPlayingID
+	p.tracksMutex.RLock()
+	trPrev, idxPrev := util.FindTrackByID(p.tracks, prevNowPlaying)
+	tr, idx := util.FindTrackByID(p.tracks, trackID)
+	p.tracksMutex.RUnlock()
+	p.nowPlayingID = trackID
+	if trPrev != nil {
+		p.list.RefreshItem(idxPrev)
+	}
+	if tr != nil {
+		p.list.RefreshItem(idx)
+	}
+}
+
+func (p *PlayQueueList) lenTracks() int {
+	p.tracksMutex.RLock()
+	defer p.tracksMutex.RUnlock()
+	return len(p.tracks)
 }
 
 func (t *PlayQueueList) onArtistTapped(artistID string) {
@@ -55,26 +139,37 @@ func (p *PlayQueueList) onSelectTrack(idx int) {
 }
 
 func (p *PlayQueueList) selectTrack(idx int) {
-	p.tracksMutex.Lock()
-	defer p.tracksMutex.Unlock()
+	p.tracksMutex.RLock()
+	defer p.tracksMutex.RUnlock()
 	util.SelectTrack(p.tracks, idx)
 }
 
 func (p *PlayQueueList) selectAddOrRemove(idx int) {
-	p.tracksMutex.Lock()
-	defer p.tracksMutex.Unlock()
+	p.tracksMutex.RLock()
+	defer p.tracksMutex.RUnlock()
 	p.tracks[idx].Selected = !p.tracks[idx].Selected
 }
 
 func (p *PlayQueueList) selectRange(idx int) {
-	p.tracksMutex.Lock()
-	defer p.tracksMutex.Unlock()
+	p.tracksMutex.RLock()
+	defer p.tracksMutex.RUnlock()
 	util.SelectTrackRange(p.tracks, idx)
+}
+
+func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
+
+}
+
+func (p *PlayQueueList) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(p.list)
 }
 
 type PlayQueueListRow struct {
 	FocusListRowBase
 
+	OnTappedSecondary func(e *fyne.PointEvent, trackIdx int)
+
+	imageLoader   util.ThumbnailLoader
 	playQueueList *PlayQueueList
 	trackID       string
 	isPlaying     bool
@@ -87,16 +182,18 @@ type PlayQueueListRow struct {
 	time        *widget.Label
 }
 
-func NewPlayQueueListRow(playQueueList *PlayQueueList, playingIcon fyne.CanvasObject) *PlayQueueListRow {
+func NewPlayQueueListRow(playQueueList *PlayQueueList, im *backend.ImageManager, playingIcon fyne.CanvasObject) *PlayQueueListRow {
 	p := &PlayQueueListRow{
 		playingIcon:   playingIcon,
 		playQueueList: playQueueList,
 		num:           widget.NewLabel(""),
-		cover:         NewImagePlaceholder(theme.TracksIcon, 64),
+		cover:         NewImagePlaceholder(myTheme.TracksIcon, thumbnailSize),
 		title:         util.NewTruncatingLabel(),
 		artist:        NewMultiHyperlink(),
 		time:          util.NewTrailingAlignLabel(),
 	}
+	p.ExtendBaseWidget(p)
+
 	p.artist.OnTapped = playQueueList.onArtistTapped
 	p.OnDoubleTapped = func() {
 		playQueueList.onPlayTrackAt(p.ItemID())
@@ -104,8 +201,18 @@ func NewPlayQueueListRow(playQueueList *PlayQueueList, playingIcon fyne.CanvasOb
 	p.OnTapped = func() {
 		playQueueList.onSelectTrack(p.ItemID())
 	}
-	//p.title.TextStyle.Bold = true
-	p.ExtendBaseWidget(p)
+	p.OnTappedSecondary = playQueueList.onShowContextMenu
+	p.OnFocusNeighbor = func(up bool) {
+		playQueueList.list.FocusNeighbor(p.ItemID(), up)
+	}
+
+	p.imageLoader = util.NewThumbnailLoader(im, func(i image.Image) {
+		p.cover.SetImage(i, false)
+	})
+	p.imageLoader.OnBeforeLoad = func() {
+		p.cover.SetImage(nil, false)
+	}
+
 	p.Content = container.New(playQueueList.colLayout,
 		container.NewCenter(p.num),
 		p.cover,
@@ -116,6 +223,12 @@ func NewPlayQueueListRow(playQueueList *PlayQueueList, playingIcon fyne.CanvasOb
 	return p
 }
 
+func (p *PlayQueueListRow) TappedSecondary(e *fyne.PointEvent) {
+	if p.OnTappedSecondary != nil {
+		p.OnTappedSecondary(e, p.ListItemID)
+	}
+}
+
 func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 	changed := false
 	if tm.Selected != p.Selected {
@@ -123,12 +236,19 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 		changed = true
 	}
 
+	if num := strconv.Itoa(rowNum); p.num.Text != num {
+		p.num.Text = num
+		changed = true
+	}
+
 	// Update info that can change if this row is bound to
 	// a new track (*mediaprovider.Track)
 	tr := tm.Track
 	if tr.ID != p.trackID {
+		p.imageLoader.Load(tm.Track.CoverArtID)
 		p.EnsureUnfocused()
 		p.trackID = tr.ID
+		p.title.Text = tr.Name
 		p.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		p.time.Text = util.SecondsToTimeString(float64(tr.Duration))
 		changed = true
@@ -142,7 +262,7 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 		if isPlaying {
 			p.Content.(*fyne.Container).Objects[0] = p.playingIcon
 		} else {
-			p.Content.(*fyne.Container).Objects[0] = p.num
+			p.Content.(*fyne.Container).Objects[0] = container.NewCenter(p.num)
 		}
 		changed = true
 	}

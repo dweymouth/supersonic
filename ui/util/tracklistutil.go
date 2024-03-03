@@ -58,6 +58,16 @@ func SelectTrackRange(tracks []*TrackListModel, idx int) {
 	}
 }
 
+func FindTrackByID(tracks []*TrackListModel, id string) (*mediaprovider.Track, int) {
+	idx := sharedutil.Find(tracks, func(tr *TrackListModel) bool {
+		return tr.Track.ID == id
+	})
+	if idx >= 0 {
+		return tracks[idx].Track, idx
+	}
+	return nil, -1
+}
+
 func minInt(a, b int) int {
 	if a < b {
 		return a
