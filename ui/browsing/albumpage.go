@@ -253,7 +253,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 			_, canShare := page.mp.(mediaprovider.SupportsSharing)
 			if canShare {
 				share := fyne.NewMenuItem("Share...", func() {
-					a.page.contr.CreateShareURL(a.albumID)
+					a.page.contr.ShowShareDialog(a.albumID)
 				})
 				share.Icon = myTheme.ShareIcon
 				menuItems = append(menuItems, share)

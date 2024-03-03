@@ -329,7 +329,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		a.menuBtn.OnTapped = func() {
 			if pop == nil {
 				share := fyne.NewMenuItem("Share...", func() {
-					a.artistPage.contr.CreateShareURL(a.artistID)
+					a.artistPage.contr.ShowShareDialog(a.artistID)
 				})
 				share.Icon = myTheme.ShareIcon
 				menu := fyne.NewMenu("", share)
