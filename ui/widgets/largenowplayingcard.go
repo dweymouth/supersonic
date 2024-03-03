@@ -4,6 +4,7 @@ import (
 	"image"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -46,6 +47,7 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	n.rating.StarSize = theme.IconInlineSize() + theme.InnerPadding()/2
 	n.rating.OnRatingChanged = n.onSetRating
 	n.favorite.OnTapped = n.onToggleFavorite
+	n.cover.ScaleMode = canvas.ImageScaleFastest
 	// set up the layout
 	n.Content = n.cover
 	n.Caption = container.New(&layouts.VboxCustomPadding{ExtraPad: -13},

@@ -52,6 +52,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.trackName.TextStyle.Bold = true
 	n.cover.SetMinSize(fyne.NewSize(85, 85))
 	n.cover.FillMode = canvas.ImageFillContain
+	n.cover.ScaleMode = canvas.ImageScaleFastest
 	n.cover.Hidden = true
 	n.albumName.OnTapped = n.onAlbumNameTapped
 	n.artistName.OnTapped = n.onArtistNameTapped
