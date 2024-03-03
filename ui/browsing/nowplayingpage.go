@@ -32,6 +32,7 @@ type NowPlayingPage struct {
 
 	queue           []*mediaprovider.Track
 	queueList       *widgets.PlayQueueList
+	lyricsViewer    *widgets.LyricsViewer
 	imageLoadCancel context.CancelFunc
 	card            *widgets.LargeNowPlayingCard
 	statusLabel     *widget.Label
@@ -107,6 +108,7 @@ func NewNowPlayingPage(
 		}
 	}
 
+	a.lyricsViewer = widgets.NewLyricsViewer()
 	a.statusLabel = widget.NewLabel("Stopped")
 
 	a.Reload()
@@ -126,7 +128,7 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 					container.NewAppTabs(
 						container.NewTabItem("Play Queue",
 							container.NewBorder(layout.NewSpacer(), nil, nil, nil, a.queueList)),
-						container.NewTabItem("Lyrics", layout.NewSpacer()),
+						container.NewTabItem("Lyrics", a.lyricsViewer),
 					))))
 		a.container = container.NewStack(
 			mainContent,
