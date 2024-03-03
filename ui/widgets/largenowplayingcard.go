@@ -99,6 +99,16 @@ func (n *LargeNowPlayingCard) onSetRating(rating int) {
 	}
 }
 
+func (n *LargeNowPlayingCard) SetDisplayedRating(rating int) {
+	n.rating.Rating = rating
+	n.rating.Refresh()
+}
+
+func (n *LargeNowPlayingCard) SetDisplayedFavorite(favorite bool) {
+	n.favorite.Favorite = favorite
+	n.favorite.Refresh()
+}
+
 func (n *LargeNowPlayingCard) Update(track *mediaprovider.Track) {
 	if track != nil {
 		n.trackName.Segments[0].(*widget.TextSegment).Text = track.Name

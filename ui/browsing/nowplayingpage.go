@@ -83,8 +83,6 @@ func NewNowPlayingPage(
 	a.queueList = widgets.NewPlayQueueList(a.im)
 	a.queueList.OnReorderTracks = a.doSetNewTrackOrder
 	a.queueList.OnDownload = contr.ShowDownloadDialog
-	a.queueList.OnSetRating = contr.SetTrackRatings
-	a.queueList.OnSetFavorite = contr.SetTrackFavorites
 	a.queueList.OnAddToPlaylist = contr.DoAddTracksToPlaylistWorkflow
 	a.queueList.OnPlayTrackAt = func(tracknum int) {
 		_ = a.pm.PlayTrackAt(tracknum)
@@ -95,6 +93,18 @@ func NewNowPlayingPage(
 	a.queueList.OnRemoveFromQueue = func(trackIDs []string) {
 		a.queueList.UnselectAll()
 		a.pm.RemoveTracksFromQueue(trackIDs)
+	}
+	a.queueList.OnSetRating = func(trackIDs []string, rating int) {
+		contr.SetTrackRatings(trackIDs, rating)
+		if sharedutil.SliceContains(trackIDs, a.nowPlayingID) {
+			a.card.SetDisplayedRating(rating)
+		}
+	}
+	a.queueList.OnSetFavorite = func(trackIDs []string, fav bool) {
+		contr.SetTrackFavorites(trackIDs, fav)
+		if sharedutil.SliceContains(trackIDs, a.nowPlayingID) {
+			a.card.SetDisplayedFavorite(fav)
+		}
 	}
 
 	a.statusLabel = widget.NewLabel("Stopped")
