@@ -49,6 +49,10 @@ type CanShowPlayTime interface {
 	OnPlayTimeUpdate(curTime, totalTime float64)
 }
 
+type CanShowPlayQueue interface {
+	OnPlayQueueChange()
+}
+
 type BrowsingPane struct {
 	widget.BaseWidget
 
@@ -80,6 +84,7 @@ func NewBrowsingPane(app *backend.App, contr *controller.Controller) *BrowsingPa
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.app.PlaybackManager.OnPlayTimeUpdate(b.onPlayTimeUpdate)
+	b.app.PlaybackManager.OnQueueChange(b.onQueueChange)
 	bkgrnd := myTheme.NewThemedRectangle(myTheme.ColorNamePageBackground)
 	b.pageContainer = container.NewStack(bkgrnd, layout.NewSpacer())
 	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
@@ -219,6 +224,15 @@ func (b *BrowsingPane) onPlayTimeUpdate(cur, total float64) {
 	}
 	if p, ok := b.curPage.(CanShowPlayTime); ok {
 		p.OnPlayTimeUpdate(cur, total)
+	}
+}
+
+func (b *BrowsingPane) onQueueChange() {
+	if b.curPage == nil {
+		return
+	}
+	if p, ok := b.curPage.(CanShowPlayQueue); ok {
+		p.OnPlayQueueChange()
 	}
 }
 

@@ -135,6 +135,10 @@ func (a *FullscreenPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 	})
 }
 
+func (a *FullscreenPage) OnPlayQueueChange() {
+	a.Reload()
+}
+
 func (a *FullscreenPage) Reload() {
 	a.queue = a.pm.GetPlayQueue()
 	a.queueList.SetTracks(a.queue)
