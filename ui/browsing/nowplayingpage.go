@@ -208,6 +208,18 @@ func (a *NowPlayingPage) OnPlayTimeUpdate(_, _ float64) {
 	a.formatStatusLine()
 }
 
+var _ CanSelectAll = (*NowPlayingPage)(nil)
+
+func (a *NowPlayingPage) SelectAll() {
+	a.queueList.SelectAll()
+}
+
+var _ fyne.Tappable = (*NowPlayingPage)(nil)
+
+func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
+	a.queueList.UnselectAll()
+}
+
 func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.TrackReorderOp) {
 	idxs := make([]int, 0, len(trackIDs))
 	for i, tr := range a.queue {
