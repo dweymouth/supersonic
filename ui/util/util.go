@@ -212,6 +212,24 @@ func AddHeaderBackground(obj fyne.CanvasObject) *fyne.Container {
 			obj))
 }
 
+func NewTruncatingRichText() *widget.RichText {
+	rt := widget.NewRichTextWithText("")
+	rt.Truncation = fyne.TextTruncateEllipsis
+	return rt
+}
+
+func NewTruncatingLabel() *widget.Label {
+	rt := widget.NewLabel("")
+	rt.Truncation = fyne.TextTruncateEllipsis
+	return rt
+}
+
+func NewTrailingAlignLabel() *widget.Label {
+	rt := widget.NewLabel("")
+	rt.Alignment = fyne.TextAlignTrailing
+	return rt
+}
+
 type HSpace struct {
 	widget.BaseWidget
 

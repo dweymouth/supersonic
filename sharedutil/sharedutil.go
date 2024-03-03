@@ -102,6 +102,13 @@ func TrackIDOrEmptyStr(track *mediaprovider.Track) string {
 	return track.ID
 }
 
+func AlbumIDOrEmptyStr(track *mediaprovider.Track) string {
+	if track == nil {
+		return ""
+	}
+	return track.AlbumID
+}
+
 func TracksToIDs(tracks []*mediaprovider.Track) []string {
 	return MapSlice(tracks, func(tr *mediaprovider.Track) string {
 		return tr.ID

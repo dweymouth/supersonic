@@ -61,6 +61,7 @@ type playbackEngine struct {
 	onStopped        []func()
 	onPlaying        []func()
 	onPlayerChange   []func()
+	onQueueChange    []func()
 }
 
 func NewPlaybackEngine(
@@ -216,15 +217,21 @@ func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, appendToQueue
 	if needToSetNext {
 		p.setNextTrack(p.nowPlayingIdx + 1)
 	}
+
+	p.invokeNoArgCallbacks(p.onQueueChange)
 	return nil
 }
 
 // Stop playback and clear the play queue.
 func (p *playbackEngine) StopAndClearPlayQueue() {
+	changed := len(p.playQueue) > 0
 	p.player.Stop()
 	p.doUpdateTimePos()
 	p.playQueue = nil
 	p.nowPlayingIdx = -1
+	if changed {
+		p.invokeNoArgCallbacks(p.onQueueChange)
+	}
 }
 
 func (p *playbackEngine) GetPlayQueue() []*mediaprovider.Track {
@@ -273,6 +280,7 @@ func (p *playbackEngine) UpdatePlayQueue(tracks []*mediaprovider.Track) error {
 		p.setNextTrackAfterQueueUpdate()
 	}
 
+	p.invokeNoArgCallbacks(p.onQueueChange)
 	return nil
 }
 
@@ -321,6 +329,8 @@ func (p *playbackEngine) RemoveTracksFromQueue(trackIDs []string) {
 			p.setNextTrack(-1)
 		}
 	}
+
+	p.invokeNoArgCallbacks(p.onQueueChange)
 }
 
 func (p *playbackEngine) SetReplayGainOptions(config ReplayGainConfig) {

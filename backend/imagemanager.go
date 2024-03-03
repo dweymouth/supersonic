@@ -136,20 +136,26 @@ func (i *ImageManager) GetFullSizeCoverArt(coverID string) (image.Image, error) 
 		i.cachedFullSizeCoverAccessedAt = time.Now().UnixMilli()
 		return i.cachedFullSizeCover, nil
 	}
-	if i.s.Server == nil {
-		return nil, errors.New("logged out")
-	}
+	return i.getFullSizeCoverArtFromServer(context.Background(), coverID, nil)
+}
 
-	i.serverFetchSema <- struct{}{} // acquire
-	im, err := i.s.Server.GetCoverArt(coverID, 0)
-	<-i.serverFetchSema // release
-	if err != nil {
-		return nil, err
-	}
-	i.cachedFullSizeCover = im
-	i.cachedFullSizeCoverID = coverID
-	i.cachedFullSizeCoverAccessedAt = time.Now().UnixMilli()
-	return im, nil
+// GetCoverThumbnailAsync asynchronously fetches the cover image for the given ID,
+// and invokes the callback on completion. It returns a context.CancelFunc which can be used to
+// cancel the fetch. The callback will not be invoked if the fetch is cancelled before completion.
+// The cancel func must be invoked to avoid resource leaks. Use GetCoverThumbnail if cancellation is not needed.
+func (i *ImageManager) GetFullSizeCoverArtAsync(coverID string, cb func(image.Image, error)) context.CancelFunc {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		if i.cachedFullSizeCoverID == coverID {
+			i.cachedFullSizeCoverAccessedAt = time.Now().UnixMilli()
+			if ctx.Err() == nil {
+				cb(i.cachedFullSizeCover, nil)
+			}
+		} else {
+			i.getFullSizeCoverArtFromServer(ctx, coverID, cb)
+		}
+	}()
+	return cancel
 }
 
 // GetCoverArtURL returns the URL for the locally cached cover thumbnail, if it exists.
@@ -264,6 +270,33 @@ func (i *ImageManager) fetchAndCacheCoverFromServer(ctx context.Context, coverID
 			cb(img, err)
 		}
 		return img, err
+	}
+}
+
+func (i *ImageManager) getFullSizeCoverArtFromServer(ctx context.Context, coverID string, cb func(image.Image, error)) (image.Image, error) {
+	if i.s.Server == nil {
+		err := errors.New("logged out")
+		if ctx.Err() == nil && cb != nil {
+			cb(nil, err)
+		}
+		return nil, err
+	}
+
+	select {
+	case <-ctx.Done():
+		return nil, context.Canceled
+	case i.serverFetchSema <- struct{}{}: // acquire
+		im, err := i.s.Server.GetCoverArt(coverID, 0)
+		<-i.serverFetchSema // release
+		if err == nil {
+			i.cachedFullSizeCover = im
+			i.cachedFullSizeCoverID = coverID
+			i.cachedFullSizeCoverAccessedAt = time.Now().UnixMilli()
+		}
+		if ctx.Err() == nil && cb != nil {
+			cb(im, err)
+		}
+		return im, err
 	}
 }
 

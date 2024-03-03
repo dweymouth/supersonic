@@ -30,7 +30,7 @@ type NowPlayingCard struct {
 	OnTrackNameTapped  func()
 	OnArtistNameTapped func(artistID string)
 	OnAlbumNameTapped  func()
-	OnShowCoverImage   func()
+	OnCoverTapped      func()
 	OnSetRating        func(rating int)
 	OnSetFavorite      func(favorite bool)
 	OnAddToPlaylist    func()
@@ -52,6 +52,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.trackName.TextStyle.Bold = true
 	n.cover.SetMinSize(fyne.NewSize(85, 85))
 	n.cover.FillMode = canvas.ImageFillContain
+	n.cover.ScaleMode = canvas.ImageScaleFastest
 	n.cover.Hidden = true
 	n.albumName.OnTapped = n.onAlbumNameTapped
 	n.artistName.OnTapped = n.onArtistNameTapped
@@ -84,8 +85,8 @@ func (n *NowPlayingCard) onTrackNameTapped() {
 }
 
 func (n *NowPlayingCard) onShowCoverImage(*fyne.PointEvent) {
-	if n.OnShowCoverImage != nil {
-		n.OnShowCoverImage()
+	if n.OnCoverTapped != nil {
+		n.OnCoverTapped()
 	}
 }
 

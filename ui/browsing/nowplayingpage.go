@@ -1,7 +1,9 @@
 package browsing
 
 import (
+	"context"
 	"fmt"
+	"image"
 	"log"
 	"strings"
 
@@ -18,6 +20,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -27,34 +30,35 @@ type NowPlayingPage struct {
 
 	nowPlayingPageState
 
-	queue     []*mediaprovider.Track
-	totalTime float64
-
-	title        *widget.RichText
-	tracklist    *widgets.Tracklist
-	statusLabel  *widget.Label
-	nowPlayingID string
-	container    *fyne.Container
+	queue           []*mediaprovider.Track
+	queueList       *widgets.PlayQueueList
+	lyricsViewer    *widgets.LyricsViewer
+	imageLoadCancel context.CancelFunc
+	card            *widgets.LargeNowPlayingCard
+	statusLabel     *widget.Label
+	totalTime       float64
+	nowPlayingID    string
+	albumID         string
+	container       *fyne.Container
 }
 
 type nowPlayingPageState struct {
 	contr   *controller.Controller
 	pool    *util.WidgetPool
-	conf    *backend.NowPlayingPageConfig
 	pm      *backend.PlaybackManager
+	im      *backend.ImageManager
 	canRate bool
 }
 
 func NewNowPlayingPage(
-	highlightedTrackID string,
 	contr *controller.Controller,
 	pool *util.WidgetPool,
-	conf *backend.NowPlayingPageConfig,
+	im *backend.ImageManager,
 	pm *backend.PlaybackManager,
 	canRate bool,
 ) *NowPlayingPage {
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
-		contr: contr, pool: pool, conf: conf, pm: pm, canRate: canRate,
+		contr: contr, pool: pool, im: im, pm: pm, canRate: canRate,
 	}}
 	a.ExtendBaseWidget(a)
 
@@ -62,51 +66,89 @@ func NewNowPlayingPage(
 	pm.OnPlaying(a.formatStatusLine)
 	pm.OnStopped(a.formatStatusLine)
 
-	if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
-		a.tracklist = t.(*widgets.Tracklist)
-		a.tracklist.Reset()
-	} else {
-		a.tracklist = widgets.NewTracklist(nil)
+	a.card = widgets.NewLargeNowPlayingCard()
+	a.card.DisableRating = !canRate
+	a.card.OnAlbumNameTapped = func() {
+		contr.NavigateTo(controller.AlbumRoute(a.albumID))
 	}
-	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
-	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
-		a.conf.TracklistColumns = cols
+	a.card.OnArtistNameTapped = func(artistID string) {
+		contr.NavigateTo(controller.ArtistRoute(artistID))
 	}
-	remove := fyne.NewMenuItem("Remove from queue", a.onRemoveSelectedFromQueue)
-	remove.Icon = theme.ContentRemoveIcon()
-	a.tracklist.Options = widgets.TracklistOptions{
-		AutoNumber:          true,
-		DisablePlaybackMenu: true,
-		DisableRating:       !canRate,
-		AuxiliaryMenuItems: []*fyne.MenuItem{
-			util.NewReorderTracksSubmenu(a.doSetNewTrackOrder),
-			remove,
-		},
+	a.card.OnSetFavorite = func(fav bool) {
+		a.contr.SetTrackFavorites([]string{a.nowPlayingID}, fav)
 	}
-	contr.ConnectTracklistActions(a.tracklist)
-	// override the default OnPlayTrackAt handler b/c we don't need to re-load the tracks into the queue
-	a.tracklist.OnPlayTrackAt = a.onPlayTrackAt
-	a.title = widget.NewRichTextWithText("Now Playing")
-	a.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
+	a.card.OnSetRating = func(rating int) {
+		a.contr.SetTrackRatings([]string{a.nowPlayingID}, rating)
+	}
+
+	a.queueList = widgets.NewPlayQueueList(a.im)
+	a.queueList.OnReorderTracks = a.doSetNewTrackOrder
+	a.queueList.OnDownload = contr.ShowDownloadDialog
+	a.queueList.OnAddToPlaylist = contr.DoAddTracksToPlaylistWorkflow
+	a.queueList.OnPlayTrackAt = func(tracknum int) {
+		_ = a.pm.PlayTrackAt(tracknum)
+	}
+	a.queueList.OnShowArtistPage = func(artistID string) {
+		a.contr.NavigateTo(controller.ArtistRoute(artistID))
+	}
+	a.queueList.OnRemoveFromQueue = func(trackIDs []string) {
+		a.queueList.UnselectAll()
+		a.pm.RemoveTracksFromQueue(trackIDs)
+	}
+	a.queueList.OnSetRating = func(trackIDs []string, rating int) {
+		contr.SetTrackRatings(trackIDs, rating)
+		if sharedutil.SliceContains(trackIDs, a.nowPlayingID) {
+			a.card.SetDisplayedRating(rating)
+		}
+	}
+	a.queueList.OnSetFavorite = func(trackIDs []string, fav bool) {
+		contr.SetTrackFavorites(trackIDs, fav)
+		if sharedutil.SliceContains(trackIDs, a.nowPlayingID) {
+			a.card.SetDisplayedFavorite(fav)
+		}
+	}
+
+	a.lyricsViewer = widgets.NewLyricsViewer()
 	a.statusLabel = widget.NewLabel("Stopped")
-	statusLabelCtr := container.New(&layouts.VboxCustomPadding{ExtraPad: -5},
-		myTheme.NewThemedRectangle(theme.ColorNameInputBorder),
-		a.statusLabel,
-	)
-	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
-		container.NewBorder(a.title, statusLabelCtr, nil, nil, a.tracklist))
-	a.load(highlightedTrackID)
+
+	a.Reload()
 	return a
 }
 
 func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
+	if a.container == nil {
+		paddedLayout := &layouts.PercentPadLayout{
+			LeftRightObjectPercent: .8,
+			TopBottomObjectPercent: .8,
+		}
+		mainContent := container.NewGridWithColumns(2,
+			container.New(paddedLayout, a.card),
+			container.New(paddedLayout,
+				util.AddHeaderBackground(
+					container.NewAppTabs(
+						container.NewTabItem("Play Queue",
+							container.NewBorder(layout.NewSpacer(), nil, nil, nil, a.queueList)),
+						container.NewTabItem("Lyrics", a.lyricsViewer),
+					))))
+		a.container = container.NewStack(
+			mainContent,
+			container.NewVBox(
+				layout.NewSpacer(),
+				container.NewBorder(nil, nil, util.NewHSpace(1), util.NewHSpace(1),
+					myTheme.NewThemedRectangle(theme.ColorNameInputBorder)),
+				a.statusLabel,
+			),
+		)
+	}
 	return widget.NewSimpleRenderer(a.container)
 }
 
 func (a *NowPlayingPage) Save() SavedPage {
-	a.tracklist.Clear()
-	a.pool.Release(util.WidgetTypeTracklist, a.tracklist)
+	if a.imageLoadCancel != nil {
+		a.imageLoadCancel()
+	}
 	nps := a.nowPlayingPageState
+	a.pool.Release(util.WidgetTypeNowPlayingPage, a)
 	return &nps
 }
 
@@ -114,26 +156,79 @@ func (a *NowPlayingPage) Route() controller.Route {
 	return controller.NowPlayingRoute("")
 }
 
-func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
-	a.tracklist.UnselectAll()
-}
-
-func (a *NowPlayingPage) SelectAll() {
-	a.tracklist.SelectAll()
-}
-
 var _ CanShowNowPlaying = (*NowPlayingPage)(nil)
 
 func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
+	if a.imageLoadCancel != nil {
+		a.imageLoadCancel()
+	}
 	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
-	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
+	a.queueList.SetNowPlaying(a.nowPlayingID)
+
+	a.albumID = sharedutil.AlbumIDOrEmptyStr(song)
+	a.card.Update(song)
+	if song == nil {
+		a.card.SetCoverImage(nil)
+		return
+	}
+	a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, func(img image.Image, err error) {
+		if err != nil {
+			log.Printf("error loading cover art: %v\n", err)
+		} else {
+			a.card.SetCoverImage(img)
+		}
+	})
+}
+
+func (a *NowPlayingPage) OnPlayQueueChange() {
+	a.Reload()
+}
+
+func (a *NowPlayingPage) Reload() {
+	a.queue = a.pm.GetPlayQueue()
+	a.queueList.SetTracks(a.queue)
+	a.totalTime = 0.0
+	for _, tr := range a.queue {
+		a.totalTime += float64(tr.Duration)
+	}
+	a.formatStatusLine()
+}
+
+func (s *nowPlayingPageState) Restore() Page {
+	if page := s.pool.Obtain(util.WidgetTypeNowPlayingPage).(*NowPlayingPage); page != nil {
+		page.Reload()
+		return page
+	}
+	return NewNowPlayingPage(s.contr, s.pool, s.im, s.pm, s.canRate)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)
 
 func (a *NowPlayingPage) OnPlayTimeUpdate(_, _ float64) {
 	a.formatStatusLine()
+}
+
+var _ CanSelectAll = (*NowPlayingPage)(nil)
+
+func (a *NowPlayingPage) SelectAll() {
+	a.queueList.SelectAll()
+}
+
+var _ fyne.Tappable = (*NowPlayingPage)(nil)
+
+func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
+	a.queueList.UnselectAll()
+}
+
+func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.TrackReorderOp) {
+	idxs := make([]int, 0, len(trackIDs))
+	for i, tr := range a.queue {
+		if sharedutil.SliceContains(trackIDs, tr.ID) {
+			idxs = append(idxs, i)
+		}
+	}
+	newTracks := sharedutil.ReorderTracks(a.queue, idxs, op)
+	a.pm.UpdatePlayQueue(newTracks)
 }
 
 func (a *NowPlayingPage) formatStatusLine() {
@@ -195,63 +290,4 @@ func (a *NowPlayingPage) formatMediaInfoStr(player player.BasePlayer) string {
 	// Note: bit depth intentionally omitted since MPV reports the decoded bit depth
 	// i.e. 24 bit files get reported as 32 bit. Also b/c bit depth isn't meaningful for lossy.
 	return fmt.Sprintf("%s %g kHz, %d kbps", codec, float64(audioInfo.Samplerate)/1000, audioInfo.Bitrate/1000)
-}
-
-func (a *NowPlayingPage) Reload() {
-	a.load("")
-}
-
-var _ Scrollable = (*NowPlayingPage)(nil)
-
-func (a *NowPlayingPage) Scroll(scrollAmt float32) {
-	a.tracklist.Scroll(scrollAmt)
-}
-
-func (a *NowPlayingPage) onPlayTrackAt(tracknum int) {
-	_ = a.pm.PlayTrackAt(tracknum)
-}
-
-func (a *NowPlayingPage) onRemoveSelectedFromQueue() {
-	a.pm.RemoveTracksFromQueue(a.tracklist.SelectedTrackIDs())
-	a.tracklist.UnselectAll()
-	a.Reload()
-}
-
-func (a *NowPlayingPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
-	// Since the tracklist view may be sorted in a different order than the
-	// actual running order, we need to get the IDs of the selected tracks
-	// from the tracklist and convert them to indices in the *original* run order
-	ids := a.tracklist.SelectedTrackIDs()
-	idxs := make([]int, 0, len(ids))
-	for i, tr := range a.queue {
-		if sharedutil.SliceContains(ids, tr.ID) {
-			idxs = append(idxs, i)
-		}
-	}
-	newTracks := sharedutil.ReorderTracks(a.queue, idxs, op)
-	a.pm.UpdatePlayQueue(newTracks)
-
-	// force-switch back to unsorted view to show new track order
-	a.tracklist.SetSorting(widgets.TracklistSort{})
-	a.tracklist.SetTracks(newTracks)
-	a.tracklist.UnselectAll()
-}
-
-// does not make calls to server - can safely be run in UI callbacks
-func (a *NowPlayingPage) load(highlightedTrackID string) {
-	a.queue = a.pm.GetPlayQueue()
-	a.tracklist.SetTracks(a.queue)
-	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	if highlightedTrackID != "" {
-		a.tracklist.SelectAndScrollToTrack(highlightedTrackID)
-	}
-	a.totalTime = 0.0
-	for _, tr := range a.queue {
-		a.totalTime += float64(tr.Duration)
-	}
-	a.formatStatusLine()
-}
-
-func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage("", s.contr, s.pool, s.conf, s.pm, s.canRate)
 }

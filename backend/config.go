@@ -69,10 +69,6 @@ type FavoritesPageConfig struct {
 	TracklistColumns []string
 }
 
-type NowPlayingPageConfig struct {
-	TracklistColumns []string
-}
-
 type PlaylistPageConfig struct {
 	TracklistColumns []string
 }
@@ -117,21 +113,20 @@ type TranscodingConfig struct {
 }
 
 type Config struct {
-	Application    AppConfig
-	Servers        []*ServerConfig
-	AlbumPage      AlbumPageConfig
-	AlbumsPage     AlbumsPageConfig
-	ArtistPage     ArtistPageConfig
-	FavoritesPage  FavoritesPageConfig
-	NowPlayingPage NowPlayingPageConfig
-	PlaylistPage   PlaylistPageConfig
-	PlaylistsPage  PlaylistsPageConfig
-	TracksPage     TracksPageConfig
-	LocalPlayback  LocalPlaybackConfig
-	Scrobbling     ScrobbleConfig
-	ReplayGain     ReplayGainConfig
-	Transcoding    TranscodingConfig
-	Theme          ThemeConfig
+	Application   AppConfig
+	Servers       []*ServerConfig
+	AlbumPage     AlbumPageConfig
+	AlbumsPage    AlbumsPageConfig
+	ArtistPage    ArtistPageConfig
+	FavoritesPage FavoritesPageConfig
+	PlaylistPage  PlaylistPageConfig
+	PlaylistsPage PlaylistsPageConfig
+	TracksPage    TracksPageConfig
+	LocalPlayback LocalPlaybackConfig
+	Scrobbling    ScrobbleConfig
+	ReplayGain    ReplayGainConfig
+	Transcoding   TranscodingConfig
+	Theme         ThemeConfig
 }
 
 var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists"}
@@ -166,9 +161,6 @@ func DefaultConfig(appVersionTag string) *Config {
 		FavoritesPage: FavoritesPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 			InitialView:      "Albums",
-		},
-		NowPlayingPage: NowPlayingPageConfig{
-			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
 		},
 		PlaylistPage: PlaylistPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
