@@ -197,9 +197,6 @@ func (a *NowPlayingPage) OnPlayTimeUpdate(_, _ float64) {
 }
 
 func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.TrackReorderOp) {
-	// Since the tracklist view may be sorted in a different order than the
-	// actual running order, we need to get the IDs of the selected tracks
-	// from the tracklist and convert them to indices in the *original* run order
 	idxs := make([]int, 0, len(trackIDs))
 	for i, tr := range a.queue {
 		if sharedutil.SliceContains(trackIDs, tr.ID) {
