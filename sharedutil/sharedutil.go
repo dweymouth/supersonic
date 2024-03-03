@@ -106,7 +106,7 @@ func AlbumIDOrEmptyStr(track *mediaprovider.Track) string {
 	if track == nil {
 		return ""
 	}
-	return track.ID
+	return track.AlbumID
 }
 
 func TracksToIDs(tracks []*mediaprovider.Track) []string {

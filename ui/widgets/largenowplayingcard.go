@@ -50,8 +50,8 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	n.Content = n.cover
 	n.Caption = container.New(&layouts.VboxCustomPadding{ExtraPad: -13},
 		n.trackName,
-		n.albumName,
 		n.artistName,
+		n.albumName,
 		container.NewHBox(
 			layout.NewSpacer(),
 			n.favorite,
