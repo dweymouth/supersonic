@@ -69,6 +69,12 @@ func NewFullscreenPage(
 	}
 
 	a.queueList = widgets.NewPlayQueueList(a.im)
+	a.queueList.OnPlayTrackAt = func(tracknum int) {
+		_ = a.pm.PlayTrackAt(tracknum)
+	}
+	a.queueList.OnShowArtistPage = func(artistID string) {
+		a.contr.NavigateTo(controller.ArtistRoute(artistID))
+	}
 	paddedLayout := &layouts.PercentPadLayout{
 		LeftRightObjectPercent: .8,
 		TopBottomObjectPercent: .8,
