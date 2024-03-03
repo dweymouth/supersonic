@@ -63,8 +63,6 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 
 	n.trackName.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText
 	n.trackName.Truncation = fyne.TextTruncateEllipsis
-	n.trackName.Hidden = true
-	n.albumName.Hidden = true
 	n.albumName.Truncation = fyne.TextTruncateEllipsis
 	n.trackName.Truncation = fyne.TextTruncateEllipsis
 	n.albumName.OnTapped = n.onAlbumNameTapped
@@ -100,13 +98,19 @@ func (n *LargeNowPlayingCard) onSetRating(rating int) {
 }
 
 func (n *LargeNowPlayingCard) Update(track *mediaprovider.Track) {
-	n.trackName.Segments[0].(*widget.TextSegment).Text = track.Name
-	n.trackName.Hidden = track.Name == ""
-	n.artistName.BuildSegments(track.ArtistNames, track.ArtistIDs)
-	n.albumName.Text = track.Album
-	n.albumName.Hidden = track.Album == ""
-	n.rating.Rating = track.Rating
-	n.favorite.Favorite = track.Favorite
+	if track != nil {
+		n.trackName.Segments[0].(*widget.TextSegment).Text = track.Name
+		n.artistName.BuildSegments(track.ArtistNames, track.ArtistIDs)
+		n.albumName.Text = track.Album
+		n.rating.Rating = track.Rating
+		n.favorite.Favorite = track.Favorite
+	} else {
+		n.trackName.Segments[0].(*widget.TextSegment).Text = ""
+		n.artistName.BuildSegments([]string{}, []string{})
+		n.albumName.Text = ""
+		n.rating.Rating = 0
+		n.favorite.Favorite = false
+	}
 
 	n.Refresh()
 }

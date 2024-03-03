@@ -110,9 +110,15 @@ func (a *FullscreenPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 	if a.imageLoadCancel != nil {
 		a.imageLoadCancel()
 	}
-	a.albumID = song.AlbumID
 	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
+	a.queueList.SetNowPlaying(a.nowPlayingID)
+
+	a.albumID = sharedutil.AlbumIDOrEmptyStr(song)
 	a.card.Update(song)
+	if song == nil {
+		a.card.SetCoverImage(nil)
+		return
+	}
 	a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, func(img image.Image, err error) {
 		if err != nil {
 			log.Printf("error loading cover art: %v\n", err)
@@ -120,7 +126,6 @@ func (a *FullscreenPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 			a.card.SetCoverImage(img)
 		}
 	})
-	a.queueList.SetNowPlaying(song.ID)
 }
 
 func (a *FullscreenPage) Reload() {

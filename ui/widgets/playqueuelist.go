@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
@@ -19,7 +20,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
-const thumbnailSize = 60
+const thumbnailSize = 52
 
 type PlayQueueList struct {
 	widget.BaseWidget
@@ -41,7 +42,8 @@ func NewPlayQueueList(im *backend.ImageManager) *PlayQueueList {
 	p.ExtendBaseWidget(p)
 
 	// #, Cover, Title/Artist, Time
-	p.colLayout = layouts.NewColumnsLayout([]float32{40, thumbnailSize, -1, 60})
+	coverWidth := NewPlayQueueListRow(p, im, layout.NewSpacer()).cover.MinSize().Width
+	p.colLayout = layouts.NewColumnsLayout([]float32{40, coverWidth, -1, 60})
 
 	playIconResource := theme.NewThemedResource(theme.MediaPlayIcon())
 	playIconResource.ColorName = theme.ColorNamePrimary
@@ -215,7 +217,7 @@ func NewPlayQueueListRow(playQueueList *PlayQueueList, im *backend.ImageManager,
 
 	p.Content = container.New(playQueueList.colLayout,
 		container.NewCenter(p.num),
-		p.cover,
+		container.NewPadded(p.cover),
 		container.New(&layouts.VboxCustomPadding{ExtraPad: -15},
 			p.title, p.artist),
 		container.NewCenter(p.time),
