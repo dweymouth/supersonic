@@ -73,8 +73,8 @@ type TracklistOptions struct {
 	// Disables the five star rating widget.
 	DisableRating bool
 
-	// Hides the sharing option.
-	HideSharing bool
+	// Disables the sharing option.
+	DisableSharing bool
 }
 
 type Tracklist struct {
@@ -560,13 +560,11 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		})
 		unfavorite.Icon = myTheme.NotFavoriteIcon
 		t.ctxMenu.Items = append(t.ctxMenu.Items, playlist, download)
-		if !t.Options.HideSharing {
-			t.shareMenuItem = fyne.NewMenuItem("Share...", func() {
-				t.onShare(t.selectedTracks())
-			})
-			t.shareMenuItem.Icon = myTheme.ShareIcon
-			t.ctxMenu.Items = append(t.ctxMenu.Items, t.shareMenuItem)
-		}
+		t.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+			t.onShare(t.selectedTracks())
+		})
+		t.shareMenuItem.Icon = myTheme.ShareIcon
+		t.ctxMenu.Items = append(t.ctxMenu.Items, t.shareMenuItem)
 		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
 		t.ctxMenu.Items = append(t.ctxMenu.Items, favorite, unfavorite)
 		t.ratingSubmenu = util.NewRatingSubmenu(func(rating int) {
@@ -579,9 +577,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		}
 	}
 	t.ratingSubmenu.Disabled = t.Options.DisableRating
-	if t.shareMenuItem != nil {
-		t.shareMenuItem.Disabled = len(t.selectedTracks()) != 1
-	}
+	t.shareMenuItem.Disabled = t.Options.DisableSharing || len(t.selectedTracks()) != 1
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
 }
 
@@ -646,9 +642,8 @@ func (t *Tracklist) onDownload(tracks []*mediaprovider.Track, downloadName strin
 
 func (t *Tracklist) onShare(tracks []*mediaprovider.Track) {
 	if t.OnShare != nil {
-		selectedTrackIDs := t.SelectedTrackIDs()
-		if len(selectedTrackIDs) > 0 {
-			t.OnShare(selectedTrackIDs[0])
+		if len(tracks) > 0 {
+			t.OnShare(tracks[0].ID)
 		}
 	}
 }

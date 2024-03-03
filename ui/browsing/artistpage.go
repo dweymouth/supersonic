@@ -239,7 +239,7 @@ func (a *ArtistPage) showTopTracks() {
 		_, canRate := a.mp.(mediaprovider.SupportsRating)
 		_, canShare := a.mp.(mediaprovider.SupportsSharing)
 		tl.Options.DisableRating = !canRate
-		tl.Options.HideSharing = !canShare
+		tl.Options.DisableSharing = !canShare
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
 		tl.SetSorting(a.trackSort)
 		tl.OnVisibleColumnsChanged = func(cols []string) {
@@ -296,6 +296,7 @@ type ArtistPageHeader struct {
 	playRadioBtn   *widget.Button
 	menuBtn        *widget.Button
 	container      *fyne.Container
+	shareMenuItem  *fyne.MenuItem
 }
 
 func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
@@ -322,23 +323,26 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	})
 	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", myTheme.ShuffleIcon, a.artistPage.playArtistRadio)
 
-	_, canShare := a.artistPage.mp.(mediaprovider.SupportsSharing)
-	if canShare {
-		var pop *widget.PopUpMenu
-		a.menuBtn = widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
-		a.menuBtn.OnTapped = func() {
-			if pop == nil {
-				share := fyne.NewMenuItem("Share...", func() {
-					a.artistPage.contr.ShowShareDialog(a.artistID)
-				})
-				share.Icon = myTheme.ShareIcon
-				menu := fyne.NewMenu("", share)
-				pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
-			}
-			pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(a.menuBtn)
-			pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+a.menuBtn.Size().Height))
-		}
-	}
+	// TODO: Uncomment when at least one media provider supports sharing artists.
+	// a.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+	// 	a.artistPage.contr.ShowShareDialog(a.artistID)
+	// })
+	// a.shareMenuItem.Icon = myTheme.ShareIcon
+	// var pop *widget.PopUpMenu
+	// a.menuBtn = widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
+	// a.menuBtn.OnTapped = func() {
+	// 	if pop == nil {
+	// 		menu := fyne.NewMenu("", a.shareMenuItem)
+	// 		pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
+	// 	}
+	// 	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(a.menuBtn)
+	// 	pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+a.menuBtn.Size().Height))
+	// }
+	// canShareArtists := false
+	// if r, canShare := a.artistPage.mp.(mediaprovider.SupportsSharing); canShare {
+	// 	canShareArtists = r.CanShareArtists()
+	// }
+	// a.shareMenuItem.Disabled = !canShareArtists
 
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.biographyDisp.Truncation = fyne.TextTruncateEllipsis

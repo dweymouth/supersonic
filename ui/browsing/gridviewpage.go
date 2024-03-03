@@ -112,6 +112,7 @@ func NewGridViewPage(
 	gp.ExtendBaseWidget(gp)
 	gp.createTitleAndSort()
 
+	_, canShare := mp.(mediaprovider.SupportsSharing)
 	iter := adapter.Iter(gp.getSortOrder(), gp.getFilter())
 	if g := pool.Obtain(util.WidgetTypeGridView); g != nil {
 		gp.grid = g.(*widgets.GridView)
@@ -120,6 +121,7 @@ func NewGridViewPage(
 	} else {
 		gp.grid = widgets.NewGridView(iter, im, adapter.PlaceholderResource())
 	}
+	gp.grid.DisableSharing = !canShare
 	adapter.ConnectGridActions(gp.grid)
 	gp.createSearchAndFilter()
 	gp.createContainer()

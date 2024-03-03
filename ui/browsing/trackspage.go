@@ -53,7 +53,7 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	t.tracklist.Options = widgets.TracklistOptions{
 		DisableSorting: true,
 		DisableRating:  !t.canRate,
-		HideSharing:    !t.canShare,
+		DisableSharing: !t.canShare,
 		AutoNumber:     true,
 	}
 	t.tracklist.SetVisibleColumns(conf.TracklistColumns)
@@ -140,7 +140,7 @@ func (t *TracksPage) doSearch(query string) {
 			AutoNumber:     true,
 			DisableSorting: true,
 			DisableRating:  !t.canRate,
-			HideSharing:    !t.canShare,
+			DisableSharing: !t.canShare,
 		}
 		t.searchTracklist.SetVisibleColumns(t.conf.TracklistColumns)
 		t.searchTracklist.SetNowPlaying(t.nowPlayingID)

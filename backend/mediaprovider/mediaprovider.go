@@ -151,6 +151,7 @@ type SupportsRating interface {
 
 type SupportsSharing interface {
 	CreateShareURL(id string) (*url.URL, error)
+	CanShareArtists() bool
 }
 
 type JukeboxProvider interface {

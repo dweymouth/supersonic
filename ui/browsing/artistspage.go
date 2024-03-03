@@ -86,6 +86,11 @@ func newArtistsPage(
 	} else {
 		a.grid = widgets.NewFixedGridView(nil, a.im, myTheme.ArtistIcon)
 	}
+	canShareArtists := false
+	if r, canShare := mp.(mediaprovider.SupportsSharing); canShare {
+		canShareArtists = r.CanShareArtists()
+	}
+	a.grid.DisableSharing = !canShareArtists
 	a.contr.ConnectArtistGridActions(a.grid)
 
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())

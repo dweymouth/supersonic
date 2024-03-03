@@ -330,6 +330,12 @@ func (s *subsonicMediaProvider) CreateShareURL(id string) (*url.URL, error) {
 	return shareUrl, nil
 }
 
+func (s *subsonicMediaProvider) CanShareArtists() bool {
+	// TODO: Change to true when we decide to allow sharing artists, in case an OpenSubsonic extension
+	//       is approved to share artists in addition to albums and tracks.
+	return false
+}
+
 func (s *subsonicMediaProvider) DownloadTrack(trackID string) (io.Reader, error) {
 	return s.client.Download(trackID)
 }

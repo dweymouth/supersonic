@@ -79,6 +79,7 @@ type GridView struct {
 	itemForIndex       map[int]*GridViewItem
 	itemWidth          float32
 	numColsCached      int
+	shareMenuItem      *fyne.MenuItem
 }
 
 type GridViewState struct {
@@ -88,6 +89,8 @@ type GridViewState struct {
 	Placeholder  fyne.Resource
 	highestShown int
 	done         bool
+
+	DisableSharing bool
 
 	OnPlay              func(id string, shuffle bool)
 	OnAddToQueue        func(id string)
@@ -408,19 +411,14 @@ func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
 			}
 		})
 		download.Icon = theme.DownloadIcon()
-		menuItems := []*fyne.MenuItem{play, shuffle, queue, playlist, download}
-
-		if g.OnShare != nil {
-			share := fyne.NewMenuItem("Share...", func() {
-				g.OnShare(g.menuGridViewItemId)
-			})
-			share.Icon = myTheme.ShareIcon
-			menuItems = append(menuItems, share)
-		}
-
-		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", menuItems...),
+		g.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+			g.OnShare(g.menuGridViewItemId)
+		})
+		g.shareMenuItem.Icon = myTheme.ShareIcon
+		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", play, shuffle, queue, playlist, download, g.shareMenuItem),
 			fyne.CurrentApp().Driver().CanvasForObject(g))
 	}
+	g.shareMenuItem.Disabled = g.DisableSharing
 	g.menu.ShowAtPosition(pos)
 }
 

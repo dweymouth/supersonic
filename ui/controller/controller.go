@@ -141,12 +141,8 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 		m.ClosePopUpOnEscape(pop)
 	}
 	tracklist.OnDownload = m.ShowDownloadDialog
-
-	_, canShare := m.App.ServerManager.Server.(mediaprovider.SupportsSharing)
-	if canShare {
-		tracklist.OnShare = func(trackID string) {
-			go m.ShowShareDialog(trackID)
-		}
+	tracklist.OnShare = func(trackID string) {
+		go m.ShowShareDialog(trackID)
 	}
 }
 
@@ -183,12 +179,8 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 			m.ShowDownloadDialog(album.Tracks, album.Name)
 		}()
 	}
-
-	_, canShare := m.App.ServerManager.Server.(mediaprovider.SupportsSharing)
-	if canShare {
-		grid.OnShare = func(albumID string) {
-			go m.ShowShareDialog(albumID)
-		}
+	grid.OnShare = func(albumID string) {
+		go m.ShowShareDialog(albumID)
 	}
 }
 

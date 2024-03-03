@@ -43,11 +43,12 @@ type NowPlayingPage struct {
 }
 
 type nowPlayingPageState struct {
-	contr   *controller.Controller
-	pool    *util.WidgetPool
-	pm      *backend.PlaybackManager
-	im      *backend.ImageManager
-	canRate bool
+	contr    *controller.Controller
+	pool     *util.WidgetPool
+	pm       *backend.PlaybackManager
+	im       *backend.ImageManager
+	canRate  bool
+	canShare bool
 }
 
 func NewNowPlayingPage(
@@ -56,9 +57,10 @@ func NewNowPlayingPage(
 	im *backend.ImageManager,
 	pm *backend.PlaybackManager,
 	canRate bool,
+	canShare bool,
 ) *NowPlayingPage {
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
-		contr: contr, pool: pool, im: im, pm: pm, canRate: canRate,
+		contr: contr, pool: pool, im: im, pm: pm, canRate: canRate, canShare: canShare,
 	}}
 	a.ExtendBaseWidget(a)
 
@@ -82,8 +84,15 @@ func NewNowPlayingPage(
 	}
 
 	a.queueList = widgets.NewPlayQueueList(a.im)
+	a.queueList.DisableRating = !canRate
+	a.queueList.DisableSharing = !canShare
 	a.queueList.OnReorderTracks = a.doSetNewTrackOrder
 	a.queueList.OnDownload = contr.ShowDownloadDialog
+	a.queueList.OnShare = func(tracks []*mediaprovider.Track) {
+		if len(tracks) > 0 {
+			a.contr.ShowShareDialog(tracks[0].ID)
+		}
+	}
 	a.queueList.OnAddToPlaylist = contr.DoAddTracksToPlaylistWorkflow
 	a.queueList.OnPlayTrackAt = func(tracknum int) {
 		_ = a.pm.PlayTrackAt(tracknum)
@@ -199,7 +208,7 @@ func (s *nowPlayingPageState) Restore() Page {
 		page.Reload()
 		return page
 	}
-	return NewNowPlayingPage(s.contr, s.pool, s.im, s.pm, s.canRate)
+	return NewNowPlayingPage(s.contr, s.pool, s.im, s.pm, s.canRate, s.canShare)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)
