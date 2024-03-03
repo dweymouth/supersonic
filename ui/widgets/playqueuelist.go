@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/os"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -25,10 +26,21 @@ const thumbnailSize = 52
 type PlayQueueList struct {
 	widget.BaseWidget
 
-	list *FocusList
+	DisableRating bool
 
-	OnShowArtistPage func(artistID string)
-	OnPlayTrackAt    func(idx int)
+	// user action callbacks
+	OnAddToPlaylist   func(trackIDs []string)
+	OnSetFavorite     func(trackIDs []string, fav bool)
+	OnSetRating       func(trackIDs []string, rating int)
+	OnRemoveFromQueue func(trackIDs []string)
+	OnDownload        func(tracks []*mediaprovider.Track, downloadName string)
+	OnShowArtistPage  func(artistID string)
+	OnPlayTrackAt     func(idx int)
+	OnReorderTracks   func(trackIDs []string, op sharedutil.TrackReorderOp)
+
+	list          *FocusList
+	menu          *widget.PopUpMenu
+	ratingSubmenu *fyne.MenuItem
 
 	nowPlayingID string
 	colLayout    *layouts.ColumnsLayout
@@ -159,7 +171,79 @@ func (p *PlayQueueList) selectRange(idx int) {
 }
 
 func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
+	p.selectTrack(trackIdx)
+	p.list.Refresh()
+	if p.menu == nil {
+		playlist := fyne.NewMenuItem("Add to playlist...", func() {
+			if p.OnAddToPlaylist != nil {
+				p.OnAddToPlaylist(p.selectedTrackIDs())
+			}
+		})
+		playlist.Icon = myTheme.PlaylistIcon
+		download := fyne.NewMenuItem("Download...", func() {
+			if p.OnDownload != nil {
+				p.OnDownload(p.selectedTracks(), "Selected tracks")
+			}
+		})
+		download.Icon = theme.DownloadIcon()
+		favorite := fyne.NewMenuItem("Set favorite", func() {
+			if p.OnSetFavorite != nil {
+				p.OnSetFavorite(p.selectedTrackIDs(), true)
+			}
+		})
+		favorite.Icon = myTheme.FavoriteIcon
+		unfavorite := fyne.NewMenuItem("Unset favorite", func() {
+			if p.OnSetFavorite != nil {
+				p.OnSetFavorite(p.selectedTrackIDs(), false)
+			}
+		})
+		unfavorite.Icon = myTheme.NotFavoriteIcon
+		p.ratingSubmenu = util.NewRatingSubmenu(func(rating int) {
+			if p.OnSetRating != nil {
+				p.OnSetRating(p.selectedTrackIDs(), rating)
+			}
+		})
+		remove := fyne.NewMenuItem("Remove from queue", func() {
+			if p.OnRemoveFromQueue != nil {
+				p.OnRemoveFromQueue(p.selectedTrackIDs())
+			}
+		})
+		remove.Icon = theme.ContentRemoveIcon()
+		reorder := util.NewReorderTracksSubmenu(func(tro sharedutil.TrackReorderOp) {
+			if p.OnReorderTracks != nil {
+				p.OnReorderTracks(p.selectedTrackIDs(), tro)
+			}
+		})
 
+		p.menu = widget.NewPopUpMenu(
+			fyne.NewMenu("",
+				playlist,
+				download,
+				fyne.NewMenuItemSeparator(),
+				favorite,
+				unfavorite,
+				p.ratingSubmenu,
+				fyne.NewMenuItemSeparator(),
+				reorder,
+				remove,
+			),
+			fyne.CurrentApp().Driver().CanvasForObject(p),
+		)
+	}
+	p.ratingSubmenu.Disabled = p.DisableRating
+	p.menu.ShowAtPosition(e.AbsolutePosition)
+}
+
+func (t *PlayQueueList) selectedTracks() []*mediaprovider.Track {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	return util.SelectedTracks(t.tracks)
+}
+
+func (t *PlayQueueList) selectedTrackIDs() []string {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	return util.SelectedTrackIDs(t.tracks)
 }
 
 func (p *PlayQueueList) CreateRenderer() fyne.WidgetRenderer {

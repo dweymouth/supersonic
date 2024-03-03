@@ -16,6 +16,24 @@ func ToTrackListModels(trs []*mediaprovider.Track) []*TrackListModel {
 	})
 }
 
+func SelectedTrackModels(tracks []*TrackListModel) []*TrackListModel {
+	return sharedutil.FilterSlice(tracks, func(tm *TrackListModel) bool {
+		return tm.Selected
+	})
+}
+
+func SelectedTracks(tracks []*TrackListModel) []*mediaprovider.Track {
+	return sharedutil.MapSlice(SelectedTrackModels(tracks), func(tm *TrackListModel) *mediaprovider.Track {
+		return tm.Track
+	})
+}
+
+func SelectedTrackIDs(tracks []*TrackListModel) []string {
+	return sharedutil.MapSlice(SelectedTrackModels(tracks), func(tm *TrackListModel) string {
+		return tm.Track.ID
+	})
+}
+
 func SelectTrack(tracks []*TrackListModel, idx int) {
 	if tracks[idx].Selected {
 		return

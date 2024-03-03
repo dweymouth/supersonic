@@ -629,24 +629,16 @@ func (t *Tracklist) onDownload(tracks []*mediaprovider.Track, downloadName strin
 	}
 }
 
-func (t *Tracklist) selectedTrackModels() []*util.TrackListModel {
+func (t *Tracklist) selectedTracks() []*mediaprovider.Track {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
-	return sharedutil.FilterSlice(t.tracks, func(tm *util.TrackListModel) bool {
-		return tm.Selected
-	})
-}
-
-func (t *Tracklist) selectedTracks() []*mediaprovider.Track {
-	return sharedutil.MapSlice(t.selectedTrackModels(), func(tm *util.TrackListModel) *mediaprovider.Track {
-		return tm.Track
-	})
+	return util.SelectedTracks(t.tracks)
 }
 
 func (t *Tracklist) SelectedTrackIDs() []string {
-	return sharedutil.MapSlice(t.selectedTrackModels(), func(tm *util.TrackListModel) string {
-		return tm.Track.ID
-	})
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	return util.SelectedTrackIDs(t.tracks)
 }
 
 func (t *Tracklist) lenTracks() int {
