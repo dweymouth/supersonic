@@ -32,6 +32,15 @@ func NewAlbumIterator(fetchFn AlbumFetchFn, filter mediaprovider.AlbumFilter, cb
 	}
 }
 
+type ArtistFetchFn func(offset, limit int) ([]*mediaprovider.Artist, error)
+
+func NewArtistIterator(fetchFn ArtistFetchFn) mediaprovider.ArtistIterator {
+	return &baseIter[mediaprovider.Artist]{
+		fetcher: fetchFn,
+		filter:  nilFilter[mediaprovider.Artist]{},
+	}
+}
+
 type TrackFetchFn func(offset, limit int) ([]*mediaprovider.Track, error)
 
 func NewTrackIterator(fetchFn TrackFetchFn, cb func(string)) mediaprovider.TrackIterator {
@@ -52,7 +61,7 @@ func (r *baseIter[T]) Next() *T {
 		return a
 	}
 	r.prefetched = nil
-	for { // keep fetching until we are done or have mathcing results
+	for { // keep fetching until we are done or have matching results
 		items, err := r.fetcher(r.serverPos, 20)
 		if err != nil {
 			log.Printf("error fetching items: %s", err.Error())
@@ -73,8 +82,8 @@ func (r *baseIter[T]) Next() *T {
 	}
 	r.prefetchedPos = 1
 	if r.prefetchCB != nil {
-		for _, album := range r.prefetched {
-			go r.prefetchCB(album)
+		for _, item := range r.prefetched {
+			go r.prefetchCB(item)
 		}
 	}
 	return r.prefetched[0]

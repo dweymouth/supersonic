@@ -2,7 +2,6 @@ package browsing
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -111,9 +110,14 @@ func (a *ArtistsPage) Reload() {
 }
 
 func (a *ArtistsPage) load() {
-	artists, err := a.mp.GetArtists()
-	if err != nil {
-		log.Printf("error loading artists: %v", err.Error())
+	iter := a.mp.IterateArtists("")
+	var artists []*mediaprovider.Artist
+	for {
+		artist := iter.Next()
+		if artist == nil {
+			break
+		}
+		artists = append(artists, artist)
 	}
 	a.artists = artists
 	a.onSearched(a.searcher.Entry.Text, true)
