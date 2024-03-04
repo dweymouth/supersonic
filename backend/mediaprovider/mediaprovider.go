@@ -3,6 +3,7 @@ package mediaprovider
 import (
 	"image"
 	"io"
+	"net/url"
 	"strings"
 )
 
@@ -146,6 +147,11 @@ type MediaProvider interface {
 
 type SupportsRating interface {
 	SetRating(params RatingFavoriteParameters, rating int) error
+}
+
+type SupportsSharing interface {
+	CreateShareURL(id string) (*url.URL, error)
+	CanShareArtists() bool
 }
 
 type JukeboxProvider interface {

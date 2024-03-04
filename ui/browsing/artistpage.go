@@ -237,7 +237,9 @@ func (a *ArtistPage) showTopTracks() {
 		}
 		tl.Options = widgets.TracklistOptions{AutoNumber: true}
 		_, canRate := a.mp.(mediaprovider.SupportsRating)
+		_, canShare := a.mp.(mediaprovider.SupportsSharing)
 		tl.Options.DisableRating = !canRate
+		tl.Options.DisableSharing = !canShare
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
 		tl.SetSorting(a.trackSort)
 		tl.OnVisibleColumnsChanged = func(cols []string) {
@@ -292,7 +294,9 @@ type ArtistPageHeader struct {
 	favoriteBtn    *widgets.FavoriteButton
 	playBtn        *widget.Button
 	playRadioBtn   *widget.Button
+	menuBtn        *widget.Button
 	container      *fyne.Container
+	shareMenuItem  *fyne.MenuItem
 }
 
 func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
@@ -318,6 +322,28 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		go a.artistPage.contr.PlayArtistDiscography(a.artistID, false /*shuffle*/)
 	})
 	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", myTheme.ShuffleIcon, a.artistPage.playArtistRadio)
+
+	// TODO: Uncomment when at least one media provider supports sharing artists.
+	// a.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+	// 	a.artistPage.contr.ShowShareDialog(a.artistID)
+	// })
+	// a.shareMenuItem.Icon = myTheme.ShareIcon
+	// var pop *widget.PopUpMenu
+	// a.menuBtn = widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
+	// a.menuBtn.OnTapped = func() {
+	// 	if pop == nil {
+	// 		menu := fyne.NewMenu("", a.shareMenuItem)
+	// 		pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
+	// 	}
+	// 	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(a.menuBtn)
+	// 	pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+a.menuBtn.Size().Height))
+	// }
+	// canShareArtists := false
+	// if r, canShare := a.artistPage.mp.(mediaprovider.SupportsSharing); canShare {
+	// 	canShareArtists = r.CanShareArtists()
+	// }
+	// a.shareMenuItem.Disabled = !canShareArtists
+
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.biographyDisp.Truncation = fyne.TextTruncateEllipsis
 	a.ExtendBaseWidget(a)
@@ -407,12 +433,17 @@ func (a *ArtistPageHeader) toggleFavorited() {
 }
 
 func (a *ArtistPageHeader) createContainer() {
+	btnContainer := container.NewHBox(util.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn)
+	if a.menuBtn != nil {
+		btnContainer.Add(a.menuBtn)
+	}
+
 	a.container = util.AddHeaderBackground(
 		container.NewBorder(nil, nil, a.artistImage, nil,
 			container.NewVBox(
 				container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
 					a.titleDisp, a.biographyDisp, a.similarArtists),
-				container.NewHBox(util.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn)),
+				btnContainer),
 		))
 }
 

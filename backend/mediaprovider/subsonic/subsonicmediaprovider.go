@@ -5,6 +5,7 @@ import (
 	"image"
 	"io"
 	"math"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -313,6 +314,26 @@ func (s *subsonicMediaProvider) SetRating(params mediaprovider.RatingFavoritePar
 	}
 
 	return err
+}
+
+func (s *subsonicMediaProvider) CreateShareURL(id string) (*url.URL, error) {
+	share, err := s.client.CreateShare(id, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	shareUrl, err := url.Parse(share.Url)
+	if err != nil {
+		return nil, err
+	}
+
+	return shareUrl, nil
+}
+
+func (s *subsonicMediaProvider) CanShareArtists() bool {
+	// TODO: Change to true when we decide to allow sharing artists, in case an OpenSubsonic extension
+	//       is approved to share artists in addition to albums and tracks.
+	return false
 }
 
 func (s *subsonicMediaProvider) DownloadTrack(trackID string) (io.Reader, error) {

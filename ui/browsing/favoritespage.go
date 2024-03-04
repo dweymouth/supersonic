@@ -336,6 +336,11 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 			} else {
 				a.artistGrid = widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
 			}
+			canShareArtists := false
+			if r, canShare := a.mp.(mediaprovider.SupportsSharing); canShare {
+				canShareArtists = r.CanShareArtists()
+			}
+			a.artistGrid.DisableSharing = !canShareArtists
 			a.contr.ConnectArtistGridActions(a.artistGrid)
 			a.container.Objects[0] = a.artistGrid
 			a.Refresh()
@@ -395,7 +400,9 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			}
 			tracklist.Options = widgets.TracklistOptions{AutoNumber: true}
 			_, canRate := a.mp.(mediaprovider.SupportsRating)
+			_, canShare := a.mp.(mediaprovider.SupportsSharing)
 			tracklist.Options.DisableRating = !canRate
+			tracklist.Options.DisableSharing = !canShare
 			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 			tracklist.SetSorting(a.trackSort)
 			tracklist.OnVisibleColumnsChanged = func(cols []string) {

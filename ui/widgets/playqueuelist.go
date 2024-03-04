@@ -26,7 +26,8 @@ const thumbnailSize = 52
 type PlayQueueList struct {
 	widget.BaseWidget
 
-	DisableRating bool
+	DisableRating  bool
+	DisableSharing bool
 
 	// user action callbacks
 	OnAddToPlaylist   func(trackIDs []string)
@@ -34,6 +35,7 @@ type PlayQueueList struct {
 	OnSetRating       func(trackIDs []string, rating int)
 	OnRemoveFromQueue func(trackIDs []string)
 	OnDownload        func(tracks []*mediaprovider.Track, downloadName string)
+	OnShare           func(tracks []*mediaprovider.Track)
 	OnShowArtistPage  func(artistID string)
 	OnPlayTrackAt     func(idx int)
 	OnReorderTracks   func(trackIDs []string, op sharedutil.TrackReorderOp)
@@ -41,6 +43,7 @@ type PlayQueueList struct {
 	list          *FocusList
 	menu          *widget.PopUpMenu
 	ratingSubmenu *fyne.MenuItem
+	shareMenuItem *fyne.MenuItem
 
 	nowPlayingID string
 	colLayout    *layouts.ColumnsLayout
@@ -200,6 +203,12 @@ func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			}
 		})
 		download.Icon = theme.DownloadIcon()
+		p.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+			if p.OnShare != nil {
+				p.OnShare(p.selectedTracks())
+			}
+		})
+		p.shareMenuItem.Icon = myTheme.ShareIcon
 		favorite := fyne.NewMenuItem("Set favorite", func() {
 			if p.OnSetFavorite != nil {
 				p.OnSetFavorite(p.selectedTrackIDs(), true)
@@ -233,6 +242,7 @@ func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			fyne.NewMenu("",
 				playlist,
 				download,
+				p.shareMenuItem,
 				fyne.NewMenuItemSeparator(),
 				favorite,
 				unfavorite,
@@ -245,6 +255,7 @@ func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		)
 	}
 	p.ratingSubmenu.Disabled = p.DisableRating
+	p.shareMenuItem.Disabled = p.DisableSharing || len(p.selectedTracks()) != 1
 	p.menu.ShowAtPosition(e.AbsolutePosition)
 }
 

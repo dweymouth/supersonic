@@ -18,6 +18,7 @@ fyne bundle -append -prefix Res icons/publicdomain/filter.svg >> bundled.go
 fyne bundle -append -prefix Res icons/remix_design/repeat.svg >> bundled.go
 fyne bundle -append -prefix Res icons/remix_design/repeatone.svg >> bundled.go
 fyne bundle -append -prefix Res icons/remix_design/shuffle.svg >> bundled.go
+fyne bundle -append -prefix Res icons/remix_design/share.svg >> bundled.go
 fyne bundle -append -prefix Res icons/remix_design/updownarrow.svg >> bundled.go
 
 fyne bundle -append -prefix Res themes/default.toml >> bundled.go

@@ -7,6 +7,7 @@ import (
 	"image"
 	"io"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -22,8 +23,10 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -138,6 +141,9 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 		m.ClosePopUpOnEscape(pop)
 	}
 	tracklist.OnDownload = m.ShowDownloadDialog
+	tracklist.OnShare = func(trackID string) {
+		go m.ShowShareDialog(trackID)
+	}
 }
 
 func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
@@ -172,6 +178,9 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 			}
 			m.ShowDownloadDialog(album.Tracks, album.Name)
 		}()
+	}
+	grid.OnShare = func(albumID string) {
+		go m.ShowShareDialog(albumID)
 	}
 }
 
@@ -662,6 +671,52 @@ func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
 	}
 }
 
+func (c *Controller) ShowShareDialog(id string) {
+	go func() {
+		shareUrl, err := c.createShareURL(id)
+		if err != nil {
+			return
+		}
+
+		hyperlink := widget.NewHyperlink(shareUrl.String(), shareUrl)
+		dlg := dialog.NewCustom("Share content", "OK",
+			container.NewHBox(
+				hyperlink,
+				widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+					c.MainWindow.Clipboard().SetContent(hyperlink.Text)
+				}),
+				widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+					if shareUrl, err := c.createShareURL(id); err == nil {
+						hyperlink.Text = shareUrl.String()
+						hyperlink.URL = shareUrl
+						hyperlink.Refresh()
+					}
+				}),
+			),
+			c.MainWindow,
+		)
+		dlg.Show()
+	}()
+}
+
+func (c *Controller) createShareURL(id string) (*url.URL, error) {
+	r, ok := c.App.ServerManager.Server.(mediaprovider.SupportsSharing)
+	if !ok {
+		return nil, fmt.Errorf("server does not support sharing")
+	}
+
+	shareUrl, err := r.CreateShareURL(id)
+	if err != nil {
+		log.Printf("error creating share URL: %v", err)
+		c.showError(
+			"Failed to share content. This commonly occurs when the server does not support sharing," +
+				"or has the feature disabled.\nPlease check the server's settings and try again.",
+		)
+		return nil, err
+	}
+	return shareUrl, nil
+}
+
 func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track, downloadName string) {
 	numTracks := len(tracks)
 	var fileName string
@@ -760,6 +815,11 @@ func (c *Controller) sendNotification(title, content string) {
 		Title:   title,
 		Content: content,
 	})
+}
+
+func (c *Controller) showError(content string) {
+	// TODO: display an in-app toast message instead of a dialog.
+	dialog.ShowError(fmt.Errorf(content), c.MainWindow)
 }
 
 func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover image.Image) {
