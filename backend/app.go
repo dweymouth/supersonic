@@ -8,12 +8,12 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"slices"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
-	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
 
@@ -233,7 +233,7 @@ func (a *App) setupMPV() error {
 	a.LocalPlayer.SetAudioDevice(desiredDevice)
 
 	rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack, ReplayGainAuto}
-	if !sharedutil.SliceContains(rgainOpts, a.Config.ReplayGain.Mode) {
+	if !slices.Contains(rgainOpts, a.Config.ReplayGain.Mode) {
 		a.Config.ReplayGain.Mode = ReplayGainNone
 	}
 	mode := player.ReplayGainNone

@@ -24,7 +24,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
+        go-version: '1.21'
 
     - name: Install Dependencies
       run: brew install --force mpv && brew install dylibbundler
@@ -60,4 +60,4 @@ jobs:
       with:
         name: Supersonic_mac_x64_HighSierra+.zip
         path: Supersonic_HighSierra+.zip
-      
+

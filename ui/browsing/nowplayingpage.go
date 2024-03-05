@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"slices"
 	"strings"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -106,13 +107,13 @@ func NewNowPlayingPage(
 	}
 	a.queueList.OnSetRating = func(trackIDs []string, rating int) {
 		contr.SetTrackRatings(trackIDs, rating)
-		if sharedutil.SliceContains(trackIDs, a.nowPlayingID) {
+		if slices.Contains(trackIDs, a.nowPlayingID) {
 			a.card.SetDisplayedRating(rating)
 		}
 	}
 	a.queueList.OnSetFavorite = func(trackIDs []string, fav bool) {
 		contr.SetTrackFavorites(trackIDs, fav)
-		if sharedutil.SliceContains(trackIDs, a.nowPlayingID) {
+		if slices.Contains(trackIDs, a.nowPlayingID) {
 			a.card.SetDisplayedFavorite(fav)
 		}
 	}
@@ -232,7 +233,7 @@ func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
 func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.TrackReorderOp) {
 	idxs := make([]int, 0, len(trackIDs))
 	for i, tr := range a.queue {
-		if sharedutil.SliceContains(trackIDs, tr.ID) {
+		if slices.Contains(trackIDs, tr.ID) {
 			idxs = append(idxs, i)
 		}
 	}

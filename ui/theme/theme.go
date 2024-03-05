@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"image/color"
-	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/res"
-	"github.com/dweymouth/supersonic/sharedutil"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
@@ -200,7 +200,7 @@ func (m *MyTheme) Font(style fyne.TextStyle) fyne.Resource {
 		}
 	case fyne.TextStyle{Bold: true}:
 		if m.BoldFont != "" && boldFont == nil {
-			if content, err := ioutil.ReadFile(m.BoldFont); err != nil {
+			if content, err := os.ReadFile(m.BoldFont); err != nil {
 				m.BoldFont = ""
 			} else {
 				normalFont = fyne.NewStaticResource("boldFont", content)
@@ -222,7 +222,7 @@ func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
 
 func (m *MyTheme) getVariant() fyne.ThemeVariant {
 	v := DefaultAppearance // default if config has invalid or missing setting
-	if sharedutil.SliceContains(
+	if slices.Contains(
 		[]string{string(AppearanceLight), string(AppearanceDark), string(AppearanceAuto)},
 		m.config.Appearance) {
 		v = AppearanceMode(m.config.Appearance)
@@ -242,7 +242,7 @@ func readTTFFile(filepath string) ([]byte, error) {
 		log.Printf("error loading custom font %q: %s", filepath, err.Error())
 		return nil, err
 	}
-	content, err := ioutil.ReadFile(filepath)
+	content, err := os.ReadFile(filepath)
 	if err != nil {
 		log.Printf("error loading custom font %q: %s", filepath, err.Error())
 	}

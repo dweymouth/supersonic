@@ -64,9 +64,7 @@ func (r *baseIter[T]) Next() *T {
 		}
 		r.serverPos += len(items)
 		if !r.filter.IsNil() {
-			items = sharedutil.FilterSlice(items, func(al *T) bool {
-				return r.filter.Matches(al)
-			})
+			items = sharedutil.FilterSlice(items, r.filter.Matches)
 		}
 		r.prefetched = items
 		if len(items) > 0 {

@@ -2,7 +2,7 @@ package widgets
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -49,7 +49,7 @@ func NewAlbumFilterButton(filter *mediaprovider.AlbumFilter, fetchGenresFunc fun
 			genreNames := sharedutil.MapSlice(genres, func(g *mediaprovider.Genre) string {
 				return g.Name
 			})
-			sort.Strings(genreNames)
+			slices.Sort(genreNames)
 			a.genreListChan <- genreNames
 		}
 	}()

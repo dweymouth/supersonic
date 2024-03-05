@@ -1,6 +1,7 @@
 package sharedutil
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -79,13 +80,7 @@ func Test_ReorderTracks(t *testing.T) {
 
 func tracklistsEqual(t *testing.T, a, b []*mediaprovider.Track) bool {
 	t.Helper()
-	if len(a) != len(b) {
-		return false
-	}
-	for i, _ := range a {
-		if a[i].ID != b[i].ID {
-			return false
-		}
-	}
-	return true
+	return slices.EqualFunc(a, b, func(a, b *mediaprovider.Track) bool {
+		return a.ID == b.ID
+	})
 }
