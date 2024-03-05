@@ -3,6 +3,7 @@ package widgets
 import (
 	"fmt"
 	"log"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -271,7 +272,7 @@ func (t *Tracklist) Sorting() TracklistSort {
 func (t *Tracklist) SetSorting(sorting TracklistSort) {
 	if sorting.ColumnName == "" {
 		// nil case - reset current sort
-		if sharedutil.SliceContains(columns, t.sorting.ColumnName) {
+		if slices.Contains(columns, t.sorting.ColumnName) {
 			t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(t.sorting.ColumnName), Type: SortNone})
 		}
 		return
@@ -667,7 +668,7 @@ func (t *Tracklist) lenTracks() int {
 }
 
 func ColNumber(colName string) int {
-	i := sharedutil.IndexOf(columns, colName)
+	i := slices.Index(columns, colName)
 	if i < 0 {
 		log.Printf("error: Tracklist: invalid column name %s", colName)
 	}

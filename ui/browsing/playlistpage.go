@@ -3,6 +3,7 @@ package browsing
 import (
 	"fmt"
 	"log"
+	"slices"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -183,7 +184,7 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 	ids := a.tracklist.SelectedTrackIDs()
 	idxs := make([]int, 0, len(ids))
 	for i, tr := range a.tracks {
-		if sharedutil.SliceContains(ids, tr.ID) {
+		if slices.Contains(ids, tr.ID) {
 			idxs = append(idxs, i)
 		}
 	}

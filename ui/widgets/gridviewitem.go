@@ -3,9 +3,9 @@ package widgets
 import (
 	"image"
 	"image/color"
+	"slices"
 
 	"github.com/dweymouth/supersonic/res"
-	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/util"
 
@@ -205,7 +205,7 @@ func (g *GridViewItem) createContainer() {
 }
 
 func (g *GridViewItem) NeedsUpdate(model GridViewItemModel) bool {
-	return g.itemID != model.ID || !sharedutil.SliceEqual(g.secondaryIDs, model.SecondaryIDs)
+	return g.itemID != model.ID || !slices.Equal(g.secondaryIDs, model.SecondaryIDs)
 }
 
 func (g *GridViewItem) Update(model GridViewItemModel) {

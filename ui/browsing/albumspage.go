@@ -1,11 +1,12 @@
 package browsing
 
 import (
+	"slices"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -37,7 +38,7 @@ func (a *albumsPageAdapter) Route() controller.Route { return controller.AlbumsR
 func (a *albumsPageAdapter) SortOrders() ([]string, string) {
 	orders := a.mp.AlbumSortOrders()
 	sortOrder := a.cfg.SortOrder
-	if !sharedutil.SliceContains(orders, sortOrder) {
+	if !slices.Contains(orders, sortOrder) {
 		sortOrder = string(orders[0])
 	}
 	return orders, sortOrder

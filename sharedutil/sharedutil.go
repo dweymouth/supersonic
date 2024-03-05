@@ -2,31 +2,10 @@ package sharedutil
 
 import (
 	"math"
-	"sort"
+	"slices"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
-
-func SliceEqual[T comparable](a []T, b []T) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func SliceContains[T comparable](ts []T, t T) bool {
-	for _, x := range ts {
-		if x == t {
-			return true
-		}
-	}
-	return false
-}
 
 func FilterSlice[T any](ss []T, test func(T) bool) []T {
 	if ss == nil {
@@ -50,19 +29,6 @@ func MapSlice[T any, U any](ts []T, f func(T) U) []U {
 		result[i] = f(t)
 	}
 	return result
-}
-
-func Find[T any](ts []T, f func(T) bool) int {
-	for i, tt := range ts {
-		if f(tt) {
-			return i
-		}
-	}
-	return -1
-}
-
-func IndexOf[T comparable](ts []T, t T) int {
-	return Find(ts, func(tt T) bool { return t == tt })
 }
 
 func Reversed[T any](ts []T) []T {
@@ -133,7 +99,7 @@ func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReord
 		topIdx := 0
 		botIdx := len(idxToMove)
 		for i, t := range tracks {
-			if SliceContains(idxToMove, i) {
+			if slices.Contains(idxToMove, i) {
 				newTracks[topIdx] = t
 				topIdx++
 			} else {
@@ -145,7 +111,7 @@ func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReord
 		topIdx := 0
 		botIdx := len(tracks) - len(idxToMove)
 		for i, t := range tracks {
-			if SliceContains(idxToMove, i) {
+			if slices.Contains(idxToMove, i) {
 				newTracks[botIdx] = t
 				botIdx++
 			} else {
@@ -178,7 +144,7 @@ func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReord
 
 func firstIdxCanMoveUp(idxs []int) int {
 	prevIdx := -1
-	sort.Ints(idxs)
+	slices.Sort(idxs)
 	for _, idx := range idxs {
 		if idx > prevIdx+1 {
 			return idx
@@ -190,7 +156,7 @@ func firstIdxCanMoveUp(idxs []int) int {
 
 func lastIdxCanMoveDown(idxs []int, lenSlice int) int {
 	prevIdx := lenSlice
-	sort.Ints(idxs)
+	slices.Sort(idxs)
 	for i := len(idxs) - 1; i >= 0; i-- {
 		idx := idxs[i]
 		if idx < prevIdx-1 {

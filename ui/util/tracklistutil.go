@@ -1,6 +1,8 @@
 package util
 
 import (
+	"slices"
+
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
@@ -69,33 +71,19 @@ func SelectTrackRange(tracks []*TrackListModel, idx int) {
 		tracks[idx].Selected = true
 		return
 	}
-	from := minInt(idx, lastSelected)
-	to := maxInt(idx, lastSelected)
+	from := min(idx, lastSelected)
+	to := max(idx, lastSelected)
 	for i := from; i <= to; i++ {
 		tracks[i].Selected = true
 	}
 }
 
 func FindTrackByID(tracks []*TrackListModel, id string) (*mediaprovider.Track, int) {
-	idx := sharedutil.Find(tracks, func(tr *TrackListModel) bool {
+	idx := slices.IndexFunc(tracks, func(tr *TrackListModel) bool {
 		return tr.Track.ID == id
 	})
 	if idx >= 0 {
 		return tracks[idx].Track, idx
 	}
 	return nil, -1
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

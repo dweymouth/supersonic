@@ -7,11 +7,11 @@ import (
 	"image/color"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
-	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -109,7 +109,7 @@ func DecodeThemeFile(reader io.Reader) (*ThemeFile, error) {
 		return nil, err
 	}
 
-	if theme.SupersonicTheme.Name == "" || !sharedutil.SliceContains(validThemeVersions, theme.SupersonicTheme.Version) {
+	if theme.SupersonicTheme.Name == "" || !slices.Contains(validThemeVersions, theme.SupersonicTheme.Version) {
 		return nil, errors.New("invalid theme file name or version")
 	}
 	if !(theme.SupersonicTheme.SupportsDark || theme.SupersonicTheme.SupportsLight) {
@@ -129,7 +129,7 @@ func (t *ThemeFile) SupportsVariant(v fyne.ThemeVariant) bool {
 
 // Parses a CSS-style #RRGGBB or #RRGGBBAA string
 func ColorStringToColor(colorStr string) (color.Color, error) {
-	if !strings.HasPrefix(colorStr, "#") || !sharedutil.SliceContains([]int{7, 9}, len(colorStr)) {
+	if !strings.HasPrefix(colorStr, "#") || !slices.Contains([]int{7, 9}, len(colorStr)) {
 		return color.Black, errors.New("invalid color string")
 	}
 	colorBytes := make([]byte, 4)
