@@ -154,6 +154,10 @@ type SupportsSharing interface {
 	CanShareArtists() bool
 }
 
+type LyricsProvider interface {
+	GetLyrics(track *Track) (*Lyrics, error)
+}
+
 type JukeboxProvider interface {
 	JukeboxStart() error
 	JukeboxStop() error

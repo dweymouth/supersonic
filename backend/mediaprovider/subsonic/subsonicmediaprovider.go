@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -343,6 +344,53 @@ func (s *subsonicMediaProvider) DownloadTrack(trackID string) (io.Reader, error)
 func (s *subsonicMediaProvider) RescanLibrary() error {
 	_, err := s.client.StartScan()
 	return err
+}
+
+// LyricsProvider interface
+var _ mediaprovider.LyricsProvider = (*subsonicMediaProvider)(nil)
+
+func (s *subsonicMediaProvider) GetLyrics(track *mediaprovider.Track) (*mediaprovider.Lyrics, error) {
+	ext, err := s.client.GetOpenSubsonicExtensions()
+	supportsSynced := err == nil &&
+		slices.ContainsFunc(ext, func(ext *subsonic.OpenSubsonicExtension) bool {
+			return ext.Name == subsonic.SongLyricsExtension
+		})
+	if supportsSynced {
+		lyrics, err := s.client.GetLyricsBySongId(track.ID)
+		if err != nil || len(lyrics.StructuredLyrics) == 0 {
+			return nil, err
+		}
+		lyric := lyrics.StructuredLyrics[0]
+		mpLyrics := &mediaprovider.Lyrics{
+			Title:  lyric.DisplayTitle,
+			Artist: lyric.DisplayArtist,
+			Synced: lyric.Synced,
+		}
+		for _, line := range lyric.Lines {
+			mpLyrics.Lines = append(mpLyrics.Lines, mediaprovider.LyricLine{
+				Text:  line.Text,
+				Start: float64(line.Start) / 1000,
+			})
+		}
+		return mpLyrics, nil
+	}
+	// fallback to legacy getLyrics endpoint
+	lyrics, err := s.client.GetLyrics(track.Name, track.ArtistNames[0])
+	if err != nil || lyrics == nil || lyrics.Text == "" {
+		return nil, err
+	}
+	mpLyrics := &mediaprovider.Lyrics{
+		Title:  lyrics.Title,
+		Artist: lyrics.Artist,
+		Synced: false,
+	}
+	lines := strings.Split(lyrics.Text, "\n")
+	for _, line := range lines {
+		mpLyrics.Lines = append(mpLyrics.Lines, mediaprovider.LyricLine{
+			Text: line,
+		})
+	}
+	return mpLyrics, nil
 }
 
 func toTrack(ch *subsonic.Child) *mediaprovider.Track {

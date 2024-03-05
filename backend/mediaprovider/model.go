@@ -120,6 +120,18 @@ type PlaylistWithTracks struct {
 	Tracks []*Track
 }
 
+type Lyrics struct {
+	Title  string
+	Artist string
+	Synced bool
+	Lines  []LyricLine
+}
+
+type LyricLine struct {
+	Text  string
+	Start float64 // seconds
+}
+
 type ContentType int
 
 const (
