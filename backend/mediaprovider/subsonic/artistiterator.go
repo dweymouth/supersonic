@@ -1,10 +1,11 @@
 package subsonic
 
 import (
-	"cmp"
 	"log"
 	"slices"
-	"strings"
+
+	"golang.org/x/text/collate"
+	"golang.org/x/text/language"
 
 	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -30,8 +31,9 @@ func (s *subsonicMediaProvider) IterateArtists(sortOrder string) mediaprovider.A
 	case ArtistSortNameAZ:
 		return s.baseArtistIterFromSimpleSortOrder(
 			func(artists []*subsonic.ArtistID3) []*subsonic.ArtistID3 {
+				c := collate.New(language.English, collate.Loose)
 				slices.SortFunc(artists, func(a, b *subsonic.ArtistID3) int {
-					return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+					return c.CompareString(a.Name, b.Name)
 				})
 				return artists
 			},
