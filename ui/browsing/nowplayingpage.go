@@ -46,6 +46,7 @@ type NowPlayingPage struct {
 type nowPlayingPageState struct {
 	contr    *controller.Controller
 	pool     *util.WidgetPool
+	sm       *backend.ServerManager
 	pm       *backend.PlaybackManager
 	im       *backend.ImageManager
 	canRate  bool
@@ -55,13 +56,14 @@ type nowPlayingPageState struct {
 func NewNowPlayingPage(
 	contr *controller.Controller,
 	pool *util.WidgetPool,
+	sm *backend.ServerManager,
 	im *backend.ImageManager,
 	pm *backend.PlaybackManager,
 	canRate bool,
 	canShare bool,
 ) *NowPlayingPage {
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
-		contr: contr, pool: pool, im: im, pm: pm, canRate: canRate, canShare: canShare,
+		contr: contr, pool: pool, sm: sm, im: im, pm: pm, canRate: canRate, canShare: canShare,
 	}}
 	a.ExtendBaseWidget(a)
 
@@ -181,6 +183,14 @@ func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 		a.card.SetCoverImage(nil)
 		return
 	}
+	if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
+		lyrics, err := lp.GetLyrics(song)
+		if err == nil {
+			a.lyricsViewer.SetLyrics(lyrics)
+		} else {
+			a.lyricsViewer.SetLyrics(nil)
+		}
+	}
 	a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, func(img image.Image, err error) {
 		if err != nil {
 			log.Printf("error loading cover art: %v\n", err)
@@ -209,7 +219,7 @@ func (s *nowPlayingPageState) Restore() Page {
 		page.Reload()
 		return page
 	}
-	return NewNowPlayingPage(s.contr, s.pool, s.im, s.pm, s.canRate, s.canShare)
+	return NewNowPlayingPage(s.contr, s.pool, s.sm, s.im, s.pm, s.canRate, s.canShare)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)
