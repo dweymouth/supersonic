@@ -8,7 +8,6 @@ const (
 	Albums
 	Artist
 	Artists
-	Fullscreen
 	Genre
 	Genres
 	Favorites

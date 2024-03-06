@@ -8,7 +8,7 @@ require (
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
 	github.com/dweymouth/go-jellyfin v0.0.0-20231116161116-e800860bdacc
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
-	github.com/dweymouth/go-subsonic v0.0.0-20240225165422-3617754d751b
+	github.com/dweymouth/go-subsonic v0.0.0-20240305034202-6193dca1c9de
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
