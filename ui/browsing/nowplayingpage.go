@@ -198,6 +198,7 @@ func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 			if err == nil {
 				a.lyricsViewer.SetLyrics(lyrics)
 			} else {
+				log.Printf("Error fetching lyrics: %v", err)
 				a.lyricsViewer.SetLyrics(nil)
 			}
 		}

@@ -26,7 +26,7 @@ func NewLyricsViewer() *LyricsViewer {
 }
 
 func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
-	if lyrics == nil {
+	if lyrics == nil || len(lyrics.Lines) == 0 {
 		l.container.Content = &l.noLyricsLabel
 		l.Refresh()
 		return
@@ -34,11 +34,13 @@ func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 
 	if l.unsyncedViewer == nil {
 		l.unsyncedViewer = widget.NewRichText()
+		l.unsyncedViewer.Wrapping = fyne.TextWrapWord
 	}
 	l.unsyncedViewer.Segments = l.unsyncedViewer.Segments[:0]
 	for _, line := range lyrics.Lines {
 		ts := &widget.TextSegment{Text: line.Text}
 		ts.Style.Alignment = fyne.TextAlignCenter
+		ts.Style.SizeName = widget.RichTextStyleSubHeading.SizeName
 		ts.Style.Inline = false
 		l.unsyncedViewer.Segments = append(l.unsyncedViewer.Segments, ts)
 	}
