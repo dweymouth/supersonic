@@ -42,6 +42,10 @@ func (f AlbumFilter) Matches(album *Album) bool {
 	return genresMatch(f.Genres, album.Genres)
 }
 
+type ArtistIterator interface {
+	Next() *Artist
+}
+
 type AlbumIterator interface {
 	Next() *Album
 }
@@ -103,7 +107,9 @@ type MediaProvider interface {
 
 	GetSimilarTracks(artistID string, count int) ([]*Track, error)
 
-	GetArtists() ([]*Artist, error)
+	ArtistSortOrders() []string
+
+	IterateArtists(sortOrder string) ArtistIterator
 
 	GetGenres() ([]*Genre, error)
 
