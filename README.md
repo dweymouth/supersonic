@@ -41,6 +41,7 @@ Supersonic supports any music server with a Subsonic (or OpenSubsonic) API, or J
 * [x] Light and Dark themes, with optional auto theme switching
 * [x] High-quality gapless audio playback powered by MPV, with optional audio exclusive mode
 * [x] ReplayGain support (depends on files being tagged on server)
+* [x] [Custom themes](https://github.com/dweymouth/supersonic/wiki/Custom-Themes) 
 * [x] MPRIS and Mac OS media center integration for media key and desktop control
 * [x] Built-in 15-band graphic equalizer
 * [x] Scrobble plays to server, with configurable criteria
