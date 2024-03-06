@@ -183,14 +183,7 @@ func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 		a.card.SetCoverImage(nil)
 		return
 	}
-	if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
-		lyrics, err := lp.GetLyrics(song)
-		if err == nil {
-			a.lyricsViewer.SetLyrics(lyrics)
-		} else {
-			a.lyricsViewer.SetLyrics(nil)
-		}
-	}
+
 	a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, func(img image.Image, err error) {
 		if err != nil {
 			log.Printf("error loading cover art: %v\n", err)
@@ -198,6 +191,17 @@ func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 			a.card.SetCoverImage(img)
 		}
 	})
+
+	go func() {
+		if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
+			lyrics, err := lp.GetLyrics(song)
+			if err == nil {
+				a.lyricsViewer.SetLyrics(lyrics)
+			} else {
+				a.lyricsViewer.SetLyrics(nil)
+			}
+		}
+	}()
 }
 
 func (a *NowPlayingPage) OnPlayQueueChange() {
