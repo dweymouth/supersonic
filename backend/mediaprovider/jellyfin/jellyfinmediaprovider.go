@@ -159,14 +159,6 @@ func (j *jellyfinMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.A
 	}, nil
 }
 
-func (j *jellyfinMediaProvider) GetArtists() ([]*mediaprovider.Artist, error) {
-	ar, err := j.client.GetAlbumArtists(jellyfin.QueryOpts{})
-	if err != nil {
-		return nil, err
-	}
-	return sharedutil.MapSlice(ar, toArtist), nil
-}
-
 func (j *jellyfinMediaProvider) GetTrack(trackID string) (*mediaprovider.Track, error) {
 	tr, err := j.client.GetSong(trackID)
 	if err != nil {

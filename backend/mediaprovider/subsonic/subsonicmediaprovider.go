@@ -131,20 +131,6 @@ func (s *subsonicMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.A
 	}, nil
 }
 
-func (s *subsonicMediaProvider) GetArtists() ([]*mediaprovider.Artist, error) {
-	idxs, err := s.client.GetArtists(map[string]string{})
-	if err != nil {
-		return nil, err
-	}
-	var artists []*mediaprovider.Artist
-	for _, idx := range idxs.Index {
-		for _, ar := range idx.Artist {
-			artists = append(artists, toArtistFromID3(ar))
-		}
-	}
-	return artists, nil
-}
-
 func (s *subsonicMediaProvider) GetCoverArt(id string, size int) (image.Image, error) {
 	params := map[string]string{}
 	if size > 0 {
