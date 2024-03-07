@@ -44,6 +44,7 @@ type NowPlayingPage struct {
 }
 
 type nowPlayingPageState struct {
+	conf     *backend.NowPlayingPageConfig
 	contr    *controller.Controller
 	pool     *util.WidgetPool
 	sm       *backend.ServerManager
@@ -54,6 +55,7 @@ type nowPlayingPageState struct {
 }
 
 func NewNowPlayingPage(
+	conf *backend.NowPlayingPageConfig,
 	contr *controller.Controller,
 	pool *util.WidgetPool,
 	sm *backend.ServerManager,
@@ -63,7 +65,7 @@ func NewNowPlayingPage(
 	canShare bool,
 ) *NowPlayingPage {
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
-		contr: contr, pool: pool, sm: sm, im: im, pm: pm, canRate: canRate, canShare: canShare,
+		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, canRate: canRate, canShare: canShare,
 	}}
 	a.ExtendBaseWidget(a)
 
@@ -129,19 +131,28 @@ func NewNowPlayingPage(
 
 func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 	if a.container == nil {
+		initialTab := 0
+		if a.conf.InitialView == "Lyrics" {
+			initialTab = 1
+		}
+		_ = initialTab
 		paddedLayout := &layouts.PercentPadLayout{
 			LeftRightObjectPercent: .8,
 			TopBottomObjectPercent: .8,
 		}
+		tabs := container.NewAppTabs(
+			container.NewTabItem("Play Queue",
+				container.NewBorder(layout.NewSpacer(), nil, nil, nil, a.queueList)),
+			container.NewTabItem("Lyrics", a.lyricsViewer),
+		)
+		tabs.SelectIndex(initialTab)
+		tabs.OnSelected = func(*container.TabItem) {
+			a.saveSelectedTab(tabs.SelectedIndex())
+		}
 		mainContent := container.NewGridWithColumns(2,
 			container.New(paddedLayout, a.card),
 			container.New(paddedLayout,
-				util.AddHeaderBackground(
-					container.NewAppTabs(
-						container.NewTabItem("Play Queue",
-							container.NewBorder(layout.NewSpacer(), nil, nil, nil, a.queueList)),
-						container.NewTabItem("Lyrics", a.lyricsViewer),
-					))))
+				util.AddHeaderBackground(tabs)))
 		a.container = container.NewStack(
 			mainContent,
 			container.NewVBox(
@@ -224,7 +235,7 @@ func (s *nowPlayingPageState) Restore() Page {
 		page.Reload()
 		return page
 	}
-	return NewNowPlayingPage(s.contr, s.pool, s.sm, s.im, s.pm, s.canRate, s.canShare)
+	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.canRate, s.canShare)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)
@@ -254,6 +265,17 @@ func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.Tra
 	}
 	newTracks := sharedutil.ReorderTracks(a.queue, idxs, op)
 	a.pm.UpdatePlayQueue(newTracks)
+}
+
+func (a *NowPlayingPage) saveSelectedTab(tabNum int) {
+	var tabName string
+	switch tabNum {
+	case 0:
+		tabName = "Play Queue"
+	case 1:
+		tabName = "Lyrics"
+	}
+	a.conf.InitialView = tabName
 }
 
 func (a *NowPlayingPage) formatStatusLine() {

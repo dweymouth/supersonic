@@ -81,6 +81,10 @@ type TracksPageConfig struct {
 	TracklistColumns []string
 }
 
+type NowPlayingPageConfig struct {
+	InitialView string
+}
+
 type LocalPlaybackConfig struct {
 	AudioDeviceName       string
 	AudioExclusive        bool
@@ -113,20 +117,21 @@ type TranscodingConfig struct {
 }
 
 type Config struct {
-	Application   AppConfig
-	Servers       []*ServerConfig
-	AlbumPage     AlbumPageConfig
-	AlbumsPage    AlbumsPageConfig
-	ArtistPage    ArtistPageConfig
-	FavoritesPage FavoritesPageConfig
-	PlaylistPage  PlaylistPageConfig
-	PlaylistsPage PlaylistsPageConfig
-	TracksPage    TracksPageConfig
-	LocalPlayback LocalPlaybackConfig
-	Scrobbling    ScrobbleConfig
-	ReplayGain    ReplayGainConfig
-	Transcoding   TranscodingConfig
-	Theme         ThemeConfig
+	Application      AppConfig
+	Servers          []*ServerConfig
+	AlbumPage        AlbumPageConfig
+	AlbumsPage       AlbumsPageConfig
+	ArtistPage       ArtistPageConfig
+	FavoritesPage    FavoritesPageConfig
+	PlaylistPage     PlaylistPageConfig
+	PlaylistsPage    PlaylistsPageConfig
+	TracksPage       TracksPageConfig
+	NowPlayingConfig NowPlayingPageConfig
+	LocalPlayback    LocalPlaybackConfig
+	Scrobbling       ScrobbleConfig
+	ReplayGain       ReplayGainConfig
+	Transcoding      TranscodingConfig
+	Theme            ThemeConfig
 }
 
 var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists"}
@@ -167,6 +172,9 @@ func DefaultConfig(appVersionTag string) *Config {
 		},
 		PlaylistsPage: PlaylistsPageConfig{
 			InitialView: "List",
+		},
+		NowPlayingConfig: NowPlayingPageConfig{
+			InitialView: "Play Queue",
 		},
 		TracksPage: TracksPageConfig{
 			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},

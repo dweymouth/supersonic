@@ -50,7 +50,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.albumName.Truncation = fyne.TextTruncateEllipsis
 	n.trackName.Truncation = fyne.TextTruncateEllipsis
 	n.trackName.TextStyle.Bold = true
-	n.cover.SetMinSize(fyne.NewSize(85, 85))
+	n.cover.SetMinSize(fyne.NewSquareSize(85))
 	n.cover.FillMode = canvas.ImageFillContain
 	n.cover.ScaleMode = canvas.ImageScaleFastest
 	n.cover.Hidden = true
