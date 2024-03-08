@@ -429,13 +429,11 @@ type PlaylistListRow struct {
 
 func NewPlaylistListRow(layout *layouts.ColumnsLayout) *PlaylistListRow {
 	a := &PlaylistListRow{
-		nameLabel:       widget.NewLabel(""),
-		descrptionLabel: widget.NewLabel(""),
-		ownerLabel:      widget.NewLabel(""),
-		trackCountLabel: widget.NewLabel(""),
+		nameLabel:       util.NewTruncatingLabel(),
+		descrptionLabel: util.NewTruncatingLabel(),
+		ownerLabel:      util.NewTruncatingLabel(),
+		trackCountLabel: util.NewTrailingAlignLabel(),
 	}
-	a.trackCountLabel.Alignment = fyne.TextAlignTrailing
-	a.ownerLabel.Truncation = fyne.TextTruncateEllipsis
 	a.Content = container.New(layout, a.nameLabel, a.descrptionLabel, a.ownerLabel, a.trackCountLabel)
 	a.ExtendBaseWidget(a)
 	return a

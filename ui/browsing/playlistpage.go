@@ -239,13 +239,12 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.ExtendBaseWidget(a)
 
 	a.image = widgets.NewImagePlaceholder(myTheme.PlaylistIcon, 225)
-	a.titleLabel = widget.NewRichTextWithText("")
-	a.titleLabel.Truncation = fyne.TextTruncateEllipsis
+	a.titleLabel = util.NewTruncatingRichText()
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.descriptionLabel = widget.NewLabel("")
-	a.ownerLabel = widget.NewLabel("")
+	a.descriptionLabel = util.NewTruncatingLabel()
+	a.ownerLabel = util.NewTruncatingLabel()
 	a.createdAtLabel = widget.NewLabel("")
 	a.trackTimeLabel = widget.NewLabel("")
 	a.editButton = widget.NewButtonWithIcon("Edit", theme.DocumentCreateIcon(), func() {
