@@ -7,7 +7,24 @@ import (
 	"strings"
 )
 
-type AlbumFilter struct {
+type MediaIterator[M any] interface {
+	Next() *M
+}
+
+type ArtistIterator = MediaIterator[Artist]
+type AlbumIterator = MediaIterator[Album]
+type TrackIterator = MediaIterator[Track]
+
+type MediaFilter[M, F any] interface {
+	Options() F
+	SetOptions(F)
+	IsNil() bool
+	Matches(*M) bool
+}
+
+type AlbumFilter = MediaFilter[Album, AlbumFilterOptions]
+
+type AlbumFilterOptions struct {
 	MinYear int
 	MaxYear int      // 0 == unset/match any
 	Genres  []string // len(0) == unset/match any
@@ -16,42 +33,46 @@ type AlbumFilter struct {
 	ExcludeUnfavorited bool // mut. exc. with ExcludeFavorited
 }
 
-// Returns true if the filter is the nil filter - i.e. matches everything
-func (a AlbumFilter) IsNil() bool {
-	return a.MinYear == 0 && a.MaxYear == 0 &&
-		len(a.Genres) == 0 &&
-		!a.ExcludeFavorited && !a.ExcludeUnfavorited
+type albumFilter struct {
+	options AlbumFilterOptions
 }
 
-func (f AlbumFilter) Matches(album *Album) bool {
+func NewAlbumFilter(options AlbumFilterOptions) *albumFilter {
+	return &albumFilter{options}
+}
+
+func (a albumFilter) Options() AlbumFilterOptions {
+	return a.options
+}
+
+func (a *albumFilter) SetOptions(o AlbumFilterOptions) {
+	a.options = o
+}
+
+// Returns true if the filter is the nil filter - i.e. matches everything
+func (a albumFilter) IsNil() bool {
+	return a.options.MinYear == 0 && a.options.MaxYear == 0 &&
+		len(a.options.Genres) == 0 &&
+		!a.options.ExcludeFavorited && !a.options.ExcludeUnfavorited
+}
+
+func (f albumFilter) Matches(album *Album) bool {
 	if album == nil {
 		return false
 	}
-	if f.ExcludeFavorited && album.Favorite {
+	if f.options.ExcludeFavorited && album.Favorite {
 		return false
 	}
-	if f.ExcludeUnfavorited && !album.Favorite {
+	if f.options.ExcludeUnfavorited && !album.Favorite {
 		return false
 	}
-	if y := album.Year; y < f.MinYear || (f.MaxYear > 0 && y > f.MaxYear) {
+	if y := album.Year; y < f.options.MinYear || (f.options.MaxYear > 0 && y > f.options.MaxYear) {
 		return false
 	}
-	if len(f.Genres) == 0 {
+	if len(f.options.Genres) == 0 {
 		return true
 	}
-	return genresMatch(f.Genres, album.Genres)
-}
-
-type ArtistIterator interface {
-	Next() *Artist
-}
-
-type AlbumIterator interface {
-	Next() *Album
-}
-
-type TrackIterator interface {
-	Next() *Track
+	return genresMatch(f.options.Genres, album.Genres)
 }
 
 type RatingFavoriteParameters struct {

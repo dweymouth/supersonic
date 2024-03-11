@@ -51,13 +51,15 @@ type FavoritesPage struct {
 
 func NewFavoritesPage(cfg *backend.FavoritesPageConfig, pool *util.WidgetPool, contr *controller.Controller, mp mediaprovider.MediaProvider, pm *backend.PlaybackManager, im *backend.ImageManager) *FavoritesPage {
 	a := &FavoritesPage{
-		filter: mediaprovider.AlbumFilter{ExcludeUnfavorited: true},
-		cfg:    cfg,
-		pool:   pool,
-		contr:  contr,
-		pm:     pm,
-		mp:     mp,
-		im:     im,
+		filter: mediaprovider.NewAlbumFilter(mediaprovider.AlbumFilterOptions{
+			ExcludeUnfavorited: true,
+		}),
+		cfg:   cfg,
+		pool:  pool,
+		contr: contr,
+		pm:    pm,
+		mp:    mp,
+		im:    im,
 	}
 	a.ExtendBaseWidget(a)
 	a.createHeader(0)
@@ -95,7 +97,7 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int) {
 	a.searcher.PlaceHolder = "Search page"
 	a.searcher.OnSearched = a.OnSearched
 	a.searcher.Entry.Text = a.searchText
-	a.filterBtn = widgets.NewAlbumFilterButton(&a.filter, a.mp.GetGenres)
+	a.filterBtn = widgets.NewAlbumFilterButton(a.filter, a.mp.GetGenres)
 	a.filterBtn.FavoriteDisabled = true
 	a.filterBtn.OnChanged = a.Reload
 }

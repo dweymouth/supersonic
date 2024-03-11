@@ -7,17 +7,12 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-type Filter[T any] interface {
-	IsNil() bool
-	Matches(*T) bool
-}
-
-type baseIter[T any] struct {
-	filter        Filter[T]
-	prefetchCB    func(*T)
+type baseIter[M, F any] struct {
+	filter        mediaprovider.MediaFilter[M, F]
+	prefetchCB    func(*M)
 	serverPos     int
-	fetcher       func(offset, limit int) ([]*T, error)
-	prefetched    []*T
+	fetcher       func(offset, limit int) ([]*M, error)
+	prefetched    []*M
 	prefetchedPos int
 	done          bool
 }
@@ -25,7 +20,7 @@ type baseIter[T any] struct {
 type AlbumFetchFn func(offset, limit int) ([]*mediaprovider.Album, error)
 
 func NewAlbumIterator(fetchFn AlbumFetchFn, filter mediaprovider.AlbumFilter, cb func(string)) mediaprovider.AlbumIterator {
-	return &baseIter[mediaprovider.Album]{
+	return &baseIter[mediaprovider.Album, mediaprovider.AlbumFilterOptions]{
 		prefetchCB: func(a *mediaprovider.Album) { cb(a.CoverArtID) },
 		filter:     filter,
 		fetcher:    fetchFn,
@@ -35,7 +30,7 @@ func NewAlbumIterator(fetchFn AlbumFetchFn, filter mediaprovider.AlbumFilter, cb
 type ArtistFetchFn func(offset, limit int) ([]*mediaprovider.Artist, error)
 
 func NewArtistIterator(fetchFn ArtistFetchFn) mediaprovider.ArtistIterator {
-	return &baseIter[mediaprovider.Artist]{
+	return &baseIter[mediaprovider.Artist, nilFilterOptions]{
 		fetcher: fetchFn,
 		filter:  nilFilter[mediaprovider.Artist]{},
 	}
@@ -44,14 +39,14 @@ func NewArtistIterator(fetchFn ArtistFetchFn) mediaprovider.ArtistIterator {
 type TrackFetchFn func(offset, limit int) ([]*mediaprovider.Track, error)
 
 func NewTrackIterator(fetchFn TrackFetchFn, cb func(string)) mediaprovider.TrackIterator {
-	return &baseIter[mediaprovider.Track]{
+	return &baseIter[mediaprovider.Track, nilFilterOptions]{
 		prefetchCB: func(a *mediaprovider.Track) { cb(a.CoverArtID) },
 		filter:     nilFilter[mediaprovider.Track]{},
 		fetcher:    fetchFn,
 	}
 }
 
-func (r *baseIter[T]) Next() *T {
+func (r *baseIter[M, F]) Next() *M {
 	if r.done {
 		return nil
 	}
@@ -89,7 +84,7 @@ func (r *baseIter[T]) Next() *T {
 	return r.prefetched[0]
 }
 
-type randomIter struct {
+type randomAlbumIter struct {
 	filter        mediaprovider.AlbumFilter
 	prefetchCB    func(coverArtID string)
 	albumIDSet    map[string]bool
@@ -108,8 +103,8 @@ type randomIter struct {
 	done                 bool
 }
 
-func NewRandomAlbumIter(deterministicFetcher, randomFetcher AlbumFetchFn, filter mediaprovider.AlbumFilter, prefetchCoverCB func(string)) *randomIter {
-	return &randomIter{
+func NewRandomAlbumIter(deterministicFetcher, randomFetcher AlbumFetchFn, filter mediaprovider.AlbumFilter, prefetchCoverCB func(string)) *randomAlbumIter {
+	return &randomAlbumIter{
 		filter:               filter,
 		prefetchCB:           prefetchCoverCB,
 		deterministicFetcher: deterministicFetcher,
@@ -118,7 +113,7 @@ func NewRandomAlbumIter(deterministicFetcher, randomFetcher AlbumFetchFn, filter
 	}
 }
 
-func (r *randomIter) Next() *mediaprovider.Album {
+func (r *randomAlbumIter) Next() *mediaprovider.Album {
 	if r.done {
 		return nil
 	}
@@ -192,8 +187,14 @@ func (r *randomIter) Next() *mediaprovider.Album {
 	return nil
 }
 
-type nilFilter[T any] struct{}
+type nilFilterOptions struct{}
 
-func (n nilFilter[T]) IsNil() bool { return true }
+type nilFilter[M any] struct{}
 
-func (n nilFilter[T]) Matches(*T) bool { return true }
+func (n nilFilter[M]) IsNil() bool { return true }
+
+func (n nilFilter[M]) Matches(*M) bool { return true }
+
+func (n nilFilter[M]) Options() nilFilterOptions { return nilFilterOptions{} }
+
+func (n nilFilter[M]) SetOptions(o nilFilterOptions) {}

@@ -35,23 +35,24 @@ func (s *subsonicMediaProvider) AlbumSortOrders() []string {
 	}
 }
 
-func filterMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3, ignoreGenre bool) bool {
+func filterAlbumMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3, ignoreGenre bool) bool {
+	filterOptions := f.Options()
 	if album == nil {
 		return false
 	}
-	if f.ExcludeFavorited && !album.Starred.IsZero() {
+	if filterOptions.ExcludeFavorited && !album.Starred.IsZero() {
 		return false
 	}
-	if f.ExcludeUnfavorited && album.Starred.IsZero() {
+	if filterOptions.ExcludeUnfavorited && album.Starred.IsZero() {
 		return false
 	}
-	if y := album.Year; y < f.MinYear || (f.MaxYear > 0 && y > f.MaxYear) {
+	if y := album.Year; y < filterOptions.MinYear || (filterOptions.MaxYear > 0 && y > filterOptions.MaxYear) {
 		return false
 	}
-	if ignoreGenre || len(f.Genres) == 0 {
+	if ignoreGenre || len(filterOptions.Genres) == 0 {
 		return true
 	}
-	for _, g := range f.Genres {
+	for _, g := range filterOptions.Genres {
 		if strings.EqualFold(g, album.Genre) {
 			return true
 		}
@@ -60,21 +61,24 @@ func filterMatches(f mediaprovider.AlbumFilter, album *subsonic.AlbumID3, ignore
 }
 
 func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
-	if sortOrder == "" && len(filter.Genres) == 1 {
-		genre := filter.Genres[0]
+	filterOptions := filter.Options()
+	if sortOrder == "" && len(filterOptions.Genres) == 1 {
+		genre := filterOptions.Genres[0]
 		// The Subsonic API (non-OpenSubsonic) returns only the first genre for multi-genre albums,
 		// but servers do internally match against all the genres the album is categorized with.
 		// So we must not additionally filter by genre to avoid excluding results where
 		// the single genre returned by Subsonic isn't the one we're iterating on.
-		filter.Genres = nil
+		filterOptions.Genres = nil
 		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
 			return s.client.GetAlbumList2("byGenre",
 				map[string]string{"genre": genre, "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
 		}
+		filter.SetOptions(filterOptions)
 		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	}
-	if sortOrder == "" && filter.ExcludeUnfavorited {
-		filter.ExcludeUnfavorited = false // we're already filtering by this
+	if sortOrder == "" && filterOptions.ExcludeUnfavorited {
+		filterOptions.ExcludeUnfavorited = false // we're already filtering by this
+		filter.SetOptions(filterOptions)
 		return s.baseIterFromSimpleSortOrder("starred", filter)
 	}
 	if sortOrder == "" {
@@ -112,10 +116,10 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 }
 
 func (s *subsonicMediaProvider) SearchAlbums(searchQuery string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
-	return s.newSearchIter(searchQuery, filter, s.prefetchCoverCB)
+	return s.newSearchAlbumIter(searchQuery, filter, s.prefetchCoverCB)
 }
 
-type searchIter struct {
+type searchAlbumIter struct {
 	searchIterBase
 
 	prefetchCB    func(string)
@@ -126,8 +130,8 @@ type searchIter struct {
 	done          bool
 }
 
-func (s *subsonicMediaProvider) newSearchIter(query string, filter mediaprovider.AlbumFilter, cb func(string)) *searchIter {
-	return &searchIter{
+func (s *subsonicMediaProvider) newSearchAlbumIter(query string, filter mediaprovider.AlbumFilter, cb func(string)) *searchAlbumIter {
+	return &searchAlbumIter{
 		searchIterBase: searchIterBase{
 			query: query,
 			s:     s.client,
@@ -138,7 +142,7 @@ func (s *subsonicMediaProvider) newSearchIter(query string, filter mediaprovider
 	}
 }
 
-func (s *searchIter) Next() *mediaprovider.Album {
+func (s *searchAlbumIter) Next() *mediaprovider.Album {
 	if s.done {
 		return nil
 	}
@@ -197,12 +201,12 @@ func (s *searchIter) Next() *mediaprovider.Album {
 	return nil
 }
 
-func (s *searchIter) addNewAlbums(al []*subsonic.AlbumID3) {
+func (s *searchAlbumIter) addNewAlbums(al []*subsonic.AlbumID3) {
 	for _, album := range al {
 		if _, have := s.albumIDset[album.ID]; have {
 			continue
 		}
-		if !filterMatches(s.filter, album, false) {
+		if !filterAlbumMatches(s.filter, album, false) {
 			continue
 		}
 		s.prefetched = append(s.prefetched, album)

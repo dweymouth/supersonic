@@ -13,10 +13,12 @@ import (
 )
 
 type genrePageAdapter struct {
-	genre string
-	contr *controller.Controller
-	mp    mediaprovider.MediaProvider
-	pm    *backend.PlaybackManager
+	genre     string
+	contr     *controller.Controller
+	mp        mediaprovider.MediaProvider
+	pm        *backend.PlaybackManager
+	filter    mediaprovider.AlbumFilter
+	filterBtn *widgets.AlbumFilterButton
 }
 
 func NewGenrePage(genre string, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) Page {
@@ -26,8 +28,22 @@ func NewGenrePage(genre string, pool *util.WidgetPool, contr *controller.Control
 
 func (g *genrePageAdapter) Title() string { return g.genre }
 
-func (g *genrePageAdapter) Filter() *mediaprovider.AlbumFilter {
-	return &mediaprovider.AlbumFilter{Genres: []string{g.genre}}
+func (g *genrePageAdapter) Filter() mediaprovider.AlbumFilter {
+	if g.filter == nil {
+		g.filter = mediaprovider.NewAlbumFilter(
+			mediaprovider.AlbumFilterOptions{
+				Genres: []string{g.genre},
+			},
+		)
+	}
+	return g.filter
+}
+
+func (g *genrePageAdapter) FilterButton() widgets.FilterButton[mediaprovider.Album, mediaprovider.AlbumFilterOptions] {
+	if g.filterBtn == nil {
+		g.filterBtn = widgets.NewAlbumFilterButton(g.Filter(), g.mp.GetGenres)
+	}
+	return g.filterBtn
 }
 
 func (g *genrePageAdapter) PlaceholderResource() fyne.Resource {

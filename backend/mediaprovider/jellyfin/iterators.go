@@ -58,7 +58,7 @@ func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 		jfSort.Field = jellyfin.SortByYear
 		jfSort.Mode = jellyfin.SortDesc
 	}
-	jfFilt := jfFilterFromFilter(&filter)
+	jfFilt := jfFilterFromFilter(filter)
 
 	fetcher := func(offs, limit int) ([]*mediaprovider.Album, error) {
 		al, err := j.client.GetAlbums(jellyfin.QueryOpts{
@@ -152,23 +152,29 @@ func (j *jellyfinMediaProvider) IterateArtists(sortOrder string) mediaprovider.A
 
 // Creates the Jellyfin filter to implement the given mediaprovider filter,
 // and zeros out the now-unneeded fields in the mediaprovider filter.
-func jfFilterFromFilter(filter *mediaprovider.AlbumFilter) jellyfin.Filter {
+func jfFilterFromFilter(filter mediaprovider.AlbumFilter) jellyfin.Filter {
 	var jfFilt jellyfin.Filter
-	if filter.ExcludeUnfavorited {
+
+	filterOptions := filter.Options()
+
+	if filterOptions.ExcludeUnfavorited {
 		jfFilt.Favorite = true
-		filter.ExcludeUnfavorited = false // Jellyfin will handle this filter
+		filterOptions.ExcludeUnfavorited = false // Jellyfin will handle this filter
 	}
-	if filter.MinYear > 0 && filter.MaxYear > 0 {
-		jfFilt.YearRange = [2]int{filter.MinYear, filter.MaxYear}
-		filter.MinYear, filter.MaxYear = 0, 0
-	} else if filter.MinYear > 0 {
-		jfFilt.YearRange = [2]int{filter.MinYear, time.Now().Year()}
-		filter.MinYear, filter.MaxYear = 0, 0
-	} else if filter.MaxYear > 0 {
-		jfFilt.YearRange = [2]int{1900, filter.MaxYear}
-		filter.MinYear, filter.MaxYear = 0, 0
+	if filterOptions.MinYear > 0 && filterOptions.MaxYear > 0 {
+		jfFilt.YearRange = [2]int{filterOptions.MinYear, filterOptions.MaxYear}
+		filterOptions.MinYear, filterOptions.MaxYear = 0, 0
+	} else if filterOptions.MinYear > 0 {
+		jfFilt.YearRange = [2]int{filterOptions.MinYear, time.Now().Year()}
+		filterOptions.MinYear, filterOptions.MaxYear = 0, 0
+	} else if filterOptions.MaxYear > 0 {
+		jfFilt.YearRange = [2]int{1900, filterOptions.MaxYear}
+		filterOptions.MinYear, filterOptions.MaxYear = 0, 0
 	}
-	jfFilt.Genres = filter.Genres
-	filter.Genres = nil
+	jfFilt.Genres = filterOptions.Genres
+	filterOptions.Genres = nil
+
+	filter.SetOptions(filterOptions)
+
 	return jfFilt
 }

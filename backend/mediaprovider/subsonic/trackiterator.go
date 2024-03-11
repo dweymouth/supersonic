@@ -10,8 +10,11 @@ import (
 func (s *subsonicMediaProvider) IterateTracks(searchQuery string) mediaprovider.TrackIterator {
 	if searchQuery == "" {
 		return &allTracksIterator{
-			s:         s,
-			albumIter: s.IterateAlbums(AlbumSortArtistAZ, mediaprovider.AlbumFilter{}),
+			s: s,
+			albumIter: s.IterateAlbums(
+				AlbumSortArtistAZ,
+				mediaprovider.NewAlbumFilter(mediaprovider.AlbumFilterOptions{}),
+			),
 		}
 	}
 	return &searchTracksIterator{

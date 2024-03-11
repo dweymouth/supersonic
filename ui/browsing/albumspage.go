@@ -14,10 +14,12 @@ import (
 )
 
 type albumsPageAdapter struct {
-	cfg   *backend.AlbumsPageConfig
-	contr *controller.Controller
-	mp    mediaprovider.MediaProvider
-	pm    *backend.PlaybackManager
+	cfg       *backend.AlbumsPageConfig
+	contr     *controller.Controller
+	mp        mediaprovider.MediaProvider
+	pm        *backend.PlaybackManager
+	filter    mediaprovider.AlbumFilter
+	filterBtn *widgets.AlbumFilterButton
 }
 
 func NewAlbumsPage(cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) Page {
@@ -27,8 +29,27 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *
 
 func (a *albumsPageAdapter) Title() string { return "Albums" }
 
-func (a *albumsPageAdapter) Filter() *mediaprovider.AlbumFilter {
-	return &mediaprovider.AlbumFilter{}
+func (a *albumsPageAdapter) Filter() mediaprovider.AlbumFilter {
+	if a.filter == nil {
+		a.filter = mediaprovider.NewAlbumFilter(
+			mediaprovider.AlbumFilterOptions{},
+		)
+	}
+	return a.filter
+}
+
+func (a *albumsPageAdapter) FilterButton() widgets.FilterButton[mediaprovider.Album, mediaprovider.AlbumFilterOptions] {
+	if a.filterBtn == nil {
+		disableGenres := len(a.Filter().Options().Genres) > 0
+		genreFn := a.mp.GetGenres
+		if disableGenres {
+			// genre filter is disabled for this page, so no need to actually call genre list fetching function
+			genreFn = func() ([]*mediaprovider.Genre, error) { return nil, nil }
+		}
+		a.filterBtn = widgets.NewAlbumFilterButton(a.Filter(), genreFn)
+		a.filterBtn.GenreDisabled = disableGenres
+	}
+	return a.filterBtn
 }
 
 func (a *albumsPageAdapter) PlaceholderResource() fyne.Resource { return myTheme.AlbumIcon }
