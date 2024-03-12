@@ -40,14 +40,7 @@ func (a *albumsPageAdapter) Filter() mediaprovider.AlbumFilter {
 
 func (a *albumsPageAdapter) FilterButton() widgets.FilterButton[mediaprovider.Album, mediaprovider.AlbumFilterOptions] {
 	if a.filterBtn == nil {
-		disableGenres := len(a.Filter().Options().Genres) > 0
-		genreFn := a.mp.GetGenres
-		if disableGenres {
-			// genre filter is disabled for this page, so no need to actually call genre list fetching function
-			genreFn = func() ([]*mediaprovider.Genre, error) { return nil, nil }
-		}
-		a.filterBtn = widgets.NewAlbumFilterButton(a.Filter(), genreFn)
-		a.filterBtn.GenreDisabled = disableGenres
+		a.filterBtn = widgets.NewAlbumFilterButton(a.Filter(), a.mp.GetGenres)
 	}
 	return a.filterBtn
 }
