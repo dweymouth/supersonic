@@ -333,6 +333,8 @@ func (m *MainWindow) addShortcuts() {
 			m.App.PlaybackManager.PlayPause()
 		}
 	})
+	m.Canvas().SetOnMouseBack(m.BrowsingPane.GoBack)
+	m.Canvas().SetOnMouseForward(m.BrowsingPane.GoForward)
 }
 
 func (m *MainWindow) showSettingsDialog() {
