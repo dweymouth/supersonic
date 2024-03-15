@@ -15,6 +15,25 @@ type PlaybackManager struct {
 	engine *playbackEngine
 }
 
+type MediaType int
+
+const (
+	MediaTypeTrack MediaType = iota
+	MediaTypeRadioStation
+)
+
+type NowPlayingMetadata struct {
+	Type       MediaType
+	ID         string
+	Title      string
+	Artists    []string
+	ArtistIDs  []string
+	Album      string
+	AlbumID    string
+	CoverArtID string
+	Duration   int
+}
+
 func NewPlaybackManager(
 	ctx context.Context,
 	s *ServerManager,
@@ -46,8 +65,12 @@ func (p *PlaybackManager) DisableCallbacks() {
 }
 
 // Gets the curently playing song, if any.
-func (p *PlaybackManager) NowPlaying() *mediaprovider.Track {
+func (p *PlaybackManager) NowPlaying() *NowPlayingMetadata {
 	return p.engine.NowPlaying()
+}
+
+func (p *PlaybackManager) NowPlayingMediaItem() mediaprovider.MediaItem {
+	return p.engine.NowPlayingMediaItem()
 }
 
 func (p *PlaybackManager) NowPlayingIndex() int {
@@ -55,7 +78,7 @@ func (p *PlaybackManager) NowPlayingIndex() int {
 }
 
 // Sets a callback that is notified whenever a new song begins playing.
-func (p *PlaybackManager) OnSongChange(cb func(nowPlaying *mediaprovider.Track, justScrobbledIfAny *mediaprovider.Track)) {
+func (p *PlaybackManager) OnSongChange(cb func(nowPlaying *NowPlayingMetadata, justScrobbledIfAny *mediaprovider.Track)) {
 	p.engine.onSongChange = append(p.engine.onSongChange, cb)
 }
 
@@ -194,7 +217,7 @@ func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Tr
 	}
 }
 
-func (p *PlaybackManager) GetPlayQueue() []*mediaprovider.Track {
+func (p *PlaybackManager) GetPlayQueue() []mediaprovider.MediaItem {
 	return p.engine.GetPlayQueue()
 }
 

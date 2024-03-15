@@ -58,7 +58,7 @@ func NewMPRISHandler(playerName string, pm *PlaybackManager) *MPRISHandler {
 			m.evt.Player.OnSeek(pos)
 		}
 	})
-	pm.OnSongChange(func(tr, _ *mediaprovider.Track) {
+	pm.OnSongChange(func(tr *NowPlayingMetadata, _ *mediaprovider.Track) {
 		if tr == nil {
 			m.curTrackPath = ""
 		} else {
@@ -252,8 +252,10 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	}
 	status := m.pm.PlayerStatus()
 	var tr mediaprovider.Track
-	if np := m.pm.NowPlaying(); np != nil && status.State != player.Stopped {
-		tr = *np
+	if np := m.pm.NowPlayingMediaItem(); np != nil && status.State != player.Stopped {
+		if track, ok := np.(*mediaprovider.Track); ok {
+			tr = *track
+		}
 	}
 	var artURL string
 	if tr.ID != "" && m.ArtURLLookup != nil {

@@ -181,11 +181,11 @@ func (a *NowPlayingPage) Route() controller.Route {
 
 var _ CanShowNowPlaying = (*NowPlayingPage)(nil)
 
-func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
+func (a *NowPlayingPage) OnSongChange(song *backend.NowPlayingMetadata, lastScrobbledIfAny *mediaprovider.Track) {
 	if a.imageLoadCancel != nil {
 		a.imageLoadCancel()
 	}
-	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
+	a.nowPlayingID = sharedutil.TrackIDOremptyStringFromMeta(song)
 	a.queueList.SetNowPlaying(a.nowPlayingID)
 
 	a.albumID = sharedutil.AlbumIDOrEmptyStr(song)
