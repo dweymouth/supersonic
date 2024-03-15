@@ -4,6 +4,7 @@ import (
 	"math"
 	"slices"
 
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
@@ -74,11 +75,27 @@ func FindTrackByID(id string, tracks []*mediaprovider.Track) *mediaprovider.Trac
 	return nil
 }
 
+func FindMediaItemByID(id string, items []mediaprovider.MediaItem) mediaprovider.MediaItem {
+	for _, tr := range items {
+		if id == tr.MediaItemID() {
+			return tr
+		}
+	}
+	return nil
+}
+
 func TrackIDOrEmptyStr(track *mediaprovider.Track) string {
 	if track == nil {
 		return ""
 	}
 	return track.ID
+}
+
+func TrackIDOremptyStringFromMeta(meta *backend.NowPlayingMetadata) string {
+	if meta == nil || meta.Type != backend.MediaTypeTrack {
+		return ""
+	}
+	return meta.ID
 }
 
 func AlbumIDOrEmptyStr(track *mediaprovider.Track) string {

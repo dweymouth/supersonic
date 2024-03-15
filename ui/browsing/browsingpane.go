@@ -42,7 +42,7 @@ type Scrollable interface {
 }
 
 type CanShowNowPlaying interface {
-	OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track)
+	OnSongChange(meta *backend.NowPlayingMetadata, lastScrobbledIfAny *mediaprovider.Track)
 }
 
 type CanShowPlayTime interface {
@@ -213,7 +213,7 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	return true
 }
 
-func (b *BrowsingPane) onSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
+func (b *BrowsingPane) onSongChange(song *backend.NowPlayingMetadata, lastScrobbledIfAny *mediaprovider.Track) {
 	if b.curPage == nil {
 		return
 	}

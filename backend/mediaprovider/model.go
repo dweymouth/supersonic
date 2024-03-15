@@ -139,6 +139,32 @@ type SavedPlayQueue struct {
 	TimePos  int // seconds
 }
 
+type RadioStation struct {
+	Name        string
+	ID          string
+	HomePageURL string
+	StreamURL   string
+}
+
+type MediaItem interface {
+	MediaItemName() string
+	MediaItemID() string
+	Copy() MediaItem
+}
+
+func (t Track) MediaItemName() string { return t.Name }
+func (t Track) MediaItemID() string   { return t.ID }
+func (t *Track) Copy() MediaItem {
+	new := *t
+	return &new
+}
+
+func (r RadioStation) MediaItemName() string { return r.Name }
+func (r RadioStation) MediaItemID() string   { return r.ID }
+func (r *RadioStation) Copy() MediaItem {
+	return r // no need to copy since RadioStations are immutable
+}
+
 type ContentType int
 
 const (
