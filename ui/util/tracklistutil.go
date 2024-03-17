@@ -18,21 +18,15 @@ func ToTrackListModels(trs []*mediaprovider.Track) []*TrackListModel {
 	})
 }
 
-func SelectedTrackModels(tracks []*TrackListModel) []*TrackListModel {
-	return sharedutil.FilterSlice(tracks, func(tm *TrackListModel) bool {
-		return tm.Selected
-	})
-}
-
 func SelectedTracks(tracks []*TrackListModel) []*mediaprovider.Track {
-	return sharedutil.MapSlice(SelectedTrackModels(tracks), func(tm *TrackListModel) *mediaprovider.Track {
-		return tm.Track
+	return sharedutil.FilterMapSlice(tracks, func(tm *TrackListModel) (*mediaprovider.Track, bool) {
+		return tm.Track, tm.Selected
 	})
 }
 
 func SelectedTrackIDs(tracks []*TrackListModel) []string {
-	return sharedutil.MapSlice(SelectedTrackModels(tracks), func(tm *TrackListModel) string {
-		return tm.Track.ID
+	return sharedutil.FilterMapSlice(tracks, func(tm *TrackListModel) (string, bool) {
+		return tm.Track.ID, tm.Selected
 	})
 }
 
