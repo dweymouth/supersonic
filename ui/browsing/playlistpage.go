@@ -3,7 +3,6 @@ package browsing
 import (
 	"fmt"
 	"log"
-	"slices"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -181,15 +180,15 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 	// Since the tracklist view may be sorted in a different order than the
 	// actual running order, we need to get the IDs of the selected tracks
 	// from the tracklist and convert them to indices in the *original* run order
-	ids := a.tracklist.SelectedTrackIDs()
-	idxs := make([]int, 0, len(ids))
+	idSet := sharedutil.ToSet(a.tracklist.SelectedTrackIDs())
+	idxs := make([]int, 0, len(idSet))
 	for i, tr := range a.tracks {
-		if slices.Contains(ids, tr.ID) {
+		if _, ok := idSet[tr.ID]; ok {
 			idxs = append(idxs, i)
 		}
 	}
 	newTracks := sharedutil.ReorderTracks(a.tracks, idxs, op)
-	ids = sharedutil.TracksToIDs(newTracks)
+	ids := sharedutil.TracksToIDs(newTracks)
 	if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 		log.Printf("error updating playlist: %s", err.Error())
 	} else {
