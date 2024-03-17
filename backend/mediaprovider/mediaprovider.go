@@ -18,6 +18,7 @@ type TrackIterator = MediaIterator[Track]
 type MediaFilter[M, F any] interface {
 	Options() F
 	SetOptions(F)
+	Clone() MediaFilter[M, F]
 	IsNil() bool
 	Matches(*M) bool
 }
@@ -33,6 +34,19 @@ type AlbumFilterOptions struct {
 	ExcludeUnfavorited bool // mut. exc. with ExcludeFavorited
 }
 
+// Clone returns a deep copy of the filter options
+func (o AlbumFilterOptions) Clone() AlbumFilterOptions {
+	genres := make([]string, len(o.Genres))
+	copy(genres, o.Genres)
+	return AlbumFilterOptions{
+		MinYear:            o.MinYear,
+		MaxYear:            o.MaxYear,
+		Genres:             genres,
+		ExcludeFavorited:   o.ExcludeFavorited,
+		ExcludeUnfavorited: o.ExcludeUnfavorited,
+	}
+}
+
 type albumFilter struct {
 	options AlbumFilterOptions
 }
@@ -45,8 +59,13 @@ func (a albumFilter) Options() AlbumFilterOptions {
 	return a.options
 }
 
-func (a *albumFilter) SetOptions(o AlbumFilterOptions) {
-	a.options = o
+func (a *albumFilter) SetOptions(options AlbumFilterOptions) {
+	a.options = options
+}
+
+// Clone returns a deep copy of the filter
+func (a albumFilter) Clone() AlbumFilter {
+	return NewAlbumFilter(a.options.Clone())
 }
 
 // Returns true if the filter is the nil filter - i.e. matches everything

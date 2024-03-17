@@ -58,7 +58,7 @@ func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 		jfSort.Field = jellyfin.SortByYear
 		jfSort.Mode = jellyfin.SortDesc
 	}
-	jfFilt := jfFilterFromFilter(filter)
+	jfFilt, modifiedFilter := jfFilterFromFilter(filter)
 
 	fetcher := func(offs, limit int) ([]*mediaprovider.Album, error) {
 		al, err := j.client.GetAlbums(jellyfin.QueryOpts{
@@ -84,9 +84,9 @@ func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 			}
 			return sharedutil.MapSlice(al, toAlbum), nil
 		}
-		return helpers.NewRandomAlbumIter(determFetcher, fetcher, filter, j.prefetchCoverCB)
+		return helpers.NewRandomAlbumIter(determFetcher, fetcher, modifiedFilter, j.prefetchCoverCB)
 	}
-	return helpers.NewAlbumIterator(fetcher, filter, j.prefetchCoverCB)
+	return helpers.NewAlbumIterator(fetcher, modifiedFilter, j.prefetchCoverCB)
 }
 
 func (j *jellyfinMediaProvider) SearchAlbums(searchQuery string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
@@ -151,15 +151,20 @@ func (j *jellyfinMediaProvider) IterateArtists(sortOrder string) mediaprovider.A
 }
 
 // Creates the Jellyfin filter to implement the given mediaprovider filter,
-// and zeros out the now-unneeded fields in the mediaprovider filter.
-func jfFilterFromFilter(filter mediaprovider.AlbumFilter) jellyfin.Filter {
+// and returns a modified mediaprovider filter, with now-unneeded fields zeroed out.
+func jfFilterFromFilter(filter mediaprovider.AlbumFilter) (jellyfin.Filter, mediaprovider.AlbumFilter) {
 	var jfFilt jellyfin.Filter
 
-	filterOptions := filter.Options()
+	// Clone the original filter to not modify its options.
+	// Set filters must be maintained in the original filter, as they are used for the UI.
+	// Modified filter options are used to ignore further filtering that was already handled by the
+	// Jellyfin API.
+	modifiedFilter := filter.Clone()
+	filterOptions := modifiedFilter.Options()
 
 	if filterOptions.ExcludeUnfavorited {
 		jfFilt.Favorite = true
-		filterOptions.ExcludeUnfavorited = false // Jellyfin will handle this filter
+		filterOptions.ExcludeUnfavorited = false
 	}
 	if filterOptions.MinYear > 0 && filterOptions.MaxYear > 0 {
 		jfFilt.YearRange = [2]int{filterOptions.MinYear, filterOptions.MaxYear}
@@ -174,7 +179,6 @@ func jfFilterFromFilter(filter mediaprovider.AlbumFilter) jellyfin.Filter {
 	jfFilt.Genres = filterOptions.Genres
 	filterOptions.Genres = nil
 
-	filter.SetOptions(filterOptions)
-
-	return jfFilt
+	modifiedFilter.SetOptions(filterOptions)
+	return jfFilt, modifiedFilter
 }

@@ -68,18 +68,22 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 		// but servers do internally match against all the genres the album is categorized with.
 		// So we must not additionally filter by genre to avoid excluding results where
 		// the single genre returned by Subsonic isn't the one we're iterating on.
-		filterOptions.Genres = nil
+		modifiedFilter := filter.Clone()
+		modifiedOptions := modifiedFilter.Options()
+		modifiedOptions.Genres = nil
+		modifiedFilter.SetOptions(modifiedOptions)
 		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
 			return s.client.GetAlbumList2("byGenre",
 				map[string]string{"genre": genre, "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
 		}
-		filter.SetOptions(filterOptions)
-		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
+		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), modifiedFilter, s.prefetchCoverCB)
 	}
 	if sortOrder == "" && filterOptions.ExcludeUnfavorited {
-		filterOptions.ExcludeUnfavorited = false // we're already filtering by this
-		filter.SetOptions(filterOptions)
-		return s.baseIterFromSimpleSortOrder("starred", filter)
+		modifiedFilter := filter.Clone()
+		modifiedOptions := modifiedFilter.Options()
+		modifiedOptions.ExcludeUnfavorited = false // we're already filtering by this
+		modifiedFilter.SetOptions(modifiedOptions)
+		return s.baseIterFromSimpleSortOrder("starred", modifiedFilter)
 	}
 	if sortOrder == "" {
 		sortOrder = AlbumSortRecentlyAdded // default

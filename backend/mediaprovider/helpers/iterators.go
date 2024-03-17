@@ -195,6 +195,8 @@ func (n nilFilter[M]) IsNil() bool { return true }
 
 func (n nilFilter[M]) Matches(*M) bool { return true }
 
+func (n nilFilter[M]) Clone() mediaprovider.MediaFilter[M, nilFilterOptions] { return n }
+
 func (n nilFilter[M]) Options() nilFilterOptions { return nilFilterOptions{} }
 
-func (n nilFilter[M]) SetOptions(o nilFilterOptions) {}
+func (n nilFilter[M]) SetOptions(options nilFilterOptions) {}
