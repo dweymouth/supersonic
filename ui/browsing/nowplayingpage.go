@@ -257,9 +257,10 @@ func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
 }
 
 func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.TrackReorderOp) {
+	trackIDSet := sharedutil.ToSet(trackIDs)
 	idxs := make([]int, 0, len(trackIDs))
 	for i, tr := range a.queue {
-		if slices.Contains(trackIDs, tr.ID) {
+		if _, ok := trackIDSet[tr.ID]; ok {
 			idxs = append(idxs, i)
 		}
 	}

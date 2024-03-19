@@ -98,8 +98,9 @@ func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReord
 	case MoveToTop:
 		topIdx := 0
 		botIdx := len(idxToMove)
+		idxToMoveSet := ToSet(idxToMove)
 		for i, t := range tracks {
-			if slices.Contains(idxToMove, i) {
+			if _, ok := idxToMoveSet[i]; ok {
 				newTracks[topIdx] = t
 				topIdx++
 			} else {
@@ -110,8 +111,9 @@ func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReord
 	case MoveToBottom:
 		topIdx := 0
 		botIdx := len(tracks) - len(idxToMove)
+		idxToMoveSet := ToSet(idxToMove)
 		for i, t := range tracks {
-			if slices.Contains(idxToMove, i) {
+			if _, ok := idxToMoveSet[i]; ok {
 				newTracks[botIdx] = t
 				botIdx++
 			} else {
