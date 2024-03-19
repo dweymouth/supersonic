@@ -14,13 +14,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-var _ Page = (*GridViewPage)(nil)
-
 // Base widget for grid view pages
-type GridViewPage struct {
+type GridViewPage[M, F any] struct {
 	widget.BaseWidget
 
-	adapter GridViewPageAdapter
+	adapter GridViewPageAdapter[M, F]
 	pool    *util.WidgetPool
 	mp      mediaprovider.MediaProvider
 	im      *backend.ImageManager
@@ -31,8 +29,8 @@ type GridViewPage struct {
 
 	title      *widget.RichText
 	sortOrder  *sortOrderSelect
-	filterBtn  *widgets.AlbumFilterButton
-	filter     *mediaprovider.AlbumFilter
+	filterBtn  widgets.FilterButton[M, F]
+	filter     mediaprovider.MediaFilter[M, F]
 	searcher   *widgets.SearchEntry
 	searchText string
 
@@ -40,14 +38,17 @@ type GridViewPage struct {
 }
 
 // Base type for pages that show an iterable GridView
-type GridViewPageAdapter interface {
+type GridViewPageAdapter[M, F any] interface {
 	// Returns the title for the page
 	Title() string
 
-	// Returns the base album filter for this page, if any.
+	// Returns the base media filter for this page, if any.
 	// A filterable page with no base filters applied should return a zero-valued
-	// *AlbumFilter, *not* nil. (Nil means unfilterable and no filter button created.)
-	Filter() *mediaprovider.AlbumFilter
+	// filter pointer, *not* nil. (Nil means unfilterable and no filter button created.)
+	Filter() mediaprovider.MediaFilter[M, F]
+
+	// Returns the filter button for the page, if any.
+	FilterButton() widgets.FilterButton[M, F]
 
 	// Returns the cover placeholder resource for the page
 	PlaceholderResource() fyne.Resource
@@ -59,11 +60,11 @@ type GridViewPageAdapter interface {
 	ActionButton() *widget.Button
 
 	// Returns the iterator for the given sortOrder and filter.
-	// (Non-album pages can ignore the filter argument)
-	Iter(sortOrder string, filter mediaprovider.AlbumFilter) widgets.GridViewIterator
+	// (Non-media pages can ignore the filter argument)
+	Iter(sortOrder string, filter mediaprovider.MediaFilter[M, F]) widgets.GridViewIterator
 
 	// Returns the iterator for the given search query and filter.
-	SearchIter(query string, filter mediaprovider.AlbumFilter) widgets.GridViewIterator
+	SearchIter(query string, filter mediaprovider.MediaFilter[M, F]) widgets.GridViewIterator
 
 	// Function that connects the GridView callbacks to the appropriate action handlers.
 	ConnectGridActions(*widgets.GridView)
@@ -96,18 +97,19 @@ func (s *sortOrderSelect) MinSize() fyne.Size {
 	return fyne.NewSize(170, s.Select.MinSize().Height)
 }
 
-func NewGridViewPage(
-	adapter GridViewPageAdapter,
+func NewGridViewPage[M, F any](
+	adapter GridViewPageAdapter[M, F],
 	pool *util.WidgetPool,
 	mp mediaprovider.MediaProvider,
 	im *backend.ImageManager,
-) *GridViewPage {
-	gp := &GridViewPage{
-		adapter: adapter,
-		pool:    pool,
-		mp:      mp,
-		im:      im,
-		filter:  adapter.Filter(),
+) *GridViewPage[M, F] {
+	gp := &GridViewPage[M, F]{
+		adapter:   adapter,
+		pool:      pool,
+		mp:        mp,
+		im:        im,
+		filter:    adapter.Filter(),
+		filterBtn: adapter.FilterButton(),
 	}
 	gp.ExtendBaseWidget(gp)
 	gp.createTitleAndSort()
@@ -128,7 +130,7 @@ func NewGridViewPage(
 	return gp
 }
 
-func (g *GridViewPage) createTitleAndSort() {
+func (g *GridViewPage[M, F]) createTitleAndSort() {
 	g.title = widget.NewRichText(&widget.TextSegment{
 		Text:  g.adapter.Title(),
 		Style: widget.RichTextStyle{SizeName: theme.SizeNameHeadingText},
@@ -140,25 +142,17 @@ func (g *GridViewPage) createTitleAndSort() {
 	}
 }
 
-func (g *GridViewPage) createSearchAndFilter() {
+func (g *GridViewPage[M, F]) createSearchAndFilter() {
 	g.searcher = widgets.NewSearchEntry()
 	g.searcher.PlaceHolder = "Search page"
 	g.searcher.Text = g.searchText
 	g.searcher.OnSearched = g.OnSearched
-	if g.filter != nil {
-		disableGenres := len(g.filter.Genres) > 0
-		genreFn := g.mp.GetGenres
-		if disableGenres {
-			// genre filter is disabled for this page, so no need to actually call genre list fetching function
-			genreFn = func() ([]*mediaprovider.Genre, error) { return nil, nil }
-		}
-		g.filterBtn = widgets.NewAlbumFilterButton(g.filter, genreFn)
-		g.filterBtn.GenreDisabled = disableGenres
-		g.filterBtn.OnChanged = g.Reload
+	if g.filterBtn != nil {
+		g.filterBtn.SetOnChanged(g.Reload)
 	}
 }
 
-func (g *GridViewPage) createContainer() {
+func (g *GridViewPage[M, F]) createContainer() {
 	header := container.NewHBox(util.NewHSpace(6), g.title)
 	if g.sortOrder != nil {
 		header.Add(container.NewCenter(g.sortOrder))
@@ -175,7 +169,7 @@ func (g *GridViewPage) createContainer() {
 	g.container = container.NewBorder(header, nil, nil, nil, g.grid)
 }
 
-func (g *GridViewPage) Reload() {
+func (g *GridViewPage[M, F]) Reload() {
 	if g.searchText != "" {
 		g.doSearch(g.searchText)
 	} else {
@@ -183,23 +177,19 @@ func (g *GridViewPage) Reload() {
 	}
 }
 
-func (g *GridViewPage) Route() controller.Route {
+func (g *GridViewPage[M, F]) Route() controller.Route {
 	return g.adapter.Route()
 }
 
-var _ Searchable = (*GridViewPage)(nil)
-
-func (g *GridViewPage) SearchWidget() fyne.Focusable {
+func (g *GridViewPage[M, F]) SearchWidget() fyne.Focusable {
 	return g.searcher
 }
 
-var _ Scrollable = (*GridViewPage)(nil)
-
-func (g *GridViewPage) Scroll(scrollAmt float32) {
+func (g *GridViewPage[M, F]) Scroll(scrollAmt float32) {
 	g.grid.ScrollToOffset(g.grid.GetScrollOffset() + scrollAmt)
 }
 
-func (g *GridViewPage) OnSearched(query string) {
+func (g *GridViewPage[M, F]) OnSearched(query string) {
 	if query == "" {
 		if g.sortOrder != nil {
 			g.sortOrder.Enable()
@@ -215,50 +205,47 @@ func (g *GridViewPage) OnSearched(query string) {
 	g.searchText = query
 }
 
-func (g *GridViewPage) doSearch(query string) {
+func (g *GridViewPage[M, F]) doSearch(query string) {
 	if g.searchText == "" {
 		g.gridState = g.grid.SaveToState()
 	}
 	g.grid.Reset(g.adapter.SearchIter(query, g.getFilter()))
 }
 
-func (g *GridViewPage) onSortOrderChanged(order string) {
+func (g *GridViewPage[M, F]) onSortOrderChanged(order string) {
 	g.adapter.(SortableGridViewPageAdapter).SaveSortOrder(g.getSortOrder())
 	g.grid.Reset(g.adapter.Iter(g.getSortOrder(), g.getFilter()))
 }
 
-func (g *GridViewPage) getFilter() mediaprovider.AlbumFilter {
-	if g.filter != nil {
-		return *g.filter
-	}
-	return mediaprovider.AlbumFilter{}
+func (g *GridViewPage[M, F]) getFilter() mediaprovider.MediaFilter[M, F] {
+	return g.filter
 }
 
-func (g *GridViewPage) getSortOrder() string {
+func (g *GridViewPage[M, F]) getSortOrder() string {
 	if g.sortOrder != nil {
 		return g.sortOrder.Selected
 	}
 	return ""
 }
 
-func (g *GridViewPage) CreateRenderer() fyne.WidgetRenderer {
+func (g *GridViewPage[M, F]) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.container)
 }
 
-type savedGridViewPage struct {
-	adapter         GridViewPageAdapter
+type savedGridViewPage[M, F any] struct {
+	adapter         GridViewPageAdapter[M, F]
 	im              *backend.ImageManager
 	mp              mediaprovider.MediaProvider
 	searchText      string
-	filter          *mediaprovider.AlbumFilter
+	filter          mediaprovider.MediaFilter[M, F]
 	pool            *util.WidgetPool
 	sortOrder       string
 	gridState       *widgets.GridViewState
 	searchGridState *widgets.GridViewState
 }
 
-func (g *GridViewPage) Save() SavedPage {
-	sa := &savedGridViewPage{
+func (g *GridViewPage[M, F]) Save() SavedPage {
+	sa := &savedGridViewPage[M, F]{
 		adapter:         g.adapter,
 		pool:            g.pool,
 		mp:              g.mp,
@@ -279,8 +266,8 @@ func (g *GridViewPage) Save() SavedPage {
 	return sa
 }
 
-func (s *savedGridViewPage) Restore() Page {
-	gp := &GridViewPage{
+func (s *savedGridViewPage[M, F]) Restore() Page {
+	gp := &GridViewPage[M, F]{
 		adapter:         s.adapter,
 		pool:            s.pool,
 		mp:              s.mp,

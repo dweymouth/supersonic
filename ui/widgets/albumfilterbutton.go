@@ -30,11 +30,11 @@ type AlbumFilterButton struct {
 
 	genreListChan chan []string
 
-	filter *mediaprovider.AlbumFilter
+	filter mediaprovider.AlbumFilter
 	dialog *widget.PopUp
 }
 
-func NewAlbumFilterButton(filter *mediaprovider.AlbumFilter, fetchGenresFunc func() ([]*mediaprovider.Genre, error)) *AlbumFilterButton {
+func NewAlbumFilterButton(filter mediaprovider.AlbumFilter, fetchGenresFunc func() ([]*mediaprovider.Genre, error)) *AlbumFilterButton {
 	a := &AlbumFilterButton{
 		filter: filter,
 		Button: widget.Button{
@@ -66,10 +66,19 @@ func (a *AlbumFilterButton) Refresh() {
 	a.Button.Refresh()
 }
 
+func (a *AlbumFilterButton) Filter() mediaprovider.AlbumFilter {
+	return a.filter
+}
+
+func (a *AlbumFilterButton) SetOnChanged(fn func()) {
+	a.OnChanged = fn
+}
+
 func (a *AlbumFilterButton) filterEmpty() bool {
-	return a.filter.MinYear == 0 && a.filter.MaxYear == 0 &&
-		(a.FavoriteDisabled || !a.filter.ExcludeFavorited && !a.filter.ExcludeUnfavorited) &&
-		(a.GenreDisabled || len(a.filter.Genres) == 0)
+	filterOptions := a.filter.Options()
+	return filterOptions.MinYear == 0 && filterOptions.MaxYear == 0 &&
+		(a.FavoriteDisabled || !filterOptions.ExcludeFavorited && !filterOptions.ExcludeUnfavorited) &&
+		(a.GenreDisabled || len(filterOptions.Genres) == 0)
 }
 
 func (a *AlbumFilterButton) onFilterChanged() {
@@ -115,53 +124,64 @@ func NewAlbumFilterPopup(filter *AlbumFilterButton) *AlbumFilterPopup {
 	minYear := NewTextRestrictedEntry(yearValidator)
 	minYear.SetMinCharWidth(4)
 	minYear.OnChanged = func(yearStr string) {
+		filterOptions := a.filterBtn.filter.Options()
 		if yearStr == "" {
-			a.filterBtn.filter.MinYear = 0
+			filterOptions.MinYear = 0
 		} else if i, err := strconv.Atoi(yearStr); err == nil {
-			a.filterBtn.filter.MinYear = i
+			filterOptions.MinYear = i
 		}
+		a.filterBtn.filter.SetOptions(filterOptions)
 		debounceOnChanged()
 	}
-	if a.filterBtn.filter.MinYear > 0 {
-		minYear.Text = strconv.Itoa(a.filterBtn.filter.MinYear)
+	filterOptions := a.filterBtn.filter.Options()
+	if filterOptions.MinYear > 0 {
+		minYear.Text = strconv.Itoa(filterOptions.MinYear)
 	}
 	maxYear := NewTextRestrictedEntry(yearValidator)
 	maxYear.SetMinCharWidth(4)
 	maxYear.OnChanged = func(yearStr string) {
+		filterOptions := a.filterBtn.filter.Options()
 		if yearStr == "" {
-			a.filterBtn.filter.MaxYear = 0
+			filterOptions.MaxYear = 0
 		} else if i, err := strconv.Atoi(yearStr); err == nil {
-			a.filterBtn.filter.MaxYear = i
+			filterOptions.MaxYear = i
 		}
+		a.filterBtn.filter.SetOptions(filterOptions)
 		debounceOnChanged()
 	}
-	if a.filterBtn.filter.MaxYear > 0 {
-		maxYear.Text = strconv.Itoa(a.filterBtn.filter.MaxYear)
+	if filterOptions.MaxYear > 0 {
+		maxYear.Text = strconv.Itoa(filterOptions.MaxYear)
 	}
 
 	// setup is favorite/not favorite filters
 	a.isFavorite = widget.NewCheck("Is favorite", func(fav bool) {
+		filterOptions := a.filterBtn.filter.Options()
 		if fav {
 			a.isNotFavorite.SetChecked(false)
 		}
-		a.filterBtn.filter.ExcludeUnfavorited = fav
+		filterOptions.ExcludeUnfavorited = fav
+		a.filterBtn.filter.SetOptions(filterOptions)
 		debounceOnChanged()
 	})
 	a.isFavorite.Hidden = a.filterBtn.FavoriteDisabled
 	a.isNotFavorite = widget.NewCheck("Is not favorite", func(fav bool) {
+		filterOptions := a.filterBtn.filter.Options()
 		if fav {
 			a.isFavorite.SetChecked(false)
 		}
-		a.filterBtn.filter.ExcludeFavorited = fav
+		filterOptions.ExcludeFavorited = fav
+		a.filterBtn.filter.SetOptions(filterOptions)
 		debounceOnChanged()
 	})
 	a.isNotFavorite.Hidden = a.filterBtn.FavoriteDisabled
 
 	// create genre filter subsection
 	a.genreFilter = NewGenreFilterSubsection(func(selectedGenres []string) {
-		a.filterBtn.filter.Genres = selectedGenres
+		filterOptions := a.filterBtn.filter.Options()
+		filterOptions.Genres = selectedGenres
+		a.filterBtn.filter.SetOptions(filterOptions)
 		debounceOnChanged()
-	}, a.filterBtn.filter.Genres)
+	}, filterOptions.Genres)
 	a.genreFilter.Hidden = a.filterBtn.GenreDisabled
 
 	// setup container

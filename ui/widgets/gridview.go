@@ -18,23 +18,23 @@ import (
 
 const batchFetchSize = 6
 
-type BatchingIterator struct {
-	iter mediaprovider.AlbumIterator
+type BatchingIterator[M any] struct {
+	iter mediaprovider.MediaIterator[M]
 }
 
-func NewBatchingIterator(iter mediaprovider.AlbumIterator) BatchingIterator {
-	return BatchingIterator{iter}
+func NewBatchingIterator[M any](iter mediaprovider.MediaIterator[M]) BatchingIterator[M] {
+	return BatchingIterator[M]{iter}
 }
 
-func (b *BatchingIterator) NextN(n int) []*mediaprovider.Album {
-	results := make([]*mediaprovider.Album, 0, n)
+func (b *BatchingIterator[M]) NextN(n int) []*M {
+	results := make([]*M, 0, n)
 	i := 0
 	for i < n {
-		album := b.iter.Next()
-		if album == nil {
+		value := b.iter.Next()
+		if value == nil {
 			break
 		}
-		results = append(results, album)
+		results = append(results, value)
 		i++
 	}
 	return results
@@ -45,7 +45,7 @@ type GridViewIterator interface {
 }
 
 type gridViewAlbumIterator struct {
-	iter BatchingIterator
+	iter BatchingIterator[mediaprovider.Album]
 }
 
 func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
