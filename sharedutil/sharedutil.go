@@ -31,6 +31,19 @@ func MapSlice[T any, U any](ts []T, f func(T) U) []U {
 	return result
 }
 
+func FilterMapSlice[T any, U any](ts []T, f func(T) (U, bool)) []U {
+	if ts == nil {
+		return nil
+	}
+	result := make([]U, 0)
+	for _, t := range ts {
+		if u, ok := f(t); ok {
+			result = append(result, u)
+		}
+	}
+	return result
+}
+
 func Reversed[T any](ts []T) []T {
 	if ts == nil {
 		return nil
