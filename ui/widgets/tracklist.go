@@ -690,7 +690,6 @@ type TrackRow struct {
 	tracklist  *Tracklist
 	trackNum   int
 	trackID    string
-	albumID    string
 	isPlaying  bool
 	isFavorite bool
 	playCount  int
@@ -698,7 +697,7 @@ type TrackRow struct {
 	num      *widget.Label
 	name     *widget.RichText // for bold support
 	artist   *MultiHyperlink
-	album    *widget.Hyperlink
+	album    *MultiHyperlink // for disabled support, if albumID is ""
 	dur      *widget.Label
 	year     *widget.Label
 	favorite *fyne.Container
@@ -721,9 +720,8 @@ func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow 
 	t.name = util.NewTruncatingRichText()
 	t.artist = NewMultiHyperlink()
 	t.artist.OnTapped = tracklist.onArtistTapped
-	t.album = widget.NewHyperlink("", nil)
-	t.album.Truncation = fyne.TextTruncateEllipsis
-	t.album.OnTapped = func() { tracklist.onAlbumTapped(t.albumID) }
+	t.album = NewMultiHyperlink()
+	t.album.OnTapped = func(id string) { tracklist.onAlbumTapped(id) }
 	t.dur = util.NewTrailingAlignLabel()
 	t.year = util.NewTrailingAlignLabel()
 	favorite := NewFavoriteIcon()
@@ -757,11 +755,10 @@ func (t *TrackRow) Update(tm *util.TrackListModel, rowNum int) {
 	if tr.ID != t.trackID {
 		t.EnsureUnfocused()
 		t.trackID = tr.ID
-		t.albumID = tr.AlbumID
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
 		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
-		t.album.SetText(tr.Album)
+		t.album.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
 		t.dur.Text = util.SecondsToTimeString(float64(tr.Duration))
 		t.year.Text = strconv.Itoa(tr.Year)
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
