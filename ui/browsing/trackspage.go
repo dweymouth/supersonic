@@ -41,6 +41,7 @@ type tracksPageState struct {
 	mp         mediaprovider.MediaProvider
 	canRate    bool
 	canShare   bool
+	canSongRadio bool
 }
 
 func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, pool *util.WidgetPool, mp mediaprovider.MediaProvider) *TracksPage {
@@ -50,10 +51,12 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	t.tracklist = t.obtainTracklist()
 	_, t.canRate = mp.(mediaprovider.SupportsRating)
 	_, t.canShare = mp.(mediaprovider.SupportsSharing)
+	_, t.canSongRadio = mp.(mediaprovider.SupportsSongRadio)
 	t.tracklist.Options = widgets.TracklistOptions{
 		DisableSorting: true,
 		DisableRating:  !t.canRate,
 		DisableSharing: !t.canShare,
+		DisableSongRadio: !t.canSongRadio,
 		AutoNumber:     true,
 	}
 	t.tracklist.SetVisibleColumns(conf.TracklistColumns)
@@ -141,6 +144,7 @@ func (t *TracksPage) doSearch(query string) {
 			DisableSorting: true,
 			DisableRating:  !t.canRate,
 			DisableSharing: !t.canShare,
+			DisableSongRadio: !t.canSongRadio,
 		}
 		t.searchTracklist.SetVisibleColumns(t.conf.TracklistColumns)
 		t.searchTracklist.SetNowPlaying(t.nowPlayingID)

@@ -200,6 +200,10 @@ type SupportsSharing interface {
 	CanShareArtists() bool
 }
 
+type SupportsSongRadio interface {
+	GetSongRadio(trackID string, count int) ([]*Track, error)
+}
+
 type LyricsProvider interface {
 	GetLyrics(track *Track) (*Lyrics, error)
 }

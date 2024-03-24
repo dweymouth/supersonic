@@ -76,6 +76,9 @@ type TracklistOptions struct {
 
 	// Disables the sharing option.
 	DisableSharing bool
+
+	// Disables the song radio option.
+	DisableSongRadio bool
 }
 
 type Tracklist struct {
@@ -92,6 +95,7 @@ type Tracklist struct {
 	OnSetRating     func(trackIDs []string, rating int)
 	OnDownload      func(tracks []*mediaprovider.Track, downloadName string)
 	OnShare         func(trackID string)
+	OnPlaySongRadio func(track *mediaprovider.Track)
 
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
@@ -114,6 +118,7 @@ type Tracklist struct {
 	ctxMenu       *fyne.Menu
 	ratingSubmenu *fyne.MenuItem
 	shareMenuItem *fyne.MenuItem
+	songRadioMenuItem *fyne.MenuItem
 	container     *fyne.Container
 }
 
@@ -539,8 +544,12 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 				}
 			})
 			add.Icon = theme.ContentAddIcon()
+			t.songRadioMenuItem = fyne.NewMenuItem("Play song radio", func() {
+				t.onPlaySongRadio(t.selectedTracks())
+			})
+			t.songRadioMenuItem.Icon = myTheme.BroadcastIcon
 			t.ctxMenu.Items = append(t.ctxMenu.Items,
-				play, shuffle, add)
+				play, shuffle, add, t.songRadioMenuItem)
 		}
 		playlist := fyne.NewMenuItem("Add to playlist...", func() {
 			if t.OnAddToPlaylist != nil {
@@ -579,6 +588,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	}
 	t.ratingSubmenu.Disabled = t.Options.DisableRating
 	t.shareMenuItem.Disabled = t.Options.DisableSharing || len(t.selectedTracks()) != 1
+	t.songRadioMenuItem.Disabled = t.Options.DisableSongRadio || len(t.selectedTracks()) != 1
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
 }
 
@@ -645,6 +655,14 @@ func (t *Tracklist) onShare(tracks []*mediaprovider.Track) {
 	if t.OnShare != nil {
 		if len(tracks) > 0 {
 			t.OnShare(tracks[0].ID)
+		}
+	}
+}
+
+func (t *Tracklist) onPlaySongRadio(tracks []*mediaprovider.Track) {
+	if t.OnPlaySongRadio != nil {
+		if len(tracks) > 0 {
+			t.OnPlaySongRadio(tracks[0])
 		}
 	}
 }
