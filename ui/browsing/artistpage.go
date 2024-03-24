@@ -323,26 +323,36 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	})
 	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", myTheme.ShuffleIcon, a.artistPage.playArtistRadio)
 
-	// TODO: Uncomment when at least one media provider supports sharing artists.
-	// a.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+	var pop *widget.PopUpMenu
+	a.menuBtn = widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
+	a.menuBtn.OnTapped = func() {
+		if pop == nil {
+			shuffleTracks := fyne.NewMenuItem("Shuffle tracks", func() {
+				go a.artistPage.contr.PlayArtistDiscography(a.artistID, true /*shuffle*/)
+			})
+			shuffleTracks.Icon = myTheme.TracksIcon
+			shuffleAlbums := fyne.NewMenuItem("Shuffle albums", func() {
+				go a.artistPage.contr.ShuffleArtistAlbums(a.artistID)
+			})
+			shuffleAlbums.Icon = myTheme.AlbumIcon
+			menu := fyne.NewMenu("", shuffleTracks, shuffleAlbums)
+			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
+		}
+		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(a.menuBtn)
+		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+a.menuBtn.Size().Height))
+	}
+
+	// TODO: Uncomment and merge into OnTapped above when at least one media provider supports sharing artists.
+	// shareMenuItem = fyne.NewMenuItem("Share...", func() {
 	// 	a.artistPage.contr.ShowShareDialog(a.artistID)
 	// })
 	// a.shareMenuItem.Icon = myTheme.ShareIcon
-	// var pop *widget.PopUpMenu
-	// a.menuBtn = widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
-	// a.menuBtn.OnTapped = func() {
-	// 	if pop == nil {
-	// 		menu := fyne.NewMenu("", a.shareMenuItem)
-	// 		pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
-	// 	}
-	// 	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(a.menuBtn)
-	// 	pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+a.menuBtn.Size().Height))
-	// }
+	//
 	// canShareArtists := false
 	// if r, canShare := a.artistPage.mp.(mediaprovider.SupportsSharing); canShare {
 	// 	canShareArtists = r.CanShareArtists()
 	// }
-	// a.shareMenuItem.Disabled = !canShareArtists
+	// shareMenuItem.Disabled = !canShareArtists
 
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.biographyDisp.Truncation = fyne.TextTruncateEllipsis
@@ -433,10 +443,7 @@ func (a *ArtistPageHeader) toggleFavorited() {
 }
 
 func (a *ArtistPageHeader) createContainer() {
-	btnContainer := container.NewHBox(util.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn)
-	if a.menuBtn != nil {
-		btnContainer.Add(a.menuBtn)
-	}
+	btnContainer := container.NewHBox(util.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn, a.menuBtn)
 
 	a.container = util.AddHeaderBackground(
 		container.NewBorder(nil, nil, a.artistImage, nil,

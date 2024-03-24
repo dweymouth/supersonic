@@ -7,6 +7,7 @@ import (
 	"image"
 	"io"
 	"log"
+	"math/rand"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -231,8 +232,35 @@ func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {
 	return allTracks
 }
 
-func (m *Controller) PlayArtistDiscography(artistID string, shuffle bool) {
-	m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), false, shuffle)
+func (m *Controller) PlayArtistDiscography(artistID string, shuffleTracks bool) {
+	m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), false, shuffleTracks)
+	if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
+		if shuffleTracks {
+			m.App.PlaybackManager.SetReplayGainMode(player.ReplayGainTrack)
+		} else {
+			m.App.PlaybackManager.SetReplayGainMode(player.ReplayGainAlbum)
+		}
+	}
+	m.App.PlaybackManager.PlayFromBeginning()
+}
+
+func (m *Controller) ShuffleArtistAlbums(artistID string) {
+	artist, err := m.App.ServerManager.Server.GetArtist(artistID)
+	if err != nil {
+		log.Printf("error getting artist discography: %v", err.Error())
+	}
+	if len(artist.Albums) == 0 {
+		return
+	}
+
+	rand.Shuffle(len(artist.Albums), func(i, j int) {
+		artist.Albums[i], artist.Albums[j] = artist.Albums[j], artist.Albums[i]
+	})
+	m.App.PlaybackManager.StopAndClearPlayQueue()
+	for _, al := range artist.Albums {
+		m.App.PlaybackManager.LoadAlbum(al.ID, true /*append*/, false /*shuffle*/)
+	}
+
 	if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
 		m.App.PlaybackManager.SetReplayGainMode(player.ReplayGainAlbum)
 	}
