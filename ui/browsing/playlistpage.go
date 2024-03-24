@@ -92,8 +92,8 @@ func newPlaylistPage(
 	remove := fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)
 	remove.Icon = theme.ContentClearIcon()
 	a.tracklist.Options = widgets.TracklistOptions{
-		DisableRating:  !canRate,
-		DisableSharing: !canShare,
+		DisableRating:    !canRate,
+		DisableSharing:   !canShare,
 		DisableSongRadio: !canSongRadio,
 		AuxiliaryMenuItems: []*fyne.MenuItem{
 			util.NewReorderTracksSubmenu(a.doSetNewTrackOrder),

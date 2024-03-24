@@ -111,15 +111,15 @@ type Tracklist struct {
 	tracks          []*util.TrackListModel
 	tracksOrigOrder []*util.TrackListModel
 
-	nowPlayingID  string
-	colLayout     *layouts.ColumnsLayout
-	hdr           *ListHeader
-	list          *FocusList
-	ctxMenu       *fyne.Menu
-	ratingSubmenu *fyne.MenuItem
-	shareMenuItem *fyne.MenuItem
+	nowPlayingID      string
+	colLayout         *layouts.ColumnsLayout
+	hdr               *ListHeader
+	list              *FocusList
+	ctxMenu           *fyne.Menu
+	ratingSubmenu     *fyne.MenuItem
+	shareMenuItem     *fyne.MenuItem
 	songRadioMenuItem *fyne.MenuItem
-	container     *fyne.Container
+	container         *fyne.Container
 }
 
 func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {

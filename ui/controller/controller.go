@@ -145,12 +145,12 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 	tracklist.OnShare = func(trackID string) {
 		go m.ShowShareDialog(trackID)
 	}
-	tracklist.OnPlaySongRadio = func (track *mediaprovider.Track) {
+	tracklist.OnPlaySongRadio = func(track *mediaprovider.Track) {
 		go func() {
 			tracks, err := m.GetSongRadioTracks(track)
 			if err != nil {
 				log.Printf("Error getting song radio: ", err)
-				return 
+				return
 			}
 			m.App.PlaybackManager.LoadTracks(tracks, false, false)
 			if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
@@ -893,9 +893,9 @@ func (c *Controller) GetSongRadioTracks(sourceTrack *mediaprovider.Track) ([]*me
 	if err != nil {
 		return nil, fmt.Errorf("Error getting song radio: ", err)
 	}
-	
+
 	// The goal of this implementation is to place the source track first in the queue.
-	filteredTracks := sharedutil.FilterSlice(radioTracks, func(track *mediaprovider.Track) bool{
+	filteredTracks := sharedutil.FilterSlice(radioTracks, func(track *mediaprovider.Track) bool {
 		return track.ID != sourceTrack.ID
 	})
 	tracks := []*mediaprovider.Track{sourceTrack}
