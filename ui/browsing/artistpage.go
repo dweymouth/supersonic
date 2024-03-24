@@ -238,8 +238,10 @@ func (a *ArtistPage) showTopTracks() {
 		tl.Options = widgets.TracklistOptions{AutoNumber: true}
 		_, canRate := a.mp.(mediaprovider.SupportsRating)
 		_, canShare := a.mp.(mediaprovider.SupportsSharing)
+		_, canSongRadio := a.mp.(mediaprovider.SupportsSongRadio)
 		tl.Options.DisableRating = !canRate
 		tl.Options.DisableSharing = !canShare
+		tl.Options.DisableSongRadio = !canSongRadio
 		tl.SetVisibleColumns(a.cfg.TracklistColumns)
 		tl.SetSorting(a.trackSort)
 		tl.OnVisibleColumnsChanged = func(cols []string) {

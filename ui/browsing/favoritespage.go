@@ -403,8 +403,10 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			tracklist.Options = widgets.TracklistOptions{AutoNumber: true}
 			_, canRate := a.mp.(mediaprovider.SupportsRating)
 			_, canShare := a.mp.(mediaprovider.SupportsSharing)
+			_, canSongRadio := a.mp.(mediaprovider.SupportsSongRadio)
 			tracklist.Options.DisableRating = !canRate
 			tracklist.Options.DisableSharing = !canShare
+			tracklist.Options.DisableSongRadio = !canSongRadio
 			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 			tracklist.SetSorting(a.trackSort)
 			tracklist.OnVisibleColumnsChanged = func(cols []string) {

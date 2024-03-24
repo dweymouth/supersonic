@@ -543,3 +543,11 @@ func fillPlaylist(pl *subsonic.Playlist, playlist *mediaprovider.Playlist) {
 	playlist.TrackCount = pl.SongCount
 	playlist.Duration = pl.Duration
 }
+
+func (s *subsonicMediaProvider) GetSongRadio(trackID string, count int) ([]*mediaprovider.Track, error) {
+	tr, err := s.client.GetSimilarSongs(trackID, map[string]string{"count": strconv.Itoa(count)})
+	if err != nil {
+		return nil, err
+	}
+	return sharedutil.MapSlice(tr, toTrack), nil
+}
