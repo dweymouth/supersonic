@@ -149,7 +149,7 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 		go func() {
 			tracks, err := m.GetSongRadioTracks(track)
 			if err != nil {
-				log.Printf("Error getting song radio: ", err)
+				log.Println("Error getting song radio: ", err)
 				return
 			}
 			m.App.PlaybackManager.LoadTracks(tracks, false, false)
@@ -886,12 +886,12 @@ func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover i
 func (c *Controller) GetSongRadioTracks(sourceTrack *mediaprovider.Track) ([]*mediaprovider.Track, error) {
 	r, ok := c.App.ServerManager.Server.(mediaprovider.SupportsSongRadio)
 	if !ok {
-		return nil, fmt.Errorf("Server does not support song radio")
+		return nil, fmt.Errorf("server does not support song radio")
 	}
 
 	radioTracks, err := r.GetSongRadio(sourceTrack.ID, 100)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting song radio: ", err)
+		return nil, fmt.Errorf("error getting song radio: %s", err.Error())
 	}
 
 	// The goal of this implementation is to place the source track first in the queue.

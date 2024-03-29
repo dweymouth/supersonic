@@ -452,3 +452,11 @@ func (j *jellyfinMediaProvider) fillPlaylist(p *jellyfin.Playlist, pl *mediaprov
 	pl.Owner = j.client.LoggedInUser()
 	pl.Public = false
 }
+
+func (j *jellyfinMediaProvider) GetSongRadio(trackID string, count int) ([]*mediaprovider.Track, error) {
+	tr, err := j.client.GetInstantMix(trackID, jellyfin.TypeSong, count)
+	if err != nil {
+		return nil, err
+	}
+	return sharedutil.MapSlice(tr, toTrack), nil
+}
