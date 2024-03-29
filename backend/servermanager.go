@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
@@ -161,21 +162,22 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 	var cli, altCli mediaprovider.Server
 
 	if connection.ServerType == ServerTypeJellyfin {
+		client, err := jellyfin.NewClient(connection.Hostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(10*time.Second))
+		if err != nil {
+			log.Print("Error creating Jellyfin client")
+			return nil, err
+		}
 		cli = &jellyfinMP.JellyfinServer{
-			Client: jellyfin.Client{
-				HTTPClient:    &http.Client{Timeout: 10 * time.Second},
-				BaseURL:       connection.Hostname,
-				ClientName:    res.AppName,
-				ClientVersion: res.AppVersion,
-			},
+			Client: *client,
+		}
+
+		altClient, err := jellyfin.NewClient(connection.AltHostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(10*time.Second))
+		if err != nil {
+			log.Print("Error creating Jellyfin alternative client")
+			return nil, err
 		}
 		altCli = &jellyfinMP.JellyfinServer{
-			Client: jellyfin.Client{
-				HTTPClient:    &http.Client{Timeout: 10 * time.Second},
-				BaseURL:       connection.AltHostname,
-				ClientName:    res.AppName,
-				ClientVersion: res.AppVersion,
-			},
+			Client: *altClient,
 		}
 	} else {
 		cli = &subsonicMP.SubsonicServer{
