@@ -145,6 +145,20 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 	tracklist.OnShare = func(trackID string) {
 		go m.ShowShareDialog(trackID)
 	}
+	tracklist.OnPlaySongRadio = func(track *mediaprovider.Track) {
+		go func() {
+			tracks, err := m.GetSongRadioTracks(track)
+			if err != nil {
+				log.Println("Error getting song radio: ", err)
+				return
+			}
+			m.App.PlaybackManager.LoadTracks(tracks, false, false)
+			if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
+				m.App.PlaybackManager.SetReplayGainMode(mode)
+			}
+			m.App.PlaybackManager.PlayFromBeginning()
+		}()
+	}
 }
 
 func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
@@ -867,4 +881,24 @@ func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover i
 		c.haveModal = true
 		pop.Show()
 	}()
+}
+
+func (c *Controller) GetSongRadioTracks(sourceTrack *mediaprovider.Track) ([]*mediaprovider.Track, error) {
+	r, ok := c.App.ServerManager.Server.(mediaprovider.SupportsSongRadio)
+	if !ok {
+		return nil, fmt.Errorf("server does not support song radio")
+	}
+
+	radioTracks, err := r.GetSongRadio(sourceTrack.ID, 100)
+	if err != nil {
+		return nil, fmt.Errorf("error getting song radio: %s", err.Error())
+	}
+
+	// The goal of this implementation is to place the source track first in the queue.
+	filteredTracks := sharedutil.FilterSlice(radioTracks, func(track *mediaprovider.Track) bool {
+		return track.ID != sourceTrack.ID
+	})
+	tracks := []*mediaprovider.Track{sourceTrack}
+	tracks = append(tracks, filteredTracks...)
+	return tracks, nil
 }
