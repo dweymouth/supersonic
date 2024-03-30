@@ -94,6 +94,48 @@ func (f albumFilter) Matches(album *Album) bool {
 	return genresMatch(f.options.Genres, album.Genres)
 }
 
+type ArtistFilter = MediaFilter[Artist, ArtistFilterOptions]
+
+type ArtistFilterOptions struct{}
+
+// Clone returns a deep copy of the filter options
+func (o ArtistFilterOptions) Clone() ArtistFilterOptions {
+	return ArtistFilterOptions{}
+}
+
+type artistFilter struct {
+	options ArtistFilterOptions
+}
+
+func NewArtistFilter(options ArtistFilterOptions) *artistFilter {
+	return &artistFilter{options}
+}
+
+func (a artistFilter) Options() ArtistFilterOptions {
+	return a.options
+}
+
+func (a *artistFilter) SetOptions(o ArtistFilterOptions) {
+	a.options = o
+}
+
+// Clone returns a deep copy of the filter
+func (a artistFilter) Clone() ArtistFilter {
+	return NewArtistFilter(a.options.Clone())
+}
+
+// Returns true if the filter is the nil filter - i.e. matches everything
+func (a artistFilter) IsNil() bool {
+	return true
+}
+
+func (f artistFilter) Matches(artist *Artist) bool {
+	if artist == nil {
+		return false
+	}
+	return false
+}
+
 type RatingFavoriteParameters struct {
 	AlbumIDs  []string
 	ArtistIDs []string
@@ -149,7 +191,9 @@ type MediaProvider interface {
 
 	ArtistSortOrders() []string
 
-	IterateArtists(sortOrder string) ArtistIterator
+	IterateArtists(sortOrder string, filter ArtistFilter) ArtistIterator
+
+	SearchArtists(searchQuery string, filter ArtistFilter) ArtistIterator
 
 	GetGenres() ([]*Genre, error)
 

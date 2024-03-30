@@ -164,20 +164,22 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 	if connection.ServerType == ServerTypeJellyfin {
 		client, err := jellyfin.NewClient(connection.Hostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(10*time.Second))
 		if err != nil {
-			log.Print("Error creating Jellyfin client")
+			log.Printf("error creating Jellyfin client: %s", err.Error())
 			return nil, err
 		}
 		cli = &jellyfinMP.JellyfinServer{
 			Client: *client,
 		}
 
-		altClient, err := jellyfin.NewClient(connection.AltHostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(10*time.Second))
-		if err != nil {
-			log.Print("Error creating Jellyfin alternative client")
-			return nil, err
-		}
-		altCli = &jellyfinMP.JellyfinServer{
-			Client: *altClient,
+		if connection.AltHostname != "" {
+			altClient, err := jellyfin.NewClient(connection.AltHostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(10*time.Second))
+			if err != nil {
+				log.Printf("error creating Jellyfin alternative client: %s", err.Error())
+				return nil, err
+			}
+			altCli = &jellyfinMP.JellyfinServer{
+				Client: *altClient,
+			}
 		}
 	} else {
 		cli = &subsonicMP.SubsonicServer{

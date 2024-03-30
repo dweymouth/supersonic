@@ -206,6 +206,9 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 			m.ShowDownloadDialog(tracks, artist.Name)
 		}()
 	}
+	grid.OnShare = func(artistID string) {
+		go m.ShowShareDialog(artistID)
+	}
 }
 
 func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {

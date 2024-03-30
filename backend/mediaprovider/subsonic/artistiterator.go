@@ -23,7 +23,14 @@ func (s *subsonicMediaProvider) ArtistSortOrders() []string {
 	}
 }
 
-func (s *subsonicMediaProvider) IterateArtists(sortOrder string) mediaprovider.ArtistIterator {
+func filterArtistMatches(f mediaprovider.ArtistFilter, artist *subsonic.ArtistID3) bool {
+	if artist == nil {
+		return false
+	}
+	return true
+}
+
+func (s *subsonicMediaProvider) IterateArtists(sortOrder string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
 	if sortOrder == "" {
 		sortOrder = ArtistSortNameAZ // default
 	}
@@ -37,6 +44,7 @@ func (s *subsonicMediaProvider) IterateArtists(sortOrder string) mediaprovider.A
 				})
 				return artists
 			},
+			filter,
 		)
 	default:
 		log.Printf("Undefined artist sort order: %s", sortOrder)
@@ -44,8 +52,85 @@ func (s *subsonicMediaProvider) IterateArtists(sortOrder string) mediaprovider.A
 	}
 }
 
-func (s *subsonicMediaProvider) baseArtistIterFromSimpleSortOrder(sortFn func([]*subsonic.ArtistID3) []*subsonic.ArtistID3) mediaprovider.ArtistIterator {
-	return helpers.NewArtistIterator(s.artistFetchFnFromStandardSort(sortFn))
+func (s *subsonicMediaProvider) SearchArtists(searchQuery string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
+	return s.newSearchArtistIter(searchQuery, filter, s.prefetchCoverCB)
+}
+
+type searchArtistIter struct {
+	searchIterBase
+
+	prefetchCB    func(string)
+	filter        mediaprovider.ArtistFilter
+	prefetched    []*subsonic.ArtistID3
+	prefetchedPos int
+	artistIDset   map[string]bool
+	done          bool
+}
+
+func (s *subsonicMediaProvider) newSearchArtistIter(query string, filter mediaprovider.ArtistFilter, cb func(string)) *searchArtistIter {
+	return &searchArtistIter{
+		searchIterBase: searchIterBase{
+			query: query,
+			s:     s.client,
+		},
+		prefetchCB:  cb,
+		filter:      filter,
+		artistIDset: make(map[string]bool),
+	}
+}
+
+func (s *searchArtistIter) Next() *mediaprovider.Artist {
+	if s.done {
+		return nil
+	}
+
+	// prefetch more search results from server
+	if s.prefetched == nil {
+		results := s.searchIterBase.fetchResults()
+		if results == nil {
+			s.done = true
+			s.artistIDset = nil
+			return nil
+		}
+
+		// add results from artists search
+		s.addNewArtists(results.Artist)
+		s.artistOffset += len(results.Artist)
+	}
+
+	// return from prefetched results
+	if len(s.prefetched) > 0 {
+		a := s.prefetched[s.prefetchedPos]
+		s.prefetchedPos++
+		if s.prefetchedPos == len(s.prefetched) {
+			s.prefetched = nil
+			s.prefetchedPos = 0
+		}
+
+		return toArtistFromID3(a)
+	}
+
+	return nil
+}
+
+func (s *searchArtistIter) addNewArtists(artists []*subsonic.ArtistID3) {
+	for _, artist := range artists {
+		if _, have := s.artistIDset[artist.ID]; have {
+			continue
+		}
+		if !filterArtistMatches(s.filter, artist) {
+			continue
+		}
+		s.prefetched = append(s.prefetched, artist)
+		if s.prefetchCB != nil {
+			go s.prefetchCB(artist.CoverArt)
+		}
+		s.artistIDset[artist.ID] = true
+	}
+}
+
+func (s *subsonicMediaProvider) baseArtistIterFromSimpleSortOrder(sortFn func([]*subsonic.ArtistID3) []*subsonic.ArtistID3, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
+	return helpers.NewArtistIterator(s.artistFetchFnFromStandardSort(sortFn), filter, s.prefetchCoverCB)
 }
 
 func (s *subsonicMediaProvider) artistFetchFnFromStandardSort(sortFn func([]*subsonic.ArtistID3) []*subsonic.ArtistID3) helpers.ArtistFetchFn {
