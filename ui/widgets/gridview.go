@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"sync"
 
@@ -63,6 +64,30 @@ func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
 
 func NewGridViewAlbumIterator(iter mediaprovider.AlbumIterator) GridViewIterator {
 	return gridViewAlbumIterator{iter: NewBatchingIterator(iter)}
+}
+
+type gridViewArtistIterator struct {
+	iter BatchingIterator[mediaprovider.Artist]
+}
+
+func (g gridViewArtistIterator) NextN(n int) []GridViewItemModel {
+	artists := g.iter.NextN(n)
+	return sharedutil.MapSlice(artists, func(ar *mediaprovider.Artist) GridViewItemModel {
+		albumsLabel := "albums"
+		if ar.AlbumCount == 1 {
+			albumsLabel = "album"
+		}
+		return GridViewItemModel{
+			Name:       ar.Name,
+			ID:         ar.ID,
+			CoverArtID: ar.CoverArtID,
+			Secondary:  []string{fmt.Sprintf("%d %s", ar.AlbumCount, albumsLabel)},
+		}
+	})
+}
+
+func NewGridViewArtistIterator(iter mediaprovider.ArtistIterator) GridViewIterator {
+	return gridViewArtistIterator{iter: NewBatchingIterator(iter)}
 }
 
 type GridView struct {

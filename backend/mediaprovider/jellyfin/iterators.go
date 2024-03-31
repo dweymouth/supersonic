@@ -124,7 +124,7 @@ func (j *jellyfinMediaProvider) IterateTracks(searchQuery string) mediaprovider.
 	return helpers.NewTrackIterator(fetcher, j.prefetchCoverCB)
 }
 
-func (j *jellyfinMediaProvider) IterateArtists(sortOrder string) mediaprovider.ArtistIterator {
+func (j *jellyfinMediaProvider) IterateArtists(sortOrder string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
 	var jfSort jellyfin.Sort
 
 	if sortOrder == "" {
@@ -147,7 +147,18 @@ func (j *jellyfinMediaProvider) IterateArtists(sortOrder string) mediaprovider.A
 		return sharedutil.MapSlice(ar, toArtist), nil
 	}
 
-	return helpers.NewArtistIterator(fetcher)
+	return helpers.NewArtistIterator(fetcher, filter, j.prefetchCoverCB)
+}
+
+func (j *jellyfinMediaProvider) SearchArtists(searchQuery string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
+	fetcher := func(offs, limit int) ([]*mediaprovider.Artist, error) {
+		sr, err := j.client.Search(searchQuery, jellyfin.TypeArtist, jellyfin.Paging{StartIndex: offs, Limit: limit})
+		if err != nil {
+			return nil, err
+		}
+		return sharedutil.MapSlice(sr.Artists, toArtist), nil
+	}
+	return helpers.NewArtistIterator(fetcher, filter, j.prefetchCoverCB)
 }
 
 // Creates the Jellyfin filter to implement the given mediaprovider filter,
