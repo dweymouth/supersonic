@@ -3,7 +3,6 @@ package widgets
 import (
 	"context"
 	"fmt"
-	"math"
 	"sync"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -249,20 +248,6 @@ func (g *GridView) Tapped(*fyne.PointEvent) {
 	fyne.CurrentApp().Driver().CanvasForObject(g).Unfocus()
 }
 
-func (g *GridView) numCols() int {
-	if g.numColsCached == -1 {
-		// logic here taken from gridwrap.go in Fyne codebase
-		colCount := 1
-		width := g.Size().Width
-		if width > g.itemWidth {
-			pad := theme.Padding()
-			colCount = int(math.Floor(float64(width+pad) / float64(g.itemWidth+pad)))
-		}
-		g.numColsCached = colCount
-	}
-	return g.numColsCached
-}
-
 func (g *GridView) createGridWrap() {
 	g.grid = NewDisabledGridWrap(
 		g.lenItems,
@@ -302,9 +287,9 @@ func (g *GridView) createNewItemCard() fyne.CanvasObject {
 		case 1: // right
 			focusIndex = card.ItemIndex + 1
 		case 2: // up
-			focusIndex = card.ItemIndex - g.numCols()
+			focusIndex = card.ItemIndex - g.grid.ColumnCount()
 		case 3: // down
-			focusIndex = card.ItemIndex + g.numCols()
+			focusIndex = card.ItemIndex + g.grid.ColumnCount()
 		}
 		if focusIndex >= 0 && focusIndex < g.lenItems() {
 			g.grid.ScrollTo(focusIndex)
