@@ -38,6 +38,7 @@ type Album struct {
 	ArtistIDs    []string
 	ArtistNames  []string
 	Year         int
+	ReissueYear  int
 	Genres       []string
 	TrackCount   int
 	Favorite     bool

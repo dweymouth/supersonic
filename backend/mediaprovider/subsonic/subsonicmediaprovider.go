@@ -451,13 +451,22 @@ func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
 		genres = append(genres, subAlbum.Genre)
 	}
 
+	album.Year = subAlbum.Year
+	if subAlbum.OriginalReleaseDate != nil &&
+		subAlbum.OriginalReleaseDate.Year != nil &&
+		*subAlbum.OriginalReleaseDate.Year < subAlbum.Year {
+		album.Year = *subAlbum.OriginalReleaseDate.Year
+	}
+	if subAlbum.ReleaseDate != nil && subAlbum.ReleaseDate.Year != nil {
+		album.ReissueYear = *subAlbum.ReleaseDate.Year
+	}
+
 	album.ID = subAlbum.ID
 	album.CoverArtID = subAlbum.CoverArt
 	album.Name = subAlbum.Name
 	album.Duration = subAlbum.Duration
 	album.ArtistIDs = artistIDs
 	album.ArtistNames = artistNames
-	album.Year = subAlbum.Year
 	album.TrackCount = subAlbum.SongCount
 	album.Genres = genres
 	album.Favorite = !subAlbum.Starred.IsZero()
