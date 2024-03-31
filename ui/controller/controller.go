@@ -887,12 +887,7 @@ func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover i
 }
 
 func (c *Controller) GetSongRadioTracks(sourceTrack *mediaprovider.Track) ([]*mediaprovider.Track, error) {
-	r, ok := c.App.ServerManager.Server.(mediaprovider.SupportsSongRadio)
-	if !ok {
-		return nil, fmt.Errorf("server does not support song radio")
-	}
-
-	radioTracks, err := r.GetSongRadio(sourceTrack.ID, 100)
+	radioTracks, err := c.App.ServerManager.Server.GetSongRadio(sourceTrack.ID, 100)
 	if err != nil {
 		return nil, fmt.Errorf("error getting song radio: %s", err.Error())
 	}

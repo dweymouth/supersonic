@@ -189,6 +189,8 @@ type MediaProvider interface {
 
 	GetSimilarTracks(artistID string, count int) ([]*Track, error)
 
+	GetSongRadio(trackID string, count int) ([]*Track, error)
+
 	ArtistSortOrders() []string
 
 	IterateArtists(sortOrder string, filter ArtistFilter) ArtistIterator
@@ -242,10 +244,6 @@ type SupportsRating interface {
 type SupportsSharing interface {
 	CreateShareURL(id string) (*url.URL, error)
 	CanShareArtists() bool
-}
-
-type SupportsSongRadio interface {
-	GetSongRadio(trackID string, count int) ([]*Track, error)
 }
 
 type LyricsProvider interface {

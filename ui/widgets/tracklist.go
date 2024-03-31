@@ -76,9 +76,6 @@ type TracklistOptions struct {
 
 	// Disables the sharing option.
 	DisableSharing bool
-
-	// Disables the song radio option.
-	DisableSongRadio bool
 }
 
 type Tracklist struct {
@@ -588,7 +585,6 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	}
 	t.ratingSubmenu.Disabled = t.Options.DisableRating
 	t.shareMenuItem.Disabled = t.Options.DisableSharing || len(t.selectedTracks()) != 1
-	t.songRadioMenuItem.Disabled = t.Options.DisableSongRadio || len(t.selectedTracks()) != 1
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
 }
 
