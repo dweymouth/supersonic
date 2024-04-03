@@ -100,27 +100,27 @@ func (p *PlaybackManager) OnPlaying(cb func()) {
 }
 
 // Loads the specified album into the play queue.
-func (p *PlaybackManager) LoadAlbum(albumID string, appendToQueue bool, shuffle bool) error {
+func (p *PlaybackManager) LoadAlbum(albumID string, insertQueueMode InsertQueueMode, shuffle bool) error {
 	album, err := p.engine.sm.Server.GetAlbum(albumID)
 	if err != nil {
 		return err
 	}
-	return p.LoadTracks(album.Tracks, appendToQueue, shuffle)
+	return p.LoadTracks(album.Tracks, insertQueueMode, shuffle)
 }
 
 // Loads the specified playlist into the play queue.
-func (p *PlaybackManager) LoadPlaylist(playlistID string, appendToQueue bool, shuffle bool) error {
+func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode InsertQueueMode, shuffle bool) error {
 	playlist, err := p.engine.sm.Server.GetPlaylist(playlistID)
 	if err != nil {
 		return err
 	}
-	return p.LoadTracks(playlist.Tracks, appendToQueue, shuffle)
+	return p.LoadTracks(playlist.Tracks, insertQueueMode, shuffle)
 }
 
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
-func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, appendToQueue, shuffle bool) error {
-	return p.engine.LoadTracks(tracks, appendToQueue, shuffle)
+func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) error {
+	return p.engine.LoadTracks(tracks, insertQueueMode, shuffle)
 }
 
 // Replaces the play queue with the given set of tracks.
@@ -131,7 +131,7 @@ func (p *PlaybackManager) UpdatePlayQueue(tracks []*mediaprovider.Track) error {
 }
 
 func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool) error {
-	if err := p.LoadAlbum(albumID, false, shuffle); err != nil {
+	if err := p.LoadAlbum(albumID, Replace, shuffle); err != nil {
 		return err
 	}
 	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
@@ -141,7 +141,7 @@ func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool
 }
 
 func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffle bool) error {
-	if err := p.LoadPlaylist(playlistID, false, shuffle); err != nil {
+	if err := p.LoadPlaylist(playlistID, Replace, shuffle); err != nil {
 		return err
 	}
 	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
@@ -155,7 +155,7 @@ func (p *PlaybackManager) PlayTrack(trackID string) error {
 	if err != nil {
 		return err
 	}
-	p.LoadTracks([]*mediaprovider.Track{tr}, false, false)
+	p.LoadTracks([]*mediaprovider.Track{tr}, Replace, false)
 	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainTrack)
 	}
@@ -186,7 +186,7 @@ func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Tr
 	if songs, err := fetchFn(); err != nil {
 		log.Printf("error fetching tracks: %s", err.Error())
 	} else {
-		p.LoadTracks(songs, false, false)
+		p.LoadTracks(songs, Replace, false)
 		if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 			p.SetReplayGainMode(player.ReplayGainTrack)
 		}

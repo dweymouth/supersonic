@@ -117,6 +117,7 @@ type GridViewState struct {
 	DisableSharing bool
 
 	OnPlay              func(id string, shuffle bool)
+	OnPlayNext          func(id string)
 	OnAddToQueue        func(id string)
 	OnAddToPlaylist     func(id string)
 	OnDownload          func(id string)
@@ -403,6 +404,12 @@ func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
 		play.Icon = theme.MediaPlayIcon()
 		shuffle := fyne.NewMenuItem("Shuffle", func() { g.onPlay(g.menuGridViewItemId, true) })
 		shuffle.Icon = myTheme.ShuffleIcon
+		queue_next := fyne.NewMenuItem("Play next", func() {
+			if g.OnPlayNext != nil {
+				g.OnPlayNext(g.menuGridViewItemId)
+			}
+		})
+		queue_next.Icon = theme.ContentAddIcon()
 		queue := fyne.NewMenuItem("Add to queue", func() {
 			if g.OnAddToQueue != nil {
 				g.OnAddToQueue(g.menuGridViewItemId)
@@ -425,7 +432,7 @@ func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
 			g.OnShare(g.menuGridViewItemId)
 		})
 		g.shareMenuItem.Icon = myTheme.ShareIcon
-		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", play, shuffle, queue, playlist, download, g.shareMenuItem),
+		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", play, shuffle, queue_next, queue, playlist, download, g.shareMenuItem),
 			fyne.CurrentApp().Driver().CanvasForObject(g))
 	}
 	g.shareMenuItem.Disabled = g.DisableSharing

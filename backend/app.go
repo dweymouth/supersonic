@@ -324,7 +324,7 @@ func (a *App) LoadSavedPlayQueue() error {
 		return nil
 	}
 
-	if err := a.PlaybackManager.LoadTracks(queue.Tracks, false, false); err != nil {
+	if err := a.PlaybackManager.LoadTracks(queue.Tracks, Replace, false); err != nil {
 		return err
 	}
 	if queue.TrackIndex >= 0 {

@@ -84,15 +84,16 @@ type Tracklist struct {
 	Options TracklistOptions
 
 	// user action callbacks
-	OnPlayTrackAt   func(int)
-	OnPlaySelection func(tracks []*mediaprovider.Track, shuffle bool)
-	OnAddToQueue    func(trackIDs []*mediaprovider.Track)
-	OnAddToPlaylist func(trackIDs []string)
-	OnSetFavorite   func(trackIDs []string, fav bool)
-	OnSetRating     func(trackIDs []string, rating int)
-	OnDownload      func(tracks []*mediaprovider.Track, downloadName string)
-	OnShare         func(trackID string)
-	OnPlaySongRadio func(track *mediaprovider.Track)
+	OnPlayTrackAt       func(int)
+	OnPlaySelection     func(tracks []*mediaprovider.Track, shuffle bool)
+	OnPlaySelectionNext func(trackIDs []*mediaprovider.Track)
+	OnAddToQueue        func(trackIDs []*mediaprovider.Track)
+	OnAddToPlaylist     func(trackIDs []string)
+	OnSetFavorite       func(trackIDs []string, fav bool)
+	OnSetRating         func(trackIDs []string, rating int)
+	OnDownload          func(tracks []*mediaprovider.Track, downloadName string)
+	OnShare             func(trackID string)
+	OnPlaySongRadio     func(track *mediaprovider.Track)
 
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
@@ -535,6 +536,12 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 				}
 			})
 			shuffle.Icon = myTheme.ShuffleIcon
+			play_next := fyne.NewMenuItem("Play next", func() {
+				if t.OnPlaySelection != nil {
+					t.OnPlaySelectionNext(t.selectedTracks())
+				}
+			})
+			play_next.Icon = theme.ContentAddIcon()
 			add := fyne.NewMenuItem("Add to queue", func() {
 				if t.OnPlaySelection != nil {
 					t.OnAddToQueue(t.selectedTracks())
@@ -546,7 +553,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			})
 			t.songRadioMenuItem.Icon = myTheme.BroadcastIcon
 			t.ctxMenu.Items = append(t.ctxMenu.Items,
-				play, shuffle, add, t.songRadioMenuItem)
+				play, shuffle, play_next, add, t.songRadioMenuItem)
 		}
 		playlist := fyne.NewMenuItem("Add to playlist...", func() {
 			if t.OnAddToPlaylist != nil {

@@ -253,19 +253,23 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	})
 	a.editButton.Hidden = true
 	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
-		a.page.pm.LoadTracks(a.page.tracks, false, false)
+		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, false)
 		a.page.pm.PlayFromBeginning()
 	})
 	shuffleBtn := widget.NewButtonWithIcon("Shuffle", myTheme.ShuffleIcon, func() {
-		a.page.pm.LoadTracks(a.page.tracks, false /*append*/, true /*shuffle*/)
+		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, true)
 		a.page.pm.PlayFromBeginning()
 	})
 	var pop *widget.PopUpMenu
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	menuBtn.OnTapped = func() {
 		if pop == nil {
+			queue_next := fyne.NewMenuItem("Play next", func() {
+				go a.page.pm.LoadPlaylist(a.page.playlistID, backend.InsertNext, false)
+			})
+			queue_next.Icon = theme.ContentAddIcon()
 			queue := fyne.NewMenuItem("Add to queue", func() {
-				go a.page.pm.LoadPlaylist(a.page.playlistID, true /*append*/, false /*shuffle*/)
+				go a.page.pm.LoadPlaylist(a.page.playlistID, backend.Append, false)
 			})
 			queue.Icon = theme.ContentAddIcon()
 			playlist := fyne.NewMenuItem("Add to playlist...", func() {
@@ -277,7 +281,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 				a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
 			})
 			download.Icon = theme.DownloadIcon()
-			menu := fyne.NewMenu("", queue, playlist, download)
+			menu := fyne.NewMenu("", queue_next, queue, playlist, download)
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
 		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)

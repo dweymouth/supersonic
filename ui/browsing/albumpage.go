@@ -226,7 +226,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		go a.page.pm.PlayAlbum(a.page.albumID, 0, false)
 	})
 	shuffleBtn := widget.NewButtonWithIcon("Shuffle", myTheme.ShuffleIcon, func() {
-		a.page.pm.LoadTracks(a.page.tracklist.GetTracks(), false, true)
+		a.page.pm.LoadTracks(a.page.tracklist.GetTracks(), backend.Replace, true)
 		a.page.pm.PlayFromBeginning()
 	})
 	var pop *widget.PopUpMenu
@@ -234,7 +234,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	menuBtn.OnTapped = func() {
 		if pop == nil {
 			queue := fyne.NewMenuItem("Add to queue", func() {
-				go a.page.pm.LoadAlbum(a.albumID, true /*append*/, false /*shuffle*/)
+				go a.page.pm.LoadAlbum(a.albumID, backend.Append, false /*shuffle*/)
 			})
 			queue.Icon = theme.ContentAddIcon()
 			playlist := fyne.NewMenuItem("Add to playlist...", func() {
