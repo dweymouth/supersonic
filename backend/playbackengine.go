@@ -20,6 +20,14 @@ var (
 	ReplayGainAuto  = "Auto"
 )
 
+type InsertQueueMode int
+
+const (
+	Replace InsertQueueMode = iota
+	InsertNext
+	Append
+)
+
 // The playback loop mode (LoopNone, LoopAll, LoopOne).
 type LoopMode int
 
@@ -200,19 +208,24 @@ func (p *playbackEngine) Continue() error {
 
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
-func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, appendToQueue, shuffle bool) error {
-	if !appendToQueue {
+func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) error {
+	if insertQueueMode == Replace {
 		p.player.Stop()
 		p.nowPlayingIdx = -1
 		p.playQueue = nil
 	}
-	needToSetNext := appendToQueue && len(tracks) > 0 && p.nowPlayingIdx == len(p.playQueue)-1
+	needToSetNext := len(tracks) > 0 && (insertQueueMode == InsertNext || (insertQueueMode == Append && p.nowPlayingIdx == len(p.playQueue)-1))
 
 	newTracks := p.deepCopyTrackSlice(tracks)
 	if shuffle {
 		rand.Shuffle(len(newTracks), func(i, j int) { newTracks[i], newTracks[j] = newTracks[j], newTracks[i] })
 	}
-	p.playQueue = append(p.playQueue, newTracks...)
+
+	insertIdx := len(p.playQueue)
+	if insertQueueMode == InsertNext {
+		insertIdx = p.nowPlayingIdx + 1
+	}
+	p.playQueue = append(p.playQueue[:insertIdx], append(newTracks, p.playQueue[insertIdx:]...)...)
 
 	if needToSetNext {
 		p.setNextTrack(p.nowPlayingIdx + 1)

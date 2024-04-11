@@ -123,7 +123,7 @@ func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 		go a.contr.App.PlaybackManager.PlayPlaylist(id, 0, shuffle)
 	}
 	a.gridView.OnAddToQueue = func(id string) {
-		go a.contr.App.PlaybackManager.LoadPlaylist(id, true, false)
+		go a.contr.App.PlaybackManager.LoadPlaylist(id, backend.Append, false)
 	}
 	a.gridView.OnShowItemPage = a.showPlaylistPage
 	a.gridView.OnShowSecondaryPage = nil

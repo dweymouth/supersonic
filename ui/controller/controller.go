@@ -113,18 +113,21 @@ func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
 
 func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widgets.Tracklist, mode player.ReplayGainMode) {
 	tracklist.OnAddToPlaylist = m.DoAddTracksToPlaylistWorkflow
+	tracklist.OnPlaySelectionNext = func(tracks []*mediaprovider.Track) {
+		m.App.PlaybackManager.LoadTracks(tracks, backend.InsertNext, false)
+	}
 	tracklist.OnAddToQueue = func(tracks []*mediaprovider.Track) {
-		m.App.PlaybackManager.LoadTracks(tracks, true, false)
+		m.App.PlaybackManager.LoadTracks(tracks, backend.Append, false)
 	}
 	tracklist.OnPlayTrackAt = func(idx int) {
-		m.App.PlaybackManager.LoadTracks(tracklist.GetTracks(), false, false)
+		m.App.PlaybackManager.LoadTracks(tracklist.GetTracks(), backend.Replace, false)
 		if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
 			m.App.PlaybackManager.SetReplayGainMode(mode)
 		}
 		m.App.PlaybackManager.PlayTrackAt(idx)
 	}
 	tracklist.OnPlaySelection = func(tracks []*mediaprovider.Track, shuffle bool) {
-		m.App.PlaybackManager.LoadTracks(tracks, false, shuffle)
+		m.App.PlaybackManager.LoadTracks(tracks, backend.Replace, shuffle)
 		if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
 			m.App.PlaybackManager.SetReplayGainMode(mode)
 		}
@@ -152,7 +155,7 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 				log.Println("Error getting song radio: ", err)
 				return
 			}
-			m.App.PlaybackManager.LoadTracks(tracks, false, false)
+			m.App.PlaybackManager.LoadTracks(tracks, backend.Replace, false)
 			if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
 				m.App.PlaybackManager.SetReplayGainMode(mode)
 			}
@@ -163,7 +166,10 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 
 func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 	grid.OnAddToQueue = func(albumID string) {
-		go m.App.PlaybackManager.LoadAlbum(albumID, true, false)
+		go m.App.PlaybackManager.LoadAlbum(albumID, backend.Append, false)
+	}
+	grid.OnPlayNext = func(albumID string) {
+		go m.App.PlaybackManager.LoadAlbum(albumID, backend.InsertNext, false)
 	}
 	grid.OnPlay = func(albumID string, shuffle bool) {
 		go m.App.PlaybackManager.PlayAlbum(albumID, 0, shuffle)
@@ -201,9 +207,12 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 
 func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 	grid.OnShowItemPage = func(id string) { m.NavigateTo(ArtistRoute(id)) }
+	grid.OnPlayNext = func(artistID string) {
+		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), backend.InsertNext, false)
+	}
 	grid.OnPlay = func(artistID string, shuffle bool) { go m.PlayArtistDiscography(artistID, shuffle) }
 	grid.OnAddToQueue = func(artistID string) {
-		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), true /*append*/, false /*shuffle*/)
+		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), backend.Append, false)
 	}
 	grid.OnAddToPlaylist = func(artistID string) {
 		go m.DoAddTracksToPlaylistWorkflow(
@@ -250,7 +259,7 @@ func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {
 }
 
 func (m *Controller) PlayArtistDiscography(artistID string, shuffleTracks bool) {
-	m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), false, shuffleTracks)
+	m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), backend.Replace, shuffleTracks)
 	if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
 		if shuffleTracks {
 			m.App.PlaybackManager.SetReplayGainMode(player.ReplayGainTrack)
@@ -275,7 +284,7 @@ func (m *Controller) ShuffleArtistAlbums(artistID string) {
 	})
 	m.App.PlaybackManager.StopAndClearPlayQueue()
 	for _, al := range artist.Albums {
-		m.App.PlaybackManager.LoadAlbum(al.ID, true /*append*/, false /*shuffle*/)
+		m.App.PlaybackManager.LoadAlbum(al.ID, backend.Append, false)
 	}
 
 	if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
