@@ -379,6 +379,27 @@ func (s *subsonicMediaProvider) GetLyrics(track *mediaprovider.Track) (*mediapro
 	return mpLyrics, nil
 }
 
+// CanSavePlayQueue interface
+
+func (s *subsonicMediaProvider) SavePlayQueue(trackIDs []string, currentTrackPos int, timeSeconds int) error {
+	return s.client.SavePlayQueue(trackIDs, map[string]string{
+		"current":  trackIDs[currentTrackPos],
+		"position": strconv.Itoa(timeSeconds * 1000),
+	})
+}
+
+func (s *subsonicMediaProvider) GetPlayQueue() (*mediaprovider.SavedPlayQueue, error) {
+	pq, err := s.client.GetPlayQueue()
+	if err != nil {
+		return nil, err
+	}
+	savedQueue := &mediaprovider.SavedPlayQueue{}
+	savedQueue.Tracks = sharedutil.MapSlice(pq.Entries, toTrack)
+	savedQueue.TrackPos = pq.Current
+	savedQueue.TimePos = int(pq.Position)
+	return savedQueue, nil
+}
+
 func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 	if ch == nil {
 		return nil

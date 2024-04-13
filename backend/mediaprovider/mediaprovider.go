@@ -258,6 +258,11 @@ type SupportsSharing interface {
 	CanShareArtists() bool
 }
 
+type CanSavePlayQueue interface {
+	SavePlayQueue(trackIDs []string, currentTrackPos int, timeSeconds int) error
+	GetPlayQueue() (*SavedPlayQueue, error)
+}
+
 type LyricsProvider interface {
 	GetLyrics(track *Track) (*Lyrics, error)
 }

@@ -22,7 +22,7 @@ type serializedSavedPlayQueue struct {
 }
 
 // SavePlayQueue saves the current play queue and playback position to a JSON file.
-func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string) error {
+func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, saveToServer bool) error {
 	queue := pm.GetPlayQueue()
 	stats := pm.PlayerStatus()
 	trackIdx := pm.NowPlayingIndex()
@@ -38,12 +38,12 @@ func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string) error 
 		TrackIndex: trackIdx,
 		TimePos:    stats.TimePos,
 	}
-	b, err := json.Marshal(saved)
-	if err != nil {
-		return err
-	}
+	b, _ := json.Marshal(saved)
+	err := os.WriteFile(filepath, b, 0644)
 
-	return os.WriteFile(filepath, b, 0644)
+	if saveToServer {
+	}
+	return err
 }
 
 // Loads the saved play queue from the given filepath using the current server.
