@@ -32,6 +32,7 @@ var (
 	NotFavoriteIcon fyne.Resource = theme.NewThemedResource(res.ResHeartOutlineSvg)
 	NowPlayingIcon  fyne.Resource = theme.NewThemedResource(res.ResHeadphonesSvg)
 	PlaylistIcon    fyne.Resource = theme.NewThemedResource(res.ResPlaylistSvg)
+	PlayNextIcon    fyne.Resource = theme.NewThemedResource(res.ResPlaylistAddNextSvg)
 	ShareIcon       fyne.Resource = theme.NewThemedResource(res.ResShareSvg)
 	ShuffleIcon     fyne.Resource = theme.NewThemedResource(res.ResShuffleSvg)
 	TracksIcon      fyne.Resource = theme.NewThemedResource(res.ResMusicnotesSvg)

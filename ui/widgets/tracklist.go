@@ -536,12 +536,12 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 				}
 			})
 			shuffle.Icon = myTheme.ShuffleIcon
-			play_next := fyne.NewMenuItem("Play next", func() {
+			playNext := fyne.NewMenuItem("Play next", func() {
 				if t.OnPlaySelection != nil {
 					t.OnPlaySelectionNext(t.selectedTracks())
 				}
 			})
-			play_next.Icon = theme.ContentAddIcon()
+			playNext.Icon = myTheme.PlayNextIcon
 			add := fyne.NewMenuItem("Add to queue", func() {
 				if t.OnPlaySelection != nil {
 					t.OnAddToQueue(t.selectedTracks())
@@ -553,7 +553,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			})
 			t.songRadioMenuItem.Icon = myTheme.BroadcastIcon
 			t.ctxMenu.Items = append(t.ctxMenu.Items,
-				play, shuffle, play_next, add, t.songRadioMenuItem)
+				play, shuffle, playNext, add, t.songRadioMenuItem)
 		}
 		playlist := fyne.NewMenuItem("Add to playlist...", func() {
 			if t.OnAddToPlaylist != nil {

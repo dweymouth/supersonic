@@ -1,6 +1,7 @@
 #!/bin/sh
 
 fyne bundle -package res -prefix Res appicon-256.png > bundled.go
+fyne bundle -append -prefix Res icons/coreui/playlist-add-next.svg >> bundled.go
 fyne bundle -append -prefix Res icons/freepik/playbutton.png >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/disc.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/headphones.svg >> bundled.go
