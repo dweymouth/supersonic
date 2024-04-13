@@ -264,10 +264,10 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	menuBtn.OnTapped = func() {
 		if pop == nil {
-			queue_next := fyne.NewMenuItem("Play next", func() {
+			playNext := fyne.NewMenuItem("Play next", func() {
 				go a.page.pm.LoadPlaylist(a.page.playlistID, backend.InsertNext, false)
 			})
-			queue_next.Icon = theme.ContentAddIcon()
+			playNext.Icon = myTheme.PlayNextIcon
 			queue := fyne.NewMenuItem("Add to queue", func() {
 				go a.page.pm.LoadPlaylist(a.page.playlistID, backend.Append, false)
 			})
@@ -281,7 +281,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 				a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
 			})
 			download.Icon = theme.DownloadIcon()
-			menu := fyne.NewMenu("", queue_next, queue, playlist, download)
+			menu := fyne.NewMenu("", playNext, queue, playlist, download)
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
 		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)

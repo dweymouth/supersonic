@@ -233,6 +233,10 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	menuBtn.OnTapped = func() {
 		if pop == nil {
+			playNext := fyne.NewMenuItem("Play next", func() {
+				go a.page.pm.LoadAlbum(a.albumID, backend.InsertNext, false /*shuffle*/)
+			})
+			playNext.Icon = myTheme.PlayNextIcon
 			queue := fyne.NewMenuItem("Add to queue", func() {
 				go a.page.pm.LoadAlbum(a.albumID, backend.Append, false /*shuffle*/)
 			})
@@ -254,7 +258,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 				a.page.contr.ShowShareDialog(a.albumID)
 			})
 			a.shareMenuItem.Icon = myTheme.ShareIcon
-			menu := fyne.NewMenu("", queue, playlist, download, info, a.shareMenuItem)
+			menu := fyne.NewMenu("", playNext, queue, playlist, download, info, a.shareMenuItem)
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
 		_, canShare := page.mp.(mediaprovider.SupportsSharing)
