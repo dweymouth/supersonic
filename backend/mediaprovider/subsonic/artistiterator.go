@@ -67,8 +67,7 @@ func (s *subsonicMediaProvider) IterateArtists(sortOrder string, filter mediapro
 			func(artists []*subsonic.ArtistID3) []*subsonic.ArtistID3 {
 				newArtists := make([]*subsonic.ArtistID3, len(artists))
 				copy(newArtists, artists)
-				r := rand.New(rand.NewSource(time.Now().UnixNano()))
-				r.Shuffle(len(newArtists), func(i, j int) { newArtists[i], newArtists[j] = newArtists[j], newArtists[i] })
+				rand.Shuffle(len(newArtists), func(i, j int) { newArtists[i], newArtists[j] = newArtists[j], newArtists[i] })
 				return newArtists
 			},
 			filter,
