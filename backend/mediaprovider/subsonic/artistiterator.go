@@ -4,7 +4,6 @@ import (
 	"log"
 	"math/rand"
 	"slices"
-	"time"
 
 	"golang.org/x/text/collate"
 	"golang.org/x/text/language"
