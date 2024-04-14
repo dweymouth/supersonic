@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/url"
 	"strings"
+
+	"github.com/deluan/sanitize"
 )
 
 type MediaIterator[M any] interface {
@@ -96,11 +98,15 @@ func (f albumFilter) Matches(album *Album) bool {
 
 type ArtistFilter = MediaFilter[Artist, ArtistFilterOptions]
 
-type ArtistFilterOptions struct{}
+type ArtistFilterOptions struct {
+	SearchQuery string
+}
 
 // Clone returns a deep copy of the filter options
 func (o ArtistFilterOptions) Clone() ArtistFilterOptions {
-	return ArtistFilterOptions{}
+	return ArtistFilterOptions{
+		SearchQuery: o.SearchQuery,
+	}
 }
 
 type artistFilter struct {
@@ -126,14 +132,20 @@ func (a artistFilter) Clone() ArtistFilter {
 
 // Returns true if the filter is the nil filter - i.e. matches everything
 func (a artistFilter) IsNil() bool {
-	return true
+	return a.options.SearchQuery == ""
 }
 
 func (f artistFilter) Matches(artist *Artist) bool {
 	if artist == nil {
 		return false
 	}
-	return false
+	if f.options.SearchQuery != "" && !strings.Contains(
+		sanitize.Accents(strings.ToLower(artist.Name)),
+		sanitize.Accents(strings.ToLower(f.options.SearchQuery)),
+	) {
+		return false
+	}
+	return true
 }
 
 type RatingFavoriteParameters struct {
