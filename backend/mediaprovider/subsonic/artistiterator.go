@@ -2,6 +2,7 @@ package subsonic
 
 import (
 	"log"
+	"math/rand"
 	"slices"
 
 	"golang.org/x/text/collate"
@@ -14,12 +15,16 @@ import (
 )
 
 const (
-	ArtistSortNameAZ string = "Name (A-Z)"
+	ArtistSortAlbumCount string = "Album Count"
+	ArtistSortNameAZ     string = "Name (A-Z)"
+	ArtistSortRandom     string = "Random"
 )
 
 func (s *subsonicMediaProvider) ArtistSortOrders() []string {
 	return []string{
+		ArtistSortAlbumCount,
 		ArtistSortNameAZ,
+		ArtistSortRandom,
 	}
 }
 
@@ -35,6 +40,16 @@ func (s *subsonicMediaProvider) IterateArtists(sortOrder string, filter mediapro
 		sortOrder = ArtistSortNameAZ // default
 	}
 	switch sortOrder {
+	case ArtistSortAlbumCount:
+		return s.baseArtistIterFromSimpleSortOrder(
+			func(artists []*subsonic.ArtistID3) []*subsonic.ArtistID3 {
+				slices.SortStableFunc(artists, func(a, b *subsonic.ArtistID3) int {
+					return b.AlbumCount - a.AlbumCount
+				})
+				return artists
+			},
+			filter,
+		)
 	case ArtistSortNameAZ:
 		return s.baseArtistIterFromSimpleSortOrder(
 			func(artists []*subsonic.ArtistID3) []*subsonic.ArtistID3 {
@@ -43,6 +58,16 @@ func (s *subsonicMediaProvider) IterateArtists(sortOrder string, filter mediapro
 					return c.CompareString(a.Name, b.Name)
 				})
 				return artists
+			},
+			filter,
+		)
+	case ArtistSortRandom:
+		return s.baseArtistIterFromSimpleSortOrder(
+			func(artists []*subsonic.ArtistID3) []*subsonic.ArtistID3 {
+				newArtists := make([]*subsonic.ArtistID3, len(artists))
+				copy(newArtists, artists)
+				rand.Shuffle(len(newArtists), func(i, j int) { newArtists[i], newArtists[j] = newArtists[j], newArtists[i] })
+				return newArtists
 			},
 			filter,
 		)

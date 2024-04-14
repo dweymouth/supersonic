@@ -1,0 +1,126 @@
+package jellyfin
+
+import (
+	"slices"
+
+	"github.com/dweymouth/go-jellyfin"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/mediaprovider/helpers"
+	"github.com/dweymouth/supersonic/sharedutil"
+)
+
+const (
+	ArtistSortAlbumCount string = "Album Count"
+	ArtistSortNameAZ     string = "Name (A-Z)"
+	ArtistSortRandom     string = "Random"
+)
+
+func (j *jellyfinMediaProvider) ArtistSortOrders() []string {
+	return []string{
+		ArtistSortAlbumCount,
+		ArtistSortNameAZ,
+		ArtistSortRandom,
+	}
+}
+
+func (j *jellyfinMediaProvider) IterateArtists(sortOrder string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
+	var jfSort jellyfin.Sort
+	var disablePagination bool
+	var sortFn func([]*jellyfin.Artist) []*jellyfin.Artist
+
+	if sortOrder == "" {
+		sortOrder = ArtistSortNameAZ // default
+	}
+	switch sortOrder {
+	case ArtistSortAlbumCount:
+		// Pagination needs to be disabled, to retrieve all results in a single request, and correctly sort them.
+		disablePagination = true
+		sortFn = func(artists []*jellyfin.Artist) []*jellyfin.Artist {
+			slices.SortStableFunc(artists, func(a, b *jellyfin.Artist) int {
+				return b.AlbumCount - a.AlbumCount
+			})
+			return artists
+		}
+	case ArtistSortNameAZ:
+		jfSort.Field = jellyfin.SortByName
+		jfSort.Mode = jellyfin.SortAsc
+	case ArtistSortRandom:
+		jfSort.Field = jellyfin.SortByRandom
+	}
+
+	fetcher := makeArtistFetchFn(
+		func(offs, limit int) ([]*jellyfin.Artist, error) {
+			if disablePagination && offs > 0 {
+				return nil, nil
+			}
+			var paging jellyfin.Paging
+			if !disablePagination {
+				paging = jellyfin.Paging{StartIndex: offs, Limit: limit}
+			}
+			return j.client.GetAlbumArtists(jellyfin.QueryOpts{
+				Sort:   jfSort,
+				Paging: paging,
+			})
+		},
+		sortFn,
+	)
+
+	return helpers.NewArtistIterator(fetcher, filter, j.prefetchCoverCB)
+}
+
+func (j *jellyfinMediaProvider) SearchArtists(searchQuery string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
+	// TODO: Jellyfin API is not returning search results for artists.
+	//       Uncomment the following code once the issue is resolved.
+	//       Related issue: https://github.com/jellyfin/jellyfin/issues/8222
+	// fetcher := makeArtistFetchFn(
+	// 	func(offs, limit int) ([]*jellyfin.Artist, error) {
+	// 		log.Printf("Searching for artists: %s", searchQuery)
+	// 		sr, err := j.client.Search(searchQuery, jellyfin.TypeArtist, jellyfin.Paging{StartIndex: offs, Limit: limit})
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	// 		log.Printf("Found %d artists", len(sr.Artists))
+	// 		for _, a := range sr.Artists {
+	// 			log.Printf("Artist: %s", a.Name)
+	// 		}
+	// 		return sr.Artists, nil
+	// 	},
+	// 	nil,
+	// )
+	// return helpers.NewArtistIterator(fetcher, filter, j.prefetchCoverCB)
+
+	modifiedFilter := filter.Clone()
+	modifiedOptions := modifiedFilter.Options()
+	modifiedOptions.SearchQuery = searchQuery
+	modifiedFilter.SetOptions(modifiedOptions)
+
+	fetcher := makeArtistFetchFn(
+		func(offs, limit int) ([]*jellyfin.Artist, error) {
+			return j.client.GetAlbumArtists(jellyfin.QueryOpts{
+				Sort: jellyfin.Sort{
+					Field: jellyfin.SortByName,
+					Mode:  jellyfin.SortAsc,
+				},
+				Paging: jellyfin.Paging{StartIndex: offs, Limit: limit},
+			})
+		},
+		nil,
+	)
+	return helpers.NewArtistIterator(fetcher, modifiedFilter, j.prefetchCoverCB)
+}
+
+func makeArtistFetchFn(
+	fetchFn func(offset, limit int) ([]*jellyfin.Artist, error),
+	sortFn func([]*jellyfin.Artist) []*jellyfin.Artist,
+) helpers.ArtistFetchFn {
+	return func(offset, limit int) ([]*mediaprovider.Artist, error) {
+		ar, err := fetchFn(offset, limit)
+		if err != nil {
+			return nil, err
+		}
+		if sortFn != nil {
+			ar = sortFn(ar)
+		}
+		return sharedutil.MapSlice(ar, toArtist), nil
+	}
+}
