@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.9.1"
+	AppVersion       = "0.10.0"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,17 +15,22 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* Show visual loading cue when searching and no results yet
-* Arrow key scrolling and focus keyboard traversal to grid and list views
-* Ctrl+Q keyboard shortcut to quit app on Windows and Linux
+* Support mouse back and forward buttons for navigation
+* Redesigned Now Playing page with large cover art and lyrics
+* Add context menu entry to create sharing URLs (Subsonic servers only)
+* Add option to load/save play queue to Subsonic servers instead of locally
+* Add option to shuffle artist's discography by albums or tracks
+* Show original and reissue date for albums if available (OpenSubsonic servers)
+* Add "Song radio" option to tracklist context menus
+* Add "Play next" option to context menus
+* Add sorting options to Artists page
 `
 
 	WhatsFixed = `
 ## Fixed
-* A few MPRIS bugs (thanks @adamantike!)
-* Show modal dialog when connecting to server to block UI interaction which could cause crash
-* High CPU use when certain dialogs were shown
-* Make tracklist widget more efficient
-* Lower CPU use when text entry fields are focused
+* Can't reorder track in play queue more than once
+* Playlist's comment text doesn't wrap
+* Pressing down arrow on tracklist with few tracks could cause some to be hidden
+* "Move down" option in play queue context menu was moving to bottom
 `
 )

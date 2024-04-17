@@ -1,5 +1,24 @@
 # Change Log
 
+## [0.10.0] - 2024-04-17
+
+### Added
+- [#128](https://github.com/dweymouth/supersonic/issues/128) Support mouse back and forward buttons for navigation
+- [#238](https://github.com/dweymouth/supersonic/issues/238) Redesigned Now Playing page with large cover art and lyrics
+- [#303](https://github.com/dweymouth/supersonic/issues/303) Add context menu entry to create sharing URLs (Subsonic servers only)
+- [#337](https://github.com/dweymouth/supersonic/issues/337) Add option to load/save play queue to Subsonic servers instead of locally
+- [#350](https://github.com/dweymouth/supersonic/issues/350) Add option to shuffle artist's discography by albums or tracks
+- [#351](https://github.com/dweymouth/supersonic/issues/351) Show original and reissue date for albums if available (OpenSubsonic servers)
+- [#352](https://github.com/dweymouth/supersonic/pull/352) Add "Song radio" option to tracklist context menus
+- [#361](https://github.com/dweymouth/supersonic/issues/361) Add "Play next" option to context menus
+- [#366](https://github.com/dweymouth/supersonic/pull/366) Add sorting options to Artists page
+
+### Fixed
+- [#330](https://github.com/dweymouth/supersonic/issues/330) Can't reorder track in play queue more than once
+- [#345](https://github.com/dweymouth/supersonic/issues/345) Playlist's comment text doesn't wrap
+- [#346](https://github.com/dweymouth/supersonic/issues/346) Pressing down arrow on tracklist with few tracks could cause some to be hidden
+- [#364](https://github.com/dweymouth/supersonic/issues/364) "Move down" option in play queue context menu was moving to bottom
+
 ## [0.9.1] - 2024-02-25
 
 ### Added
