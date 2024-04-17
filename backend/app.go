@@ -11,6 +11,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
@@ -305,7 +306,13 @@ func (a *App) Shutdown() {
 	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
 	if a.Config.Application.SavePlayQueue {
-		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, configdir.LocalConfig(a.appName, savedQueueFile))
+		var queueServer mediaprovider.CanSavePlayQueue = nil
+		if a.Config.Application.SaveQueueToServer {
+			if qs, ok := a.ServerManager.Server.(mediaprovider.CanSavePlayQueue); ok {
+				queueServer = qs
+			}
+		}
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, configdir.LocalConfig(a.appName, savedQueueFile), queueServer)
 	}
 	a.PlaybackManager.Stop() // will trigger scrobble check
 	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
@@ -316,7 +323,8 @@ func (a *App) Shutdown() {
 }
 
 func (a *App) LoadSavedPlayQueue() error {
-	queue, err := LoadPlayQueue(configdir.LocalConfig(a.appName, savedQueueFile), a.ServerManager)
+	queueFilePath := configdir.LocalConfig(a.appName, savedQueueFile)
+	queue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
 	if err != nil {
 		return err
 	}

@@ -578,12 +578,13 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	curPlayer := c.App.PlaybackManager.CurrentPlayer()
 	_, isReplayGainPlayer := curPlayer.(player.ReplayGainPlayer)
 	_, isEqualizerPlayer := curPlayer.(*mpv.Player)
+	_, canSavePlayQueue := c.App.ServerManager.Server.(mediaprovider.CanSavePlayQueue)
 	isLocalPlayer := isEqualizerPlayer
 	bands := c.App.LocalPlayer.Equalizer().BandFrequencies()
 	dlg := dialogs.NewSettingsDialog(c.App.Config,
 		devs, themeFiles, bands,
 		c.App.ServerManager.Server.ClientDecidesScrobble(),
-		isLocalPlayer, isReplayGainPlayer, isEqualizerPlayer,
+		isLocalPlayer, isReplayGainPlayer, isEqualizerPlayer, canSavePlayQueue,
 		c.MainWindow)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)

@@ -133,6 +133,12 @@ type LyricLine struct {
 	Start float64 // seconds
 }
 
+type SavedPlayQueue struct {
+	Tracks   []*Track
+	TrackPos int
+	TimePos  int // seconds
+}
+
 type ContentType int
 
 const (
