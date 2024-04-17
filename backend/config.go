@@ -42,6 +42,7 @@ type AppConfig struct {
 	AllowMultiInstance          bool
 	MaxImageCacheSizeMB         int
 	SavePlayQueue               bool
+	SaveQueueToServer           bool
 	DefaultPlaylistID           string
 	ShowTrackChangeNotification bool
 
@@ -155,7 +156,8 @@ func DefaultConfig(appVersionTag string) *Config {
 			AllowMultiInstance:          false,
 			MaxImageCacheSizeMB:         50,
 			UIScaleSize:                 "Normal",
-			SavePlayQueue:               false,
+			SavePlayQueue:               true,
+			SaveQueueToServer:           false,
 			ShowTrackChangeNotification: false,
 		},
 		AlbumPage: AlbumPageConfig{
