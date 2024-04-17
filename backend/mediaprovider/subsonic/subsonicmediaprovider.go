@@ -398,8 +398,10 @@ func (s *subsonicMediaProvider) GetPlayQueue() (*mediaprovider.SavedPlayQueue, e
 	}
 	savedQueue := &mediaprovider.SavedPlayQueue{}
 	savedQueue.Tracks = sharedutil.MapSlice(pq.Entries, toTrack)
-	savedQueue.TrackPos = pq.Current
-	savedQueue.TimePos = int(pq.Position)
+	savedQueue.TrackPos = slices.IndexFunc(pq.Entries, func(e *subsonic.Child) bool {
+		return e.ID == pq.Current
+	})
+	savedQueue.TimePos = int(pq.Position / 1000)
 	return savedQueue, nil
 }
 
