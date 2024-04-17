@@ -22,7 +22,8 @@ type serializedSavedPlayQueue struct {
 }
 
 // SavePlayQueue saves the current play queue and playback position to a JSON file.
-func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, saveToServer bool) error {
+// If the provided CanSavePlayQueue server is non-nil, it will also save to the server.
+func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, server mediaprovider.CanSavePlayQueue) error {
 	queue := pm.GetPlayQueue()
 	stats := pm.PlayerStatus()
 	trackIdx := pm.NowPlayingIndex()
@@ -41,15 +42,32 @@ func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, saveTo
 	b, _ := json.Marshal(saved)
 	err := os.WriteFile(filepath, b, 0644)
 
-	if saveToServer {
+	if server != nil {
+		// save to server
+		err = server.SavePlayQueue(trackIDs, trackIdx, int(stats.TimePos))
 	}
 	return err
 }
 
 // Loads the saved play queue from the given filepath using the current server.
+// If loadFromServer is true and the current server supports saving the play queue,
+// the queue will attempt to load from the server and only use the local file as a fallback.
 // Returns an error if the queue could not be loaded for any reason, including the
 // currently logged in server being different than the server from which the queue was saved.
-func LoadPlayQueue(filepath string, sm *ServerManager) (*SavedPlayQueue, error) {
+func LoadPlayQueue(filepath string, sm *ServerManager, loadFromServer bool) (*SavedPlayQueue, error) {
+	if pq, ok := sm.Server.(mediaprovider.CanSavePlayQueue); loadFromServer && ok && pq != nil {
+		// load queue from server
+		queue, err := pq.GetPlayQueue()
+		if err == nil {
+			return &SavedPlayQueue{
+				Tracks:     queue.Tracks,
+				TrackIndex: queue.TrackPos,
+				TimePos:    float64(queue.TimePos),
+			}, nil
+		}
+	}
+
+	// load queue from local file
 	b, err := os.ReadFile(filepath)
 	if err != nil {
 		return nil, err

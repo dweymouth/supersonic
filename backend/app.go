@@ -305,7 +305,7 @@ func (a *App) Shutdown() {
 	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
 	if a.Config.Application.SavePlayQueue {
-		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, configdir.LocalConfig(a.appName, savedQueueFile), false)
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, configdir.LocalConfig(a.appName, savedQueueFile), nil)
 	}
 	a.PlaybackManager.Stop() // will trigger scrobble check
 	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
@@ -316,7 +316,7 @@ func (a *App) Shutdown() {
 }
 
 func (a *App) LoadSavedPlayQueue() error {
-	queue, err := LoadPlayQueue(configdir.LocalConfig(a.appName, savedQueueFile), a.ServerManager)
+	queue, err := LoadPlayQueue(configdir.LocalConfig(a.appName, savedQueueFile), a.ServerManager, false)
 	if err != nil {
 		return err
 	}
