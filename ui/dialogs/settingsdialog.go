@@ -56,6 +56,7 @@ func NewSettingsDialog(
 	isLocalPlayer bool,
 	isReplayGainPlayer bool,
 	isEqualizerPlayer bool,
+	canSavePlayQueue bool,
 	window fyne.Window,
 ) *SettingsDialog {
 	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList, clientDecidesScrobble: clientDecidesScrobble}
@@ -66,14 +67,14 @@ func NewSettingsDialog(
 	var tabs *container.AppTabs
 	if isEqualizerPlayer {
 		tabs = container.NewAppTabs(
-			s.createGeneralTab(),
+			s.createGeneralTab(canSavePlayQueue),
 			s.createPlaybackTab(isLocalPlayer, isReplayGainPlayer),
 			s.createEqualizerTab(equalizerBands),
 			s.createExperimentalTab(window),
 		)
 	} else {
 		tabs = container.NewAppTabs(
-			s.createGeneralTab(),
+			s.createGeneralTab(canSavePlayQueue),
 			s.createPlaybackTab(isLocalPlayer, isReplayGainPlayer),
 			s.createExperimentalTab(window),
 		)
@@ -94,7 +95,7 @@ func NewSettingsDialog(
 	return s
 }
 
-func (s *SettingsDialog) createGeneralTab() *container.TabItem {
+func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.TabItem {
 	themeNames := []string{"Default"}
 	themeFileNames := []string{""}
 	i, selIndex := 1, 0
@@ -157,8 +158,32 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 	})
 	systemTrayEnable.Checked = s.config.Application.EnableSystemTray
 
-	saveQueue := widget.NewCheckWithData("Save play queue on exit",
-		binding.BindBool(&s.config.Application.SavePlayQueue))
+	// save play queue settings
+	saveToServer := widget.NewRadioGroup([]string{"Locally", "To server"}, func(choice string) {
+		s.config.Application.SaveQueueToServer = choice == "To server"
+	})
+	saveToServer.Horizontal = true
+	if !s.config.Application.SavePlayQueue {
+		saveToServer.Disable()
+	}
+	saveToServer.Selected = "Locally"
+	if s.config.Application.SaveQueueToServer {
+		saveToServer.Selected = "To server"
+	}
+	saveQueue := widget.NewCheck("Save play queue on exit", func(save bool) {
+		s.config.Application.SavePlayQueue = save
+		if save && canSaveQueueToServer {
+			saveToServer.Enable()
+		} else if canSaveQueueToServer {
+			saveToServer.Disable()
+		}
+	})
+	saveQueue.Checked = s.config.Application.SavePlayQueue
+	saveQueueHBox := container.NewHBox(saveQueue)
+	if canSaveQueueToServer {
+		saveQueueHBox.Add(saveToServer)
+	}
+
 	trackNotif := widget.NewCheckWithData("Show notification on track change",
 		binding.BindBool(&s.config.Application.ShowTrackChangeNotification))
 
@@ -250,7 +275,7 @@ func (s *SettingsDialog) createGeneralTab() *container.TabItem {
 			widget.NewLabel("Startup page"), container.NewGridWithColumns(2, startupPage),
 		),
 		container.NewHBox(systemTrayEnable, closeToTray),
-		saveQueue,
+		saveQueueHBox,
 		trackNotif,
 		s.newSectionSeparator(),
 

@@ -382,6 +382,9 @@ func (s *subsonicMediaProvider) GetLyrics(track *mediaprovider.Track) (*mediapro
 // CanSavePlayQueue interface
 
 func (s *subsonicMediaProvider) SavePlayQueue(trackIDs []string, currentTrackPos int, timeSeconds int) error {
+	if len(trackIDs) == 0 {
+		return nil // don't save an empty queue
+	}
 	return s.client.SavePlayQueue(trackIDs, map[string]string{
 		"current":  trackIDs[currentTrackPos],
 		"position": strconv.Itoa(timeSeconds * 1000),

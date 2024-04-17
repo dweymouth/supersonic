@@ -3,6 +3,7 @@ package backend
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -64,6 +65,8 @@ func LoadPlayQueue(filepath string, sm *ServerManager, loadFromServer bool) (*Sa
 				TrackIndex: queue.TrackPos,
 				TimePos:    float64(queue.TimePos),
 			}, nil
+		} else {
+			log.Printf("error loading queue from server: %v", err.Error())
 		}
 	}
 
