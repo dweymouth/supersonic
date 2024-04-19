@@ -203,17 +203,18 @@ func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 		}
 	})
 
-	go func() {
-		if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
-			lyrics, err := lp.GetLyrics(song)
-			if err == nil {
+	if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
+		go func() {
+			if lyrics, err := lp.GetLyrics(song); err == nil {
 				a.lyricsViewer.SetLyrics(lyrics)
 			} else {
 				log.Printf("Error fetching lyrics: %v", err)
 				a.lyricsViewer.SetLyrics(nil)
 			}
-		}
-	}()
+		}()
+	} else {
+		a.lyricsViewer.SetLyrics(nil)
+	}
 }
 
 func (a *NowPlayingPage) OnPlayQueueChange() {

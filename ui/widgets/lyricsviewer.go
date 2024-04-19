@@ -13,8 +13,17 @@ type LyricsViewer struct {
 	noLyricsLabel  widget.Label
 	unsyncedViewer *widget.RichText
 
-	container *container.Scroll
+	container   *container.Scroll
+	currentView lyricView
 }
+
+type lyricView int
+
+const (
+	lyricViewEmpty lyricView = iota
+	lyricViewUnsynced
+	lyricViewSynced
+)
 
 func NewLyricsViewer() *LyricsViewer {
 	l := &LyricsViewer{noLyricsLabel: widget.Label{
@@ -27,8 +36,11 @@ func NewLyricsViewer() *LyricsViewer {
 
 func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 	if lyrics == nil || len(lyrics.Lines) == 0 {
-		l.container.Content = &l.noLyricsLabel
-		l.Refresh()
+		if l.currentView != lyricViewEmpty {
+			l.container.Content = &l.noLyricsLabel
+			l.currentView = lyricViewEmpty
+			l.Refresh()
+		}
 		return
 	}
 
@@ -36,7 +48,7 @@ func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 		l.unsyncedViewer = widget.NewRichText()
 		l.unsyncedViewer.Wrapping = fyne.TextWrapWord
 	}
-	l.unsyncedViewer.Segments = l.unsyncedViewer.Segments[:0]
+	l.unsyncedViewer.Segments = nil
 	for _, line := range lyrics.Lines {
 		ts := &widget.TextSegment{Text: line.Text}
 		ts.Style.Alignment = fyne.TextAlignCenter
@@ -44,8 +56,12 @@ func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 		ts.Style.Inline = false
 		l.unsyncedViewer.Segments = append(l.unsyncedViewer.Segments, ts)
 	}
-	l.container.Content = l.unsyncedViewer
-	l.Refresh()
+	l.unsyncedViewer.Refresh()
+	if l.currentView != lyricViewUnsynced {
+		l.container.Content = l.unsyncedViewer
+		l.currentView = lyricViewUnsynced
+		l.Refresh()
+	}
 }
 
 func (l *LyricsViewer) CreateRenderer() fyne.WidgetRenderer {
