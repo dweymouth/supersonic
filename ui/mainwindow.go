@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/20after4/configdir"
 	"github.com/dweymouth/supersonic/backend"
@@ -102,7 +103,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		}
 	})
 	app.ServerManager.OnServerConnected(func() {
-		m.RunOnServerConnectedTasks(app, displayAppName)
+		go m.RunOnServerConnectedTasks(app, displayAppName)
 	})
 	app.ServerManager.OnLogout(func() {
 		m.BrowsingPane.DisableNavigationButtons()
@@ -145,6 +146,7 @@ func (m *MainWindow) StartupPage() controller.Route {
 }
 
 func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName string) {
+	time.Sleep(1 * time.Millisecond) // ensure this runs after sync tasks
 	m.BrowsingPane.EnableNavigationButtons()
 	m.Router.NavigateTo(m.StartupPage())
 	_, canRate := m.App.ServerManager.Server.(mediaprovider.SupportsRating)
