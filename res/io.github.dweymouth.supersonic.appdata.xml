@@ -61,35 +61,20 @@
   </screenshots>
 
  <releases>
-  <release date="2024-04-17" version="0.10.0">
+  <release date="2024-04-21" version="0.10.1">
    <description>
      <p>
-       Version 0.10.0 of Supersonic
+       Version 0.10.1 of Supersonic
      </p>
-
-     <p>
-       Added
-     </p>
-     <ul>
-       <li>Support mouse back and forward buttons for navigation</li>
-       <li>Redesigned Now Playing page with large cover art and lyrics</li>
-       <li>Add context menu entry to create sharing URLs (Subsonic servers only)</li>
-       <li>Add option to load/save play queue to Subsonic servers instead of locally</li>
-       <li>Add option to shuffle artist's discography by albums or tracks</li>
-       <li>Show original and reissue date for albums if available (OpenSubsonic servers)</li>
-       <li>Add "Song radio" option to tracklist context menus</li>
-       <li>Add "Play next" option to context menus</li>
-       <li>Add sorting options to Artists page</li>
-     </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Can't reorder track in play queue more than once</li>
-       <li>Playlist's comment text doesn't wrap</li>
-       <li>Pressing down arrow on tracklist with few tracks could cause some to be hidden</li>
-       <li>"Move down" option in play queue context menu was moving to bottom</li>
+       <li>Crashing when trying to add a new server</li>
+       <li>Lyrics don't refresh when playing next song</li>
+       <li>What's New dialog wasn't showing when launching updated version</li>
+       <li>Crash on exit when saving play queue to server and no track playing</li>
      </ul>
 
    </description>

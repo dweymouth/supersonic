@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.10.1] - 2024-04-21
+
+### Fixed
+- [#369](https://github.com/dweymouth/supersonic/issues/369) Crashing when trying to add a new server
+- [#370](https://github.com/dweymouth/supersonic/issues/370) Lyrics don't refresh when playing next song
+- What's New dialog wasn't showing when launching updated version
+- Crash on exit when saving play queue to server and no track playing
+
 ## [0.10.0] - 2024-04-17
 
 ### Added
