@@ -573,7 +573,8 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			t.onSetFavorites(t.selectedTracks(), false, true)
 		})
 		unfavorite.Icon = myTheme.NotFavoriteIcon
-		t.ctxMenu.Items = append(t.ctxMenu.Items, playlist, download)
+		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator(),
+			playlist, download)
 		t.shareMenuItem = fyne.NewMenuItem("Share...", func() {
 			t.onShare(t.selectedTracks())
 		})
