@@ -268,14 +268,11 @@ func (m *MainWindow) addShortcuts() {
 	for _, sh := range os.BackShortcuts {
 		m.Canvas().AddShortcut(&sh, func(_ fyne.Shortcut) {
 			m.BrowsingPane.GoBack()
-			// TODO: reset focus only if something inside the page had focus
-			m.Canvas().Focus(nil)
 		})
 	}
 	for _, sh := range os.ForwardShortcuts {
 		m.Canvas().AddShortcut(&sh, func(_ fyne.Shortcut) {
 			m.BrowsingPane.GoForward()
-			m.Canvas().Focus(nil)
 		})
 	}
 	if os.SettingsShortcut != nil {

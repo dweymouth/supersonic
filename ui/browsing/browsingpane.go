@@ -197,6 +197,10 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	if b.curPage != nil && b.curPage.Route() == p.Route() {
 		return false
 	}
+	// TODO: reset focus only if something inside the previous page had focus
+	if c := fyne.CurrentApp().Driver().CanvasForObject(b); c != nil {
+		c.Focus(nil)
+	}
 	b.curPage = p
 	if np, ok := p.(CanShowNowPlaying); ok {
 		// inform page of currently playing track
