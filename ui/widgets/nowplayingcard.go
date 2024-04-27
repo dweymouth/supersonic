@@ -3,6 +3,7 @@ package widgets
 import (
 	"image"
 
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -117,12 +118,19 @@ func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (n *NowPlayingCard) Update(track string, artists, artistIDs []string, album string, cover image.Image) {
-	n.trackName.SetText(track)
-	n.trackName.Hidden = track == ""
-	n.artistName.BuildSegments(artists, artistIDs)
-	n.albumName.SetText(album)
-	n.albumName.Hidden = album == ""
+func (n *NowPlayingCard) Update(track *mediaprovider.Track, cover image.Image) {
+	if track != nil {
+		n.trackName.SetText(track.Name)
+		n.artistName.BuildSegments(track.ArtistNames, track.ArtistIDs)
+		n.albumName.SetText(track.Album)
+	} else {
+		n.trackName.SetText("")
+		n.artistName.BuildSegments([]string{}, []string{})
+		n.albumName.SetText("")
+	}
+	n.trackName.Hidden = n.trackName.Text == ""
+	n.artistName.Hidden = len(n.artistName.Segments) == 0
+	n.albumName.Hidden = n.albumName.Text == ""
 	n.cover.Image.Image = cover
 	n.cover.Hidden = cover == nil
 	n.Refresh()
