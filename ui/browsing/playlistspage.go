@@ -41,6 +41,9 @@ type PlaylistsPage struct {
 	listView   *PlaylistList
 	listSort   widgets.ListHeaderSort
 	gridView   *widgets.GridView
+
+	initialListScrollPos float32
+	initialGridScrollPos float32
 }
 
 func NewPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider) *PlaylistsPage {
@@ -48,17 +51,29 @@ func NewPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *
 	if cfg.InitialView == "Grid" {
 		activeView = 1
 	}
-	return newPlaylistsPage(contr, pool, cfg, mp, "", activeView, widgets.ListHeaderSort{})
+	return newPlaylistsPage(contr, pool, cfg, mp, "", activeView, widgets.ListHeaderSort{}, 0, 0)
 }
 
-func newPlaylistsPage(contr *controller.Controller, pool *util.WidgetPool, cfg *backend.PlaylistsPageConfig, mp mediaprovider.MediaProvider, searchText string, activeView int, listSort widgets.ListHeaderSort) *PlaylistsPage {
+func newPlaylistsPage(
+	contr *controller.Controller,
+	pool *util.WidgetPool,
+	cfg *backend.PlaylistsPageConfig,
+	mp mediaprovider.MediaProvider,
+	searchText string,
+	activeView int,
+	listSort widgets.ListHeaderSort,
+	listScrollPos float32,
+	gridScrollPos float32,
+) *PlaylistsPage {
 	a := &PlaylistsPage{
-		pool:      pool,
-		cfg:       cfg,
-		mp:        mp,
-		contr:     contr,
-		listSort:  listSort,
-		titleDisp: widget.NewRichTextWithText("Playlists"),
+		pool:                 pool,
+		cfg:                  cfg,
+		mp:                   mp,
+		contr:                contr,
+		listSort:             listSort,
+		titleDisp:            widget.NewRichTextWithText("Playlists"),
+		initialListScrollPos: listScrollPos,
+		initialGridScrollPos: gridScrollPos,
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
@@ -224,9 +239,18 @@ func (a *PlaylistsPage) refreshView(playlists []*mediaprovider.Playlist) {
 		a.gridView.ResetFixed(createPlaylistGridViewModel(playlists))
 	}
 	if a.viewToggle.ActivatedButtonIndex() == 0 {
-		a.listView.Refresh()
+		a.listView.Refresh() // ensures content size updates for ScrollToOffset too
+		if a.initialListScrollPos != 0 {
+			a.listView.list.ScrollToOffset(a.initialListScrollPos)
+			a.initialListScrollPos = 0
+		}
 	} else {
-		a.gridView.Refresh()
+		if a.initialGridScrollPos != 0 {
+			a.gridView.ScrollToOffset(a.initialGridScrollPos)
+			a.initialGridScrollPos = 0
+		} else {
+			a.gridView.Refresh()
+		}
 	}
 }
 
@@ -254,27 +278,31 @@ func (a *PlaylistsPage) Save() SavedPage {
 		activeView: a.viewToggle.ActivatedButtonIndex(),
 	}
 	if a.gridView != nil {
+		s.gridScrollPos = a.gridView.GetScrollOffset()
 		a.gridView.Clear()
 		a.pool.Release(util.WidgetTypeGridView, a.gridView)
 	}
 	if a.listView != nil {
+		s.listScrollPos = a.listView.list.GetScrollOffset()
 		s.listSort = a.listView.sorting
 	}
 	return s
 }
 
 type savedPlaylistsPage struct {
-	contr      *controller.Controller
-	pool       *util.WidgetPool
-	cfg        *backend.PlaylistsPageConfig
-	mp         mediaprovider.MediaProvider
-	searchText string
-	activeView int
-	listSort   widgets.ListHeaderSort
+	contr         *controller.Controller
+	pool          *util.WidgetPool
+	cfg           *backend.PlaylistsPageConfig
+	mp            mediaprovider.MediaProvider
+	searchText    string
+	activeView    int
+	listSort      widgets.ListHeaderSort
+	listScrollPos float32
+	gridScrollPos float32
 }
 
 func (s *savedPlaylistsPage) Restore() Page {
-	return newPlaylistsPage(s.contr, s.pool, s.cfg, s.mp, s.searchText, s.activeView, s.listSort)
+	return newPlaylistsPage(s.contr, s.pool, s.cfg, s.mp, s.searchText, s.activeView, s.listSort, s.listScrollPos, s.gridScrollPos)
 }
 
 func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {
