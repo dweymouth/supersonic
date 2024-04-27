@@ -6,7 +6,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 )
 
-var _ fyne.Layout = (*VboxCustomPadding)(nil)
+var _ fyne.Layout = (*HboxCustomPadding)(nil)
 
 type HboxCustomPadding struct {
 	ExtraPad        float32
@@ -14,14 +14,8 @@ type HboxCustomPadding struct {
 }
 
 func (*HboxCustomPadding) isSpacer(obj fyne.CanvasObject) bool {
-	if !obj.Visible() {
-		return false
-	}
-	if spacer, ok := obj.(layout.SpacerObject); ok {
-		return spacer.ExpandHorizontal()
-	}
-
-	return false
+	spacer, ok := obj.(layout.SpacerObject)
+	return ok && spacer.ExpandHorizontal()
 }
 
 func (h *HboxCustomPadding) MinSize(objects []fyne.CanvasObject) fyne.Size {
@@ -29,15 +23,13 @@ func (h *HboxCustomPadding) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	addPadding := false
 	padding := h.themePad() + h.ExtraPad
 	for _, child := range objects {
-		if !child.Visible() {
-			continue
-		}
-		if h.isSpacer(child) {
+		if !child.Visible() || h.isSpacer(child) {
 			continue
 		}
 
-		minSize.Height = fyne.Max(child.MinSize().Height, minSize.Height)
-		minSize.Width += child.MinSize().Width
+		childMin := child.MinSize()
+		minSize.Height = fyne.Max(childMin.Height, minSize.Height)
+		minSize.Width += childMin.Width
 		if addPadding {
 			minSize.Width += padding
 		}
@@ -48,37 +40,50 @@ func (h *HboxCustomPadding) MinSize(objects []fyne.CanvasObject) fyne.Size {
 
 func (h *HboxCustomPadding) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	spacers := 0
+	visibleObjects := 0
+	// Size taken up by visible objects
 	total := float32(0)
+
 	for _, child := range objects {
 		if !child.Visible() {
 			continue
 		}
+
 		if h.isSpacer(child) {
 			spacers++
 			continue
 		}
+
+		visibleObjects++
 		total += child.MinSize().Width
 	}
 
-	x, y := float32(0), float32(0)
 	padding := h.themePad() + h.ExtraPad
-	extra := size.Width - total - (padding * float32(len(objects)-spacers-1))
-	extraCell := float32(0)
+
+	// Amount of space not taken up by visible objects and inter-object padding
+	extra := size.Width - total - (padding * float32(visibleObjects-1))
+
+	// Spacers split extra space equally
+	spacerSize := float32(0)
 	if spacers > 0 {
-		extraCell = extra / float32(spacers)
+		spacerSize = extra / float32(spacers)
 	}
+
+	x, y := float32(0), float32(0)
 	for _, child := range objects {
 		if !child.Visible() {
 			continue
 		}
 
 		if h.isSpacer(child) {
-			x += extraCell
+			x += spacerSize
+			continue
 		}
-		width := child.MinSize().Width
 		child.Move(fyne.NewPos(x, y))
-		child.Resize(fyne.NewSize(width, size.Height))
+
+		width := child.MinSize().Width
 		x += padding + width
+		child.Resize(fyne.NewSize(width, size.Height))
 	}
 }
 

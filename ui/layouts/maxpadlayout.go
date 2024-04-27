@@ -2,7 +2,7 @@ package layouts
 
 import "fyne.io/fyne/v2"
 
-var _ fyne.Layout = (*CenterPadLayout)(nil)
+var _ fyne.Layout = (*MaxPadLayout)(nil)
 
 type MaxPadLayout struct {
 	PadLeft   float32
