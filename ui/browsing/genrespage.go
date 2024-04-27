@@ -35,10 +35,10 @@ type GenresPage struct {
 }
 
 func NewGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider) *GenresPage {
-	return newGenresPage(contr, mp, "", widgets.ListHeaderSort{})
+	return newGenresPage(contr, mp, "", widgets.ListHeaderSort{}, 0)
 }
 
-func newGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider, searchText string, sorting widgets.ListHeaderSort) *GenresPage {
+func newGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider, searchText string, sorting widgets.ListHeaderSort, scrollPos float32) *GenresPage {
 	a := &GenresPage{
 		contr:     contr,
 		mp:        mp,
@@ -53,12 +53,12 @@ func newGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider,
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 	a.buildContainer()
-	go a.load(searchText != "")
+	go a.load(searchText != "", scrollPos)
 	return a
 }
 
 // should be called asynchronously
-func (a *GenresPage) load(searchOnLoad bool) {
+func (a *GenresPage) load(searchOnLoad bool, scrollPos float32) {
 	genres, err := a.mp.GetGenres()
 	if err != nil {
 		log.Printf("error loading genres: %v", err.Error())
@@ -66,8 +66,15 @@ func (a *GenresPage) load(searchOnLoad bool) {
 	a.genres = genres
 	if searchOnLoad {
 		a.onSearched(a.searcher.Entry.Text)
+		if scrollPos != 0 {
+			a.list.list.ScrollToOffset(scrollPos)
+		}
 	} else {
 		a.list.SetGenres(a.genres)
+		if scrollPos != 0 {
+			a.list.list.ScrollToOffset(scrollPos)
+			return
+		}
 		a.list.Refresh()
 	}
 }
@@ -84,7 +91,7 @@ func (a *GenresPage) onSearched(query string) {
 		})
 		a.list.SetGenres(result)
 	}
-	a.list.Refresh()
+	a.list.list.ScrollTo(0)
 }
 
 var _ Searchable = (*GenresPage)(nil)
@@ -104,7 +111,7 @@ func (a *GenresPage) Route() controller.Route {
 }
 
 func (a *GenresPage) Reload() {
-	go a.load(false)
+	go a.load(false, 0)
 }
 
 func (a *GenresPage) Save() SavedPage {
@@ -113,6 +120,7 @@ func (a *GenresPage) Save() SavedPage {
 		mp:         a.mp,
 		searchText: a.searcher.Entry.Text,
 		sorting:    a.list.sorting,
+		scrollPos:  a.list.list.GetScrollOffset(),
 	}
 }
 
@@ -121,10 +129,11 @@ type savedGenresPage struct {
 	mp         mediaprovider.MediaProvider
 	searchText string
 	sorting    widgets.ListHeaderSort
+	scrollPos  float32
 }
 
 func (s *savedGenresPage) Restore() Page {
-	return newGenresPage(s.contr, s.mp, s.searchText, s.sorting)
+	return newGenresPage(s.contr, s.mp, s.searchText, s.sorting, s.scrollPos)
 }
 
 func (a *GenresPage) buildContainer() {
