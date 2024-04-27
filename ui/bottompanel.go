@@ -104,7 +104,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *
 
 func (bp *BottomPanel) onSongChange(song, _ *mediaprovider.Track) {
 	if song == nil {
-		bp.NowPlaying.Update("", []string{}, []string{}, "", nil)
+		bp.NowPlaying.Update(nil, nil)
 	} else {
 		bp.coverArtID = song.CoverArtID
 		var im image.Image
@@ -116,7 +116,7 @@ func (bp *BottomPanel) onSongChange(song, _ *mediaprovider.Track) {
 			imgTTLSec := song.Duration + 30
 			im, _ = bp.ImageManager.GetCoverThumbnailWithTTL(song.CoverArtID, time.Duration(imgTTLSec)*time.Second)
 		}
-		bp.NowPlaying.Update(song.Name, song.ArtistNames, song.ArtistIDs, song.Album, im)
+		bp.NowPlaying.Update(song, im)
 	}
 }
 
