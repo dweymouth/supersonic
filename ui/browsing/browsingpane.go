@@ -75,10 +75,10 @@ type BrowsingPane struct {
 	navBtnsPageMap   map[controller.PageName]fyne.Resource
 }
 
-func NewBrowsingPane(app *backend.App, contr *controller.Controller) *BrowsingPane {
+func NewBrowsingPane(app *backend.App, contr *controller.Controller, onGoHome func()) *BrowsingPane {
 	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
-	b.home = widget.NewButtonWithIcon("", theme.HomeIcon(), b.GoHome)
+	b.home = widget.NewButtonWithIcon("", theme.HomeIcon(), onGoHome)
 	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
 	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
@@ -266,17 +266,6 @@ func (b *BrowsingPane) updateHistoryButtons() {
 		b.forward.Enable()
 	} else {
 		b.forward.Disable()
-	}
-}
-
-func (b *BrowsingPane) GoHome() {
-	if len(b.history) > 0 {
-		homePage := b.history[0].Restore()
-		if b.CurrentPage() != homePage.Route() {
-			b.addPageToHistory(b.curPage, false)
-			b.doSetPage(homePage)
-			b.updateHistoryButtons()
-		}
 	}
 }
 

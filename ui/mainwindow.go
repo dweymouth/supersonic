@@ -75,7 +75,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		MainWindow: m.Window,
 		App:        app,
 	}
-	m.BrowsingPane = browsing.NewBrowsingPane(app, m.Controller)
+	m.BrowsingPane = browsing.NewBrowsingPane(app, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	// inject controller dependencies
 	m.Controller.NavHandler = m.Router.NavigateTo
