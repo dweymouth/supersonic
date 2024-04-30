@@ -233,7 +233,7 @@ type GenreFilterSubsection struct {
 	selectedGenresMutex sync.RWMutex
 
 	filterText         *widget.Entry
-	numSelectedText    *widget.Label
+	genresTitleLine    *widget.RichText
 	allBtn             *widget.Button
 	noneBtn            *widget.Button
 	listModelMutex     sync.RWMutex
@@ -295,14 +295,20 @@ func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []
 	g.allBtn = widget.NewButton("All", func() { g.selectAllOrNoneInView(false) })
 	g.noneBtn = widget.NewButton("None", func() { g.selectAllOrNoneInView(true) })
 
-	title := widget.NewRichTextWithText("Genres")
-	title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
-	g.numSelectedText = widget.NewLabel("(none selected)")
+	g.genresTitleLine = widget.NewRichText(
+		&widget.TextSegment{
+			Text: "Genres  ",
+			Style: widget.RichTextStyle{
+				Inline:    true,
+				TextStyle: fyne.TextStyle{Bold: true},
+			},
+		},
+		&widget.TextSegment{Text: "(none selected)"},
+	)
 	g.updateNumSelectedText()
-	titleRow := container.New(&layouts.HboxCustomPadding{ExtraPad: -10}, title, g.numSelectedText)
 
 	filterRow := container.NewBorder(nil, nil, nil, container.NewHBox(g.allBtn, g.noneBtn), g.filterText)
-	g.container = container.NewBorder(titleRow, nil, nil, nil,
+	g.container = container.NewBorder(g.genresTitleLine, nil, nil, nil,
 		container.New(&layouts.MaxPadLayout{PadLeft: 5, PadRight: 5},
 			container.NewBorder(filterRow, nil, nil, nil, g.genreListView),
 		),
@@ -378,7 +384,9 @@ func (g *GenreFilterSubsection) updateNumSelectedText() {
 	if l := len(g.selectedGenres); l > 0 {
 		numText = strconv.Itoa(l)
 	}
-	g.numSelectedText.SetText(fmt.Sprintf("(%s selected)", numText))
+	t := fmt.Sprintf("(%s selected)", numText)
+	g.genresTitleLine.Segments[1].(*widget.TextSegment).Text = t
+	g.genresTitleLine.Refresh()
 }
 
 func (g *GenreFilterSubsection) CreateRenderer() fyne.WidgetRenderer {
