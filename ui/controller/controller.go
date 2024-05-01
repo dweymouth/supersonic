@@ -617,12 +617,12 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 
 func (c *Controller) ShowQuickSearch() {
 	qs := dialogs.NewQuickSearch(c.App.ServerManager.Server, c.App.ImageManager)
-	pop := widget.NewModalPopUp(qs, c.MainWindow.Canvas())
-	qs.OnDismiss = func() {
+	pop := widget.NewModalPopUp(qs.SearchDialog, c.MainWindow.Canvas())
+	qs.SetOnDismiss(func() {
 		pop.Hide()
 		c.doModalClosed()
-	}
-	qs.OnNavigateTo = func(contentType mediaprovider.ContentType, id string) {
+	})
+	qs.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
 		pop.Hide()
 		c.doModalClosed()
 		switch contentType {
@@ -637,14 +637,14 @@ func (c *Controller) ShowQuickSearch() {
 		case mediaprovider.ContentTypeGenre:
 			c.NavigateTo(GenreRoute(id))
 		}
-	}
+	})
 	c.ClosePopUpOnEscape(pop)
 	c.haveModal = true
-	min := qs.MinSize()
+	min := qs.GetMinSize()
 	height := fyne.Max(min.Height, fyne.Min(min.Height*1.5, c.MainWindow.Canvas().Size().Height*0.7))
 	pop.Resize(fyne.NewSize(min.Width, height))
 	pop.Show()
-	c.MainWindow.Canvas().Focus(qs.SearchEntry)
+	c.MainWindow.Canvas().Focus(qs.GetSearchEntry())
 }
 
 func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {
