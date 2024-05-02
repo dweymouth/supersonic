@@ -4,6 +4,7 @@ import (
 	"errors"
 	"image"
 	"io"
+	"log"
 	"math"
 	"net/url"
 	"slices"
@@ -39,10 +40,12 @@ func (s *subsonicMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID stri
 }
 
 func (s *subsonicMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
+	s.playlistsCached = nil
 	return s.client.CreatePlaylistWithTracks(trackIDs, map[string]string{"name": name})
 }
 
 func (s *subsonicMediaProvider) DeletePlaylist(id string) error {
+	s.playlistsCached = nil
 	return s.client.DeletePlaylist(id)
 }
 
@@ -51,6 +54,7 @@ func (s *subsonicMediaProvider) CanMakePublicPlaylist() bool {
 }
 
 func (s *subsonicMediaProvider) EditPlaylist(id, name, description string, public bool) error {
+	s.playlistsCached = nil
 	return s.client.UpdatePlaylist(id, map[string]string{
 		"name":    name,
 		"comment": description,
@@ -59,10 +63,12 @@ func (s *subsonicMediaProvider) EditPlaylist(id, name, description string, publi
 }
 
 func (s *subsonicMediaProvider) AddPlaylistTracks(id string, trackIDsToAdd []string) error {
+	s.playlistsCached = nil
 	return s.client.UpdatePlaylistTracks(id, trackIDsToAdd, nil)
 }
 
 func (s *subsonicMediaProvider) RemovePlaylistTracks(id string, removeIdxs []int) error {
+	s.playlistsCached = nil
 	return s.client.UpdatePlaylistTracks(id, nil, removeIdxs)
 }
 
@@ -242,6 +248,7 @@ func (s *subsonicMediaProvider) GetTopTracks(artist mediaprovider.Artist, count 
 }
 
 func (s *subsonicMediaProvider) ReplacePlaylistTracks(playlistID string, trackIDs []string) error {
+	s.playlistsCached = nil
 	return s.client.CreatePlaylistWithTracks(trackIDs, map[string]string{"playlistId": playlistID})
 }
 
