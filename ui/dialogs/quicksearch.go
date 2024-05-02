@@ -95,7 +95,7 @@ func (q *QuickSearch) SetOnDismiss(onDismiss func()) {
 	q.SearchDialog.OnDismiss = onDismiss
 }
 
-func (q *QuickSearch) SetOnNavigateTo(onNavigateTo func(mediaprovider.ContentType, string)) {
+func (q *QuickSearch) SetOnNavigateTo(onNavigateTo func(mediaprovider.ContentType, string, string)) {
 	q.SearchDialog.OnNavigateTo = onNavigateTo
 }
 

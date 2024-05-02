@@ -36,7 +36,7 @@ type SearchDialog struct {
 	content *fyne.Container
 
 	OnDismiss             func()
-	OnNavigateTo          func(mediaprovider.ContentType, string)
+	OnNavigateTo          func(mediaprovider.ContentType, string, string)
 	OnSearched            func(string) []*mediaprovider.SearchResult
 	OnUpdateSearchResults func(*searchResult, *mediaprovider.SearchResult)
 }
@@ -109,8 +109,9 @@ func (sd *SearchDialog) onSelected(idx int) {
 	}
 	id := sd.searchResults[idx].ID
 	typ := sd.searchResults[idx].Type
+	query := sd.searchResults[idx].Query
 	sd.resultsMutex.RUnlock()
-	sd.OnNavigateTo(typ, id)
+	sd.OnNavigateTo(typ, id, query)
 }
 
 func (sd *SearchDialog) moveSelectionDown() {
@@ -164,7 +165,7 @@ func (sd *SearchDialog) update(sr *searchResult, result *mediaprovider.SearchRes
 	if result == nil {
 		return
 	}
-	if sr.contentType == result.Type && sr.id == result.ID {
+	if sr.contentType == result.Type && sr.id == result.ID && result.ID != "" {
 		return // nothing to do
 	}
 	sr.id = result.ID
