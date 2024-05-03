@@ -4,7 +4,6 @@ import (
 	"errors"
 	"image"
 	"io"
-	"log"
 	"math"
 	"net/url"
 	"slices"
