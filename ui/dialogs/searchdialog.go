@@ -19,6 +19,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/widgets"
 )
 
+// SearchDialog is a base widget to be built upon for creating custom search dialogs
 type SearchDialog struct {
 	widget.BaseWidget
 
