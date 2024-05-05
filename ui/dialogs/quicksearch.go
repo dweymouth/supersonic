@@ -99,7 +99,7 @@ func (q *QuickSearch) SetOnNavigateTo(onNavigateTo func(mediaprovider.ContentTyp
 	q.SearchDialog.OnNavigateTo = onNavigateTo
 }
 
-func (q *QuickSearch) GetMinSize() fyne.Size {
+func (q *QuickSearch) MinSize() fyne.Size {
 	return q.SearchDialog.MinSize()
 }
 

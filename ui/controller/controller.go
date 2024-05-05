@@ -640,7 +640,7 @@ func (c *Controller) ShowQuickSearch() {
 	})
 	c.ClosePopUpOnEscape(pop)
 	c.haveModal = true
-	min := qs.GetMinSize()
+	min := qs.MinSize()
 	height := fyne.Max(min.Height, fyne.Min(min.Height*1.5, c.MainWindow.Canvas().Size().Height*0.7))
 	pop.Resize(fyne.NewSize(min.Width, height))
 	pop.Show()
