@@ -147,6 +147,7 @@ func (g *GridViewPage[M, F]) createSearchAndFilter() {
 	g.searcher.PlaceHolder = "Search page"
 	g.searcher.Text = g.searchText
 	g.searcher.OnSearched = g.OnSearched
+	g.filterBtn = g.adapter.FilterButton()
 	if g.filterBtn != nil {
 		g.filterBtn.SetOnChanged(g.Reload)
 	}
