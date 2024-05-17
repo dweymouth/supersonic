@@ -4,62 +4,51 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	fynelyrics "github.com/dweymouth/fyne-lyrics"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
 type LyricsViewer struct {
 	widget.BaseWidget
 
-	noLyricsLabel  widget.Label
-	unsyncedViewer *widget.RichText
+	noLyricsLabel widget.Label
+	viewer        *fynelyrics.LyricsViewer
 
-	container   *container.Scroll
-	currentView lyricView
+	container *fyne.Container
+	isEmpty   bool
 }
-
-type lyricView int
-
-const (
-	lyricViewEmpty lyricView = iota
-	lyricViewUnsynced
-	lyricViewSynced
-)
 
 func NewLyricsViewer() *LyricsViewer {
 	l := &LyricsViewer{noLyricsLabel: widget.Label{
 		Text: "Lyrics not available",
-	}}
+	}, isEmpty: true}
 	l.ExtendBaseWidget(l)
-	l.container = container.NewVScroll(&l.noLyricsLabel)
+	l.container = container.NewStack(&l.noLyricsLabel)
 	return l
 }
 
 func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 	if lyrics == nil || len(lyrics.Lines) == 0 {
-		if l.currentView != lyricViewEmpty {
-			l.container.Content = &l.noLyricsLabel
-			l.currentView = lyricViewEmpty
+		if !l.isEmpty {
+			l.container.Objects[0] = &l.noLyricsLabel
+			l.isEmpty = true
 			l.Refresh()
 		}
 		return
 	}
 
-	if l.unsyncedViewer == nil {
-		l.unsyncedViewer = widget.NewRichText()
-		l.unsyncedViewer.Wrapping = fyne.TextWrapWord
+	if l.viewer == nil {
+		l.viewer = fynelyrics.NewLyricsViewer()
+		l.viewer.ActiveLyricPosition = fynelyrics.ActiveLyricPositionTopThird
 	}
-	l.unsyncedViewer.Segments = nil
-	for _, line := range lyrics.Lines {
-		ts := &widget.TextSegment{Text: line.Text}
-		ts.Style.Alignment = fyne.TextAlignCenter
-		ts.Style.SizeName = widget.RichTextStyleSubHeading.SizeName
-		ts.Style.Inline = false
-		l.unsyncedViewer.Segments = append(l.unsyncedViewer.Segments, ts)
+	lines := make([]string, len(lyrics.Lines))
+	for i, line := range lyrics.Lines {
+		lines[i] = line.Text
 	}
-	l.unsyncedViewer.Refresh()
-	if l.currentView != lyricViewUnsynced {
-		l.container.Content = l.unsyncedViewer
-		l.currentView = lyricViewUnsynced
+	l.viewer.SetLyrics(lines, false /*synced*/)
+	if l.isEmpty {
+		l.container.Objects[0] = l.viewer
+		l.isEmpty = false
 		l.Refresh()
 	}
 }
