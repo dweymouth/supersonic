@@ -354,6 +354,28 @@ func (j *jellyfinMediaProvider) RescanLibrary() error {
 	return j.client.RefreshLibrary()
 }
 
+var _ mediaprovider.LyricsProvider = (*jellyfinMediaProvider)(nil)
+
+func (j *jellyfinMediaProvider) GetLyrics(tr *mediaprovider.Track) (*mediaprovider.Lyrics, error) {
+	l, err := j.client.GetLyrics(tr.ID)
+	if err != nil {
+		return nil, err
+	}
+	return &mediaprovider.Lyrics{
+		Title:  l.Metadata.Title,
+		Artist: l.Metadata.Artist,
+		Synced: l.Metadata.IsSynced,
+		Lines:  sharedutil.MapSlice(l.Lyrics, toLyricLine),
+	}, nil
+}
+
+func toLyricLine(ll jellyfin.LyricLine) mediaprovider.LyricLine {
+	return mediaprovider.LyricLine{
+		Text:  ll.Text,
+		Start: float64(ll.Start) / float64(runTimeTicksPerSecond),
+	}
+}
+
 func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 	if ch == nil {
 		return nil
