@@ -13,6 +13,8 @@ type LyricsViewer struct {
 
 	noLyricsLabel widget.Label
 	viewer        *fynelyrics.LyricsViewer
+	lyrics        *mediaprovider.Lyrics
+	nextLyricLine int
 
 	container *fyne.Container
 	isEmpty   bool
@@ -28,6 +30,8 @@ func NewLyricsViewer() *LyricsViewer {
 }
 
 func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
+	l.lyrics = lyrics
+	l.nextLyricLine = 0
 	if lyrics == nil || len(lyrics.Lines) == 0 {
 		if !l.isEmpty {
 			l.container.Objects[0] = &l.noLyricsLabel
@@ -51,6 +55,33 @@ func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 		l.isEmpty = false
 		l.Refresh()
 	}
+}
+
+func (l *LyricsViewer) UpdatePlayPos(timeSecs float64) {
+	if l.lyrics == nil || !l.lyrics.Synced {
+		return
+	}
+	// advance if needed
+	if l.lyrics.Lines[l.nextLyricLine].Start <= timeSecs {
+		l.viewer.NextLine()
+		if l.nextLyricLine < len(l.lyrics.Lines) {
+			l.nextLyricLine++
+		}
+	}
+}
+
+func (l *LyricsViewer) OnSeeked(timeSecs float64) {
+	if l.lyrics == nil || !l.lyrics.Synced {
+		return
+	}
+	curLine := 0
+	for i, l := range l.lyrics.Lines {
+		if l.Start < timeSecs {
+			curLine = i + 1
+			break
+		}
+	}
+	l.viewer.SetCurrentLine(curLine)
 }
 
 func (l *LyricsViewer) CreateRenderer() fyne.WidgetRenderer {
