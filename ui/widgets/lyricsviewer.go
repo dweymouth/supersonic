@@ -49,7 +49,7 @@ func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 	for i, line := range lyrics.Lines {
 		lines[i] = line.Text
 	}
-	l.viewer.SetLyrics(lines, false /*synced*/)
+	l.viewer.SetLyrics(lines, lyrics.Synced)
 	if l.isEmpty {
 		l.container.Objects[0] = l.viewer
 		l.isEmpty = false
