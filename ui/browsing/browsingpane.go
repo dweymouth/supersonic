@@ -46,7 +46,7 @@ type CanShowNowPlaying interface {
 }
 
 type CanShowPlayTime interface {
-	OnPlayTimeUpdate(curTime, totalTime float64)
+	OnPlayTimeUpdate(curTime, totalTime float64, seeked bool)
 }
 
 type CanShowPlayQueue interface {
@@ -222,12 +222,12 @@ func (b *BrowsingPane) onSongChange(song, lastScrobbledIfAny *mediaprovider.Trac
 	}
 }
 
-func (b *BrowsingPane) onPlayTimeUpdate(cur, total float64) {
+func (b *BrowsingPane) onPlayTimeUpdate(cur, total float64, seeked bool) {
 	if b.curPage == nil {
 		return
 	}
 	if p, ok := b.curPage.(CanShowPlayTime); ok {
-		p.OnPlayTimeUpdate(cur, total)
+		p.OnPlayTimeUpdate(cur, total, seeked)
 	}
 }
 

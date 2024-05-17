@@ -241,9 +241,13 @@ func (s *nowPlayingPageState) Restore() Page {
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)
 
-func (a *NowPlayingPage) OnPlayTimeUpdate(curTime, _ float64) {
+func (a *NowPlayingPage) OnPlayTimeUpdate(curTime, _ float64, seeked bool) {
 	a.formatStatusLine()
-	a.lyricsViewer.UpdatePlayPos(curTime)
+	if seeked {
+		a.lyricsViewer.OnSeeked(curTime)
+	} else {
+		a.lyricsViewer.UpdatePlayPos(curTime)
+	}
 }
 
 var _ CanSelectAll = (*NowPlayingPage)(nil)

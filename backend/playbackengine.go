@@ -61,7 +61,7 @@ type playbackEngine struct {
 
 	// registered callbacks
 	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
-	onPlayTimeUpdate []func(float64, float64)
+	onPlayTimeUpdate []func(float64, float64, bool)
 	onLoopModeChange []func(LoopMode)
 	onVolumeChange   []func(int)
 	onSeek           []func()
@@ -92,7 +92,7 @@ func NewPlaybackEngine(
 	}
 	p.OnTrackChange(pm.handleOnTrackChange)
 	p.OnSeek(func() {
-		pm.doUpdateTimePos()
+		pm.doUpdateTimePos(true)
 		pm.invokeNoArgCallbacks(pm.onSeek)
 	})
 	p.OnStopped(pm.handleOnStopped)
@@ -239,7 +239,7 @@ func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMo
 func (p *playbackEngine) StopAndClearPlayQueue() {
 	changed := len(p.playQueue) > 0
 	p.player.Stop()
-	p.doUpdateTimePos()
+	p.doUpdateTimePos(false)
 	p.playQueue = nil
 	p.nowPlayingIdx = -1
 	if changed {
@@ -399,7 +399,7 @@ func (p *playbackEngine) handleOnTrackChange() {
 	p.curTrackTime = float64(p.playQueue[p.nowPlayingIdx].Duration)
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
-	p.doUpdateTimePos()
+	p.doUpdateTimePos(false)
 	p.setNextTrackBasedOnLoopMode(false)
 }
 
@@ -407,7 +407,7 @@ func (p *playbackEngine) handleOnStopped() {
 	p.playTimeStopwatch.Stop()
 	p.checkScrobble()
 	p.stopPollTimePos()
-	p.doUpdateTimePos()
+	p.doUpdateTimePos(false)
 	p.invokeOnSongChangeCallbacks()
 	p.invokeNoArgCallbacks(p.onStopped)
 	p.wasStopped = true
@@ -568,7 +568,7 @@ func (p *playbackEngine) startPollTimePos() {
 				pollingTick.Stop()
 				return
 			case <-pollingTick.C:
-				p.doUpdateTimePos()
+				p.doUpdateTimePos(false)
 			}
 		}
 	}()
@@ -581,7 +581,7 @@ func (p *playbackEngine) stopPollTimePos() {
 	}
 }
 
-func (p *playbackEngine) doUpdateTimePos() {
+func (p *playbackEngine) doUpdateTimePos(seeked bool) {
 	if p.callbacksDisabled {
 		return
 	}
@@ -590,6 +590,6 @@ func (p *playbackEngine) doUpdateTimePos() {
 		p.latestTrackPosition = s.TimePos
 	}
 	for _, cb := range p.onPlayTimeUpdate {
-		cb(s.TimePos, s.Duration)
+		cb(s.TimePos, s.Duration, seeked)
 	}
 }
