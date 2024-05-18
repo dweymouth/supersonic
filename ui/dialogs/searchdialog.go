@@ -39,14 +39,16 @@ type SearchDialog struct {
 	OnNavigateTo          func(mediaprovider.ContentType, string, string)
 	OnSearched            func(string) []*mediaprovider.SearchResult
 	OnUpdateSearchResults func(*searchResult, *mediaprovider.SearchResult)
+	OnInit                func() []*mediaprovider.SearchResult
 }
 
-func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched func(string) []*mediaprovider.SearchResult, onUpdateSearchResult func(*searchResult, *mediaprovider.SearchResult)) *SearchDialog {
+func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched func(string) []*mediaprovider.SearchResult, onUpdateSearchResult func(*searchResult, *mediaprovider.SearchResult), onInit func() []*mediaprovider.SearchResult) *SearchDialog {
 	sd := &SearchDialog{
 		imgSource:             im,
 		loadingDots:           widgets.NewLoadingDots(),
 		OnSearched:            onSearched,
 		OnUpdateSearchResults: onUpdateSearchResult,
+		OnInit:                onInit,
 	}
 	sd.ExtendBaseWidget(sd)
 
@@ -92,6 +94,11 @@ func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched f
 	return sd
 }
 
+func (sd *SearchDialog) Show() {
+	sd.onInit()
+	sd.BaseWidget.Show()
+}
+
 func (sd *SearchDialog) onDismiss() {
 	if sd.OnDismiss != nil {
 		sd.OnDismiss()
@@ -132,18 +139,7 @@ func (sd *SearchDialog) moveSelectionUp() {
 	sd.list.Select(sd.selectedIndex)
 }
 
-func (sd *SearchDialog) onSearched(query string) {
-	sd.loadingDots.Start()
-	var results []*mediaprovider.SearchResult
-	if query != "" {
-		res := sd.OnSearched(query)
-		if len(res) == 0 {
-			log.Println("No results matched the query.")
-		} else {
-			results = res
-		}
-	}
-	sd.loadingDots.Stop()
+func (sd *SearchDialog) setResults(results []*mediaprovider.SearchResult) {
 	sd.resultsMutex.Lock()
 	sd.searchResults = results
 	sd.resultsMutex.Unlock()
@@ -151,6 +147,35 @@ func (sd *SearchDialog) onSearched(query string) {
 	sd.list.ScrollToTop()
 	sd.selectedIndex = 0
 	sd.list.Select(0)
+}
+
+func (sd *SearchDialog) onInit() {
+	if sd.OnInit == nil {
+		return
+	}
+	sd.loadingDots.Start()
+	var results []*mediaprovider.SearchResult
+	res := sd.OnInit()
+	if len(res) == 0 {
+		log.Println("No results")
+	} else {
+		results = res
+	}
+	sd.loadingDots.Stop()
+	sd.setResults(results)
+}
+
+func (sd *SearchDialog) onSearched(query string) {
+	sd.loadingDots.Start()
+	var results []*mediaprovider.SearchResult
+	res := sd.OnSearched(query)
+	if len(res) == 0 {
+		log.Println("No results matched the query.")
+	} else {
+		results = res
+	}
+	sd.loadingDots.Stop()
+	sd.setResults(results)
 }
 
 func (sd *SearchDialog) CreateRenderer() fyne.WidgetRenderer {

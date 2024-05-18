@@ -19,6 +19,7 @@ type SelectPlaylist struct {
 	SearchDialog *SearchDialog
 	mp           mediaprovider.MediaProvider
 	loggedInUser string
+	allPlaylists []*mediaprovider.Playlist
 }
 
 func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetcher, loggedInUser string) *SelectPlaylist {
@@ -27,50 +28,69 @@ func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetche
 		mp:           mp,
 		loggedInUser: loggedInUser,
 	}
-
 	sd := NewSearchDialog(
 		im,
 		"Select playlist",
 		sp.onSearched,
 		sp.onUpdateSearchResult,
+		sp.onInit,
 	)
 	sp.SearchDialog = sd
 	return sp
 }
 
+func (sp *SelectPlaylist) onInit() []*mediaprovider.SearchResult {
+	var results []*mediaprovider.SearchResult
+	playlists, err := sp.mp.GetPlaylists()
+	if err != nil {
+		// TODO: surface this error to user
+		log.Printf("error getting playlists: %s", err.Error())
+		return results
+	}
+	sp.allPlaylists = sharedutil.FilterSlice(playlists, func(playlist *mediaprovider.Playlist) bool {
+		return playlist.Owner == sp.loggedInUser
+	})
+	for _, playlist := range sp.allPlaylists {
+		results = append(results, &mediaprovider.SearchResult{
+			Name:       playlist.Name,
+			ID:         playlist.ID,
+			CoverID:    playlist.CoverArtID,
+			Type:       mediaprovider.ContentTypePlaylist,
+			Size:       playlist.TrackCount,
+			ArtistName: playlist.Name,
+		})
+	}
+	return results
+}
+
 func (sp *SelectPlaylist) onSearched(query string) []*mediaprovider.SearchResult {
 	var results []*mediaprovider.SearchResult
-	if query != "" {
-		var filteredPlaylists []*mediaprovider.Playlist
-		if playlists, err := sp.mp.GetPlaylists(); err != nil {
-			// TODO: surface this error to user
-			log.Printf("error getting playlists: %s", err.Error())
-			return results
-		} else {
-			filteredPlaylists = sharedutil.FilterSlice(playlists, func(playlist *mediaprovider.Playlist) bool {
-				return strings.Contains(
-					sanitize.Accents(strings.ToLower(playlist.Name)),
-					sanitize.Accents(strings.ToLower(query)),
-				) && playlist.Owner == sp.loggedInUser
-			})
-		}
-
+	var filteredPlaylists []*mediaprovider.Playlist
+	if query == "" {
+		filteredPlaylists = sp.allPlaylists
+	} else {
+		filteredPlaylists = sharedutil.FilterSlice(sp.allPlaylists, func(playlist *mediaprovider.Playlist) bool {
+			return strings.Contains(
+				sanitize.Accents(strings.ToLower(playlist.Name)),
+				sanitize.Accents(strings.ToLower(query)),
+			)
+		})
 		results = append(results, &mediaprovider.SearchResult{
 			Name:  fmt.Sprintf("Create new playlist: %s", query),
 			Type:  mediaprovider.ContentTypePlaylist,
 			Query: query,
 		})
-		for _, playlist := range filteredPlaylists {
-			results = append(results, &mediaprovider.SearchResult{
-				Name:       playlist.Name,
-				ID:         playlist.ID,
-				CoverID:    playlist.CoverArtID,
-				Type:       mediaprovider.ContentTypePlaylist,
-				Size:       playlist.TrackCount,
-				ArtistName: playlist.Name,
-			})
-		}
+	}
 
+	for _, playlist := range filteredPlaylists {
+		results = append(results, &mediaprovider.SearchResult{
+			Name:       playlist.Name,
+			ID:         playlist.ID,
+			CoverID:    playlist.CoverArtID,
+			Type:       mediaprovider.ContentTypePlaylist,
+			Size:       playlist.TrackCount,
+			ArtistName: playlist.Name,
+		})
 	}
 	return results
 }

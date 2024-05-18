@@ -27,6 +27,7 @@ func NewQuickSearch(mp mediaprovider.MediaProvider, im util.ImageFetcher) *Quick
 		"Quick Search",
 		q.onSearched,
 		q.onUpdateSearchResult,
+		nil,
 	)
 	q.SearchDialog = sd
 	return q

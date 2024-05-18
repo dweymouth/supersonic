@@ -347,6 +347,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	min := sp.MinSize()
 	height := fyne.Max(min.Height, fyne.Min(min.Height*1.5, m.MainWindow.Canvas().Size().Height*0.7))
 	pop.Resize(fyne.NewSize(min.Width, height))
+	sp.SearchDialog.Show()
 	pop.Show()
 	m.MainWindow.Canvas().Focus(sp.GetSearchEntry())
 }
