@@ -364,7 +364,7 @@ func (j *jellyfinMediaProvider) GetLyrics(tr *mediaprovider.Track) (*mediaprovid
 	return &mediaprovider.Lyrics{
 		Title:  l.Metadata.Title,
 		Artist: l.Metadata.Artist,
-		Synced: l.Metadata.IsSynced,
+		Synced: l.Metadata.IsSynced || (len(l.Lyrics) > 0 && l.Lyrics[0].Start > 0),
 		Lines:  sharedutil.MapSlice(l.Lyrics, toLyricLine),
 	}, nil
 }
