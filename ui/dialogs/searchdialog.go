@@ -33,22 +33,24 @@ type SearchDialog struct {
 	list          *widget.List
 	selectedIndex int
 
+	placeholderTitle  string
 	content *fyne.Container
 
 	OnDismiss             func()
 	OnNavigateTo          func(mediaprovider.ContentType, string, string)
 	OnSearched            func(string) []*mediaprovider.SearchResult
 	OnUpdateSearchResults func(*searchResult, *mediaprovider.SearchResult)
-	OnInit                func() []*mediaprovider.SearchResult
+	OnInit                func() ([]*mediaprovider.SearchResult, *widget.Check)
 }
 
-func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched func(string) []*mediaprovider.SearchResult, onUpdateSearchResult func(*searchResult, *mediaprovider.SearchResult), onInit func() []*mediaprovider.SearchResult) *SearchDialog {
+func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched func(string) []*mediaprovider.SearchResult, onUpdateSearchResult func(*searchResult, *mediaprovider.SearchResult), onInit func() ([]*mediaprovider.SearchResult, *widget.Check)) *SearchDialog {
 	sd := &SearchDialog{
 		imgSource:             im,
 		loadingDots:           widgets.NewLoadingDots(),
 		OnSearched:            onSearched,
 		OnUpdateSearchResults: onUpdateSearchResult,
 		OnInit:                onInit,
+		placeholderTitle:      placeholderTitle,
 	}
 	sd.ExtendBaseWidget(sd)
 
@@ -79,17 +81,6 @@ func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched f
 			sr.index = lii
 			sd.update(sr, result)
 		},
-	)
-
-	dismissBtn := widget.NewButton("Close", sd.onDismiss)
-	title := widget.NewRichText(&widget.TextSegment{Text: placeholderTitle, Style: util.BoldRichTextStyle})
-	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
-	sd.content = container.NewStack(
-		container.NewBorder(
-			container.NewVBox(title, se),
-			container.NewVBox(widget.NewSeparator(), container.NewHBox(layout.NewSpacer(), dismissBtn)),
-			nil, nil, sd.list),
-		container.NewCenter(sd.loadingDots),
 	)
 	return sd
 }
@@ -149,20 +140,47 @@ func (sd *SearchDialog) setResults(results []*mediaprovider.SearchResult) {
 	sd.list.Select(0)
 }
 
+func (sd *SearchDialog) SetContent(checkBox *widget.Check) {
+	dismissBtn := widget.NewButton("Close", sd.onDismiss)
+	title := widget.NewRichText(&widget.TextSegment{Text:sd.placeholderTitle, Style: util.BoldRichTextStyle})
+	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
+	se := sd.SearchEntry.(fyne.CanvasObject)
+	if checkBox != nil {
+		sd.content = container.NewStack(
+			container.NewBorder(
+				container.NewVBox(title, se),
+				container.NewVBox(widget.NewSeparator(), container.NewHBox(checkBox, layout.NewSpacer(), dismissBtn)),
+				nil, nil, sd.list),
+			container.NewCenter(sd.loadingDots),
+		)
+	} else {
+		sd.content = container.NewStack(
+		container.NewBorder(
+			container.NewVBox(title, se),
+			container.NewVBox(widget.NewSeparator(), container.NewHBox(layout.NewSpacer(), dismissBtn)),
+			nil, nil, sd.list),
+		container.NewCenter(sd.loadingDots),
+	)
+	}
+}
+	
+
 func (sd *SearchDialog) onInit() {
 	if sd.OnInit == nil {
+		sd.SetContent(nil)
 		return
 	}
 	sd.loadingDots.Start()
 	var results []*mediaprovider.SearchResult
-	res := sd.OnInit()
+	res, checkBox := sd.OnInit()
 	if len(res) == 0 {
 		log.Println("No results")
 	} else {
 		results = res
 	}
+	sd.SetContent(checkBox)
 	sd.loadingDots.Stop()
-	sd.setResults(results)
+	sd.setResults(results)	
 }
 
 func (sd *SearchDialog) onSearched(query string) {

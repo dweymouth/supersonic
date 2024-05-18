@@ -20,6 +20,7 @@ type SelectPlaylist struct {
 	mp           mediaprovider.MediaProvider
 	loggedInUser string
 	allPlaylists []*mediaprovider.Playlist
+	SkipDuplicates bool
 }
 
 func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetcher, loggedInUser string) *SelectPlaylist {
@@ -27,6 +28,7 @@ func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetche
 	sp := &SelectPlaylist{
 		mp:           mp,
 		loggedInUser: loggedInUser,
+		SkipDuplicates: false,
 	}
 	sd := NewSearchDialog(
 		im,
@@ -39,13 +41,13 @@ func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetche
 	return sp
 }
 
-func (sp *SelectPlaylist) onInit() []*mediaprovider.SearchResult {
+func (sp *SelectPlaylist) onInit() ([]*mediaprovider.SearchResult, *widget.Check) {
 	var results []*mediaprovider.SearchResult
 	playlists, err := sp.mp.GetPlaylists()
 	if err != nil {
 		// TODO: surface this error to user
 		log.Printf("error getting playlists: %s", err.Error())
-		return results
+		return results, nil
 	}
 	sp.allPlaylists = sharedutil.FilterSlice(playlists, func(playlist *mediaprovider.Playlist) bool {
 		return playlist.Owner == sp.loggedInUser
@@ -60,7 +62,10 @@ func (sp *SelectPlaylist) onInit() []*mediaprovider.SearchResult {
 			ArtistName: playlist.Name,
 		})
 	}
-	return results
+	skipDuplicatesCheck := widget.NewCheck("Skip duplicates", func(checked bool) {
+		sp.SkipDuplicates = checked
+	})
+	return results, skipDuplicatesCheck
 }
 
 func (sp *SelectPlaylist) onSearched(query string) []*mediaprovider.SearchResult {

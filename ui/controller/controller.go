@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"slices"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -338,7 +339,27 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 			go m.App.ServerManager.Server.CreatePlaylist(query, trackIDs)
 		} else {
 			m.App.Config.Application.DefaultPlaylistID = id
-			go m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
+			if sp.SkipDuplicates {
+				var filterTrackIDs []string
+				go func() {
+					if selectedPlaylist, err := m.App.ServerManager.Server.GetPlaylist(id); err != nil {
+						log.Printf("error getting playlist: %s", err.Error())
+					} else {
+						var trackIDsInPaylist []string
+						
+						for _, track := range selectedPlaylist.Tracks{
+							trackIDsInPaylist = append(trackIDsInPaylist, track.ID)
+						}
+						filterTrackIDs = sharedutil.FilterSlice(trackIDs, func(trackID string) bool {
+							return !slices.Contains(trackIDsInPaylist, trackID)
+						})
+						
+					}
+					m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
+				}()
+			} else {
+				go m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
+			}	
 		}
 
 	})
@@ -346,8 +367,8 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	m.haveModal = true
 	min := sp.MinSize()
 	height := fyne.Max(min.Height, fyne.Min(min.Height*1.5, m.MainWindow.Canvas().Size().Height*0.7))
-	pop.Resize(fyne.NewSize(min.Width, height))
 	sp.SearchDialog.Show()
+	pop.Resize(fyne.NewSize(min.Width, height))
 	pop.Show()
 	m.MainWindow.Canvas().Focus(sp.GetSearchEntry())
 }
@@ -627,6 +648,7 @@ func (c *Controller) ShowQuickSearch() {
 	c.haveModal = true
 	min := qs.MinSize()
 	height := fyne.Max(min.Height, fyne.Min(min.Height*1.5, c.MainWindow.Canvas().Size().Height*0.7))
+	qs.SearchDialog.Show()
 	pop.Resize(fyne.NewSize(min.Width, height))
 	pop.Show()
 	c.MainWindow.Canvas().Focus(qs.GetSearchEntry())
