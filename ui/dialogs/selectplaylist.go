@@ -16,18 +16,18 @@ import (
 )
 
 type SelectPlaylist struct {
-	SearchDialog *SearchDialog
-	mp           mediaprovider.MediaProvider
-	loggedInUser string
-	allPlaylists []*mediaprovider.Playlist
+	SearchDialog   *SearchDialog
+	mp             mediaprovider.MediaProvider
+	loggedInUser   string
+	allPlaylists   []*mediaprovider.Playlist
 	SkipDuplicates bool
 }
 
 func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetcher, loggedInUser string) *SelectPlaylist {
 
 	sp := &SelectPlaylist{
-		mp:           mp,
-		loggedInUser: loggedInUser,
+		mp:             mp,
+		loggedInUser:   loggedInUser,
 		SkipDuplicates: false,
 	}
 	sd := NewSearchDialog(

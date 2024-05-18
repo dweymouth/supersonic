@@ -11,8 +11,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"time"
 	"slices"
+	"time"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -346,20 +346,20 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 						log.Printf("error getting playlist: %s", err.Error())
 					} else {
 						var trackIDsInPaylist []string
-						
-						for _, track := range selectedPlaylist.Tracks{
+
+						for _, track := range selectedPlaylist.Tracks {
 							trackIDsInPaylist = append(trackIDsInPaylist, track.ID)
 						}
 						filterTrackIDs = sharedutil.FilterSlice(trackIDs, func(trackID string) bool {
 							return !slices.Contains(trackIDsInPaylist, trackID)
 						})
-						
+
 					}
 					m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
 				}()
 			} else {
 				go m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
-			}	
+			}
 		}
 
 	})
