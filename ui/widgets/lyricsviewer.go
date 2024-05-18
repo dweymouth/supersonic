@@ -17,6 +17,10 @@ type LyricsViewer struct {
 	nextLyricLine int
 	lastPlayPos   float64
 
+	// keeps track if UpdatePlayPos has been called yet
+	// for the current lyrics
+	firstUpdate bool
+
 	container *fyne.Container
 	isEmpty   bool
 }
@@ -33,6 +37,7 @@ func NewLyricsViewer() *LyricsViewer {
 func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 	l.lyrics = lyrics
 	l.nextLyricLine = 0
+	l.firstUpdate = true
 	if lyrics == nil || len(lyrics.Lines) == 0 {
 		if !l.isEmpty {
 			l.container.Objects[0] = &l.noLyricsLabel
@@ -62,8 +67,9 @@ func (l *LyricsViewer) UpdatePlayPos(timeSecs float64) {
 	if l.lyrics == nil || !l.lyrics.Synced {
 		return
 	}
-	if timeSecs < l.lastPlayPos {
+	if l.firstUpdate || timeSecs < l.lastPlayPos {
 		l.OnSeeked(timeSecs)
+		l.firstUpdate = false
 		return
 	}
 	l.lastPlayPos = timeSecs
