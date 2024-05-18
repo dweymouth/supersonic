@@ -81,14 +81,16 @@ func (l *LyricsViewer) OnSeeked(timeSecs float64) {
 	if l.lyrics == nil || !l.lyrics.Synced {
 		return
 	}
-	curLine := 0
+
+	nextLine := 0 // first line that starts after timeSecs
 	for i, l := range l.lyrics.Lines {
-		if l.Start < timeSecs {
-			curLine = i + 1
+		if l.Start > timeSecs {
+			nextLine = i
 			break
 		}
 	}
-	l.viewer.SetCurrentLine(curLine)
+	l.nextLyricLine = nextLine
+	l.viewer.SetCurrentLine(nextLine /*one-indexed*/)
 }
 
 func (l *LyricsViewer) CreateRenderer() fyne.WidgetRenderer {
