@@ -1,12 +1,13 @@
 module github.com/dweymouth/supersonic
 
-go 1.21
+go 1.21.1
 
 require (
-	fyne.io/fyne/v2 v2.4.4
+	fyne.io/fyne/v2 v2.4.5
 	github.com/20after4/configdir v0.1.1
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
-	github.com/dweymouth/go-jellyfin v0.0.0-20240330010648-fb02c0b3878e
+	github.com/dweymouth/fyne-lyrics v0.0.0-20240519002116-250ccc6f4a5f
+	github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
 	github.com/dweymouth/go-subsonic v0.0.0-20240417012336-798603e9f3a3
 	github.com/fsnotify/fsnotify v1.6.0
@@ -29,8 +30,8 @@ require (
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
-	github.com/go-text/render v0.0.0-20230619120952-35bccb6164b8 // indirect
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240306074159-ea2d69986ecb // indirect
+	github.com/go-text/render v0.1.0 // indirect
 	github.com/go-text/typesetting v0.1.0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
@@ -47,4 +48,4 @@ require (
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.4.4 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240418162613-9e56d7882130
+replace fyne.io/fyne/v2 v2.4.5 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240418162613-9e56d7882130

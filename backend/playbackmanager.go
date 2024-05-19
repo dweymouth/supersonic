@@ -60,7 +60,7 @@ func (p *PlaybackManager) OnSongChange(cb func(nowPlaying *mediaprovider.Track, 
 }
 
 // Registers a callback that is notified whenever the play time should be updated.
-func (p *PlaybackManager) OnPlayTimeUpdate(cb func(float64, float64)) {
+func (p *PlaybackManager) OnPlayTimeUpdate(cb func(curTime float64, totalTime float64, seeked bool)) {
 	p.engine.onPlayTimeUpdate = append(p.engine.onPlayTimeUpdate, cb)
 }
 

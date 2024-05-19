@@ -35,7 +35,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *
 	bp.ExtendBaseWidget(bp)
 
 	pm.OnSongChange(bp.onSongChange)
-	pm.OnPlayTimeUpdate(func(cur, total float64) {
+	pm.OnPlayTimeUpdate(func(cur, total float64, _ bool) {
 		if !pm.IsSeeking() {
 			bp.Controls.UpdatePlayTime(cur, total)
 		}
