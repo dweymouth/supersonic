@@ -76,7 +76,7 @@ func (l *LyricsViewer) UpdatePlayPos(timeSecs float64) {
 	// advance if needed
 	if l.lyrics.Lines[l.nextLyricLine].Start <= timeSecs {
 		l.viewer.NextLine()
-		if l.nextLyricLine < len(l.lyrics.Lines) {
+		if l.nextLyricLine < len(l.lyrics.Lines)-1 {
 			l.nextLyricLine++
 		}
 	}
@@ -88,14 +88,22 @@ func (l *LyricsViewer) OnSeeked(timeSecs float64) {
 		return
 	}
 
-	nextLine := 0 // first line that starts after timeSecs
+	// find first line that starts after timeSecs
+	nextLine := -1
 	for i, l := range l.lyrics.Lines {
 		if l.Start > timeSecs {
 			nextLine = i
 			break
 		}
 	}
-	l.nextLyricLine = nextLine
+
+	if nextLine == -1 {
+		// last lyric
+		nextLine = len(l.lyrics.Lines)
+		l.nextLyricLine = nextLine - 1
+	} else {
+		l.nextLyricLine = nextLine
+	}
 	l.viewer.SetCurrentLine(nextLine /*one-indexed*/)
 }
 
