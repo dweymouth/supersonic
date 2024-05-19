@@ -6,6 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.4.5
 	github.com/20after4/configdir v0.1.1
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
+	github.com/dweymouth/fyne-lyrics v0.0.0-20240519002116-250ccc6f4a5f
 	github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
 	github.com/dweymouth/go-subsonic v0.0.0-20240417012336-798603e9f3a3
@@ -24,7 +25,6 @@ require (
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/danieljoos/wincred v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dweymouth/fyne-lyrics v0.0.0-20240517003322-3c47c48b1751 // indirect
 	github.com/fredbi/uri v1.0.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
