@@ -98,7 +98,7 @@ type randomAlbumIter struct {
 	// Once we start getting back too many already-returned albums,
 	// switch to requesting more albums from a deterministic sort order.
 	deterministicFetcher AlbumFetchFn
-	ramdomFetcher        AlbumFetchFn
+	randomFetcher        AlbumFetchFn
 	phaseTwo             bool
 	offset               int
 	done                 bool
@@ -109,7 +109,7 @@ func NewRandomAlbumIter(deterministicFetcher, randomFetcher AlbumFetchFn, filter
 		filter:               filter,
 		prefetchCB:           prefetchCoverCB,
 		deterministicFetcher: deterministicFetcher,
-		ramdomFetcher:        randomFetcher,
+		randomFetcher:        randomFetcher,
 		albumIDSet:           make(map[string]bool),
 	}
 }
@@ -145,13 +145,14 @@ func (r *randomAlbumIter) Next() *mediaprovider.Album {
 				}
 			}
 		} else {
-			albums, err := r.ramdomFetcher(0 /*offset - doesn't matter for random*/, 25)
+			albums, err := r.randomFetcher(r.offset, 25)
 			if err != nil {
 				log.Println(err)
 				r.done = true
 				r.albumIDSet = nil
 				return nil
 			}
+			r.offset += len(albums)
 			var hitCount int
 			for _, album := range albums {
 				if _, ok := r.albumIDSet[album.ID]; !ok {
@@ -169,6 +170,7 @@ func (r *randomAlbumIter) Next() *mediaprovider.Album {
 			}
 			if successRatio := float64(hitCount) / float64(25); successRatio < 0.3 {
 				r.phaseTwo = true
+				r.offset = 0
 			}
 		}
 	}

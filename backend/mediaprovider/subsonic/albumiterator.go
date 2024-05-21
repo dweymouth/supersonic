@@ -225,7 +225,11 @@ func (s *subsonicMediaProvider) newRandomIter(filter mediaprovider.AlbumFilter, 
 	return helpers.NewRandomAlbumIter(
 		s.fetchFnFromStandardSort("newest"),
 		makeFetchFn(func(offset, limit int) ([]*subsonic.AlbumID3, error) {
-			return s.client.GetAlbumList2("random", map[string]string{"size": strconv.Itoa(limit)})
+			args := map[string]string{
+				"size":   strconv.Itoa(limit),
+				"offset": strconv.Itoa(offset),
+			}
+			return s.client.GetAlbumList2("random", args)
 		}),
 		filter, s.prefetchCoverCB)
 }
