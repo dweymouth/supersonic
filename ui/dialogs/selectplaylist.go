@@ -35,6 +35,7 @@ func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetche
 		sp.onSearched,
 		sp.onInit,
 	)
+	sd.PlaceholderText = "Search playlists or new playlist name"
 	sp.SearchDialog = sd
 	return sp
 }

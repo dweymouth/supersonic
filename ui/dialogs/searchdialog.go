@@ -24,6 +24,8 @@ import (
 type SearchDialog struct {
 	widget.BaseWidget
 
+	PlaceholderText string
+
 	OnDismiss    func()
 	OnNavigateTo func(mediaprovider.ContentType, string)
 	OnSearched   func(string) []*mediaprovider.SearchResult
@@ -95,6 +97,13 @@ func (sd *SearchDialog) SearchQuery() string {
 func (sd *SearchDialog) Show() {
 	sd.onInit()
 	sd.BaseWidget.Show()
+}
+
+func (sd *SearchDialog) Refresh() {
+	if sd.PlaceholderText != "" {
+		sd.searchEntry.SetPlaceHolder(sd.PlaceholderText)
+	}
+	sd.BaseWidget.Refresh()
 }
 
 func (sd *SearchDialog) onDismiss() {
@@ -267,7 +276,7 @@ func (s *searchResult) Update(result *mediaprovider.SearchResult) {
 	if result == nil {
 		return
 	}
-	if s.contentType == result.Type && s.id == result.ID {
+	if s.contentType == result.Type && s.id == result.ID && s.title.Text == result.Name {
 		return // nothing to do
 	}
 	s.id = result.ID
