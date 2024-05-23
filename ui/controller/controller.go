@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -322,49 +323,54 @@ func (m *Controller) PromptForFirstServer() {
 	pop.Show()
 }
 
-// Show dialog to prompt for playlist.
+// Show dialog to select playlist.
 // Depending on the results of that dialog, potentially create a new playlist
 // Add tracks to the user-specified playlist
 func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
-	go func() {
-		pls, err := m.App.ServerManager.Server.GetPlaylists()
-		pls = sharedutil.FilterSlice(pls, func(pl *mediaprovider.Playlist) bool {
-			return pl.Owner == m.App.ServerManager.LoggedInUser
-		})
-		if err != nil {
-			// TODO: surface this error to user
-			log.Printf("error getting user-owned playlists: %s", err.Error())
-			return
-		}
+	sp := dialogs.NewSelectPlaylistDialog(m.App.ServerManager.Server, m.App.ImageManager, m.App.ServerManager.LoggedInUser)
+	pop := widget.NewModalPopUp(sp.SearchDialog, m.MainWindow.Canvas())
+	sp.SetOnDismiss(func() {
+		pop.Hide()
+		m.doModalClosed()
+	})
+	sp.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string, query string) {
+		pop.Hide()
+		if id == "" {
+			go m.App.ServerManager.Server.CreatePlaylist(query, trackIDs)
+		} else {
+			m.App.Config.Application.DefaultPlaylistID = id
+			if sp.SkipDuplicates {
+				var filterTrackIDs []string
+				go func() {
+					if selectedPlaylist, err := m.App.ServerManager.Server.GetPlaylist(id); err != nil {
+						log.Printf("error getting playlist: %s", err.Error())
+					} else {
+						var trackIDsInPaylist []string
 
-		selectedIdx := -1
-		plNames := make([]string, 0, len(pls))
-		for i, pl := range pls {
-			plNames = append(plNames, pl.Name)
-			if defId := m.App.Config.Application.DefaultPlaylistID; defId != "" && pl.ID == defId {
-				selectedIdx = i
-			}
-		}
+						for _, track := range selectedPlaylist.Tracks {
+							trackIDsInPaylist = append(trackIDsInPaylist, track.ID)
+						}
+						filterTrackIDs = sharedutil.FilterSlice(trackIDs, func(trackID string) bool {
+							return !slices.Contains(trackIDsInPaylist, trackID)
+						})
 
-		dlg := dialogs.NewAddToPlaylistDialog("Add to Playlist", plNames, selectedIdx)
-		pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
-		m.ClosePopUpOnEscape(pop)
-		dlg.OnCanceled = pop.Hide
-		dlg.OnSubmit = func(playlistChoice int, newPlaylistName string) {
-			pop.Hide()
-			m.doModalClosed()
-			if playlistChoice < 0 {
-				go m.App.ServerManager.Server.CreatePlaylist(newPlaylistName, trackIDs)
+					}
+					m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
+				}()
 			} else {
-				playlist := pls[playlistChoice]
-				m.App.Config.Application.DefaultPlaylistID = playlist.ID
-				go m.App.ServerManager.Server.AddPlaylistTracks(
-					playlist.ID, trackIDs)
+				go m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
 			}
 		}
-		m.haveModal = true
-		pop.Show()
-	}()
+
+	})
+	m.ClosePopUpOnEscape(pop)
+	m.haveModal = true
+	min := sp.MinSize()
+	height := fyne.Max(min.Height, fyne.Min(min.Height*1.5, m.MainWindow.Canvas().Size().Height*0.7))
+	sp.SearchDialog.Show()
+	pop.Resize(fyne.NewSize(min.Width, height))
+	pop.Show()
+	m.MainWindow.Canvas().Focus(sp.GetSearchEntry())
 }
 
 func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
@@ -622,7 +628,7 @@ func (c *Controller) ShowQuickSearch() {
 		pop.Hide()
 		c.doModalClosed()
 	})
-	qs.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
+	qs.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string, query string) {
 		pop.Hide()
 		c.doModalClosed()
 		switch contentType {
@@ -642,6 +648,7 @@ func (c *Controller) ShowQuickSearch() {
 	c.haveModal = true
 	min := qs.MinSize()
 	height := fyne.Max(min.Height, fyne.Min(min.Height*1.5, c.MainWindow.Canvas().Size().Height*0.7))
+	qs.SearchDialog.Show()
 	pop.Resize(fyne.NewSize(min.Width, height))
 	pop.Show()
 	c.MainWindow.Canvas().Focus(qs.GetSearchEntry())
