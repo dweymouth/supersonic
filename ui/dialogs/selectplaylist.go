@@ -111,5 +111,5 @@ func (sp *SelectPlaylist) MinSize() fyne.Size {
 }
 
 func (sp *SelectPlaylist) GetSearchEntry() fyne.Focusable {
-	return sp.SearchDialog.SearchEntry
+	return sp.SearchDialog.GetSearchEntry()
 }

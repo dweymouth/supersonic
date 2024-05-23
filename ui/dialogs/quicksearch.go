@@ -54,5 +54,5 @@ func (q *QuickSearch) MinSize() fyne.Size {
 }
 
 func (q *QuickSearch) GetSearchEntry() fyne.Focusable {
-	return q.SearchDialog.SearchEntry
+	return q.SearchDialog.GetSearchEntry()
 }

@@ -24,23 +24,21 @@ import (
 type SearchDialog struct {
 	widget.BaseWidget
 
-	SearchEntry fyne.Focusable // exported so it can be focused by the Controller
-
-	imgSource util.ImageFetcher
-
-	resultsMutex  sync.RWMutex
-	searchResults []*mediaprovider.SearchResult
-	loadingDots   *widgets.LoadingDots
-	list          *widget.List
-	selectedIndex int
-
-	placeholderTitle string
-	content          *fyne.Container
-
 	OnDismiss    func()
 	OnNavigateTo func(mediaprovider.ContentType, string, string)
 	OnSearched   func(string) []*mediaprovider.SearchResult
 	OnInit       func() ([]*mediaprovider.SearchResult, *widget.Check)
+
+	imgSource     util.ImageFetcher
+	resultsMutex  sync.RWMutex
+	searchResults []*mediaprovider.SearchResult
+	selectedIndex int
+
+	searchEntry      *searchEntry
+	loadingDots      *widgets.LoadingDots
+	list             *widget.List
+	placeholderTitle string
+	content          *fyne.Container
 }
 
 func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched func(string) []*mediaprovider.SearchResult, onInit func() ([]*mediaprovider.SearchResult, *widget.Check)) *SearchDialog {
@@ -61,7 +59,7 @@ func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched f
 	se.OnTypedDown = sd.moveSelectionDown
 	se.OnTypedUp = sd.moveSelectionUp
 	se.OnTypedEscape = sd.onDismiss
-	sd.SearchEntry = se
+	sd.searchEntry = se
 	sd.list = widget.NewList(
 		func() int {
 			sd.resultsMutex.RLock()
@@ -82,6 +80,10 @@ func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched f
 		},
 	)
 	return sd
+}
+
+func (sd *SearchDialog) GetSearchEntry() fyne.Focusable {
+	return sd.searchEntry
 }
 
 func (sd *SearchDialog) Show() {
@@ -143,11 +145,10 @@ func (sd *SearchDialog) SetContent(checkBox *widget.Check) {
 	dismissBtn := widget.NewButton("Close", sd.onDismiss)
 	title := widget.NewRichText(&widget.TextSegment{Text: sd.placeholderTitle, Style: util.BoldRichTextStyle})
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
-	se := sd.SearchEntry.(fyne.CanvasObject)
 	if checkBox != nil {
 		sd.content = container.NewStack(
 			container.NewBorder(
-				container.NewVBox(title, se),
+				container.NewVBox(title, sd.searchEntry),
 				container.NewVBox(widget.NewSeparator(), container.NewHBox(checkBox, layout.NewSpacer(), dismissBtn)),
 				nil, nil, sd.list),
 			container.NewCenter(sd.loadingDots),
@@ -155,7 +156,7 @@ func (sd *SearchDialog) SetContent(checkBox *widget.Check) {
 	} else {
 		sd.content = container.NewStack(
 			container.NewBorder(
-				container.NewVBox(title, se),
+				container.NewVBox(title, sd.searchEntry),
 				container.NewVBox(widget.NewSeparator(), container.NewHBox(layout.NewSpacer(), dismissBtn)),
 				nil, nil, sd.list),
 			container.NewCenter(sd.loadingDots),
