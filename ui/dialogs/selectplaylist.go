@@ -15,11 +15,11 @@ import (
 )
 
 type SelectPlaylist struct {
-	SearchDialog   *SearchDialog
-	mp             mediaprovider.MediaProvider
-	loggedInUser   string
-	allPlaylists   []*mediaprovider.Playlist
-	SkipDuplicates bool
+	SearchDialog      *SearchDialog
+	mp                mediaprovider.MediaProvider
+	loggedInUser      string
+	allPlaylistResuts []*mediaprovider.SearchResult
+	SkipDuplicates    bool
 }
 
 func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetcher, loggedInUser string) *SelectPlaylist {
@@ -47,53 +47,48 @@ func (sp *SelectPlaylist) onInit() ([]*mediaprovider.SearchResult, *widget.Check
 		log.Printf("error getting playlists: %s", err.Error())
 		return results, nil
 	}
-	sp.allPlaylists = sharedutil.FilterSlice(playlists, func(playlist *mediaprovider.Playlist) bool {
+	userPlaylists := sharedutil.FilterSlice(playlists, func(playlist *mediaprovider.Playlist) bool {
 		return playlist.Owner == sp.loggedInUser
 	})
-	for _, playlist := range sp.allPlaylists {
-		results = append(results, &mediaprovider.SearchResult{
-			Name:       playlist.Name,
-			ID:         playlist.ID,
-			CoverID:    playlist.CoverArtID,
-			Type:       mediaprovider.ContentTypePlaylist,
-			Size:       playlist.TrackCount,
-			ArtistName: playlist.Name,
-		})
-	}
+	sp.allPlaylistResuts = sharedutil.MapSlice(userPlaylists, sp.playlistToSearchResult)
 	skipDuplicatesCheck := widget.NewCheck("Skip duplicates", func(checked bool) {
 		sp.SkipDuplicates = checked
 	})
 	return results, skipDuplicatesCheck
 }
 
+func (sp *SelectPlaylist) playlistToSearchResult(playlist *mediaprovider.Playlist) *mediaprovider.SearchResult {
+	if playlist == nil {
+		return nil
+	}
+	return &mediaprovider.SearchResult{
+		Name:       playlist.Name,
+		ID:         playlist.ID,
+		CoverID:    playlist.CoverArtID,
+		Type:       mediaprovider.ContentTypePlaylist,
+		Size:       playlist.TrackCount,
+		ArtistName: playlist.Name,
+	}
+}
+
 func (sp *SelectPlaylist) onSearched(query string) []*mediaprovider.SearchResult {
 	var results []*mediaprovider.SearchResult
-	var filteredPlaylists []*mediaprovider.Playlist
 	if query == "" {
-		filteredPlaylists = sp.allPlaylists
+		results = sp.allPlaylistResuts
 	} else {
-		filteredPlaylists = sharedutil.FilterSlice(sp.allPlaylists, func(playlist *mediaprovider.Playlist) bool {
+		results = []*mediaprovider.SearchResult{{
+			Name: fmt.Sprintf("Create new playlist: %s", query),
+			Type: mediaprovider.ContentTypePlaylist,
+		}}
+		filteredPlaylists := sharedutil.FilterSlice(sp.allPlaylistResuts, func(playlist *mediaprovider.SearchResult) bool {
 			return strings.Contains(
 				sanitize.Accents(strings.ToLower(playlist.Name)),
 				sanitize.Accents(strings.ToLower(query)),
 			)
 		})
-		results = append(results, &mediaprovider.SearchResult{
-			Name: fmt.Sprintf("Create new playlist: %s", query),
-			Type: mediaprovider.ContentTypePlaylist,
-		})
+		results = append(results, filteredPlaylists...)
 	}
 
-	for _, playlist := range filteredPlaylists {
-		results = append(results, &mediaprovider.SearchResult{
-			Name:       playlist.Name,
-			ID:         playlist.ID,
-			CoverID:    playlist.CoverArtID,
-			Type:       mediaprovider.ContentTypePlaylist,
-			Size:       playlist.TrackCount,
-			ArtistName: playlist.Name,
-		})
-	}
 	return results
 }
 
