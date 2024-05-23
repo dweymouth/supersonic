@@ -179,5 +179,4 @@ type SearchResult struct {
 
 	// Unset for ContentTypes Artist, Playlist, and Genre
 	ArtistName string
-	Query      string
 }

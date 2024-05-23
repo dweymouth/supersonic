@@ -79,9 +79,8 @@ func (sp *SelectPlaylist) onSearched(query string) []*mediaprovider.SearchResult
 			)
 		})
 		results = append(results, &mediaprovider.SearchResult{
-			Name:  fmt.Sprintf("Create new playlist: %s", query),
-			Type:  mediaprovider.ContentTypePlaylist,
-			Query: query,
+			Name: fmt.Sprintf("Create new playlist: %s", query),
+			Type: mediaprovider.ContentTypePlaylist,
 		})
 	}
 
@@ -102,7 +101,7 @@ func (sp *SelectPlaylist) SetOnDismiss(onDismiss func()) {
 	sp.SearchDialog.OnDismiss = onDismiss
 }
 
-func (sp *SelectPlaylist) SetOnNavigateTo(onNavigateTo func(mediaprovider.ContentType, string, string)) {
+func (sp *SelectPlaylist) SetOnNavigateTo(onNavigateTo func(mediaprovider.ContentType, string)) {
 	sp.SearchDialog.OnNavigateTo = onNavigateTo
 }
 

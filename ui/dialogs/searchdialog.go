@@ -25,7 +25,7 @@ type SearchDialog struct {
 	widget.BaseWidget
 
 	OnDismiss    func()
-	OnNavigateTo func(mediaprovider.ContentType, string, string)
+	OnNavigateTo func(mediaprovider.ContentType, string)
 	OnSearched   func(string) []*mediaprovider.SearchResult
 	OnInit       func() ([]*mediaprovider.SearchResult, *widget.Check)
 
@@ -82,8 +82,14 @@ func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched f
 	return sd
 }
 
+// GetSearchEntry returns the search Entry widget for focusing
 func (sd *SearchDialog) GetSearchEntry() fyne.Focusable {
 	return sd.searchEntry
+}
+
+// SearchQuery returns the current search query entered by the user
+func (sd *SearchDialog) SearchQuery() string {
+	return sd.searchEntry.Text
 }
 
 func (sd *SearchDialog) Show() {
@@ -108,9 +114,8 @@ func (sd *SearchDialog) onSelected(idx int) {
 	}
 	id := sd.searchResults[idx].ID
 	typ := sd.searchResults[idx].Type
-	query := sd.searchResults[idx].Query
 	sd.resultsMutex.RUnlock()
-	sd.OnNavigateTo(typ, id, query)
+	sd.OnNavigateTo(typ, id)
 }
 
 func (sd *SearchDialog) moveSelectionDown() {

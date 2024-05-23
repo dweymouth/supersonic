@@ -333,10 +333,10 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 		pop.Hide()
 		m.doModalClosed()
 	})
-	sp.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string, query string) {
+	sp.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
 		pop.Hide()
-		if id == "" {
-			go m.App.ServerManager.Server.CreatePlaylist(query, trackIDs)
+		if id == "" /* creating new playlist */ {
+			go m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
 		} else {
 			m.App.Config.Application.DefaultPlaylistID = id
 			if sp.SkipDuplicates {
@@ -628,7 +628,7 @@ func (c *Controller) ShowQuickSearch() {
 		pop.Hide()
 		c.doModalClosed()
 	})
-	qs.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string, query string) {
+	qs.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
 		pop.Hide()
 		c.doModalClosed()
 		switch contentType {
