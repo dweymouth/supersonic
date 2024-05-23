@@ -1,6 +1,7 @@
 package dialogs
 
 import (
+	"fmt"
 	"image"
 	"log"
 	"sync"
@@ -36,21 +37,19 @@ type SearchDialog struct {
 	placeholderTitle string
 	content          *fyne.Container
 
-	OnDismiss             func()
-	OnNavigateTo          func(mediaprovider.ContentType, string, string)
-	OnSearched            func(string) []*mediaprovider.SearchResult
-	OnUpdateSearchResults func(*searchResult, *mediaprovider.SearchResult)
-	OnInit                func() ([]*mediaprovider.SearchResult, *widget.Check)
+	OnDismiss    func()
+	OnNavigateTo func(mediaprovider.ContentType, string, string)
+	OnSearched   func(string) []*mediaprovider.SearchResult
+	OnInit       func() ([]*mediaprovider.SearchResult, *widget.Check)
 }
 
-func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched func(string) []*mediaprovider.SearchResult, onUpdateSearchResult func(*searchResult, *mediaprovider.SearchResult), onInit func() ([]*mediaprovider.SearchResult, *widget.Check)) *SearchDialog {
+func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched func(string) []*mediaprovider.SearchResult, onInit func() ([]*mediaprovider.SearchResult, *widget.Check)) *SearchDialog {
 	sd := &SearchDialog{
-		imgSource:             im,
-		loadingDots:           widgets.NewLoadingDots(),
-		OnSearched:            onSearched,
-		OnUpdateSearchResults: onUpdateSearchResult,
-		OnInit:                onInit,
-		placeholderTitle:      placeholderTitle,
+		imgSource:        im,
+		loadingDots:      widgets.NewLoadingDots(),
+		OnSearched:       onSearched,
+		OnInit:           onInit,
+		placeholderTitle: placeholderTitle,
 	}
 	sd.ExtendBaseWidget(sd)
 
@@ -79,7 +78,7 @@ func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched f
 			sd.resultsMutex.RUnlock()
 			sr := co.(*searchResult)
 			sr.index = lii
-			sd.update(sr, result)
+			sr.Update(result)
 		},
 	)
 	return sd
@@ -203,22 +202,6 @@ func (sd *SearchDialog) MinSize() fyne.Size {
 	return fyne.NewSize(400, 350)
 }
 
-func (sd *SearchDialog) update(sr *searchResult, result *mediaprovider.SearchResult) {
-	if result == nil {
-		return
-	}
-	if sr.contentType == result.Type && sr.id == result.ID && result.ID != "" {
-		return // nothing to do
-	}
-	sr.id = result.ID
-	sr.contentType = result.Type
-	sr.image.CenterIcon = placeholderIconForContentType(result.Type)
-	sr.imageLoader.Load(result.CoverID)
-	sr.title.SetText(result.Name)
-
-	sd.OnUpdateSearchResults(sr, result)
-}
-
 func placeholderIconForContentType(c mediaprovider.ContentType) fyne.Resource {
 	switch c {
 	case mediaprovider.ContentTypeAlbum:
@@ -272,6 +255,64 @@ func newSearchResult(parent *SearchDialog) *searchResult {
 	}
 
 	return qs
+}
+
+func (s *searchResult) Update(result *mediaprovider.SearchResult) {
+	if result == nil {
+		return
+	}
+	if s.contentType == result.Type && s.id == result.ID {
+		return // nothing to do
+	}
+	s.id = result.ID
+	s.contentType = result.Type
+	s.image.CenterIcon = placeholderIconForContentType(result.Type)
+	s.imageLoader.Load(result.CoverID)
+	s.title.SetText(result.Name)
+
+	maybePluralize := func(s string, size int) string {
+		if size != 1 {
+			return s + "s"
+		}
+		return s
+	}
+	var secondaryText string
+	switch result.Type {
+	case mediaprovider.ContentTypeAlbum:
+		secondaryText = result.ArtistName
+	case mediaprovider.ContentTypeArtist:
+		secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("album", result.Size))
+	case mediaprovider.ContentTypeTrack:
+		secondaryText = result.ArtistName
+	case mediaprovider.ContentTypePlaylist:
+		secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("track", result.Size))
+	case mediaprovider.ContentTypeGenre:
+		if result.Size > 0 {
+			secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("album", result.Size))
+		} else {
+			secondaryText = ""
+		}
+	}
+	s.secondary.Segments = []widget.RichTextSegment{
+		&widget.TextSegment{
+			Text:  result.Type.String(),
+			Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, TextStyle: fyne.TextStyle{Bold: true}, Inline: true},
+		},
+	}
+	if secondaryText != "" {
+		s.secondary.Segments = append(s.secondary.Segments,
+			&widget.TextSegment{
+				Text:  " · ",
+				Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
+			},
+			&widget.TextSegment{
+				Text:  secondaryText,
+				Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
+			},
+		)
+	}
+
+	s.secondary.Refresh()
 }
 
 func (q *searchResult) Tapped(_ *fyne.PointEvent) {

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/deluan/sanitize"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -34,7 +33,6 @@ func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetche
 		im,
 		"Select playlist",
 		sp.onSearched,
-		sp.onUpdateSearchResult,
 		sp.onInit,
 	)
 	sp.SearchDialog = sd
@@ -98,41 +96,6 @@ func (sp *SelectPlaylist) onSearched(query string) []*mediaprovider.SearchResult
 		})
 	}
 	return results
-}
-
-func (sp *SelectPlaylist) onUpdateSearchResult(sr *searchResult, result *mediaprovider.SearchResult) {
-	if result.ID == "" {
-		sr.secondary.Segments = []widget.RichTextSegment{}
-		sr.secondary.Refresh()
-		return
-	}
-
-	maybePluralize := func(s string, size int) string {
-		if size != 1 {
-			return s + "s"
-		}
-		return s
-	}
-	secondaryText := fmt.Sprintf("%d %s", result.Size, maybePluralize("track", result.Size))
-	sr.secondary.Segments = []widget.RichTextSegment{
-		&widget.TextSegment{
-			Text:  result.Type.String(),
-			Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, TextStyle: fyne.TextStyle{Bold: true}, Inline: true},
-		},
-	}
-	if secondaryText != "" {
-		sr.secondary.Segments = append(sr.secondary.Segments,
-			&widget.TextSegment{
-				Text:  " · ",
-				Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
-			},
-			&widget.TextSegment{
-				Text:  secondaryText,
-				Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
-			},
-		)
-	}
-	sr.secondary.Refresh()
 }
 
 func (sp *SelectPlaylist) SetOnDismiss(onDismiss func()) {
