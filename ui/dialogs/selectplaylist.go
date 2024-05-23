@@ -52,7 +52,7 @@ func (sp *SelectPlaylist) onInit() ([]*mediaprovider.SearchResult, *widget.Check
 		return playlist.Owner == sp.loggedInUser
 	})
 	sp.allPlaylistResuts = sharedutil.MapSlice(userPlaylists, sp.playlistToSearchResult)
-	skipDuplicatesCheck := widget.NewCheck("Skip duplicates", func(checked bool) {
+	skipDuplicatesCheck := widget.NewCheck("Skip duplicate tracks", func(checked bool) {
 		sp.SkipDuplicates = checked
 	})
 	return results, skipDuplicatesCheck
