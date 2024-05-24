@@ -16,7 +16,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
@@ -309,7 +308,7 @@ func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []
 
 	filterRow := container.NewBorder(nil, nil, nil, container.NewHBox(g.allBtn, g.noneBtn), g.filterText)
 	g.container = container.NewBorder(g.genresTitleLine, nil, nil, nil,
-		container.New(&layouts.MaxPadLayout{PadLeft: 5, PadRight: 5},
+		container.New(&layout.CustomPaddedLayout{LeftPadding: 5, RightPadding: 5},
 			container.NewBorder(filterRow, nil, nil, nil, g.genreListView),
 		),
 	)

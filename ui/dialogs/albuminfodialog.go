@@ -71,7 +71,7 @@ func (a *AlbumInfoDialog) buildMainContainer(albumInfo *mediaprovider.AlbumInfo,
 	urlContainer := a.buildUrlContainer(albumInfo.LastFmUrl, albumInfo.MusicBrainzID)
 
 	return container.New(
-		&layouts.MaxPadLayout{PadLeft: 15, PadRight: 10, PadTop: 15, PadBottom: 10},
+		&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 10, TopPadding: 15, BottomPadding: 10},
 		container.NewVBox(
 			iconImage,
 			title,

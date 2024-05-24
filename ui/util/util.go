@@ -18,7 +18,6 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"golang.org/x/net/html"
 )
@@ -208,7 +207,7 @@ func AddHeaderBackground(obj fyne.CanvasObject) *fyne.Container {
 	bgrnd := myTheme.NewThemedRectangle(myTheme.ColorNamePageHeader)
 	bgrnd.CornerRadiusName = theme.SizeNameInputRadius
 	return container.NewStack(bgrnd,
-		container.New(&layouts.MaxPadLayout{PadLeft: 10, PadRight: 10, PadTop: 10, PadBottom: 10},
+		container.New(&layout.CustomPaddedLayout{LeftPadding: 10, RightPadding: 10, TopPadding: 10, BottomPadding: 10},
 			obj))
 }
 

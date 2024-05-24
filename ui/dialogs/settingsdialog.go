@@ -11,7 +11,6 @@ import (
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
@@ -385,7 +384,7 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 
 	return container.NewTabItem("Playback", container.NewVBox(
 		disableTranscode,
-		container.New(&layouts.MaxPadLayout{PadTop: 5},
+		container.New(&layout.CustomPaddedLayout{TopPadding: 5},
 			container.New(layout.NewFormLayout(),
 				widget.NewLabel("Audio device"), container.NewBorder(nil, nil, nil, util.NewHSpace(70), deviceSelect),
 				layout.NewSpacer(), audioExclusive,
@@ -521,7 +520,7 @@ func (s *SettingsDialog) setRestartRequired() {
 }
 
 func (s *SettingsDialog) newSectionSeparator() fyne.CanvasObject {
-	return container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15}, widget.NewSeparator())
+	return container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15}, widget.NewSeparator())
 }
 
 func (s *SettingsDialog) onReplayGainSettingsChanged() {

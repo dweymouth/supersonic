@@ -138,9 +138,9 @@ func (s *savedGenresPage) Restore() Page {
 
 func (a *GenresPage) buildContainer() {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
-	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
+	a.container = container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
 		container.NewBorder(
-			container.New(&layouts.MaxPadLayout{PadLeft: -5},
+			container.New(&layout.CustomPaddedLayout{LeftPadding: -5},
 				container.NewHBox(a.titleDisp, layout.NewSpacer(), searchVbox)),
 			nil, nil, nil, a.list))
 }
