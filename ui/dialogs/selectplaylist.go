@@ -29,7 +29,6 @@ func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetche
 		loggedInUser:   loggedInUser,
 		SkipDuplicates: false,
 	}
-	sp.fetchUserOwnedPlaylists()
 	sd := NewSearchDialog(
 		im,
 		"Add to playlist",
@@ -69,21 +68,23 @@ func (sp *SelectPlaylist) playlistToSearchResult(playlist *mediaprovider.Playlis
 }
 
 func (sp *SelectPlaylist) onSearched(query string) []*mediaprovider.SearchResult {
+	if sp.allPlaylistResuts == nil {
+		sp.fetchUserOwnedPlaylists()
+	}
 	var results []*mediaprovider.SearchResult
 	if query == "" {
 		results = sp.allPlaylistResuts
 	} else {
-		results = []*mediaprovider.SearchResult{{
-			Name: fmt.Sprintf("Create new playlist: %s", query),
-			Type: mediaprovider.ContentTypePlaylist,
-		}}
-		filteredPlaylists := sharedutil.FilterSlice(sp.allPlaylistResuts, func(playlist *mediaprovider.SearchResult) bool {
+		results = sharedutil.FilterSlice(sp.allPlaylistResuts, func(playlist *mediaprovider.SearchResult) bool {
 			return strings.Contains(
 				sanitize.Accents(strings.ToLower(playlist.Name)),
 				sanitize.Accents(strings.ToLower(query)),
 			)
 		})
-		results = append(results, filteredPlaylists...)
+		results = append(results, &mediaprovider.SearchResult{
+			Name: fmt.Sprintf("Create new playlist: %s", query),
+			Type: mediaprovider.ContentTypePlaylist,
+		})
 	}
 
 	return results
