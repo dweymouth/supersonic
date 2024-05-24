@@ -10,18 +10,14 @@ on:
     branches: [ "main" ]
 
 jobs:
-  install-macports:
-    runs-on: macos-latest
-    name: 'Install MacPorts 2.9.3 on MacOS 11'
-    steps:
-      - uses: actions/checkout@v3
-      - uses: melusina-org/setup-macports@v1
-      - run: port version
-
   build:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v3
+
+    - name: Set up MacPorts
+      uses: melusina-org/setup-macports@v1
+      run: port version
 
     - name: Set up Go
       uses: actions/setup-go@v4
