@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"github.com/deluan/sanitize"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -23,39 +24,34 @@ type SelectPlaylist struct {
 }
 
 func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetcher, loggedInUser string) *SelectPlaylist {
-
 	sp := &SelectPlaylist{
 		mp:             mp,
 		loggedInUser:   loggedInUser,
 		SkipDuplicates: false,
 	}
+	sp.fetchUserOwnedPlaylists()
 	sd := NewSearchDialog(
 		im,
-		"Select playlist",
+		"Add to playlist",
+		"Cancel",
 		sp.onSearched,
-		sp.onInit,
 	)
+	sd.ActionItem = widget.NewCheckWithData("Skip duplicate tracks", binding.BindBool(&sp.SkipDuplicates))
 	sd.PlaceholderText = "Search playlists or new playlist name"
 	sp.SearchDialog = sd
 	return sp
 }
 
-func (sp *SelectPlaylist) onInit() ([]*mediaprovider.SearchResult, *widget.Check) {
-	var results []*mediaprovider.SearchResult
+func (sp *SelectPlaylist) fetchUserOwnedPlaylists() {
 	playlists, err := sp.mp.GetPlaylists()
 	if err != nil {
 		// TODO: surface this error to user
 		log.Printf("error getting playlists: %s", err.Error())
-		return results, nil
 	}
 	userPlaylists := sharedutil.FilterSlice(playlists, func(playlist *mediaprovider.Playlist) bool {
 		return playlist.Owner == sp.loggedInUser
 	})
 	sp.allPlaylistResuts = sharedutil.MapSlice(userPlaylists, sp.playlistToSearchResult)
-	skipDuplicatesCheck := widget.NewCheck("Skip duplicate tracks", func(checked bool) {
-		sp.SkipDuplicates = checked
-	})
-	return results, skipDuplicatesCheck
 }
 
 func (sp *SelectPlaylist) playlistToSearchResult(playlist *mediaprovider.Playlist) *mediaprovider.SearchResult {

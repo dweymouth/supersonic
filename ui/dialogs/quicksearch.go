@@ -14,18 +14,8 @@ type QuickSearch struct {
 }
 
 func NewQuickSearch(mp mediaprovider.MediaProvider, im util.ImageFetcher) *QuickSearch {
-
-	q := &QuickSearch{
-		mp: mp,
-	}
-
-	sd := NewSearchDialog(
-		im,
-		"Quick Search",
-		q.onSearched,
-		nil,
-	)
-	q.SearchDialog = sd
+	q := &QuickSearch{mp: mp}
+	q.SearchDialog = NewSearchDialog(im, "Quick Search", "Close", q.onSearched)
 	return q
 }
 

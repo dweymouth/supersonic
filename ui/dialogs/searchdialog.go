@@ -26,30 +26,34 @@ type SearchDialog struct {
 
 	PlaceholderText string
 
+	// Additional item that can be placed to the left
+	// of the dismiss buttons
+	ActionItem fyne.CanvasObject
+
 	OnDismiss    func()
 	OnNavigateTo func(mediaprovider.ContentType, string)
 	OnSearched   func(string) []*mediaprovider.SearchResult
-	OnInit       func() ([]*mediaprovider.SearchResult, *widget.Check)
 
 	imgSource     util.ImageFetcher
 	resultsMutex  sync.RWMutex
 	searchResults []*mediaprovider.SearchResult
 	selectedIndex int
 
-	searchEntry      *searchEntry
-	loadingDots      *widgets.LoadingDots
-	list             *widget.List
-	placeholderTitle string
-	content          *fyne.Container
+	searchEntry *searchEntry
+	loadingDots *widgets.LoadingDots
+	list        *widget.List
+	dialogTitle string
+	dismissText string
+	content     *fyne.Container
 }
 
-func NewSearchDialog(im util.ImageFetcher, placeholderTitle string, onSearched func(string) []*mediaprovider.SearchResult, onInit func() ([]*mediaprovider.SearchResult, *widget.Check)) *SearchDialog {
+func NewSearchDialog(im util.ImageFetcher, title, dismissBtn string, onSearched func(string) []*mediaprovider.SearchResult) *SearchDialog {
 	sd := &SearchDialog{
-		imgSource:        im,
-		loadingDots:      widgets.NewLoadingDots(),
-		OnSearched:       onSearched,
-		OnInit:           onInit,
-		placeholderTitle: placeholderTitle,
+		imgSource:   im,
+		loadingDots: widgets.NewLoadingDots(),
+		OnSearched:  onSearched,
+		dialogTitle: title,
+		dismissText: dismissBtn,
 	}
 	sd.ExtendBaseWidget(sd)
 
@@ -95,8 +99,8 @@ func (sd *SearchDialog) SearchQuery() string {
 }
 
 func (sd *SearchDialog) Show() {
-	sd.onInit()
 	sd.BaseWidget.Show()
+	go sd.onSearched("")
 }
 
 func (sd *SearchDialog) Refresh() {
@@ -155,47 +159,6 @@ func (sd *SearchDialog) setResults(results []*mediaprovider.SearchResult) {
 	sd.list.Select(0)
 }
 
-func (sd *SearchDialog) SetContent(checkBox *widget.Check) {
-	dismissBtn := widget.NewButton("Close", sd.onDismiss)
-	title := widget.NewRichText(&widget.TextSegment{Text: sd.placeholderTitle, Style: util.BoldRichTextStyle})
-	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
-	if checkBox != nil {
-		sd.content = container.NewStack(
-			container.NewBorder(
-				container.NewVBox(title, sd.searchEntry),
-				container.NewVBox(widget.NewSeparator(), container.NewHBox(checkBox, layout.NewSpacer(), dismissBtn)),
-				nil, nil, sd.list),
-			container.NewCenter(sd.loadingDots),
-		)
-	} else {
-		sd.content = container.NewStack(
-			container.NewBorder(
-				container.NewVBox(title, sd.searchEntry),
-				container.NewVBox(widget.NewSeparator(), container.NewHBox(layout.NewSpacer(), dismissBtn)),
-				nil, nil, sd.list),
-			container.NewCenter(sd.loadingDots),
-		)
-	}
-}
-
-func (sd *SearchDialog) onInit() {
-	if sd.OnInit == nil {
-		sd.SetContent(nil)
-		return
-	}
-	sd.loadingDots.Start()
-	var results []*mediaprovider.SearchResult
-	res, checkBox := sd.OnInit()
-	if len(res) == 0 {
-		log.Println("No results")
-	} else {
-		results = res
-	}
-	sd.SetContent(checkBox)
-	sd.loadingDots.Stop()
-	sd.setResults(results)
-}
-
 func (sd *SearchDialog) onSearched(query string) {
 	sd.loadingDots.Start()
 	var results []*mediaprovider.SearchResult
@@ -210,6 +173,23 @@ func (sd *SearchDialog) onSearched(query string) {
 }
 
 func (sd *SearchDialog) CreateRenderer() fyne.WidgetRenderer {
+	dismissBtn := widget.NewButton(sd.dismissText, sd.onDismiss)
+	title := widget.NewRichText(&widget.TextSegment{Text: sd.dialogTitle, Style: util.BoldRichTextStyle})
+	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
+	bottomRow := container.NewHBox()
+	if sd.ActionItem != nil {
+		bottomRow.Objects = []fyne.CanvasObject{sd.ActionItem, layout.NewSpacer(), dismissBtn}
+	} else {
+		bottomRow.Objects = []fyne.CanvasObject{layout.NewSpacer(), dismissBtn}
+	}
+	sd.content = container.NewStack(
+		container.NewBorder(
+			container.NewVBox(title, sd.searchEntry),
+			container.NewVBox(widget.NewSeparator(), bottomRow),
+			nil, nil, sd.list),
+		container.NewCenter(sd.loadingDots),
+	)
+
 	return widget.NewSimpleRenderer(sd.content)
 }
 
