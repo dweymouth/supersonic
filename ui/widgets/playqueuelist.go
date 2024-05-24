@@ -328,7 +328,7 @@ func NewPlayQueueListRow(playQueueList *PlayQueueList, im *backend.ImageManager,
 	p.Content = container.New(playQueueList.colLayout,
 		container.NewCenter(p.num),
 		container.NewPadded(p.cover),
-		container.New(&layouts.VboxCustomPadding{ExtraPad: -15},
+		container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-15),
 			p.title, p.artist),
 		container.NewCenter(p.time),
 	)

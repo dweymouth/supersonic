@@ -8,7 +8,6 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
@@ -448,7 +447,7 @@ func (a *ArtistPageHeader) createContainer() {
 	a.container = util.AddHeaderBackground(
 		container.NewBorder(nil, nil, a.artistImage, nil,
 			container.NewVBox(
-				container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
+				container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
 					a.titleDisp, a.biographyDisp, a.similarArtists),
 				btnContainer),
 		))

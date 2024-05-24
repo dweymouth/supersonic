@@ -1,10 +1,9 @@
 package widgets
 
 import (
-	"github.com/dweymouth/supersonic/ui/layouts"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -22,7 +21,7 @@ type ToggleButtonGroup struct {
 func NewToggleButtonGroup(activatedBtnIdx int, buttons ...*widget.Button) *ToggleButtonGroup {
 	t := &ToggleButtonGroup{}
 	t.ExtendBaseWidget(t)
-	t.buttonContainer = container.New(&layouts.HboxCustomPadding{DisableThemePad: true})
+	t.buttonContainer = container.New(layout.NewCustomPaddedHBoxLayout(0))
 	for i, b := range buttons {
 		b.Importance = widget.MediumImportance
 		t.buttonContainer.Add(b)

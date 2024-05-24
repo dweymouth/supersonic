@@ -14,7 +14,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
@@ -317,7 +316,7 @@ func (q *searchResult) Tapped(_ *fyne.PointEvent) {
 func (q *searchResult) CreateRenderer() fyne.WidgetRenderer {
 	if q.content == nil {
 		q.content = container.NewBorder(nil, nil, container.NewCenter(q.image), nil,
-			container.New(&layouts.VboxCustomPadding{ExtraPad: -15},
+			container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-15),
 				q.title,
 				q.secondary,
 			))

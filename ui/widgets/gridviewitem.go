@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -195,11 +196,11 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 }
 
 func (g *GridViewItem) createContainer() {
-	info := container.New(&layouts.VboxCustomPadding{ExtraPad: -16}, g.primaryText, g.secondaryText)
+	info := container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-16), g.primaryText, g.secondaryText)
 	g.focusRect = canvas.NewRectangle(color.Transparent)
 	g.focusRect.StrokeWidth = 3
 	coverStack := container.NewStack(g.Cover, g.focusRect)
-	c := container.New(&layouts.VboxCustomPadding{ExtraPad: -5}, coverStack, info)
+	c := container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-5), coverStack, info)
 	pad := &layouts.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
 	g.container = container.New(pad, c)
 }
