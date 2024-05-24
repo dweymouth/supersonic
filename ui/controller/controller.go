@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"slices"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -340,22 +339,20 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 		} else {
 			m.App.Config.Application.DefaultPlaylistID = id
 			if sp.SkipDuplicates {
-				var filterTrackIDs []string
 				go func() {
+					currentTrackIDs := make(map[string]struct{})
 					if selectedPlaylist, err := m.App.ServerManager.Server.GetPlaylist(id); err != nil {
 						log.Printf("error getting playlist: %s", err.Error())
 					} else {
-						var trackIDsInPaylist []string
-
 						for _, track := range selectedPlaylist.Tracks {
-							trackIDsInPaylist = append(trackIDsInPaylist, track.ID)
+							currentTrackIDs[track.ID] = struct{}{}
 						}
-						filterTrackIDs = sharedutil.FilterSlice(trackIDs, func(trackID string) bool {
-							return !slices.Contains(trackIDsInPaylist, trackID)
+						filterTrackIDs := sharedutil.FilterSlice(trackIDs, func(trackID string) bool {
+							_, ok := currentTrackIDs[trackID]
+							return !ok
 						})
-
+						m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
 					}
-					m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
 				}()
 			} else {
 				go m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
