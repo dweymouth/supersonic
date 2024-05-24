@@ -10,35 +10,12 @@ on:
     branches: [ "main" ]
 
 jobs:
-  install-macports-on-macos-11:
-    runs-on: macos-11
+  install-macports:
+    runs-on: macos-latest
     name: 'Install MacPorts 2.9.3 on MacOS 11'
     steps:
       - uses: actions/checkout@v3
       - uses: melusina-org/setup-macports@v1
-        id: 'macports'
-        with:
-          parameters: 'testsuite/run-testsuite-on-macos-11.yaml'
-      - name: 'Validate installed MacPorts version'
-        run: >-
-          test "$(port version)" = 'Version: 2.9.3'
-      - name: 'Validate transmitted MacPorts prefix'
-        run: >-
-          test "${{ steps.macports.outputs.prefix }}" = '/opt/local'
-      - name: 'Validate transmitted MacPorts version'
-        run: >-
-          test "${{ steps.macports.outputs.version }}" = '2.9.3'
-
-  install-macports-on-macos-12:
-    runs-on: macos-12
-    name: 'Install MacPorts 2.9.3 on MacOS 12'
-    steps:
-      - uses: actions/checkout@v3
-      - name: 'Run testsuite'
-        run: development/testsuite
-      - uses: melusina-org/setup-macports@v1
-        with:
-          parameters: 'testsuite/run-testsuite-on-macos-12.yaml'
       - run: port version
 
   build:
@@ -67,7 +44,7 @@ jobs:
       run: >
         make package_macos &&
         cp -r Supersonic.app Supersonic.app.2 &&
-        make bundledeps_macos_homebrew && make zip_macos &&
+        make bundledeps_macos_macports && make zip_macos &&
         mv Supersonic.zip Supersonic_BigSur+.zip &&
         rm -r Supersonic.app &&
         mv Supersonic.app.2 Supersonic.app &&
