@@ -30,7 +30,7 @@ jobs:
       run: brew install --force mpv && brew install dylibbundler
 
     - name: Setup path
-      run: export C_INCLUDE_PATH=/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH
+      run: export C_INCLUDE_PATH=/usr/local/include:/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib:$LIBRARY_PATH
 
     - name: Build
       run: go build
