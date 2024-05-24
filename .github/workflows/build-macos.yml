@@ -17,7 +17,6 @@ jobs:
 
     - name: Set up MacPorts
       uses: melusina-org/setup-macports@v1
-      run: port version
 
     - name: Set up Go
       uses: actions/setup-go@v4
