@@ -114,6 +114,7 @@ func NewPlayerControls() *PlayerControls {
 	pc.ExtendBaseWidget(pc)
 
 	pc.slider = NewTrackPosSlider()
+	pc.slider.Disable()
 	pc.curTimeLabel = NewLabelMinSize(util.SecondsToTimeString(0), 55)
 	pc.curTimeLabel.Alignment = fyne.TextAlignTrailing
 	pc.totalTimeLabel = NewLabelMinSize(util.SecondsToTimeString(0), 55)
@@ -181,6 +182,11 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 	if tt != pc.totalTimeLabel.Text {
 		pc.totalTimeLabel.SetText(tt)
 		updated = true
+	}
+	if totalTime > 0 {
+		pc.slider.Enable()
+	} else {
+		pc.slider.Disable()
 	}
 	if !pc.slider.IsDragging() {
 		ct := util.SecondsToTimeString(curTime)
