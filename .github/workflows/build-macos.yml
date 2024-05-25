@@ -30,7 +30,7 @@ jobs:
       run: export C_INCLUDE_PATH=/usr/local/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
 
     - name: Build
-      run: go build
+      run: CGO_CFLAGS="-I/usr/local/include" go build
 
     - name: Install Fyne tool
       run: go install fyne.io/fyne/v2/cmd/fyne@latest
