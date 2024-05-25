@@ -9,9 +9,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/supersonic/ui/layouts"
 )
 
 type LoadingDots struct {
@@ -92,9 +92,7 @@ func (l *LoadingDots) doTick(foreground, disabled color.Color) {
 
 func (l *LoadingDots) CreateRenderer() fyne.WidgetRenderer {
 	if l.container == nil {
-		layout := &layouts.CenterPadLayout{
-			PadLeftRight: 3,
-		}
+		layout := layout.NewCustomPaddedLayout(0, 0, 3, 3)
 		l.container = container.NewHBox(
 			container.New(layout, &l.dots[0]),
 			container.New(layout, &l.dots[1]),

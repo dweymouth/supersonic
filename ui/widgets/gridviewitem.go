@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"github.com/dweymouth/supersonic/res"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
@@ -201,7 +200,7 @@ func (g *GridViewItem) createContainer() {
 	g.focusRect.StrokeWidth = 3
 	coverStack := container.NewStack(g.Cover, g.focusRect)
 	c := container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-5), coverStack, info)
-	pad := &layouts.CenterPadLayout{PadLeftRight: 20, PadTopBottom: 10}
+	pad := layout.NewCustomPaddedLayout(10, 10, 20, 20)
 	g.container = container.New(pad, c)
 }
 

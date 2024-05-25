@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	"github.com/dweymouth/supersonic/res"
-	"github.com/dweymouth/supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -75,7 +74,7 @@ func (a *AboutDialog) buildMainTabContainer(version string) *fyne.Container {
 			widget.NewHyperlink("Support the project", kofiUrl)),
 	)
 
-	return container.New(&layouts.CenterPadLayout{PadTopBottom: 10},
+	return container.New(&layout.CustomPaddedLayout{TopPadding: 10, BottomPadding: 10},
 		container.NewVBox(iconImage,
 			container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10), title, versionLbl, copyright, license, githubKofi)))
 }
