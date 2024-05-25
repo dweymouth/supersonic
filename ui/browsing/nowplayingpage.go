@@ -7,6 +7,7 @@ import (
 	"log"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -31,16 +32,21 @@ type NowPlayingPage struct {
 
 	nowPlayingPageState
 
-	queue           []*mediaprovider.Track
-	queueList       *widgets.PlayQueueList
-	lyricsViewer    *widgets.LyricsViewer
-	imageLoadCancel context.CancelFunc
-	card            *widgets.LargeNowPlayingCard
-	statusLabel     *widget.Label
-	totalTime       float64
-	nowPlayingID    string
-	albumID         string
-	container       *fyne.Container
+	nowPlaying       *mediaprovider.Track
+	nowPlayingID     string
+	curLyricsID      string
+	queue            []*mediaprovider.Track
+	queueList        *widgets.PlayQueueList
+	lyricLock        sync.Mutex
+	lyricsViewer     *widgets.LyricsViewer
+	lyricFetchCancel context.CancelFunc
+	imageLoadCancel  context.CancelFunc
+	card             *widgets.LargeNowPlayingCard
+	statusLabel      *widget.Label
+	tabs             *container.AppTabs
+	totalTime        float64
+	lastPlayPos      float64
+	container        *fyne.Container
 }
 
 type nowPlayingPageState struct {
@@ -76,7 +82,7 @@ func NewNowPlayingPage(
 	a.card = widgets.NewLargeNowPlayingCard()
 	a.card.DisableRating = !canRate
 	a.card.OnAlbumNameTapped = func() {
-		contr.NavigateTo(controller.AlbumRoute(a.albumID))
+		contr.NavigateTo(controller.AlbumRoute(sharedutil.AlbumIDOrEmptyStr(a.nowPlaying)))
 	}
 	a.card.OnArtistNameTapped = func(artistID string) {
 		contr.NavigateTo(controller.ArtistRoute(artistID))
@@ -140,19 +146,26 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 			LeftRightObjectPercent: .8,
 			TopBottomObjectPercent: .8,
 		}
-		tabs := container.NewAppTabs(
+		a.tabs = container.NewAppTabs(
 			container.NewTabItem("Play Queue",
 				container.NewBorder(layout.NewSpacer(), nil, nil, nil, a.queueList)),
 			container.NewTabItem("Lyrics", a.lyricsViewer),
 		)
-		tabs.SelectIndex(initialTab)
-		tabs.OnSelected = func(*container.TabItem) {
-			a.saveSelectedTab(tabs.SelectedIndex())
+		a.tabs.SelectIndex(initialTab)
+		a.tabs.OnSelected = func(*container.TabItem) {
+			idx := a.tabs.SelectedIndex()
+			a.saveSelectedTab(idx)
+			if idx == 1 /*lyrics*/ {
+				a.updateLyrics()
+			}
+		}
+		if initialTab == 1 /*lyrics*/ {
+			a.updateLyrics()
 		}
 		mainContent := container.NewGridWithColumns(2,
 			container.New(paddedLayout, a.card),
 			container.New(paddedLayout,
-				util.AddHeaderBackground(tabs)))
+				util.AddHeaderBackground(a.tabs)))
 		a.container = container.NewStack(
 			mainContent,
 			container.NewVBox(
@@ -181,14 +194,14 @@ func (a *NowPlayingPage) Route() controller.Route {
 
 var _ CanShowNowPlaying = (*NowPlayingPage)(nil)
 
-func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
+func (a *NowPlayingPage) OnSongChange(song, _ *mediaprovider.Track) {
+	a.nowPlaying = song
 	if a.imageLoadCancel != nil {
 		a.imageLoadCancel()
 	}
 	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
 	a.queueList.SetNowPlaying(a.nowPlayingID)
 
-	a.albumID = sharedutil.AlbumIDOrEmptyStr(song)
 	a.card.Update(song)
 	if song == nil {
 		a.card.SetCoverImage(nil)
@@ -203,15 +216,50 @@ func (a *NowPlayingPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Tr
 		}
 	})
 
+	if a.tabs != nil && a.tabs.SelectedIndex() == 1 /*lyrics*/ {
+		a.updateLyrics()
+	}
+}
+
+func (a *NowPlayingPage) updateLyrics() {
+	a.lyricLock.Lock()
+	defer a.lyricLock.Unlock()
+
+	if a.lyricFetchCancel != nil {
+		a.lyricFetchCancel()
+	}
+
+	if a.nowPlayingID == a.curLyricsID {
+		if a.nowPlayingID != "" {
+			// just need to sync the current time
+			a.lyricsViewer.OnSeeked(a.lastPlayPos)
+		}
+	}
+	if a.nowPlaying == nil {
+		a.lyricsViewer.SetLyrics(nil)
+		a.curLyricsID = ""
+		return
+	}
+	a.curLyricsID = a.nowPlayingID
 	if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
-		go func() {
-			if lyrics, err := lp.GetLyrics(song); err == nil {
-				a.lyricsViewer.SetLyrics(lyrics)
-			} else {
+		ctx, cancel := context.WithCancel(context.Background())
+		a.lyricFetchCancel = cancel
+		go func(ctx context.Context) {
+			var lyrics *mediaprovider.Lyrics
+			var err error
+			if lyrics, err = lp.GetLyrics(a.nowPlaying); err != nil {
 				log.Printf("Error fetching lyrics: %v", err)
-				a.lyricsViewer.SetLyrics(nil)
 			}
-		}()
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				a.lyricLock.Lock()
+				a.lyricsViewer.SetLyrics(lyrics)
+				a.lyricsViewer.OnSeeked(a.lastPlayPos)
+				a.lyricLock.Unlock()
+			}
+		}(ctx)
 	} else {
 		a.lyricsViewer.SetLyrics(nil)
 	}
@@ -242,7 +290,13 @@ func (s *nowPlayingPageState) Restore() Page {
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)
 
 func (a *NowPlayingPage) OnPlayTimeUpdate(curTime, _ float64, seeked bool) {
+	a.lastPlayPos = curTime
 	a.formatStatusLine()
+	if a.tabs == nil || a.tabs.SelectedIndex() != 1 /*lyrics*/ {
+		return
+	}
+	a.lyricLock.Lock()
+	defer a.lyricLock.Unlock()
 	if seeked {
 		a.lyricsViewer.OnSeeked(curTime)
 	} else {
