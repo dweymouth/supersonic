@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/20after4/configdir"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
@@ -60,7 +59,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m := MainWindow{
 		App:    app,
 		Window: fyneApp.NewWindow(displayAppName),
-		theme:  theme.NewMyTheme(&app.Config.Theme, configdir.LocalConfig(appName, "themes")),
+		theme:  theme.NewMyTheme(&app.Config.Theme, app.ThemesDir()),
 	}
 
 	m.theme.NormalFont = app.Config.Application.FontNormalTTF

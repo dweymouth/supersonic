@@ -14,10 +14,8 @@ import (
 	"fyne.io/fyne/v2/app"
 )
 
-const configFile = "config.toml"
-
 func main() {
-	myApp, err := backend.StartupApp(res.AppName, res.DisplayName, res.AppVersionTag, configFile, res.LatestReleaseURL)
+	myApp, err := backend.StartupApp(res.AppName, res.DisplayName, res.AppVersionTag, res.LatestReleaseURL)
 	if err != nil {
 		log.Fatalf("fatal startup error: %v", err.Error())
 	}

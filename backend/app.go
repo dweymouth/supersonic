@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"time"
@@ -23,10 +24,13 @@ import (
 )
 
 const (
+	configFile          = "config.toml"
+	portableDir         = "supersonic_portable"
 	sessionDir          = "session"
 	sessionLockFile     = ".lock"
 	sessionActivateFile = ".activate"
 	savedQueueFile      = "saved_queue.json"
+	themesDir           = "themes"
 )
 
 var (
@@ -49,7 +53,9 @@ type App struct {
 
 	appName       string
 	appVersionTag string
-	configFile    string
+	configDir     string
+	cacheDir      string
+	portableMode  bool
 
 	isFirstLaunch bool // set by config file reader
 	bgrndCtx      context.Context
@@ -62,8 +68,22 @@ func (a *App) VersionTag() string {
 	return a.appVersionTag
 }
 
-func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleaseURL string) (*App, error) {
-	sessionPath := configdir.LocalConfig(appName, sessionDir)
+func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string) (*App, error) {
+	var confDir, cacheDir string
+	portableMode := false
+	if p := checkPortablePath(); p != "" {
+		confDir = path.Join(p, "config")
+		cacheDir = path.Join(p, "cache")
+		portableMode = true
+	} else {
+		confDir = configdir.LocalConfig(appName)
+		cacheDir = configdir.LocalCache(appName)
+	}
+	// ensure config and cache dirs exist
+	configdir.MakePath(confDir)
+	configdir.MakePath(cacheDir)
+
+	sessionPath := path.Join(confDir, sessionDir)
 	if _, err := os.Stat(path.Join(sessionPath, sessionLockFile)); err == nil {
 		log.Println("Another instance is running. Reactivating it...")
 		reactivateFile := path.Join(sessionPath, sessionActivateFile)
@@ -80,10 +100,16 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 	}
 
 	log.Printf("Starting %s...", appName)
-	log.Printf("Using config dir: %s", configdir.LocalConfig(appName))
-	log.Printf("Using cache dir: %s", configdir.LocalCache(appName))
+	log.Printf("Using config dir: %s", confDir)
+	log.Printf("Using cache dir: %s", cacheDir)
 
-	a := &App{appName: appName, appVersionTag: appVersionTag, configFile: configFile}
+	a := &App{
+		appName:       appName,
+		appVersionTag: appVersionTag,
+		configDir:     confDir,
+		cacheDir:      cacheDir,
+		portableMode:  portableMode,
+	}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 	a.readConfig()
 	a.startConfigWriter(a.bgrndCtx)
@@ -109,9 +135,9 @@ func StartupApp(appName, displayAppName, appVersionTag, configFile, latestReleas
 		return nil, err
 	}
 
-	a.ServerManager = NewServerManager(appName, a.Config)
+	a.ServerManager = NewServerManager(appName, a.Config, !portableMode /*use keyring*/)
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Scrobbling, &a.Config.Transcoding)
-	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, configdir.LocalCache(a.appName))
+	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, cacheDir)
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
@@ -132,9 +158,26 @@ func (a *App) IsFirstLaunch() bool {
 	return a.isFirstLaunch
 }
 
+func (a *App) IsPortableMode() bool {
+	return a.portableMode
+}
+
+func (a *App) ThemesDir() string {
+	return filepath.Join(a.configDir, themesDir)
+}
+
+func checkPortablePath() string {
+	if p, err := os.Executable(); err == nil {
+		pdirPath := path.Join(filepath.Dir(p), portableDir)
+		if s, err := os.Stat(pdirPath); err == nil && s.IsDir() {
+			return pdirPath
+		}
+	}
+	return ""
+}
+
 func (a *App) readConfig() {
-	configdir.MakePath(configdir.LocalConfig(a.appName))
-	cfgPath := a.configPath()
+	cfgPath := a.configFilePath()
 	var cfgExists bool
 	if _, err := os.Stat(cfgPath); err == nil {
 		cfgExists = true
@@ -145,9 +188,9 @@ func (a *App) readConfig() {
 		log.Printf("Error reading app config file: %v", err)
 		cfg = DefaultConfig(a.appVersionTag)
 		if cfgExists {
-			backupCfgName := fmt.Sprintf("%s.bak", a.configFile)
+			backupCfgName := fmt.Sprintf("%s.bak", configFile)
 			log.Printf("Config file may be malformed: copying to %s", backupCfgName)
-			_ = util.CopyFile(cfgPath, path.Join(configdir.LocalConfig(a.appName), backupCfgName))
+			_ = util.CopyFile(cfgPath, path.Join(a.configDir, backupCfgName))
 		}
 	}
 	a.Config = cfg
@@ -183,7 +226,7 @@ func (a *App) startConfigWriter(ctx context.Context) {
 			return
 		case <-tick.C:
 			if !reflect.DeepEqual(&a.lastWrittenCfg, a.Config) {
-				a.Config.WriteConfigFile(a.configPath())
+				a.Config.WriteConfigFile(a.configFilePath())
 				a.lastWrittenCfg = *a.Config
 			}
 		}
@@ -297,7 +340,7 @@ func (a *App) LoginToDefaultServer(string) error {
 }
 
 func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
-	path := path.Join(configdir.LocalCache(a.appName), serverID.String())
+	path := path.Join(a.cacheDir, serverID.String())
 	log.Printf("Deleting server cache dir: %s", path)
 	return os.RemoveAll(path)
 }
@@ -312,18 +355,18 @@ func (a *App) Shutdown() {
 				queueServer = qs
 			}
 		}
-		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, configdir.LocalConfig(a.appName, savedQueueFile), queueServer)
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
 	}
 	a.PlaybackManager.Stop() // will trigger scrobble check
 	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
 	a.cancel()
 	a.LocalPlayer.Destroy()
-	a.Config.WriteConfigFile(a.configPath())
-	os.RemoveAll(configdir.LocalConfig(a.appName, sessionDir))
+	a.Config.WriteConfigFile(a.configFilePath())
+	os.RemoveAll(path.Join(a.configDir, sessionDir))
 }
 
 func (a *App) LoadSavedPlayQueue() error {
-	queueFilePath := configdir.LocalConfig(a.appName, savedQueueFile)
+	queueFilePath := path.Join(a.configDir, savedQueueFile)
 	queue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
 	if err != nil {
 		return err
@@ -346,12 +389,12 @@ func (a *App) LoadSavedPlayQueue() error {
 }
 
 func (a *App) SaveConfigFile() {
-	a.Config.WriteConfigFile(a.configPath())
+	a.Config.WriteConfigFile(a.configFilePath())
 	a.lastWrittenCfg = *a.Config
 }
 
-func (a *App) configPath() string {
-	return path.Join(configdir.LocalConfig(a.appName), a.configFile)
+func (a *App) configFilePath() string {
+	return path.Join(a.configDir, configFile)
 }
 
 func clamp(i, min, max int) int {

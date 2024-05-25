@@ -22,6 +22,7 @@ type ServerManager struct {
 	ServerID     uuid.UUID
 	Server       mediaprovider.MediaProvider
 
+	useKeyring        bool
 	prefetchCoverCB   func(string)
 	appName           string
 	config            *Config
@@ -31,8 +32,8 @@ type ServerManager struct {
 
 var ErrUnreachable = errors.New("server is unreachable")
 
-func NewServerManager(appName string, config *Config) *ServerManager {
-	return &ServerManager{appName: appName, config: config}
+func NewServerManager(appName string, config *Config, useKeyring bool) *ServerManager {
+	return &ServerManager{appName: appName, config: config, useKeyring: useKeyring}
 }
 
 func (s *ServerManager) SetPrefetchAlbumCoverCallback(cb func(string)) {
@@ -137,7 +138,9 @@ func (s *ServerManager) Logout(deletePassword bool) {
 }
 
 func (s *ServerManager) deleteServerPassword(serverID uuid.UUID) {
-	keyring.Delete(s.appName, s.ServerID.String())
+	if s.useKeyring {
+		keyring.Delete(s.appName, s.ServerID.String())
+	}
 }
 
 // Sets a callback that is invoked when a server is connected to.
@@ -151,11 +154,17 @@ func (s *ServerManager) OnLogout(cb func()) {
 }
 
 func (s *ServerManager) GetServerPassword(serverID uuid.UUID) (string, error) {
-	return keyring.Get(s.appName, serverID.String())
+	if s.useKeyring {
+		return keyring.Get(s.appName, serverID.String())
+	}
+	return "", errors.New("keyring not enabled")
 }
 
 func (s *ServerManager) SetServerPassword(server *ServerConfig, password string) error {
-	return keyring.Set(s.appName, server.ID.String(), password)
+	if s.useKeyring {
+		return keyring.Set(s.appName, server.ID.String(), password)
+	}
+	return errors.New("keyring not available")
 }
 
 func (s *ServerManager) connect(connection ServerConnection, password string) (mediaprovider.Server, error) {
