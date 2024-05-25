@@ -205,16 +205,15 @@ func (a *NowPlayingPage) OnSongChange(song, _ *mediaprovider.Track) {
 	a.card.Update(song)
 	if song == nil {
 		a.card.SetCoverImage(nil)
-		return
+	} else {
+		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, func(img image.Image, err error) {
+			if err != nil {
+				log.Printf("error loading cover art: %v\n", err)
+			} else {
+				a.card.SetCoverImage(img)
+			}
+		})
 	}
-
-	a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, func(img image.Image, err error) {
-		if err != nil {
-			log.Printf("error loading cover art: %v\n", err)
-		} else {
-			a.card.SetCoverImage(img)
-		}
-	})
 
 	if a.tabs != nil && a.tabs.SelectedIndex() == 1 /*lyrics*/ {
 		a.updateLyrics()
