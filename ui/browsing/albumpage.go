@@ -9,13 +9,13 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -104,8 +104,8 @@ func newAlbumPage(
 	a.contr.ConnectTracklistActionsWithReplayGainAlbum(a.tracklist)
 
 	a.container = container.NewBorder(
-		container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 15, PadBottom: 10}, a.header),
-		nil, nil, nil, container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadBottom: 15}, a.tracklist))
+		container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 15, BottomPadding: 10}, a.header),
+		nil, nil, nil, container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 15}, a.tracklist))
 
 	go a.load()
 	return a
@@ -279,10 +279,10 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	// TODO: there's got to be a way to make this less convoluted. Custom layout?
 	a.container = util.AddHeaderBackground(
 		container.NewBorder(nil, nil, a.cover, nil,
-			container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
+			container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
 				a.titleLabel,
 				container.NewVBox(
-					container.New(&layouts.VboxCustomPadding{ExtraPad: -12}, artistReleaseTypeLine, a.genreLabel, a.miscLabel),
+					container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-12), artistReleaseTypeLine, a.genreLabel, a.miscLabel),
 					container.NewVBox(
 						container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn, menuBtn),
 						container.NewHBox(util.NewHSpace(2), a.toggleFavButton),

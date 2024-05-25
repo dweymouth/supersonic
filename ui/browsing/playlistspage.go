@@ -307,7 +307,7 @@ func (s *savedPlaylistsPage) Restore() Page {
 
 func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
-	a.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
+	a.container = container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
 		container.NewBorder(
 			container.NewHBox(a.titleDisp, container.NewCenter(a.viewToggle), layout.NewSpacer(), searchVbox),
 			nil, nil, nil, initialView))

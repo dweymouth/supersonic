@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	"github.com/dweymouth/supersonic/res"
-	"github.com/dweymouth/supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -69,15 +68,15 @@ func (a *AboutDialog) buildMainTabContainer(version string) *fyne.Container {
 	ghUrl, _ := url.Parse(res.GithubURL)
 	kofiUrl, _ := url.Parse(res.KofiURL)
 	githubKofi := container.NewCenter(
-		container.New(&layouts.HboxCustomPadding{DisableThemePad: true, ExtraPad: -10},
+		container.New(layout.NewCustomPaddedHBoxLayout(-10),
 			widget.NewHyperlink("Github page", ghUrl),
 			widget.NewLabel("·"),
 			widget.NewHyperlink("Support the project", kofiUrl)),
 	)
 
-	return container.New(&layouts.CenterPadLayout{PadTopBottom: 10},
+	return container.New(&layout.CustomPaddedLayout{TopPadding: 10, BottomPadding: 10},
 		container.NewVBox(iconImage,
-			container.New(&layouts.VboxCustomPadding{ExtraPad: -10}, title, versionLbl, copyright, license, githubKofi)))
+			container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10), title, versionLbl, copyright, license, githubKofi)))
 }
 
 func (a *AboutDialog) licenseLabel(res *fyne.StaticResource) *widget.Label {
@@ -94,7 +93,7 @@ func (a *AboutDialog) buildCreditsContainer() fyne.CanvasObject {
 	freepikURL, _ := url.Parse("https://www.flaticon.com/authors/freepik")
 	appIconCredit := widget.NewLabel("The Supersonic app icon is a derivative of a work created by Piotr Siedlecki and placed in the public domain.")
 	appIconCredit.Wrapping = fyne.TextWrapWord
-	return container.New(&layouts.VboxCustomPadding{ExtraPad: -10},
+	return container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
 		widget.NewLabel("Major frameworks and modules used in this application include:"),
 		container.NewHBox(widget.NewHyperlink("Fyne toolkit", fyneURL), widget.NewLabel("BSD 3-Clause License")),
 		container.NewHBox(widget.NewHyperlink("go-subsonic", goSubsonicURL), widget.NewLabel("GPL v3 License")),

@@ -4,13 +4,14 @@ import (
 	"image"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -110,10 +111,10 @@ func (n *NowPlayingCard) onAddToPlaylist() {
 }
 
 func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
-	c := container.New(&layouts.MaxPadLayout{PadLeft: -4},
+	c := container.New(&layout.CustomPaddedLayout{LeftPadding: -4},
 		container.NewBorder(nil, nil, n.cover, nil,
-			container.New(&layouts.MaxPadLayout{PadTop: -2},
-				container.New(&layouts.VboxCustomPadding{ExtraPad: -13}, n.trackName, n.artistName, n.albumName))),
+			container.New(&layout.CustomPaddedLayout{TopPadding: -2},
+				container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-13), n.trackName, n.artistName, n.albumName))),
 	)
 	return widget.NewSimpleRenderer(c)
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
@@ -80,7 +79,7 @@ func (t *TracksPage) createContainer() {
 	playRandomVbox := container.NewVBox(layout.NewSpacer(), t.playRandom, layout.NewSpacer())
 	searchVbox := container.NewVBox(layout.NewSpacer(), t.searcher, layout.NewSpacer())
 	topRow := container.NewHBox(t.title, playRandomVbox, layout.NewSpacer(), searchVbox)
-	t.container = container.New(&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
+	t.container = container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
 		container.NewBorder(topRow, nil, nil, nil, t.tracklist))
 }
 

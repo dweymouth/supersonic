@@ -4,12 +4,12 @@ import (
 	"math"
 
 	"github.com/dweymouth/supersonic/res"
-	"github.com/dweymouth/supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -43,9 +43,7 @@ func NewStarRating() *StarRating {
 }
 
 func (s *StarRating) createContainer() {
-	s.container = container.New(&layouts.HboxCustomPadding{
-		DisableThemePad: true,
-	})
+	s.container = container.New(layout.NewCustomPaddedHBoxLayout(0))
 	var im *canvas.Image
 	for i := 0; i < 5; i++ {
 		if s.IsDisabled {

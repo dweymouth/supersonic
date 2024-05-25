@@ -135,7 +135,7 @@ func (l *ListHeader) TappedSecondary(e *fyne.PointEvent) {
 
 func (l *ListHeader) setupPopUpMenu() {
 	if l.popUpMenu == nil {
-		l.popUpMenu = container.New(&layouts.VboxCustomPadding{ExtraPad: -10})
+		l.popUpMenu = container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding() - 10))
 		for i, c := range l.columns {
 			if c.CanToggleVisible {
 				l.popUpMenu.Add(widget.NewCheck(c.Text, l.createOnChangedCallbk(i)))
@@ -258,7 +258,7 @@ func (c *colHeader) Refresh() {
 
 func (c *colHeader) CreateRenderer() fyne.WidgetRenderer {
 	if c.container == nil {
-		c.container = container.New(&layouts.HboxCustomPadding{DisableThemePad: true, ExtraPad: -8})
+		c.container = container.New(layout.NewCustomPaddedHBoxLayout(-8))
 		if c.columnCfg.Alignment != fyne.TextAlignLeading {
 			c.container.Add(layout.NewSpacer())
 		}

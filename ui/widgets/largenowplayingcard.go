@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 )
 
@@ -50,7 +49,7 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	n.cover.ScaleMode = canvas.ImageScaleFastest
 	// set up the layout
 	n.Content = n.cover
-	n.Caption = container.New(&layouts.VboxCustomPadding{ExtraPad: -13},
+	n.Caption = container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-13),
 		n.trackName,
 		n.artistName,
 		n.albumName,

@@ -8,7 +8,6 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
@@ -413,7 +412,7 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			tracklist.SetNowPlaying(a.nowPlayingID)
 			a.contr.ConnectTracklistActions(tracklist)
 			a.tracklistCtr = container.New(
-				&layouts.MaxPadLayout{PadLeft: 15, PadRight: 15, PadTop: 5, PadBottom: 15},
+				&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
 				tracklist)
 			a.container.Objects[0] = a.tracklistCtr
 			a.Refresh()

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/ui/layouts"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -71,7 +70,7 @@ func (a *AlbumInfoDialog) buildMainContainer(albumInfo *mediaprovider.AlbumInfo,
 	urlContainer := a.buildUrlContainer(albumInfo.LastFmUrl, albumInfo.MusicBrainzID)
 
 	return container.New(
-		&layouts.MaxPadLayout{PadLeft: 15, PadRight: 10, PadTop: 15, PadBottom: 10},
+		&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 10, TopPadding: 15, BottomPadding: 10},
 		container.NewVBox(
 			iconImage,
 			title,
@@ -111,7 +110,7 @@ func (a *AlbumInfoDialog) buildUrlContainer(lastFm, musicBrainzID string) *fyne.
 		}
 	}
 
-	urlContainer := container.New(&layouts.HboxCustomPadding{DisableThemePad: true, ExtraPad: -10})
+	urlContainer := container.New(layout.NewCustomPaddedHBoxLayout(-10))
 	for index, url := range urls {
 		if index > 0 {
 			urlContainer.Add(widget.NewLabel("·"))
