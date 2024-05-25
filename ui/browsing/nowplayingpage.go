@@ -70,6 +70,7 @@ type nowPlayingPageState struct {
 	mp       mediaprovider.MediaProvider
 	canRate  bool
 	canShare bool
+	lrcLib   bool
 }
 
 func NewNowPlayingPage(
@@ -82,9 +83,10 @@ func NewNowPlayingPage(
 	mp mediaprovider.MediaProvider,
 	canRate bool,
 	canShare bool,
+	lrcLibEnabled bool,
 ) *NowPlayingPage {
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
-		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare,
+		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, lrcLib: lrcLibEnabled,
 	}}
 	a.ExtendBaseWidget(a)
 
@@ -275,27 +277,35 @@ func (a *NowPlayingPage) updateLyrics() {
 		return
 	}
 	a.curLyricsID = a.nowPlayingID
+	ctx, cancel := context.WithCancel(context.Background())
+	a.lyricFetchCancel = cancel
+	go a.fetchLyrics(ctx, a.nowPlaying)
+}
+
+func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Track) {
+	var lyrics *mediaprovider.Lyrics
+	var err error
 	if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
-		ctx, cancel := context.WithCancel(context.Background())
-		a.lyricFetchCancel = cancel
-		go func(ctx context.Context) {
-			var lyrics *mediaprovider.Lyrics
-			var err error
-			if lyrics, err = lp.GetLyrics(a.nowPlaying); err != nil {
-				log.Printf("Error fetching lyrics: %v", err)
-			}
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				a.lyricLock.Lock()
-				a.lyricsViewer.SetLyrics(lyrics)
-				a.lyricsViewer.OnSeeked(a.lastPlayPos)
-				a.lyricLock.Unlock()
-			}
-		}(ctx)
-	} else {
-		a.lyricsViewer.SetLyrics(nil)
+		if lyrics, err = lp.GetLyrics(a.nowPlaying); err != nil {
+			log.Printf("Error fetching lyrics: %v", err)
+		}
+	}
+	if lyrics == nil {
+		lyrics, err = backend.FetchLrcLibLyrics(song.Name, song.ArtistNames[0], song.Album, song.Duration)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}
+	select {
+	case <-ctx.Done():
+		return
+	default:
+		a.lyricLock.Lock()
+		a.lyricsViewer.SetLyrics(lyrics)
+		if lyrics != nil {
+			a.lyricsViewer.OnSeeked(a.lastPlayPos)
+		}
+		a.lyricLock.Unlock()
 	}
 }
 
@@ -352,7 +362,7 @@ func (s *nowPlayingPageState) Restore() Page {
 		page.Reload()
 		return page
 	}
-	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.mp, s.canRate, s.canShare)
+	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.mp, s.canRate, s.canShare, s.lrcLib)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)

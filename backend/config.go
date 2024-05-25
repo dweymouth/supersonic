@@ -45,6 +45,7 @@ type AppConfig struct {
 	SaveQueueToServer           bool
 	DefaultPlaylistID           string
 	ShowTrackChangeNotification bool
+	EnableLrcLib                bool
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
@@ -159,6 +160,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			SavePlayQueue:               true,
 			SaveQueueToServer:           false,
 			ShowTrackChangeNotification: false,
+			EnableLrcLib:                true,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},
