@@ -32,21 +32,32 @@ type NowPlayingPage struct {
 
 	nowPlayingPageState
 
-	nowPlaying       *mediaprovider.Track
-	nowPlayingID     string
-	curLyricsID      string
-	queue            []*mediaprovider.Track
-	queueList        *widgets.PlayQueueList
-	lyricLock        sync.Mutex
-	lyricsViewer     *widgets.LyricsViewer
-	lyricFetchCancel context.CancelFunc
-	imageLoadCancel  context.CancelFunc
-	card             *widgets.LargeNowPlayingCard
-	statusLabel      *widget.Label
-	tabs             *container.AppTabs
-	totalTime        float64
-	lastPlayPos      float64
-	container        *fyne.Container
+	// volatile state
+	nowPlaying   *mediaprovider.Track
+	nowPlayingID string
+	curLyricsID  string // id of track currently shown in lyrics
+	curRelatedID string // id of track currrently used to populate related list
+	totalTime    float64
+	lastPlayPos  float64
+	queue        []*mediaprovider.Track
+	related      []*mediaprovider.Track
+
+	lyricLock   sync.Mutex
+	relatedLock sync.Mutex
+
+	// widgets for render
+	queueList    *widgets.PlayQueueList
+	relatedList  *widgets.PlayQueueList
+	lyricsViewer *widgets.LyricsViewer
+	card         *widgets.LargeNowPlayingCard
+	statusLabel  *widget.Label
+	tabs         *container.AppTabs
+	container    *fyne.Container
+
+	// cancel funcs for background fetch tasks
+	lyricFetchCancel   context.CancelFunc
+	imageLoadCancel    context.CancelFunc
+	relatedFetchCancel context.CancelFunc
 }
 
 type nowPlayingPageState struct {
@@ -56,6 +67,7 @@ type nowPlayingPageState struct {
 	sm       *backend.ServerManager
 	pm       *backend.PlaybackManager
 	im       *backend.ImageManager
+	mp       mediaprovider.MediaProvider
 	canRate  bool
 	canShare bool
 }
@@ -67,11 +79,12 @@ func NewNowPlayingPage(
 	sm *backend.ServerManager,
 	im *backend.ImageManager,
 	pm *backend.PlaybackManager,
+	mp mediaprovider.MediaProvider,
 	canRate bool,
 	canShare bool,
 ) *NowPlayingPage {
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
-		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, canRate: canRate, canShare: canShare,
+		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare,
 	}}
 	a.ExtendBaseWidget(a)
 
@@ -95,6 +108,7 @@ func NewNowPlayingPage(
 	}
 
 	a.queueList = widgets.NewPlayQueueList(a.im)
+	a.relatedList = widgets.NewPlayQueueList(a.im)
 	a.queueList.DisableRating = !canRate
 	a.queueList.DisableSharing = !canShare
 	a.queueList.OnReorderTracks = a.doSetNewTrackOrder
@@ -127,6 +141,17 @@ func NewNowPlayingPage(
 			a.card.SetDisplayedFavorite(fav)
 		}
 	}
+	a.relatedList.OnDownload = a.queueList.OnDownload
+	a.relatedList.OnShare = a.queueList.OnShare
+	a.relatedList.OnAddToPlaylist = a.queueList.OnAddToPlaylist
+	a.relatedList.OnShowArtistPage = a.queueList.OnShowArtistPage
+	a.relatedList.OnRemoveFromQueue = a.queueList.OnRemoveFromQueue
+	a.relatedList.OnSetRating = a.queueList.OnSetRating
+	a.relatedList.OnSetFavorite = a.queueList.OnSetFavorite
+	a.relatedList.OnPlayTrackAt = func(idx int) {
+		a.pm.LoadTracks(a.related, backend.Replace, false)
+		a.pm.PlayTrackAt(idx)
+	}
 
 	a.lyricsViewer = widgets.NewLyricsViewer()
 	a.statusLabel = widget.NewLabel("Stopped")
@@ -140,6 +165,8 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 		initialTab := 0
 		if a.conf.InitialView == "Lyrics" {
 			initialTab = 1
+		} else if a.conf.InitialView == "Related" {
+			initialTab = 2
 		}
 		_ = initialTab
 		paddedLayout := &layouts.PercentPadLayout{
@@ -150,6 +177,7 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 			container.NewTabItem("Play Queue",
 				container.NewBorder(layout.NewSpacer(), nil, nil, nil, a.queueList)),
 			container.NewTabItem("Lyrics", a.lyricsViewer),
+			container.NewTabItem("Related", a.relatedList),
 		)
 		a.tabs.SelectIndex(initialTab)
 		a.tabs.OnSelected = func(*container.TabItem) {
@@ -157,10 +185,14 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 			a.saveSelectedTab(idx)
 			if idx == 1 /*lyrics*/ {
 				a.updateLyrics()
+			} else if idx == 2 /*related*/ {
+				a.updateRelatedList()
 			}
 		}
 		if initialTab == 1 /*lyrics*/ {
 			a.updateLyrics()
+		} else if initialTab == 2 /*related*/ {
+			a.updateRelatedList()
 		}
 		mainContent := container.NewGridWithColumns(2,
 			container.New(paddedLayout, a.card),
@@ -201,6 +233,7 @@ func (a *NowPlayingPage) OnSongChange(song, _ *mediaprovider.Track) {
 	}
 	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
 	a.queueList.SetNowPlaying(a.nowPlayingID)
+	a.relatedList.SetNowPlaying(a.nowPlayingID)
 
 	a.card.Update(song)
 	if song == nil {
@@ -217,6 +250,8 @@ func (a *NowPlayingPage) OnSongChange(song, _ *mediaprovider.Track) {
 
 	if a.tabs != nil && a.tabs.SelectedIndex() == 1 /*lyrics*/ {
 		a.updateLyrics()
+	} else if a.tabs != nil && a.tabs.SelectedIndex() == 2 /*related*/ {
+		a.updateRelatedList()
 	}
 }
 
@@ -264,6 +299,40 @@ func (a *NowPlayingPage) updateLyrics() {
 	}
 }
 
+func (a *NowPlayingPage) updateRelatedList() {
+	a.relatedLock.Lock()
+	defer a.relatedLock.Unlock()
+
+	if a.relatedFetchCancel != nil {
+		a.relatedFetchCancel()
+	}
+	if a.curRelatedID == a.nowPlayingID {
+		return
+	}
+	a.curRelatedID = a.nowPlayingID
+	if a.nowPlayingID == "" {
+		a.relatedList.SetTracks(nil)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	a.relatedFetchCancel = cancel
+	go func(ctx context.Context) {
+		related, err := a.mp.GetSongRadio(a.nowPlayingID, 50)
+		if err != nil {
+			log.Println("failed to get similar tracks: %s", err.Error())
+		}
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			a.relatedLock.Lock()
+			a.related = related
+			a.relatedList.SetTracks(a.related)
+			a.relatedLock.Unlock()
+		}
+	}(ctx)
+}
+
 func (a *NowPlayingPage) OnPlayQueueChange() {
 	a.Reload()
 }
@@ -283,7 +352,7 @@ func (s *nowPlayingPageState) Restore() Page {
 		page.Reload()
 		return page
 	}
-	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.canRate, s.canShare)
+	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.mp, s.canRate, s.canShare)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)
@@ -334,6 +403,8 @@ func (a *NowPlayingPage) saveSelectedTab(tabNum int) {
 		tabName = "Play Queue"
 	case 1:
 		tabName = "Lyrics"
+	case 2:
+		tabName = "Related"
 	}
 	a.conf.InitialView = tabName
 }
