@@ -22,6 +22,7 @@ const (
 	ColorNameListHeader     fyne.ThemeColorName = "ListHeader"
 	ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
 	ColorNamePageHeader     fyne.ThemeColorName = "PageHeader"
+	ColorNameInactiveLyric  fyne.ThemeColorName = "InactiveLyric"
 )
 
 var (
@@ -105,6 +106,18 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		defColors = m.defaultThemeFile.LightColors
 	}
 	switch name {
+	case ColorNameInactiveLyric:
+		// average the Foreground and Disabled colors
+		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
+		disabled := colorOrDefault(colors.Disabled, defColors.Disabled, theme.ColorNameDisabled, variant)
+		pr, pg, pb, pa := foreground.RGBA()
+		dr, dg, db, da := disabled.RGBA()
+
+		rAvg := uint8((pr/257 + dr/257) / 2)
+		gAvg := uint8((pg/257 + dg/257) / 2)
+		bAvg := uint8((pb/257 + db/257) / 2)
+		aAvg := uint8((pa/257 + da/257) / 2)
+		return color.RGBA{R: rAvg, G: gAvg, B: bAvg, A: aAvg}
 	case ColorNameListHeader:
 		return colorOrDefault(colors.ListHeader, defColors.ListHeader, name, variant)
 	case ColorNamePageBackground:

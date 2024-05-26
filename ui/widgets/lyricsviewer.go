@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	fynelyrics "github.com/dweymouth/fyne-lyrics"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/ui/theme"
 )
 
 type LyricsViewer struct {
@@ -50,6 +51,7 @@ func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 	if l.viewer == nil {
 		l.viewer = fynelyrics.NewLyricsViewer()
 		l.viewer.ActiveLyricPosition = fynelyrics.ActiveLyricPositionTopThird
+		l.viewer.InactiveLyricColorName = theme.ColorNameInactiveLyric
 	}
 	lines := make([]string, len(lyrics.Lines))
 	for i, line := range lyrics.Lines {
