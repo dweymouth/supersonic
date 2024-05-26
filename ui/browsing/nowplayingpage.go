@@ -223,12 +223,6 @@ func (a *NowPlayingPage) Save() SavedPage {
 		a.imageLoadCancel()
 	}
 	nps := a.nowPlayingPageState
-	a.nowPlayingID = ""
-	a.nowPlaying = nil
-	a.curLyricsID = ""
-	a.curRelatedID = ""
-	a.queue = nil
-	a.related = nil
 	a.pool.Release(util.WidgetTypeNowPlayingPage, a)
 	return &nps
 }
