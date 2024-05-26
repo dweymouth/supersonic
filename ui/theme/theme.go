@@ -110,14 +110,7 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		// average the Foreground and Disabled colors
 		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
 		disabled := colorOrDefault(colors.Disabled, defColors.Disabled, theme.ColorNameDisabled, variant)
-		pr, pg, pb, pa := foreground.RGBA()
-		dr, dg, db, da := disabled.RGBA()
-
-		rAvg := uint8((pr/257 + dr/257) / 2)
-		gAvg := uint8((pg/257 + dg/257) / 2)
-		bAvg := uint8((pb/257 + db/257) / 2)
-		aAvg := uint8((pa/257 + da/257) / 2)
-		return color.RGBA{R: rAvg, G: gAvg, B: bAvg, A: aAvg}
+		return blendColors(foreground, disabled, 0.33)
 	case ColorNameListHeader:
 		return colorOrDefault(colors.ListHeader, defColors.ListHeader, name, variant)
 	case ColorNamePageBackground:
@@ -249,6 +242,18 @@ func (m *MyTheme) getVariant() fyne.ThemeVariant {
 		return theme.VariantLight
 	}
 	return fyne.CurrentApp().Settings().ThemeVariant()
+}
+
+func blendColors(a, b color.Color, fractionA float64) color.Color {
+	ra, ga, ba, aa := a.RGBA()
+	rb, gb, bb, ab := b.RGBA()
+
+	fractionB := 1 - fractionA
+	rAvg := uint8(float64(ra/257)*fractionA + float64(rb/257)*fractionB)
+	gAvg := uint8(float64(ga/257)*fractionA + float64(gb/257)*fractionB)
+	bAvg := uint8(float64(ba/257)*fractionA + float64(bb/257)*fractionB)
+	aAvg := uint8(float64(aa/257)*fractionA + float64(ab/257)*fractionB)
+	return color.RGBA{R: rAvg, G: gAvg, B: bAvg, A: aAvg}
 }
 
 func readTTFFile(filepath string) ([]byte, error) {
