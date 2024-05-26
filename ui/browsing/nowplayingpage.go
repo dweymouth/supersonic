@@ -86,6 +86,10 @@ func NewNowPlayingPage(
 	canShare bool,
 	lrcLibEnabled bool,
 ) *NowPlayingPage {
+	if page, ok := pool.Obtain(util.WidgetTypeNowPlayingPage).(*NowPlayingPage); ok && page != nil {
+		page.Reload()
+		return page
+	}
 	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
 		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, lrcLib: lrcLibEnabled,
 	}}
@@ -96,7 +100,6 @@ func NewNowPlayingPage(
 	pm.OnStopped(a.formatStatusLine)
 
 	a.card = widgets.NewLargeNowPlayingCard()
-	a.card.DisableRating = !canRate
 	a.card.OnAlbumNameTapped = func() {
 		contr.NavigateTo(controller.AlbumRoute(sharedutil.AlbumIDOrEmptyStr(a.nowPlaying)))
 	}
@@ -112,8 +115,6 @@ func NewNowPlayingPage(
 
 	a.queueList = widgets.NewPlayQueueList(a.im)
 	a.relatedList = widgets.NewPlayQueueList(a.im)
-	a.queueList.DisableRating = !canRate
-	a.queueList.DisableSharing = !canShare
 	a.queueList.OnReorderTracks = a.doSetNewTrackOrder
 	a.queueList.OnDownload = contr.ShowDownloadDialog
 	a.queueList.OnShare = func(tracks []*mediaprovider.Track) {
@@ -222,6 +223,12 @@ func (a *NowPlayingPage) Save() SavedPage {
 		a.imageLoadCancel()
 	}
 	nps := a.nowPlayingPageState
+	a.nowPlayingID = ""
+	a.nowPlaying = nil
+	a.curLyricsID = ""
+	a.curRelatedID = ""
+	a.queue = nil
+	a.related = nil
 	a.pool.Release(util.WidgetTypeNowPlayingPage, a)
 	return &nps
 }
@@ -362,6 +369,12 @@ func (a *NowPlayingPage) OnPlayQueueChange() {
 }
 
 func (a *NowPlayingPage) Reload() {
+	a.card.DisableRating = !a.canRate
+	a.queueList.DisableRating = !a.canRate
+	a.queueList.DisableSharing = !a.canShare
+	a.relatedList.DisableRating = !a.canRate
+	a.relatedList.DisableSharing = !a.canShare
+
 	a.queue = a.pm.GetPlayQueue()
 	a.queueList.SetTracks(a.queue)
 	a.totalTime = 0.0
@@ -372,10 +385,6 @@ func (a *NowPlayingPage) Reload() {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	if page := s.pool.Obtain(util.WidgetTypeNowPlayingPage).(*NowPlayingPage); page != nil {
-		page.Reload()
-		return page
-	}
 	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.mp, s.canRate, s.canShare, s.lrcLib)
 }
 
