@@ -52,6 +52,7 @@ type NowPlayingPage struct {
 	card         *widgets.LargeNowPlayingCard
 	statusLabel  *widget.Label
 	tabs         *container.AppTabs
+	tabLoading   *widgets.LoadingDots
 	container    *fyne.Container
 
 	// cancel funcs for background fetch tasks
@@ -191,6 +192,7 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 				a.updateRelatedList()
 			}
 		}
+		a.tabLoading = widgets.NewLoadingDots()
 		if initialTab == 1 /*lyrics*/ {
 			a.updateLyrics()
 		} else if initialTab == 2 /*related*/ {
@@ -199,7 +201,9 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 		mainContent := container.NewGridWithColumns(2,
 			container.New(paddedLayout, a.card),
 			container.New(paddedLayout,
-				util.AddHeaderBackground(a.tabs)))
+				container.NewStack(
+					util.AddHeaderBackground(a.tabs),
+					container.NewCenter(a.tabLoading))))
 		a.container = container.NewStack(
 			mainContent,
 			container.NewVBox(
@@ -269,6 +273,7 @@ func (a *NowPlayingPage) updateLyrics() {
 		if a.nowPlayingID != "" {
 			// just need to sync the current time
 			a.lyricsViewer.OnSeeked(a.lastPlayPos)
+			return
 		}
 	}
 	if a.nowPlaying == nil {
@@ -279,6 +284,9 @@ func (a *NowPlayingPage) updateLyrics() {
 	a.curLyricsID = a.nowPlayingID
 	ctx, cancel := context.WithCancel(context.Background())
 	a.lyricFetchCancel = cancel
+	a.tabLoading.Start()
+	a.lyricsViewer.SetLyrics(nil)
+	a.lyricsViewer.Hide()
 	go a.fetchLyrics(ctx, a.nowPlaying)
 }
 
@@ -301,10 +309,12 @@ func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 		return
 	default:
 		a.lyricLock.Lock()
+		a.tabLoading.Stop()
 		a.lyricsViewer.SetLyrics(lyrics)
 		if lyrics != nil {
 			a.lyricsViewer.OnSeeked(a.lastPlayPos)
 		}
+		a.lyricsViewer.Show()
 		a.lyricLock.Unlock()
 	}
 }
@@ -326,10 +336,13 @@ func (a *NowPlayingPage) updateRelatedList() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	a.relatedFetchCancel = cancel
+	a.tabLoading.Start()
+	a.relatedList.Hide()
+	a.relatedList.SetTracks(nil)
 	go func(ctx context.Context) {
-		related, err := a.mp.GetSongRadio(a.nowPlayingID, 50)
+		related, err := a.mp.GetSongRadio(a.nowPlayingID, 30)
 		if err != nil {
-			log.Println("failed to get similar tracks: %s", err.Error())
+			log.Printf("failed to get similar tracks: %s", err.Error())
 		}
 		select {
 		case <-ctx.Done():
@@ -338,6 +351,8 @@ func (a *NowPlayingPage) updateRelatedList() {
 			a.relatedLock.Lock()
 			a.related = related
 			a.relatedList.SetTracks(a.related)
+			a.tabLoading.Stop()
+			a.relatedList.Show()
 			a.relatedLock.Unlock()
 		}
 	}(ctx)
