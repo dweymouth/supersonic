@@ -183,9 +183,12 @@ func (sd *SearchDialog) CreateRenderer() fyne.WidgetRenderer {
 	}
 	sd.content = container.NewStack(
 		container.NewBorder(
-			container.NewVBox(title, sd.searchEntry),
+			container.NewVBox(title,
+				container.New(layout.NewCustomPaddedLayout(0, 0, 2, 2),
+					sd.searchEntry)),
 			container.NewVBox(widget.NewSeparator(), bottomRow),
-			nil, nil, sd.list),
+			nil, nil,
+			container.New(layout.NewCustomPaddedLayout(0, 0, 4, 4), sd.list)),
 		container.NewCenter(sd.loadingDots),
 	)
 
