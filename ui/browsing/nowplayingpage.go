@@ -285,8 +285,10 @@ func (a *NowPlayingPage) updateLyrics() {
 	ctx, cancel := context.WithCancel(context.Background())
 	a.lyricFetchCancel = cancel
 	a.tabLoading.Start()
-	a.lyricsViewer.SetLyrics(nil)
-	a.lyricsViewer.Hide()
+	// set the widget to an empty (not nil) lyric during fetch
+	// to keep it from showing "Lyrics not available"
+	a.lyricsViewer.SetLyrics(&mediaprovider.Lyrics{Synced: true,
+		Lines: []mediaprovider.LyricLine{{Text: ""}}})
 	go a.fetchLyrics(ctx, a.nowPlaying)
 }
 
@@ -314,7 +316,6 @@ func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 		if lyrics != nil {
 			a.lyricsViewer.OnSeeked(a.lastPlayPos)
 		}
-		a.lyricsViewer.Show()
 		a.lyricLock.Unlock()
 	}
 }
@@ -337,7 +338,6 @@ func (a *NowPlayingPage) updateRelatedList() {
 	ctx, cancel := context.WithCancel(context.Background())
 	a.relatedFetchCancel = cancel
 	a.tabLoading.Start()
-	a.relatedList.Hide()
 	a.relatedList.SetTracks(nil)
 	go func(ctx context.Context) {
 		related, err := a.mp.GetSongRadio(a.nowPlayingID, 30)
@@ -352,7 +352,6 @@ func (a *NowPlayingPage) updateRelatedList() {
 			a.related = related
 			a.relatedList.SetTracks(a.related)
 			a.tabLoading.Stop()
-			a.relatedList.Show()
 			a.relatedLock.Unlock()
 		}
 	}(ctx)
