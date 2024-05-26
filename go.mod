@@ -1,6 +1,6 @@
 module github.com/dweymouth/supersonic
 
-go 1.19
+go 1.21
 
 require (
 	fyne.io/fyne/v2 v2.5.0

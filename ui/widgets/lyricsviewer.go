@@ -50,7 +50,7 @@ func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 
 	if l.viewer == nil {
 		l.viewer = fynelyrics.NewLyricsViewer()
-		l.viewer.ActiveLyricPosition = fynelyrics.ActiveLyricPositionTopThird
+		l.viewer.ActiveLyricPosition = fynelyrics.ActiveLyricPositionMiddle
 		l.viewer.InactiveLyricColorName = theme.ColorNameInactiveLyric
 	}
 	lines := make([]string, len(lyrics.Lines))
