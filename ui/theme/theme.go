@@ -19,10 +19,12 @@ import (
 )
 
 const (
-	ColorNameListHeader     fyne.ThemeColorName = "ListHeader"
-	ColorNamePageBackground fyne.ThemeColorName = "PageBackground"
-	ColorNamePageHeader     fyne.ThemeColorName = "PageHeader"
-	ColorNameInactiveLyric  fyne.ThemeColorName = "InactiveLyric"
+	ColorNameListHeader        fyne.ThemeColorName = "ListHeader"
+	ColorNamePageBackground    fyne.ThemeColorName = "PageBackground"
+	ColorNamePageHeader        fyne.ThemeColorName = "PageHeader"
+	ColorNameInactiveLyric     fyne.ThemeColorName = "InactiveLyric"
+	ColorNameIconButton        fyne.ThemeColorName = "IconButton"
+	ColorNameHoveredIconButton fyne.ThemeColorName = "HoveredIconButton"
 )
 
 var (
@@ -111,6 +113,17 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
 		disabled := colorOrDefault(colors.Disabled, defColors.Disabled, theme.ColorNameDisabled, variant)
 		return blendColors(foreground, disabled, 0.33)
+	case ColorNameHoveredIconButton:
+		if variant == theme.VariantDark {
+			return color.White
+		}
+		return color.Black
+	case ColorNameIconButton:
+		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
+		if variant == theme.VariantDark {
+			return darkenColor(foreground, 0.05)
+		}
+		return brightenColor(foreground, 0.2)
 	case ColorNameListHeader:
 		return colorOrDefault(colors.ListHeader, defColors.ListHeader, name, variant)
 	case ColorNamePageBackground:
@@ -254,6 +267,44 @@ func blendColors(a, b color.Color, fractionA float64) color.Color {
 	bAvg := uint8(float64(ba/257)*fractionA + float64(bb/257)*fractionB)
 	aAvg := uint8(float64(aa/257)*fractionA + float64(ab/257)*fractionB)
 	return color.RGBA{R: rAvg, G: gAvg, B: bAvg, A: aAvg}
+}
+
+func brightenColor(c color.Color, fraction float64) color.Color {
+	r, g, b, a := c.RGBA()
+	r, g, b = brightenComponent(r, fraction), brightenComponent(g, fraction), brightenComponent(b, fraction)
+	return color.RGBA{
+		R: uint8(r >> 8),
+		G: uint8(g >> 8),
+		B: uint8(b >> 8),
+		A: uint8(a >> 8),
+	}
+}
+
+func darkenColor(c color.Color, fraction float64) color.Color {
+	r, g, b, a := c.RGBA()
+	r, g, b = darkenComponent(r, fraction), darkenComponent(g, fraction), darkenComponent(b, fraction)
+	return color.RGBA{
+		R: uint8(r >> 8),
+		G: uint8(g >> 8),
+		B: uint8(b >> 8),
+		A: uint8(a >> 8),
+	}
+}
+
+func brightenComponent(component uint32, fraction float64) uint32 {
+	brightened := component + uint32(float64(component)*fraction)
+	if brightened > 0xffff {
+		brightened = 0xffff
+	}
+	return brightened
+}
+
+func darkenComponent(component uint32, fraction float64) uint32 {
+	i := uint32(float64(component) * fraction)
+	if i > component {
+		return 0
+	}
+	return component - i
 }
 
 func readTTFFile(filepath string) ([]byte, error) {

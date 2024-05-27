@@ -12,45 +12,23 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
-var (
-	repeatThemedResource    = theme.NewThemedResource(myTheme.RepeatIcon)
-	repeatOneThemedResource = theme.NewThemedResource(myTheme.RepeatOneIcon)
-)
-
 // The "aux" controls for playback, positioned to the right
 // of the BottomPanel. Currently only volume control.
 type AuxControls struct {
 	widget.BaseWidget
 
 	VolumeControl *VolumeControl
-	loop          *miniButton
+	loop          *IconButton
 
 	container *fyne.Container
-}
-
-type miniButton struct {
-	widget.Button
-}
-
-func newMiniButton(icon fyne.Resource) *miniButton {
-	b := &miniButton{
-		Button: widget.Button{
-			Icon: icon,
-		},
-	}
-	b.ExtendBaseWidget(b)
-	return b
-}
-
-func (b *miniButton) MinSize() fyne.Size {
-	return fyne.NewSize(24, 24)
 }
 
 func NewAuxControls(initialVolume int) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
-		loop:          newMiniButton(myTheme.RepeatIcon),
+		loop:          NewIconButton(myTheme.RepeatIcon, nil),
 	}
+	a.loop.IconSize = IconButtonSizeSmaller
 	a.container = container.NewHBox(
 		layout.NewSpacer(),
 		container.NewVBox(
@@ -75,16 +53,15 @@ func (a *AuxControls) OnChangeLoopMode(f func()) {
 func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 	switch mode {
 	case backend.LoopAll:
-		a.loop.Icon = repeatThemedResource
-		repeatThemedResource.ColorName = theme.ColorNamePrimary
+		a.loop.Highlighted = true
+		a.loop.SetIcon(myTheme.RepeatIcon)
 	case backend.LoopOne:
-		a.loop.Icon = repeatOneThemedResource
-		repeatOneThemedResource.ColorName = theme.ColorNamePrimary
+		a.loop.Highlighted = true
+		a.loop.SetIcon(myTheme.RepeatOneIcon)
 	case backend.LoopNone:
-		a.loop.Importance = widget.MediumImportance
-		a.loop.Icon = myTheme.RepeatIcon
+		a.loop.Highlighted = false
+		a.loop.SetIcon(myTheme.RepeatIcon)
 	}
-	a.loop.Refresh()
 }
 
 type volumeSlider struct {
@@ -114,9 +91,7 @@ func (v *volumeSlider) Tapped(e *fyne.PointEvent) {
 }
 
 func (v *volumeSlider) MinSize() fyne.Size {
-	h := v.Slider.MinSize().Height
-	// give extra space for height to hack around mini button covering part of focus circle
-	return fyne.NewSize(v.Width, h+theme.Padding()*3)
+	return fyne.NewSize(v.Width, v.Slider.MinSize().Height)
 }
 
 func (v *volumeSlider) Scrolled(e *fyne.ScrollEvent) {
@@ -126,7 +101,7 @@ func (v *volumeSlider) Scrolled(e *fyne.ScrollEvent) {
 type VolumeControl struct {
 	widget.BaseWidget
 
-	icon   *TappableIcon
+	icon   *IconButton
 	slider *volumeSlider
 
 	OnSetVolume func(int)
@@ -140,8 +115,8 @@ type VolumeControl struct {
 func NewVolumeControl(initialVol int) *VolumeControl {
 	v := &VolumeControl{}
 	v.ExtendBaseWidget(v)
-	v.icon = NewTappableIcon(theme.VolumeUpIcon())
-	v.icon.OnTapped = v.toggleMute
+	v.icon = NewIconButton(theme.VolumeUpIcon(), v.toggleMute)
+	v.icon.IconSize = IconButtonSizeSmaller
 	v.slider = NewVolumeSlider(100)
 	v.lastVol = initialVol
 	v.slider.Step = 1
@@ -203,11 +178,10 @@ func (v *VolumeControl) invokeOnVolumeChange(vol int) {
 
 func (v *VolumeControl) updateIconForVolume(vol int) {
 	if vol <= 0 {
-		v.icon.Resource = theme.VolumeMuteIcon()
+		v.icon.SetIcon(theme.VolumeMuteIcon())
 	} else if vol < 50 {
-		v.icon.Resource = theme.VolumeDownIcon()
+		v.icon.SetIcon(theme.VolumeDownIcon())
 	} else {
-		v.icon.Resource = theme.VolumeUpIcon()
+		v.icon.SetIcon(theme.VolumeUpIcon())
 	}
-	v.icon.Refresh()
 }

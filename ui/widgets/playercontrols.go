@@ -83,9 +83,9 @@ type PlayerControls struct {
 	slider         *TrackPosSlider
 	curTimeLabel   *labelMinSize
 	totalTimeLabel *labelMinSize
-	prev           *widget.Button
-	playpause      *widget.Button
-	next           *widget.Button
+	prev           *IconButton
+	playpause      *IconButton
+	next           *IconButton
 	container      *fyne.Container
 
 	totalTime float64
@@ -127,15 +127,15 @@ func NewPlayerControls() *PlayerControls {
 		}
 	}
 
-	pc.prev = widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {})
-	pc.next = widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), func() {})
-	pc.playpause = widget.NewButtonWithIcon("", theme.MediaPlayIcon(), func() {})
+	pc.prev = NewIconButton(theme.MediaSkipPreviousIcon(), func() {})
+	pc.next = NewIconButton(theme.MediaSkipNextIcon(), func() {})
+	pc.playpause = NewIconButton(theme.MediaPlayIcon(), func() {})
+	pc.playpause.IconSize = IconButtonSizeBigger
 
-	buttons := container.NewHBox(pc.prev, pc.playpause, pc.next)
-	b := container.New(layout.NewCenterLayout(), buttons)
+	buttons := container.NewHBox(layout.NewSpacer(), pc.prev, pc.playpause, pc.next, layout.NewSpacer())
 
 	c := container.NewBorder(nil, nil, pc.curTimeLabel, pc.totalTimeLabel, pc.slider)
-	pc.container = container.NewVBox(c, b)
+	pc.container = container.New(layout.NewCustomPaddedVBoxLayout(0), c, buttons)
 
 	return pc
 }
