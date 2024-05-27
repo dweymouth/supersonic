@@ -86,13 +86,15 @@ func NewNowPlayingPage(
 	canShare bool,
 	lrcLibEnabled bool,
 ) *NowPlayingPage {
+	state := nowPlayingPageState{
+		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, lrcLib: lrcLibEnabled,
+	}
 	if page, ok := pool.Obtain(util.WidgetTypeNowPlayingPage).(*NowPlayingPage); ok && page != nil {
+		page.nowPlayingPageState = state
 		page.Reload()
 		return page
 	}
-	a := &NowPlayingPage{nowPlayingPageState: nowPlayingPageState{
-		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, lrcLib: lrcLibEnabled,
-	}}
+	a := &NowPlayingPage{nowPlayingPageState: state}
 	a.ExtendBaseWidget(a)
 
 	pm.OnPaused(a.formatStatusLine)
