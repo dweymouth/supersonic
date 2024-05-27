@@ -73,7 +73,8 @@ If you are running **Windows**, **Mac OS**, or a **Debian**-based Linux distro, 
 ## Build instructions (Linux)
 
 ### Ubuntu dependencies
-* ``sudo snap install --classic go``, and make sure the Go bin directory is in your `$PATH`
+* ``sudo snap install --classic go``
+* Make sure the Go bin directory is in your `$PATH` (`export PATH=~/go/bin:$PATH`)
 * ``sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev``
 
 ### Fedora dependencies
