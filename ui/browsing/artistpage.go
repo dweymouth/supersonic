@@ -128,6 +128,7 @@ func (a *ArtistPage) Save() SavedPage {
 		tl.Clear()
 		a.pool.Release(util.WidgetTypeTracklist, tl)
 	}
+	a.header.artistPage = nil
 	a.pool.Release(util.WidgetTypeArtistPageHeader, a.header)
 	if a.albumGrid != nil {
 		a.albumGrid.Clear()
@@ -320,7 +321,11 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), func() {
 		go a.artistPage.contr.PlayArtistDiscography(a.artistID, false /*shuffle*/)
 	})
-	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", myTheme.ShuffleIcon, a.artistPage.playArtistRadio)
+	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", myTheme.ShuffleIcon, func() {
+		// must not pass playArtistRadio func directly to NewButton
+		// because the artistPage bound to this header can change when reused
+		a.artistPage.playArtistRadio()
+	})
 
 	var pop *widget.PopUpMenu
 	a.menuBtn = widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
