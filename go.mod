@@ -6,7 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.5.0
 	github.com/20after4/configdir v0.1.1
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
-	github.com/dweymouth/fyne-lyrics v0.0.0-20240526154007-e993930580d1
+	github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64
 	github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645
 	github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee
 	github.com/dweymouth/go-subsonic v0.0.0-20240417012336-798603e9f3a3

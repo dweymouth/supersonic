@@ -78,8 +78,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1 h1:mGvOb3zxl4vCLv+dbf7JA6CAaM2UH/AGP1KX4DsJmTI=
 github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1/go.mod h1:ZNCLJfehvEf34B7BbLKjgpsL9lyW7q938w/GY1XgV4E=
-github.com/dweymouth/fyne-lyrics v0.0.0-20240526154007-e993930580d1 h1:U3ar+Af1r3anxzhZ69DgfpMeGJjHVnz5GQEFy9U6dmI=
-github.com/dweymouth/fyne-lyrics v0.0.0-20240526154007-e993930580d1/go.mod h1:3YrjFDHMlhCsSZ/OvmJCxWm9QHSgOVWZBxnraZz9Z7c=
+github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64 h1:RUIrnGY034rDMlcOui/daurwX5b+52KdUKhH9aXaDSg=
+github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64/go.mod h1:3YrjFDHMlhCsSZ/OvmJCxWm9QHSgOVWZBxnraZz9Z7c=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240528001024-2e495ffd5a3d h1:8obdXU9J1UEkESdcSF6HnAYwvLosqSsDtTNBOgnRfDk=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240528001024-2e495ffd5a3d/go.mod h1:1hsmV5qd8p1/Ek4fhltWFohcw/5n2Y71b7tQxHHpi08=
 github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645 h1:KzqSaQwG3HsTZQlEtkp0BeUy9vmYZ0rq0B15qIPSiBs=
