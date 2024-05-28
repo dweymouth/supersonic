@@ -84,6 +84,7 @@ func NewSearchDialog(im util.ImageFetcher, title, dismissBtn string, onSearched 
 			sr.Update(result)
 		},
 	)
+	sd.list.HideSeparators = true
 	return sd
 }
 

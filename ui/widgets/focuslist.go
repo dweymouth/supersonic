@@ -29,9 +29,10 @@ type FocusListRow interface {
 func NewFocusList(len func() int, create func() fyne.CanvasObject, update func(widget.GridWrapItemID, fyne.CanvasObject)) *FocusList {
 	g := &FocusList{
 		List: widget.List{
-			Length:     len,
-			CreateItem: create,
-			UpdateItem: update,
+			HideSeparators: true,
+			Length:         len,
+			CreateItem:     create,
+			UpdateItem:     update,
 		},
 		itemForIndex: make(map[int]FocusListRow),
 	}
