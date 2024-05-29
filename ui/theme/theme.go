@@ -25,6 +25,7 @@ const (
 	ColorNameInactiveLyric     fyne.ThemeColorName = "InactiveLyric"
 	ColorNameIconButton        fyne.ThemeColorName = "IconButton"
 	ColorNameHoveredIconButton fyne.ThemeColorName = "HoveredIconButton"
+	ColorNameNowPlayingPanel   fyne.ThemeColorName = "NowPlayingPanel"
 )
 
 var (
@@ -124,6 +125,10 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 			return darkenColor(foreground, 0.05)
 		}
 		return brightenColor(foreground, 0.2)
+	case ColorNameNowPlayingPanel:
+		pageHeader := colorOrDefault(colors.PageHeader, defColors.PageHeader, name, variant).(color.RGBA)
+		pageHeader.A = 180
+		return pageHeader
 	case ColorNameListHeader:
 		return colorOrDefault(colors.ListHeader, defColors.ListHeader, name, variant)
 	case ColorNamePageBackground:

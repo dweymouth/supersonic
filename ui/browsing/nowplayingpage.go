@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"image/color"
 	"log"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/cenkalti/dominantcolor"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
@@ -21,6 +24,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -46,6 +50,7 @@ type NowPlayingPage struct {
 	relatedLock sync.Mutex
 
 	// widgets for render
+	background   *canvas.LinearGradient
 	queueList    *widgets.PlayQueueList
 	relatedList  *widgets.PlayQueueList
 	lyricsViewer *widgets.LyricsViewer
@@ -201,13 +206,18 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 		} else if initialTab == 2 /*related*/ {
 			a.updateRelatedList()
 		}
+		c := theme.Color(myTheme.ColorNamePageBackground)
+		a.background = canvas.NewLinearGradient(c, c, 0)
+
 		mainContent := container.NewGridWithColumns(2,
 			container.New(paddedLayout, a.card),
 			container.New(paddedLayout,
 				container.NewStack(
-					util.AddHeaderBackground(a.tabs),
+					util.AddHeaderBackgroundWithColorName(
+						a.tabs, myTheme.ColorNameNowPlayingPanel),
 					container.NewCenter(a.tabLoading))))
 		a.container = container.NewStack(
+			a.background,
 			mainContent,
 			container.NewVBox(
 				layout.NewSpacer(),
@@ -248,13 +258,7 @@ func (a *NowPlayingPage) OnSongChange(song, _ *mediaprovider.Track) {
 	if song == nil {
 		a.card.SetCoverImage(nil)
 	} else {
-		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, func(img image.Image, err error) {
-			if err != nil {
-				log.Printf("error loading cover art: %v\n", err)
-			} else {
-				a.card.SetCoverImage(img)
-			}
-		})
+		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, a.onImageLoaded)
 	}
 
 	if a.tabs != nil && a.tabs.SelectedIndex() == 1 /*lyrics*/ {
@@ -262,6 +266,31 @@ func (a *NowPlayingPage) OnSongChange(song, _ *mediaprovider.Track) {
 	} else if a.tabs != nil && a.tabs.SelectedIndex() == 2 /*related*/ {
 		a.updateRelatedList()
 	}
+}
+
+func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
+	if err != nil {
+		log.Printf("error loading cover art: %v\n", err)
+		return
+	}
+	a.card.SetCoverImage(img)
+	c := dominantcolor.Find(img)
+	if c == a.background.StartColor {
+		return
+	}
+
+	evenFrame := true
+	anim := canvas.NewColorRGBAAnimation(
+		a.background.StartColor, c, 50*time.Millisecond, func(c color.Color) {
+			// reduce fps to reduce mem allocations
+			if evenFrame {
+				a.background.StartColor = c
+				a.background.Refresh()
+			}
+			evenFrame = !evenFrame
+		})
+	anim.Start()
+
 }
 
 func (a *NowPlayingPage) updateLyrics() {
@@ -411,6 +440,17 @@ var _ fyne.Tappable = (*NowPlayingPage)(nil)
 
 func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
 	a.queueList.UnselectAll()
+}
+
+func (a *NowPlayingPage) Refresh() {
+	if a.background != nil {
+		c := theme.Color(myTheme.ColorNamePageBackground)
+		if c != a.background.EndColor {
+			a.background.EndColor = c
+			a.background.Refresh()
+		}
+	}
+	a.BaseWidget.Refresh()
 }
 
 func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.TrackReorderOp) {
