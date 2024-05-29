@@ -281,7 +281,7 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 
 	evenFrame := true
 	anim := canvas.NewColorRGBAAnimation(
-		a.background.StartColor, c, 50*time.Millisecond, func(c color.Color) {
+		a.background.StartColor, c, 75*time.Millisecond, func(c color.Color) {
 			// reduce fps to reduce mem allocations
 			if evenFrame {
 				a.background.StartColor = c
