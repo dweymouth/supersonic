@@ -204,7 +204,7 @@ func NewReorderTracksSubmenu(onReorderTracks func(sharedutil.TrackReorderOp)) *f
 }
 
 func AddHeaderBackground(obj fyne.CanvasObject) *fyne.Container {
-	return AddHeaderBackgroundWithColorName(obj, myTheme.ColorNamePageBackground)
+	return AddHeaderBackgroundWithColorName(obj, myTheme.ColorNamePageHeader)
 }
 
 func AddHeaderBackgroundWithColorName(obj fyne.CanvasObject, colorName fyne.ThemeColorName) *fyne.Container {
