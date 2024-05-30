@@ -287,7 +287,7 @@ func (t *Tracklist) VisibleColumns() []string {
 	var cols []string
 	for i := 2; i < len(t.visibleColumns); i++ {
 		if t.visibleColumns[i] {
-			cols = append(cols, string(colName(i)))
+			cols = append(cols, string(t.colName(i, false)))
 		}
 	}
 	return cols
@@ -511,7 +511,7 @@ func (t *Tracklist) doSortTracks() {
 }
 
 func (t *Tracklist) onSorted(sort ListHeaderSort) {
-	t.sorting = TracklistSort{ColumnName: colName(sort.ColNumber), SortOrder: sort.Type}
+	t.sorting = TracklistSort{ColumnName: t.colName(sort.ColNumber, true), SortOrder: sort.Type}
 	t.tracksMutex.Lock()
 	t.doSortTracks()
 	t.tracksMutex.Unlock()
@@ -737,7 +737,10 @@ func ColNumber(colName string) int {
 	return i
 }
 
-func colName(i int) string {
+func (t *Tracklist) colName(i int, adjustForExpandedRows bool) string {
+	if adjustForExpandedRows && !t.compactRows && i >= 2 {
+		i += 1 // adjust for off-by-one from combined title/artist column
+	}
 	if i < len(columns) {
 		return columns[i]
 	}
