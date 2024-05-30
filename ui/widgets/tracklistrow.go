@@ -2,13 +2,20 @@ package widgets
 
 import (
 	"fmt"
+	"image"
 	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/backend"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
+
+const tracklistThumbnailSize = 52
 
 type tracklistRowBase struct {
 	FocusListRowBase
@@ -50,6 +57,9 @@ type TracklistRow interface {
 
 type ExpandedTracklistRow struct {
 	tracklistRowBase
+
+	img         *ImagePlaceholder
+	imageLoader util.ThumbnailLoader
 }
 
 type CompactTracklistRow struct {
@@ -61,8 +71,36 @@ var (
 	_ TracklistRow = (*ExpandedTracklistRow)(nil)
 )
 
-func NewTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *ExpandedTracklistRow {
-	return nil
+func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, playingIcon fyne.CanvasObject) *ExpandedTracklistRow {
+	t := &ExpandedTracklistRow{}
+	t.ExtendBaseWidget(t)
+	t.tracklistRowBase.create(tracklist)
+	t.playingIcon = playingIcon
+	t.img = NewImagePlaceholder(myTheme.TracksIcon, tracklistThumbnailSize)
+
+	t.imageLoader = util.NewThumbnailLoader(im, func(i image.Image) {
+		t.img.SetImage(i, false)
+	})
+	t.imageLoader.OnBeforeLoad = func() {
+		t.img.SetImage(nil, false)
+	}
+
+	titleArtistImg := container.NewBorder(nil, nil,
+		container.NewPadded(t.img) /*left*/, nil,
+		container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-15),
+			t.name, t.artist))
+
+	v := makeVerticallyCentered // func alias
+	t.Content = container.New(tracklist.colLayout,
+		v(t.num), titleArtistImg, v(t.album), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.comment), v(t.bitrate), v(t.size), v(t.path))
+	return t
+}
+
+func (t *ExpandedTracklistRow) Update(tm *util.TrackListModel, rowNum int) {
+	if t.trackID != tm.Track.ID {
+		t.imageLoader.Load(tm.Track.CoverArtID)
+	}
+	t.tracklistRowBase.Update(tm, rowNum)
 }
 
 func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *CompactTracklistRow {
@@ -230,4 +268,8 @@ func (t *tracklistRowBase) TappedSecondary(e *fyne.PointEvent) {
 	if t.OnTappedSecondary != nil {
 		t.OnTappedSecondary(e, t.ListItemID)
 	}
+}
+
+func makeVerticallyCentered(obj fyne.CanvasObject) fyne.CanvasObject {
+	return container.NewVBox(layout.NewSpacer(), obj, layout.NewSpacer())
 }

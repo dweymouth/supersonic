@@ -21,8 +21,6 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
-const thumbnailSize = 52
-
 type PlayQueueList struct {
 	widget.BaseWidget
 
@@ -298,7 +296,7 @@ func NewPlayQueueListRow(playQueueList *PlayQueueList, im *backend.ImageManager,
 		playingIcon:   playingIcon,
 		playQueueList: playQueueList,
 		num:           widget.NewLabel(""),
-		cover:         NewImagePlaceholder(myTheme.TracksIcon, thumbnailSize),
+		cover:         NewImagePlaceholder(myTheme.TracksIcon, tracklistThumbnailSize),
 		title:         util.NewTruncatingLabel(),
 		artist:        NewMultiHyperlink(),
 		time:          util.NewTrailingAlignLabel(),
