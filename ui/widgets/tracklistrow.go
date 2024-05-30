@@ -46,6 +46,8 @@ type tracklistRowBase struct {
 	comment  *widget.Label
 	size     *widget.Label
 	path     *widget.Label
+
+	colHiddenPtrMap map[string]*bool
 }
 
 type TracklistRow interface {
@@ -94,8 +96,23 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 			t.name, t.artist))
 
 	v := makeVerticallyCentered // func alias
-	t.Content = container.New(tracklist.colLayout,
+	container := container.New(tracklist.colLayout,
 		v(t.num), titleArtistImg, v(t.album), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.comment), v(t.bitrate), v(t.size), v(t.path))
+	t.Content = container
+	var dummy bool
+	t.colHiddenPtrMap = map[string]*bool{
+		ColumnArtist:   &dummy, // artist column is never hidden
+		ColumnAlbum:    &container.Objects[2].(*fyne.Container).Hidden,
+		ColumnTime:     &container.Objects[3].(*fyne.Container).Hidden,
+		ColumnYear:     &container.Objects[4].(*fyne.Container).Hidden,
+		ColumnFavorite: &container.Objects[5].(*fyne.Container).Hidden,
+		ColumnRating:   &container.Objects[6].(*fyne.Container).Hidden,
+		ColumnPlays:    &container.Objects[7].(*fyne.Container).Hidden,
+		ColumnComment:  &container.Objects[8].(*fyne.Container).Hidden,
+		ColumnBitrate:  &container.Objects[9].(*fyne.Container).Hidden,
+		ColumnSize:     &container.Objects[10].(*fyne.Container).Hidden,
+		ColumnPath:     &container.Objects[11].(*fyne.Container).Hidden,
+	}
 	return t
 }
 
@@ -109,11 +126,26 @@ func (t *ExpandedTracklistRow) Update(tm *util.TrackListModel, rowNum int) {
 func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *CompactTracklistRow {
 	t := &CompactTracklistRow{}
 	t.ExtendBaseWidget(t)
+
 	t.tracklistRowBase.create(tracklist)
 	t.playingIcon = playingIcon
 
 	t.Content = container.New(tracklist.colLayout,
 		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.rating, t.plays, t.comment, t.bitrate, t.size, t.path)
+
+	t.colHiddenPtrMap = map[string]*bool{
+		ColumnArtist:   &t.artist.Hidden,
+		ColumnAlbum:    &t.album.Hidden,
+		ColumnTime:     &t.dur.Hidden,
+		ColumnYear:     &t.year.Hidden,
+		ColumnFavorite: &t.favorite.Hidden,
+		ColumnRating:   &t.rating.Hidden,
+		ColumnPlays:    &t.plays.Hidden,
+		ColumnComment:  &t.comment.Hidden,
+		ColumnBitrate:  &t.bitrate.Hidden,
+		ColumnSize:     &t.size.Hidden,
+		ColumnPath:     &t.path.Hidden,
+	}
 	return t
 }
 
@@ -234,24 +266,25 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 	}
 
 	// Show only columns configured to be visible
-	updateHidden := func(hiddenPtr *bool, colName string) {
+	updateHidden := func(colName string) {
 		colHidden := !t.tracklist.visibleColumns[ColNumber(colName)]
+		hiddenPtr := t.colHiddenPtrMap[colName]
 		if colHidden != *hiddenPtr {
 			*hiddenPtr = colHidden
 			changed = true
 		}
 	}
-	updateHidden(&t.artist.Hidden, ColumnArtist)
-	updateHidden(&t.album.Hidden, ColumnAlbum)
-	updateHidden(&t.dur.Hidden, ColumnTime)
-	updateHidden(&t.year.Hidden, ColumnYear)
-	updateHidden(&t.favorite.Hidden, ColumnFavorite)
-	updateHidden(&t.rating.Hidden, ColumnRating)
-	updateHidden(&t.plays.Hidden, ColumnPlays)
-	updateHidden(&t.comment.Hidden, ColumnComment)
-	updateHidden(&t.bitrate.Hidden, ColumnBitrate)
-	updateHidden(&t.size.Hidden, ColumnSize)
-	updateHidden(&t.path.Hidden, ColumnPath)
+	updateHidden(ColumnArtist)
+	updateHidden(ColumnAlbum)
+	updateHidden(ColumnTime)
+	updateHidden(ColumnYear)
+	updateHidden(ColumnFavorite)
+	updateHidden(ColumnRating)
+	updateHidden(ColumnPlays)
+	updateHidden(ColumnComment)
+	updateHidden(ColumnBitrate)
+	updateHidden(ColumnSize)
+	updateHidden(ColumnPath)
 
 	if changed {
 		t.Refresh()
