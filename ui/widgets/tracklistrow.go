@@ -15,7 +15,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
-const tracklistThumbnailSize = 52
+const tracklistThumbnailSize = 48
 
 type tracklistRowBase struct {
 	FocusListRowBase
@@ -49,7 +49,10 @@ type tracklistRowBase struct {
 }
 
 type TracklistRow interface {
+	fyne.CanvasObject
 	FocusListRow
+
+	SetOnTappedSecondary(func(_ *fyne.PointEvent, trackNum int))
 
 	TrackID() string
 	Update(model *util.TrackListModel, rowNum int)
@@ -87,7 +90,7 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 
 	titleArtistImg := container.NewBorder(nil, nil,
 		container.NewPadded(t.img) /*left*/, nil,
-		container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-15),
+		container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-16),
 			t.name, t.artist))
 
 	v := makeVerticallyCentered // func alias
@@ -138,6 +141,9 @@ func (t *tracklistRowBase) create(tracklist *Tracklist) {
 	t.path = util.NewTruncatingLabel()
 }
 
+func (t *tracklistRowBase) SetOnTappedSecondary(f func(*fyne.PointEvent, int)) {
+	t.OnTappedSecondary = f
+}
 func (t *tracklistRowBase) TrackID() string {
 	return t.trackID
 }

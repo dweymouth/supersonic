@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -79,6 +80,8 @@ type TracklistOptions struct {
 type Tracklist struct {
 	widget.BaseWidget
 
+	compactRows bool
+
 	Options TracklistOptions
 
 	// user action callbacks
@@ -118,16 +121,22 @@ type Tracklist struct {
 	container         *fyne.Container
 }
 
-func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
-	t := &Tracklist{visibleColumns: make([]bool, numColumns)}
+func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCompactRows bool) *Tracklist {
+	t := &Tracklist{visibleColumns: make([]bool, numColumns), compactRows: useCompactRows}
 	t.ExtendBaseWidget(t)
 
 	if len(tracks) > 0 {
 		t._setTracks(tracks)
 	}
 
-	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1})
+	// #, Title/Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
+	colWidths := []float32{40, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
+	if useCompactRows {
+		// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
+		colWidths = []float32{40, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
+	}
+
+	t.colLayout = layouts.NewColumnsLayout(colWidths)
 	t.buildHeader()
 	t.hdr.OnColumnSortChanged = t.onSorted
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
@@ -144,17 +153,22 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 	t.list = NewFocusList(
 		t.lenTracks,
 		func() fyne.CanvasObject {
-			tr := NewCompactTracklistRow(t, playingIcon)
-			tr.OnTapped = func() {
-				t.onSelectTrack(tr.ListItemID)
+			var tr TracklistRow
+			if t.compactRows {
+				tr = NewCompactTracklistRow(t, playingIcon)
+			} else {
+				tr = NewExpandedTracklistRow(t, im, playingIcon)
 			}
-			tr.OnTappedSecondary = t.onShowContextMenu
-			tr.OnDoubleTapped = func() {
-				t.onPlayTrackAt(tr.ListItemID)
-			}
-			tr.OnFocusNeighbor = func(up bool) {
-				t.list.FocusNeighbor(tr.ListItemID, up)
-			}
+			tr.SetOnTapped(func() {
+				t.onSelectTrack(tr.ItemID())
+			})
+			tr.SetOnTappedSecondary(t.onShowContextMenu)
+			tr.SetOnDoubleTapped(func() {
+				t.onPlayTrackAt(tr.ItemID())
+			})
+			tr.SetOnFocusNeighbor(func(up bool) {
+				t.list.FocusNeighbor(tr.ItemID(), up)
+			})
 			return tr
 		},
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
@@ -199,21 +213,31 @@ func (t *Tracklist) Scroll(amount float32) {
 }
 
 func (t *Tracklist) buildHeader() {
-	t.hdr = NewListHeader([]ListColumn{
-		{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
-		{Text: "Title", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true},
-		{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: "Comment", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		t.colLayout)
+	cols := []ListColumn{{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}
+	if t.compactRows {
+		cols = append(cols,
+			ListColumn{Text: "Title", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+			ListColumn{Text: "Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		)
+	} else {
+		cols = append(cols,
+			ListColumn{Text: "   Title / Aritst", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		)
+	}
+	cols = append(cols,
+		ListColumn{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		ListColumn{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		ListColumn{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		ListColumn{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true},
+		ListColumn{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		ListColumn{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		ListColumn{Text: "Comment", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+		ListColumn{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		ListColumn{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
+		ListColumn{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
+	)
+
+	t.hdr = NewListHeader(cols, t.colLayout)
 }
 
 // Gets the track at the given index. Thread-safe.
@@ -230,15 +254,30 @@ func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
 func (t *Tracklist) SetVisibleColumns(cols []string) {
 	t.visibleColumns[0] = true
 	t.visibleColumns[1] = true
-	for i := 2; i < len(t.visibleColumns); i++ {
-		t.visibleColumns[i] = false
+	if !t.compactRows {
+		// hard-code artist column to visible since it's part of title col
+		t.visibleColumns[2] = true
+	}
+
+	l := len(t.visibleColumns)
+	if !t.compactRows {
+		l-- // expanded rows have one fewer column due to merged title/artist
+	}
+	for i := 2; i < l; i++ {
 		t.hdr.SetColumnVisible(i, false)
 	}
 	for _, col := range cols {
 		if num := ColNumber(col); num < 0 {
 			log.Printf("Unknown tracklist column %q", col)
 		} else {
+			if num == 2 && !t.compactRows {
+				// Artist column is hard-coded visible (part of title), skip
+				continue
+			}
 			t.visibleColumns[num] = true
+			if !t.compactRows && num >= 3 {
+				num -= 1 // shift cols by 1 to account for Title/Artist combined col
+			}
 			t.hdr.SetColumnVisible(num, true)
 		}
 	}
@@ -258,6 +297,9 @@ func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
 	if colNum >= len(t.visibleColumns) {
 		log.Printf("error: Tracklist.SetColumnVisible: column index %d out of range", colNum)
 		return
+	}
+	if !t.compactRows && colNum >= 2 {
+		colNum++ // account for off-by-one from merged title/artist column
 	}
 	t.visibleColumns[colNum] = vis
 	t.list.Refresh()

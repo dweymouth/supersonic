@@ -90,7 +90,7 @@ func newAlbumPage(
 		a.tracklist = t.(*widgets.Tracklist)
 		a.tracklist.Reset()
 	} else {
-		a.tracklist = widgets.NewTracklist(nil)
+		a.tracklist = widgets.NewTracklist(nil, a.im, true)
 	}
 	a.tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 	a.tracklist.SetSorting(sort)
@@ -122,7 +122,7 @@ func (a *AlbumPage) Save() SavedPage {
 	a.header.page = nil
 	a.pool.Release(util.WidgetTypeAlbumPageHeader, a.header)
 	a.tracklist.Clear()
-	a.pool.Release(util.WidgetTypeTracklist, a.tracklist)
+	a.pool.Release(util.WidgetTypeCompactTracklist, a.tracklist)
 	return &s
 }
 
