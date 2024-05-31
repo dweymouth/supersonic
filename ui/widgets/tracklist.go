@@ -16,6 +16,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
@@ -100,15 +101,25 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCompactRows bool) *Tracklist {
+	playIcon := theme.NewThemedResource(theme.MediaPlayIcon())
+	playIcon.ColorName = theme.ColorNamePrimary
+
 	t := &Tracklist{compactRows: useCompactRows}
+	t.ExtendBaseWidget(t)
 	t.columns = ExpandedTracklistRowColumns
 	colWidths := ExpandedTracklistRowColumnWidths
+	var playingIcon fyne.CanvasObject
 	if useCompactRows {
 		t.columns = CompactTracklistRowColumns
 		colWidths = CompactTracklistRowColumnWidths
+		playingIcon = container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(playIcon)))
+	} else {
+		playIconImg := canvas.NewImageFromResource(playIcon)
+		playIconImg.FillMode = canvas.ImageFillContain
+		playIconImg.SetMinSize(fyne.NewSquareSize(theme.IconInlineSize() * 1.5))
+		playingIcon = container.NewCenter(playIconImg)
 	}
 	t.visibleColumns = make([]bool, len(t.columns))
-	t.ExtendBaseWidget(t)
 
 	if len(tracks) > 0 {
 		t._setTracks(tracks)
@@ -124,10 +135,6 @@ func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCo
 			t.OnColumnVisibilityMenuShown(pop)
 		}
 	}
-
-	playIcon := theme.NewThemedResource(theme.MediaPlayIcon())
-	playIcon.ColorName = theme.ColorNamePrimary
-	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(playIcon)))
 
 	t.list = NewFocusList(
 		t.lenTracks,

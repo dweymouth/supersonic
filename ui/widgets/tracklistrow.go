@@ -86,6 +86,10 @@ type tracklistRowBase struct {
 	// set by extending widget
 	playingIcon fyne.CanvasObject
 
+	// when replacing the content of col 0 with playing icon,
+	// the original content is saved here for resetting
+	originalNumColContent fyne.CanvasObject
+
 	// internal state
 	tracklist  *Tracklist
 	trackNum   int
@@ -108,6 +112,7 @@ type tracklistRowBase struct {
 	size     *widget.Label
 	path     *widget.Label
 
+	// must be injected by extending widget
 	setColVisibility func(int, bool) bool
 }
 
@@ -303,9 +308,10 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 
 		if isPlaying {
+			t.originalNumColContent = t.Content.(*fyne.Container).Objects[0]
 			t.Content.(*fyne.Container).Objects[0] = t.playingIcon
 		} else {
-			t.Content.(*fyne.Container).Objects[0] = t.num
+			t.Content.(*fyne.Container).Objects[0] = t.originalNumColContent
 		}
 		changed = true
 	}
