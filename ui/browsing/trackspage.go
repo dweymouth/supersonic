@@ -38,12 +38,13 @@ type tracksPageState struct {
 	contr      *controller.Controller
 	conf       *backend.TracksPageConfig
 	mp         mediaprovider.MediaProvider
+	im         *backend.ImageManager
 	canRate    bool
 	canShare   bool
 }
 
-func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, pool *util.WidgetPool, mp mediaprovider.MediaProvider) *TracksPage {
-	t := &TracksPage{tracksPageState: tracksPageState{contr: contr, conf: conf, widgetPool: pool, mp: mp}}
+func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, pool *util.WidgetPool, mp mediaprovider.MediaProvider, im *backend.ImageManager) *TracksPage {
+	t := &TracksPage{tracksPageState: tracksPageState{contr: contr, conf: conf, widgetPool: pool, mp: mp, im: im}}
 	t.ExtendBaseWidget(t)
 
 	t.tracklist = t.obtainTracklist()
@@ -175,7 +176,7 @@ func (t *TracksPage) Save() SavedPage {
 }
 
 func (s *tracksPageState) Restore() Page {
-	t := NewTracksPage(s.contr, s.conf, s.widgetPool, s.mp)
+	t := NewTracksPage(s.contr, s.conf, s.widgetPool, s.mp, s.im)
 	t.searchText = s.searchText
 	if t.searchText != "" {
 		t.searcher.Entry.Text = t.searchText
@@ -194,5 +195,5 @@ func (t *TracksPage) obtainTracklist() *widgets.Tracklist {
 		tracklist.Reset()
 		return tracklist
 	}
-	return widgets.NewTracklist(nil)
+	return widgets.NewTracklist(nil, t.im, false)
 }

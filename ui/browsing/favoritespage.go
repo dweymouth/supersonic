@@ -397,7 +397,7 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 				tracklist.Reset()
 				tracklist.SetTracks(fav.Tracks)
 			} else {
-				tracklist = widgets.NewTracklist(fav.Tracks)
+				tracklist = widgets.NewTracklist(fav.Tracks, a.im, false)
 			}
 			tracklist.Options = widgets.TracklistOptions{AutoNumber: true}
 			_, canRate := a.mp.(mediaprovider.SupportsRating)

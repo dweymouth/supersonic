@@ -24,6 +24,11 @@ type FocusList struct {
 type FocusListRow interface {
 	fyne.Focusable
 	ItemID() widget.ListItemID
+	SetItemID(widget.ListItemID)
+
+	SetOnTapped(func())
+	SetOnDoubleTapped(func())
+	SetOnFocusNeighbor(func(up bool))
 }
 
 func NewFocusList(len func() int, create func() fyne.CanvasObject, update func(widget.GridWrapItemID, fyne.CanvasObject)) *FocusList {
@@ -101,8 +106,24 @@ type FocusListRowBase struct {
 	selectionRect *canvas.Rectangle
 }
 
+func (l *FocusListRowBase) SetOnTapped(f func()) {
+	l.OnTapped = f
+}
+
+func (l *FocusListRowBase) SetOnDoubleTapped(f func()) {
+	l.OnDoubleTapped = f
+}
+
+func (l *FocusListRowBase) SetOnFocusNeighbor(f func(up bool)) {
+	l.OnFocusNeighbor = f
+}
+
 func (l *FocusListRowBase) ItemID() widget.ListItemID {
 	return l.ListItemID
+}
+
+func (l *FocusListRowBase) SetItemID(id widget.ListItemID) {
+	l.ListItemID = id
 }
 
 func (l *FocusListRowBase) EnsureUnfocused() {

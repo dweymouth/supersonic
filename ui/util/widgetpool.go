@@ -15,6 +15,7 @@ const (
 	WidgetTypeGridView
 	WidgetTypePlaylistPageHeader
 	WidgetTypeTracklist
+	WidgetTypeCompactTracklist
 	WidgetTypeNowPlayingPage
 
 	// keep at bottom

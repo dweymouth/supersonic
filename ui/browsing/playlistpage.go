@@ -79,7 +79,7 @@ func newPlaylistPage(
 		a.tracklist = tl.(*widgets.Tracklist)
 		a.tracklist.Reset()
 	} else {
-		a.tracklist = widgets.NewTracklist(nil)
+		a.tracklist = widgets.NewTracklist(nil, a.im, false)
 	}
 	a.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	a.tracklist.SetSorting(trackSort)

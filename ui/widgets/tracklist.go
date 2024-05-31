@@ -1,14 +1,13 @@
 package widgets
 
 import (
-	"fmt"
 	"log"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -17,34 +16,12 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
-
-const (
-	ColumnNum      = "Num"
-	ColumnTitle    = "Title"
-	ColumnArtist   = "Artist"
-	ColumnAlbum    = "Album"
-	ColumnTime     = "Time"
-	ColumnYear     = "Year"
-	ColumnFavorite = "Favorite"
-	ColumnRating   = "Rating"
-	ColumnPlays    = "Plays"
-	ColumnComment  = "Comment"
-	ColumnBitrate  = "Bitrate"
-	ColumnSize     = "Size"
-	ColumnPath     = "Path"
-
-	numColumns = 13
-)
-
-var columns = []string{
-	ColumnNum, ColumnTitle, ColumnArtist, ColumnAlbum, ColumnTime, ColumnYear, ColumnFavorite,
-	ColumnRating, ColumnPlays, ColumnComment, ColumnBitrate, ColumnSize, ColumnPath,
-}
 
 type TracklistSort struct {
 	SortOrder  SortType
@@ -80,6 +57,9 @@ type TracklistOptions struct {
 
 type Tracklist struct {
 	widget.BaseWidget
+
+	compactRows bool
+	columns     []TracklistColumn
 
 	Options TracklistOptions
 
@@ -120,17 +100,34 @@ type Tracklist struct {
 	container         *fyne.Container
 }
 
-func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
-	t := &Tracklist{visibleColumns: make([]bool, numColumns)}
+func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCompactRows bool) *Tracklist {
+	playIcon := theme.NewThemedResource(theme.MediaPlayIcon())
+	playIcon.ColorName = theme.ColorNamePrimary
+
+	t := &Tracklist{compactRows: useCompactRows}
 	t.ExtendBaseWidget(t)
+	t.columns = ExpandedTracklistRowColumns
+	colWidths := ExpandedTracklistRowColumnWidths
+	var playingIcon fyne.CanvasObject
+	if useCompactRows {
+		t.columns = CompactTracklistRowColumns
+		colWidths = CompactTracklistRowColumnWidths
+		playingIcon = container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(playIcon)))
+	} else {
+		playIconImg := canvas.NewImageFromResource(playIcon)
+		playIconImg.FillMode = canvas.ImageFillContain
+		playIconImg.SetMinSize(fyne.NewSquareSize(theme.IconInlineSize() * 1.5))
+		playingIcon = container.NewCenter(playIconImg)
+	}
+	t.visibleColumns = make([]bool, len(t.columns))
 
 	if len(tracks) > 0 {
 		t._setTracks(tracks)
 	}
 
-	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-	t.colLayout = layouts.NewColumnsLayout([]float32{40, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1})
-	t.buildHeader()
+	t.colLayout = layouts.NewColumnsLayout(colWidths)
+	t.hdr = NewListHeader(sharedutil.MapSlice(t.columns,
+		func(t TracklistColumn) ListColumn { return t.Col }), t.colLayout)
 	t.hdr.OnColumnSortChanged = t.onSorted
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
@@ -139,24 +136,25 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 		}
 	}
 
-	playIcon := theme.NewThemedResource(theme.MediaPlayIcon())
-	playIcon.ColorName = theme.ColorNamePrimary
-	playingIcon := container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(playIcon)))
-
 	t.list = NewFocusList(
 		t.lenTracks,
 		func() fyne.CanvasObject {
-			tr := NewTrackRow(t, playingIcon)
-			tr.OnTapped = func() {
-				t.onSelectTrack(tr.ListItemID)
+			var tr TracklistRow
+			if t.compactRows {
+				tr = NewCompactTracklistRow(t, playingIcon)
+			} else {
+				tr = NewExpandedTracklistRow(t, im, playingIcon)
 			}
-			tr.OnTappedSecondary = t.onShowContextMenu
-			tr.OnDoubleTapped = func() {
-				t.onPlayTrackAt(tr.ListItemID)
-			}
-			tr.OnFocusNeighbor = func(up bool) {
-				t.list.FocusNeighbor(tr.ListItemID, up)
-			}
+			tr.SetOnTapped(func() {
+				t.onSelectTrack(tr.ItemID())
+			})
+			tr.SetOnTappedSecondary(t.onShowContextMenu)
+			tr.SetOnDoubleTapped(func() {
+				t.onPlayTrackAt(tr.ItemID())
+			})
+			tr.SetOnFocusNeighbor(func(up bool) {
+				t.list.FocusNeighbor(tr.ItemID(), up)
+			})
 			return tr
 		},
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
@@ -171,10 +169,10 @@ func NewTracklist(tracks []*mediaprovider.Track) *Tracklist {
 			model := t.tracks[itemID]
 			t.tracksMutex.RUnlock()
 
-			tr := item.(*TrackRow)
+			tr := item.(TracklistRow)
 			t.list.SetItemForID(itemID, tr)
-			if tr.trackID != model.Track.ID || tr.ListItemID != itemID {
-				tr.ListItemID = itemID
+			if tr.TrackID() != model.Track.ID || tr.ItemID() != itemID {
+				tr.SetItemID(itemID)
 			}
 			i := -1 // signal that we want to display the actual track num.
 			if t.Options.AutoNumber {
@@ -200,24 +198,6 @@ func (t *Tracklist) Scroll(amount float32) {
 	t.list.ScrollToOffset(t.list.GetScrollOffset() + amount)
 }
 
-func (t *Tracklist) buildHeader() {
-	t.hdr = NewListHeader([]ListColumn{
-		{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
-		{Text: "Title", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true},
-		{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: "Comment", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		t.colLayout)
-}
-
 // Gets the track at the given index. Thread-safe.
 func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
 	t.tracksMutex.RLock()
@@ -232,12 +212,13 @@ func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
 func (t *Tracklist) SetVisibleColumns(cols []string) {
 	t.visibleColumns[0] = true
 	t.visibleColumns[1] = true
-	for i := 2; i < len(t.visibleColumns); i++ {
+
+	for i := 2; i < len(t.columns); i++ {
 		t.visibleColumns[i] = false
 		t.hdr.SetColumnVisible(i, false)
 	}
 	for _, col := range cols {
-		if num := ColNumber(col); num < 0 {
+		if num := t.ColNumber(col); num < 0 {
 			log.Printf("Unknown tracklist column %q", col)
 		} else {
 			t.visibleColumns[num] = true
@@ -250,7 +231,7 @@ func (t *Tracklist) VisibleColumns() []string {
 	var cols []string
 	for i := 2; i < len(t.visibleColumns); i++ {
 		if t.visibleColumns[i] {
-			cols = append(cols, string(colName(i)))
+			cols = append(cols, string(t.colName(i)))
 		}
 	}
 	return cols
@@ -275,13 +256,15 @@ func (t *Tracklist) Sorting() TracklistSort {
 func (t *Tracklist) SetSorting(sorting TracklistSort) {
 	if sorting.ColumnName == "" {
 		// nil case - reset current sort
-		if slices.Contains(columns, t.sorting.ColumnName) {
-			t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(t.sorting.ColumnName), Type: SortNone})
+		if slices.ContainsFunc(t.columns, func(c TracklistColumn) bool {
+			return c.Name == t.sorting.ColumnName
+		}) {
+			t.hdr.SetSorting(ListHeaderSort{ColNumber: t.ColNumber(t.sorting.ColumnName), Type: SortNone})
 		}
 		return
 	}
 	// actual sorting will be handled in callback from header
-	t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(sorting.ColumnName), Type: sorting.SortOrder})
+	t.hdr.SetSorting(ListHeaderSort{ColNumber: t.ColNumber(sorting.ColumnName), Type: sorting.SortOrder})
 }
 
 // Sets the currently playing track ID and updates the list rendering
@@ -471,7 +454,7 @@ func (t *Tracklist) doSortTracks() {
 }
 
 func (t *Tracklist) onSorted(sort ListHeaderSort) {
-	t.sorting = TracklistSort{ColumnName: colName(sort.ColNumber), SortOrder: sort.Type}
+	t.sorting = TracklistSort{ColumnName: t.colName(sort.ColNumber), SortOrder: sort.Type}
 	t.tracksMutex.Lock()
 	t.doSortTracks()
 	t.tracksMutex.Unlock()
@@ -689,205 +672,20 @@ func (t *Tracklist) lenTracks() int {
 	return len(t.tracks)
 }
 
-func ColNumber(colName string) int {
-	i := slices.Index(columns, colName)
+func (t *Tracklist) ColNumber(colName string) int {
+	i := slices.IndexFunc(t.columns, func(c TracklistColumn) bool {
+		return c.Name == colName
+	})
 	if i < 0 {
 		log.Printf("error: Tracklist: invalid column name %s", colName)
 	}
 	return i
 }
 
-func colName(i int) string {
-	if i < len(columns) {
-		return columns[i]
+func (t *Tracklist) colName(i int) string {
+	if i < len(t.columns) {
+		return t.columns[i].Name
 	}
 	log.Println("notReached: Tracklist.colName")
 	return ""
-}
-
-type TrackRow struct {
-	FocusListRowBase
-
-	// internal state
-	tracklist  *Tracklist
-	trackNum   int
-	trackID    string
-	isPlaying  bool
-	isFavorite bool
-	playCount  int
-
-	num      *widget.Label
-	name     *widget.RichText // for bold support
-	artist   *MultiHyperlink
-	album    *MultiHyperlink // for disabled support, if albumID is ""
-	dur      *widget.Label
-	year     *widget.Label
-	favorite *fyne.Container
-	rating   *StarRating
-	bitrate  *widget.Label
-	plays    *widget.Label
-	comment  *widget.Label
-	size     *widget.Label
-	path     *widget.Label
-
-	OnTappedSecondary func(e *fyne.PointEvent, trackIdx int)
-
-	playingIcon fyne.CanvasObject
-}
-
-func NewTrackRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *TrackRow {
-	t := &TrackRow{tracklist: tracklist, playingIcon: playingIcon}
-	t.ExtendBaseWidget(t)
-	t.num = util.NewTrailingAlignLabel()
-	t.name = util.NewTruncatingRichText()
-	t.artist = NewMultiHyperlink()
-	t.artist.OnTapped = tracklist.onArtistTapped
-	t.album = NewMultiHyperlink()
-	t.album.OnTapped = func(id string) { tracklist.onAlbumTapped(id) }
-	t.dur = util.NewTrailingAlignLabel()
-	t.year = util.NewTrailingAlignLabel()
-	favorite := NewFavoriteIcon()
-	favorite.OnTapped = t.toggleFavorited
-	t.favorite = container.NewCenter(favorite)
-	t.rating = NewStarRating()
-	t.rating.IsDisabled = t.tracklist.Options.DisableRating
-	t.rating.StarSize = 16
-	t.rating.OnRatingChanged = t.setTrackRating
-	t.plays = util.NewTrailingAlignLabel()
-	t.comment = util.NewTruncatingLabel()
-	t.bitrate = util.NewTrailingAlignLabel()
-	t.size = util.NewTrailingAlignLabel()
-	t.path = util.NewTruncatingLabel()
-
-	t.Content = container.New(tracklist.colLayout,
-		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.rating, t.plays, t.comment, t.bitrate, t.size, t.path)
-	return t
-}
-
-func (t *TrackRow) Update(tm *util.TrackListModel, rowNum int) {
-	changed := false
-	if tm.Selected != t.Selected {
-		t.Selected = tm.Selected
-		changed = true
-	}
-
-	// Update info that can change if this row is bound to
-	// a new track (*mediaprovider.Track)
-	tr := tm.Track
-	if tr.ID != t.trackID {
-		t.EnsureUnfocused()
-		t.trackID = tr.ID
-
-		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
-		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
-		t.album.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
-		t.dur.Text = util.SecondsToTimeString(float64(tr.Duration))
-		t.year.Text = strconv.Itoa(tr.Year)
-		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
-		t.comment.Text = tr.Comment
-		t.bitrate.Text = strconv.Itoa(tr.BitRate)
-		t.size.Text = util.BytesToSizeString(tr.Size)
-		t.path.Text = tr.FilePath
-		changed = true
-	}
-
-	// Update track num if needed
-	// (which can change based on bound *mediaprovider.Track or tracklist.AutoNumber)
-	if t.trackNum != rowNum {
-		discNum := -1
-		var str string
-		if rowNum < 0 {
-			rowNum = tr.TrackNumber
-			if t.tracklist.Options.ShowDiscNumber {
-				discNum = tr.DiscNumber
-			}
-		}
-		t.trackNum = rowNum
-		if discNum >= 0 {
-			str = fmt.Sprintf("%d.%02d", discNum, rowNum)
-		} else {
-			str = strconv.Itoa(rowNum)
-		}
-		t.num.Text = str
-		changed = true
-	}
-
-	// Update play count if needed
-	if tr.PlayCount != t.playCount {
-		t.playCount = tr.PlayCount
-		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
-		changed = true
-	}
-
-	// Render whether track is playing or not
-	if isPlaying := t.tracklist.nowPlayingID == tr.ID; isPlaying != t.isPlaying {
-		t.isPlaying = isPlaying
-		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
-
-		if isPlaying {
-			t.Content.(*fyne.Container).Objects[0] = t.playingIcon
-		} else {
-			t.Content.(*fyne.Container).Objects[0] = t.num
-		}
-		changed = true
-	}
-
-	// Update favorite column
-	if tr.Favorite != t.isFavorite {
-		t.isFavorite = tr.Favorite
-		t.favorite.Objects[0].(*FavoriteIcon).Favorite = tr.Favorite
-		changed = true
-	}
-
-	// Update rating column
-	if t.rating.Rating != tr.Rating {
-		t.rating.Rating = tr.Rating
-		t.rating.Refresh()
-	}
-	if t.rating.IsDisabled != t.tracklist.Options.DisableRating {
-		t.rating.IsDisabled = t.tracklist.Options.DisableRating
-		t.rating.Refresh()
-	}
-
-	// Show only columns configured to be visible
-	updateHidden := func(hiddenPtr *bool, colName string) {
-		colHidden := !t.tracklist.visibleColumns[ColNumber(colName)]
-		if colHidden != *hiddenPtr {
-			*hiddenPtr = colHidden
-			changed = true
-		}
-	}
-	updateHidden(&t.artist.Hidden, ColumnArtist)
-	updateHidden(&t.album.Hidden, ColumnAlbum)
-	updateHidden(&t.dur.Hidden, ColumnTime)
-	updateHidden(&t.year.Hidden, ColumnYear)
-	updateHidden(&t.favorite.Hidden, ColumnFavorite)
-	updateHidden(&t.rating.Hidden, ColumnRating)
-	updateHidden(&t.plays.Hidden, ColumnPlays)
-	updateHidden(&t.comment.Hidden, ColumnComment)
-	updateHidden(&t.bitrate.Hidden, ColumnBitrate)
-	updateHidden(&t.size.Hidden, ColumnSize)
-	updateHidden(&t.path.Hidden, ColumnPath)
-
-	if changed {
-		t.Refresh()
-	}
-}
-
-func (t *TrackRow) toggleFavorited() {
-	t.isFavorite = !t.isFavorite
-	favIcon := t.favorite.Objects[0].(*FavoriteIcon)
-	favIcon.Favorite = t.isFavorite
-	t.favorite.Refresh()
-	t.tracklist.onSetFavorite(t.trackID, t.isFavorite)
-}
-
-func (t *TrackRow) setTrackRating(rating int) {
-	t.tracklist.onSetRating(t.trackID, rating)
-}
-
-func (t *TrackRow) TappedSecondary(e *fyne.PointEvent) {
-	if t.OnTappedSecondary != nil {
-		t.OnTappedSecondary(e, t.ListItemID)
-	}
 }

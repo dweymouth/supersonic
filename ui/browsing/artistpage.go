@@ -233,7 +233,7 @@ func (a *ArtistPage) showTopTracks() {
 			tl.Reset()
 			tl.SetTracks(ts)
 		} else {
-			tl = widgets.NewTracklist(ts)
+			tl = widgets.NewTracklist(ts, a.im, false)
 		}
 		tl.Options = widgets.TracklistOptions{AutoNumber: true}
 		_, canRate := a.mp.(mediaprovider.SupportsRating)
