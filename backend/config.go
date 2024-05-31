@@ -176,11 +176,11 @@ func DefaultConfig(appVersionTag string) *Config {
 			SortOrder: string("Name (A-Z)"),
 		},
 		FavoritesPage: FavoritesPageConfig{
-			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
+			TracklistColumns: []string{"Album", "Time", "Plays"},
 			InitialView:      "Albums",
 		},
 		PlaylistPage: PlaylistPageConfig{
-			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
+			TracklistColumns: []string{"Album", "Time", "Plays"},
 		},
 		PlaylistsPage: PlaylistsPageConfig{
 			InitialView: "List",
@@ -189,7 +189,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			InitialView: "Play Queue",
 		},
 		TracksPage: TracksPageConfig{
-			TracklistColumns: []string{"Artist", "Album", "Time", "Plays"},
+			TracklistColumns: []string{"Album", "Time", "Plays"},
 		},
 		LocalPlayback: LocalPlaybackConfig{
 			// "auto" is the name to pass to MPV for autoselecting the output device

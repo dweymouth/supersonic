@@ -17,6 +17,67 @@ import (
 
 const tracklistThumbnailSize = 48
 
+type TracklistColumn struct {
+	Name string
+	Col  ListColumn
+}
+
+const (
+	ColumnNum         = "Num"
+	ColumnTitle       = "Title"
+	ColumnArtist      = "Artist"
+	ColumnTitleArtist = "Title/Artist"
+	ColumnAlbum       = "Album"
+	ColumnTime        = "Time"
+	ColumnYear        = "Year"
+	ColumnFavorite    = "Favorite"
+	ColumnRating      = "Rating"
+	ColumnPlays       = "Plays"
+	ColumnComment     = "Comment"
+	ColumnBitrate     = "Bitrate"
+	ColumnSize        = "Size"
+	ColumnPath        = "Path"
+)
+
+var (
+	ExpandedTracklistRowColumns = []TracklistColumn{
+		{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
+		{Name: ColumnTitleArtist, Col: ListColumn{Text: "Title / Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
+		{Name: ColumnAlbum, Col: ListColumn{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		{Name: ColumnTime, Col: ListColumn{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnYear, Col: ListColumn{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnFavorite, Col: ListColumn{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
+		{Name: ColumnRating, Col: ListColumn{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		{Name: ColumnPlays, Col: ListColumn{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnComment, Col: ListColumn{Text: "Comment", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		{Name: ColumnBitrate, Col: ListColumn{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnSize, Col: ListColumn{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnPath, Col: ListColumn{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+	}
+
+	// #, Title/Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
+	ExpandedTracklistRowColumnWidths = []float32{40, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
+
+	CompactTracklistRowColumns = []TracklistColumn{
+		{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
+		{Name: ColumnTitle, Col: ListColumn{Text: "Title", Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
+		{Name: ColumnArtist, Col: ListColumn{Text: "Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		{Name: ColumnAlbum, Col: ListColumn{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		{Name: ColumnTime, Col: ListColumn{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnYear, Col: ListColumn{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnFavorite, Col: ListColumn{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
+		{Name: ColumnRating, Col: ListColumn{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		{Name: ColumnPlays, Col: ListColumn{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnComment, Col: ListColumn{Text: "Comment", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		{Name: ColumnBitrate, Col: ListColumn{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnSize, Col: ListColumn{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+		{Name: ColumnPath, Col: ListColumn{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+	}
+
+	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
+	CompactTracklistRowColumnWidths = []float32{40, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
+)
+
 type tracklistRowBase struct {
 	FocusListRowBase
 
@@ -47,7 +108,7 @@ type tracklistRowBase struct {
 	size     *widget.Label
 	path     *widget.Label
 
-	colHiddenPtrMap map[string]*bool
+	setColVisibility func(int, bool) bool
 }
 
 type TracklistRow interface {
@@ -99,19 +160,11 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 	container := container.New(tracklist.colLayout,
 		v(t.num), titleArtistImg, v(t.album), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.comment), v(t.bitrate), v(t.size), v(t.path))
 	t.Content = container
-	var dummy bool
-	t.colHiddenPtrMap = map[string]*bool{
-		ColumnArtist:   &dummy, // artist column is never hidden
-		ColumnAlbum:    &container.Objects[2].(*fyne.Container).Hidden,
-		ColumnTime:     &container.Objects[3].(*fyne.Container).Hidden,
-		ColumnYear:     &container.Objects[4].(*fyne.Container).Hidden,
-		ColumnFavorite: &container.Objects[5].(*fyne.Container).Hidden,
-		ColumnRating:   &container.Objects[6].(*fyne.Container).Hidden,
-		ColumnPlays:    &container.Objects[7].(*fyne.Container).Hidden,
-		ColumnComment:  &container.Objects[8].(*fyne.Container).Hidden,
-		ColumnBitrate:  &container.Objects[9].(*fyne.Container).Hidden,
-		ColumnSize:     &container.Objects[10].(*fyne.Container).Hidden,
-		ColumnPath:     &container.Objects[11].(*fyne.Container).Hidden,
+	t.setColVisibility = func(colNum int, vis bool) bool {
+		c := container.Objects[colNum].(*fyne.Container)
+		wasHidden := c.Hidden
+		c.Hidden = vis
+		return c.Hidden != wasHidden
 	}
 	return t
 }
@@ -133,18 +186,27 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 	t.Content = container.New(tracklist.colLayout,
 		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.rating, t.plays, t.comment, t.bitrate, t.size, t.path)
 
-	t.colHiddenPtrMap = map[string]*bool{
-		ColumnArtist:   &t.artist.Hidden,
-		ColumnAlbum:    &t.album.Hidden,
-		ColumnTime:     &t.dur.Hidden,
-		ColumnYear:     &t.year.Hidden,
-		ColumnFavorite: &t.favorite.Hidden,
-		ColumnRating:   &t.rating.Hidden,
-		ColumnPlays:    &t.plays.Hidden,
-		ColumnComment:  &t.comment.Hidden,
-		ColumnBitrate:  &t.bitrate.Hidden,
-		ColumnSize:     &t.size.Hidden,
-		ColumnPath:     &t.path.Hidden,
+	colHiddenPtrMap := map[int]*bool{
+		2:  &t.artist.Hidden,
+		3:  &t.album.Hidden,
+		4:  &t.dur.Hidden,
+		5:  &t.year.Hidden,
+		6:  &t.favorite.Hidden,
+		7:  &t.rating.Hidden,
+		8:  &t.plays.Hidden,
+		9:  &t.comment.Hidden,
+		10: &t.bitrate.Hidden,
+		11: &t.size.Hidden,
+		12: &t.path.Hidden,
+	}
+	t.setColVisibility = func(colNum int, vis bool) bool {
+		ptr, ok := colHiddenPtrMap[colNum]
+		if !ok {
+			return false // column is always visible
+		}
+		wasHidden := *ptr
+		*ptr = vis
+		return vis != wasHidden
 	}
 	return t
 }
@@ -266,25 +328,11 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 	}
 
 	// Show only columns configured to be visible
-	updateHidden := func(colName string) {
-		colHidden := !t.tracklist.visibleColumns[ColNumber(colName)]
-		hiddenPtr := t.colHiddenPtrMap[colName]
-		if colHidden != *hiddenPtr {
-			*hiddenPtr = colHidden
+	for i := 2; i < len(t.tracklist.columns); i++ {
+		if ch := t.setColVisibility(i, !t.tracklist.visibleColumns[i]); ch {
 			changed = true
 		}
 	}
-	updateHidden(ColumnArtist)
-	updateHidden(ColumnAlbum)
-	updateHidden(ColumnTime)
-	updateHidden(ColumnYear)
-	updateHidden(ColumnFavorite)
-	updateHidden(ColumnRating)
-	updateHidden(ColumnPlays)
-	updateHidden(ColumnComment)
-	updateHidden(ColumnBitrate)
-	updateHidden(ColumnSize)
-	updateHidden(ColumnPath)
 
 	if changed {
 		t.Refresh()

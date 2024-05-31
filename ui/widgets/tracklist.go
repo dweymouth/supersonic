@@ -22,29 +22,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-const (
-	ColumnNum      = "Num"
-	ColumnTitle    = "Title"
-	ColumnArtist   = "Artist"
-	ColumnAlbum    = "Album"
-	ColumnTime     = "Time"
-	ColumnYear     = "Year"
-	ColumnFavorite = "Favorite"
-	ColumnRating   = "Rating"
-	ColumnPlays    = "Plays"
-	ColumnComment  = "Comment"
-	ColumnBitrate  = "Bitrate"
-	ColumnSize     = "Size"
-	ColumnPath     = "Path"
-
-	numColumns = 13
-)
-
-var columns = []string{
-	ColumnNum, ColumnTitle, ColumnArtist, ColumnAlbum, ColumnTime, ColumnYear, ColumnFavorite,
-	ColumnRating, ColumnPlays, ColumnComment, ColumnBitrate, ColumnSize, ColumnPath,
-}
-
 type TracklistSort struct {
 	SortOrder  SortType
 	ColumnName string
@@ -81,6 +58,7 @@ type Tracklist struct {
 	widget.BaseWidget
 
 	compactRows bool
+	columns     []TracklistColumn
 
 	Options TracklistOptions
 
@@ -122,22 +100,23 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCompactRows bool) *Tracklist {
-	t := &Tracklist{visibleColumns: make([]bool, numColumns), compactRows: useCompactRows}
+	t := &Tracklist{compactRows: useCompactRows}
+	t.columns = ExpandedTracklistRowColumns
+	colWidths := ExpandedTracklistRowColumnWidths
+	if useCompactRows {
+		t.columns = CompactTracklistRowColumns
+		colWidths = CompactTracklistRowColumnWidths
+	}
+	t.visibleColumns = make([]bool, len(t.columns))
 	t.ExtendBaseWidget(t)
 
 	if len(tracks) > 0 {
 		t._setTracks(tracks)
 	}
 
-	// #, Title/Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-	colWidths := []float32{40, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
-	if useCompactRows {
-		// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-		colWidths = []float32{40, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
-	}
-
 	t.colLayout = layouts.NewColumnsLayout(colWidths)
-	t.buildHeader()
+	t.hdr = NewListHeader(sharedutil.MapSlice(t.columns,
+		func(t TracklistColumn) ListColumn { return t.Col }), t.colLayout)
 	t.hdr.OnColumnSortChanged = t.onSorted
 	t.hdr.OnColumnVisibilityChanged = t.setColumnVisible
 	t.hdr.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
@@ -212,34 +191,6 @@ func (t *Tracklist) Scroll(amount float32) {
 	t.list.ScrollToOffset(t.list.GetScrollOffset() + amount)
 }
 
-func (t *Tracklist) buildHeader() {
-	cols := []ListColumn{{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}
-	if t.compactRows {
-		cols = append(cols,
-			ListColumn{Text: "Title", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-			ListColumn{Text: "Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		)
-	} else {
-		cols = append(cols,
-			ListColumn{Text: "   Title / Aritst", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		)
-	}
-	cols = append(cols,
-		ListColumn{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		ListColumn{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		ListColumn{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		ListColumn{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true},
-		ListColumn{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		ListColumn{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		ListColumn{Text: "Comment", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-		ListColumn{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		ListColumn{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true},
-		ListColumn{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true},
-	)
-
-	t.hdr = NewListHeader(cols, t.colLayout)
-}
-
 // Gets the track at the given index. Thread-safe.
 func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
 	t.tracksMutex.RLock()
@@ -254,30 +205,15 @@ func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
 func (t *Tracklist) SetVisibleColumns(cols []string) {
 	t.visibleColumns[0] = true
 	t.visibleColumns[1] = true
-	if !t.compactRows {
-		// hard-code artist column to visible since it's part of title col
-		t.visibleColumns[2] = true
-	}
 
-	l := len(t.visibleColumns)
-	if !t.compactRows {
-		l-- // expanded rows have one fewer column due to merged title/artist
-	}
-	for i := 2; i < l; i++ {
+	for i := 2; i < len(t.columns); i++ {
 		t.hdr.SetColumnVisible(i, false)
 	}
 	for _, col := range cols {
-		if num := ColNumber(col); num < 0 {
+		if num := t.ColNumber(col); num < 0 {
 			log.Printf("Unknown tracklist column %q", col)
 		} else {
-			if num == 2 && !t.compactRows {
-				// Artist column is hard-coded visible (part of title), skip
-				continue
-			}
 			t.visibleColumns[num] = true
-			if !t.compactRows && num >= 3 {
-				num -= 1 // shift cols by 1 to account for Title/Artist combined col
-			}
 			t.hdr.SetColumnVisible(num, true)
 		}
 	}
@@ -287,7 +223,7 @@ func (t *Tracklist) VisibleColumns() []string {
 	var cols []string
 	for i := 2; i < len(t.visibleColumns); i++ {
 		if t.visibleColumns[i] {
-			cols = append(cols, string(t.colName(i, false)))
+			cols = append(cols, string(t.colName(i)))
 		}
 	}
 	return cols
@@ -297,9 +233,6 @@ func (t *Tracklist) setColumnVisible(colNum int, vis bool) {
 	if colNum >= len(t.visibleColumns) {
 		log.Printf("error: Tracklist.SetColumnVisible: column index %d out of range", colNum)
 		return
-	}
-	if !t.compactRows && colNum >= 2 {
-		colNum++ // account for off-by-one from merged title/artist column
 	}
 	t.visibleColumns[colNum] = vis
 	t.list.Refresh()
@@ -315,13 +248,15 @@ func (t *Tracklist) Sorting() TracklistSort {
 func (t *Tracklist) SetSorting(sorting TracklistSort) {
 	if sorting.ColumnName == "" {
 		// nil case - reset current sort
-		if slices.Contains(columns, t.sorting.ColumnName) {
-			t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(t.sorting.ColumnName), Type: SortNone})
+		if slices.ContainsFunc(t.columns, func(c TracklistColumn) bool {
+			return c.Name == t.sorting.ColumnName
+		}) {
+			t.hdr.SetSorting(ListHeaderSort{ColNumber: t.ColNumber(t.sorting.ColumnName), Type: SortNone})
 		}
 		return
 	}
 	// actual sorting will be handled in callback from header
-	t.hdr.SetSorting(ListHeaderSort{ColNumber: ColNumber(sorting.ColumnName), Type: sorting.SortOrder})
+	t.hdr.SetSorting(ListHeaderSort{ColNumber: t.ColNumber(sorting.ColumnName), Type: sorting.SortOrder})
 }
 
 // Sets the currently playing track ID and updates the list rendering
@@ -511,7 +446,7 @@ func (t *Tracklist) doSortTracks() {
 }
 
 func (t *Tracklist) onSorted(sort ListHeaderSort) {
-	t.sorting = TracklistSort{ColumnName: t.colName(sort.ColNumber, true), SortOrder: sort.Type}
+	t.sorting = TracklistSort{ColumnName: t.colName(sort.ColNumber), SortOrder: sort.Type}
 	t.tracksMutex.Lock()
 	t.doSortTracks()
 	t.tracksMutex.Unlock()
@@ -729,20 +664,19 @@ func (t *Tracklist) lenTracks() int {
 	return len(t.tracks)
 }
 
-func ColNumber(colName string) int {
-	i := slices.Index(columns, colName)
+func (t *Tracklist) ColNumber(colName string) int {
+	i := slices.IndexFunc(t.columns, func(c TracklistColumn) bool {
+		return c.Name == colName
+	})
 	if i < 0 {
 		log.Printf("error: Tracklist: invalid column name %s", colName)
 	}
 	return i
 }
 
-func (t *Tracklist) colName(i int, adjustForExpandedRows bool) string {
-	if adjustForExpandedRows && !t.compactRows && i >= 2 {
-		i += 1 // adjust for off-by-one from combined title/artist column
-	}
-	if i < len(columns) {
-		return columns[i]
+func (t *Tracklist) colName(i int) string {
+	if i < len(t.columns) {
+		return t.columns[i].Name
 	}
 	log.Println("notReached: Tracklist.colName")
 	return ""
