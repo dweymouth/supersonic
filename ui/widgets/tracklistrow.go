@@ -157,7 +157,7 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 	}
 
 	titleArtistImg := container.NewBorder(nil, nil,
-		container.NewPadded(t.img) /*left*/, nil,
+		container.New(layout.NewCustomPaddedLayout(2, 2, 2, -4), t.img) /*left*/, nil,
 		container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-16),
 			t.name, t.artist))
 
