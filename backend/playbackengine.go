@@ -60,7 +60,7 @@ type playbackEngine struct {
 	replayGainCfg ReplayGainConfig
 
 	// registered callbacks
-	onSongChange     []func(nowPlaying *NowPlayingMetadata, justScrobbledIfAny *mediaprovider.Track)
+	onSongChange     []func(nowPlaying mediaprovider.MediaItem, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64, bool)
 	onLoopModeChange []func(LoopMode)
 	onVolumeChange   []func(int)
@@ -122,34 +122,8 @@ func (p *playbackEngine) PlayTrackAt(idx int) error {
 	return p.setTrack(idx, false)
 }
 
-// Gets the curently playing song, if any.
-func (p *playbackEngine) NowPlaying() *NowPlayingMetadata {
-	if p.nowPlayingIdx < 0 || len(p.playQueue) == 0 || p.player.GetStatus().State == player.Stopped {
-		return nil
-	}
-	item := p.playQueue[p.nowPlayingIdx]
-	if tr, ok := item.(*mediaprovider.Track); ok {
-		return &NowPlayingMetadata{
-			Type:      MediaTypeTrack,
-			ID:        tr.ID,
-			Title:     tr.Name,
-			Artists:   tr.ArtistNames,
-			ArtistIDs: tr.ArtistIDs,
-			Album:     tr.Album,
-			AlbumID:   tr.AlbumID,
-			Duration:  float64(tr.Duration),
-		}
-	}
-	return &NowPlayingMetadata{
-		Type:     MediaTypeRadioStation,
-		ID:       item.MediaItemID(),
-		Title:    item.MediaItemName(),
-		Duration: 0.0,
-	}
-}
-
-// Gets the curently playing song, if any.
-func (p *playbackEngine) NowPlayingMediaItem() mediaprovider.MediaItem {
+// Gets the curently playing media item, if any.
+func (p *playbackEngine) NowPlaying() mediaprovider.MediaItem {
 	if p.nowPlayingIdx < 0 || len(p.playQueue) == 0 || p.player.GetStatus().State == player.Stopped {
 		return nil
 	}
@@ -304,9 +278,9 @@ func (p *playbackEngine) UpdatePlayQueue(tracks []*mediaprovider.Track) error {
 	newQueue := p.copyTrackSliceToMediaItemSlice(tracks)
 	newNowPlayingIdx := -1
 	if p.nowPlayingIdx >= 0 {
-		nowPlayingID := p.playQueue[p.nowPlayingIdx].MediaItemID()
+		nowPlayingID := p.playQueue[p.nowPlayingIdx].Metadata().ID
 		for i, tr := range newQueue {
-			if tr.MediaItemID() == nowPlayingID {
+			if tr.Metadata().ID == nowPlayingID {
 				newNowPlayingIdx = i
 				break
 			}
@@ -335,7 +309,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(trackIDs []string) {
 	nowPlaying := p.NowPlayingIndex()
 	newNowPlaying := nowPlaying
 	for i, tr := range p.playQueue {
-		if _, ok := idSet[tr.MediaItemID()]; ok {
+		if _, ok := idSet[tr.Metadata().ID]; ok {
 			if i < nowPlaying {
 				// if removing a track earlier than the currently playing one (if any),
 				// decrement new now playing index by one to account for new position in queue

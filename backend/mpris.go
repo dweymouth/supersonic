@@ -58,11 +58,11 @@ func NewMPRISHandler(playerName string, pm *PlaybackManager) *MPRISHandler {
 			m.evt.Player.OnSeek(pos)
 		}
 	})
-	pm.OnSongChange(func(tr *NowPlayingMetadata, _ *mediaprovider.Track) {
+	pm.OnSongChange(func(tr mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		if tr == nil {
 			m.curTrackPath = ""
 		} else {
-			m.curTrackPath = dbusTrackIDPrefix + encodeTrackId(tr.ID)
+			m.curTrackPath = dbusTrackIDPrefix + encodeTrackId(tr.Metadata().ID)
 		}
 		if m.connErr == nil {
 			m.evt.Player.OnTitle()
@@ -252,7 +252,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	}
 	status := m.pm.PlayerStatus()
 	var tr mediaprovider.Track
-	if np := m.pm.NowPlayingMediaItem(); np != nil && status.State != player.Stopped {
+	if np := m.pm.NowPlaying(); np != nil && status.State != player.Stopped {
 		if track, ok := np.(*mediaprovider.Track); ok {
 			tr = *track
 		}
@@ -266,7 +266,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	return types.Metadata{
 		TrackId:        dbus.ObjectPath(trackObjPath),
 		Length:         secondsToMicroseconds(status.Duration),
-		Title:          tr.Name,
+		Title:          tr.Title,
 		Album:          tr.Album,
 		Artist:         tr.ArtistNames,
 		DiscNumber:     tr.DiscNumber,

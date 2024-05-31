@@ -96,12 +96,12 @@ func (t *TracksPage) Reload() {
 }
 
 func (t *TracksPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
-	t.nowPlayingID = sharedutil.TrackIDOrEmptyStr(track)
+	t.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(track)
 	t.tracklist.SetNowPlaying(t.nowPlayingID)
 	if t.searchTracklist != nil {
 		t.searchTracklist.SetNowPlaying(t.nowPlayingID)
 	}
-	playedID := sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny)
+	playedID := sharedutil.MediaItemIDOrEmptyStr(lastScrobbledIfAny)
 	t.tracklist.IncrementPlayCount(playedID)
 	if t.searchTracklist != nil {
 		t.searchTracklist.IncrementPlayCount(playedID)

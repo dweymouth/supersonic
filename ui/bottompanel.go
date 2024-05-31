@@ -56,22 +56,30 @@ func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *
 		contr.NavigateTo(controller.NowPlayingRoute(""))
 	}
 	bp.NowPlaying.OnSetFavorite = func(fav bool) {
-		contr.SetTrackFavorites([]string{pm.NowPlaying().ID}, fav)
+		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {
+			contr.SetTrackFavorites([]string{tr.ID}, fav)
+		}
 	}
 	bp.NowPlaying.OnSetRating = func(rating int) {
-		contr.SetTrackRatings([]string{pm.NowPlaying().ID}, rating)
+		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {
+			contr.SetTrackRatings([]string{tr.ID}, rating)
+		}
 	}
 	bp.NowPlaying.OnAddToPlaylist = func() {
-		contr.DoAddTracksToPlaylistWorkflow([]string{pm.NowPlaying().ID})
+		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {
+			contr.DoAddTracksToPlaylistWorkflow([]string{tr.ID})
+		}
 	}
 	bp.NowPlaying.OnAlbumNameTapped = func() {
-		contr.NavigateTo(controller.AlbumRoute(pm.NowPlaying().AlbumID))
+		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {
+			contr.NavigateTo(controller.AlbumRoute(tr.AlbumID))
+		}
 	}
 	bp.NowPlaying.OnArtistNameTapped = func(artistID string) {
 		contr.NavigateTo(controller.ArtistRoute(artistID))
 	}
 	bp.NowPlaying.OnTrackNameTapped = func() {
-		contr.NavigateTo(controller.NowPlayingRoute(pm.NowPlaying().ID))
+		contr.NavigateTo(controller.NowPlayingRoute(pm.NowPlaying().Metadata().ID))
 	}
 	bp.Controls = widgets.NewPlayerControls()
 	bp.Controls.OnPlayPause(func() {
@@ -102,19 +110,20 @@ func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *
 	return bp
 }
 
-func (bp *BottomPanel) onSongChange(song, _ *mediaprovider.Track) {
+func (bp *BottomPanel) onSongChange(song mediaprovider.MediaItem, _ *mediaprovider.Track) {
 	if song == nil {
 		bp.NowPlaying.Update(nil, nil)
 	} else {
-		bp.coverArtID = song.CoverArtID
+		meta := song.Metadata()
+		bp.coverArtID = meta.CoverArtID
 		var im image.Image
 		if bp.ImageManager != nil {
 			// set image to expire not long after the length of the song
 			// if song is played through without much pausing, image will still
 			// be in cache for the next song if it's from the same album, or
 			// if the user navigates to the album page for the track
-			imgTTLSec := song.Duration + 30
-			im, _ = bp.ImageManager.GetCoverThumbnailWithTTL(song.CoverArtID, time.Duration(imgTTLSec)*time.Second)
+			imgTTLSec := meta.Duration + 30
+			im, _ = bp.ImageManager.GetCoverThumbnailWithTTL(meta.CoverArtID, time.Duration(imgTTLSec)*time.Second)
 		}
 		bp.NowPlaying.Update(song, im)
 	}

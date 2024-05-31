@@ -360,7 +360,7 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 		p.imageLoader.Load(tm.Track.CoverArtID)
 		p.EnsureUnfocused()
 		p.trackID = tr.ID
-		p.title.Text = tr.Name
+		p.title.Text = tr.Title
 		p.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		p.time.Text = util.SecondsToTimeString(float64(tr.Duration))
 		changed = true

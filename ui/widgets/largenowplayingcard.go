@@ -108,19 +108,22 @@ func (n *LargeNowPlayingCard) SetDisplayedFavorite(favorite bool) {
 	n.favorite.Refresh()
 }
 
-func (n *LargeNowPlayingCard) Update(track *mediaprovider.Track) {
-	if track != nil {
-		n.trackName.Segments[0].(*widget.TextSegment).Text = track.Name
-		n.artistName.BuildSegments(track.ArtistNames, track.ArtistIDs)
-		n.albumName.Text = track.Album
-		n.rating.Rating = track.Rating
-		n.favorite.Favorite = track.Favorite
-	} else {
+func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
+	if item == nil {
 		n.trackName.Segments[0].(*widget.TextSegment).Text = ""
 		n.artistName.BuildSegments([]string{}, []string{})
 		n.albumName.Text = ""
 		n.rating.Rating = 0
 		n.favorite.Favorite = false
+	}
+	meta := item.Metadata()
+	n.trackName.Segments[0].(*widget.TextSegment).Text = meta.Name
+
+	if tr, ok := item.(*mediaprovider.Track); ok {
+		n.artistName.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
+		n.albumName.Text = tr.Album
+		n.rating.Rating = tr.Rating
+		n.favorite.Favorite = tr.Favorite
 	}
 
 	n.Refresh()

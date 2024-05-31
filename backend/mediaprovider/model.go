@@ -86,7 +86,7 @@ type Track struct {
 	ID          string
 	CoverArtID  string
 	ParentID    string
-	Name        string
+	Title       string
 	Duration    int
 	TrackNumber int
 	DiscNumber  int
@@ -146,21 +146,56 @@ type RadioStation struct {
 	StreamURL   string
 }
 
+type MediaItemType int
+
+const (
+	MediaItemTypeTrack MediaItemType = iota
+	MediaItemTypeRadioStation
+)
+
+type MediaItemMetadata struct {
+	Type       MediaItemType
+	ID         string
+	Name       string
+	Artists    []string
+	ArtistIDs  []string
+	Album      string
+	AlbumID    string
+	CoverArtID string
+	Duration   int
+}
+
 type MediaItem interface {
-	MediaItemName() string
-	MediaItemID() string
+	Metadata() MediaItemMetadata
 	Copy() MediaItem
 }
 
-func (t Track) MediaItemName() string { return t.Name }
-func (t Track) MediaItemID() string   { return t.ID }
+func (t Track) Metadata() MediaItemMetadata {
+	return MediaItemMetadata{
+		Type:       MediaItemTypeTrack,
+		ID:         t.ID,
+		Name:       t.Title,
+		Artists:    t.ArtistNames,
+		ArtistIDs:  t.ArtistIDs,
+		Album:      t.Album,
+		AlbumID:    t.AlbumID,
+		CoverArtID: t.CoverArtID,
+		Duration:   t.Duration,
+	}
+}
 func (t *Track) Copy() MediaItem {
 	new := *t
 	return &new
 }
 
-func (r RadioStation) MediaItemName() string { return r.Name }
-func (r RadioStation) MediaItemID() string   { return r.ID }
+func (r RadioStation) Metadata() MediaItemMetadata {
+	return MediaItemMetadata{
+		Type: MediaItemTypeRadioStation,
+		ID:   r.ID,
+		Name: r.Name,
+	}
+}
+
 func (r *RadioStation) Copy() MediaItem {
 	return r // no need to copy since RadioStations are immutable
 }

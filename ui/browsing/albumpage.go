@@ -131,9 +131,9 @@ func (a *AlbumPage) Route() controller.Route {
 }
 
 func (a *AlbumPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
-	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(track)
+	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(track)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
+	a.tracklist.IncrementPlayCount(sharedutil.MediaItemIDOrEmptyStr(lastScrobbledIfAny))
 }
 
 func (a *AlbumPage) Reload() {

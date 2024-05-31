@@ -139,12 +139,12 @@ func (a *ArtistPage) Save() SavedPage {
 
 var _ CanShowNowPlaying = (*ArtistPage)(nil)
 
-func (a *ArtistPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
-	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(track)
+func (a *ArtistPage) OnSongChange(track mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
+	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(track)
 	if a.tracklistCtr != nil {
 		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
 		tl.SetNowPlaying(a.nowPlayingID)
-		tl.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
+		tl.IncrementPlayCount(sharedutil.MediaItemIDOrEmptyStr(lastScrobbledIfAny))
 	}
 }
 

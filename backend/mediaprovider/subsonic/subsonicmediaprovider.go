@@ -367,7 +367,7 @@ func (s *subsonicMediaProvider) GetLyrics(track *mediaprovider.Track) (*mediapro
 		return mpLyrics, nil
 	}
 	// fallback to legacy getLyrics endpoint
-	lyrics, err := s.client.GetLyrics(track.Name, track.ArtistNames[0])
+	lyrics, err := s.client.GetLyrics(track.Title, track.ArtistNames[0])
 	if err != nil || lyrics == nil || lyrics.Text == "" {
 		return nil, err
 	}
@@ -433,7 +433,7 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		ID:          ch.ID,
 		CoverArtID:  ch.CoverArt,
 		ParentID:    ch.Parent,
-		Name:        ch.Title,
+		Title:       ch.Title,
 		Duration:    ch.Duration,
 		TrackNumber: ch.Track,
 		DiscNumber:  ch.DiscNumber,

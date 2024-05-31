@@ -37,7 +37,7 @@ type NowPlayingPage struct {
 	nowPlayingPageState
 
 	// volatile state
-	nowPlaying   *mediaprovider.Track
+	nowPlaying   mediaprovider.MediaItem
 	nowPlayingID string
 	curLyricsID  string // id of track currently shown in lyrics
 	curRelatedID string // id of track currrently used to populate related list
@@ -108,7 +108,7 @@ func NewNowPlayingPage(
 
 	a.card = widgets.NewLargeNowPlayingCard()
 	a.card.OnAlbumNameTapped = func() {
-		contr.NavigateTo(controller.AlbumRoute(sharedutil.AlbumIDOrEmptyStr(a.nowPlaying)))
+		contr.NavigateTo(controller.AlbumRoute(a.nowPlaying.Metadata().AlbumID))
 	}
 	a.card.OnArtistNameTapped = func(artistID string) {
 		contr.NavigateTo(controller.ArtistRoute(artistID))
@@ -245,12 +245,12 @@ func (a *NowPlayingPage) Route() controller.Route {
 
 var _ CanShowNowPlaying = (*NowPlayingPage)(nil)
 
-func (a *NowPlayingPage) OnSongChange(song *backend.NowPlayingMetadata, lastScrobbledIfAny *mediaprovider.Track) {
+func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
 	a.nowPlaying = song
 	if a.imageLoadCancel != nil {
 		a.imageLoadCancel()
 	}
-	a.nowPlayingID = sharedutil.TrackIDOremptyStringFromMeta(song)
+	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(song)
 	a.queueList.SetNowPlaying(a.nowPlayingID)
 	a.relatedList.SetNowPlaying(a.nowPlayingID)
 
@@ -258,7 +258,7 @@ func (a *NowPlayingPage) OnSongChange(song *backend.NowPlayingMetadata, lastScro
 	if song == nil {
 		a.card.SetCoverImage(nil)
 	} else {
-		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, a.onImageLoaded)
+		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.Metadata().CoverArtID, a.onImageLoaded)
 	}
 
 	if a.tabs != nil && a.tabs.SelectedIndex() == 1 /*lyrics*/ {
@@ -308,7 +308,7 @@ func (a *NowPlayingPage) updateLyrics() {
 			return
 		}
 	}
-	if a.nowPlaying == nil {
+	if a.nowPlaying == nil || a.nowPlaying.Metadata().Type == mediaprovider.MediaItemTypeRadioStation {
 		a.lyricsViewer.SetLyrics(nil)
 		a.curLyricsID = ""
 		return
@@ -321,19 +321,20 @@ func (a *NowPlayingPage) updateLyrics() {
 	// to keep it from showing "Lyrics not available"
 	a.lyricsViewer.SetLyrics(&mediaprovider.Lyrics{Synced: true,
 		Lines: []mediaprovider.LyricLine{{Text: ""}}})
-	go a.fetchLyrics(ctx, a.nowPlaying)
+	tr, _ := a.nowPlaying.(*mediaprovider.Track)
+	go a.fetchLyrics(ctx, tr)
 }
 
 func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Track) {
 	var lyrics *mediaprovider.Lyrics
 	var err error
 	if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
-		if lyrics, err = lp.GetLyrics(a.nowPlaying); err != nil {
+		if lyrics, err = lp.GetLyrics(song); err != nil {
 			log.Printf("Error fetching lyrics: %v", err)
 		}
 	}
 	if lyrics == nil {
-		lyrics, err = backend.FetchLrcLibLyrics(song.Name, song.ArtistNames[0], song.Album, song.Duration)
+		lyrics, err = backend.FetchLrcLibLyrics(song.Title, song.ArtistNames[0], song.Album, song.Duration)
 		if err != nil {
 			log.Println(err.Error())
 		}
@@ -400,7 +401,8 @@ func (a *NowPlayingPage) Reload() {
 	a.relatedList.DisableRating = !a.canRate
 	a.relatedList.DisableSharing = !a.canShare
 
-	a.queue = a.pm.GetPlayQueue()
+	// TODO
+	//a.queue = a.pm.GetPlayQueue()
 	a.queueList.SetTracks(a.queue)
 	a.totalTime = 0.0
 	for _, tr := range a.queue {
@@ -492,7 +494,7 @@ func (a *NowPlayingPage) formatStatusLine() {
 
 	dur := 0.0
 	if np := a.pm.NowPlaying(); np != nil {
-		dur = float64(np.Duration)
+		dur = float64(np.Metadata().Duration)
 	}
 	statusSuffix := ""
 	trackNum := 0

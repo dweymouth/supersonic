@@ -119,15 +119,21 @@ func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (n *NowPlayingCard) Update(track *mediaprovider.Track, cover image.Image) {
-	if track != nil {
-		n.trackName.SetText(track.Name)
-		n.artistName.BuildSegments(track.ArtistNames, track.ArtistIDs)
-		n.albumName.SetText(track.Album)
-	} else {
+func (n *NowPlayingCard) Update(track mediaprovider.MediaItem, cover image.Image) {
+	if track == nil {
 		n.trackName.SetText("")
 		n.artistName.BuildSegments([]string{}, []string{})
 		n.albumName.SetText("")
+
+	} else {
+		n.trackName.SetText(track.Metadata().Name)
+		if tr, ok := track.(*mediaprovider.Track); ok {
+			n.artistName.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
+			n.albumName.SetText(tr.Album)
+		} else {
+			n.artistName.BuildSegments([]string{}, []string{})
+			n.albumName.SetText("")
+		}
 	}
 	n.trackName.Hidden = n.trackName.Text == ""
 	n.artistName.Hidden = len(n.artistName.Segments) == 0

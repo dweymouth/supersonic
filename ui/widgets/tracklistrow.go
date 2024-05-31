@@ -261,7 +261,7 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 		t.EnsureUnfocused()
 		t.trackID = tr.ID
 
-		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
+		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		t.album.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
 		t.dur.Text = util.SecondsToTimeString(float64(tr.Duration))
