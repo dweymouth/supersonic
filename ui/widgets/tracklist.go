@@ -207,6 +207,7 @@ func (t *Tracklist) SetVisibleColumns(cols []string) {
 	t.visibleColumns[1] = true
 
 	for i := 2; i < len(t.columns); i++ {
+		t.visibleColumns[i] = false
 		t.hdr.SetColumnVisible(i, false)
 	}
 	for _, col := range cols {
