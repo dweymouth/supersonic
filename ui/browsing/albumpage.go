@@ -86,7 +86,7 @@ func newAlbumPage(
 		a.header = NewAlbumPageHeader(a)
 	}
 	a.header.page = a
-	if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
+	if t := a.pool.Obtain(util.WidgetTypeCompactTracklist); t != nil {
 		a.tracklist = t.(*widgets.Tracklist)
 		a.tracklist.Reset()
 	} else {
