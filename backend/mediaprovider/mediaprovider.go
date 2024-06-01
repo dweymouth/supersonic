@@ -267,6 +267,10 @@ type LyricsProvider interface {
 	GetLyrics(track *Track) (*Lyrics, error)
 }
 
+type RadioProvider interface {
+	GetRadioStations() ([]*RadioStation, error)
+}
+
 type JukeboxProvider interface {
 	JukeboxStart() error
 	JukeboxStop() error

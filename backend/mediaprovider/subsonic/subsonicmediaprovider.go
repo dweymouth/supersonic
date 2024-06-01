@@ -386,6 +386,7 @@ func (s *subsonicMediaProvider) GetLyrics(track *mediaprovider.Track) (*mediapro
 }
 
 // CanSavePlayQueue interface
+var _ mediaprovider.CanSavePlayQueue = (*subsonicMediaProvider)(nil)
 
 func (s *subsonicMediaProvider) SavePlayQueue(trackIDs []string, currentTrackIdx int, timeSeconds int) error {
 	if len(trackIDs) == 0 {
@@ -411,6 +412,24 @@ func (s *subsonicMediaProvider) GetPlayQueue() (*mediaprovider.SavedPlayQueue, e
 	})
 	savedQueue.TimePos = int(pq.Position / 1000)
 	return savedQueue, nil
+}
+
+// RadioProvider interface
+var _ mediaprovider.RadioProvider = (*subsonicMediaProvider)(nil)
+
+func (s *subsonicMediaProvider) GetRadioStations() ([]*mediaprovider.RadioStation, error) {
+	rs, err := s.client.GetInternetRadioStations()
+	if err != nil {
+		return nil, err
+	}
+	return sharedutil.MapSlice(rs, func(rs *subsonic.InternetRadioStation) *mediaprovider.RadioStation {
+		return &mediaprovider.RadioStation{
+			ID:          "radio-" + strings.ReplaceAll(rs.Name, " ", ""),
+			Name:        rs.Name,
+			HomePageURL: rs.HomePageUrl,
+			StreamURL:   rs.StreamUrl,
+		}
+	}), nil
 }
 
 func toTrack(ch *subsonic.Child) *mediaprovider.Track {
