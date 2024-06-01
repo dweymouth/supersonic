@@ -462,7 +462,7 @@ func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.Tra
 			idxs = append(idxs, i)
 		}
 	}
-	newTracks := sharedutil.ReorderMediaItems(a.queue, idxs, op)
+	newTracks := sharedutil.ReorderItems(a.queue, idxs, op)
 	a.pm.UpdatePlayQueue(newTracks)
 }
 

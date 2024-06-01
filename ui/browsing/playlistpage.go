@@ -187,7 +187,7 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 			idxs = append(idxs, i)
 		}
 	}
-	newTracks := sharedutil.ReorderTracks(a.tracks, idxs, op)
+	newTracks := sharedutil.ReorderItems(a.tracks, idxs, op)
 	ids := sharedutil.TracksToIDs(newTracks)
 	if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 		log.Printf("error updating playlist: %s", err.Error())

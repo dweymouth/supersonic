@@ -115,67 +115,10 @@ const (
 	MoveDown
 )
 
-// TODO: it's a shame the below function is just duplicated for a slice of mediaprovider.MediaItem
-// Find out if there's a better way with refactoring.
-
-// Reorder tracks and return a new track slice.
+// Reorder items and return a new track slice.
 // idxToMove must contain only valid indexes into tracks, and no repeats
-func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReorderOp) []*mediaprovider.Track {
-	newTracks := make([]*mediaprovider.Track, len(tracks))
-	switch op {
-	case MoveToTop:
-		topIdx := 0
-		botIdx := len(idxToMove)
-		idxToMoveSet := ToSet(idxToMove)
-		for i, t := range tracks {
-			if _, ok := idxToMoveSet[i]; ok {
-				newTracks[topIdx] = t
-				topIdx++
-			} else {
-				newTracks[botIdx] = t
-				botIdx++
-			}
-		}
-	case MoveToBottom:
-		topIdx := 0
-		botIdx := len(tracks) - len(idxToMove)
-		idxToMoveSet := ToSet(idxToMove)
-		for i, t := range tracks {
-			if _, ok := idxToMoveSet[i]; ok {
-				newTracks[botIdx] = t
-				botIdx++
-			} else {
-				newTracks[topIdx] = t
-				topIdx++
-			}
-		}
-	case MoveUp:
-		first := firstIdxCanMoveUp(idxToMove)
-		copy(newTracks, tracks)
-		for _, i := range idxToMove {
-			if i < first {
-				continue
-			}
-			newTracks[i-1], newTracks[i] = newTracks[i], newTracks[i-1]
-		}
-	case MoveDown:
-		last := lastIdxCanMoveDown(idxToMove, len(tracks))
-		copy(newTracks, tracks)
-		for i := len(idxToMove) - 1; i >= 0; i-- {
-			idx := idxToMove[i]
-			if idx > last {
-				continue
-			}
-			newTracks[idx+1], newTracks[idx] = newTracks[idx], newTracks[idx+1]
-		}
-	}
-	return newTracks
-}
-
-// Reorder media items and return a new item slice.
-// idxToMove must contain only valid indexes into items, and no repeats
-func ReorderMediaItems(items []mediaprovider.MediaItem, idxToMove []int, op TrackReorderOp) []mediaprovider.MediaItem {
-	newTracks := make([]mediaprovider.MediaItem, len(items))
+func ReorderItems[T any](items []T, idxToMove []int, op TrackReorderOp) []T {
+	newItems := make([]T, len(items))
 	switch op {
 	case MoveToTop:
 		topIdx := 0
@@ -183,10 +126,10 @@ func ReorderMediaItems(items []mediaprovider.MediaItem, idxToMove []int, op Trac
 		idxToMoveSet := ToSet(idxToMove)
 		for i, t := range items {
 			if _, ok := idxToMoveSet[i]; ok {
-				newTracks[topIdx] = t
+				newItems[topIdx] = t
 				topIdx++
 			} else {
-				newTracks[botIdx] = t
+				newItems[botIdx] = t
 				botIdx++
 			}
 		}
@@ -196,34 +139,34 @@ func ReorderMediaItems(items []mediaprovider.MediaItem, idxToMove []int, op Trac
 		idxToMoveSet := ToSet(idxToMove)
 		for i, t := range items {
 			if _, ok := idxToMoveSet[i]; ok {
-				newTracks[botIdx] = t
+				newItems[botIdx] = t
 				botIdx++
 			} else {
-				newTracks[topIdx] = t
+				newItems[topIdx] = t
 				topIdx++
 			}
 		}
 	case MoveUp:
 		first := firstIdxCanMoveUp(idxToMove)
-		copy(newTracks, items)
+		copy(newItems, items)
 		for _, i := range idxToMove {
 			if i < first {
 				continue
 			}
-			newTracks[i-1], newTracks[i] = newTracks[i], newTracks[i-1]
+			newItems[i-1], newItems[i] = newItems[i], newItems[i-1]
 		}
 	case MoveDown:
 		last := lastIdxCanMoveDown(idxToMove, len(items))
-		copy(newTracks, items)
+		copy(newItems, items)
 		for i := len(idxToMove) - 1; i >= 0; i-- {
 			idx := idxToMove[i]
 			if idx > last {
 				continue
 			}
-			newTracks[idx+1], newTracks[idx] = newTracks[idx], newTracks[idx+1]
+			newItems[idx+1], newItems[idx] = newItems[idx], newItems[idx+1]
 		}
 	}
-	return newTracks
+	return newItems
 }
 
 func firstIdxCanMoveUp(idxs []int) int {
