@@ -50,6 +50,7 @@ type playbackEngine struct {
 
 	playQueue     []mediaprovider.MediaItem
 	nowPlayingIdx int
+	isRadio       bool
 	wasStopped    bool // true iff player was stopped before handleOnTrackChange invocation
 	loopMode      LoopMode
 
@@ -184,6 +185,9 @@ func (p *playbackEngine) SeekBackOrPrevious() error {
 
 // Seek to given absolute position in the current track by seconds.
 func (p *playbackEngine) SeekSeconds(sec float64) error {
+	if p.isRadio {
+		return nil // can't seek radio stations
+	}
 	return p.player.SeekSeconds(sec)
 }
 
@@ -424,8 +428,11 @@ func (p *playbackEngine) handleOnTrackChange() {
 			p.nowPlayingIdx = 0 // wrapped around
 		}
 	}
+	nowPlaying := p.playQueue[p.nowPlayingIdx]
+	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
+	p.isRadio = isRadio
 	p.wasStopped = false
-	p.curTrackDuration = float64(p.playQueue[p.nowPlayingIdx].Metadata().Duration)
+	p.curTrackDuration = float64(nowPlaying.Metadata().Duration)
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
 	p.doUpdateTimePos(false)
@@ -641,7 +648,12 @@ func (p *playbackEngine) doUpdateTimePos(seeked bool) {
 	if s.TimePos > p.latestTrackPosition {
 		p.latestTrackPosition = s.TimePos
 	}
+	duration := s.Duration
+	if p.isRadio {
+		// MPV reports buffered duration - we don't want to show this
+		duration = 0
+	}
 	for _, cb := range p.onPlayTimeUpdate {
-		cb(s.TimePos, s.Duration, seeked)
+		cb(s.TimePos, duration, seeked)
 	}
 }
