@@ -115,13 +115,14 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 		n.albumName.Text = ""
 		n.rating.Rating = 0
 		n.favorite.Favorite = false
+		return
 	}
 	meta := item.Metadata()
 	n.trackName.Segments[0].(*widget.TextSegment).Text = meta.Name
+	n.artistName.BuildSegments(meta.Artists, meta.ArtistIDs)
+	n.albumName.Text = meta.Album
 
 	if tr, ok := item.(*mediaprovider.Track); ok {
-		n.artistName.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
-		n.albumName.Text = tr.Album
 		n.rating.Rating = tr.Rating
 		n.favorite.Favorite = tr.Favorite
 	}

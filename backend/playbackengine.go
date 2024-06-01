@@ -44,7 +44,7 @@ type playbackEngine struct {
 	player        player.BasePlayer
 
 	playTimeStopwatch   util.Stopwatch
-	curTrackTime        float64
+	curTrackDuration    float64
 	latestTrackPosition float64 // cleared by checkScrobble
 	callbacksDisabled   bool
 
@@ -400,10 +400,7 @@ func (p *playbackEngine) handleOnTrackChange() {
 		}
 	}
 	p.wasStopped = false
-	p.curTrackTime = 0
-	if tr, ok := p.playQueue[p.nowPlayingIdx].(*mediaprovider.Track); ok {
-		p.curTrackTime = float64(tr.Duration)
-	}
+	p.curTrackDuration = float64(p.playQueue[p.nowPlayingIdx].Metadata().Duration)
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
 	p.doUpdateTimePos(false)
@@ -512,10 +509,10 @@ func (p *playbackEngine) checkScrobble() {
 	}
 
 	playDur := p.playTimeStopwatch.Elapsed()
-	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
+	if playDur.Seconds() < 0.1 || p.curTrackDuration < 0.1 {
 		return
 	}
-	pcnt := playDur.Seconds() / p.curTrackTime * 100
+	pcnt := playDur.Seconds() / p.curTrackDuration * 100
 	timeThresholdMet := p.scrobbleCfg.ThresholdTimeSeconds >= 0 &&
 		playDur.Seconds() >= float64(p.scrobbleCfg.ThresholdTimeSeconds)
 

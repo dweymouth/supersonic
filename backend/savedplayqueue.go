@@ -32,7 +32,7 @@ func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, server
 	trackIDs := make([]string, 0, len(queue))
 	for _, item := range queue {
 		if _, ok := item.(*mediaprovider.Track); ok {
-			// dont' save radio stations in play queue
+			// don't save radio stations in play queue
 			trackIDs = append(trackIDs, item.Metadata().ID)
 		}
 	}

@@ -281,7 +281,7 @@ func (p *PlaybackManager) SeekFraction(fraction float64) error {
 	} else if fraction > 1 {
 		fraction = 1
 	}
-	target := p.engine.curTrackTime * fraction
+	target := p.engine.curTrackDuration * fraction
 	return p.engine.SeekSeconds(target)
 }
 

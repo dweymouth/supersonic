@@ -71,11 +71,12 @@ func InitMPMediaHandler(playbackManager *PlaybackManager, artURLLookup func(trac
 
 	mp.playbackManager.OnSongChange(func(track mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		// Asynchronously because artwork fetching can take time
-		var meta mediaprovider.MediaItemMetadata
-		if track == nil {
-			meta = track.Metadata()
+		var meta *mediaprovider.MediaItemMetadata
+		if track != nil {
+			m := track.Metadata()
+			meta = &m
 		}
-		go mp.updateMetadata(&meta)
+		go mp.updateMetadata(meta)
 	})
 
 	mp.playbackManager.OnStopped(func() {
@@ -106,7 +107,9 @@ func (mp *MPMediaHandler) updateMetadata(meta *mediaprovider.MediaItemMetadata) 
 		title = meta.Name
 		var err error
 		if artURL, err = mp.artURLLookup(meta.CoverArtID); err != nil {
-			log.Printf("error fetching art url: %s", err.Error())
+			if meta.CoverArtID != "" {
+				log.Printf("error fetching art url: %s", err.Error())
+			}
 		}
 		artist = strings.Join(meta.Artists, ", ")
 		duration = meta.Duration

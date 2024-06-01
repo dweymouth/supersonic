@@ -94,9 +94,9 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		meta := item.Metadata()
 		artistDisp := ""
 		if tr, ok := item.(*mediaprovider.Track); ok {
-			artistDisp = strings.Join(tr.ArtistNames, ", ")
+			artistDisp = " – " + strings.Join(tr.ArtistNames, ", ")
 		}
-		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", meta.Name, artistDisp, displayAppName))
+		m.Window.SetTitle(fmt.Sprintf("%s%s · %s", meta.Name, artistDisp, displayAppName))
 		if m.App.Config.Application.ShowTrackChangeNotification {
 			// TODO: Once Fyne issue #2935 is resolved, show album cover
 			fyne.CurrentApp().SendNotification(&fyne.Notification{
