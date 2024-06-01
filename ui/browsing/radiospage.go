@@ -178,11 +178,11 @@ func (s *savedrRadiosPage) Restore() Page {
 func (a *RadiosPage) buildContainer() {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
 	a.container = container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
-		container.NewStack(a.noRadiosMsg,
-			container.NewBorder(
-				container.New(&layout.CustomPaddedLayout{LeftPadding: -5},
-					container.NewHBox(a.titleDisp, layout.NewSpacer(), searchVbox)),
-				nil, nil, nil, a.list)),
+		container.NewBorder(
+			container.New(&layout.CustomPaddedLayout{LeftPadding: -5},
+				container.NewHBox(a.titleDisp, layout.NewSpacer(), searchVbox)),
+			nil, nil, nil,
+			container.NewStack(a.noRadiosMsg, a.list)),
 	)
 }
 
@@ -236,7 +236,7 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 	a.ExtendBaseWidget(a)
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
 		{Text: "Name", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Home Page", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
+		{Text: "Home Page", Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
 		a.columnsLayout)
 	a.hdr.DisableSorting = true
 	a.list = widgets.NewFocusList(
