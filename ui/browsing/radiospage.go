@@ -30,6 +30,8 @@ type RadiosPage struct {
 	radios []*mediaprovider.RadioStation
 	list   *RadioList
 
+	nowPlayingID string
+
 	titleDisp *widget.RichText
 	container *fyne.Container
 	searcher  *widgets.SearchEntry
@@ -48,7 +50,7 @@ func newRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider,
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
-	a.list = NewRadioList()
+	a.list = NewRadioList(&a.nowPlayingID)
 	a.list.OnPlay = func(station *mediaprovider.RadioStation) {
 		pm.LoadRadioStation(station, backend.Replace)
 		pm.PlayFromBeginning()
@@ -111,6 +113,17 @@ func (a *RadiosPage) Scroll(amount float32) {
 	a.list.list.ScrollToOffset(a.list.list.GetScrollOffset() + amount)
 }
 
+var _ CanShowNowPlaying = (*RadiosPage)(nil)
+
+func (a *RadiosPage) OnSongChange(playing mediaprovider.MediaItem, _ *mediaprovider.Track) {
+	if playing != nil {
+		a.nowPlayingID = playing.Metadata().ID
+	} else {
+		a.nowPlayingID = ""
+	}
+	a.list.Refresh()
+}
+
 func (a *RadiosPage) Route() controller.Route {
 	return controller.RadiosRoute()
 }
@@ -165,20 +178,22 @@ type RadioList struct {
 	hdr           *widgets.ListHeader
 	list          *widgets.FocusList
 	container     *fyne.Container
+	playingIcon   fyne.CanvasObject
 }
 
 type RadioListRow struct {
 	widgets.FocusListRowBase
 
-	Item *mediaprovider.RadioStation
+	Item      *mediaprovider.RadioStation
+	IsPlaying bool
 
-	nameLabel    *widget.Label
+	nameLabel    *widget.RichText
 	homePageLink *widget.Hyperlink
 }
 
 func NewRadioListRow(layout *layouts.ColumnsLayout) *RadioListRow {
 	a := &RadioListRow{
-		nameLabel:    widget.NewLabel(""),
+		nameLabel:    widget.NewRichTextWithText(""),
 		homePageLink: widget.NewHyperlink("", nil),
 	}
 	a.ExtendBaseWidget(a)
@@ -188,10 +203,13 @@ func NewRadioListRow(layout *layouts.ColumnsLayout) *RadioListRow {
 	return a
 }
 
-func NewRadioList() *RadioList {
+func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 	a := &RadioList{
-		columnsLayout: layouts.NewColumnsLayout([]float32{-1, 125, 125}),
+		columnsLayout: layouts.NewColumnsLayout([]float32{-1, -1}),
 	}
+	playIcon := theme.NewThemedResource(theme.MediaPlayIcon())
+	playIcon.ColorName = theme.ColorNamePrimary
+	a.playingIcon = container.NewCenter(widget.NewIcon(playIcon))
 	a.ExtendBaseWidget(a)
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
 		{Text: "Name", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
@@ -211,15 +229,32 @@ func NewRadioList() *RadioList {
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			row := item.(*RadioListRow)
 			a.list.SetItemForID(id, row)
+			changed := false
 			if row.Item != a.radios[id] {
 				row.EnsureUnfocused()
 				row.ListItemID = id
 				row.Item = a.radios[id]
-				row.nameLabel.Text = row.Item.Name
+				row.nameLabel.Segments[0].(*widget.TextSegment).Text = row.Item.Name
 				row.homePageLink.Text = row.Item.HomePageURL
 				if u, err := url.Parse(row.Item.HomePageURL); err == nil {
 					row.homePageLink.URL = u
 				}
+				changed = true
+			}
+			isPlaying := *nowPlayingIDPtr == row.Item.ID
+			if row.IsPlaying != isPlaying {
+				row.IsPlaying = isPlaying
+				row.nameLabel.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+				if isPlaying {
+					row.Content.(*fyne.Container).Objects[0] =
+						container.NewBorder(nil, nil, a.playingIcon, nil,
+							container.New(layout.NewCustomPaddedLayout(0, 0, -5, 0), row.nameLabel))
+				} else {
+					row.Content.(*fyne.Container).Objects[0] = row.nameLabel
+				}
+				changed = true
+			}
+			if changed {
 				row.Refresh()
 			}
 		},
