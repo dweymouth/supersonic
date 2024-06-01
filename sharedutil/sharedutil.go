@@ -84,10 +84,13 @@ func FindMediaItemByID(id string, items []mediaprovider.MediaItem) mediaprovider
 }
 
 func MediaItemIDOrEmptyStr(item mediaprovider.MediaItem) string {
-	if item == nil {
-		return ""
+	if tr, ok := item.(*mediaprovider.Track); ok && tr != nil {
+		return tr.ID
 	}
-	return item.Metadata().ID
+	if rd, ok := item.(*mediaprovider.RadioStation); ok && rd != nil {
+		return rd.ID
+	}
+	return ""
 }
 
 func AlbumIDOrEmptyStr(track *mediaprovider.Track) string {

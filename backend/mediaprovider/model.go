@@ -170,7 +170,7 @@ type MediaItem interface {
 	Copy() MediaItem
 }
 
-func (t Track) Metadata() MediaItemMetadata {
+func (t *Track) Metadata() MediaItemMetadata {
 	return MediaItemMetadata{
 		Type:       MediaItemTypeTrack,
 		ID:         t.ID,
@@ -183,12 +183,13 @@ func (t Track) Metadata() MediaItemMetadata {
 		Duration:   t.Duration,
 	}
 }
+
 func (t *Track) Copy() MediaItem {
 	new := *t
 	return &new
 }
 
-func (r RadioStation) Metadata() MediaItemMetadata {
+func (r *RadioStation) Metadata() MediaItemMetadata {
 	return MediaItemMetadata{
 		Type: MediaItemTypeRadioStation,
 		ID:   r.ID,
