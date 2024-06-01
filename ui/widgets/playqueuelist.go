@@ -120,14 +120,14 @@ func (p *PlayQueueList) SetItems(items []mediaprovider.MediaItem) {
 	p.Refresh()
 }
 
-// Sets the currently playing track ID and updates the list rendering
-func (p *PlayQueueList) SetNowPlaying(trackID string) {
+// Sets the currently playing item ID and updates the list rendering
+func (p *PlayQueueList) SetNowPlaying(itemID string) {
 	prevNowPlaying := p.nowPlayingID
 	p.tracksMutex.RLock()
-	trPrev, idxPrev := util.FindTrackByID(p.items, prevNowPlaying)
-	tr, idx := util.FindTrackByID(p.items, trackID)
+	trPrev, idxPrev := util.FindItemByID(p.items, prevNowPlaying)
+	tr, idx := util.FindItemByID(p.items, itemID)
 	p.tracksMutex.RUnlock()
-	p.nowPlayingID = trackID
+	p.nowPlayingID = itemID
 	if trPrev != nil {
 		p.list.RefreshItem(idxPrev)
 	}

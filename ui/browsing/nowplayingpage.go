@@ -273,6 +273,9 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 		log.Printf("error loading cover art: %v\n", err)
 		return
 	}
+	if img == nil {
+		return
+	}
 	a.card.SetCoverImage(img)
 	c := dominantcolor.Find(img)
 	if c == a.background.StartColor {

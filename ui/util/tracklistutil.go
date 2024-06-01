@@ -78,12 +78,12 @@ func SelectItemRange(items []*TrackListModel, idx int) {
 	}
 }
 
-func FindTrackByID(items []*TrackListModel, id string) (*mediaprovider.Track, int) {
+func FindItemByID(items []*TrackListModel, id string) (mediaprovider.MediaItem, int) {
 	idx := slices.IndexFunc(items, func(tr *TrackListModel) bool {
 		return tr.Item.Metadata().ID == id
 	})
 	if idx >= 0 {
-		return items[idx].Track(), idx
+		return items[idx].Item, idx
 	}
 	return nil, -1
 }

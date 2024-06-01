@@ -271,8 +271,8 @@ func (t *Tracklist) SetSorting(sorting TracklistSort) {
 func (t *Tracklist) SetNowPlaying(trackID string) {
 	prevNowPlaying := t.nowPlayingID
 	t.tracksMutex.RLock()
-	trPrev, idxPrev := util.FindTrackByID(t.tracks, prevNowPlaying)
-	tr, idx := util.FindTrackByID(t.tracks, trackID)
+	trPrev, idxPrev := util.FindItemByID(t.tracks, prevNowPlaying)
+	tr, idx := util.FindItemByID(t.tracks, trackID)
 	t.tracksMutex.RUnlock()
 	t.nowPlayingID = trackID
 	if trPrev != nil {
@@ -286,10 +286,10 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 // Increments the play count of the given track and updates the list rendering
 func (t *Tracklist) IncrementPlayCount(trackID string) {
 	t.tracksMutex.RLock()
-	tr, idx := util.FindTrackByID(t.tracks, trackID)
+	tr, idx := util.FindItemByID(t.tracks, trackID)
 	t.tracksMutex.RUnlock()
 	if tr != nil {
-		tr.PlayCount += 1
+		tr.(*mediaprovider.Track).PlayCount += 1
 		t.list.RefreshItem(idx)
 	}
 }
@@ -581,9 +581,9 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
 	t.tracksMutex.RLock()
-	tr, _ := util.FindTrackByID(t.tracks, trackID)
+	item, _ := util.FindItemByID(t.tracks, trackID)
 	t.tracksMutex.RUnlock()
-	t.onSetFavorites([]*mediaprovider.Track{tr}, fav, false)
+	t.onSetFavorites([]*mediaprovider.Track{item.(*mediaprovider.Track)}, fav, false)
 }
 
 func (t *Tracklist) onSetFavorites(tracks []*mediaprovider.Track, fav bool, needRefresh bool) {
@@ -602,9 +602,9 @@ func (t *Tracklist) onSetFavorites(tracks []*mediaprovider.Track, fav bool, need
 func (t *Tracklist) onSetRating(trackID string, rating int) {
 	// update our own track model
 	t.tracksMutex.RLock()
-	tr, _ := util.FindTrackByID(t.tracks, trackID)
+	item, _ := util.FindItemByID(t.tracks, trackID)
 	t.tracksMutex.RUnlock()
-	t.onSetRatings([]*mediaprovider.Track{tr}, rating, false)
+	t.onSetRatings([]*mediaprovider.Track{item.(*mediaprovider.Track)}, rating, false)
 }
 
 func (t *Tracklist) onSetRatings(tracks []*mediaprovider.Track, rating int, needRefresh bool) {
