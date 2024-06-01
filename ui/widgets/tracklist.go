@@ -534,7 +534,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			t.songRadioMenuItem = fyne.NewMenuItem("Play song radio", func() {
 				t.onPlaySongRadio(t.selectedTracks())
 			})
-			t.songRadioMenuItem.Icon = myTheme.BroadcastIcon
+			t.songRadioMenuItem.Icon = myTheme.RadioIcon
 			t.ctxMenu.Items = append(t.ctxMenu.Items,
 				play, shuffle, playNext, add, t.songRadioMenuItem)
 		}

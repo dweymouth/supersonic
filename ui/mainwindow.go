@@ -273,7 +273,7 @@ func (m *MainWindow) addNavigationButtons() {
 	m.BrowsingPane.AddNavigationButton(theme.TracksIcon, controller.Tracks, func() {
 		m.Router.NavigateTo(controller.TracksRoute())
 	})
-	m.radioBtn = m.BrowsingPane.AddNavigationButton(theme.TracksIcon /*todo*/, controller.Radios, func() {
+	m.radioBtn = m.BrowsingPane.AddNavigationButton(theme.RadioIcon, controller.Radios, func() {
 		m.Router.NavigateTo(controller.RadiosRoute())
 	})
 }
