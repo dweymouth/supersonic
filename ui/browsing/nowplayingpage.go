@@ -43,7 +43,7 @@ type NowPlayingPage struct {
 	curRelatedID string // id of track currrently used to populate related list
 	totalTime    float64
 	lastPlayPos  float64
-	queue        []*mediaprovider.Track
+	queue        []mediaprovider.MediaItem
 	related      []*mediaprovider.Track
 
 	lyricLock   sync.Mutex
@@ -122,7 +122,7 @@ func NewNowPlayingPage(
 
 	a.queueList = widgets.NewPlayQueueList(a.im)
 	a.relatedList = widgets.NewPlayQueueList(a.im)
-	a.queueList.OnReorderTracks = a.doSetNewTrackOrder
+	a.queueList.OnReorderItems = a.doSetNewTrackOrder
 	a.queueList.OnDownload = contr.ShowDownloadDialog
 	a.queueList.OnShare = func(tracks []*mediaprovider.Track) {
 		if len(tracks) > 0 {
@@ -401,12 +401,11 @@ func (a *NowPlayingPage) Reload() {
 	a.relatedList.DisableRating = !a.canRate
 	a.relatedList.DisableSharing = !a.canShare
 
-	// TODO
-	//a.queue = a.pm.GetPlayQueue()
-	a.queueList.SetTracks(a.queue)
+	a.queue = a.pm.GetPlayQueue()
+	a.queueList.SetItems(a.queue)
 	a.totalTime = 0.0
 	for _, tr := range a.queue {
-		a.totalTime += float64(tr.Duration)
+		a.totalTime += float64(tr.Metadata().Duration)
 	}
 	a.formatStatusLine()
 }
@@ -459,11 +458,11 @@ func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.Tra
 	trackIDSet := sharedutil.ToSet(trackIDs)
 	idxs := make([]int, 0, len(trackIDs))
 	for i, tr := range a.queue {
-		if _, ok := trackIDSet[tr.ID]; ok {
+		if _, ok := trackIDSet[tr.Metadata().ID]; ok {
 			idxs = append(idxs, i)
 		}
 	}
-	newTracks := sharedutil.ReorderTracks(a.queue, idxs, op)
+	newTracks := sharedutil.ReorderMediaItems(a.queue, idxs, op)
 	a.pm.UpdatePlayQueue(newTracks)
 }
 

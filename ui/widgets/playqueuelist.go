@@ -23,6 +23,11 @@ import (
 
 const playQueueListThumbnailSize = 52
 
+type PlayQueueListModel struct {
+	Item     mediaprovider.MediaItem
+	Selected bool
+}
+
 type PlayQueueList struct {
 	widget.BaseWidget
 
@@ -33,12 +38,12 @@ type PlayQueueList struct {
 	OnAddToPlaylist   func(trackIDs []string)
 	OnSetFavorite     func(trackIDs []string, fav bool)
 	OnSetRating       func(trackIDs []string, rating int)
-	OnRemoveFromQueue func(trackIDs []string)
+	OnRemoveFromQueue func(itemIDs []string)
 	OnDownload        func(tracks []*mediaprovider.Track, downloadName string)
 	OnShare           func(tracks []*mediaprovider.Track)
 	OnShowArtistPage  func(artistID string)
 	OnPlayTrackAt     func(idx int)
-	OnReorderTracks   func(trackIDs []string, op sharedutil.TrackReorderOp)
+	OnReorderItems    func(itemIDs []string, op sharedutil.TrackReorderOp)
 
 	list          *FocusList
 	menu          *widget.PopUpMenu
@@ -49,7 +54,7 @@ type PlayQueueList struct {
 	colLayout    *layouts.ColumnsLayout
 
 	tracksMutex sync.RWMutex
-	tracks      []*util.TrackListModel
+	items       []*util.TrackListModel
 }
 
 func NewPlayQueueList(im *backend.ImageManager) *PlayQueueList {
@@ -78,16 +83,16 @@ func NewPlayQueueList(im *backend.ImageManager) *PlayQueueList {
 			// we could have removed tracks from the list in between
 			// Fyne calling the length callback and this update callback
 			// so the itemID may be out of bounds. if so, do nothing.
-			if itemID >= len(p.tracks) {
+			if itemID >= len(p.items) {
 				p.tracksMutex.RUnlock()
 				return
 			}
-			model := p.tracks[itemID]
+			model := p.items[itemID]
 			p.tracksMutex.RUnlock()
 
 			tr := item.(*PlayQueueListRow)
 			p.list.SetItemForID(itemID, tr)
-			if tr.trackID != model.Track.ID || tr.ListItemID != itemID {
+			if tr.trackID != model.Item.Metadata().ID || tr.ListItemID != itemID {
 				tr.ListItemID = itemID
 			}
 			tr.Update(model, itemID+1)
@@ -100,7 +105,17 @@ func NewPlayQueueList(im *backend.ImageManager) *PlayQueueList {
 func (p *PlayQueueList) SetTracks(trs []*mediaprovider.Track) {
 	p.tracksMutex.Lock()
 	p.list.ClearItemForIDMap()
-	p.tracks = util.ToTrackListModels(trs)
+	p.items = util.ToTrackListModels(trs)
+	p.tracksMutex.Unlock()
+	p.Refresh()
+}
+
+func (p *PlayQueueList) SetItems(items []mediaprovider.MediaItem) {
+	p.tracksMutex.Lock()
+	p.list.ClearItemForIDMap()
+	p.items = sharedutil.MapSlice(items, func(item mediaprovider.MediaItem) *util.TrackListModel {
+		return &util.TrackListModel{Item: item}
+	})
 	p.tracksMutex.Unlock()
 	p.Refresh()
 }
@@ -109,8 +124,8 @@ func (p *PlayQueueList) SetTracks(trs []*mediaprovider.Track) {
 func (p *PlayQueueList) SetNowPlaying(trackID string) {
 	prevNowPlaying := p.nowPlayingID
 	p.tracksMutex.RLock()
-	trPrev, idxPrev := util.FindTrackByID(p.tracks, prevNowPlaying)
-	tr, idx := util.FindTrackByID(p.tracks, trackID)
+	trPrev, idxPrev := util.FindTrackByID(p.items, prevNowPlaying)
+	tr, idx := util.FindTrackByID(p.items, trackID)
 	p.tracksMutex.RUnlock()
 	p.nowPlayingID = trackID
 	if trPrev != nil {
@@ -123,14 +138,14 @@ func (p *PlayQueueList) SetNowPlaying(trackID string) {
 
 func (p *PlayQueueList) SelectAll() {
 	p.tracksMutex.RLock()
-	util.SelectAllTracks(p.tracks)
+	util.SelectAllItems(p.items)
 	p.tracksMutex.RUnlock()
 	p.list.Refresh()
 }
 
 func (p *PlayQueueList) UnselectAll() {
 	p.tracksMutex.RLock()
-	util.UnselectAllTracks(p.tracks)
+	util.UnselectAllItems(p.items)
 	p.tracksMutex.RUnlock()
 	p.Refresh()
 }
@@ -138,7 +153,7 @@ func (p *PlayQueueList) UnselectAll() {
 func (p *PlayQueueList) lenTracks() int {
 	p.tracksMutex.RLock()
 	defer p.tracksMutex.RUnlock()
-	return len(p.tracks)
+	return len(p.items)
 }
 
 func (t *PlayQueueList) onArtistTapped(artistID string) {
@@ -172,19 +187,19 @@ func (p *PlayQueueList) onSelectTrack(idx int) {
 func (p *PlayQueueList) selectTrack(idx int) {
 	p.tracksMutex.RLock()
 	defer p.tracksMutex.RUnlock()
-	util.SelectTrack(p.tracks, idx)
+	util.SelectItem(p.items, idx)
 }
 
 func (p *PlayQueueList) selectAddOrRemove(idx int) {
 	p.tracksMutex.RLock()
 	defer p.tracksMutex.RUnlock()
-	p.tracks[idx].Selected = !p.tracks[idx].Selected
+	p.items[idx].Selected = !p.items[idx].Selected
 }
 
 func (p *PlayQueueList) selectRange(idx int) {
 	p.tracksMutex.RLock()
 	defer p.tracksMutex.RUnlock()
-	util.SelectTrackRange(p.tracks, idx)
+	util.SelectItemRange(p.items, idx)
 }
 
 func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
@@ -233,8 +248,8 @@ func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		})
 		remove.Icon = theme.ContentRemoveIcon()
 		reorder := util.NewReorderTracksSubmenu(func(tro sharedutil.TrackReorderOp) {
-			if p.OnReorderTracks != nil {
-				p.OnReorderTracks(p.selectedTrackIDs(), tro)
+			if p.OnReorderItems != nil {
+				p.OnReorderItems(p.selectedTrackIDs(), tro)
 			}
 		})
 
@@ -262,13 +277,13 @@ func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 func (t *PlayQueueList) selectedTracks() []*mediaprovider.Track {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
-	return util.SelectedTracks(t.tracks)
+	return util.SelectedTracks(t.items)
 }
 
 func (t *PlayQueueList) selectedTrackIDs() []string {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
-	return util.SelectedTrackIDs(t.tracks)
+	return util.SelectedItemIDs(t.items)
 }
 
 func (p *PlayQueueList) CreateRenderer() fyne.WidgetRenderer {
@@ -355,19 +370,19 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 
 	// Update info that can change if this row is bound to
 	// a new track (*mediaprovider.Track)
-	tr := tm.Track
-	if tr.ID != p.trackID {
-		p.imageLoader.Load(tm.Track.CoverArtID)
+	meta := tm.Item.Metadata()
+	if meta.ID != p.trackID {
+		p.imageLoader.Load(meta.CoverArtID)
 		p.EnsureUnfocused()
-		p.trackID = tr.ID
-		p.title.Text = tr.Title
-		p.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
-		p.time.Text = util.SecondsToTimeString(float64(tr.Duration))
+		p.trackID = meta.ID
+		p.title.Text = meta.Name
+		p.artist.BuildSegments(meta.Artists, meta.ArtistIDs)
+		p.time.Text = util.SecondsToTimeString(float64(meta.Duration))
 		changed = true
 	}
 
 	// Render whether track is playing or not
-	if isPlaying := p.playQueueList.nowPlayingID == tr.ID; isPlaying != p.isPlaying {
+	if isPlaying := p.playQueueList.nowPlayingID == meta.ID; isPlaying != p.isPlaying {
 		p.isPlaying = isPlaying
 		p.title.TextStyle.Bold = isPlaying
 

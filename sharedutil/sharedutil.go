@@ -112,6 +112,9 @@ const (
 	MoveDown
 )
 
+// TODO: it's a shame the below function is just duplicated for a slice of mediaprovider.MediaItem
+// Find out if there's a better way with refactoring.
+
 // Reorder tracks and return a new track slice.
 // idxToMove must contain only valid indexes into tracks, and no repeats
 func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReorderOp) []*mediaprovider.Track {
@@ -155,6 +158,60 @@ func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReord
 	case MoveDown:
 		last := lastIdxCanMoveDown(idxToMove, len(tracks))
 		copy(newTracks, tracks)
+		for i := len(idxToMove) - 1; i >= 0; i-- {
+			idx := idxToMove[i]
+			if idx > last {
+				continue
+			}
+			newTracks[idx+1], newTracks[idx] = newTracks[idx], newTracks[idx+1]
+		}
+	}
+	return newTracks
+}
+
+// Reorder media items and return a new item slice.
+// idxToMove must contain only valid indexes into items, and no repeats
+func ReorderMediaItems(items []mediaprovider.MediaItem, idxToMove []int, op TrackReorderOp) []mediaprovider.MediaItem {
+	newTracks := make([]mediaprovider.MediaItem, len(items))
+	switch op {
+	case MoveToTop:
+		topIdx := 0
+		botIdx := len(idxToMove)
+		idxToMoveSet := ToSet(idxToMove)
+		for i, t := range items {
+			if _, ok := idxToMoveSet[i]; ok {
+				newTracks[topIdx] = t
+				topIdx++
+			} else {
+				newTracks[botIdx] = t
+				botIdx++
+			}
+		}
+	case MoveToBottom:
+		topIdx := 0
+		botIdx := len(items) - len(idxToMove)
+		idxToMoveSet := ToSet(idxToMove)
+		for i, t := range items {
+			if _, ok := idxToMoveSet[i]; ok {
+				newTracks[botIdx] = t
+				botIdx++
+			} else {
+				newTracks[topIdx] = t
+				topIdx++
+			}
+		}
+	case MoveUp:
+		first := firstIdxCanMoveUp(idxToMove)
+		copy(newTracks, items)
+		for _, i := range idxToMove {
+			if i < first {
+				continue
+			}
+			newTracks[i-1], newTracks[i] = newTracks[i], newTracks[i-1]
+		}
+	case MoveDown:
+		last := lastIdxCanMoveDown(idxToMove, len(items))
+		copy(newTracks, items)
 		for i := len(idxToMove) - 1; i >= 0; i-- {
 			idx := idxToMove[i]
 			if idx > last {

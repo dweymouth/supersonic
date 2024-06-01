@@ -248,7 +248,7 @@ func (p *playbackEngine) StopAndClearPlayQueue() {
 }
 
 func (p *playbackEngine) GetPlayQueue() []mediaprovider.MediaItem {
-	return p.deepCopyTrackSlice(p.playQueue)
+	return p.deepCopyMediaItemSlice(p.playQueue)
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
@@ -274,8 +274,8 @@ func (p *playbackEngine) OnTrackRatingChanged(id string, rating int) {
 // Replaces the play queue with the given set of tracks.
 // Does not stop playback if the currently playing track is in the new queue,
 // but updates the now playing index to point to the first instance of the track in the new queue.
-func (p *playbackEngine) UpdatePlayQueue(tracks []*mediaprovider.Track) error {
-	newQueue := p.copyTrackSliceToMediaItemSlice(tracks)
+func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error {
+	newQueue := p.deepCopyMediaItemSlice(items)
 	newNowPlayingIdx := -1
 	if p.nowPlayingIdx >= 0 {
 		nowPlayingID := p.playQueue[p.nowPlayingIdx].Metadata().ID
@@ -548,7 +548,7 @@ func (p *playbackEngine) sendNowPlayingScrobble() {
 
 // creates a deep copy of the track info so that we can maintain our own state
 // (play count increases, favorite, and rating) without messing up other views' track models
-func (p *playbackEngine) deepCopyTrackSlice(tracks []mediaprovider.MediaItem) []mediaprovider.MediaItem {
+func (p *playbackEngine) deepCopyMediaItemSlice(tracks []mediaprovider.MediaItem) []mediaprovider.MediaItem {
 	newTracks := make([]mediaprovider.MediaItem, len(tracks))
 	for i, tr := range tracks {
 		newTracks[i] = tr.Copy()

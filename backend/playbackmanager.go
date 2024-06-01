@@ -126,8 +126,8 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueM
 // Replaces the play queue with the given set of tracks.
 // Does not stop playback if the currently playing track is in the new queue,
 // but updates the now playing index to point to the first instance of the track in the new queue.
-func (p *PlaybackManager) UpdatePlayQueue(tracks []*mediaprovider.Track) error {
-	return p.engine.UpdatePlayQueue(tracks)
+func (p *PlaybackManager) UpdatePlayQueue(items []mediaprovider.MediaItem) error {
+	return p.engine.UpdatePlayQueue(items)
 }
 
 func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool) error {
