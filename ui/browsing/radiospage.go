@@ -32,9 +32,10 @@ type RadiosPage struct {
 
 	nowPlayingID string
 
-	titleDisp *widget.RichText
-	container *fyne.Container
-	searcher  *widgets.SearchEntry
+	titleDisp   *widget.RichText
+	noRadiosMsg fyne.CanvasObject
+	container   *fyne.Container
+	searcher    *widgets.SearchEntry
 }
 
 func NewRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider, pm *backend.PlaybackManager) *RadiosPage {
@@ -59,6 +60,21 @@ func newRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider,
 	a.searcher.PlaceHolder = "Search page"
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
+
+	a.noRadiosMsg = container.NewCenter(
+		container.New(layout.NewCustomPaddedVBoxLayout(-10),
+			container.NewCenter(
+				container.NewBorder(nil, nil,
+					widget.NewIcon(theme.InfoIcon()), nil,
+					widget.NewRichText(&widget.TextSegment{
+						Text:  "No radio stations available",
+						Style: widget.RichTextStyleSubHeading,
+					}))),
+			widget.NewLabel("Configure your music server to add radio stations"),
+		),
+	)
+	a.noRadiosMsg.Hide()
+
 	a.buildContainer()
 	go a.load(searchText != "", scrollPos)
 	return a
@@ -69,6 +85,11 @@ func (a *RadiosPage) load(searchOnLoad bool, scrollPos float32) {
 	radios, err := a.rp.GetRadioStations()
 	if err != nil {
 		log.Printf("error loading radios: %v", err.Error())
+	}
+	if len(radios) == 0 {
+		a.noRadiosMsg.Show()
+	} else {
+		a.noRadiosMsg.Hide()
 	}
 	a.radios = radios
 	if searchOnLoad {
@@ -157,10 +178,12 @@ func (s *savedrRadiosPage) Restore() Page {
 func (a *RadiosPage) buildContainer() {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
 	a.container = container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
-		container.NewBorder(
-			container.New(&layout.CustomPaddedLayout{LeftPadding: -5},
-				container.NewHBox(a.titleDisp, layout.NewSpacer(), searchVbox)),
-			nil, nil, nil, a.list))
+		container.NewStack(a.noRadiosMsg,
+			container.NewBorder(
+				container.New(&layout.CustomPaddedLayout{LeftPadding: -5},
+					container.NewHBox(a.titleDisp, layout.NewSpacer(), searchVbox)),
+				nil, nil, nil, a.list)),
+	)
 }
 
 func (a *RadiosPage) CreateRenderer() fyne.WidgetRenderer {
