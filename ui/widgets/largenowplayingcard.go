@@ -125,6 +125,9 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 	if tr, ok := item.(*mediaprovider.Track); ok {
 		n.rating.Rating = tr.Rating
 		n.favorite.Favorite = tr.Favorite
+	} else {
+		n.rating.Rating = 0
+		n.favorite.Favorite = false
 	}
 
 	n.Refresh()
