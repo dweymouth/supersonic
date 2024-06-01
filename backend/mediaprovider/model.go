@@ -171,6 +171,9 @@ type MediaItem interface {
 }
 
 func (t *Track) Metadata() MediaItemMetadata {
+	if t == nil {
+		return MediaItemMetadata{}
+	}
 	return MediaItemMetadata{
 		Type:       MediaItemTypeTrack,
 		ID:         t.ID,
@@ -190,6 +193,9 @@ func (t *Track) Copy() MediaItem {
 }
 
 func (r *RadioStation) Metadata() MediaItemMetadata {
+	if r == nil {
+		return MediaItemMetadata{}
+	}
 	return MediaItemMetadata{
 		Type: MediaItemTypeRadioStation,
 		ID:   r.ID,
