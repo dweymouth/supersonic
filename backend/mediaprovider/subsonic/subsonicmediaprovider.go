@@ -424,6 +424,7 @@ func (s *subsonicMediaProvider) GetRadioStations() ([]*mediaprovider.RadioStatio
 	}
 	return sharedutil.MapSlice(rs, func(rs *subsonic.InternetRadioStation) *mediaprovider.RadioStation {
 		return &mediaprovider.RadioStation{
+			// TODO - subsonic library is missing ID in its radiostation object. add it
 			ID:          "radio-" + strings.ReplaceAll(rs.Name, " ", ""),
 			Name:        rs.Name,
 			HomePageURL: rs.HomePageUrl,

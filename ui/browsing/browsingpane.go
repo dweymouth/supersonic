@@ -140,11 +140,13 @@ func (b *BrowsingPane) AddSettingsMenuSeparator() {
 		fyne.NewMenuItemSeparator())
 }
 
-func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, pageName controller.PageName, action func()) {
+func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, pageName controller.PageName, action func()) *widget.Button {
 	// make a copy of the icon, because it can change the color
 	browsingPaneIcon := theme.NewThemedResource(icon)
-	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", browsingPaneIcon, action))
+	btn := widget.NewButtonWithIcon("", browsingPaneIcon, action)
+	b.navBtnsContainer.Add(btn)
 	b.navBtnsPageMap[pageName] = browsingPaneIcon
+	return btn
 }
 
 func (b *BrowsingPane) DisableNavigationButtons() {

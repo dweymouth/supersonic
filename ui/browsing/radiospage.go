@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -25,6 +26,7 @@ type RadiosPage struct {
 
 	contr  *controller.Controller
 	rp     mediaprovider.RadioProvider
+	pm     *backend.PlaybackManager
 	radios []*mediaprovider.RadioStation
 	list   *RadioList
 
@@ -33,19 +35,24 @@ type RadiosPage struct {
 	searcher  *widgets.SearchEntry
 }
 
-func NewRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider) *RadiosPage {
-	return newRadiosPage(contr, rp, "", 0)
+func NewRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider, pm *backend.PlaybackManager) *RadiosPage {
+	return newRadiosPage(contr, rp, pm, "", 0)
 }
 
-func newRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider, searchText string, scrollPos float32) *RadiosPage {
+func newRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider, pm *backend.PlaybackManager, searchText string, scrollPos float32) *RadiosPage {
 	a := &RadiosPage{
 		contr:     contr,
 		rp:        rp,
+		pm:        pm,
 		titleDisp: widget.NewRichTextWithText("Internet Radio Stations"),
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
 	a.list = NewRadioList()
+	a.list.OnPlay = func(station *mediaprovider.RadioStation) {
+		pm.LoadRadioStation(station, backend.Replace)
+		pm.PlayFromBeginning()
+	}
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.PlaceHolder = "Search page"
 	a.searcher.OnSearched = a.onSearched
@@ -105,9 +112,7 @@ func (a *RadiosPage) Scroll(amount float32) {
 }
 
 func (a *RadiosPage) Route() controller.Route {
-	// TODO
-	//return controller.RadiosRoute()
-	return controller.Route{}
+	return controller.RadiosRoute()
 }
 
 func (a *RadiosPage) Reload() {
@@ -118,6 +123,7 @@ func (a *RadiosPage) Save() SavedPage {
 	return &savedrRadiosPage{
 		contr:      a.contr,
 		rp:         a.rp,
+		pm:         a.pm,
 		searchText: a.searcher.Entry.Text,
 		scrollPos:  a.list.list.GetScrollOffset(),
 	}
@@ -126,12 +132,13 @@ func (a *RadiosPage) Save() SavedPage {
 type savedrRadiosPage struct {
 	contr      *controller.Controller
 	rp         mediaprovider.RadioProvider
+	pm         *backend.PlaybackManager
 	searchText string
 	scrollPos  float32
 }
 
 func (s *savedrRadiosPage) Restore() Page {
-	return newRadiosPage(s.contr, s.rp, s.searchText, s.scrollPos)
+	return newRadiosPage(s.contr, s.rp, s.pm, s.searchText, s.scrollPos)
 }
 
 func (a *RadiosPage) buildContainer() {
@@ -150,7 +157,7 @@ func (a *RadiosPage) CreateRenderer() fyne.WidgetRenderer {
 type RadioList struct {
 	widget.BaseWidget
 
-	OnPlay func(string)
+	OnPlay func(*mediaprovider.RadioStation)
 
 	radios []*mediaprovider.RadioStation
 
@@ -228,7 +235,7 @@ func (g *RadioList) SetRadios(radios []*mediaprovider.RadioStation) {
 
 func (a *RadioList) onPlayRadio(item *mediaprovider.RadioStation) {
 	if a.OnPlay != nil {
-		a.OnPlay(item.ID)
+		a.OnPlay(item)
 	}
 }
 

@@ -53,6 +53,9 @@ type MainWindow struct {
 	theme          *theme.MyTheme
 	haveSystemTray bool
 	container      *fyne.Container
+
+	// needs to bes shown/hidden when switching between servers based on whether they support radio
+	radioBtn *widget.Button
 }
 
 func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App, size fyne.Size) MainWindow {
@@ -183,6 +186,11 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 		}
 		m.App.Config.Application.LastCheckedVersion = t
 	}
+
+	_, supportsRadio := m.App.ServerManager.Server.(mediaprovider.RadioProvider)
+	m.radioBtn.Hidden = !supportsRadio
+	m.radioBtn.Refresh()
+
 	m.App.SaveConfigFile()
 }
 
@@ -264,6 +272,9 @@ func (m *MainWindow) addNavigationButtons() {
 	})
 	m.BrowsingPane.AddNavigationButton(theme.TracksIcon, controller.Tracks, func() {
 		m.Router.NavigateTo(controller.TracksRoute())
+	})
+	m.radioBtn = m.BrowsingPane.AddNavigationButton(theme.TracksIcon /*todo*/, controller.Radios, func() {
+		m.Router.NavigateTo(controller.RadiosRoute())
 	})
 }
 

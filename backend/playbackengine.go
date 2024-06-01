@@ -235,6 +235,31 @@ func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMo
 	return nil
 }
 
+func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, insertMode InsertQueueMode) {
+	if insertMode == Replace {
+		p.player.Stop()
+		p.nowPlayingIdx = -1
+		p.playQueue = nil
+	}
+	needToSetNext := insertMode == InsertNext || (insertMode == Append && p.nowPlayingIdx == len(p.playQueue)-1)
+	insertIdx := len(p.playQueue)
+	if insertMode == InsertNext {
+		insertIdx = p.nowPlayingIdx + 1
+	}
+	new := make([]mediaprovider.MediaItem, len(p.playQueue)+1)
+	firstHalf := p.playQueue[:insertIdx]
+	copy(new, firstHalf)
+	new[len(firstHalf)] = radio
+	copy(new[len(firstHalf)+1:], p.playQueue[insertIdx:])
+	p.playQueue = new
+
+	if needToSetNext {
+		p.setNextTrack(p.nowPlayingIdx + 1)
+	}
+
+	p.invokeNoArgCallbacks(p.onQueueChange)
+}
+
 // Stop playback and clear the play queue.
 func (p *playbackEngine) StopAndClearPlayQueue() {
 	changed := len(p.playQueue) > 0

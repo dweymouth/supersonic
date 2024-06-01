@@ -55,6 +55,10 @@ func (r Router) CreatePage(rte controller.Route) Page {
 		return NewPlaylistsPage(r.Controller, r.widgetPool, &r.App.Config.PlaylistsPage, r.App.ServerManager.Server)
 	case controller.Tracks:
 		return NewTracksPage(r.Controller, &r.App.Config.TracksPage, r.widgetPool, r.App.ServerManager.Server, r.App.ImageManager)
+	case controller.Radios:
+		var rp mediaprovider.RadioProvider
+		rp, _ = r.App.ServerManager.Server.(mediaprovider.RadioProvider)
+		return NewRadiosPage(r.Controller, rp, r.App.PlaybackManager)
 	}
 	return nil
 }
