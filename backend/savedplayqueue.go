@@ -36,6 +36,13 @@ func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, server
 			trackIDs = append(trackIDs, item.Metadata().ID)
 		}
 	}
+	if l := len(trackIDs); trackIdx >= l {
+		if l == 0 {
+			trackIdx = 0
+		} else {
+			trackIdx = l - 1
+		}
+	}
 
 	saved := serializedSavedPlayQueue{
 		ServerID:   serverID,
