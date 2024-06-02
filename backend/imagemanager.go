@@ -249,7 +249,11 @@ func (i *ImageManager) fetchAndCacheCoverFromServer(ctx context.Context, coverID
 	case <-ctx.Done():
 		return nil, context.Canceled
 	case i.serverFetchSema <- struct{}{}: // acquire
-		img, err := i.s.Server.GetCoverArt(coverID, coverArtThumbnailSize)
+		server := i.s.Server
+		if server == nil {
+			return nil, errors.New("logged out")
+		}
+		img, err := server.GetCoverArt(coverID, coverArtThumbnailSize)
 		<-i.serverFetchSema // release
 		if err == nil {
 			if i.ensureCoverCacheDir() != "" {
@@ -277,7 +281,11 @@ func (i *ImageManager) getFullSizeCoverArtFromServer(ctx context.Context, coverI
 	case <-ctx.Done():
 		return nil, context.Canceled
 	case i.serverFetchSema <- struct{}{}: // acquire
-		im, err := i.s.Server.GetCoverArt(coverID, 0)
+		server := i.s.Server
+		if server == nil {
+			return nil, errors.New("logged out")
+		}
+		im, err := server.GetCoverArt(coverID, 0)
 		<-i.serverFetchSema // release
 		if err == nil {
 			i.cachedFullSizeCover = im
