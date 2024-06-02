@@ -164,7 +164,7 @@ func (b *BrowsingPane) EnableNavigationButtons() {
 func (b *BrowsingPane) ActivateNavigationButton(num int) {
 	if num < len(b.navBtnsContainer.Objects) {
 		btn := b.navBtnsContainer.Objects[num].(*widget.Button)
-		if !btn.Disabled() {
+		if !btn.Disabled() && !btn.Hidden {
 			btn.OnTapped()
 		}
 	}

@@ -36,9 +36,10 @@ var (
 	ShortcutNavFive  = desktop.CustomShortcut{KeyName: fyne.Key5, Modifier: os.ControlModifier}
 	ShortcutNavSix   = desktop.CustomShortcut{KeyName: fyne.Key6, Modifier: os.ControlModifier}
 	ShortcutNavSeven = desktop.CustomShortcut{KeyName: fyne.Key7, Modifier: os.ControlModifier}
+	ShortcutNavEight = desktop.CustomShortcut{KeyName: fyne.Key8, Modifier: os.ControlModifier}
 
 	NavShortcuts = []desktop.CustomShortcut{ShortcutNavOne, ShortcutNavTwo, ShortcutNavThree,
-		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix, ShortcutNavSeven}
+		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix, ShortcutNavSeven, ShortcutNavEight}
 )
 
 type MainWindow struct {
