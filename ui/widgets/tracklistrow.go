@@ -175,8 +175,8 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 }
 
 func (t *ExpandedTracklistRow) Update(tm *util.TrackListModel, rowNum int) {
-	if t.trackID != tm.Track.ID {
-		t.imageLoader.Load(tm.Track.CoverArtID)
+	if t.trackID != tm.Track().ID {
+		t.imageLoader.Load(tm.Track().CoverArtID)
 	}
 	t.tracklistRowBase.Update(tm, rowNum)
 }
@@ -256,12 +256,12 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 
 	// Update info that can change if this row is bound to
 	// a new track (*mediaprovider.Track)
-	tr := tm.Track
-	if tr.ID != t.trackID {
+	tr := tm.Track()
+	if id := tr.ID; id != t.trackID {
 		t.EnsureUnfocused()
-		t.trackID = tr.ID
+		t.trackID = id
 
-		t.name.Segments[0].(*widget.TextSegment).Text = tr.Name
+		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		t.album.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
 		t.dur.Text = util.SecondsToTimeString(float64(tr.Duration))

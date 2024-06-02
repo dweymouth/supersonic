@@ -321,7 +321,7 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	}
 	card.ItemIndex = itemIdx
 	g.itemForIndex[itemIdx] = card
-	card.Cover.Im.CenterIcon = g.Placeholder
+	card.Cover.Im.PlaceholderIcon = g.Placeholder
 	if !card.NeedsUpdate(item) && card.ItemIndex == itemIdx {
 		// nothing to do
 		g.stateMutex.Unlock()

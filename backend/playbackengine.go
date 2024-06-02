@@ -44,12 +44,13 @@ type playbackEngine struct {
 	player        player.BasePlayer
 
 	playTimeStopwatch   util.Stopwatch
-	curTrackTime        float64
+	curTrackDuration    float64
 	latestTrackPosition float64 // cleared by checkScrobble
 	callbacksDisabled   bool
 
-	playQueue     []*mediaprovider.Track
+	playQueue     []mediaprovider.MediaItem
 	nowPlayingIdx int
+	isRadio       bool
 	wasStopped    bool // true iff player was stopped before handleOnTrackChange invocation
 	loopMode      LoopMode
 
@@ -60,7 +61,7 @@ type playbackEngine struct {
 	replayGainCfg ReplayGainConfig
 
 	// registered callbacks
-	onSongChange     []func(nowPlaying, justScrobbledIfAny *mediaprovider.Track)
+	onSongChange     []func(nowPlaying mediaprovider.MediaItem, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate []func(float64, float64, bool)
 	onLoopModeChange []func(LoopMode)
 	onVolumeChange   []func(int)
@@ -122,8 +123,8 @@ func (p *playbackEngine) PlayTrackAt(idx int) error {
 	return p.setTrack(idx, false)
 }
 
-// Gets the curently playing song, if any.
-func (p *playbackEngine) NowPlaying() *mediaprovider.Track {
+// Gets the curently playing media item, if any.
+func (p *playbackEngine) NowPlaying() mediaprovider.MediaItem {
 	if p.nowPlayingIdx < 0 || len(p.playQueue) == 0 || p.player.GetStatus().State == player.Stopped {
 		return nil
 	}
@@ -184,6 +185,9 @@ func (p *playbackEngine) SeekBackOrPrevious() error {
 
 // Seek to given absolute position in the current track by seconds.
 func (p *playbackEngine) SeekSeconds(sec float64) error {
+	if p.isRadio {
+		return nil // can't seek radio stations
+	}
 	return p.player.SeekSeconds(sec)
 }
 
@@ -216,7 +220,7 @@ func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMo
 	}
 	needToSetNext := len(tracks) > 0 && (insertQueueMode == InsertNext || (insertQueueMode == Append && p.nowPlayingIdx == len(p.playQueue)-1))
 
-	newTracks := p.deepCopyTrackSlice(tracks)
+	newTracks := p.copyTrackSliceToMediaItemSlice(tracks)
 	if shuffle {
 		rand.Shuffle(len(newTracks), func(i, j int) { newTracks[i], newTracks[j] = newTracks[j], newTracks[i] })
 	}
@@ -235,6 +239,31 @@ func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMo
 	return nil
 }
 
+func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, insertMode InsertQueueMode) {
+	if insertMode == Replace {
+		p.player.Stop()
+		p.nowPlayingIdx = -1
+		p.playQueue = nil
+	}
+	needToSetNext := insertMode == InsertNext || (insertMode == Append && p.nowPlayingIdx == len(p.playQueue)-1)
+	insertIdx := len(p.playQueue)
+	if insertMode == InsertNext {
+		insertIdx = p.nowPlayingIdx + 1
+	}
+	new := make([]mediaprovider.MediaItem, len(p.playQueue)+1)
+	firstHalf := p.playQueue[:insertIdx]
+	copy(new, firstHalf)
+	new[len(firstHalf)] = radio
+	copy(new[len(firstHalf)+1:], p.playQueue[insertIdx:])
+	p.playQueue = new
+
+	if needToSetNext {
+		p.setNextTrack(p.nowPlayingIdx + 1)
+	}
+
+	p.invokeNoArgCallbacks(p.onQueueChange)
+}
+
 // Stop playback and clear the play queue.
 func (p *playbackEngine) StopAndClearPlayQueue() {
 	changed := len(p.playQueue) > 0
@@ -247,36 +276,40 @@ func (p *playbackEngine) StopAndClearPlayQueue() {
 	}
 }
 
-func (p *playbackEngine) GetPlayQueue() []*mediaprovider.Track {
-	return p.deepCopyTrackSlice(p.playQueue)
+func (p *playbackEngine) GetPlayQueue() []mediaprovider.MediaItem {
+	return p.deepCopyMediaItemSlice(p.playQueue)
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
 // this should be called to ensure the in-memory track model is updated.
 func (p *playbackEngine) OnTrackFavoriteStatusChanged(id string, fav bool) {
-	if tr := sharedutil.FindTrackByID(id, p.playQueue); tr != nil {
-		tr.Favorite = fav
+	if item := sharedutil.FindMediaItemByID(id, p.playQueue); item != nil {
+		if tr, ok := item.(*mediaprovider.Track); ok {
+			tr.Favorite = fav
+		}
 	}
 }
 
 // Any time the user changes the rating of a track elsewhere in the app,
 // this should be called to ensure the in-memory track model is updated.
 func (p *playbackEngine) OnTrackRatingChanged(id string, rating int) {
-	if tr := sharedutil.FindTrackByID(id, p.playQueue); tr != nil {
-		tr.Rating = rating
+	if item := sharedutil.FindMediaItemByID(id, p.playQueue); item != nil {
+		if tr, ok := item.(*mediaprovider.Track); ok {
+			tr.Rating = rating
+		}
 	}
 }
 
 // Replaces the play queue with the given set of tracks.
 // Does not stop playback if the currently playing track is in the new queue,
 // but updates the now playing index to point to the first instance of the track in the new queue.
-func (p *playbackEngine) UpdatePlayQueue(tracks []*mediaprovider.Track) error {
-	newQueue := p.deepCopyTrackSlice(tracks)
+func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error {
+	newQueue := p.deepCopyMediaItemSlice(items)
 	newNowPlayingIdx := -1
 	if p.nowPlayingIdx >= 0 {
-		nowPlayingID := p.playQueue[p.nowPlayingIdx].ID
+		nowPlayingID := p.playQueue[p.nowPlayingIdx].Metadata().ID
 		for i, tr := range newQueue {
-			if tr.ID == nowPlayingID {
+			if tr.Metadata().ID == nowPlayingID {
 				newNowPlayingIdx = i
 				break
 			}
@@ -298,14 +331,14 @@ func (p *playbackEngine) UpdatePlayQueue(tracks []*mediaprovider.Track) error {
 }
 
 func (p *playbackEngine) RemoveTracksFromQueue(trackIDs []string) {
-	newQueue := make([]*mediaprovider.Track, 0, len(p.playQueue)-len(trackIDs))
+	newQueue := make([]mediaprovider.MediaItem, 0, len(p.playQueue)-len(trackIDs))
 	idSet := sharedutil.ToSet(trackIDs)
 	isPlayingTrackRemoved := false
 	isNextPlayingTrackremoved := false
 	nowPlaying := p.NowPlayingIndex()
 	newNowPlaying := nowPlaying
 	for i, tr := range p.playQueue {
-		if _, ok := idSet[tr.ID]; ok {
+		if _, ok := idSet[tr.Metadata().ID]; ok {
 			if i < nowPlaying {
 				// if removing a track earlier than the currently playing one (if any),
 				// decrement new now playing index by one to account for new position in queue
@@ -395,8 +428,11 @@ func (p *playbackEngine) handleOnTrackChange() {
 			p.nowPlayingIdx = 0 // wrapped around
 		}
 	}
+	nowPlaying := p.playQueue[p.nowPlayingIdx]
+	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
+	p.isRadio = isRadio
 	p.wasStopped = false
-	p.curTrackTime = float64(p.playQueue[p.nowPlayingIdx].Duration)
+	p.curTrackDuration = float64(nowPlaying.Metadata().Duration)
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
 	p.doUpdateTimePos(false)
@@ -460,7 +496,12 @@ func (p *playbackEngine) setTrack(idx int, next bool) error {
 		url := ""
 		if idx >= 0 {
 			var err error
-			url, err = p.sm.Server.GetStreamURL(p.playQueue[idx].ID, p.transcodeCfg.ForceRawFile)
+			item := p.playQueue[idx]
+			if tr, ok := item.(*mediaprovider.Track); ok {
+				url, err = p.sm.Server.GetStreamURL(tr.ID, p.transcodeCfg.ForceRawFile)
+			} else {
+				url = item.(*mediaprovider.RadioStation).StreamURL
+			}
 			if err != nil {
 				return err
 			}
@@ -472,7 +513,10 @@ func (p *playbackEngine) setTrack(idx int, next bool) error {
 	} else if trP, ok := p.player.(player.TrackPlayer); ok {
 		var track *mediaprovider.Track
 		if idx >= 0 {
-			track = p.playQueue[idx]
+			track, ok = p.playQueue[idx].(*mediaprovider.Track)
+			if !ok {
+				return errors.New("cannot play non-Track media item with TrackPlayer")
+			}
 		}
 		if next {
 			return trP.SetNextTrack(track)
@@ -491,15 +535,19 @@ func (p *playbackEngine) checkScrobble() {
 	if !p.scrobbleCfg.Enabled || len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
 		return
 	}
+	track, ok := p.playQueue[p.nowPlayingIdx].(*mediaprovider.Track)
+	if !ok {
+		return // radio stations are not scrobbled
+	}
+
 	playDur := p.playTimeStopwatch.Elapsed()
-	if playDur.Seconds() < 0.1 || p.curTrackTime < 0.1 {
+	if playDur.Seconds() < 0.1 || p.curTrackDuration < 0.1 {
 		return
 	}
-	pcnt := playDur.Seconds() / p.curTrackTime * 100
+	pcnt := playDur.Seconds() / p.curTrackDuration * 100
 	timeThresholdMet := p.scrobbleCfg.ThresholdTimeSeconds >= 0 &&
 		playDur.Seconds() >= float64(p.scrobbleCfg.ThresholdTimeSeconds)
 
-	track := p.playQueue[p.nowPlayingIdx]
 	var submission bool
 	server := p.sm.Server
 	if server.ClientDecidesScrobble() && (timeThresholdMet || pcnt >= float64(p.scrobbleCfg.ThresholdPercent)) {
@@ -516,7 +564,11 @@ func (p *playbackEngine) sendNowPlayingScrobble() {
 	if !p.scrobbleCfg.Enabled || len(p.playQueue) == 0 || p.nowPlayingIdx < 0 {
 		return
 	}
-	track := p.playQueue[p.nowPlayingIdx]
+	track, ok := p.playQueue[p.nowPlayingIdx].(*mediaprovider.Track)
+	if !ok {
+		return // radio stations are not scrobbled
+	}
+
 	server := p.sm.Server
 	if !server.ClientDecidesScrobble() {
 		// server will count track as scrobbled as soon as it starts playing
@@ -528,11 +580,18 @@ func (p *playbackEngine) sendNowPlayingScrobble() {
 
 // creates a deep copy of the track info so that we can maintain our own state
 // (play count increases, favorite, and rating) without messing up other views' track models
-func (p *playbackEngine) deepCopyTrackSlice(tracks []*mediaprovider.Track) []*mediaprovider.Track {
-	newTracks := make([]*mediaprovider.Track, len(tracks))
+func (p *playbackEngine) deepCopyMediaItemSlice(tracks []mediaprovider.MediaItem) []mediaprovider.MediaItem {
+	newTracks := make([]mediaprovider.MediaItem, len(tracks))
 	for i, tr := range tracks {
-		copy := *tr
-		newTracks[i] = &copy
+		newTracks[i] = tr.Copy()
+	}
+	return newTracks
+}
+
+func (p *playbackEngine) copyTrackSliceToMediaItemSlice(tracks []*mediaprovider.Track) []mediaprovider.MediaItem {
+	newTracks := make([]mediaprovider.MediaItem, len(tracks))
+	for i, tr := range tracks {
+		newTracks[i] = tr.Copy()
 	}
 	return newTracks
 }
@@ -589,7 +648,12 @@ func (p *playbackEngine) doUpdateTimePos(seeked bool) {
 	if s.TimePos > p.latestTrackPosition {
 		p.latestTrackPosition = s.TimePos
 	}
+	duration := s.Duration
+	if p.isRadio {
+		// MPV reports buffered duration - we don't want to show this
+		duration = 0
+	}
 	for _, cb := range p.onPlayTimeUpdate {
-		cb(s.TimePos, s.Duration, seeked)
+		cb(s.TimePos, duration, seeked)
 	}
 }

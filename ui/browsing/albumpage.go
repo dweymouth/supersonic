@@ -130,10 +130,12 @@ func (a *AlbumPage) Route() controller.Route {
 	return controller.AlbumRoute(a.albumID)
 }
 
-func (a *AlbumPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
-	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(track)
+var _ CanShowNowPlaying = (*AlbumPage)(nil)
+
+func (a *AlbumPage) OnSongChange(track mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
+	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(track)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
+	a.tracklist.IncrementPlayCount(sharedutil.MediaItemIDOrEmptyStr(lastScrobbledIfAny))
 }
 
 func (a *AlbumPage) Reload() {

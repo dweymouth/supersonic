@@ -827,8 +827,8 @@ func (c *Controller) downloadTrack(track *mediaprovider.Track, filePath string) 
 		return
 	}
 
-	log.Printf("Saved song %s to: %s\n", track.Name, filePath)
-	c.sendNotification(fmt.Sprintf("Download completed: %s", track.Name), fmt.Sprintf("Saved at: %s", filePath))
+	log.Printf("Saved song %s to: %s\n", track.Title, filePath)
+	c.sendNotification(fmt.Sprintf("Download completed: %s", track.Title), fmt.Sprintf("Saved at: %s", filePath))
 }
 
 func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath, downloadName string) {
@@ -863,7 +863,7 @@ func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath, dow
 			continue
 		}
 
-		log.Printf("Saved song %s to: %s\n", track.Name, filePath)
+		log.Printf("Saved song %s to: %s\n", track.Title, filePath)
 	}
 
 	c.sendNotification(fmt.Sprintf("Download completed: %s", downloadName), fmt.Sprintf("Saved at: %s", filePath))

@@ -23,6 +23,11 @@ import (
 
 const playQueueListThumbnailSize = 52
 
+type PlayQueueListModel struct {
+	Item     mediaprovider.MediaItem
+	Selected bool
+}
+
 type PlayQueueList struct {
 	widget.BaseWidget
 
@@ -33,15 +38,16 @@ type PlayQueueList struct {
 	OnAddToPlaylist   func(trackIDs []string)
 	OnSetFavorite     func(trackIDs []string, fav bool)
 	OnSetRating       func(trackIDs []string, rating int)
-	OnRemoveFromQueue func(trackIDs []string)
+	OnRemoveFromQueue func(itemIDs []string)
 	OnDownload        func(tracks []*mediaprovider.Track, downloadName string)
 	OnShare           func(tracks []*mediaprovider.Track)
 	OnShowArtistPage  func(artistID string)
 	OnPlayTrackAt     func(idx int)
-	OnReorderTracks   func(trackIDs []string, op sharedutil.TrackReorderOp)
+	OnReorderItems    func(itemIDs []string, op sharedutil.TrackReorderOp)
 
 	list          *FocusList
-	menu          *widget.PopUpMenu
+	menu          *widget.PopUpMenu // ctx menu for when only tracks are selected
+	radiosMenu    *widget.PopUpMenu // ctx menu for when selection contains radios
 	ratingSubmenu *fyne.MenuItem
 	shareMenuItem *fyne.MenuItem
 
@@ -49,7 +55,7 @@ type PlayQueueList struct {
 	colLayout    *layouts.ColumnsLayout
 
 	tracksMutex sync.RWMutex
-	tracks      []*util.TrackListModel
+	items       []*util.TrackListModel
 }
 
 func NewPlayQueueList(im *backend.ImageManager) *PlayQueueList {
@@ -78,16 +84,16 @@ func NewPlayQueueList(im *backend.ImageManager) *PlayQueueList {
 			// we could have removed tracks from the list in between
 			// Fyne calling the length callback and this update callback
 			// so the itemID may be out of bounds. if so, do nothing.
-			if itemID >= len(p.tracks) {
+			if itemID >= len(p.items) {
 				p.tracksMutex.RUnlock()
 				return
 			}
-			model := p.tracks[itemID]
+			model := p.items[itemID]
 			p.tracksMutex.RUnlock()
 
 			tr := item.(*PlayQueueListRow)
 			p.list.SetItemForID(itemID, tr)
-			if tr.trackID != model.Track.ID || tr.ListItemID != itemID {
+			if tr.trackID != model.Item.Metadata().ID || tr.ListItemID != itemID {
 				tr.ListItemID = itemID
 			}
 			tr.Update(model, itemID+1)
@@ -100,19 +106,29 @@ func NewPlayQueueList(im *backend.ImageManager) *PlayQueueList {
 func (p *PlayQueueList) SetTracks(trs []*mediaprovider.Track) {
 	p.tracksMutex.Lock()
 	p.list.ClearItemForIDMap()
-	p.tracks = util.ToTrackListModels(trs)
+	p.items = util.ToTrackListModels(trs)
 	p.tracksMutex.Unlock()
 	p.Refresh()
 }
 
-// Sets the currently playing track ID and updates the list rendering
-func (p *PlayQueueList) SetNowPlaying(trackID string) {
+func (p *PlayQueueList) SetItems(items []mediaprovider.MediaItem) {
+	p.tracksMutex.Lock()
+	p.list.ClearItemForIDMap()
+	p.items = sharedutil.MapSlice(items, func(item mediaprovider.MediaItem) *util.TrackListModel {
+		return &util.TrackListModel{Item: item}
+	})
+	p.tracksMutex.Unlock()
+	p.Refresh()
+}
+
+// Sets the currently playing item ID and updates the list rendering
+func (p *PlayQueueList) SetNowPlaying(itemID string) {
 	prevNowPlaying := p.nowPlayingID
 	p.tracksMutex.RLock()
-	trPrev, idxPrev := util.FindTrackByID(p.tracks, prevNowPlaying)
-	tr, idx := util.FindTrackByID(p.tracks, trackID)
+	trPrev, idxPrev := util.FindItemByID(p.items, prevNowPlaying)
+	tr, idx := util.FindItemByID(p.items, itemID)
 	p.tracksMutex.RUnlock()
-	p.nowPlayingID = trackID
+	p.nowPlayingID = itemID
 	if trPrev != nil {
 		p.list.RefreshItem(idxPrev)
 	}
@@ -123,14 +139,14 @@ func (p *PlayQueueList) SetNowPlaying(trackID string) {
 
 func (p *PlayQueueList) SelectAll() {
 	p.tracksMutex.RLock()
-	util.SelectAllTracks(p.tracks)
+	util.SelectAllItems(p.items)
 	p.tracksMutex.RUnlock()
 	p.list.Refresh()
 }
 
 func (p *PlayQueueList) UnselectAll() {
 	p.tracksMutex.RLock()
-	util.UnselectAllTracks(p.tracks)
+	util.UnselectAllItems(p.items)
 	p.tracksMutex.RUnlock()
 	p.Refresh()
 }
@@ -138,7 +154,7 @@ func (p *PlayQueueList) UnselectAll() {
 func (p *PlayQueueList) lenTracks() int {
 	p.tracksMutex.RLock()
 	defer p.tracksMutex.RUnlock()
-	return len(p.tracks)
+	return len(p.items)
 }
 
 func (t *PlayQueueList) onArtistTapped(artistID string) {
@@ -172,103 +188,152 @@ func (p *PlayQueueList) onSelectTrack(idx int) {
 func (p *PlayQueueList) selectTrack(idx int) {
 	p.tracksMutex.RLock()
 	defer p.tracksMutex.RUnlock()
-	util.SelectTrack(p.tracks, idx)
+	util.SelectItem(p.items, idx)
 }
 
 func (p *PlayQueueList) selectAddOrRemove(idx int) {
 	p.tracksMutex.RLock()
 	defer p.tracksMutex.RUnlock()
-	p.tracks[idx].Selected = !p.tracks[idx].Selected
+	p.items[idx].Selected = !p.items[idx].Selected
 }
 
 func (p *PlayQueueList) selectRange(idx int) {
 	p.tracksMutex.RLock()
 	defer p.tracksMutex.RUnlock()
-	util.SelectTrackRange(p.tracks, idx)
+	util.SelectItemRange(p.items, idx)
 }
 
 func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	p.selectTrack(trackIdx)
 	p.list.Refresh()
-	if p.menu == nil {
-		playlist := fyne.NewMenuItem("Add to playlist...", func() {
-			if p.OnAddToPlaylist != nil {
-				p.OnAddToPlaylist(p.selectedTrackIDs())
-			}
-		})
-		playlist.Icon = myTheme.PlaylistIcon
-		download := fyne.NewMenuItem("Download...", func() {
-			if p.OnDownload != nil {
-				p.OnDownload(p.selectedTracks(), "Selected tracks")
-			}
-		})
-		download.Icon = theme.DownloadIcon()
-		p.shareMenuItem = fyne.NewMenuItem("Share...", func() {
-			if p.OnShare != nil {
-				p.OnShare(p.selectedTracks())
-			}
-		})
-		p.shareMenuItem.Icon = myTheme.ShareIcon
-		favorite := fyne.NewMenuItem("Set favorite", func() {
-			if p.OnSetFavorite != nil {
-				p.OnSetFavorite(p.selectedTrackIDs(), true)
-			}
-		})
-		favorite.Icon = myTheme.FavoriteIcon
-		unfavorite := fyne.NewMenuItem("Unset favorite", func() {
-			if p.OnSetFavorite != nil {
-				p.OnSetFavorite(p.selectedTrackIDs(), false)
-			}
-		})
-		unfavorite.Icon = myTheme.NotFavoriteIcon
-		p.ratingSubmenu = util.NewRatingSubmenu(func(rating int) {
-			if p.OnSetRating != nil {
-				p.OnSetRating(p.selectedTrackIDs(), rating)
-			}
-		})
-		remove := fyne.NewMenuItem("Remove from queue", func() {
-			if p.OnRemoveFromQueue != nil {
-				p.OnRemoveFromQueue(p.selectedTrackIDs())
-			}
-		})
-		remove.Icon = theme.ContentRemoveIcon()
-		reorder := util.NewReorderTracksSubmenu(func(tro sharedutil.TrackReorderOp) {
-			if p.OnReorderTracks != nil {
-				p.OnReorderTracks(p.selectedTrackIDs(), tro)
-			}
-		})
+	selected := p.selectedItems()
 
-		p.menu = widget.NewPopUpMenu(
-			fyne.NewMenu("",
-				playlist,
-				download,
-				p.shareMenuItem,
-				fyne.NewMenuItemSeparator(),
-				favorite,
-				unfavorite,
-				p.ratingSubmenu,
-				fyne.NewMenuItemSeparator(),
-				reorder,
-				remove,
-			),
-			fyne.CurrentApp().Driver().CanvasForObject(p),
-		)
+	allTracks := true
+	for _, item := range selected {
+		if item.Metadata().Type == mediaprovider.MediaItemTypeRadioStation {
+			allTracks = false
+			break
+		}
 	}
-	p.ratingSubmenu.Disabled = p.DisableRating
-	p.shareMenuItem.Disabled = p.DisableSharing || len(p.selectedTracks()) != 1
-	p.menu.ShowAtPosition(e.AbsolutePosition)
+
+	var menu *widget.PopUpMenu
+	if allTracks {
+		p.ensureTracksMenu()
+		p.ratingSubmenu.Disabled = p.DisableRating
+		p.shareMenuItem.Disabled = p.DisableSharing || len(selected) != 1
+		menu = p.menu
+	} else {
+		p.ensureRadiosMenu()
+		menu = p.radiosMenu
+	}
+	menu.ShowAtPosition(e.AbsolutePosition)
+}
+
+func (p *PlayQueueList) ensureTracksMenu() {
+	if p.menu != nil {
+		return
+	}
+	playlist := fyne.NewMenuItem("Add to playlist...", func() {
+		if p.OnAddToPlaylist != nil {
+			p.OnAddToPlaylist(p.selectedItemIDs())
+		}
+	})
+	playlist.Icon = myTheme.PlaylistIcon
+	download := fyne.NewMenuItem("Download...", func() {
+		if p.OnDownload != nil {
+			p.OnDownload(p.selectedTracks(), "Selected tracks")
+		}
+	})
+	download.Icon = theme.DownloadIcon()
+	p.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+		if p.OnShare != nil {
+			p.OnShare(p.selectedTracks())
+		}
+	})
+	p.shareMenuItem.Icon = myTheme.ShareIcon
+	favorite := fyne.NewMenuItem("Set favorite", func() {
+		if p.OnSetFavorite != nil {
+			p.OnSetFavorite(p.selectedItemIDs(), true)
+		}
+	})
+	favorite.Icon = myTheme.FavoriteIcon
+	unfavorite := fyne.NewMenuItem("Unset favorite", func() {
+		if p.OnSetFavorite != nil {
+			p.OnSetFavorite(p.selectedItemIDs(), false)
+		}
+	})
+	unfavorite.Icon = myTheme.NotFavoriteIcon
+	p.ratingSubmenu = util.NewRatingSubmenu(func(rating int) {
+		if p.OnSetRating != nil {
+			p.OnSetRating(p.selectedItemIDs(), rating)
+		}
+	})
+	remove := fyne.NewMenuItem("Remove from queue", func() {
+		if p.OnRemoveFromQueue != nil {
+			p.OnRemoveFromQueue(p.selectedItemIDs())
+		}
+	})
+	remove.Icon = theme.ContentRemoveIcon()
+	reorder := util.NewReorderTracksSubmenu(func(tro sharedutil.TrackReorderOp) {
+		if p.OnReorderItems != nil {
+			p.OnReorderItems(p.selectedItemIDs(), tro)
+		}
+	})
+
+	p.menu = widget.NewPopUpMenu(
+		fyne.NewMenu("",
+			playlist,
+			download,
+			p.shareMenuItem,
+			fyne.NewMenuItemSeparator(),
+			favorite,
+			unfavorite,
+			p.ratingSubmenu,
+			fyne.NewMenuItemSeparator(),
+			reorder,
+			remove,
+		),
+		fyne.CurrentApp().Driver().CanvasForObject(p),
+	)
+}
+
+func (p *PlayQueueList) ensureRadiosMenu() {
+	if p.radiosMenu != nil {
+		return
+	}
+	remove := fyne.NewMenuItem("Remove from queue", func() {
+		if p.OnRemoveFromQueue != nil {
+			p.OnRemoveFromQueue(p.selectedItemIDs())
+		}
+	})
+	remove.Icon = theme.ContentRemoveIcon()
+	reorder := util.NewReorderTracksSubmenu(func(tro sharedutil.TrackReorderOp) {
+		if p.OnReorderItems != nil {
+			p.OnReorderItems(p.selectedItemIDs(), tro)
+		}
+	})
+	p.radiosMenu = widget.NewPopUpMenu(
+		fyne.NewMenu("", remove, reorder),
+		fyne.CurrentApp().Driver().CanvasForObject(p),
+	)
+}
+
+func (t *PlayQueueList) selectedItems() []mediaprovider.MediaItem {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	return util.SelectedItems(t.items)
 }
 
 func (t *PlayQueueList) selectedTracks() []*mediaprovider.Track {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
-	return util.SelectedTracks(t.tracks)
+	return util.SelectedTracks(t.items)
 }
 
-func (t *PlayQueueList) selectedTrackIDs() []string {
+func (t *PlayQueueList) selectedItemIDs() []string {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
-	return util.SelectedTrackIDs(t.tracks)
+	return util.SelectedItemIDs(t.items)
 }
 
 func (p *PlayQueueList) CreateRenderer() fyne.WidgetRenderer {
@@ -355,19 +420,24 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 
 	// Update info that can change if this row is bound to
 	// a new track (*mediaprovider.Track)
-	tr := tm.Track
-	if tr.ID != p.trackID {
-		p.imageLoader.Load(tm.Track.CoverArtID)
+	meta := tm.Item.Metadata()
+	if meta.ID != p.trackID {
+		if meta.Type == mediaprovider.MediaItemTypeRadioStation {
+			p.cover.PlaceholderIcon = myTheme.RadioIcon
+		} else {
+			p.cover.PlaceholderIcon = myTheme.TracksIcon
+		}
+		p.imageLoader.Load(meta.CoverArtID)
 		p.EnsureUnfocused()
-		p.trackID = tr.ID
-		p.title.Text = tr.Name
-		p.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
-		p.time.Text = util.SecondsToTimeString(float64(tr.Duration))
+		p.trackID = meta.ID
+		p.title.Text = meta.Name
+		p.artist.BuildSegments(meta.Artists, meta.ArtistIDs)
+		p.time.Text = util.SecondsToTimeString(float64(meta.Duration))
 		changed = true
 	}
 
 	// Render whether track is playing or not
-	if isPlaying := p.playQueueList.nowPlayingID == tr.ID; isPlaying != p.isPlaying {
+	if isPlaying := p.playQueueList.nowPlayingID == meta.ID; isPlaying != p.isPlaying {
 		p.isPlaying = isPlaying
 		p.title.TextStyle.Bold = isPlaying
 

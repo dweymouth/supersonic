@@ -126,10 +126,12 @@ func (a *PlaylistPage) Route() controller.Route {
 	return controller.PlaylistRoute(a.playlistID)
 }
 
-func (a *PlaylistPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
-	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(track)
+var _ CanShowNowPlaying = (*PlaylistPage)(nil)
+
+func (a *PlaylistPage) OnSongChange(item mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
+	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(item)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
+	a.tracklist.IncrementPlayCount(sharedutil.MediaItemIDOrEmptyStr(lastScrobbledIfAny))
 }
 
 func (a *PlaylistPage) Reload() {
@@ -187,7 +189,7 @@ func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
 			idxs = append(idxs, i)
 		}
 	}
-	newTracks := sharedutil.ReorderTracks(a.tracks, idxs, op)
+	newTracks := sharedutil.ReorderItems(a.tracks, idxs, op)
 	ids := sharedutil.TracksToIDs(newTracks)
 	if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 		log.Printf("error updating playlist: %s", err.Error())

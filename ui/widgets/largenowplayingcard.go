@@ -20,15 +20,18 @@ type LargeNowPlayingCard struct {
 
 	DisableRating bool
 
-	trackName  *widget.RichText
-	artistName *MultiHyperlink
-	albumName  *widget.Hyperlink
-	rating     *StarRating
-	favorite   *FavoriteIcon
-	cover      *ImagePlaceholder
+	isRadio                 bool
+	trackName               *widget.RichText
+	artistName              *MultiHyperlink
+	albumName               *widget.Hyperlink
+	rating                  *StarRating
+	favorite                *FavoriteIcon
+	ratingFavoriteContainer *fyne.Container
+	cover                   *ImagePlaceholder
 
 	OnArtistNameTapped func(artistID string)
 	OnAlbumNameTapped  func()
+	OnRadioURLTapped   func(url string)
 	OnSetRating        func(rating int)
 	OnSetFavorite      func(favorite bool)
 }
@@ -49,17 +52,18 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	n.cover.ScaleMode = canvas.ImageScaleFastest
 	// set up the layout
 	n.Content = n.cover
+	n.ratingFavoriteContainer = container.NewHBox(
+		layout.NewSpacer(),
+		n.favorite,
+		widget.NewLabel("·"),
+		n.rating,
+		layout.NewSpacer(),
+	)
 	n.Caption = container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-13),
 		n.trackName,
 		n.artistName,
 		n.albumName,
-		container.NewHBox(
-			layout.NewSpacer(),
-			n.favorite,
-			widget.NewLabel("·"),
-			n.rating,
-			layout.NewSpacer(),
-		),
+		n.ratingFavoriteContainer,
 	)
 
 	n.trackName.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText
@@ -79,6 +83,12 @@ func (n *LargeNowPlayingCard) onAlbumNameTapped() {
 }
 
 func (n *LargeNowPlayingCard) onArtistNameTapped(artistID string) {
+	if n.isRadio {
+		if n.OnRadioURLTapped != nil {
+			n.OnRadioURLTapped(artistID)
+		}
+		return
+	}
 	if n.OnArtistNameTapped != nil {
 		n.OnArtistNameTapped(artistID)
 	}
@@ -108,19 +118,32 @@ func (n *LargeNowPlayingCard) SetDisplayedFavorite(favorite bool) {
 	n.favorite.Refresh()
 }
 
-func (n *LargeNowPlayingCard) Update(track *mediaprovider.Track) {
-	if track != nil {
-		n.trackName.Segments[0].(*widget.TextSegment).Text = track.Name
-		n.artistName.BuildSegments(track.ArtistNames, track.ArtistIDs)
-		n.albumName.Text = track.Album
-		n.rating.Rating = track.Rating
-		n.favorite.Favorite = track.Favorite
-	} else {
+func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
+	if item == nil {
 		n.trackName.Segments[0].(*widget.TextSegment).Text = ""
 		n.artistName.BuildSegments([]string{}, []string{})
 		n.albumName.Text = ""
 		n.rating.Rating = 0
 		n.favorite.Favorite = false
+		return
+	}
+	meta := item.Metadata()
+	n.trackName.Segments[0].(*widget.TextSegment).Text = meta.Name
+	n.albumName.Text = meta.Album
+	n.albumName.Hidden = meta.AlbumID == ""
+
+	if tr, ok := item.(*mediaprovider.Track); ok {
+		n.artistName.BuildSegments(meta.Artists, meta.ArtistIDs)
+		n.rating.Rating = tr.Rating
+		n.favorite.Favorite = tr.Favorite
+		n.cover.PlaceholderIcon = myTheme.TracksIcon
+		n.ratingFavoriteContainer.Hidden = false
+		n.isRadio = false
+	} else if rd, ok := item.(*mediaprovider.RadioStation); ok {
+		n.artistName.BuildSegments([]string{rd.HomePageURL}, []string{rd.HomePageURL})
+		n.ratingFavoriteContainer.Hidden = true
+		n.cover.PlaceholderIcon = myTheme.RadioIcon
+		n.isRadio = true
 	}
 
 	n.Refresh()

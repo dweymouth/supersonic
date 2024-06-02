@@ -45,8 +45,8 @@ func (p *PlaybackManager) DisableCallbacks() {
 	p.engine.callbacksDisabled = true
 }
 
-// Gets the curently playing song, if any.
-func (p *PlaybackManager) NowPlaying() *mediaprovider.Track {
+// Gets the now playing media item, if any.
+func (p *PlaybackManager) NowPlaying() mediaprovider.MediaItem {
 	return p.engine.NowPlaying()
 }
 
@@ -55,7 +55,7 @@ func (p *PlaybackManager) NowPlayingIndex() int {
 }
 
 // Sets a callback that is notified whenever a new song begins playing.
-func (p *PlaybackManager) OnSongChange(cb func(nowPlaying *mediaprovider.Track, justScrobbledIfAny *mediaprovider.Track)) {
+func (p *PlaybackManager) OnSongChange(cb func(nowPlaying mediaprovider.MediaItem, justScrobbledIfAny *mediaprovider.Track)) {
 	p.engine.onSongChange = append(p.engine.onSongChange, cb)
 }
 
@@ -126,8 +126,8 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueM
 // Replaces the play queue with the given set of tracks.
 // Does not stop playback if the currently playing track is in the new queue,
 // but updates the now playing index to point to the first instance of the track in the new queue.
-func (p *PlaybackManager) UpdatePlayQueue(tracks []*mediaprovider.Track) error {
-	return p.engine.UpdatePlayQueue(tracks)
+func (p *PlaybackManager) UpdatePlayQueue(items []mediaprovider.MediaItem) error {
+	return p.engine.UpdatePlayQueue(items)
 }
 
 func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool) error {
@@ -182,6 +182,10 @@ func (p *PlaybackManager) PlaySimilarSongs(id string) {
 	})
 }
 
+func (p *PlaybackManager) LoadRadioStation(station *mediaprovider.RadioStation, queueMode InsertQueueMode) {
+	p.engine.LoadRadioStation(station, queueMode)
+}
+
 func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Track, error)) {
 	if songs, err := fetchFn(); err != nil {
 		log.Printf("error fetching tracks: %s", err.Error())
@@ -194,7 +198,7 @@ func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Tr
 	}
 }
 
-func (p *PlaybackManager) GetPlayQueue() []*mediaprovider.Track {
+func (p *PlaybackManager) GetPlayQueue() []mediaprovider.MediaItem {
 	return p.engine.GetPlayQueue()
 }
 
@@ -281,7 +285,7 @@ func (p *PlaybackManager) SeekFraction(fraction float64) error {
 	} else if fraction > 1 {
 		fraction = 1
 	}
-	target := p.engine.curTrackTime * fraction
+	target := p.engine.curTrackDuration * fraction
 	return p.engine.SeekSeconds(target)
 }
 

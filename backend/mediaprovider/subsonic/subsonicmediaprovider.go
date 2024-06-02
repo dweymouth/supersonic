@@ -367,7 +367,7 @@ func (s *subsonicMediaProvider) GetLyrics(track *mediaprovider.Track) (*mediapro
 		return mpLyrics, nil
 	}
 	// fallback to legacy getLyrics endpoint
-	lyrics, err := s.client.GetLyrics(track.Name, track.ArtistNames[0])
+	lyrics, err := s.client.GetLyrics(track.Title, track.ArtistNames[0])
 	if err != nil || lyrics == nil || lyrics.Text == "" {
 		return nil, err
 	}
@@ -386,6 +386,7 @@ func (s *subsonicMediaProvider) GetLyrics(track *mediaprovider.Track) (*mediapro
 }
 
 // CanSavePlayQueue interface
+var _ mediaprovider.CanSavePlayQueue = (*subsonicMediaProvider)(nil)
 
 func (s *subsonicMediaProvider) SavePlayQueue(trackIDs []string, currentTrackIdx int, timeSeconds int) error {
 	if len(trackIDs) == 0 {
@@ -413,6 +414,25 @@ func (s *subsonicMediaProvider) GetPlayQueue() (*mediaprovider.SavedPlayQueue, e
 	return savedQueue, nil
 }
 
+// RadioProvider interface
+var _ mediaprovider.RadioProvider = (*subsonicMediaProvider)(nil)
+
+func (s *subsonicMediaProvider) GetRadioStations() ([]*mediaprovider.RadioStation, error) {
+	rs, err := s.client.GetInternetRadioStations()
+	if err != nil {
+		return nil, err
+	}
+	return sharedutil.MapSlice(rs, func(rs *subsonic.InternetRadioStation) *mediaprovider.RadioStation {
+		return &mediaprovider.RadioStation{
+			// TODO - subsonic library is missing ID in its radiostation object. add it
+			ID:          "radio-" + strings.ReplaceAll(rs.Name, " ", ""),
+			Name:        rs.Name,
+			HomePageURL: rs.HomePageUrl,
+			StreamURL:   rs.StreamUrl,
+		}
+	}), nil
+}
+
 func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 	if ch == nil {
 		return nil
@@ -433,7 +453,7 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		ID:          ch.ID,
 		CoverArtID:  ch.CoverArt,
 		ParentID:    ch.Parent,
-		Name:        ch.Title,
+		Title:       ch.Title,
 		Duration:    ch.Duration,
 		TrackNumber: ch.Track,
 		DiscNumber:  ch.DiscNumber,

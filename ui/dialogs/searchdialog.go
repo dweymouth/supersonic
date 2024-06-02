@@ -264,7 +264,7 @@ func (s *searchResult) Update(result *mediaprovider.SearchResult) {
 	}
 	s.id = result.ID
 	s.contentType = result.Type
-	s.image.CenterIcon = placeholderIconForContentType(result.Type)
+	s.image.PlaceholderIcon = placeholderIconForContentType(result.Type)
 	s.imageLoader.Load(result.CoverID)
 	s.title.SetText(result.Name)
 

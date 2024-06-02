@@ -29,9 +29,19 @@ func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, server
 	stats := pm.PlayerStatus()
 	trackIdx := pm.NowPlayingIndex()
 
-	trackIDs := make([]string, len(queue))
-	for i, tr := range queue {
-		trackIDs[i] = tr.ID
+	trackIDs := make([]string, 0, len(queue))
+	for _, item := range queue {
+		if _, ok := item.(*mediaprovider.Track); ok {
+			// don't save radio stations in play queue
+			trackIDs = append(trackIDs, item.Metadata().ID)
+		}
+	}
+	if l := len(trackIDs); trackIdx >= l {
+		if l == 0 {
+			trackIdx = 0
+		} else {
+			trackIdx = l - 1
+		}
 	}
 
 	saved := serializedSavedPlayQueue{

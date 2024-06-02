@@ -8,76 +8,88 @@ import (
 )
 
 type TrackListModel struct {
-	Track    *mediaprovider.Track
+	Item     mediaprovider.MediaItem
 	Selected bool
+}
+
+// Returns the item as a *mediaprovider.Track, or panics if not a Track
+// Use for tracklists that can only contain tracks (ie not PlayQueueList)
+func (t TrackListModel) Track() *mediaprovider.Track {
+	return t.Item.(*mediaprovider.Track)
 }
 
 func ToTrackListModels(trs []*mediaprovider.Track) []*TrackListModel {
 	return sharedutil.MapSlice(trs, func(tr *mediaprovider.Track) *TrackListModel {
-		return &TrackListModel{Track: tr, Selected: false}
+		return &TrackListModel{Item: tr, Selected: false}
 	})
 }
 
-func SelectedTracks(tracks []*TrackListModel) []*mediaprovider.Track {
-	return sharedutil.FilterMapSlice(tracks, func(tm *TrackListModel) (*mediaprovider.Track, bool) {
-		return tm.Track, tm.Selected
+func SelectedTracks(items []*TrackListModel) []*mediaprovider.Track {
+	return sharedutil.FilterMapSlice(items, func(tm *TrackListModel) (*mediaprovider.Track, bool) {
+		return tm.Track(), tm.Selected
 	})
 }
 
-func SelectedTrackIDs(tracks []*TrackListModel) []string {
-	return sharedutil.FilterMapSlice(tracks, func(tm *TrackListModel) (string, bool) {
-		return tm.Track.ID, tm.Selected
+func SelectedItems(items []*TrackListModel) []mediaprovider.MediaItem {
+	return sharedutil.FilterMapSlice(items, func(tm *TrackListModel) (mediaprovider.MediaItem, bool) {
+		return tm.Item, tm.Selected
 	})
 }
 
-func SelectTrack(tracks []*TrackListModel, idx int) {
-	if tracks[idx].Selected {
+func SelectedItemIDs(items []*TrackListModel) []string {
+	return sharedutil.FilterMapSlice(items, func(tm *TrackListModel) (string, bool) {
+		return tm.Item.Metadata().ID, tm.Selected
+	})
+}
+
+func SelectItem(items []*TrackListModel, idx int) {
+	if items[idx].Selected {
 		return
 	}
-	UnselectAllTracks(tracks)
-	tracks[idx].Selected = true
+	UnselectAllItems(items)
+	items[idx].Selected = true
 }
 
-func SelectAllTracks(tracks []*TrackListModel) {
-	for _, tm := range tracks {
+func SelectAllItems(items []*TrackListModel) {
+	for _, tm := range items {
 		tm.Selected = true
 	}
 }
 
-func UnselectAllTracks(tracks []*TrackListModel) {
-	for _, tm := range tracks {
+func UnselectAllItems(items []*TrackListModel) {
+	for _, tm := range items {
 		tm.Selected = false
 	}
 }
 
-func SelectTrackRange(tracks []*TrackListModel, idx int) {
-	if tracks[idx].Selected {
+func SelectItemRange(items []*TrackListModel, idx int) {
+	if items[idx].Selected {
 		return
 	}
 	lastSelected := -1
-	for i := len(tracks) - 1; i >= 0; i-- {
-		if tracks[i].Selected {
+	for i := len(items) - 1; i >= 0; i-- {
+		if items[i].Selected {
 			lastSelected = i
 			break
 		}
 	}
 	if lastSelected < 0 {
-		tracks[idx].Selected = true
+		items[idx].Selected = true
 		return
 	}
 	from := min(idx, lastSelected)
 	to := max(idx, lastSelected)
 	for i := from; i <= to; i++ {
-		tracks[i].Selected = true
+		items[i].Selected = true
 	}
 }
 
-func FindTrackByID(tracks []*TrackListModel, id string) (*mediaprovider.Track, int) {
-	idx := slices.IndexFunc(tracks, func(tr *TrackListModel) bool {
-		return tr.Track.ID == id
+func FindItemByID(items []*TrackListModel, id string) (mediaprovider.MediaItem, int) {
+	idx := slices.IndexFunc(items, func(tr *TrackListModel) bool {
+		return tr.Item.Metadata().ID == id
 	})
 	if idx >= 0 {
-		return tracks[idx].Track, idx
+		return items[idx].Item, idx
 	}
 	return nil, -1
 }

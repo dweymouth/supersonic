@@ -36,9 +36,10 @@ var (
 	ShortcutNavFive  = desktop.CustomShortcut{KeyName: fyne.Key5, Modifier: os.ControlModifier}
 	ShortcutNavSix   = desktop.CustomShortcut{KeyName: fyne.Key6, Modifier: os.ControlModifier}
 	ShortcutNavSeven = desktop.CustomShortcut{KeyName: fyne.Key7, Modifier: os.ControlModifier}
+	ShortcutNavEight = desktop.CustomShortcut{KeyName: fyne.Key8, Modifier: os.ControlModifier}
 
 	NavShortcuts = []desktop.CustomShortcut{ShortcutNavOne, ShortcutNavTwo, ShortcutNavThree,
-		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix, ShortcutNavSeven}
+		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix, ShortcutNavSeven, ShortcutNavEight}
 )
 
 type MainWindow struct {
@@ -53,6 +54,9 @@ type MainWindow struct {
 	theme          *theme.MyTheme
 	haveSystemTray bool
 	container      *fyne.Container
+
+	// needs to bes shown/hidden when switching between servers based on whether they support radio
+	radioBtn *widget.Button
 }
 
 func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App, size fyne.Size) MainWindow {
@@ -81,22 +85,25 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.ReloadFunc = m.BrowsingPane.Reload
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
 
-	m.BottomPanel = NewBottomPanel(app.PlaybackManager, m.Controller)
-	m.BottomPanel.ImageManager = app.ImageManager
+	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller)
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
 	m.Window.SetContent(m.container)
 	m.Window.Resize(size)
-	app.PlaybackManager.OnSongChange(func(track, _ *mediaprovider.Track) {
-		if track == nil {
+	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
+		if item == nil {
 			m.Window.SetTitle(displayAppName)
 			return
 		}
-		artistDisp := strings.Join(track.ArtistNames, ", ")
-		m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", track.Name, artistDisp, displayAppName))
+		meta := item.Metadata()
+		artistDisp := ""
+		if tr, ok := item.(*mediaprovider.Track); ok {
+			artistDisp = " – " + strings.Join(tr.ArtistNames, ", ")
+		}
+		m.Window.SetTitle(fmt.Sprintf("%s%s · %s", meta.Name, artistDisp, displayAppName))
 		if m.App.Config.Application.ShowTrackChangeNotification {
 			// TODO: Once Fyne issue #2935 is resolved, show album cover
 			fyne.CurrentApp().SendNotification(&fyne.Notification{
-				Title:   track.Name,
+				Title:   meta.Name,
 				Content: artistDisp,
 			})
 		}
@@ -179,6 +186,11 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 		}
 		m.App.Config.Application.LastCheckedVersion = t
 	}
+
+	_, supportsRadio := m.App.ServerManager.Server.(mediaprovider.RadioProvider)
+	m.radioBtn.Hidden = !supportsRadio
+	m.radioBtn.Refresh()
+
 	m.App.SaveConfigFile()
 }
 
@@ -260,6 +272,9 @@ func (m *MainWindow) addNavigationButtons() {
 	})
 	m.BrowsingPane.AddNavigationButton(theme.TracksIcon, controller.Tracks, func() {
 		m.Router.NavigateTo(controller.TracksRoute())
+	})
+	m.radioBtn = m.BrowsingPane.AddNavigationButton(theme.RadioIcon, controller.Radios, func() {
+		m.Router.NavigateTo(controller.RadiosRoute())
 	})
 }
 

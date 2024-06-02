@@ -269,11 +269,11 @@ func (a *FavoritesPage) OnSearched(query string) {
 
 var _ CanShowNowPlaying = (*FavoritesPage)(nil)
 
-func (a *FavoritesPage) OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
-	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
+func (a *FavoritesPage) OnSongChange(item mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
+	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(item)
 	if tracklist := a.tracklistOrNil(); tracklist != nil {
 		tracklist.SetNowPlaying(a.nowPlayingID)
-		tracklist.IncrementPlayCount(sharedutil.TrackIDOrEmptyStr(lastScrobbledIfAny))
+		tracklist.IncrementPlayCount(sharedutil.MediaItemIDOrEmptyStr(lastScrobbledIfAny))
 	}
 }
 

@@ -58,11 +58,11 @@ func NewMPRISHandler(playerName string, pm *PlaybackManager) *MPRISHandler {
 			m.evt.Player.OnSeek(pos)
 		}
 	})
-	pm.OnSongChange(func(tr, _ *mediaprovider.Track) {
+	pm.OnSongChange(func(tr mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		if tr == nil {
 			m.curTrackPath = ""
 		} else {
-			m.curTrackPath = dbusTrackIDPrefix + encodeTrackId(tr.ID)
+			m.curTrackPath = dbusTrackIDPrefix + encodeTrackId(tr.Metadata().ID)
 		}
 		if m.connErr == nil {
 			m.evt.Player.OnTitle()
@@ -251,30 +251,48 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 		trackObjPath = m.curTrackPath
 	}
 	status := m.pm.PlayerStatus()
-	var tr mediaprovider.Track
+
+	var meta mediaprovider.MediaItemMetadata
+	// metadata that can come only from tracks
+	var discNumber, trackNumber, userRating, playCount, year int
+	var genre string
+
 	if np := m.pm.NowPlaying(); np != nil && status.State != player.Stopped {
-		tr = *np
+		meta = np.Metadata()
+		if track, ok := np.(*mediaprovider.Track); ok {
+			discNumber = track.DiscNumber
+			trackNumber = track.TrackNumber
+			userRating = track.Rating
+			playCount = track.PlayCount
+			year = track.Year
+			genre = track.Genre
+		}
 	}
 	var artURL string
-	if tr.ID != "" && m.ArtURLLookup != nil {
-		if u, err := m.ArtURLLookup(tr.CoverArtID); err == nil {
+	if meta.ID != "" && m.ArtURLLookup != nil {
+		if u, err := m.ArtURLLookup(meta.CoverArtID); err == nil {
 			artURL = u
 		}
 	}
-	return types.Metadata{
-		TrackId:        dbus.ObjectPath(trackObjPath),
-		Length:         secondsToMicroseconds(status.Duration),
-		Title:          tr.Name,
-		Album:          tr.Album,
-		Artist:         tr.ArtistNames,
-		DiscNumber:     tr.DiscNumber,
-		TrackNumber:    tr.TrackNumber,
-		Genre:          []string{tr.Genre},
-		UserRating:     float64(tr.Rating) / 5,
-		ContentCreated: strconv.Itoa(tr.Year),
-		UseCount:       tr.PlayCount,
-		ArtUrl:         artURL,
-	}, nil
+	mprisMeta := types.Metadata{
+		TrackId:     dbus.ObjectPath(trackObjPath),
+		Length:      secondsToMicroseconds(status.Duration),
+		Title:       meta.Name,
+		Album:       meta.Album,
+		Artist:      meta.Artists,
+		DiscNumber:  discNumber,
+		TrackNumber: trackNumber,
+		UserRating:  float64(userRating) / 5,
+		UseCount:    playCount,
+		ArtUrl:      artURL,
+	}
+	if genre != "" {
+		mprisMeta.Genre = []string{genre}
+	}
+	if year != 0 {
+		mprisMeta.ContentCreated = strconv.Itoa(year)
+	}
+	return mprisMeta, nil
 }
 
 func (m *MPRISHandler) Volume() (float64, error) {

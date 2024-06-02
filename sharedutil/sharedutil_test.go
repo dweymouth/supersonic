@@ -7,7 +7,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
-func Test_ReorderTracks(t *testing.T) {
+func Test_ReorderItems(t *testing.T) {
 	tracks := []*mediaprovider.Track{
 		{ID: "a"}, // 0
 		{ID: "b"}, // 1
@@ -27,7 +27,7 @@ func Test_ReorderTracks(t *testing.T) {
 		{ID: "b"},
 		{ID: "e"},
 	}
-	newTracks := ReorderTracks(tracks, idxToMove, MoveToTop)
+	newTracks := ReorderItems(tracks, idxToMove, MoveToTop)
 	if !tracklistsEqual(t, newTracks, want) {
 		t.Error("ReorderTracks: MoveToTop order incorrect")
 	}
@@ -42,7 +42,7 @@ func Test_ReorderTracks(t *testing.T) {
 		{ID: "c"},
 		{ID: "f"},
 	}
-	newTracks = ReorderTracks(tracks, idxToMove, MoveToBottom)
+	newTracks = ReorderItems(tracks, idxToMove, MoveToBottom)
 	if !tracklistsEqual(t, newTracks, want) {
 		t.Error("ReorderTracks: MoveToBottom order incorrect")
 	}
@@ -57,7 +57,7 @@ func Test_ReorderTracks(t *testing.T) {
 		{ID: "f"},
 		{ID: "e"},
 	}
-	newTracks = ReorderTracks(tracks, idxToMove, MoveUp)
+	newTracks = ReorderItems(tracks, idxToMove, MoveUp)
 	if !tracklistsEqual(t, newTracks, want) {
 		t.Error("ReorderTracks: MoveUp order incorrect")
 	}
@@ -72,7 +72,7 @@ func Test_ReorderTracks(t *testing.T) {
 		{ID: "e"},
 		{ID: "f"},
 	}
-	newTracks = ReorderTracks(tracks, idxToMove, MoveDown)
+	newTracks = ReorderItems(tracks, idxToMove, MoveDown)
 	if !tracklistsEqual(t, newTracks, want) {
 		t.Error("ReorderTracks: MoveDown order incorrect")
 	}

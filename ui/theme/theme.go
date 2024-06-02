@@ -31,7 +31,7 @@ const (
 var (
 	AlbumIcon       fyne.Resource = theme.NewThemedResource(res.ResDiscSvg)
 	ArtistIcon      fyne.Resource = theme.NewThemedResource(res.ResPeopleSvg)
-	BroadcastIcon   fyne.Resource = theme.NewThemedResource(res.ResBroadcastSvg)
+	RadioIcon       fyne.Resource = theme.NewThemedResource(res.ResBroadcastSvg)
 	FavoriteIcon    fyne.Resource = theme.NewThemedResource(res.ResHeartFilledSvg)
 	NotFavoriteIcon fyne.Resource = theme.NewThemedResource(res.ResHeartOutlineSvg)
 	NowPlayingIcon  fyne.Resource = theme.NewThemedResource(res.ResHeadphonesSvg)

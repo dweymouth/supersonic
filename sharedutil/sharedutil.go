@@ -74,11 +74,23 @@ func FindTrackByID(id string, tracks []*mediaprovider.Track) *mediaprovider.Trac
 	return nil
 }
 
-func TrackIDOrEmptyStr(track *mediaprovider.Track) string {
-	if track == nil {
-		return ""
+func FindMediaItemByID(id string, items []mediaprovider.MediaItem) mediaprovider.MediaItem {
+	for _, tr := range items {
+		if id == tr.Metadata().ID {
+			return tr
+		}
 	}
-	return track.ID
+	return nil
+}
+
+func MediaItemIDOrEmptyStr(item mediaprovider.MediaItem) string {
+	if tr, ok := item.(*mediaprovider.Track); ok && tr != nil {
+		return tr.ID
+	}
+	if rd, ok := item.(*mediaprovider.RadioStation); ok && rd != nil {
+		return rd.ID
+	}
+	return ""
 }
 
 func AlbumIDOrEmptyStr(track *mediaprovider.Track) string {
@@ -103,58 +115,58 @@ const (
 	MoveDown
 )
 
-// Reorder tracks and return a new track slice.
+// Reorder items and return a new track slice.
 // idxToMove must contain only valid indexes into tracks, and no repeats
-func ReorderTracks(tracks []*mediaprovider.Track, idxToMove []int, op TrackReorderOp) []*mediaprovider.Track {
-	newTracks := make([]*mediaprovider.Track, len(tracks))
+func ReorderItems[T any](items []T, idxToMove []int, op TrackReorderOp) []T {
+	newItems := make([]T, len(items))
 	switch op {
 	case MoveToTop:
 		topIdx := 0
 		botIdx := len(idxToMove)
 		idxToMoveSet := ToSet(idxToMove)
-		for i, t := range tracks {
+		for i, t := range items {
 			if _, ok := idxToMoveSet[i]; ok {
-				newTracks[topIdx] = t
+				newItems[topIdx] = t
 				topIdx++
 			} else {
-				newTracks[botIdx] = t
+				newItems[botIdx] = t
 				botIdx++
 			}
 		}
 	case MoveToBottom:
 		topIdx := 0
-		botIdx := len(tracks) - len(idxToMove)
+		botIdx := len(items) - len(idxToMove)
 		idxToMoveSet := ToSet(idxToMove)
-		for i, t := range tracks {
+		for i, t := range items {
 			if _, ok := idxToMoveSet[i]; ok {
-				newTracks[botIdx] = t
+				newItems[botIdx] = t
 				botIdx++
 			} else {
-				newTracks[topIdx] = t
+				newItems[topIdx] = t
 				topIdx++
 			}
 		}
 	case MoveUp:
 		first := firstIdxCanMoveUp(idxToMove)
-		copy(newTracks, tracks)
+		copy(newItems, items)
 		for _, i := range idxToMove {
 			if i < first {
 				continue
 			}
-			newTracks[i-1], newTracks[i] = newTracks[i], newTracks[i-1]
+			newItems[i-1], newItems[i] = newItems[i], newItems[i-1]
 		}
 	case MoveDown:
-		last := lastIdxCanMoveDown(idxToMove, len(tracks))
-		copy(newTracks, tracks)
+		last := lastIdxCanMoveDown(idxToMove, len(items))
+		copy(newItems, items)
 		for i := len(idxToMove) - 1; i >= 0; i-- {
 			idx := idxToMove[i]
 			if idx > last {
 				continue
 			}
-			newTracks[idx+1], newTracks[idx] = newTracks[idx], newTracks[idx+1]
+			newItems[idx+1], newItems[idx] = newItems[idx], newItems[idx+1]
 		}
 	}
-	return newTracks
+	return newItems
 }
 
 func firstIdxCanMoveUp(idxs []int) int {

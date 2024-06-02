@@ -120,15 +120,6 @@ func (i *ImageManager) GetCoverThumbnail(coverID string) (image.Image, error) {
 	return i.fetchAndCacheCoverFromDiskOrServer(context.Background(), coverID, i.thumbnailCache.DefaultTTL, nil)
 }
 
-// GetCoverThumbnailWithTTL fetches the cover for the given coverID and updates the TTL
-// in the in-memory image cache. It blocks until the image fetch is complete.
-func (i *ImageManager) GetCoverThumbnailWithTTL(coverID string, ttl time.Duration) (image.Image, error) {
-	if img, err := i.thumbnailCache.GetWithNewTTL(coverID, ttl); err == nil {
-		return img, nil
-	}
-	return i.fetchAndCacheCoverFromDiskOrServer(context.Background(), coverID, ttl, nil)
-}
-
 // GetFullSizeCoverArt fetches the full size cover image for the given coverID.
 // It blocks until the fetch is complete.
 func (i *ImageManager) GetFullSizeCoverArt(coverID string) (image.Image, error) {

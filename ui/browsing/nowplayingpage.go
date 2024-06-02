@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"net/url"
 	"slices"
 	"strings"
 	"sync"
@@ -37,13 +38,13 @@ type NowPlayingPage struct {
 	nowPlayingPageState
 
 	// volatile state
-	nowPlaying   *mediaprovider.Track
+	nowPlaying   mediaprovider.MediaItem
 	nowPlayingID string
 	curLyricsID  string // id of track currently shown in lyrics
 	curRelatedID string // id of track currrently used to populate related list
 	totalTime    float64
 	lastPlayPos  float64
-	queue        []*mediaprovider.Track
+	queue        []mediaprovider.MediaItem
 	related      []*mediaprovider.Track
 
 	lyricLock   sync.Mutex
@@ -108,10 +109,15 @@ func NewNowPlayingPage(
 
 	a.card = widgets.NewLargeNowPlayingCard()
 	a.card.OnAlbumNameTapped = func() {
-		contr.NavigateTo(controller.AlbumRoute(sharedutil.AlbumIDOrEmptyStr(a.nowPlaying)))
+		contr.NavigateTo(controller.AlbumRoute(a.nowPlaying.Metadata().AlbumID))
 	}
 	a.card.OnArtistNameTapped = func(artistID string) {
 		contr.NavigateTo(controller.ArtistRoute(artistID))
+	}
+	a.card.OnRadioURLTapped = func(urlText string) {
+		if u, err := url.Parse(urlText); err == nil {
+			fyne.CurrentApp().OpenURL(u)
+		}
 	}
 	a.card.OnSetFavorite = func(fav bool) {
 		a.contr.SetTrackFavorites([]string{a.nowPlayingID}, fav)
@@ -122,7 +128,7 @@ func NewNowPlayingPage(
 
 	a.queueList = widgets.NewPlayQueueList(a.im)
 	a.relatedList = widgets.NewPlayQueueList(a.im)
-	a.queueList.OnReorderTracks = a.doSetNewTrackOrder
+	a.queueList.OnReorderItems = a.doSetNewTrackOrder
 	a.queueList.OnDownload = contr.ShowDownloadDialog
 	a.queueList.OnShare = func(tracks []*mediaprovider.Track) {
 		if len(tracks) > 0 {
@@ -245,12 +251,12 @@ func (a *NowPlayingPage) Route() controller.Route {
 
 var _ CanShowNowPlaying = (*NowPlayingPage)(nil)
 
-func (a *NowPlayingPage) OnSongChange(song, _ *mediaprovider.Track) {
+func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
 	a.nowPlaying = song
 	if a.imageLoadCancel != nil {
 		a.imageLoadCancel()
 	}
-	a.nowPlayingID = sharedutil.TrackIDOrEmptyStr(song)
+	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(song)
 	a.queueList.SetNowPlaying(a.nowPlayingID)
 	a.relatedList.SetNowPlaying(a.nowPlayingID)
 
@@ -258,7 +264,7 @@ func (a *NowPlayingPage) OnSongChange(song, _ *mediaprovider.Track) {
 	if song == nil {
 		a.card.SetCoverImage(nil)
 	} else {
-		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.CoverArtID, a.onImageLoaded)
+		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.Metadata().CoverArtID, a.onImageLoaded)
 	}
 
 	if a.tabs != nil && a.tabs.SelectedIndex() == 1 /*lyrics*/ {
@@ -271,6 +277,9 @@ func (a *NowPlayingPage) OnSongChange(song, _ *mediaprovider.Track) {
 func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 	if err != nil {
 		log.Printf("error loading cover art: %v\n", err)
+		return
+	}
+	if img == nil {
 		return
 	}
 	a.card.SetCoverImage(img)
@@ -308,7 +317,7 @@ func (a *NowPlayingPage) updateLyrics() {
 			return
 		}
 	}
-	if a.nowPlaying == nil {
+	if a.nowPlaying == nil || a.nowPlaying.Metadata().Type == mediaprovider.MediaItemTypeRadioStation {
 		a.lyricsViewer.SetLyrics(nil)
 		a.curLyricsID = ""
 		return
@@ -321,19 +330,20 @@ func (a *NowPlayingPage) updateLyrics() {
 	// to keep it from showing "Lyrics not available"
 	a.lyricsViewer.SetLyrics(&mediaprovider.Lyrics{Synced: true,
 		Lines: []mediaprovider.LyricLine{{Text: ""}}})
-	go a.fetchLyrics(ctx, a.nowPlaying)
+	tr, _ := a.nowPlaying.(*mediaprovider.Track)
+	go a.fetchLyrics(ctx, tr)
 }
 
 func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Track) {
 	var lyrics *mediaprovider.Lyrics
 	var err error
 	if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
-		if lyrics, err = lp.GetLyrics(a.nowPlaying); err != nil {
+		if lyrics, err = lp.GetLyrics(song); err != nil {
 			log.Printf("Error fetching lyrics: %v", err)
 		}
 	}
 	if lyrics == nil {
-		lyrics, err = backend.FetchLrcLibLyrics(song.Name, song.ArtistNames[0], song.Album, song.Duration)
+		lyrics, err = backend.FetchLrcLibLyrics(song.Title, song.ArtistNames[0], song.Album, song.Duration)
 		if err != nil {
 			log.Println(err.Error())
 		}
@@ -401,10 +411,10 @@ func (a *NowPlayingPage) Reload() {
 	a.relatedList.DisableSharing = !a.canShare
 
 	a.queue = a.pm.GetPlayQueue()
-	a.queueList.SetTracks(a.queue)
+	a.queueList.SetItems(a.queue)
 	a.totalTime = 0.0
 	for _, tr := range a.queue {
-		a.totalTime += float64(tr.Duration)
+		a.totalTime += float64(tr.Metadata().Duration)
 	}
 	a.formatStatusLine()
 }
@@ -457,11 +467,11 @@ func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.Tra
 	trackIDSet := sharedutil.ToSet(trackIDs)
 	idxs := make([]int, 0, len(trackIDs))
 	for i, tr := range a.queue {
-		if _, ok := trackIDSet[tr.ID]; ok {
+		if _, ok := trackIDSet[tr.Metadata().ID]; ok {
 			idxs = append(idxs, i)
 		}
 	}
-	newTracks := sharedutil.ReorderTracks(a.queue, idxs, op)
+	newTracks := sharedutil.ReorderItems(a.queue, idxs, op)
 	a.pm.UpdatePlayQueue(newTracks)
 }
 
@@ -492,7 +502,7 @@ func (a *NowPlayingPage) formatStatusLine() {
 
 	dur := 0.0
 	if np := a.pm.NowPlaying(); np != nil {
-		dur = float64(np.Duration)
+		dur = float64(np.Metadata().Duration)
 	}
 	statusSuffix := ""
 	trackNum := 0

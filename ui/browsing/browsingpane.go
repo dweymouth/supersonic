@@ -42,7 +42,7 @@ type Scrollable interface {
 }
 
 type CanShowNowPlaying interface {
-	OnSongChange(song, lastScrobbledIfAny *mediaprovider.Track)
+	OnSongChange(playing mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track)
 }
 
 type CanShowPlayTime interface {
@@ -140,11 +140,13 @@ func (b *BrowsingPane) AddSettingsMenuSeparator() {
 		fyne.NewMenuItemSeparator())
 }
 
-func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, pageName controller.PageName, action func()) {
+func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, pageName controller.PageName, action func()) *widget.Button {
 	// make a copy of the icon, because it can change the color
 	browsingPaneIcon := theme.NewThemedResource(icon)
-	b.navBtnsContainer.Add(widget.NewButtonWithIcon("", browsingPaneIcon, action))
+	btn := widget.NewButtonWithIcon("", browsingPaneIcon, action)
+	b.navBtnsContainer.Add(btn)
 	b.navBtnsPageMap[pageName] = browsingPaneIcon
+	return btn
 }
 
 func (b *BrowsingPane) DisableNavigationButtons() {
@@ -162,7 +164,7 @@ func (b *BrowsingPane) EnableNavigationButtons() {
 func (b *BrowsingPane) ActivateNavigationButton(num int) {
 	if num < len(b.navBtnsContainer.Objects) {
 		btn := b.navBtnsContainer.Objects[num].(*widget.Button)
-		if !btn.Disabled() {
+		if !btn.Disabled() && !btn.Hidden {
 			btn.OnTapped()
 		}
 	}
@@ -213,7 +215,7 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	return true
 }
 
-func (b *BrowsingPane) onSongChange(song, lastScrobbledIfAny *mediaprovider.Track) {
+func (b *BrowsingPane) onSongChange(song mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
 	if b.curPage == nil {
 		return
 	}

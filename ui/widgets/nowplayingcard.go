@@ -25,7 +25,7 @@ type NowPlayingCard struct {
 	trackName  *widget.Hyperlink
 	artistName *MultiHyperlink
 	albumName  *widget.Hyperlink
-	cover      *TappableImage
+	cover      *ImagePlaceholder
 	menu       *widget.PopUpMenu
 	ratingMenu *fyne.MenuItem
 
@@ -45,17 +45,16 @@ func NewNowPlayingCard() *NowPlayingCard {
 		albumName:  widget.NewHyperlink("", nil),
 	}
 	n.ExtendBaseWidget(n)
-	n.cover = NewTappableImage(n.onShowCoverImage)
+	n.cover = NewImagePlaceholder(myTheme.TracksIcon, 85)
+	n.cover.OnTapped = n.onShowCoverImage
 	n.cover.OnTappedSecondary = n.showMenu
+	n.cover.ScaleMode = canvas.ImageScaleFastest
+	n.cover.Hidden = true
 	n.trackName.Hidden = true
 	n.albumName.Hidden = true
 	n.albumName.Truncation = fyne.TextTruncateEllipsis
 	n.trackName.Truncation = fyne.TextTruncateEllipsis
 	n.trackName.TextStyle.Bold = true
-	n.cover.SetMinSize(fyne.NewSquareSize(85))
-	n.cover.FillMode = canvas.ImageFillContain
-	n.cover.ScaleMode = canvas.ImageScaleFastest
-	n.cover.Hidden = true
 	n.albumName.OnTapped = n.onAlbumNameTapped
 	n.artistName.OnTapped = n.onArtistNameTapped
 	n.trackName.OnTapped = n.onTrackNameTapped
@@ -119,22 +118,33 @@ func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (n *NowPlayingCard) Update(track *mediaprovider.Track, cover image.Image) {
-	if track != nil {
-		n.trackName.SetText(track.Name)
-		n.artistName.BuildSegments(track.ArtistNames, track.ArtistIDs)
-		n.albumName.SetText(track.Album)
-	} else {
+func (n *NowPlayingCard) Update(track mediaprovider.MediaItem) {
+	if track == nil {
 		n.trackName.SetText("")
 		n.artistName.BuildSegments([]string{}, []string{})
 		n.albumName.SetText("")
+		n.cover.Hidden = true
+	} else {
+		n.cover.Hidden = false
+		n.trackName.SetText(track.Metadata().Name)
+		if tr, ok := track.(*mediaprovider.Track); ok {
+			n.artistName.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
+			n.albumName.SetText(tr.Album)
+			n.cover.PlaceholderIcon = myTheme.TracksIcon
+		} else {
+			n.artistName.BuildSegments([]string{}, []string{})
+			n.albumName.SetText("")
+			n.cover.PlaceholderIcon = myTheme.RadioIcon
+		}
 	}
 	n.trackName.Hidden = n.trackName.Text == ""
 	n.artistName.Hidden = len(n.artistName.Segments) == 0
 	n.albumName.Hidden = n.albumName.Text == ""
-	n.cover.Image.Image = cover
-	n.cover.Hidden = cover == nil
 	n.Refresh()
+}
+
+func (n *NowPlayingCard) SetImage(cover image.Image) {
+	n.cover.SetImage(cover, true)
 }
 
 func (n *NowPlayingCard) showMenu(e *fyne.PointEvent) {
