@@ -10,6 +10,7 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -52,10 +53,8 @@ func newRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider,
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
 	a.list = NewRadioList(&a.nowPlayingID)
-	a.list.OnPlay = func(station *mediaprovider.RadioStation) {
-		pm.LoadRadioStation(station, backend.Replace)
-		pm.PlayFromBeginning()
-	}
+	a.list.OnPlay = a.onPlay
+	a.list.OnQueue = a.onQueue
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.PlaceHolder = "Search page"
 	a.searcher.OnSearched = a.onSearched
@@ -105,6 +104,19 @@ func (a *RadiosPage) load(searchOnLoad bool, scrollPos float32) {
 		}
 		a.list.Refresh()
 	}
+}
+
+func (a *RadiosPage) onPlay(station *mediaprovider.RadioStation) {
+	a.pm.LoadRadioStation(station, backend.Replace)
+	a.pm.PlayFromBeginning()
+}
+
+func (a *RadiosPage) onQueue(station *mediaprovider.RadioStation, next bool) {
+	queueMode := backend.Append
+	if next {
+		queueMode = backend.InsertNext
+	}
+	a.pm.LoadRadioStation(station, queueMode)
 }
 
 func (a *RadiosPage) onSearched(query string) {
@@ -193,22 +205,26 @@ func (a *RadiosPage) CreateRenderer() fyne.WidgetRenderer {
 type RadioList struct {
 	widget.BaseWidget
 
-	OnPlay func(*mediaprovider.RadioStation)
+	OnPlay  func(*mediaprovider.RadioStation)
+	OnQueue func(r *mediaprovider.RadioStation, next bool)
 
-	radios []*mediaprovider.RadioStation
+	radios   []*mediaprovider.RadioStation
+	selected *RadioListRow
 
 	columnsLayout *layouts.ColumnsLayout
 	hdr           *widgets.ListHeader
 	list          *widgets.FocusList
 	container     *fyne.Container
 	playingIcon   fyne.CanvasObject
+	menu          *widget.PopUpMenu
 }
 
 type RadioListRow struct {
 	widgets.FocusListRowBase
 
-	Item      *mediaprovider.RadioStation
-	IsPlaying bool
+	Item              *mediaprovider.RadioStation
+	IsPlaying         bool
+	OnTappedSecondary func(*fyne.PointEvent)
 
 	nameLabel    *widget.RichText
 	homePageLink *widget.Hyperlink
@@ -224,6 +240,12 @@ func NewRadioListRow(layout *layouts.ColumnsLayout) *RadioListRow {
 	a.homePageLink.Truncation = fyne.TextTruncateEllipsis
 	a.Content = container.New(layout, a.nameLabel, a.homePageLink)
 	return a
+}
+
+func (a *RadioListRow) TappedSecondary(e *fyne.PointEvent) {
+	if a.OnTappedSecondary != nil {
+		a.OnTappedSecondary(e)
+	}
 }
 
 func NewRadioList(nowPlayingIDPtr *string) *RadioList {
@@ -243,7 +265,21 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 		func() int { return len(a.radios) },
 		func() fyne.CanvasObject {
 			r := NewRadioListRow(a.columnsLayout)
+			r.OnTapped = func() {
+				r.Selected = true
+				if a.selected != nil {
+					// unselect old row
+					a.selected.Selected = false
+					a.selected.Refresh()
+				}
+				a.selected = r
+				r.Refresh()
+			}
 			r.OnDoubleTapped = func() { a.onPlayRadio(r.Item) }
+			r.OnTappedSecondary = func(e *fyne.PointEvent) {
+				r.OnTapped() // handle selection
+				a.showMenu(e.AbsolutePosition)
+			}
 			r.OnFocusNeighbor = func(up bool) {
 				a.list.FocusNeighbor(r.ItemID(), up)
 			}
@@ -284,6 +320,40 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 	)
 	a.container = container.NewBorder(a.hdr, nil, nil, nil, a.list)
 	return a
+}
+
+func (a *RadioList) showMenu(pos fyne.Position) {
+	if a.menu == nil {
+		play := fyne.NewMenuItem("Play", func() {
+			if a.OnPlay != nil {
+				a.OnPlay(a.selected.Item)
+			}
+		})
+		play.Icon = theme.MediaPlayIcon()
+
+		playNext := fyne.NewMenuItem("Play next", func() {
+			if a.OnQueue != nil {
+				a.OnQueue(a.selected.Item, true)
+			}
+		})
+		playNext.Icon = myTheme.PlayNextIcon
+
+		append := fyne.NewMenuItem("Add to queue", func() {
+			if a.OnQueue != nil {
+				a.OnQueue(a.selected.Item, false)
+			}
+		})
+		append.Icon = theme.ContentAddIcon()
+
+		a.menu = widget.NewPopUpMenu(fyne.NewMenu("",
+			play,
+			playNext,
+			append,
+		),
+			fyne.CurrentApp().Driver().CanvasForObject(a),
+		)
+	}
+	a.menu.ShowAtPosition(pos)
 }
 
 func (g *RadioList) SetRadios(radios []*mediaprovider.RadioStation) {
