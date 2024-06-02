@@ -51,9 +51,10 @@ type MainWindow struct {
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
 
-	theme          *theme.MyTheme
-	haveSystemTray bool
-	container      *fyne.Container
+	theme            *theme.MyTheme
+	haveSystemTray   bool
+	alreadyConnected bool // tracks if we have already connected to a server before
+	container        *fyne.Container
 
 	// needs to bes shown/hidden when switching between servers based on whether they support radio
 	radioBtn *widget.Button
@@ -166,6 +167,17 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 		}()
 	}
 
+	_, supportsRadio := m.App.ServerManager.Server.(mediaprovider.RadioProvider)
+	m.radioBtn.Hidden = !supportsRadio
+	m.radioBtn.Refresh()
+
+	m.App.SaveConfigFile()
+
+	if m.alreadyConnected {
+		// below tasks only need to run on first time connecting to a server since launch
+		return
+	}
+
 	// check if launching new version, else if found available update on startup
 	if l := app.Config.Application.LastLaunchedVersion; app.VersionTag() != l {
 		if !app.IsFirstLaunch() {
@@ -186,12 +198,7 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 		}
 		m.App.Config.Application.LastCheckedVersion = t
 	}
-
-	_, supportsRadio := m.App.ServerManager.Server.(mediaprovider.RadioProvider)
-	m.radioBtn.Hidden = !supportsRadio
-	m.radioBtn.Refresh()
-
-	m.App.SaveConfigFile()
+	m.alreadyConnected = true
 }
 
 func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
