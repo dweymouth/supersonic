@@ -1,13 +1,11 @@
 package ui
 
 import (
-	"image"
-	"time"
-
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
+	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
@@ -18,19 +16,18 @@ import (
 type BottomPanel struct {
 	widget.BaseWidget
 
-	ImageManager *backend.ImageManager
+	imageLoader util.ThumbnailLoader
 
 	NowPlaying  *widgets.NowPlayingCard
 	Controls    *widgets.PlayerControls
 	AuxControls *widgets.AuxControls
 
-	coverArtID string
-	container  *fyne.Container
+	container *fyne.Container
 }
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *BottomPanel {
+func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller) *BottomPanel {
 	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
 
@@ -105,6 +102,8 @@ func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *
 		pm.SetNextLoopMode()
 	})
 
+	bp.imageLoader = util.NewThumbnailLoader(im, bp.NowPlaying.SetImage)
+
 	bp.container = container.New(layouts.NewLeftMiddleRightLayout(500),
 		bp.NowPlaying, bp.Controls, bp.AuxControls)
 	return bp
@@ -112,20 +111,11 @@ func NewBottomPanel(pm *backend.PlaybackManager, contr *controller.Controller) *
 
 func (bp *BottomPanel) onSongChange(song mediaprovider.MediaItem, _ *mediaprovider.Track) {
 	if song == nil {
-		bp.NowPlaying.Update(nil, nil)
+		bp.NowPlaying.Update(nil)
+		bp.imageLoader.Load("")
 	} else {
-		meta := song.Metadata()
-		bp.coverArtID = meta.CoverArtID
-		var im image.Image
-		if bp.ImageManager != nil {
-			// set image to expire not long after the length of the song
-			// if song is played through without much pausing, image will still
-			// be in cache for the next song if it's from the same album, or
-			// if the user navigates to the album page for the track
-			imgTTLSec := meta.Duration + 30
-			im, _ = bp.ImageManager.GetCoverThumbnailWithTTL(meta.CoverArtID, time.Duration(imgTTLSec)*time.Second)
-		}
-		bp.NowPlaying.Update(song, im)
+		bp.NowPlaying.Update(song)
+		bp.imageLoader.Load(song.Metadata().CoverArtID)
 	}
 }
 

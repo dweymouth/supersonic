@@ -125,9 +125,11 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 	if tr, ok := item.(*mediaprovider.Track); ok {
 		n.rating.Rating = tr.Rating
 		n.favorite.Favorite = tr.Favorite
+		n.cover.PlaceholderIcon = myTheme.TracksIcon
 	} else {
 		n.rating.Rating = 0
 		n.favorite.Favorite = false
+		n.cover.PlaceholderIcon = myTheme.RadioIcon
 	}
 
 	n.Refresh()

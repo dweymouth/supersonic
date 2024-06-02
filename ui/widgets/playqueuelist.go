@@ -372,6 +372,11 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 	// a new track (*mediaprovider.Track)
 	meta := tm.Item.Metadata()
 	if meta.ID != p.trackID {
+		if meta.Type == mediaprovider.MediaItemTypeRadioStation {
+			p.cover.PlaceholderIcon = myTheme.RadioIcon
+		} else {
+			p.cover.PlaceholderIcon = myTheme.TracksIcon
+		}
 		p.imageLoader.Load(meta.CoverArtID)
 		p.EnsureUnfocused()
 		p.trackID = meta.ID

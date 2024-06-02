@@ -15,8 +15,8 @@ import (
 // a placeholder with a rectangular border frame
 // and an icon positioned in the center of the frame.
 type ImagePlaceholder struct {
-	ScaleMode  canvas.ImageScale
-	CenterIcon fyne.Resource
+	ScaleMode       canvas.ImageScale
+	PlaceholderIcon fyne.Resource
 
 	widget.BaseWidget
 	content   *fyne.Container
@@ -31,7 +31,7 @@ type ImagePlaceholder struct {
 }
 
 func NewImagePlaceholder(centerIcon fyne.Resource, minSize float32) *ImagePlaceholder {
-	i := &ImagePlaceholder{minSize: minSize, CenterIcon: centerIcon}
+	i := &ImagePlaceholder{minSize: minSize, PlaceholderIcon: centerIcon}
 	i.ExtendBaseWidget(i)
 	i.iconImage = canvas.NewImageFromResource(centerIcon)
 	i.iconImage.FillMode = canvas.ImageFillContain
@@ -94,7 +94,7 @@ func (i *ImagePlaceholder) MinSize() fyne.Size {
 
 func (i *ImagePlaceholder) Refresh() {
 	i.border.Hidden = i.HaveImage()
-	i.iconImage.Resource = i.CenterIcon
+	i.iconImage.Resource = i.PlaceholderIcon
 	i.iconImage.Hidden = i.HaveImage()
 	i.imageDisp.Hidden = !i.HaveImage()
 	i.imageDisp.ScaleMode = i.ScaleMode
