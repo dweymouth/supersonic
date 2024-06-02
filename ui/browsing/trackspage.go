@@ -95,8 +95,10 @@ func (t *TracksPage) Reload() {
 	t.loader = widgets.NewTracklistLoader(t.tracklist, iter)
 }
 
-func (t *TracksPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
-	t.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(track)
+var _ CanShowNowPlaying = (*TracksPage)(nil)
+
+func (t *TracksPage) OnSongChange(item mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
+	t.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(item)
 	t.tracklist.SetNowPlaying(t.nowPlayingID)
 	if t.searchTracklist != nil {
 		t.searchTracklist.SetNowPlaying(t.nowPlayingID)

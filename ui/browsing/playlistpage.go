@@ -126,8 +126,10 @@ func (a *PlaylistPage) Route() controller.Route {
 	return controller.PlaylistRoute(a.playlistID)
 }
 
-func (a *PlaylistPage) OnSongChange(track, lastScrobbledIfAny *mediaprovider.Track) {
-	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(track)
+var _ CanShowNowPlaying = (*PlaylistPage)(nil)
+
+func (a *PlaylistPage) OnSongChange(item mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
+	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(item)
 	a.tracklist.SetNowPlaying(a.nowPlayingID)
 	a.tracklist.IncrementPlayCount(sharedutil.MediaItemIDOrEmptyStr(lastScrobbledIfAny))
 }
