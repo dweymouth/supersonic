@@ -51,15 +51,16 @@ type NowPlayingPage struct {
 	relatedLock sync.Mutex
 
 	// widgets for render
-	background   *canvas.LinearGradient
-	queueList    *widgets.PlayQueueList
-	relatedList  *widgets.PlayQueueList
-	lyricsViewer *widgets.LyricsViewer
-	card         *widgets.LargeNowPlayingCard
-	statusLabel  *widget.Label
-	tabs         *container.AppTabs
-	tabLoading   *widgets.LoadingDots
-	container    *fyne.Container
+	background     *canvas.LinearGradient
+	queueList      *widgets.PlayQueueList
+	relatedList    *widgets.PlayQueueList
+	lyricsViewer   *widgets.LyricsViewer
+	card           *widgets.LargeNowPlayingCard
+	statusLabel    *widget.Label
+	tabs           *container.AppTabs
+	lyricsLoading  *widgets.LoadingDots
+	relatedLoading *widgets.LoadingDots
+	container      *fyne.Container
 
 	// cancel funcs for background fetch tasks
 	lyricFetchCancel   context.CancelFunc
@@ -190,11 +191,17 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 			LeftRightObjectPercent: .8,
 			TopBottomObjectPercent: .8,
 		}
+		a.lyricsLoading = widgets.NewLoadingDots()
+		a.relatedLoading = widgets.NewLoadingDots()
 		a.tabs = container.NewAppTabs(
 			container.NewTabItem("Play Queue",
 				container.NewBorder(layout.NewSpacer(), nil, nil, nil, a.queueList)),
-			container.NewTabItem("Lyrics", a.lyricsViewer),
-			container.NewTabItem("Related", a.relatedList),
+			container.NewTabItem("Lyrics", container.NewStack(
+				a.lyricsViewer,
+				container.NewCenter(a.lyricsLoading))),
+			container.NewTabItem("Related", container.NewStack(
+				a.relatedList,
+				container.NewCenter(a.relatedLoading))),
 		)
 		a.tabs.SelectIndex(initialTab)
 		a.tabs.OnSelected = func(*container.TabItem) {
@@ -206,7 +213,6 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 				a.updateRelatedList()
 			}
 		}
-		a.tabLoading = widgets.NewLoadingDots()
 		if initialTab == 1 /*lyrics*/ {
 			a.updateLyrics()
 		} else if initialTab == 2 /*related*/ {
@@ -218,10 +224,8 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 		mainContent := container.NewGridWithColumns(2,
 			container.New(paddedLayout, a.card),
 			container.New(paddedLayout,
-				container.NewStack(
-					util.AddHeaderBackgroundWithColorName(
-						a.tabs, myTheme.ColorNameNowPlayingPanel),
-					container.NewCenter(a.tabLoading))))
+				util.AddHeaderBackgroundWithColorName(
+					a.tabs, myTheme.ColorNameNowPlayingPanel)))
 		a.container = container.NewStack(
 			a.background,
 			mainContent,
@@ -325,7 +329,7 @@ func (a *NowPlayingPage) updateLyrics() {
 	a.curLyricsID = a.nowPlayingID
 	ctx, cancel := context.WithCancel(context.Background())
 	a.lyricFetchCancel = cancel
-	a.tabLoading.Start()
+	a.lyricsLoading.Start()
 	// set the widget to an empty (not nil) lyric during fetch
 	// to keep it from showing "Lyrics not available"
 	a.lyricsViewer.SetLyrics(&mediaprovider.Lyrics{Synced: true,
@@ -353,7 +357,7 @@ func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 		return
 	default:
 		a.lyricLock.Lock()
-		a.tabLoading.Stop()
+		a.lyricsLoading.Stop()
 		a.lyricsViewer.SetLyrics(lyrics)
 		if lyrics != nil {
 			a.lyricsViewer.OnSeeked(a.lastPlayPos)
@@ -379,7 +383,7 @@ func (a *NowPlayingPage) updateRelatedList() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	a.relatedFetchCancel = cancel
-	a.tabLoading.Start()
+	a.relatedLoading.Start()
 	a.relatedList.SetTracks(nil)
 	go func(ctx context.Context) {
 		related, err := a.mp.GetSongRadio(a.nowPlayingID, 30)
@@ -393,7 +397,7 @@ func (a *NowPlayingPage) updateRelatedList() {
 			a.relatedLock.Lock()
 			a.related = related
 			a.relatedList.SetTracks(a.related)
-			a.tabLoading.Stop()
+			a.relatedLoading.Stop()
 			a.relatedLock.Unlock()
 		}
 	}(ctx)
