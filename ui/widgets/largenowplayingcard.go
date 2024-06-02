@@ -20,6 +20,7 @@ type LargeNowPlayingCard struct {
 
 	DisableRating bool
 
+	isRadio    bool
 	trackName  *widget.RichText
 	artistName *MultiHyperlink
 	albumName  *widget.Hyperlink
@@ -29,6 +30,7 @@ type LargeNowPlayingCard struct {
 
 	OnArtistNameTapped func(artistID string)
 	OnAlbumNameTapped  func()
+	OnRadioURLTapped   func(url string)
 	OnSetRating        func(rating int)
 	OnSetFavorite      func(favorite bool)
 }
@@ -79,6 +81,12 @@ func (n *LargeNowPlayingCard) onAlbumNameTapped() {
 }
 
 func (n *LargeNowPlayingCard) onArtistNameTapped(artistID string) {
+	if n.isRadio {
+		if n.OnRadioURLTapped != nil {
+			n.OnRadioURLTapped(artistID)
+		}
+		return
+	}
 	if n.OnArtistNameTapped != nil {
 		n.OnArtistNameTapped(artistID)
 	}
@@ -119,17 +127,23 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 	}
 	meta := item.Metadata()
 	n.trackName.Segments[0].(*widget.TextSegment).Text = meta.Name
-	n.artistName.BuildSegments(meta.Artists, meta.ArtistIDs)
 	n.albumName.Text = meta.Album
+	n.albumName.Hidden = meta.AlbumID == ""
 
 	if tr, ok := item.(*mediaprovider.Track); ok {
+		n.artistName.BuildSegments(meta.Artists, meta.ArtistIDs)
 		n.rating.Rating = tr.Rating
 		n.favorite.Favorite = tr.Favorite
 		n.cover.PlaceholderIcon = myTheme.TracksIcon
-	} else {
-		n.rating.Rating = 0
-		n.favorite.Favorite = false
+		n.favorite.Hidden = false
+		n.rating.Hidden = false
+		n.isRadio = false
+	} else if rd, ok := item.(*mediaprovider.RadioStation); ok {
+		n.artistName.BuildSegments([]string{rd.HomePageURL}, []string{rd.HomePageURL})
+		n.rating.Hidden = true
+		n.favorite.Hidden = true
 		n.cover.PlaceholderIcon = myTheme.RadioIcon
+		n.isRadio = true
 	}
 
 	n.Refresh()

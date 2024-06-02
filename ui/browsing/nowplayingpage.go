@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"net/url"
 	"slices"
 	"strings"
 	"sync"
@@ -112,6 +113,11 @@ func NewNowPlayingPage(
 	}
 	a.card.OnArtistNameTapped = func(artistID string) {
 		contr.NavigateTo(controller.ArtistRoute(artistID))
+	}
+	a.card.OnRadioURLTapped = func(urlText string) {
+		if u, err := url.Parse(urlText); err == nil {
+			fyne.CurrentApp().OpenURL(u)
+		}
 	}
 	a.card.OnSetFavorite = func(fav bool) {
 		a.contr.SetTrackFavorites([]string{a.nowPlayingID}, fav)
