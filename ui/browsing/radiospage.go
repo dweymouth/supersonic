@@ -60,18 +60,10 @@ func newRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider,
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 
-	a.noRadiosMsg = container.NewCenter(
-		container.New(layout.NewCustomPaddedVBoxLayout(-10),
-			container.NewCenter(
-				container.NewBorder(nil, nil,
-					widget.NewIcon(theme.InfoIcon()), nil,
-					widget.NewRichText(&widget.TextSegment{
-						Text:  "No radio stations available",
-						Style: widget.RichTextStyleSubHeading,
-					}))),
-			widget.NewLabel("Configure your music server to add radio stations"),
-		),
-	)
+	a.noRadiosMsg = container.NewCenter(widgets.NewInfoMessage(
+		"No radio stations available",
+		"Configure your music server to add radio stations",
+	))
 	a.noRadiosMsg.Hide()
 
 	a.buildContainer()

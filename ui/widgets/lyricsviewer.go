@@ -12,7 +12,7 @@ import (
 type LyricsViewer struct {
 	widget.BaseWidget
 
-	noLyricsLabel widget.Label
+	noLyricsMsg   fyne.CanvasObject
 	viewer        *fynelyrics.LyricsViewer
 	lyrics        *mediaprovider.Lyrics
 	nextLyricLine int
@@ -27,11 +27,13 @@ type LyricsViewer struct {
 }
 
 func NewLyricsViewer() *LyricsViewer {
-	l := &LyricsViewer{noLyricsLabel: widget.Label{
-		Text: "Lyrics not available",
-	}, isEmpty: true}
+	l := &LyricsViewer{
+		noLyricsMsg: container.NewCenter(NewInfoMessage(
+			"Lyrics not available", "")),
+		isEmpty: true,
+	}
 	l.ExtendBaseWidget(l)
-	l.container = container.NewStack(&l.noLyricsLabel)
+	l.container = container.NewStack(l.noLyricsMsg)
 	return l
 }
 
@@ -41,7 +43,7 @@ func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 	l.firstUpdate = true
 	if lyrics == nil || len(lyrics.Lines) == 0 {
 		if !l.isEmpty {
-			l.container.Objects[0] = &l.noLyricsLabel
+			l.container.Objects[0] = l.noLyricsMsg
 			l.isEmpty = true
 			l.Refresh()
 		}
