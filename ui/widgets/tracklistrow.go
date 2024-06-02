@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -148,6 +149,7 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 	t.tracklistRowBase.create(tracklist)
 	t.playingIcon = playingIcon
 	t.img = NewImagePlaceholder(myTheme.TracksIcon, tracklistThumbnailSize)
+	t.img.ScaleMode = canvas.ImageScaleFastest
 
 	t.imageLoader = util.NewThumbnailLoader(im, func(i image.Image) {
 		t.img.SetImage(i, false)
