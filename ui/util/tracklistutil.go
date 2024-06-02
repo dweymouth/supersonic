@@ -30,6 +30,12 @@ func SelectedTracks(items []*TrackListModel) []*mediaprovider.Track {
 	})
 }
 
+func SelectedItems(items []*TrackListModel) []mediaprovider.MediaItem {
+	return sharedutil.FilterMapSlice(items, func(tm *TrackListModel) (mediaprovider.MediaItem, bool) {
+		return tm.Item, tm.Selected
+	})
+}
+
 func SelectedItemIDs(items []*TrackListModel) []string {
 	return sharedutil.FilterMapSlice(items, func(tm *TrackListModel) (string, bool) {
 		return tm.Item.Metadata().ID, tm.Selected
