@@ -20,13 +20,14 @@ type LargeNowPlayingCard struct {
 
 	DisableRating bool
 
-	isRadio    bool
-	trackName  *widget.RichText
-	artistName *MultiHyperlink
-	albumName  *widget.Hyperlink
-	rating     *StarRating
-	favorite   *FavoriteIcon
-	cover      *ImagePlaceholder
+	isRadio                 bool
+	trackName               *widget.RichText
+	artistName              *MultiHyperlink
+	albumName               *widget.Hyperlink
+	rating                  *StarRating
+	favorite                *FavoriteIcon
+	ratingFavoriteContainer *fyne.Container
+	cover                   *ImagePlaceholder
 
 	OnArtistNameTapped func(artistID string)
 	OnAlbumNameTapped  func()
@@ -51,17 +52,18 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	n.cover.ScaleMode = canvas.ImageScaleFastest
 	// set up the layout
 	n.Content = n.cover
+	n.ratingFavoriteContainer = container.NewHBox(
+		layout.NewSpacer(),
+		n.favorite,
+		widget.NewLabel("·"),
+		n.rating,
+		layout.NewSpacer(),
+	)
 	n.Caption = container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-13),
 		n.trackName,
 		n.artistName,
 		n.albumName,
-		container.NewHBox(
-			layout.NewSpacer(),
-			n.favorite,
-			widget.NewLabel("·"),
-			n.rating,
-			layout.NewSpacer(),
-		),
+		n.ratingFavoriteContainer,
 	)
 
 	n.trackName.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText
@@ -135,13 +137,11 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 		n.rating.Rating = tr.Rating
 		n.favorite.Favorite = tr.Favorite
 		n.cover.PlaceholderIcon = myTheme.TracksIcon
-		n.favorite.Hidden = false
-		n.rating.Hidden = false
+		n.ratingFavoriteContainer.Hidden = false
 		n.isRadio = false
 	} else if rd, ok := item.(*mediaprovider.RadioStation); ok {
 		n.artistName.BuildSegments([]string{rd.HomePageURL}, []string{rd.HomePageURL})
-		n.rating.Hidden = true
-		n.favorite.Hidden = true
+		n.ratingFavoriteContainer.Hidden = true
 		n.cover.PlaceholderIcon = myTheme.RadioIcon
 		n.isRadio = true
 	}
