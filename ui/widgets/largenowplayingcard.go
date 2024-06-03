@@ -152,3 +152,12 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 func (n *LargeNowPlayingCard) SetCoverImage(im image.Image) {
 	n.cover.SetImage(im, false)
 }
+
+func (n *LargeNowPlayingCard) Refresh() {
+	if n.DisableRating {
+		n.rating.Disable()
+	} else {
+		n.rating.Enable()
+	}
+	n.BaseWidget.Refresh()
+}
