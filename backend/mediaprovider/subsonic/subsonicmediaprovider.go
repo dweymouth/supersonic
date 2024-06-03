@@ -359,8 +359,14 @@ func (s *subsonicMediaProvider) GetLyrics(track *mediaprovider.Track) (*mediapro
 			Synced: lyric.Synced,
 		}
 		for _, line := range lyric.Lines {
+			// Navidrome's incorrect lyric text field
+			// TODO: remove this after Navidrome 0.53.0 release.
+			text := line.Value
+			if text == "" {
+				text = line.Text
+			}
 			mpLyrics.Lines = append(mpLyrics.Lines, mediaprovider.LyricLine{
-				Text:  line.Text,
+				Text:  text,
 				Start: float64(line.Start) / 1000,
 			})
 		}
