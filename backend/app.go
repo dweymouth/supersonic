@@ -374,6 +374,10 @@ func (a *App) LoadSavedPlayQueue() error {
 	if len(queue.Tracks) == 0 {
 		return nil
 	}
+	if len(a.PlaybackManager.GetPlayQueue()) > 0 {
+		// don't restore play queue if the user has already queued new tracks
+		return nil
+	}
 
 	if err := a.PlaybackManager.LoadTracks(queue.Tracks, Replace, false); err != nil {
 		return err
@@ -382,7 +386,7 @@ func (a *App) LoadSavedPlayQueue() error {
 		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
 		a.PlaybackManager.PlayTrackAt(queue.TrackIndex)
 		a.PlaybackManager.Pause()
-		time.Sleep(75 * time.Millisecond) // MPV seek fails if run immediately after
+		time.Sleep(100 * time.Millisecond) // MPV seek fails if run quickly after
 		a.PlaybackManager.SeekSeconds(queue.TimePos)
 	}
 	return nil
