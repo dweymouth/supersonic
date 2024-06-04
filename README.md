@@ -18,10 +18,10 @@ A lightweight cross-platform desktop client for Subsonic and Jellyfin music serv
 
 Screenshots of Supersonic running against the Navidrome demo server, showcasing the builtin dark and light themes.
 
+<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/NowPlayingView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/NowPlayingView.png" width="49.5%"/></a>
 <a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png" width="49.5%"/></a>
-<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/AlbumView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/AlbumView.png" width="49.5%"/></a>
-<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png" width="49.5%"/></a>
 <a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/FavoriteSongsView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/FavoriteSongsView.png" width="49.5%"/></a>
+<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png" width="49.5%"/></a>
 
 ## Supported servers
 
