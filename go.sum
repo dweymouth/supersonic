@@ -84,8 +84,8 @@ github.com/disintegration/imaging v1.6.2 h1:w1LecBlG2Lnp8B3jk5zSuNqd7b4DXhcjwek1
 github.com/disintegration/imaging v1.6.2/go.mod h1:44/5580QXChDfwIclfc/PCwrr44amcmDAg8hxG0Ewe4=
 github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64 h1:RUIrnGY034rDMlcOui/daurwX5b+52KdUKhH9aXaDSg=
 github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64/go.mod h1:3YrjFDHMlhCsSZ/OvmJCxWm9QHSgOVWZBxnraZz9Z7c=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240602201848-d18ef7f2f005 h1:69dxdPyU4oyvkzNikVlyM1Gp3Y3w1mCvH83khJuNkzw=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240602201848-d18ef7f2f005/go.mod h1:We0FQjT5agjov+opbnmMlH81clRuyut2Bk6p7UlZTSM=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240604143614-256525c6a602 h1:k3jFLjmAuPJ5ZFNF57szZp8XrLIb6mIdEEGPkm6EZ7Q=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240604143614-256525c6a602/go.mod h1:We0FQjT5agjov+opbnmMlH81clRuyut2Bk6p7UlZTSM=
 github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645 h1:KzqSaQwG3HsTZQlEtkp0BeUy9vmYZ0rq0B15qIPSiBs=
 github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee h1:ZGyJ6wp7CAfT31BugypcF/TPKEy2RrGR9JFq1JOjOpY=
