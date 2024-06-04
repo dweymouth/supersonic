@@ -421,7 +421,7 @@ func (t *Tracklist) doSortTracks() {
 		} else {
 			t.tracks = t.tracksOrigOrder
 		}
-	case ColumnTitle:
+	case ColumnTitle, ColumnTitleArtist:
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Title })
 	case ColumnArtist:
 		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().ArtistNames, ", ") })
