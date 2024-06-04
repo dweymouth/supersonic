@@ -421,6 +421,17 @@ func (a *NowPlayingPage) Reload() {
 		a.totalTime += float64(tr.Metadata().Duration)
 	}
 	a.formatStatusLine()
+
+	if a.tabs == nil {
+		return
+	}
+	switch a.tabs.SelectedIndex() {
+	case 1: /*lyrics*/
+		a.lastPlayPos = a.pm.CurrentPlayer().GetStatus().TimePos
+		a.updateLyrics()
+	case 2: /*related*/
+		a.updateRelatedList()
+	}
 }
 
 func (s *nowPlayingPageState) Restore() Page {
