@@ -9,7 +9,7 @@ build:
 # so the last 3 cmds move it over manually. This is a bit fragile though
 # since it assumes a specific location and version of the dependency
 package_macos:
-	fyne package -os darwin -name $(app_name) -appVersion $(app_version) -icon $(icon_path)
+	CGO_CFLAGS="-I/usr/local/include -I/opt/homebrew/include" CGO_LDFLAGS="-L/usr/local/lib -L/opt/homebrew/lib" fyne package -os darwin -name $(app_name) -appVersion $(app_version) -icon $(icon_path)
 
 bundledeps_macos_homebrew:
 	dylibbundler -od -b -x ./Supersonic.app/Contents/MacOS/supersonic -d ./Supersonic.app/Contents/Frameworks/ -p @executable_path/../Frameworks/
