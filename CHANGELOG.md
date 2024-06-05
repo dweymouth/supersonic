@@ -1,5 +1,28 @@
 # Change Log
 
+## [0.11.0] - TBD
+
+### Added / Changed
+- Updated to Fyne 2.5, adds/fixes the following
+  - [#57](https://github.com/dweymouth/supersonic/issues/57) Unable to show CJK characters without setting custom app font
+  - [#329](https://github.com/dweymouth/supersonic/issues/329) Adds support for Ctrl+{backspace/delete} to remove words in text inputs
+- [#356](https://github.com/dweymouth/supersonic/issues/356), [#372](https://github.com/dweymouth/supersonic/issues/372) Adds synced lyrics support, and Jellyfin lyrics support
+  - LrcLib.net is used as a fallback lyrics source and can be disabled in the config file
+- [#344](https://github.com/dweymouth/supersonic/issues/344) Improve UX of Add to Playlist dialog (thanks @natilou!)
+- [#276](https://github.com/dweymouth/supersonic/issues/276) Show track thumbnails in tracklist views
+- [#328](https://github.com/dweymouth/supersonic/issues/328) Adds support for internet radio stations for Subsonic servers
+- [#286](https://github.com/dweymouth/supersonic/issues/286) Adds "option button" to right of current track title to bring up action menu
+- [#371](https://github.com/dweymouth/supersonic/issues/371) Adds a portable mode
+- [#387](https://github.com/dweymouth/supersonic/issues/387) Improves performance and behavior of Random albums sort with upcoming Navidrome releases
+- Adds dynamic gradient background to Now Playing page
+
+### Fixed
+- [#165](https://github.com/dweymouth/supersonic/issues/165) Last track occasionally missing in album view depending on window size
+- [#383](https://github.com/dweymouth/supersonic/issues/383) Album filter button disappearing when restoring pages from history
+- [#391](https://github.com/dweymouth/supersonic/issues/391)  Artist radio button sometimes plays radio for wrong artist
+- [#378](https://github.com/dweymouth/supersonic/issues/378) Home doesn't stay refreshed
+
+
 ## [0.10.1] - 2024-04-21
 
 ### Fixed
