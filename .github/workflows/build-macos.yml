@@ -28,6 +28,9 @@ jobs:
     - name: Install Dependencies
       run: brew install --force mpv && brew install --force dylibbundler
 
+    - name: Setup path
+      run: export C_INCLUDE_PATH=/usr/local/include:/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib:$LIBRARY_PATH
+
     - name: Build
       run: CGO_CFLAGS="-I/usr/local/include -I/opt/homebrew/include" CGO_LDFLAGS="-L/usr/local/lib -L/opt/homebrew/lib" go build
 
