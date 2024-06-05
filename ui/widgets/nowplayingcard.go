@@ -22,7 +22,7 @@ type NowPlayingCard struct {
 
 	DisableRating bool
 
-	trackName  *widget.Hyperlink
+	trackName  *OptionHyperlink
 	artistName *MultiHyperlink
 	albumName  *widget.Hyperlink
 	cover      *ImagePlaceholder
@@ -36,28 +36,28 @@ type NowPlayingCard struct {
 	OnSetRating        func(rating int)
 	OnSetFavorite      func(favorite bool)
 	OnAddToPlaylist    func()
+	OnShare            func()
 }
 
 func NewNowPlayingCard() *NowPlayingCard {
 	n := &NowPlayingCard{
-		trackName:  widget.NewHyperlink("", nil),
+		trackName:  NewOptionHyperlink(),
 		artistName: NewMultiHyperlink(),
 		albumName:  widget.NewHyperlink("", nil),
 	}
 	n.ExtendBaseWidget(n)
 	n.cover = NewImagePlaceholder(myTheme.TracksIcon, 85)
 	n.cover.OnTapped = n.onShowCoverImage
-	n.cover.OnTappedSecondary = n.showMenu
 	n.cover.ScaleMode = canvas.ImageScaleFastest
 	n.cover.Hidden = true
 	n.trackName.Hidden = true
 	n.albumName.Hidden = true
 	n.albumName.Truncation = fyne.TextTruncateEllipsis
-	n.trackName.Truncation = fyne.TextTruncateEllipsis
-	n.trackName.TextStyle.Bold = true
+	n.trackName.SetTextStyle(fyne.TextStyle{Bold: true})
+	n.trackName.OnShowMenu = n.showMenu
 	n.albumName.OnTapped = n.onAlbumNameTapped
 	n.artistName.OnTapped = n.onArtistNameTapped
-	n.trackName.OnTapped = n.onTrackNameTapped
+	n.trackName.SetOnTapped(n.onTrackNameTapped)
 
 	return n
 }
@@ -109,6 +109,12 @@ func (n *NowPlayingCard) onAddToPlaylist() {
 	}
 }
 
+func (n *NowPlayingCard) onShare() {
+	if n.OnShare != nil {
+		n.OnShare()
+	}
+}
+
 func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 	c := container.New(&layout.CustomPaddedLayout{LeftPadding: -4},
 		container.NewBorder(nil, nil, n.cover, nil,
@@ -137,7 +143,8 @@ func (n *NowPlayingCard) Update(track mediaprovider.MediaItem) {
 			n.cover.PlaceholderIcon = myTheme.RadioIcon
 		}
 	}
-	n.trackName.Hidden = n.trackName.Text == ""
+	n.trackName.Hidden = n.trackName.Text() == ""
+	n.trackName.SetMenuBtnEnabled(n.cover.PlaceholderIcon != myTheme.RadioIcon)
 	n.artistName.Hidden = len(n.artistName.Segments) == 0
 	n.albumName.Hidden = n.albumName.Text == ""
 	n.Refresh()
@@ -147,7 +154,7 @@ func (n *NowPlayingCard) SetImage(cover image.Image) {
 	n.cover.SetImage(cover, true)
 }
 
-func (n *NowPlayingCard) showMenu(e *fyne.PointEvent) {
+func (n *NowPlayingCard) showMenu(btnPos fyne.Position) {
 	if n.menu == nil {
 		n.ratingMenu = util.NewRatingSubmenu(n.onSetRating)
 		favorite := fyne.NewMenuItem("Set favorite", func() { n.onSetFavorite(true) })
@@ -156,10 +163,15 @@ func (n *NowPlayingCard) showMenu(e *fyne.PointEvent) {
 		unfavorite.Icon = myTheme.NotFavoriteIcon
 		playlist := fyne.NewMenuItem("Add to playlist...", func() { n.onAddToPlaylist() })
 		playlist.Icon = myTheme.PlaylistIcon
+		share := fyne.NewMenuItem("Share...", func() { n.onShare() })
+		share.Icon = myTheme.ShareIcon
 
-		m := fyne.NewMenu("", favorite, unfavorite, n.ratingMenu, playlist)
+		m := fyne.NewMenu("", favorite, unfavorite, n.ratingMenu, playlist, share)
 		n.menu = widget.NewPopUpMenu(m, fyne.CurrentApp().Driver().CanvasForObject(n))
 	}
+	menuSize := n.menu.MinSize()
 	n.ratingMenu.Disabled = n.DisableRating
-	n.menu.ShowAtPosition(e.AbsolutePosition)
+	btnPos.Y -= (menuSize.Height + theme.Padding()*3)
+	btnPos.X -= menuSize.Width / 2
+	n.menu.ShowAtPosition(btnPos)
 }
