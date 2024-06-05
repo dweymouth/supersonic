@@ -61,20 +61,36 @@
   </screenshots>
 
  <releases>
-  <release date="2024-04-21" version="0.10.1">
+  <release date="2024-06-05" version="0.11.0">
    <description>
      <p>
-       Version 0.10.1 of Supersonic
+       Version 0.11.0 of Supersonic
      </p>
+
+     <p>
+       Added
+     </p>
+     <ul>
+       <li>Automatically load fonts from the OS as needed to display CJK and other scripts</li>
+       <li>Synced lyrics support and Jellyfin lyrics support</li>
+       <li>LrcLib.net as a backup lyric source (disable in config file if desired)</li>
+       <li>Improve UX of Add to Playlist dialog</li>
+       <li>Show track thumbnails in tracklist views</li>
+       <li>Support for internet radio stations for Subsonic servers</li>
+       <li>New "option button" to right of current track title to bring up action menu</li>
+       <li>Ctrl+{backspace/delete} to remove words in text inputs</li>
+       <li>Improves performance and behavior of Random albums sort with upcoming Navidrome releases</li>
+       <li>Dynamic gradient background on Now Playing page</li>
+     </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Crashing when trying to add a new server</li>
-       <li>Lyrics don't refresh when playing next song</li>
-       <li>What's New dialog wasn't showing when launching updated version</li>
-       <li>Crash on exit when saving play queue to server and no track playing</li>
+       <li>Last track occasionally missing in album view depending on window size</li>
+       <li>Album filter button disappearing when restoring pages from history</li>
+       <li>Artist radio button sometimes plays radio for wrong artist</li>
+       <li>Clicking Home button doesn't automatically refresh page</li>
      </ul>
 
    </description>

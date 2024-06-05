@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.11.0] - TBD
+## [0.11.0] - 2024-06-05
 
 ### Added / Changed
 - Updated to Fyne 2.5, adds/fixes the following
@@ -20,7 +20,7 @@
 - [#165](https://github.com/dweymouth/supersonic/issues/165) Last track occasionally missing in album view depending on window size
 - [#383](https://github.com/dweymouth/supersonic/issues/383) Album filter button disappearing when restoring pages from history
 - [#391](https://github.com/dweymouth/supersonic/issues/391)  Artist radio button sometimes plays radio for wrong artist
-- [#378](https://github.com/dweymouth/supersonic/issues/378) Home doesn't stay refreshed
+- [#378](https://github.com/dweymouth/supersonic/issues/378) Clicking Home button doesn't automatically refresh page
 
 
 ## [0.10.1] - 2024-04-21
