@@ -41,7 +41,7 @@ jobs:
       run: >
         make package_macos &&
         cp -r Supersonic.app Supersonic.app.2 &&
-        make bundledeps_macos_macports && make zip_macos &&
+        make bundledeps_macos_homebrew && make zip_macos &&
         mv Supersonic.zip Supersonic_BigSur+.zip &&
         rm -r Supersonic.app &&
         mv Supersonic.app.2 Supersonic.app &&
