@@ -123,6 +123,12 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueM
 	return p.engine.LoadTracks(tracks, insertQueueMode, shuffle)
 }
 
+// Load items into the play queue.
+// If replacing the current queue (!appendToQueue), playback will be stopped.
+func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
+	return p.engine.LoadItems(items, insertQueueMode, shuffle)
+}
+
 // Replaces the play queue with the given set of tracks.
 // Does not stop playback if the currently playing track is in the new queue,
 // but updates the now playing index to point to the first instance of the track in the new queue.

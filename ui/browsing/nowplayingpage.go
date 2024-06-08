@@ -127,8 +127,8 @@ func NewNowPlayingPage(
 		a.contr.SetTrackRatings([]string{a.nowPlayingID}, rating)
 	}
 
-	a.queueList = widgets.NewPlayQueueList(a.im)
-	a.relatedList = widgets.NewPlayQueueList(a.im)
+	a.queueList = widgets.NewPlayQueueList(a.im, false)
+	a.relatedList = widgets.NewPlayQueueList(a.im, true)
 	a.queueList.OnReorderItems = a.doSetNewTrackOrder
 	a.queueList.OnDownload = contr.ShowDownloadDialog
 	a.queueList.OnShare = func(tracks []*mediaprovider.Track) {
@@ -137,7 +137,7 @@ func NewNowPlayingPage(
 		}
 	}
 	a.queueList.OnAddToPlaylist = contr.DoAddTracksToPlaylistWorkflow
-	a.queueList.OnPlayTrackAt = func(tracknum int) {
+	a.queueList.OnPlayItemAt = func(tracknum int) {
 		_ = a.pm.PlayTrackAt(tracknum)
 	}
 	a.queueList.OnShowArtistPage = func(artistID string) {
@@ -163,14 +163,22 @@ func NewNowPlayingPage(
 	a.relatedList.OnShare = a.queueList.OnShare
 	a.relatedList.OnAddToPlaylist = a.queueList.OnAddToPlaylist
 	a.relatedList.OnShowArtistPage = a.queueList.OnShowArtistPage
-	a.relatedList.OnRemoveFromQueue = a.queueList.OnRemoveFromQueue
 	a.relatedList.OnSetRating = a.queueList.OnSetRating
 	a.relatedList.OnSetFavorite = a.queueList.OnSetFavorite
-	a.relatedList.OnPlayTrackAt = func(idx int) {
-		a.pm.LoadTracks(a.related, backend.Replace, false)
+	a.relatedList.OnPlayItemAt = func(idx int) {
+		a.pm.LoadTracks([]*mediaprovider.Track{a.related[idx]}, backend.Replace, false)
 		a.pm.PlayTrackAt(idx)
 	}
-
+	a.relatedList.OnAddToQueue = func(items []mediaprovider.MediaItem) {
+		a.pm.LoadItems(items, backend.Append, false)
+	}
+	a.relatedList.OnPlaySelection = func(items []mediaprovider.MediaItem, shuffle bool) {
+		a.pm.LoadItems(items, backend.Replace, shuffle)
+		a.pm.PlayFromBeginning()
+	}
+	a.relatedList.OnPlaySelectionNext = func(items []mediaprovider.MediaItem) {
+		a.pm.LoadItems(items, backend.InsertNext, false)
+	}
 	a.lyricsViewer = widgets.NewLyricsViewer()
 	a.statusLabel = widget.NewLabel("Stopped")
 
@@ -458,13 +466,29 @@ func (a *NowPlayingPage) OnPlayTimeUpdate(curTime, _ float64, seeked bool) {
 var _ CanSelectAll = (*NowPlayingPage)(nil)
 
 func (a *NowPlayingPage) SelectAll() {
-	a.queueList.SelectAll()
+	if a.tabs == nil {
+		return
+	}
+	switch a.tabs.SelectedIndex() {
+	case 0: /*queue*/
+		a.queueList.SelectAll()
+	case 2: /*related*/
+		a.relatedList.SelectAll()
+	}
 }
 
 var _ fyne.Tappable = (*NowPlayingPage)(nil)
 
 func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
-	a.queueList.UnselectAll()
+	if a.tabs == nil {
+		return
+	}
+	switch a.tabs.SelectedIndex() {
+	case 0: /*queue*/
+		a.queueList.UnselectAll()
+	case 2: /*related*/
+		a.relatedList.UnselectAll()
+	}
 }
 
 func (a *NowPlayingPage) Refresh() {

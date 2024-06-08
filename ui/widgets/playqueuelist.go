@@ -35,31 +35,35 @@ type PlayQueueList struct {
 	DisableSharing bool
 
 	// user action callbacks
-	OnAddToPlaylist   func(trackIDs []string)
-	OnSetFavorite     func(trackIDs []string, fav bool)
-	OnSetRating       func(trackIDs []string, rating int)
-	OnRemoveFromQueue func(itemIDs []string)
-	OnDownload        func(tracks []*mediaprovider.Track, downloadName string)
-	OnShare           func(tracks []*mediaprovider.Track)
-	OnShowArtistPage  func(artistID string)
-	OnPlayTrackAt     func(idx int)
-	OnReorderItems    func(itemIDs []string, op sharedutil.TrackReorderOp)
+	OnPlayItemAt        func(idx int)
+	OnPlaySelection     func(items []mediaprovider.MediaItem, shuffle bool)
+	OnPlaySelectionNext func(items []mediaprovider.MediaItem)
+	OnAddToQueue        func(items []mediaprovider.MediaItem)
+	OnAddToPlaylist     func(trackIDs []string)
+	OnSetFavorite       func(trackIDs []string, fav bool)
+	OnSetRating         func(trackIDs []string, rating int)
+	OnRemoveFromQueue   func(itemIDs []string)
+	OnDownload          func(tracks []*mediaprovider.Track, downloadName string)
+	OnShare             func(tracks []*mediaprovider.Track)
+	OnShowArtistPage    func(artistID string)
+	OnReorderItems      func(itemIDs []string, op sharedutil.TrackReorderOp)
 
-	list          *FocusList
-	menu          *widget.PopUpMenu // ctx menu for when only tracks are selected
-	radiosMenu    *widget.PopUpMenu // ctx menu for when selection contains radios
-	ratingSubmenu *fyne.MenuItem
-	shareMenuItem *fyne.MenuItem
+	useNonQueueMenu bool
+	menu            *widget.PopUpMenu // ctx menu for when only tracks are selected
+	radiosMenu      *widget.PopUpMenu // ctx menu for when selection contains radios
+	ratingSubmenu   *fyne.MenuItem
+	shareMenuItem   *fyne.MenuItem
 
 	nowPlayingID string
-	colLayout    *layouts.ColumnsLayout
 
+	list        *FocusList
+	colLayout   *layouts.ColumnsLayout
 	tracksMutex sync.RWMutex
 	items       []*util.TrackListModel
 }
 
-func NewPlayQueueList(im *backend.ImageManager) *PlayQueueList {
-	p := &PlayQueueList{}
+func NewPlayQueueList(im *backend.ImageManager, useNonQueueMenu bool) *PlayQueueList {
+	p := &PlayQueueList{useNonQueueMenu: useNonQueueMenu}
 	p.ExtendBaseWidget(p)
 
 	// #, Cover, Title/Artist, Time
@@ -164,8 +168,8 @@ func (t *PlayQueueList) onArtistTapped(artistID string) {
 }
 
 func (p *PlayQueueList) onPlayTrackAt(idx int) {
-	if p.OnPlayTrackAt != nil {
-		p.OnPlayTrackAt(idx)
+	if p.OnPlayItemAt != nil {
+		p.OnPlayItemAt(idx)
 	}
 }
 
@@ -233,6 +237,12 @@ func (p *PlayQueueList) ensureTracksMenu() {
 	if p.menu != nil {
 		return
 	}
+	var menuItems []*fyne.MenuItem
+	if p.useNonQueueMenu {
+		menuItems = append(menuItems, p.createQueueActionMenuItems()...)
+		menuItems = append(menuItems, fyne.NewMenuItemSeparator())
+	}
+
 	playlist := fyne.NewMenuItem("Add to playlist...", func() {
 		if p.OnAddToPlaylist != nil {
 			p.OnAddToPlaylist(p.selectedItemIDs())
@@ -268,31 +278,36 @@ func (p *PlayQueueList) ensureTracksMenu() {
 			p.OnSetRating(p.selectedItemIDs(), rating)
 		}
 	})
-	remove := fyne.NewMenuItem("Remove from queue", func() {
-		if p.OnRemoveFromQueue != nil {
-			p.OnRemoveFromQueue(p.selectedItemIDs())
-		}
-	})
-	remove.Icon = theme.ContentRemoveIcon()
-	reorder := util.NewReorderTracksSubmenu(func(tro sharedutil.TrackReorderOp) {
-		if p.OnReorderItems != nil {
-			p.OnReorderItems(p.selectedItemIDs(), tro)
-		}
-	})
+	menuItems = append(menuItems,
+		playlist,
+		download,
+		p.shareMenuItem,
+		fyne.NewMenuItemSeparator(),
+		favorite,
+		unfavorite,
+		p.ratingSubmenu,
+	)
+
+	if !p.useNonQueueMenu {
+		remove := fyne.NewMenuItem("Remove from queue", func() {
+			if p.OnRemoveFromQueue != nil {
+				p.OnRemoveFromQueue(p.selectedItemIDs())
+			}
+		})
+		remove.Icon = theme.ContentRemoveIcon()
+		reorder := util.NewReorderTracksSubmenu(func(tro sharedutil.TrackReorderOp) {
+			if p.OnReorderItems != nil {
+				p.OnReorderItems(p.selectedItemIDs(), tro)
+			}
+		})
+		menuItems = append(menuItems,
+			fyne.NewMenuItemSeparator(),
+			remove,
+			reorder)
+	}
 
 	p.menu = widget.NewPopUpMenu(
-		fyne.NewMenu("",
-			playlist,
-			download,
-			p.shareMenuItem,
-			fyne.NewMenuItemSeparator(),
-			favorite,
-			unfavorite,
-			p.ratingSubmenu,
-			fyne.NewMenuItemSeparator(),
-			reorder,
-			remove,
-		),
+		fyne.NewMenu("", menuItems...),
 		fyne.CurrentApp().Driver().CanvasForObject(p),
 	)
 }
@@ -316,6 +331,34 @@ func (p *PlayQueueList) ensureRadiosMenu() {
 		fyne.NewMenu("", remove, reorder),
 		fyne.CurrentApp().Driver().CanvasForObject(p),
 	)
+}
+
+func (p *PlayQueueList) createQueueActionMenuItems() []*fyne.MenuItem {
+	play := fyne.NewMenuItem("Play", func() {
+		if p.OnPlaySelection != nil {
+			p.OnPlaySelection(p.selectedItems(), false)
+		}
+	})
+	play.Icon = theme.MediaPlayIcon()
+	shuffle := fyne.NewMenuItem("Shuffle", func() {
+		if p.OnPlaySelection != nil {
+			p.OnPlaySelection(p.selectedItems(), true)
+		}
+	})
+	shuffle.Icon = myTheme.ShuffleIcon
+	playNext := fyne.NewMenuItem("Play next", func() {
+		if p.OnPlaySelection != nil {
+			p.OnPlaySelectionNext(p.selectedItems())
+		}
+	})
+	playNext.Icon = myTheme.PlayNextIcon
+	add := fyne.NewMenuItem("Add to queue", func() {
+		if p.OnPlaySelection != nil {
+			p.OnAddToQueue(p.selectedItems())
+		}
+	})
+	add.Icon = theme.ContentAddIcon()
+	return []*fyne.MenuItem{play, shuffle, playNext, add}
 }
 
 func (t *PlayQueueList) selectedItems() []mediaprovider.MediaItem {

@@ -210,26 +210,37 @@ func (p *playbackEngine) Continue() error {
 	return p.player.Continue()
 }
 
+// Load items into the play queue.
+// If replacing the current queue (!appendToQueue), playback will be stopped.
+func (p *playbackEngine) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
+	newItems := p.deepCopyMediaItemSlice(items)
+	return p.doLoaditems(newItems, insertQueueMode, shuffle)
+}
+
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) error {
+	newTracks := p.copyTrackSliceToMediaItemSlice(tracks)
+	return p.doLoaditems(newTracks, insertQueueMode, shuffle)
+}
+
+func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
 	if insertQueueMode == Replace {
 		p.player.Stop()
 		p.nowPlayingIdx = -1
 		p.playQueue = nil
 	}
-	needToSetNext := len(tracks) > 0 && (insertQueueMode == InsertNext || (insertQueueMode == Append && p.nowPlayingIdx == len(p.playQueue)-1))
+	needToSetNext := len(items) > 0 && (insertQueueMode == InsertNext || (insertQueueMode == Append && p.nowPlayingIdx == len(p.playQueue)-1))
 
-	newTracks := p.copyTrackSliceToMediaItemSlice(tracks)
 	if shuffle {
-		rand.Shuffle(len(newTracks), func(i, j int) { newTracks[i], newTracks[j] = newTracks[j], newTracks[i] })
+		rand.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
 	}
 
 	insertIdx := len(p.playQueue)
 	if insertQueueMode == InsertNext {
 		insertIdx = p.nowPlayingIdx + 1
 	}
-	p.playQueue = append(p.playQueue[:insertIdx], append(newTracks, p.playQueue[insertIdx:]...)...)
+	p.playQueue = append(p.playQueue[:insertIdx], append(items, p.playQueue[insertIdx:]...)...)
 
 	if needToSetNext {
 		p.setNextTrack(p.nowPlayingIdx + 1)
