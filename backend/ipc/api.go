@@ -1,18 +1,36 @@
 package ipc
 
 const (
-	PlayPath      = "/transport/play"
+	// GET
+	PingPath = "/ping"
+	// POST
+	PlayPath = "/transport/play"
+	// POST
 	PlayPausePath = "/transport/playpause"
-	PausePath     = "/transport/pause"
-	StopPath      = "/transport/stop"
-	PreviousPath  = "/transport/previous"
-	NextPath      = "/transport/next"
-	TimePosPath   = "/transport/timepos"
-
+	// POST
+	PausePath = "/transport/pause"
+	// POST
+	StopPath = "/transport/stop"
+	// POST
+	PreviousPath = "/transport/previous"
+	// POST
+	NextPath = "/transport/next"
+	// POST(TimePos)
+	TimePosPath = "/transport/timepos"
+	// POST to seek
 	PlayTrackPath = "/queue/playtrack"
-
+	// GET -> Volume
+	// POST(Volume)
 	VolumePath = "/volume"
 )
+
+type TimePos struct {
+	Seconds float64 `json:"seconds"`
+}
+
+type Volume struct {
+	Volume int `json:"volume"`
+}
 
 type Response struct {
 	Error string `json:"error"`
