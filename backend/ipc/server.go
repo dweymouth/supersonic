@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type Handler interface {
+type PlaybackHandler interface {
 	PlayPause() error
 	Stop() error
 	Pause() error
@@ -17,12 +17,18 @@ type Handler interface {
 	SetVolume(int) error
 }
 
-type serverImpl struct {
-	handler Handler
+type WindowHandler interface {
+	Show()
+	Quit()
 }
 
-func NewServer(handler Handler) *http.Server {
-	s := serverImpl{handler: handler}
+type serverImpl struct {
+	pbHandler PlaybackHandler
+	wdHandler WindowHandler
+}
+
+func NewServer(pbHandler PlaybackHandler, wdHandler WindowHandler) *http.Server {
+	s := serverImpl{pbHandler: pbHandler, wdHandler: wdHandler}
 	return &http.Server{
 		Handler: s.createHandler(),
 	}
@@ -35,23 +41,31 @@ func (s *serverImpl) createHandler() http.Handler {
 		w.Write([]byte("The given path is not valid"))
 	})
 	m.HandleFunc(PingPath, s.makeSimpleEndpointHandler(func() error { return nil }))
-	m.HandleFunc(PlayPath, s.makeSimpleEndpointHandler(s.handler.Continue))
-	m.HandleFunc(PausePath, s.makeSimpleEndpointHandler(s.handler.Pause))
-	m.HandleFunc(PlayPausePath, s.makeSimpleEndpointHandler(s.handler.PlayPause))
-	m.HandleFunc(StopPath, s.makeSimpleEndpointHandler(s.handler.Stop))
-	m.HandleFunc(PreviousPath, s.makeSimpleEndpointHandler(s.handler.SeekBackOrPrevious))
-	m.HandleFunc(NextPath, s.makeSimpleEndpointHandler(s.handler.SeekNext))
+	m.HandleFunc(ShowPath, s.makeSimpleEndpointHandler(func() error {
+		s.wdHandler.Show()
+		return nil
+	}))
+	m.HandleFunc(QuitPath, s.makeSimpleEndpointHandler(func() error {
+		go s.wdHandler.Quit()
+		return nil
+	}))
+	m.HandleFunc(PlayPath, s.makeSimpleEndpointHandler(s.pbHandler.Continue))
+	m.HandleFunc(PausePath, s.makeSimpleEndpointHandler(s.pbHandler.Pause))
+	m.HandleFunc(PlayPausePath, s.makeSimpleEndpointHandler(s.pbHandler.PlayPause))
+	m.HandleFunc(StopPath, s.makeSimpleEndpointHandler(s.pbHandler.Stop))
+	m.HandleFunc(PreviousPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekBackOrPrevious))
+	m.HandleFunc(NextPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekNext))
 	m.HandleFunc(TimePosPath, func(w http.ResponseWriter, r *http.Request) {
 		var t TimePos
 		if err := json.NewDecoder(r.Response.Body).Decode(&t); err != nil {
 			s.writeErr(w, err)
 			return
 		}
-		s.writeSimpleResponse(w, s.handler.SeekSeconds(t.Seconds))
+		s.writeSimpleResponse(w, s.pbHandler.SeekSeconds(t.Seconds))
 	})
 	m.HandleFunc(VolumePath, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			msg, _ := json.Marshal(Volume{Volume: s.handler.Volume()})
+			msg, _ := json.Marshal(Volume{Volume: s.pbHandler.Volume()})
 			w.Write(msg)
 			return
 		}
@@ -60,7 +74,7 @@ func (s *serverImpl) createHandler() http.Handler {
 			s.writeErr(w, err)
 			return
 		}
-		s.writeSimpleResponse(w, s.handler.SetVolume(v.Volume))
+		s.writeSimpleResponse(w, s.pbHandler.SetVolume(v.Volume))
 	})
 	return m
 }

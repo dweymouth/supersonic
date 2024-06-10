@@ -3,6 +3,7 @@ package ipc
 const (
 	// GET
 	PingPath = "/ping"
+
 	// POST
 	PlayPath = "/transport/play"
 	// POST
@@ -22,6 +23,11 @@ const (
 	// GET -> Volume
 	// POST(Volume)
 	VolumePath = "/volume"
+
+	// POST
+	ShowPath = "/window/show"
+	// POST
+	QuitPath = "/window/quit"
 )
 
 type TimePos struct {
