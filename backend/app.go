@@ -12,6 +12,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/dweymouth/supersonic/backend/ipc"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
@@ -83,21 +84,30 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	configdir.MakePath(confDir)
 	configdir.MakePath(cacheDir)
 
-	sessionPath := path.Join(confDir, sessionDir)
-	if _, err := os.Stat(path.Join(sessionPath, sessionLockFile)); err == nil {
+	cli, err := ipc.Connect()
+	if err == nil {
 		log.Println("Another instance is running. Reactivating it...")
-		reactivateFile := path.Join(sessionPath, sessionActivateFile)
-		if f, err := os.Create(reactivateFile); err == nil {
-			f.Close()
-		}
-		time.Sleep(750 * time.Millisecond)
-		if _, err := os.Stat(reactivateFile); err == nil {
-			log.Println("No other instance responded. Starting as normal...")
-			os.RemoveAll(sessionPath)
-		} else {
-			return nil, ErrAnotherInstance
-		}
+		cli.Show()
+		return nil, ErrAnotherInstance
 	}
+
+	/*
+		sessionPath := path.Join(confDir, sessionDir)
+		if _, err := os.Stat(path.Join(sessionPath, sessionLockFile)); err == nil {
+			log.Println("Another instance is running. Reactivating it...")
+			reactivateFile := path.Join(sessionPath, sessionActivateFile)
+			if f, err := os.Create(reactivateFile); err == nil {
+				f.Close()
+			}
+			time.Sleep(750 * time.Millisecond)
+			if _, err := os.Stat(reactivateFile); err == nil {
+				log.Println("No other instance responded. Starting as normal...")
+				os.RemoveAll(sessionPath)
+			} else {
+				return nil, ErrAnotherInstance
+			}
+		}
+	*/
 
 	log.Printf("Starting %s...", appName)
 	log.Printf("Using config dir: %s", confDir)
@@ -114,16 +124,18 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	a.readConfig()
 	a.startConfigWriter(a.bgrndCtx)
 
-	if !a.Config.Application.AllowMultiInstance {
-		log.Println("Creating session lock file")
-		os.MkdirAll(sessionPath, 0770)
-		if f, err := os.Create(path.Join(sessionPath, sessionLockFile)); err == nil {
-			f.Close()
-		} else {
-			log.Printf("error creating session file: %s", err.Error())
+	/*
+		if !a.Config.Application.AllowMultiInstance {
+			log.Println("Creating session lock file")
+			os.MkdirAll(sessionPath, 0770)
+			if f, err := os.Create(path.Join(sessionPath, sessionLockFile)); err == nil {
+				f.Close()
+			} else {
+				log.Printf("error creating session file: %s", err.Error())
+			}
+			a.startSessionWatcher(sessionPath)
 		}
-		a.startSessionWatcher(sessionPath)
-	}
+	*/
 
 	a.UpdateChecker = NewUpdateChecker(appVersionTag, latestReleaseURL, &a.Config.Application.LastCheckedVersion)
 	a.UpdateChecker.Start(a.bgrndCtx, 24*time.Hour)
@@ -143,6 +155,9 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
+	listener, _ := ipc.Listen()
+	server := ipc.NewServer(a.PlaybackManager, nil)
+	go server.Serve(listener)
 
 	// OS media center integrations
 	a.setupMPRIS(displayAppName)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net"
 	"net/http"
 )
@@ -18,6 +19,7 @@ type Client struct {
 func Connect() (*Client, error) {
 	conn, err := Dial()
 	if err != nil {
+		log.Println("dial error")
 		return nil, err
 	}
 	client := &Client{httpC: http.Client{
@@ -28,6 +30,7 @@ func Connect() (*Client, error) {
 		},
 	}}
 	if err := client.Ping(); err != nil {
+		log.Println("ping error")
 		return nil, err
 	}
 	return client, nil
@@ -60,17 +63,26 @@ func (c *Client) SeekBackOrPrevious() error {
 	return c.makeSimpleRequest(http.MethodPost, NextPath)
 }
 
+func (c *Client) Show() error {
+	return c.makeSimpleRequest(http.MethodPost, ShowPath)
+}
+
+func (c *Client) Quit() error {
+	return c.makeSimpleRequest(http.MethodPost, QuitPath)
+}
+
 func (c *Client) makeSimpleRequest(method string, path string) error {
 	var resp *http.Response
 	var err error
 	switch method {
 	case http.MethodGet:
-		resp, err = c.httpC.Get(path)
+		resp, err = c.httpC.Get("http://supersonic/" + path)
 	case http.MethodPost:
-		resp, err = c.httpC.Post(path, "application/json", nil)
+		resp, err = c.httpC.Post("http://supersonic/"+path, "application/json", nil)
 	}
 
 	if err != nil {
+		log.Printf("http err: %v\n", err)
 		return err
 	}
 	defer resp.Body.Close()
