@@ -17,15 +17,10 @@ type Client struct {
 
 // Connect attempts to connect to the IPC socket as client.
 func Connect() (*Client, error) {
-	conn, err := Dial()
-	if err != nil {
-		log.Println("dial error")
-		return nil, err
-	}
 	client := &Client{httpC: http.Client{
 		Transport: &http.Transport{
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return conn, nil
+				return Dial()
 			},
 		},
 	}}

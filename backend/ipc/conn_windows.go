@@ -17,3 +17,8 @@ func Dial() (net.Conn, error) {
 func Listen() (net.Listener, error) {
 	return winio.ListenPipe("supersonic", nil)
 }
+
+func DestroyConn() error {
+	// Windows named pipes automatically clean up
+	return nil
+}

@@ -2,7 +2,10 @@
 
 package ipc
 
-import "net"
+import (
+	"net"
+	"os"
+)
 
 func Dial() (net.Conn, error) {
 	// TODO - use XDG runtime dir, also handle portable mode
@@ -11,4 +14,8 @@ func Dial() (net.Conn, error) {
 
 func Listen() (net.Listener, error) {
 	return net.Listen("unix", "/tmp/supersonic.sock")
+}
+
+func DestroyConn() error {
+	return os.Remove("/tmp/supersonic.sock")
 }

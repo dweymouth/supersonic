@@ -17,7 +17,6 @@ import (
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
-	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
 
 	"github.com/20after4/configdir"
@@ -25,13 +24,10 @@ import (
 )
 
 const (
-	configFile          = "config.toml"
-	portableDir         = "supersonic_portable"
-	sessionDir          = "session"
-	sessionLockFile     = ".lock"
-	sessionActivateFile = ".activate"
-	savedQueueFile      = "saved_queue.json"
-	themesDir           = "themes"
+	configFile     = "config.toml"
+	portableDir    = "supersonic_portable"
+	savedQueueFile = "saved_queue.json"
+	themesDir      = "themes"
 )
 
 var (
@@ -47,6 +43,7 @@ type App struct {
 	LocalPlayer     *mpv.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
+	ipcServer       ipc.IPCServer
 
 	// UI callbacks to be set in main
 	OnReactivate func()
@@ -91,24 +88,6 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 		return nil, ErrAnotherInstance
 	}
 
-	/*
-		sessionPath := path.Join(confDir, sessionDir)
-		if _, err := os.Stat(path.Join(sessionPath, sessionLockFile)); err == nil {
-			log.Println("Another instance is running. Reactivating it...")
-			reactivateFile := path.Join(sessionPath, sessionActivateFile)
-			if f, err := os.Create(reactivateFile); err == nil {
-				f.Close()
-			}
-			time.Sleep(750 * time.Millisecond)
-			if _, err := os.Stat(reactivateFile); err == nil {
-				log.Println("No other instance responded. Starting as normal...")
-				os.RemoveAll(sessionPath)
-			} else {
-				return nil, ErrAnotherInstance
-			}
-		}
-	*/
-
 	log.Printf("Starting %s...", appName)
 	log.Printf("Using config dir: %s", confDir)
 	log.Printf("Using cache dir: %s", cacheDir)
@@ -123,19 +102,6 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 	a.readConfig()
 	a.startConfigWriter(a.bgrndCtx)
-
-	/*
-		if !a.Config.Application.AllowMultiInstance {
-			log.Println("Creating session lock file")
-			os.MkdirAll(sessionPath, 0770)
-			if f, err := os.Create(path.Join(sessionPath, sessionLockFile)); err == nil {
-				f.Close()
-			} else {
-				log.Printf("error creating session file: %s", err.Error())
-			}
-			a.startSessionWatcher(sessionPath)
-		}
-	*/
 
 	a.UpdateChecker = NewUpdateChecker(appVersionTag, latestReleaseURL, &a.Config.Application.LastCheckedVersion)
 	a.UpdateChecker.Start(a.bgrndCtx, 24*time.Hour)
@@ -155,9 +121,14 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
-	listener, _ := ipc.Listen()
-	server := ipc.NewServer(a.PlaybackManager, nil)
-	go server.Serve(listener)
+
+	// Start IPC server
+	listener, err := ipc.Listen()
+	if err == nil {
+		a.ipcServer = ipc.NewServer(a.PlaybackManager, a.callOnReactivate,
+			func() { _ = a.callOnExit() })
+		go a.ipcServer.Serve(listener)
+	}
 
 	// OS media center integrations
 	a.setupMPRIS(displayAppName)
@@ -211,26 +182,6 @@ func (a *App) readConfig() {
 	a.Config = cfg
 }
 
-func (a *App) startSessionWatcher(sessionPath string) {
-	if sessionWatch, err := fsnotify.NewWatcher(); err == nil {
-		sessionWatch.Add(sessionPath)
-		go func() {
-			for {
-				select {
-				case <-a.bgrndCtx.Done():
-					return
-				case <-sessionWatch.Events:
-					activatePath := path.Join(sessionPath, sessionActivateFile)
-					if _, err := os.Stat(activatePath); err == nil {
-						os.Remove(path.Join(sessionPath, sessionActivateFile))
-						a.callOnReactivate()
-					}
-				}
-			}
-		}()
-	}
-}
-
 // periodically save config file so abnormal exit won't lose settings
 func (a *App) startConfigWriter(ctx context.Context) {
 	tick := time.NewTicker(2 * time.Minute)
@@ -252,6 +203,17 @@ func (a *App) callOnReactivate() {
 	if a.OnReactivate != nil {
 		a.OnReactivate()
 	}
+}
+
+func (a *App) callOnExit() error {
+	if a.OnExit == nil {
+		return errors.New("no quit handler registered")
+	}
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		a.OnExit()
+	}()
+	return nil
 }
 
 func (a *App) initMPV() error {
@@ -329,16 +291,7 @@ func (a *App) setupMPRIS(mprisAppName string) {
 		return a.ImageManager.GetCoverArtUrl(id)
 	}
 	a.MPRISHandler.OnRaise = func() error { a.callOnReactivate(); return nil }
-	a.MPRISHandler.OnQuit = func() error {
-		if a.OnExit == nil {
-			return errors.New("no quit handler registered")
-		}
-		go func() {
-			time.Sleep(10 * time.Millisecond)
-			a.OnExit()
-		}()
-		return nil
-	}
+	a.MPRISHandler.OnQuit = a.callOnExit
 	a.MPRISHandler.Start()
 }
 
@@ -361,6 +314,9 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 }
 
 func (a *App) Shutdown() {
+	if a.ipcServer != nil {
+		a.ipcServer.Shutdown(a.bgrndCtx)
+	}
 	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
 	if a.Config.Application.SavePlayQueue {
@@ -377,7 +333,6 @@ func (a *App) Shutdown() {
 	a.cancel()
 	a.LocalPlayer.Destroy()
 	a.Config.WriteConfigFile(a.configFilePath())
-	os.RemoveAll(path.Join(a.configDir, sessionDir))
 }
 
 func (a *App) LoadSavedPlayQueue() error {

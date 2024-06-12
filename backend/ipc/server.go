@@ -1,7 +1,9 @@
 package ipc
 
 import (
+	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 )
 
@@ -17,21 +19,34 @@ type PlaybackHandler interface {
 	SetVolume(int) error
 }
 
-type WindowHandler interface {
-	Show()
-	Quit()
+type IPCServer interface {
+	Serve(net.Listener) error
+	Shutdown(context.Context) error
 }
 
 type serverImpl struct {
+	server    *http.Server
 	pbHandler PlaybackHandler
-	wdHandler WindowHandler
+	showFn    func()
+	quitFn    func()
 }
 
-func NewServer(pbHandler PlaybackHandler, wdHandler WindowHandler) *http.Server {
-	s := serverImpl{pbHandler: pbHandler, wdHandler: wdHandler}
-	return &http.Server{
+func NewServer(pbHandler PlaybackHandler, showFn, quitFn func()) IPCServer {
+	s := &serverImpl{pbHandler: pbHandler, showFn: showFn, quitFn: quitFn}
+	s.server = &http.Server{
 		Handler: s.createHandler(),
 	}
+	return s
+}
+
+func (s *serverImpl) Serve(listener net.Listener) error {
+	return s.server.Serve(listener)
+}
+
+func (s *serverImpl) Shutdown(ctx context.Context) error {
+	err := s.server.Shutdown(ctx)
+	DestroyConn()
+	return err
 }
 
 func (s *serverImpl) createHandler() http.Handler {
@@ -42,11 +57,11 @@ func (s *serverImpl) createHandler() http.Handler {
 	})
 	m.HandleFunc(PingPath, s.makeSimpleEndpointHandler(func() error { return nil }))
 	m.HandleFunc(ShowPath, s.makeSimpleEndpointHandler(func() error {
-		s.wdHandler.Show()
+		s.showFn()
 		return nil
 	}))
 	m.HandleFunc(QuitPath, s.makeSimpleEndpointHandler(func() error {
-		go s.wdHandler.Quit()
+		s.quitFn()
 		return nil
 	}))
 	m.HandleFunc(PlayPath, s.makeSimpleEndpointHandler(s.pbHandler.Continue))
