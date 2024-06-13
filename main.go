@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
 	"runtime"
@@ -10,14 +12,28 @@ import (
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 )
 
 func main() {
+	// parse cmd line flags - see backend/cmdlineoptions.go
+	flag.Parse()
+	if *backend.FlagVersion {
+		fmt.Println(res.AppVersion)
+		return
+	}
+	if *backend.FlagHelp {
+		flag.Usage()
+		return
+	}
+	// rest of flag actions are handled in backend.StartupApp
+
 	myApp, err := backend.StartupApp(res.AppName, res.DisplayName, res.AppVersionTag, res.LatestReleaseURL)
 	if err != nil {
-		log.Fatalf("fatal startup error: %v", err.Error())
+		if err != backend.ErrAnotherInstance {
+			log.Fatalf("fatal startup error: %v", err.Error())
+		}
+		return
 	}
 
 	if myApp.Config.Application.UIScaleSize == "Smaller" {
@@ -29,15 +45,7 @@ func main() {
 	fyneApp := app.New()
 	fyneApp.SetIcon(res.ResAppicon256Png)
 
-	w := float32(myApp.Config.Application.WindowWidth)
-	if w <= 1 {
-		w = 1000
-	}
-	h := float32(myApp.Config.Application.WindowHeight)
-	if h <= 1 {
-		h = 800
-	}
-	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp, fyne.NewSize(w, h))
+	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp)
 	myApp.OnReactivate = mainWindow.Show
 	myApp.OnExit = mainWindow.Quit
 
