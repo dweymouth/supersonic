@@ -91,10 +91,13 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 	a.readConfig()
 
-	if HaveCommandLineOptions() || !a.Config.Application.AllowMultiInstance {
+	if haveCLI := HaveCommandLineOptions(); haveCLI || !a.Config.Application.AllowMultiInstance {
 		connected, err := a.checkCLIFlagsAndSendIPCMsg()
 		if err != nil {
-			log.Printf("error sending IPC message: %s", err.Error())
+			if haveCLI {
+				// we were supposed to control another instance and couldn't
+				log.Fatalf("error sending IPC message: %s", err.Error())
+			}
 		}
 		if connected /* we reached the other instance at all */ {
 			return nil, ErrAnotherInstance
@@ -125,11 +128,16 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	})
 
 	// Start IPC server
+	if !a.lastWrittenCfg.Application.AllowMultiInstance {
+		ipc.DestroyConn() // cleanup socket possibly orphaned by crashed process
+	}
 	listener, err := ipc.Listen()
 	if err == nil {
 		a.ipcServer = ipc.NewServer(a.PlaybackManager, a.callOnReactivate,
 			func() { _ = a.callOnExit() })
 		go a.ipcServer.Serve(listener)
+	} else {
+		log.Printf("error starting IPC server: %s", err.Error())
 	}
 
 	// OS media center integrations

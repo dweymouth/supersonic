@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net"
 	"net/http"
 )
@@ -77,7 +76,6 @@ func (c *Client) sendRequest(path string) error {
 	resp, err := c.httpC.Get("http://supersonic/" + path)
 
 	if err != nil {
-		log.Printf("http err: %v\n", err)
 		return err
 	}
 	defer resp.Body.Close()
