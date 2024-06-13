@@ -91,17 +91,17 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 	a.readConfig()
 
-	if haveCLI := HaveCommandLineOptions(); haveCLI || !a.Config.Application.AllowMultiInstance {
-		connected, err := a.checkCLIFlagsAndSendIPCMsg()
-		if err != nil {
-			if haveCLI {
-				// we were supposed to control another instance and couldn't
-				log.Fatalf("error sending IPC message: %s", err.Error())
-			}
+	cli, _ := ipc.Connect()
+	if HaveCommandLineOptions() {
+		if err := a.checkFlagsAndSendIPCMsg(cli); err != nil {
+			// we were supposed to control another instance and couldn't
+			log.Fatalf("error sending IPC message: %s", err.Error())
 		}
-		if connected /* we reached the other instance at all */ {
-			return nil, ErrAnotherInstance
-		}
+		return nil, ErrAnotherInstance
+	} else if cli != nil && !a.Config.Application.AllowMultiInstance {
+		log.Println("Another instance is running. Reactivating it...")
+		cli.Show()
+		return nil, ErrAnotherInstance
 	}
 
 	log.Printf("Starting %s...", appName)
@@ -127,17 +127,17 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
 
-	// Start IPC server
-	if !a.lastWrittenCfg.Application.AllowMultiInstance {
+	// Start IPC server if another not already running in a different instance
+	if cli == nil {
 		ipc.DestroyConn() // cleanup socket possibly orphaned by crashed process
-	}
-	listener, err := ipc.Listen()
-	if err == nil {
-		a.ipcServer = ipc.NewServer(a.PlaybackManager, a.callOnReactivate,
-			func() { _ = a.callOnExit() })
-		go a.ipcServer.Serve(listener)
-	} else {
-		log.Printf("error starting IPC server: %s", err.Error())
+		listener, err := ipc.Listen()
+		if err == nil {
+			a.ipcServer = ipc.NewServer(a.PlaybackManager, a.callOnReactivate,
+				func() { _ = a.callOnExit() })
+			go a.ipcServer.Serve(listener)
+		} else {
+			log.Printf("error starting IPC server: %s", err.Error())
+		}
 	}
 
 	// OS media center integrations
@@ -379,32 +379,28 @@ func (a *App) SaveConfigFile() {
 	a.lastWrittenCfg = *a.Config
 }
 
-func (a *App) checkCLIFlagsAndSendIPCMsg() (connected bool, err error) {
-	cli, err := ipc.Connect()
-	if err != nil {
-		return false, err
+func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
+	if cli == nil {
+		return errors.New("no IPC connection")
 	}
-
 	switch {
 	case *FlagPlay:
-		err = cli.Play()
+		return cli.Play()
 	case *FlagPause:
-		err = cli.Pause()
+		return cli.Pause()
 	case *FlagPlayPause:
-		err = cli.PlayPause()
+		return cli.PlayPause()
 	case *FlagPrevious:
-		err = cli.SeekBackOrPrevious()
+		return cli.SeekBackOrPrevious()
 	case *FlagNext:
-		err = cli.SeekNext()
+		return cli.SeekNext()
 	case VolumeCLIArg >= 0:
-		err = cli.SetVolume(VolumeCLIArg)
+		return cli.SetVolume(VolumeCLIArg)
 	case SeekToCLIArg >= 0:
-		err = cli.SeekSeconds(SeekToCLIArg)
+		return cli.SeekSeconds(SeekToCLIArg)
 	default:
-		log.Println("Another instance is running. Reactivating it...")
-		err = cli.Show()
+		return nil
 	}
-	return true, err
 }
 
 func (a *App) configFilePath() string {
