@@ -25,56 +25,56 @@ func Connect() (*Client, error) {
 		},
 	}}
 	if err := client.Ping(); err != nil {
-		log.Println("ping error")
 		return nil, err
 	}
 	return client, nil
 }
 
 func (c *Client) Ping() error {
-	if c.makeSimpleRequest(http.MethodGet, PingPath) != nil {
+	if c.sendRequest(PingPath) != nil {
 		return ErrPingFail
 	}
 	return nil
 }
 
 func (c *Client) Play() error {
-	return c.makeSimpleRequest(http.MethodPost, PlayPath)
+	return c.sendRequest(PlayPath)
 }
 
 func (c *Client) Pause() error {
-	return c.makeSimpleRequest(http.MethodPost, PausePath)
+	return c.sendRequest(PausePath)
 }
 
 func (c *Client) PlayPause() error {
-	return c.makeSimpleRequest(http.MethodPost, PlayPausePath)
+	return c.sendRequest(PlayPausePath)
 }
 
 func (c *Client) SeekNext() error {
-	return c.makeSimpleRequest(http.MethodPost, NextPath)
+	return c.sendRequest(NextPath)
 }
 
 func (c *Client) SeekBackOrPrevious() error {
-	return c.makeSimpleRequest(http.MethodPost, NextPath)
+	return c.sendRequest(PreviousPath)
+}
+
+func (c *Client) SeekSeconds(secs float64) error {
+	return c.sendRequest(SeekToSecondsPath(secs))
+}
+
+func (c *Client) SetVolume(vol int) error {
+	return c.sendRequest(SetVolumePath(vol))
 }
 
 func (c *Client) Show() error {
-	return c.makeSimpleRequest(http.MethodPost, ShowPath)
+	return c.sendRequest(ShowPath)
 }
 
 func (c *Client) Quit() error {
-	return c.makeSimpleRequest(http.MethodPost, QuitPath)
+	return c.sendRequest(QuitPath)
 }
 
-func (c *Client) makeSimpleRequest(method string, path string) error {
-	var resp *http.Response
-	var err error
-	switch method {
-	case http.MethodGet:
-		resp, err = c.httpC.Get("http://supersonic/" + path)
-	case http.MethodPost:
-		resp, err = c.httpC.Post("http://supersonic/"+path, "application/json", nil)
-	}
+func (c *Client) sendRequest(path string) error {
+	resp, err := c.httpC.Get("http://supersonic/" + path)
 
 	if err != nil {
 		log.Printf("http err: %v\n", err)

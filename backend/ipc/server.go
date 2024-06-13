@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"strconv"
 )
 
 type PlaybackHandler interface {
@@ -71,25 +72,20 @@ func (s *serverImpl) createHandler() http.Handler {
 	m.HandleFunc(PreviousPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekBackOrPrevious))
 	m.HandleFunc(NextPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekNext))
 	m.HandleFunc(TimePosPath, func(w http.ResponseWriter, r *http.Request) {
-		var t TimePos
-		if err := json.NewDecoder(r.Response.Body).Decode(&t); err != nil {
+		_s := r.URL.Query().Get("s")
+		if secs, err := strconv.ParseFloat(_s, 64); err == nil {
+			s.writeSimpleResponse(w, s.pbHandler.SeekSeconds(secs))
+		} else {
 			s.writeErr(w, err)
-			return
 		}
-		s.writeSimpleResponse(w, s.pbHandler.SeekSeconds(t.Seconds))
 	})
 	m.HandleFunc(VolumePath, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			msg, _ := json.Marshal(Volume{Volume: s.pbHandler.Volume()})
-			w.Write(msg)
-			return
-		}
-		var v Volume
-		if err := json.NewDecoder(r.Response.Body).Decode(&v); err != nil {
+		v := r.URL.Query().Get("v")
+		if vol, err := strconv.Atoi(v); err == nil {
+			s.writeSimpleResponse(w, s.pbHandler.SetVolume(vol))
+		} else {
 			s.writeErr(w, err)
-			return
 		}
-		s.writeSimpleResponse(w, s.pbHandler.SetVolume(v.Volume))
 	})
 	return m
 }

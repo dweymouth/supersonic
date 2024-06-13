@@ -1,43 +1,29 @@
 package ipc
 
+import "fmt"
+
 const (
-	// GET
-	PingPath = "/ping"
-
-	// POST
-	PlayPath = "/transport/play"
-	// POST
+	PingPath      = "/ping"
+	PlayPath      = "/transport/play"
 	PlayPausePath = "/transport/playpause"
-	// POST
-	PausePath = "/transport/pause"
-	// POST
-	StopPath = "/transport/stop"
-	// POST
-	PreviousPath = "/transport/previous"
-	// POST
-	NextPath = "/transport/next"
-	// POST(TimePos)
-	TimePosPath = "/transport/timepos"
-	// POST to seek
-	PlayTrackPath = "/queue/playtrack"
-	// GET -> Volume
-	// POST(Volume)
-	VolumePath = "/volume"
-
-	// POST
-	ShowPath = "/window/show"
-	// POST
-	QuitPath = "/window/quit"
+	PausePath     = "/transport/pause"
+	StopPath      = "/transport/stop"
+	PreviousPath  = "/transport/previous"
+	NextPath      = "/transport/next"
+	TimePosPath   = "/transport/timepos" // ?s=<seconds>
+	VolumePath    = "/volume"            // ?v=<vol>
+	ShowPath      = "/window/show"
+	QuitPath      = "/window/quit"
 )
-
-type TimePos struct {
-	Seconds float64 `json:"seconds"`
-}
-
-type Volume struct {
-	Volume int `json:"volume"`
-}
 
 type Response struct {
 	Error string `json:"error"`
+}
+
+func SetVolumePath(vol int) string {
+	return fmt.Sprintf("%s?v=%d", VolumePath, vol)
+}
+
+func SeekToSecondsPath(secs float64) string {
+	return fmt.Sprintf("%s?s=%0.2f", TimePosPath, secs)
 }

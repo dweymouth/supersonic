@@ -60,7 +60,7 @@ type MainWindow struct {
 	radioBtn *widget.Button
 }
 
-func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App, size fyne.Size) MainWindow {
+func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App) MainWindow {
 	m := MainWindow{
 		App:    app,
 		Window: fyneApp.NewWindow(displayAppName),
@@ -89,7 +89,16 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller)
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
 	m.Window.SetContent(m.container)
-	m.Window.Resize(size)
+
+	w := float32(app.Config.Application.WindowWidth)
+	if w <= 1 {
+		w = 1000
+	}
+	h := float32(app.Config.Application.WindowHeight)
+	if h <= 1 {
+		h = 800
+	}
+	m.Window.Resize(fyne.NewSize(w, h))
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		if item == nil {
 			m.Window.SetTitle(displayAppName)

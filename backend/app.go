@@ -81,17 +81,6 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	configdir.MakePath(confDir)
 	configdir.MakePath(cacheDir)
 
-	cli, err := ipc.Connect()
-	if err == nil {
-		log.Println("Another instance is running. Reactivating it...")
-		cli.Show()
-		return nil, ErrAnotherInstance
-	}
-
-	log.Printf("Starting %s...", appName)
-	log.Printf("Using config dir: %s", confDir)
-	log.Printf("Using cache dir: %s", cacheDir)
-
 	a := &App{
 		appName:       appName,
 		appVersionTag: appVersionTag,
@@ -101,7 +90,20 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 	a.readConfig()
-	a.startConfigWriter(a.bgrndCtx)
+
+	if HaveCommandLineOptions() || !a.Config.Application.AllowMultiInstance {
+		connected, err := a.checkCLIFlagsAndSendIPCMsg()
+		if err != nil {
+			log.Printf("error sending IPC message: %s", err.Error())
+		}
+		if connected /* we reached the other instance at all */ {
+			return nil, ErrAnotherInstance
+		}
+	}
+
+	log.Printf("Starting %s...", appName)
+	log.Printf("Using config dir: %s", confDir)
+	log.Printf("Using cache dir: %s", cacheDir)
 
 	a.UpdateChecker = NewUpdateChecker(appVersionTag, latestReleaseURL, &a.Config.Application.LastCheckedVersion)
 	a.UpdateChecker.Start(a.bgrndCtx, 24*time.Hour)
@@ -136,6 +138,8 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 		a.ImageManager.GetCoverThumbnail(id) // ensure image is cached locally
 		return a.ImageManager.GetCoverArtUrl(id)
 	})
+
+	a.startConfigWriter(a.bgrndCtx)
 
 	return a, nil
 }
@@ -365,6 +369,34 @@ func (a *App) LoadSavedPlayQueue() error {
 func (a *App) SaveConfigFile() {
 	a.Config.WriteConfigFile(a.configFilePath())
 	a.lastWrittenCfg = *a.Config
+}
+
+func (a *App) checkCLIFlagsAndSendIPCMsg() (connected bool, err error) {
+	cli, err := ipc.Connect()
+	if err != nil {
+		return false, err
+	}
+
+	switch {
+	case *FlagPlay:
+		err = cli.Play()
+	case *FlagPause:
+		err = cli.Pause()
+	case *FlagPlayPause:
+		err = cli.PlayPause()
+	case *FlagPrevious:
+		err = cli.SeekBackOrPrevious()
+	case *FlagNext:
+		err = cli.SeekNext()
+	case VolumeCLIArg >= 0:
+		err = cli.SetVolume(VolumeCLIArg)
+	case SeekToCLIArg >= 0:
+		err = cli.SeekSeconds(SeekToCLIArg)
+	default:
+		log.Println("Another instance is running. Reactivating it...")
+		err = cli.Show()
+	}
+	return true, err
 }
 
 func (a *App) configFilePath() string {
