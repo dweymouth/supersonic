@@ -4,18 +4,26 @@ package ipc
 
 import (
 	"net"
-	"time"
+	"os/user"
+	"regexp"
 
 	"github.com/Microsoft/go-winio"
 )
 
+var pipeName = `\\.\pipe\supersonic`
+
+func init() {
+	if user, err := user.Current(); err == nil {
+		pipeName += regexp.MustCompile(`[^a-zA-Z0-9]+`).ReplaceAllString(user.Name, "")
+	}
+}
+
 func Dial() (net.Conn, error) {
-	timeout := 300 * time.Millisecond
-	return winio.DialPipe("supersonic", &timeout)
+	return winio.DialPipe(pipeName, nil)
 }
 
 func Listen() (net.Listener, error) {
-	return winio.ListenPipe("supersonic", nil)
+	return winio.ListenPipe(pipeName, nil)
 }
 
 func DestroyConn() error {

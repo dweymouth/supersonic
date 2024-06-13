@@ -18,13 +18,13 @@ func init() {
 		if home, err := os.UserHomeDir(); err == nil {
 			socketPath = path.Join(home, "Library", "Caches", "supersonic", "supersonic.sock")
 		} else if user, err := user.Current(); err == nil {
-			socketPath = fmt.Sprintf("/tmp/supersonic-%s.sock", user.Name)
+			socketPath = fmt.Sprintf("/tmp/supersonic-%s.sock", user.Uid)
 		}
 	} else {
 		if runtime := os.Getenv("XDG_RUNTIME_DIR"); runtime != "" {
 			socketPath = path.Join(runtime, "supersonic.sock")
 		} else if user, err := user.Current(); err == nil {
-			socketPath = fmt.Sprintf("/tmp/supersonic-%s.sock", user.Name)
+			socketPath = fmt.Sprintf("/tmp/supersonic-%s.sock", user.Uid)
 		}
 	}
 }
