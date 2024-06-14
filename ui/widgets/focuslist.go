@@ -128,7 +128,10 @@ func (l *FocusListRowBase) SetItemID(id widget.ListItemID) {
 
 func (l *FocusListRowBase) EnsureUnfocused() {
 	if l.Focused {
-		fyne.CurrentApp().Driver().CanvasForObject(l).Unfocus()
+		c := fyne.CurrentApp().Driver().CanvasForObject(l)
+		if c != nil {
+			c.Unfocus()
+		}
 	}
 	l.Focused = false
 }
