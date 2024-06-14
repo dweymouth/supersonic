@@ -274,7 +274,6 @@ func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []
 			_, selected := g.selectedGenres[genre]
 			g.selectedGenresMutex.RUnlock()
 			row := obj.(*genreListViewRow)
-			g.genreListView.SetItemForID(id, row)
 			row.ListItemID = id
 			row.Content.(*widget.Check).Text = genre
 			row.Content.(*widget.Check).Checked = selected

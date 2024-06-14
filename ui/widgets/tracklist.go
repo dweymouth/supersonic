@@ -170,7 +170,6 @@ func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCo
 			t.tracksMutex.RUnlock()
 
 			tr := item.(TracklistRow)
-			t.list.SetItemForID(itemID, tr)
 			if tr.TrackID() != model.Item.Metadata().ID || tr.ItemID() != itemID {
 				tr.SetItemID(itemID)
 			}
@@ -300,7 +299,6 @@ func (t *Tracklist) Clear() {
 	defer t.tracksMutex.Unlock()
 	t.tracks = nil
 	t.tracksOrigOrder = nil
-	t.list.ClearItemForIDMap()
 }
 
 // Sets the tracks in the tracklist. Thread-safe.
@@ -312,9 +310,6 @@ func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
 func (t *Tracklist) _setTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	if t.list != nil {
-		t.list.ClearItemForIDMap()
-	}
 	t.tracksOrigOrder = util.ToTrackListModels(trs)
 	t.doSortTracks()
 }

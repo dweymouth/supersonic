@@ -96,7 +96,6 @@ func NewPlayQueueList(im *backend.ImageManager, useNonQueueMenu bool) *PlayQueue
 			p.tracksMutex.RUnlock()
 
 			tr := item.(*PlayQueueListRow)
-			p.list.SetItemForID(itemID, tr)
 			if tr.trackID != model.Item.Metadata().ID || tr.ListItemID != itemID {
 				tr.ListItemID = itemID
 			}
@@ -109,7 +108,6 @@ func NewPlayQueueList(im *backend.ImageManager, useNonQueueMenu bool) *PlayQueue
 
 func (p *PlayQueueList) SetTracks(trs []*mediaprovider.Track) {
 	p.tracksMutex.Lock()
-	p.list.ClearItemForIDMap()
 	p.items = util.ToTrackListModels(trs)
 	p.tracksMutex.Unlock()
 	p.Refresh()
@@ -117,7 +115,6 @@ func (p *PlayQueueList) SetTracks(trs []*mediaprovider.Track) {
 
 func (p *PlayQueueList) SetItems(items []mediaprovider.MediaItem) {
 	p.tracksMutex.Lock()
-	p.list.ClearItemForIDMap()
 	p.items = sharedutil.MapSlice(items, func(item mediaprovider.MediaItem) *util.TrackListModel {
 		return &util.TrackListModel{Item: item}
 	})

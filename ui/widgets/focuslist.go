@@ -9,16 +9,17 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	list "github.com/dweymouth/fyne-advanced-list"
 )
 
 // FocusList extends List to be disabled so that the focus manager
 // considers it unfocusable, and adds utilities for handling our
 // own focus navigation on the rows directly (with FocusListRow
 type FocusList struct {
-	widget.List
+	list.List
 
-	mutex        sync.Mutex
-	itemForIndex map[widget.ListItemID]FocusListRow
+	mutex sync.Mutex
 }
 
 type FocusListRow interface {
@@ -33,13 +34,12 @@ type FocusListRow interface {
 
 func NewFocusList(len func() int, create func() fyne.CanvasObject, update func(widget.GridWrapItemID, fyne.CanvasObject)) *FocusList {
 	g := &FocusList{
-		List: widget.List{
+		List: list.List{
 			HideSeparators: true,
 			Length:         len,
 			CreateItem:     create,
 			UpdateItem:     update,
 		},
-		itemForIndex: make(map[int]FocusListRow),
 	}
 	g.ExtendBaseWidget(g)
 	return g
@@ -53,21 +53,6 @@ func (g *FocusList) Disable() {}
 
 func (g *FocusList) Enable() {}
 
-// MUST be called *before* updating the ListItemID field to the
-// new ItemID this row will be bound to.
-func (g *FocusList) SetItemForID(id widget.ListItemID, item FocusListRow) {
-	g.mutex.Lock()
-	if other, ok := g.itemForIndex[id]; ok && other == item {
-		delete(g.itemForIndex, other.ItemID())
-	}
-	g.itemForIndex[id] = item
-	g.mutex.Unlock()
-}
-
-func (g *FocusList) ClearItemForIDMap() {
-	g.itemForIndex = make(map[int]FocusListRow)
-}
-
 func (g *FocusList) FocusNeighbor(curItem widget.ListItemID, up bool) {
 	focusIdx := curItem + 1
 	if up {
@@ -77,10 +62,10 @@ func (g *FocusList) FocusNeighbor(curItem widget.ListItemID, up bool) {
 		g.ScrollTo(focusIdx)
 	}
 	g.mutex.Lock()
-	other, ok := g.itemForIndex[focusIdx]
+	other := g.ItemForID(focusIdx)
 	g.mutex.Unlock()
-	if ok {
-		fyne.CurrentApp().Driver().CanvasForObject(g).Focus(other)
+	if other != nil {
+		fyne.CurrentApp().Driver().CanvasForObject(g).Focus(other.(fyne.Focusable))
 	}
 }
 
@@ -128,7 +113,10 @@ func (l *FocusListRowBase) SetItemID(id widget.ListItemID) {
 
 func (l *FocusListRowBase) EnsureUnfocused() {
 	if l.Focused {
-		fyne.CurrentApp().Driver().CanvasForObject(l).Unfocus()
+		c := fyne.CurrentApp().Driver().CanvasForObject(l)
+		if c != nil {
+			c.Unfocus()
+		}
 	}
 	l.Focused = false
 }
