@@ -32,7 +32,7 @@ func MakeOpaque(c color.Color) color.Color {
 	return c
 }
 
-func SecondsToTimeString(s float64) string {
+func SecondsToMMSS(s float64) string {
 	if s < 0 {
 		s = 0
 	}
@@ -41,6 +41,42 @@ func SecondsToTimeString(s float64) string {
 	sec -= min * 60
 
 	return fmt.Sprintf("%d:%02d", min, sec)
+}
+
+func SecondsToTimeString(s float64) string {
+	if s < 3600 /*1 hour*/ {
+		return SecondsToMMSS(s)
+	}
+	sec := int64(s)
+	days := sec / 86400
+	sec -= days * 86400
+	hr := sec / 3600
+	sec -= hr * 3600
+	min := sec / 60
+	sec -= min * 60
+
+	var str string
+	if days > 0 {
+		daysStr := "days"
+		if days == 1 {
+			daysStr = "day"
+		}
+		str = fmt.Sprintf("%d %s ", days, daysStr)
+	}
+	if hr > 0 {
+		hrStr := "hrs"
+		if hr == 1 {
+			hrStr = "hr"
+		}
+		str += fmt.Sprintf("%d %s ", hr, hrStr)
+	}
+	if min > 0 {
+		str += fmt.Sprintf("%d min ", min)
+	}
+	if sec > 0 {
+		str += fmt.Sprintf("%d sec ", sec)
+	}
+	return str[:len(str)-1]
 }
 
 func BytesToSizeString(bytes int64) string {

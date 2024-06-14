@@ -475,7 +475,7 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 		p.trackID = meta.ID
 		p.title.Text = meta.Name
 		p.artist.BuildSegments(meta.Artists, meta.ArtistIDs)
-		p.time.Text = util.SecondsToTimeString(float64(meta.Duration))
+		p.time.Text = util.SecondsToMMSS(float64(meta.Duration))
 		changed = true
 	}
 

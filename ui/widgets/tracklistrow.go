@@ -266,7 +266,7 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		t.album.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
-		t.dur.Text = util.SecondsToTimeString(float64(tr.Duration))
+		t.dur.Text = util.SecondsToMMSS(float64(tr.Duration))
 		t.year.Text = strconv.Itoa(tr.Year)
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
 		t.comment.Text = tr.Comment

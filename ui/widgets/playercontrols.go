@@ -115,15 +115,15 @@ func NewPlayerControls() *PlayerControls {
 
 	pc.slider = NewTrackPosSlider()
 	pc.slider.Disable()
-	pc.curTimeLabel = NewLabelMinSize(util.SecondsToTimeString(0), 55)
+	pc.curTimeLabel = NewLabelMinSize(util.SecondsToMMSS(0), 55)
 	pc.curTimeLabel.Alignment = fyne.TextAlignTrailing
-	pc.totalTimeLabel = NewLabelMinSize(util.SecondsToTimeString(0), 55)
+	pc.totalTimeLabel = NewLabelMinSize(util.SecondsToMMSS(0), 55)
 	pc.totalTimeLabel.Alignment = fyne.TextAlignTrailing
 
 	pc.slider.OnChanged = func(f float64) {
 		if pc.slider.IsDragging() {
 			time := f * pc.totalTime
-			pc.curTimeLabel.SetText(util.SecondsToTimeString(time))
+			pc.curTimeLabel.SetText(util.SecondsToMMSS(time))
 		}
 	}
 
@@ -178,7 +178,7 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 	}
 
 	updated := false
-	tt := util.SecondsToTimeString(totalTime)
+	tt := util.SecondsToMMSS(totalTime)
 	if tt != pc.totalTimeLabel.Text {
 		pc.totalTimeLabel.SetText(tt)
 		updated = true
@@ -189,7 +189,7 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 		pc.slider.Disable()
 	}
 	if !pc.slider.IsDragging() {
-		ct := util.SecondsToTimeString(curTime)
+		ct := util.SecondsToMMSS(curTime)
 		if ct != pc.curTimeLabel.Text {
 			pc.curTimeLabel.SetText(ct)
 			updated = true

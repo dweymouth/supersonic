@@ -548,8 +548,8 @@ func (a *NowPlayingPage) formatStatusLine() {
 	if state != "Stopped" {
 		trackNum = a.pm.NowPlayingIndex() + 1
 		statusSuffix = fmt.Sprintf(" %s/%s",
-			util.SecondsToTimeString(playerStats.TimePos),
-			util.SecondsToTimeString(dur))
+			util.SecondsToMMSS(playerStats.TimePos),
+			util.SecondsToMMSS(dur))
 	}
 	status := fmt.Sprintf("%s (%d/%d)%s", state, trackNum,
 		len(a.queue), statusSuffix)
