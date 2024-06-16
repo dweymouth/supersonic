@@ -68,7 +68,7 @@ If you are running **Windows**, **Mac OS**, or a **Debian**-based Linux distro, 
 
 **Apple Silicon (M1/M2) Macs:** You will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `sudo xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
 
-**If you are on Linux** and using the build from the Releases page, you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv1` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies.
+**If you are on Linux** and using the build from the Releases page, you must have libmpv installed on your system. On apt-based systems, run `sudo apt install libmpv1` if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies. To install the Linux release build, extract the .tar.xz bundle and run `make user-install` or `sudo make install`.
 
 ## Build instructions (Linux)
 
