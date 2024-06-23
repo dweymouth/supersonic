@@ -354,7 +354,6 @@ func NewPlaylistList(initialSort widgets.ListHeaderSort) *PlaylistList {
 			row := item.(*PlaylistListRow)
 			if row.PlaylistID != a.playlists[id].ID {
 				row.EnsureUnfocused()
-				a.list.SetItemForID(id, row)
 				row.ListItemID = id
 				row.PlaylistID = a.playlists[id].ID
 				row.nameLabel.Text = a.playlists[id].Name

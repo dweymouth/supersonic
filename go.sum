@@ -84,6 +84,8 @@ github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1 h1:mGvOb3zxl4vCLv+
 github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1/go.mod h1:ZNCLJfehvEf34B7BbLKjgpsL9lyW7q938w/GY1XgV4E=
 github.com/disintegration/imaging v1.6.2 h1:w1LecBlG2Lnp8B3jk5zSuNqd7b4DXhcjwek1ei82L+c=
 github.com/disintegration/imaging v1.6.2/go.mod h1:44/5580QXChDfwIclfc/PCwrr44amcmDAg8hxG0Ewe4=
+github.com/dweymouth/fyne-advanced-list v0.0.0-20240623145729-9c6b8f99bcfe h1:owGwqph+Y+PqjDiWjZjOFOhlo8QsLs+LHrHojaaBo34=
+github.com/dweymouth/fyne-advanced-list v0.0.0-20240623145729-9c6b8f99bcfe/go.mod h1:sbOhla4VcfFb4OjXiUFTLXMPTnhRUlVrDMhB8HtWR4o=
 github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64 h1:RUIrnGY034rDMlcOui/daurwX5b+52KdUKhH9aXaDSg=
 github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64/go.mod h1:3YrjFDHMlhCsSZ/OvmJCxWm9QHSgOVWZBxnraZz9Z7c=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240604143614-256525c6a602 h1:k3jFLjmAuPJ5ZFNF57szZp8XrLIb6mIdEEGPkm6EZ7Q=

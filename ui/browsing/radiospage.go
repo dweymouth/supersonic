@@ -279,7 +279,6 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			row := item.(*RadioListRow)
-			a.list.SetItemForID(id, row)
 			changed := false
 			if row.Item != a.radios[id] {
 				row.EnsureUnfocused()

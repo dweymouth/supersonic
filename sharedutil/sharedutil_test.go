@@ -8,6 +8,7 @@ import (
 )
 
 func Test_ReorderItems(t *testing.T) {
+
 	tracks := []*mediaprovider.Track{
 		{ID: "a"}, // 0
 		{ID: "b"}, // 1
@@ -27,7 +28,7 @@ func Test_ReorderItems(t *testing.T) {
 		{ID: "b"},
 		{ID: "e"},
 	}
-	newTracks := ReorderItems(tracks, idxToMove, MoveToTop)
+	newTracks := ReorderItems(tracks, idxToMove, 0)
 	if !tracklistsEqual(t, newTracks, want) {
 		t.Error("ReorderTracks: MoveToTop order incorrect")
 	}
@@ -42,39 +43,9 @@ func Test_ReorderItems(t *testing.T) {
 		{ID: "c"},
 		{ID: "f"},
 	}
-	newTracks = ReorderItems(tracks, idxToMove, MoveToBottom)
+	newTracks = ReorderItems(tracks, idxToMove, len(tracks))
 	if !tracklistsEqual(t, newTracks, want) {
 		t.Error("ReorderTracks: MoveToBottom order incorrect")
-	}
-
-	// test MoveUp:
-	idxToMove = []int{0, 1, 3, 5}
-	want = []*mediaprovider.Track{
-		{ID: "a"},
-		{ID: "b"},
-		{ID: "d"},
-		{ID: "c"},
-		{ID: "f"},
-		{ID: "e"},
-	}
-	newTracks = ReorderItems(tracks, idxToMove, MoveUp)
-	if !tracklistsEqual(t, newTracks, want) {
-		t.Error("ReorderTracks: MoveUp order incorrect")
-	}
-
-	// test MoveDown:
-	idxToMove = []int{2, 4, 5}
-	want = []*mediaprovider.Track{
-		{ID: "a"},
-		{ID: "b"},
-		{ID: "d"},
-		{ID: "c"},
-		{ID: "e"},
-		{ID: "f"},
-	}
-	newTracks = ReorderItems(tracks, idxToMove, MoveDown)
-	if !tracklistsEqual(t, newTracks, want) {
-		t.Error("ReorderTracks: MoveDown order incorrect")
 	}
 }
 

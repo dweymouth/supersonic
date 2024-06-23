@@ -33,6 +33,9 @@ type TracklistOptions struct {
 	// or to use the number from the track's metadata
 	AutoNumber bool
 
+	// Reorderable sets whether the tracklist supports drag-and-drop reordering.
+	Reorderable bool
+
 	// ShowDiscNumber sets whether to display the disc number as part of the '#' column,
 	// (with format %d.%02d). Only applies if AutoNumber==false.
 	ShowDiscNumber bool
@@ -74,6 +77,7 @@ type Tracklist struct {
 	OnDownload          func(tracks []*mediaprovider.Track, downloadName string)
 	OnShare             func(trackID string)
 	OnPlaySongRadio     func(track *mediaprovider.Track)
+	OnReorderTracks     func(trackIDs []string, insertPos int)
 
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
@@ -170,7 +174,6 @@ func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCo
 			t.tracksMutex.RUnlock()
 
 			tr := item.(TracklistRow)
-			t.list.SetItemForID(itemID, tr)
 			if tr.TrackID() != model.Item.Metadata().ID || tr.ItemID() != itemID {
 				tr.SetItemID(itemID)
 			}
@@ -183,6 +186,17 @@ func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCo
 				t.OnTrackShown(itemID)
 			}
 		})
+	t.list.OnDragBegin = func(id int) {
+		if !t.tracks[id].Selected {
+			t.selectTrack(id)
+			t.list.Refresh()
+		}
+	}
+	t.list.OnDragEnd = func(dragged, insertPos int) {
+		if t.OnReorderTracks != nil {
+			t.OnReorderTracks(t.SelectedTrackIDs(), insertPos)
+		}
+	}
 	t.container = container.NewBorder(t.hdr, nil, nil, nil, t.list)
 	return t
 }
@@ -300,7 +314,6 @@ func (t *Tracklist) Clear() {
 	defer t.tracksMutex.Unlock()
 	t.tracks = nil
 	t.tracksOrigOrder = nil
-	t.list.ClearItemForIDMap()
 }
 
 // Sets the tracks in the tracklist. Thread-safe.
@@ -312,9 +325,6 @@ func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
 func (t *Tracklist) _setTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
-	if t.list != nil {
-		t.list.ClearItemForIDMap()
-	}
 	t.tracksOrigOrder = util.ToTrackListModels(trs)
 	t.doSortTracks()
 }
@@ -376,6 +386,7 @@ func (t *Tracklist) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (t *Tracklist) Refresh() {
+	t.list.EnableDragging = t.Options.Reorderable
 	t.hdr.DisableSorting = t.Options.DisableSorting
 	t.BaseWidget.Refresh()
 }

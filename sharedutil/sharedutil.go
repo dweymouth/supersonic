@@ -1,9 +1,6 @@
 package sharedutil
 
 import (
-	"math"
-	"slices"
-
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
@@ -106,90 +103,33 @@ func TracksToIDs(tracks []*mediaprovider.Track) []string {
 	})
 }
 
-type TrackReorderOp int
-
-const (
-	MoveToTop TrackReorderOp = iota
-	MoveToBottom
-	MoveUp
-	MoveDown
-)
-
 // Reorder items and return a new track slice.
 // idxToMove must contain only valid indexes into tracks, and no repeats
-func ReorderItems[T any](items []T, idxToMove []int, op TrackReorderOp) []T {
-	newItems := make([]T, len(items))
-	switch op {
-	case MoveToTop:
-		topIdx := 0
-		botIdx := len(idxToMove)
-		idxToMoveSet := ToSet(idxToMove)
-		for i, t := range items {
-			if _, ok := idxToMoveSet[i]; ok {
-				newItems[topIdx] = t
-				topIdx++
-			} else {
-				newItems[botIdx] = t
-				botIdx++
-			}
+func ReorderItems[T any](items []T, idxToMove []int, insertIdx int) []T {
+	idxToMoveSet := ToSet(idxToMove)
+
+	newItems := make([]T, 0, len(items))
+
+	// collect items that will end up before the insertion set
+	i := 0
+	for ; i < len(items); i++ {
+		if insertIdx == i {
+			break
 		}
-	case MoveToBottom:
-		topIdx := 0
-		botIdx := len(items) - len(idxToMove)
-		idxToMoveSet := ToSet(idxToMove)
-		for i, t := range items {
-			if _, ok := idxToMoveSet[i]; ok {
-				newItems[botIdx] = t
-				botIdx++
-			} else {
-				newItems[topIdx] = t
-				topIdx++
-			}
-		}
-	case MoveUp:
-		first := firstIdxCanMoveUp(idxToMove)
-		copy(newItems, items)
-		for _, i := range idxToMove {
-			if i < first {
-				continue
-			}
-			newItems[i-1], newItems[i] = newItems[i], newItems[i-1]
-		}
-	case MoveDown:
-		last := lastIdxCanMoveDown(idxToMove, len(items))
-		copy(newItems, items)
-		for i := len(idxToMove) - 1; i >= 0; i-- {
-			idx := idxToMove[i]
-			if idx > last {
-				continue
-			}
-			newItems[idx+1], newItems[idx] = newItems[idx], newItems[idx+1]
+		if _, ok := idxToMoveSet[i]; !ok {
+			newItems = append(newItems, items[i])
 		}
 	}
+
+	for _, idx := range idxToMove {
+		newItems = append(newItems, items[idx])
+	}
+
+	for ; i < len(items); i++ {
+		if _, ok := idxToMoveSet[i]; !ok {
+			newItems = append(newItems, items[i])
+		}
+	}
+
 	return newItems
-}
-
-func firstIdxCanMoveUp(idxs []int) int {
-	prevIdx := -1
-	slices.Sort(idxs)
-	for _, idx := range idxs {
-		if idx > prevIdx+1 {
-			return idx
-		}
-		prevIdx = idx
-	}
-	return math.MaxInt
-}
-
-func lastIdxCanMoveDown(idxs []int, lenSlice int) int {
-	prevIdx := lenSlice
-	slices.Sort(idxs)
-	for i := len(idxs) - 1; i >= 0; i-- {
-		idx := idxs[i]
-		if idx < prevIdx-1 {
-			return idx
-		}
-		prevIdx = idx
-	}
-	return -1
 }
