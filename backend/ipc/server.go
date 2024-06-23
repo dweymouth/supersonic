@@ -16,6 +16,7 @@ type PlaybackHandler interface {
 	SeekBackOrPrevious() error
 	SeekNext() error
 	SeekSeconds(float64) error
+	SeekBySeconds(float64) error
 	Volume() int
 	SetVolume(int) error
 }
@@ -71,14 +72,8 @@ func (s *serverImpl) createHandler() http.Handler {
 	m.HandleFunc(StopPath, s.makeSimpleEndpointHandler(s.pbHandler.Stop))
 	m.HandleFunc(PreviousPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekBackOrPrevious))
 	m.HandleFunc(NextPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekNext))
-	m.HandleFunc(TimePosPath, func(w http.ResponseWriter, r *http.Request) {
-		_s := r.URL.Query().Get("s")
-		if secs, err := strconv.ParseFloat(_s, 64); err == nil {
-			s.writeSimpleResponse(w, s.pbHandler.SeekSeconds(secs))
-		} else {
-			s.writeErr(w, err)
-		}
-	})
+	m.HandleFunc(TimePosPath, s.makeFloatEndpointHandler(s.pbHandler.SeekSeconds, "s"))
+	m.HandleFunc(SeekByPath, s.makeFloatEndpointHandler(s.pbHandler.SeekBySeconds, "s"))
 	m.HandleFunc(VolumePath, func(w http.ResponseWriter, r *http.Request) {
 		v := r.URL.Query().Get("v")
 		if vol, err := strconv.Atoi(v); err == nil {
@@ -93,6 +88,17 @@ func (s *serverImpl) createHandler() http.Handler {
 func (s *serverImpl) makeSimpleEndpointHandler(f func() error) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		s.writeSimpleResponse(w, f())
+	}
+}
+
+func (s *serverImpl) makeFloatEndpointHandler(f func(float64) error, queryParam string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		v := r.URL.Query().Get(queryParam)
+		if val, err := strconv.ParseFloat(v, 64); err == nil {
+			s.writeSimpleResponse(w, f(val))
+		} else {
+			s.writeErr(w, err)
+		}
 	}
 }
 

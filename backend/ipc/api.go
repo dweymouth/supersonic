@@ -11,6 +11,7 @@ const (
 	PreviousPath  = "/transport/previous"
 	NextPath      = "/transport/next"
 	TimePosPath   = "/transport/timepos" // ?s=<seconds>
+	SeekByPath    = "/transport/seek-by" // ?s=<+/- seconds>
 	VolumePath    = "/volume"            // ?v=<vol>
 	ShowPath      = "/window/show"
 	QuitPath      = "/window/quit"
@@ -26,4 +27,8 @@ func SetVolumePath(vol int) string {
 
 func SeekToSecondsPath(secs float64) string {
 	return fmt.Sprintf("%s?s=%0.2f", TimePosPath, secs)
+}
+
+func SeekBySecondsPath(secs float64) string {
+	return fmt.Sprintf("%s?s=%0.2f", SeekByPath, secs)
 }

@@ -8,6 +8,7 @@ import (
 var (
 	VolumeCLIArg int     = -1
 	SeekToCLIArg float64 = -1
+	SeekByCLIArg float64 = 0
 
 	FlagPlay      = flag.Bool("play", false, "unpause or begin playback")
 	FlagPause     = flag.Bool("pause", false, "pause playback")
@@ -28,6 +29,11 @@ func init() {
 	flag.Func("seek-to", "seeks to the given position in seconds in the current file (0.0 - <trackDur>)", func(s string) error {
 		v, err := strconv.ParseFloat(s, 64)
 		SeekToCLIArg = v
+		return err
+	})
+	flag.Func("seek-by", "seeks back or forward by the given number of seconds (negative or positive)", func(s string) error {
+		v, err := strconv.ParseFloat(s, 64)
+		SeekByCLIArg = v
 		return err
 	})
 }

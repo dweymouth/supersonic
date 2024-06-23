@@ -60,6 +60,10 @@ func (c *Client) SeekSeconds(secs float64) error {
 	return c.sendRequest(SeekToSecondsPath(secs))
 }
 
+func (c *Client) SeekBySeconds(secs float64) error {
+	return c.sendRequest(SeekBySecondsPath(secs))
+}
+
 func (c *Client) SetVolume(vol int) error {
 	return c.sendRequest(SetVolumePath(vol))
 }

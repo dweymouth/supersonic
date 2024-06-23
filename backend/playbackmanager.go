@@ -284,6 +284,18 @@ func (p *PlaybackManager) SeekSeconds(sec float64) error {
 	return p.engine.SeekSeconds(sec)
 }
 
+// Seek by given relative position in the current track by seconds.
+func (p *PlaybackManager) SeekBySeconds(sec float64) error {
+	status := p.engine.PlayerStatus()
+	target := status.TimePos + sec
+	if target < 0 {
+		target = 0
+	} else if target > status.Duration {
+		target = status.Duration
+	}
+	return p.engine.SeekSeconds(target)
+}
+
 // Seek to a fractional position in the current track [0..1]
 func (p *PlaybackManager) SeekFraction(fraction float64) error {
 	if fraction < 0 {

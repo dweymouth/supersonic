@@ -184,8 +184,7 @@ func (m *MPRISHandler) Play() error {
 
 func (m *MPRISHandler) Seek(offset types.Microseconds) error {
 	// MPRIS seek command is relative to current position
-	pos := m.pm.PlayerStatus().TimePos + microsecondsToSeconds(offset)
-	return m.pm.SeekSeconds(pos)
+	return m.pm.SeekBySeconds(microsecondsToSeconds(offset))
 }
 
 func (m *MPRISHandler) SetPosition(trackId string, position types.Microseconds) error {

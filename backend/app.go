@@ -398,6 +398,8 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.SetVolume(VolumeCLIArg)
 	case SeekToCLIArg >= 0:
 		return cli.SeekSeconds(SeekToCLIArg)
+	case SeekByCLIArg != 0:
+		return cli.SeekBySeconds(SeekByCLIArg)
 	default:
 		return nil
 	}
