@@ -54,7 +54,7 @@ int send_resize_to_pid(int pid, int w, int h) {
     Window windows[128];
     Window root = DefaultRootWindow(display);
 
-    int n = find_windows_by_pid(display, root, pid, &windows, 0);
+    int n = find_windows_by_pid(display, root, pid, &windows[0], 0);
     if (n > 0) {
 	    for (int i = 0; i < n; i++) {
         	send_resize_event(display, windows[i], w, h);
