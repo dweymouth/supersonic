@@ -129,6 +129,7 @@ func NewNowPlayingPage(
 
 	a.queueList = widgets.NewPlayQueueList(a.im, false)
 	a.relatedList = widgets.NewPlayQueueList(a.im, true)
+	a.queueList.Reorderable = true
 	a.queueList.OnReorderItems = a.doSetNewTrackOrder
 	a.queueList.OnDownload = contr.ShowDownloadDialog
 	a.queueList.OnShare = func(tracks []*mediaprovider.Track) {
@@ -502,7 +503,7 @@ func (a *NowPlayingPage) Refresh() {
 	a.BaseWidget.Refresh()
 }
 
-func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.TrackReorderOp) {
+func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, insertPos int) {
 	trackIDSet := sharedutil.ToSet(trackIDs)
 	idxs := make([]int, 0, len(trackIDs))
 	for i, tr := range a.queue {
@@ -510,7 +511,7 @@ func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, op sharedutil.Tra
 			idxs = append(idxs, i)
 		}
 	}
-	newTracks := sharedutil.ReorderItems(a.queue, idxs, op)
+	newTracks := sharedutil.ReorderItems(a.queue, idxs, insertPos)
 	a.pm.UpdatePlayQueue(newTracks)
 }
 

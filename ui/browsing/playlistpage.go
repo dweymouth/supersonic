@@ -86,17 +86,16 @@ func newPlaylistPage(
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		conf.TracklistColumns = cols
 	}
+	a.tracklist.OnReorderTracks = a.doSetNewTrackOrder
 	_, canRate := a.sm.Server.(mediaprovider.SupportsRating)
 	_, canShare := a.sm.Server.(mediaprovider.SupportsSharing)
 	remove := fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)
 	remove.Icon = theme.ContentClearIcon()
 	a.tracklist.Options = widgets.TracklistOptions{
-		DisableRating:  !canRate,
-		DisableSharing: !canShare,
-		AuxiliaryMenuItems: []*fyne.MenuItem{
-			util.NewReorderTracksSubmenu(a.doSetNewTrackOrder),
-			remove,
-		},
+		Reorderable:        true,
+		DisableRating:      !canRate,
+		DisableSharing:     !canShare,
+		AuxiliaryMenuItems: []*fyne.MenuItem{remove},
 	}
 	// connect tracklist actions
 	a.contr.ConnectTracklistActions(a.tracklist)
@@ -118,6 +117,7 @@ func (a *PlaylistPage) Save() SavedPage {
 	p.trackSort = a.tracklist.Sorting()
 	p.widgetPool.Release(util.WidgetTypePlaylistPageHeader, a.header)
 	a.tracklist.Clear()
+	a.tracklist.OnReorderTracks = nil
 	p.widgetPool.Release(util.WidgetTypeTracklist, a.tracklist)
 	return &p
 }
@@ -178,19 +178,19 @@ func renumberTracks(tracks []*mediaprovider.Track) {
 	}
 }
 
-func (a *PlaylistPage) doSetNewTrackOrder(op sharedutil.TrackReorderOp) {
+func (a *PlaylistPage) doSetNewTrackOrder(ids []string, newPos int) {
 	// Since the tracklist view may be sorted in a different order than the
 	// actual running order, we need to get the IDs of the selected tracks
 	// from the tracklist and convert them to indices in the *original* run order
-	idSet := sharedutil.ToSet(a.tracklist.SelectedTrackIDs())
+	idSet := sharedutil.ToSet(ids)
 	idxs := make([]int, 0, len(idSet))
 	for i, tr := range a.tracks {
 		if _, ok := idSet[tr.ID]; ok {
 			idxs = append(idxs, i)
 		}
 	}
-	newTracks := sharedutil.ReorderItems(a.tracks, idxs, op)
-	ids := sharedutil.TracksToIDs(newTracks)
+	newTracks := sharedutil.ReorderItems(a.tracks, idxs, newPos)
+	ids = sharedutil.TracksToIDs(newTracks)
 	if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 		log.Printf("error updating playlist: %s", err.Error())
 	} else {

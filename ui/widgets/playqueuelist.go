@@ -31,6 +31,7 @@ type PlayQueueListModel struct {
 type PlayQueueList struct {
 	widget.BaseWidget
 
+	Reorderable    bool
 	DisableRating  bool
 	DisableSharing bool
 
@@ -46,7 +47,7 @@ type PlayQueueList struct {
 	OnDownload          func(tracks []*mediaprovider.Track, downloadName string)
 	OnShare             func(tracks []*mediaprovider.Track)
 	OnShowArtistPage    func(artistID string)
-	OnReorderItems      func(itemIDs []string, op sharedutil.TrackReorderOp)
+	OnReorderItems      func(itemIDs []string, reorderTo int)
 
 	useNonQueueMenu bool
 	menu            *widget.PopUpMenu // ctx menu for when only tracks are selected
@@ -102,6 +103,17 @@ func NewPlayQueueList(im *backend.ImageManager, useNonQueueMenu bool) *PlayQueue
 			tr.Update(model, itemID+1)
 		},
 	)
+	p.list.OnDragBegin = func(id int) {
+		if !p.items[id].Selected {
+			p.selectTrack(id)
+			p.list.Refresh()
+		}
+	}
+	p.list.OnDragEnd = func(dragged, insertPos int) {
+		if p.OnReorderItems != nil {
+			p.OnReorderItems(p.selectedItemIDs(), insertPos)
+		}
+	}
 
 	return p
 }
@@ -149,7 +161,12 @@ func (p *PlayQueueList) UnselectAll() {
 	p.tracksMutex.RLock()
 	util.UnselectAllItems(p.items)
 	p.tracksMutex.RUnlock()
-	p.Refresh()
+	p.list.Refresh()
+}
+
+func (p *PlayQueueList) Refresh() {
+	p.list.EnableDragging = p.Reorderable
+	p.BaseWidget.Refresh()
 }
 
 func (p *PlayQueueList) lenTracks() int {
@@ -292,15 +309,9 @@ func (p *PlayQueueList) ensureTracksMenu() {
 			}
 		})
 		remove.Icon = theme.ContentRemoveIcon()
-		reorder := util.NewReorderTracksSubmenu(func(tro sharedutil.TrackReorderOp) {
-			if p.OnReorderItems != nil {
-				p.OnReorderItems(p.selectedItemIDs(), tro)
-			}
-		})
 		menuItems = append(menuItems,
 			fyne.NewMenuItemSeparator(),
-			remove,
-			reorder)
+			remove)
 	}
 
 	p.menu = widget.NewPopUpMenu(
@@ -319,13 +330,8 @@ func (p *PlayQueueList) ensureRadiosMenu() {
 		}
 	})
 	remove.Icon = theme.ContentRemoveIcon()
-	reorder := util.NewReorderTracksSubmenu(func(tro sharedutil.TrackReorderOp) {
-		if p.OnReorderItems != nil {
-			p.OnReorderItems(p.selectedItemIDs(), tro)
-		}
-	})
 	p.radiosMenu = widget.NewPopUpMenu(
-		fyne.NewMenu("", remove, reorder),
+		fyne.NewMenu("", remove),
 		fyne.CurrentApp().Driver().CanvasForObject(p),
 	)
 }
