@@ -59,7 +59,7 @@ func main() {
 
 		// hacky workaround for https://github.com/fyne-io/fyne/issues/4964
 		if runtime.GOOS == "linux" {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(350 * time.Millisecond)
 			w, h := mainWindow.DesiredSize()
 			scale := mainWindow.Window.Canvas().Scale()
 			SendResizeToPID(os.Getpid(), int(w*scale), int(h*scale))
