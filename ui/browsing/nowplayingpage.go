@@ -167,7 +167,7 @@ func NewNowPlayingPage(
 	a.relatedList.OnSetRating = a.queueList.OnSetRating
 	a.relatedList.OnSetFavorite = a.queueList.OnSetFavorite
 	a.relatedList.OnPlayItemAt = func(idx int) {
-		a.pm.LoadTracks([]*mediaprovider.Track{a.related[idx]}, backend.Replace, false)
+		a.pm.LoadTracks(a.related, backend.Replace, false)
 		a.pm.PlayTrackAt(idx)
 	}
 	a.relatedList.OnAddToQueue = func(items []mediaprovider.MediaItem) {
