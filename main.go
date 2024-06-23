@@ -12,6 +12,7 @@ import (
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 )
 
