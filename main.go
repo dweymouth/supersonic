@@ -50,19 +50,20 @@ func main() {
 	myApp.OnExit = mainWindow.Quit
 
 	go func() {
+		defaultServer := myApp.ServerManager.GetDefaultServer()
+		if defaultServer == nil {
+			mainWindow.Controller.PromptForFirstServer()
+		} else {
+			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
+		}
 		// TODO: There is a race condition with laying out the window before the
 		// window creation animation on Ubuntu (and other DEs?) finishes, where
 		// the window will be misdrawn into a smaller area if the animation hasn't finished.
 		// This makes it much less likely to occur (not seen on dozens of startups)
 		// but is a hacky "solution"!
 		if runtime.GOOS == "linux" {
-			time.Sleep(250 * time.Millisecond)
-		}
-		defaultServer := myApp.ServerManager.GetDefaultServer()
-		if defaultServer == nil {
-			mainWindow.Controller.PromptForFirstServer()
-		} else {
-			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
+			time.Sleep(350 * time.Millisecond)
+			mainWindow.ForceResize()
 		}
 	}()
 
