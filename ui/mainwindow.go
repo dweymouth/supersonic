@@ -89,7 +89,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller)
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
 	m.Window.SetContent(m.container)
-	m.ForceResize()
+	m.setInitialSize()
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		if item == nil {
 			m.Window.SetTitle(displayAppName)
@@ -141,15 +141,20 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	return m
 }
 
-func (m *MainWindow) ForceResize() {
-	w := float32(m.App.Config.Application.WindowWidth)
+func (m *MainWindow) DesiredSize() (w, h float32) {
+	w = float32(m.App.Config.Application.WindowWidth)
 	if w <= 1 {
 		w = 1000
 	}
-	h := float32(m.App.Config.Application.WindowHeight)
+	h = float32(m.App.Config.Application.WindowHeight)
 	if h <= 1 {
 		h = 800
 	}
+	return w, h
+}
+
+func (m *MainWindow) setInitialSize() {
+	w, h := m.DesiredSize()
 	m.Window.Resize(fyne.NewSize(w, h))
 }
 
