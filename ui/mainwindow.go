@@ -141,21 +141,20 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	return m
 }
 
-func (m *MainWindow) DesiredSize() (w, h float32) {
-	w = float32(m.App.Config.Application.WindowWidth)
+func (m *MainWindow) DesiredSize() fyne.Size {
+	w := float32(m.App.Config.Application.WindowWidth)
 	if w <= 1 {
 		w = 1000
 	}
-	h = float32(m.App.Config.Application.WindowHeight)
+	h := float32(m.App.Config.Application.WindowHeight)
 	if h <= 1 {
 		h = 800
 	}
-	return w, h
+	return fyne.NewSize(w, h)
 }
 
 func (m *MainWindow) setInitialSize() {
-	w, h := m.DesiredSize()
-	m.Window.Resize(fyne.NewSize(w, h))
+	m.Window.Resize(m.DesiredSize())
 }
 
 func (m *MainWindow) StartupPage() controller.Route {

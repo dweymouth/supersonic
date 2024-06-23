@@ -60,9 +60,14 @@ func main() {
 		// hacky workaround for https://github.com/fyne-io/fyne/issues/4964
 		if runtime.GOOS == "linux" {
 			time.Sleep(350 * time.Millisecond)
-			w, h := mainWindow.DesiredSize()
-			scale := mainWindow.Window.Canvas().Scale()
-			SendResizeToPID(os.Getpid(), int(w*scale), int(h*scale))
+			canvas := mainWindow.Window.Canvas()
+			size := canvas.Size()
+			desired := mainWindow.DesiredSize()
+			if !inDelta(size, desired, 1) {
+				// window drawn at incorrect size on startup
+				scale := canvas.Scale()
+				SendResizeToPID(os.Getpid(), int(desired.Width*scale), int(desired.Height*scale))
+			}
 		}
 
 	}()
@@ -81,4 +86,11 @@ func main() {
 
 	log.Println("Running shutdown tasks...")
 	myApp.Shutdown()
+}
+
+func inDelta(a, b fyne.Size, delta float32) bool {
+	diffW := a.Width - b.Width
+	diffH := a.Height - b.Height
+	return diffW < delta && diffW > -delta &&
+		diffH < delta && diffH > -delta
 }
