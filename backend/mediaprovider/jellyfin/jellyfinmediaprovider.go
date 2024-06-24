@@ -10,6 +10,7 @@ import (
 
 	"github.com/dweymouth/go-jellyfin"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/mediaprovider/helpers"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
@@ -479,6 +480,13 @@ func (j *jellyfinMediaProvider) GetSongRadio(trackID string, count int) ([]*medi
 	tr, err := j.client.GetInstantMix(trackID, jellyfin.TypeSong, count)
 	if err != nil {
 		return nil, err
+	}
+	if len(tr) == 0 {
+		track, err := j.GetTrack(trackID)
+		if err != nil {
+			return nil, err
+		}
+		return helpers.GetSimilarSongsFallback(j, track, count), nil
 	}
 	return sharedutil.MapSlice(tr, toTrack), nil
 }

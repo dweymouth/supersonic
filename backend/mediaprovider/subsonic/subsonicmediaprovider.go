@@ -14,6 +14,7 @@ import (
 
 	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/mediaprovider/helpers"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
@@ -621,6 +622,13 @@ func (s *subsonicMediaProvider) GetSongRadio(trackID string, count int) ([]*medi
 	tr, err := s.client.GetSimilarSongs(trackID, map[string]string{"count": strconv.Itoa(count)})
 	if err != nil {
 		return nil, err
+	}
+	if len(tr) == 0 {
+		track, err := s.GetTrack(trackID)
+		if err != nil {
+			return nil, err
+		}
+		return helpers.GetSimilarSongsFallback(s, track, count), nil
 	}
 	return sharedutil.MapSlice(tr, toTrack), nil
 }
