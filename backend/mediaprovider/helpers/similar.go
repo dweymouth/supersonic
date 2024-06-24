@@ -9,11 +9,10 @@ func GetSimilarSongsFallback(mp mediaprovider.MediaProvider, track *mediaprovide
 	var tracks []*mediaprovider.Track
 	if len(track.ArtistIDs) > 0 {
 		tracks, _ = mp.GetSimilarTracks(track.ArtistIDs[0], count)
-		if len(tracks) > 0 {
-			return tracks
-		}
 	}
-	tracks, _ = mp.GetRandomTracks(track.Genre, count)
+	if len(tracks) == 0 {
+		tracks, _ = mp.GetRandomTracks(track.Genre, count)
+	}
 
 	// make sure to exclude the song itself from the similar list
 	return sharedutil.FilterSlice(tracks, func(t *mediaprovider.Track) bool {
