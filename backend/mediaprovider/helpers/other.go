@@ -10,6 +10,7 @@ import (
 func GetSimilarSongsFallback(mp mediaprovider.MediaProvider, track *mediaprovider.Track, count int) []*mediaprovider.Track {
 	var tracks []*mediaprovider.Track
 	if len(track.ArtistIDs) > 0 {
+		tracks, _ = mp.GetSimilarTracks(track.ArtistIDs[0], count)
 	}
 	if len(tracks) == 0 {
 		tracks, _ = mp.GetRandomTracks(track.Genre, count)
