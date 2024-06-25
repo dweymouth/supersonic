@@ -104,7 +104,10 @@ func (p *Player) Init(maxCacheMB int) error {
 		m.SetOptionString("terminal", "no")
 
 		// limit in-memory cache size
-		m.SetOptionString("demuxer-max-bytes", fmt.Sprintf("%dMiB", maxCacheMB))
+		maxBackMB := maxCacheMB / 3
+		maxForwardMB := maxBackMB + maxBackMB
+		m.SetOptionString("demuxer-max-bytes", fmt.Sprintf("%dMiB", maxForwardMB))
+		m.SetOptionString("demuxer-max-back-bytes", fmt.Sprintf("%dMiB", maxBackMB))
 
 		if p.vol < 0 {
 			p.vol = 100
