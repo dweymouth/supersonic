@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"math/rand"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
@@ -166,6 +167,47 @@ func (p *PlaybackManager) PlayTrack(trackID string) error {
 		p.SetReplayGainMode(player.ReplayGainTrack)
 	}
 	return p.PlayFromBeginning()
+}
+
+func (p *PlaybackManager) ShuffleArtistAlbums(artistID string) {
+	artist, err := p.engine.sm.Server.GetArtist(artistID)
+	if err != nil {
+		log.Printf(err.Error())
+		return
+	}
+	if len(artist.Albums) == 0 {
+		return
+	}
+
+	rand.Shuffle(len(artist.Albums), func(i, j int) {
+		artist.Albums[i], artist.Albums[j] = artist.Albums[j], artist.Albums[i]
+	})
+	p.StopAndClearPlayQueue()
+	for _, al := range artist.Albums {
+		p.LoadAlbum(al.ID, Append, false)
+	}
+
+	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
+		p.SetReplayGainMode(player.ReplayGainAlbum)
+	}
+	p.PlayFromBeginning()
+}
+
+func (p *PlaybackManager) PlayArtistDiscography(artistID string, shuffleTracks bool) {
+	tr, err := p.engine.sm.Server.GetArtistTracks(artistID)
+	if err != nil {
+		log.Printf(err.Error())
+		return
+	}
+	p.LoadTracks(tr, Replace, shuffleTracks)
+	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
+		if shuffleTracks {
+			p.SetReplayGainMode(player.ReplayGainTrack)
+		} else {
+			p.SetReplayGainMode(player.ReplayGainAlbum)
+		}
+	}
+	p.PlayFromBeginning()
 }
 
 func (p *PlaybackManager) PlayFromBeginning() error {

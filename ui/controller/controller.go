@@ -7,7 +7,6 @@ import (
 	"image"
 	"io"
 	"log"
-	"math/rand"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -210,7 +209,7 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 	grid.OnPlayNext = func(artistID string) {
 		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), backend.InsertNext, false)
 	}
-	grid.OnPlay = func(artistID string, shuffle bool) { go m.PlayArtistDiscography(artistID, shuffle) }
+	grid.OnPlay = func(artistID string, shuffle bool) { go m.App.PlaybackManager.PlayArtistDiscography(artistID, shuffle) }
 	grid.OnAddToQueue = func(artistID string) {
 		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), backend.Append, false)
 	}
@@ -235,62 +234,15 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 }
 
 func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {
-	server := m.App.ServerManager.Server
-	if server == nil {
-		log.Println("error playing artist discography: logged out")
-		return nil
-	}
-
-	artist, err := server.GetArtist(artistID)
-	if err != nil {
-		log.Printf("error getting artist discography: %v", err.Error())
-		return nil
-	}
-	var allTracks []*mediaprovider.Track
-	for _, album := range artist.Albums {
-		album, err := server.GetAlbum(album.ID)
-		if err != nil {
-			log.Printf("error loading album tracks: %v", err.Error())
+	if mp := m.App.ServerManager.Server; mp != nil {
+		if tr, err := mp.GetArtistTracks(artistID); err != nil {
+			log.Println(err.Error())
 			return nil
-		}
-		allTracks = append(allTracks, album.Tracks...)
-	}
-	return allTracks
-}
-
-func (m *Controller) PlayArtistDiscography(artistID string, shuffleTracks bool) {
-	m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), backend.Replace, shuffleTracks)
-	if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
-		if shuffleTracks {
-			m.App.PlaybackManager.SetReplayGainMode(player.ReplayGainTrack)
 		} else {
-			m.App.PlaybackManager.SetReplayGainMode(player.ReplayGainAlbum)
+			return tr
 		}
 	}
-	m.App.PlaybackManager.PlayFromBeginning()
-}
-
-func (m *Controller) ShuffleArtistAlbums(artistID string) {
-	artist, err := m.App.ServerManager.Server.GetArtist(artistID)
-	if err != nil {
-		log.Printf("error getting artist discography: %v", err.Error())
-	}
-	if len(artist.Albums) == 0 {
-		return
-	}
-
-	rand.Shuffle(len(artist.Albums), func(i, j int) {
-		artist.Albums[i], artist.Albums[j] = artist.Albums[j], artist.Albums[i]
-	})
-	m.App.PlaybackManager.StopAndClearPlayQueue()
-	for _, al := range artist.Albums {
-		m.App.PlaybackManager.LoadAlbum(al.ID, backend.Append, false)
-	}
-
-	if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
-		m.App.PlaybackManager.SetReplayGainMode(player.ReplayGainAlbum)
-	}
-	m.App.PlaybackManager.PlayFromBeginning()
+	return nil
 }
 
 func (m *Controller) PromptForFirstServer() {

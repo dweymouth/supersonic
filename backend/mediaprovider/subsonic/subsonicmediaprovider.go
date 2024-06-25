@@ -121,6 +121,10 @@ func (s *subsonicMediaProvider) GetArtist(artistID string) (*mediaprovider.Artis
 	}, nil
 }
 
+func (s *subsonicMediaProvider) GetArtistTracks(artistID string) ([]*mediaprovider.Track, error) {
+	return helpers.GetArtistTracks(s, artistID)
+}
+
 func (s *subsonicMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.ArtistInfo, error) {
 	info, err := s.client.GetArtistInfo2(artistID, map[string]string{})
 	if err != nil {

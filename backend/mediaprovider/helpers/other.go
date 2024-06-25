@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"fmt"
+
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
@@ -8,7 +10,6 @@ import (
 func GetSimilarSongsFallback(mp mediaprovider.MediaProvider, track *mediaprovider.Track, count int) []*mediaprovider.Track {
 	var tracks []*mediaprovider.Track
 	if len(track.ArtistIDs) > 0 {
-		tracks, _ = mp.GetSimilarTracks(track.ArtistIDs[0], count)
 	}
 	if len(tracks) == 0 {
 		tracks, _ = mp.GetRandomTracks(track.Genre, count)
@@ -18,4 +19,20 @@ func GetSimilarSongsFallback(mp mediaprovider.MediaProvider, track *mediaprovide
 	return sharedutil.FilterSlice(tracks, func(t *mediaprovider.Track) bool {
 		return t.ID != track.ID
 	})
+}
+
+func GetArtistTracks(mp mediaprovider.MediaProvider, artistID string) ([]*mediaprovider.Track, error) {
+	artist, err := mp.GetArtist(artistID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting artist tracks: %v", err.Error())
+	}
+	var allTracks []*mediaprovider.Track
+	for _, album := range artist.Albums {
+		album, err := mp.GetAlbum(album.ID)
+		if err != nil {
+			return nil, fmt.Errorf("error loading album tracks: %v", err.Error())
+		}
+		allTracks = append(allTracks, album.Tracks...)
+	}
+	return allTracks, nil
 }

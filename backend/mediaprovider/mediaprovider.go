@@ -181,6 +181,8 @@ type MediaProvider interface {
 
 	GetArtist(artistID string) (*ArtistWithAlbums, error)
 
+	GetArtistTracks(artistID string) ([]*Track, error)
+
 	GetArtistInfo(artistID string) (*ArtistInfo, error)
 
 	GetPlaylist(playlistID string) (*PlaylistWithTracks, error)

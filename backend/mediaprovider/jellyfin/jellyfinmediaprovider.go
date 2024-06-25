@@ -145,6 +145,10 @@ func (j *jellyfinMediaProvider) GetArtist(artistID string) (*mediaprovider.Artis
 	return artist, nil
 }
 
+func (j *jellyfinMediaProvider) GetArtistTracks(artistID string) ([]*mediaprovider.Track, error) {
+	return helpers.GetArtistTracks(j, artistID)
+}
+
 func (j *jellyfinMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.ArtistInfo, error) {
 	ar, err := j.client.GetArtist(artistID)
 	if err != nil {
