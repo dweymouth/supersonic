@@ -182,6 +182,9 @@ func (j *jellyfinMediaProvider) GetTopTracks(artist mediaprovider.Artist, limit 
 	if err != nil {
 		return nil, err
 	}
+	if len(tr) == 0 {
+		return helpers.GetTopTracksFallback(j, artist.ID, limit)
+	}
 	return sharedutil.MapSlice(tr, toTrack), nil
 }
 

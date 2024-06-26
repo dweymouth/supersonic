@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -36,4 +37,18 @@ func GetArtistTracks(mp mediaprovider.MediaProvider, artistID string) ([]*mediap
 		allTracks = append(allTracks, album.Tracks...)
 	}
 	return allTracks, nil
+}
+
+func GetTopTracksFallback(mp mediaprovider.MediaProvider, artistID string, count int) ([]*mediaprovider.Track, error) {
+	tracks, err := GetArtistTracks(mp, artistID)
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(tracks, func(i, j int) bool {
+		return tracks[i].PlayCount > tracks[j].PlayCount
+	})
+	if len(tracks) > count {
+		return tracks[:count], nil
+	}
+	return tracks, nil
 }

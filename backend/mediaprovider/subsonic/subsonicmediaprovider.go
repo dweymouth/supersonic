@@ -248,6 +248,9 @@ func (s *subsonicMediaProvider) GetTopTracks(artist mediaprovider.Artist, count 
 	if err != nil {
 		return nil, err
 	}
+	if len(tr) == 0 {
+		return helpers.GetTopTracksFallback(s, artist.ID, count)
+	}
 	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
