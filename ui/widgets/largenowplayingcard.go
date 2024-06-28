@@ -68,10 +68,11 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 
 	n.trackName.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText
 	n.trackName.Truncation = fyne.TextTruncateEllipsis
+	n.albumName.SizeName = myTheme.SizeNameSubSubHeadingText
 	n.albumName.Truncation = fyne.TextTruncateEllipsis
-	n.trackName.Truncation = fyne.TextTruncateEllipsis
 	n.albumName.OnTapped = n.onAlbumNameTapped
 	n.artistName.OnTapped = n.onArtistNameTapped
+	n.artistName.SizeName = myTheme.SizeNameSubSubHeadingText
 
 	return n
 }

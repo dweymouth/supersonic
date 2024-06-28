@@ -27,8 +27,9 @@ const (
 	ColorNameHoveredIconButton fyne.ThemeColorName = "HoveredIconButton"
 	ColorNameNowPlayingPanel   fyne.ThemeColorName = "NowPlayingPanel"
 
-	SizeNameSubText    fyne.ThemeSizeName = "subText"    // in between Text and Caption
-	SizeNameSuffixText fyne.ThemeSizeName = "suffixText" // a tiny bit smaller than subText
+	SizeNameSubSubHeadingText fyne.ThemeSizeName = "subSubHeadingText" // in between Text and SubHeadingText
+	SizeNameSubText           fyne.ThemeSizeName = "subText"           // in between Text and Caption
+	SizeNameSuffixText        fyne.ThemeSizeName = "suffixText"        // a tiny bit smaller than subText
 )
 
 var (
@@ -246,7 +247,9 @@ func (m *MyTheme) Font(style fyne.TextStyle) fyne.Resource {
 }
 
 func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
-	if name == SizeNameSubText {
+	if name == SizeNameSubSubHeadingText {
+		return 15.5
+	} else if name == SizeNameSubText {
 		return 13
 	} else if name == SizeNameSuffixText {
 		return 12
