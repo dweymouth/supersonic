@@ -195,6 +195,12 @@ func (b *BrowsingPane) ScrollDown() {
 	}
 }
 
+func (b *BrowsingPane) RefreshPage() {
+	if b.curPage != nil {
+		b.curPage.Refresh()
+	}
+}
+
 func (b *BrowsingPane) doSetPage(p Page) bool {
 	if b.curPage != nil && b.curPage.Route() == p.Route() {
 		return false

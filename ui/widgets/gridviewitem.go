@@ -5,9 +5,6 @@ import (
 	"image/color"
 	"slices"
 
-	"github.com/dweymouth/supersonic/res"
-	"github.com/dweymouth/supersonic/ui/util"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -15,6 +12,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/dweymouth/supersonic/res"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
 )
 
 var _ fyne.Widget = (*GridViewItem)(nil)
@@ -131,15 +132,19 @@ type GridViewItemModel struct {
 	CoverArtID   string
 	Secondary    []string
 	SecondaryIDs []string
+	Suffix       string
 }
 
 type GridViewItem struct {
 	widget.BaseWidget
 
+	ShowSuffix bool
+
 	itemID        string
 	secondaryIDs  []string
 	primaryText   *widget.Hyperlink
 	secondaryText *MultiHyperlink
+	suffix        string
 	container     *fyne.Container
 	focused       bool
 	focusRect     *canvas.Rectangle
@@ -164,8 +169,10 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 		secondaryText: NewMultiHyperlink(),
 		Cover:         newCoverImage(placeholderResource),
 	}
-	g.primaryText.TextStyle.Bold = true
 	g.primaryText.Truncation = fyne.TextTruncateEllipsis
+	g.primaryText.TextStyle.Bold = true
+	g.secondaryText.SizeName = myTheme.SizeNameSubText
+	g.secondaryText.SuffixSizeName = myTheme.SizeNameSuffixText
 	g.ExtendBaseWidget(g)
 	g.Cover.OnPlay = func() {
 		if g.OnPlay != nil {
@@ -195,7 +202,7 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 }
 
 func (g *GridViewItem) createContainer() {
-	info := container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-16), g.primaryText, g.secondaryText)
+	info := container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-17), g.primaryText, g.secondaryText)
 	g.focusRect = canvas.NewRectangle(color.Transparent)
 	g.focusRect.StrokeWidth = 3
 	coverStack := container.NewStack(g.Cover, g.focusRect)
@@ -205,7 +212,8 @@ func (g *GridViewItem) createContainer() {
 }
 
 func (g *GridViewItem) NeedsUpdate(model GridViewItemModel) bool {
-	return g.itemID != model.ID || !slices.Equal(g.secondaryIDs, model.SecondaryIDs)
+	return g.itemID != model.ID || !slices.Equal(g.secondaryIDs, model.SecondaryIDs) ||
+		g.secondaryText.Suffix != model.Suffix
 }
 
 func (g *GridViewItem) Update(model GridViewItemModel) {
@@ -213,6 +221,11 @@ func (g *GridViewItem) Update(model GridViewItemModel) {
 	g.secondaryIDs = model.SecondaryIDs
 	g.primaryText.SetText(model.Name)
 	g.secondaryText.BuildSegments(model.Secondary, model.SecondaryIDs)
+	if g.ShowSuffix {
+		g.secondaryText.Suffix = model.Suffix
+	} else {
+		g.secondaryText.Suffix = ""
+	}
 	g.secondaryText.Refresh()
 	g.Cover.ResetPlayButton()
 	if g.focused {
@@ -222,9 +235,15 @@ func (g *GridViewItem) Update(model GridViewItemModel) {
 }
 
 func (g *GridViewItem) Refresh() {
+	if g.ShowSuffix && g.secondaryText.Suffix == "" && g.suffix != "" {
+		g.secondaryText.Suffix = g.suffix
+		g.secondaryText.Refresh()
+	} else if !g.ShowSuffix && g.secondaryText.Suffix != "" {
+		g.secondaryText.Suffix = ""
+		g.secondaryText.Refresh()
+	}
 	g.focusRect.StrokeColor = util.MakeOpaque(theme.FocusColor())
 	g.focusRect.Hidden = !g.focused
-	g.BaseWidget.Refresh()
 }
 
 func (g *GridViewItem) ItemID() string {

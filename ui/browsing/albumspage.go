@@ -72,6 +72,12 @@ func (a *albumsPageAdapter) SearchIter(query string, filter mediaprovider.AlbumF
 	return widgets.NewGridViewAlbumIterator(a.mp.SearchAlbums(query, filter))
 }
 
-func (a *albumsPageAdapter) ConnectGridActions(gv *widgets.GridView) {
+func (a *albumsPageAdapter) InitGrid(gv *widgets.GridView) {
 	a.contr.ConnectAlbumGridActions(gv)
+	gv.ShowSuffix = a.cfg.ShowYears
+}
+
+func (a *albumsPageAdapter) RefreshGrid(gv *widgets.GridView) {
+	gv.ShowSuffix = a.cfg.ShowYears
+	gv.Refresh()
 }

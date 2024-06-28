@@ -59,6 +59,7 @@ type AlbumPageConfig struct {
 
 type AlbumsPageConfig struct {
 	SortOrder string
+	ShowYears bool
 }
 
 type ArtistPageConfig struct {
@@ -73,6 +74,7 @@ type ArtistsPageConfig struct {
 type FavoritesPageConfig struct {
 	InitialView      string
 	TracklistColumns []string
+	ShowAlbumYears   bool
 }
 
 type PlaylistPageConfig struct {
@@ -167,6 +169,7 @@ func DefaultConfig(appVersionTag string) *Config {
 		},
 		AlbumsPage: AlbumsPageConfig{
 			SortOrder: string("Recently Added"),
+			ShowYears: false,
 		},
 		ArtistPage: ArtistPageConfig{
 			InitialView:      "Discography",
@@ -178,6 +181,7 @@ func DefaultConfig(appVersionTag string) *Config {
 		FavoritesPage: FavoritesPageConfig{
 			TracklistColumns: []string{"Album", "Time", "Plays"},
 			InitialView:      "Albums",
+			ShowAlbumYears:   false,
 		},
 		PlaylistPage: PlaylistPageConfig{
 			TracklistColumns: []string{"Album", "Time", "Plays"},

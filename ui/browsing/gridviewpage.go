@@ -66,8 +66,13 @@ type GridViewPageAdapter[M, F any] interface {
 	// Returns the iterator for the given search query and filter.
 	SearchIter(query string, filter mediaprovider.MediaFilter[M, F]) widgets.GridViewIterator
 
-	// Function that connects the GridView callbacks to the appropriate action handlers.
-	ConnectGridActions(*widgets.GridView)
+	// Function that initialized the GridView with page-specific settings
+	// and connects the GridView callbacks to the appropriate action handlers.
+	InitGrid(*widgets.GridView)
+
+	// Function called when settings may have changed and the grid needs
+	// reconfiguring with possible settings changes.
+	RefreshGrid(*widgets.GridView)
 }
 
 type SortableGridViewPageAdapter interface {
@@ -124,7 +129,7 @@ func NewGridViewPage[M, F any](
 		gp.grid = widgets.NewGridView(iter, im, adapter.PlaceholderResource())
 	}
 	gp.grid.DisableSharing = !canShare
-	adapter.ConnectGridActions(gp.grid)
+	adapter.InitGrid(gp.grid)
 	gp.createSearchAndFilter()
 	gp.createContainer()
 	return gp
@@ -204,6 +209,10 @@ func (g *GridViewPage[M, F]) OnSearched(query string) {
 		g.doSearch(query)
 	}
 	g.searchText = query
+}
+
+func (g *GridViewPage[M, F]) Refresh() {
+	g.adapter.RefreshGrid(g.grid)
 }
 
 func (g *GridViewPage[M, F]) doSearch(query string) {
@@ -294,7 +303,7 @@ func (s *savedGridViewPage[M, F]) Restore() Page {
 	} else {
 		gp.grid = widgets.NewGridViewFromState(state)
 	}
-	gp.adapter.ConnectGridActions(gp.grid)
+	gp.adapter.InitGrid(gp.grid)
 	gp.createSearchAndFilter()
 	gp.createContainer()
 	return gp

@@ -3,6 +3,7 @@ package widgets
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -51,13 +52,17 @@ type gridViewAlbumIterator struct {
 func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
 	albums := g.iter.NextN(n)
 	return sharedutil.MapSlice(albums, func(al *mediaprovider.Album) GridViewItemModel {
-		return GridViewItemModel{
+		model := GridViewItemModel{
 			Name:         al.Name,
 			ID:           al.ID,
 			CoverArtID:   al.CoverArtID,
 			Secondary:    al.ArtistNames,
 			SecondaryIDs: al.ArtistIDs,
 		}
+		if al.Year > 0 {
+			model.Suffix = strconv.Itoa(al.Year)
+		}
+		return model
 	})
 }
 
@@ -91,6 +96,8 @@ func NewGridViewArtistIterator(iter mediaprovider.ArtistIterator) GridViewIterat
 
 type GridView struct {
 	widget.BaseWidget
+
+	ShowSuffix bool
 
 	stateMutex  sync.RWMutex
 	fetchCancel context.CancelFunc
@@ -322,9 +329,11 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	card.ItemIndex = itemIdx
 	g.itemForIndex[itemIdx] = card
 	card.Cover.Im.PlaceholderIcon = g.Placeholder
+	card.ShowSuffix = g.ShowSuffix
 	if !card.NeedsUpdate(item) && card.ItemIndex == itemIdx {
 		// nothing to do
 		g.stateMutex.Unlock()
+		card.Refresh()
 		return
 	}
 	g.stateMutex.Unlock()

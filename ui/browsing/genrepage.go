@@ -14,6 +14,7 @@ import (
 
 type genrePageAdapter struct {
 	genre     string
+	cfg       *backend.AlbumsPageConfig
 	contr     *controller.Controller
 	mp        mediaprovider.MediaProvider
 	pm        *backend.PlaybackManager
@@ -21,8 +22,8 @@ type genrePageAdapter struct {
 	filterBtn *widgets.AlbumFilterButton
 }
 
-func NewGenrePage(genre string, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) Page {
-	adapter := &genrePageAdapter{genre: genre, contr: contr, mp: mp, pm: pm}
+func NewGenrePage(genre string, cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) Page {
+	adapter := &genrePageAdapter{genre: genre, cfg: cfg, contr: contr, mp: mp, pm: pm}
 	return NewGridViewPage(adapter, pool, mp, im)
 }
 
@@ -68,6 +69,12 @@ func (a *genrePageAdapter) SearchIter(query string, filter mediaprovider.AlbumFi
 	return widgets.NewGridViewAlbumIterator(a.mp.SearchAlbums(query, filter))
 }
 
-func (g *genrePageAdapter) ConnectGridActions(gv *widgets.GridView) {
+func (g *genrePageAdapter) InitGrid(gv *widgets.GridView) {
 	g.contr.ConnectAlbumGridActions(gv)
+	gv.ShowSuffix = g.cfg.ShowYears
+}
+
+func (g *genrePageAdapter) RefreshGrid(gv *widgets.GridView) {
+	gv.ShowSuffix = g.cfg.ShowYears
+	gv.Refresh()
 }

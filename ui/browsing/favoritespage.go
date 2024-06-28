@@ -70,6 +70,7 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, pool *util.WidgetPool, c
 	} else {
 		a.albumGrid = widgets.NewGridView(iter, a.im, myTheme.AlbumIcon)
 	}
+	a.albumGrid.ShowSuffix = cfg.ShowAlbumYears
 	a.contr.ConnectAlbumGridActions(a.albumGrid)
 	if cfg.InitialView == "Artists" {
 		a.toggleBtns.SetActivatedButton(1)
@@ -283,6 +284,13 @@ func (a *FavoritesPage) SelectAll() {
 	if a.toggleBtns.ActivatedButtonIndex() == 2 /*songs*/ && a.tracklistCtr != nil {
 		a.tracklistOrNil().SelectAll() // can't be nil in this case
 	}
+}
+
+func (a *FavoritesPage) Refresh() {
+	if a.albumGrid != nil {
+		a.albumGrid.ShowSuffix = a.cfg.ShowAlbumYears
+	}
+	a.BaseWidget.Refresh()
 }
 
 func (a *FavoritesPage) tracklistOrNil() *widgets.Tracklist {

@@ -68,11 +68,15 @@ func (a *artistsPageAdapter) SearchIter(query string, filter mediaprovider.Artis
 	return widgets.NewGridViewArtistIterator(a.mp.SearchArtists(query, filter))
 }
 
-func (a *artistsPageAdapter) ConnectGridActions(gv *widgets.GridView) {
+func (a *artistsPageAdapter) InitGrid(gv *widgets.GridView) {
 	canShareArtists := false
 	if r, canShare := a.mp.(mediaprovider.SupportsSharing); canShare {
 		canShareArtists = r.CanShareArtists()
 	}
 	gv.DisableSharing = !canShareArtists
 	a.contr.ConnectArtistGridActions(gv)
+}
+
+func (a *artistsPageAdapter) RefreshGrid(gv *widgets.GridView) {
+	gv.Refresh()
 }

@@ -32,17 +32,16 @@ import (
 
 type NavigationHandler func(Route)
 
-type ReloadFunc func()
-
 type CurPageFunc func() Route
 
 type Controller struct {
-	AppVersion  string
-	MainWindow  fyne.Window
-	App         *backend.App
-	NavHandler  NavigationHandler
-	CurPageFunc CurPageFunc
-	ReloadFunc  ReloadFunc
+	AppVersion      string
+	App             *backend.App
+	MainWindow      fyne.Window
+	NavHandler      NavigationHandler
+	CurPageFunc     CurPageFunc
+	ReloadFunc      func()
+	RefreshPageFunc func()
 
 	escapablePopUp   *widget.PopUp
 	haveModal        bool
@@ -559,6 +558,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 		copy(eq.BandGains[:], c.App.Config.LocalPlayback.GraphicEqualizerBands)
 		c.App.LocalPlayer.SetEqualizer(eq)
 	}
+	dlg.OnPageNeedsRefresh = c.RefreshPageFunc
 	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
 	dlg.OnDismiss = func() {
 		pop.Hide()

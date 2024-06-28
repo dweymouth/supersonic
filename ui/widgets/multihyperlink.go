@@ -11,7 +11,15 @@ type MultiHyperlink struct {
 	widget.BaseWidget
 
 	Segments []MultiHyperlinkSegment
+
+	// Suffix string that is appended (with · separator)
+	// only if there is enough room
+	Suffix string
+
 	OnTapped func(string)
+
+	SizeName       fyne.ThemeSizeName
+	SuffixSizeName fyne.ThemeSizeName
 
 	minSegWidthCached float32
 	minHeightCached   float32
@@ -20,7 +28,10 @@ type MultiHyperlink struct {
 	// TODO: Once https://github.com/fyne-io/fyne/issues/4336 is resolved,
 	//   we can switch to the much cleaner RichText implementation
 	//provider *widget.RichText
-	content *fyne.Container
+
+	objects     []fyne.CanvasObject
+	suffixLabel *widget.RichText
+	content     *fyne.Container
 }
 
 type MultiHyperlinkSegment struct {
@@ -52,14 +63,14 @@ func (m *MultiHyperlink) BuildSegments(texts, links []string) {
 
 func (c *MultiHyperlink) getMinSegWidth() float32 {
 	if c.minSegWidthCached == 0 {
-		c.minSegWidthCached = fyne.MeasureText(", W", theme.TextSize(), fyne.TextStyle{}).Width
+		c.minSegWidthCached = fyne.MeasureText(", W", theme.Size(c.sizeName()), fyne.TextStyle{}).Width
 	}
 	return c.minSegWidthCached
 }
 
 func (c *MultiHyperlink) getSeparatorWidth() float32 {
 	if c.separatorWCached == 0 {
-		c.separatorWCached = fyne.MeasureText(",", theme.TextSize(), fyne.TextStyle{}).Width
+		c.separatorWCached = fyne.MeasureText(",", theme.Size(c.sizeName()), fyne.TextStyle{}).Width
 	}
 	return c.separatorWCached
 }
@@ -71,7 +82,7 @@ func (c *MultiHyperlink) layoutObjects() {
 	}
 	x := float32(0)
 	width := c.Size().Width
-	l := len(c.content.Objects)
+	l := len(c.objects)
 
 	var i int // at end of loop should be index of last seg that was laid out for display
 	var seg MultiHyperlinkSegment
@@ -87,9 +98,9 @@ func (c *MultiHyperlink) layoutObjects() {
 		appendingSegments := 2*i >= l
 		var obj fyne.CanvasObject
 		if !appendingSegments {
-			obj = c.content.Objects[2*i]
+			obj = c.objects[2*i]
 		} else if i > 0 {
-			c.content.Objects = append(c.content.Objects, c.newSeparatorLabel())
+			c.objects = append(c.objects, c.newSeparatorLabel())
 		}
 		if seg.LinkID == "" {
 			obj = c.updateOrReplaceLabel(obj, seg.Text)
@@ -97,14 +108,14 @@ func (c *MultiHyperlink) layoutObjects() {
 			obj = c.updateOrReplaceHyperlink(obj, seg.Text, seg.LinkID)
 		}
 		if appendingSegments {
-			c.content.Objects = append(c.content.Objects, obj)
+			c.objects = append(c.objects, obj)
 		} else {
-			c.content.Objects[2*i] = obj
+			c.objects[2*i] = obj
 		}
 
 		if i > 0 {
 			// move and resize separator
-			obj = c.content.Objects[2*i-1]
+			obj = c.objects[2*i-1]
 			ms := obj.MinSize()
 			obj.Resize(ms)
 			obj.Move(fyne.NewPos(x-ms.Width+c.getSeparatorWidth()+1, 0)) // this is really ugly
@@ -112,8 +123,8 @@ func (c *MultiHyperlink) layoutObjects() {
 		}
 		// move and resize text object
 		// extra +3 to textW gives it just enough space to not trigger ellipsis truncation
-		textW := fyne.MeasureText(seg.Text, theme.TextSize(), fyne.TextStyle{}).Width + theme.Padding()*2 + theme.InnerPadding() + 3
-		obj = c.content.Objects[2*i]
+		textW := fyne.MeasureText(seg.Text, theme.Size(c.sizeName()), fyne.TextStyle{}).Width + theme.Padding()*2 + theme.InnerPadding() + 3
+		obj = c.objects[2*i]
 		ms := obj.MinSize()
 		w := fyne.Min(width-x, textW)
 		obj.Resize(fyne.NewSize(w, ms.Height))
@@ -122,17 +133,39 @@ func (c *MultiHyperlink) layoutObjects() {
 	}
 
 	i += 1
-	c.content.Objects = c.content.Objects[:2*i-1]
+	c.content.Objects = c.objects[:2*i-1]
+	if i == len(c.Segments) && c.Suffix != "" {
+		if c.suffixLabel == nil {
+			c.suffixLabel = widget.NewRichTextWithText("· " + c.Suffix)
+		} else {
+			c.suffixLabel.Segments[0].(*widget.TextSegment).Text = "· " + c.Suffix
+		}
+		sizeName := c.sizeName()
+		if c.SuffixSizeName != "" {
+			sizeName = c.SuffixSizeName
+		}
+		// TODO: the magic numbers to get exact positioning here are gross
+		c.suffixLabel.Segments[0].(*widget.TextSegment).Style.SizeName = sizeName
+		innerPad2 := theme.InnerPadding() * 2
+		if x+c.suffixLabel.MinSize().Width-innerPad2*1.3 < width {
+			y := theme.Size(c.sizeName()) - theme.Size(sizeName)
+			c.suffixLabel.Move(fyne.NewPos(x-innerPad2+1, y))
+			c.content.Objects = append(c.content.Objects, c.suffixLabel)
+		}
+	}
 }
 
 func (c *MultiHyperlink) updateOrReplaceLabel(obj fyne.CanvasObject, text string) fyne.CanvasObject {
 	if obj != nil {
-		if label, ok := obj.(*widget.Label); ok {
-			label.Text = text
+		if label, ok := obj.(*widget.RichText); ok {
+			ts := label.Segments[0].(*widget.TextSegment)
+			ts.Text = text
+			ts.Style.SizeName = c.sizeName()
 			return label
 		}
 	}
-	l := widget.NewLabel(text)
+	l := widget.NewRichTextWithText(text)
+	l.Segments[0].(*widget.TextSegment).Style.SizeName = c.sizeName()
 	l.Truncation = fyne.TextTruncateEllipsis
 	return l
 }
@@ -141,22 +174,34 @@ func (c *MultiHyperlink) updateOrReplaceHyperlink(obj fyne.CanvasObject, text, l
 	if obj != nil {
 		if l, ok := obj.(*widget.Hyperlink); ok {
 			l.Text = text
+			l.SizeName = c.sizeName()
 			l.OnTapped = func() { c.onSegmentTapped(link) }
 			return l
 		}
 	}
 	l := widget.NewHyperlink(text, nil)
+	l.SizeName = c.sizeName()
 	l.Truncation = fyne.TextTruncateEllipsis
 	l.OnTapped = func() { c.onSegmentTapped(link) }
 	return l
 }
 
-func (c *MultiHyperlink) newSeparatorLabel() *widget.Label {
-	return widget.NewLabel(", ")
+func (c *MultiHyperlink) newSeparatorLabel() *widget.RichText {
+	rt := widget.NewRichTextWithText(", ")
+	rt.Segments[0].(*widget.TextSegment).Style.SizeName = c.sizeName()
+	return rt
+}
+
+func (c *MultiHyperlink) sizeName() fyne.ThemeSizeName {
+	if c.SizeName == "" {
+		return theme.SizeNameText
+	}
+	return c.SizeName
 }
 
 /***
  * RichText implementation
+ * TODO: add support for SizeName, suffix
 
 func (c *MultiHyperlink) syncSegments() {
 	l := len(c.provider.Segments)

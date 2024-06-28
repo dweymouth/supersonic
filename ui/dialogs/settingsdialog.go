@@ -34,6 +34,7 @@ type SettingsDialog struct {
 	OnThemeSettingChanged          func()
 	OnDismiss                      func()
 	OnEqualizerSettingsChanged     func()
+	OnPageNeedsRefresh             func()
 
 	config       *backend.Config
 	audioDevices []mpv.AudioDevice
@@ -185,6 +186,14 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 
 	trackNotif := widget.NewCheckWithData("Show notification on track change",
 		binding.BindBool(&s.config.Application.ShowTrackChangeNotification))
+	albumGridYears := widget.NewCheck("Show year in album grid cards", func(b bool) {
+		s.config.AlbumsPage.ShowYears = b
+		s.config.FavoritesPage.ShowAlbumYears = b
+		if s.OnPageNeedsRefresh != nil {
+			s.OnPageNeedsRefresh()
+		}
+	})
+	albumGridYears.Checked = s.config.AlbumsPage.ShowYears
 
 	// Scrobble settings
 
@@ -276,6 +285,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 		container.NewHBox(systemTrayEnable, closeToTray),
 		saveQueueHBox,
 		trackNotif,
+		albumGridYears,
 		s.newSectionSeparator(),
 
 		widget.NewRichText(&widget.TextSegment{Text: "Scrobbling", Style: util.BoldRichTextStyle}),
