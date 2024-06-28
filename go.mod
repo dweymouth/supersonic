@@ -19,7 +19,7 @@ require (
 	github.com/quarckster/go-mpris-server v1.0.3
 	github.com/zalando/go-keyring v0.2.1
 	golang.org/x/net v0.24.0
-	golang.org/x/text v0.14.0
+	golang.org/x/text v0.16.0
 )
 
 require (
@@ -48,7 +48,7 @@ require (
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/yuin/goldmark v1.5.5 // indirect
-	golang.org/x/image v0.15.0 // indirect
+	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
