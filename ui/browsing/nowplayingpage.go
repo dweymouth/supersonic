@@ -290,12 +290,12 @@ func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobble
 func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 	if err != nil {
 		log.Printf("error loading cover art: %v\n", err)
-		return
 	}
+	a.card.SetCoverImage(img)
 	if img == nil {
 		return
 	}
-	a.card.SetCoverImage(img)
+
 	c := dominantcolor.Find(img)
 	if c == a.background.StartColor {
 		return
