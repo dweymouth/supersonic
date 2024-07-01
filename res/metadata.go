@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.11.0"
+	AppVersion       = "0.12.0"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,24 +15,19 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* Automatically load fonts from the OS as needed to display CJK and other scripts
-* Synced lyrics support and Jellyfin lyrics support
-* LrcLib.net as a backup lyric source (disable in config file if desired)
-* Improve UX of Add to Playlist dialog
-* Show track thumbnails in tracklist views
-* Support for internet radio stations for Subsonic servers
-* New "option button" to right of current track title to bring up action menu
-* Ctrl+{backspace/delete} to remove words in text inputs
-* New portable mode option
-* Improves performance and behavior of Random albums sort with upcoming Navidrome releases
-* Dynamic gradient background on Now Playing page
+* Enable drag-and-drop reordering of tracks in the play queue and playlists
+* Add command-line options to control playback
+* Add option to show album years in grid views
+* Include radio station results in Quick Search
+* Better stringification of play times longer than 1 hour
+* Add fallback logic for populating related tracks and artist top tracks if server returns none
 `
 
 	WhatsFixed = `
 ## Fixed
-* Last track occasionally missing in album view depending on window size
-* Album filter button disappearing when restoring pages from history
-* Artist radio button sometimes plays radio for wrong artist
-* Clicking Home button doesn't automatically refresh page
+* Window occasionally misrendered into smaller space on opening for Linux over xwayland
+* Add "Play next/later" options to the related tracks list on the Now Playing page
+* Change wording of the Add/Edit server form to be less confusing
+* Don't crash if server returns nil saved play queue but no Subsonic error
 `
 )

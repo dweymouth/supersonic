@@ -1,5 +1,21 @@
 # Change Log
 
+## [0.12.0] - 2024-07-01
+
+### Added
+- [#363](https://github.com/dweymouth/supersonic/issues/363) Enable drag-and-drop reordering of tracks in the play queue and playlists
+- [#403](https://github.com/dweymouth/supersonic/pull/403) Add command-line options to control playback
+- Add option to show album years in grid views
+- Include radio station results in Quick Search
+- Better stringification of play times longer than 1 hour
+- Add fallback logic for populating related tracks and artist top tracks if server returns none
+
+### Fixed
+- [#397](https://github.com/dweymouth/supersonic/issues/397) Add "Play next/later" options to the related tracks list on the Now Playing page
+- [#405](https://github.com/dweymouth/supersonic/pull/405) Change wording of the Add/Edit server form to be less confusing (thanks @mintsoft!)
+- Window occasionally misrendered into smaller space on opening for Linux over xwayland
+- Don't crash if server returns nil saved play queue but no Subsonic error
+
 ## [0.11.0] - 2024-06-05
 
 ### Added / Changed

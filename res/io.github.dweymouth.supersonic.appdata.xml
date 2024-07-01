@@ -61,36 +61,32 @@
   </screenshots>
 
  <releases>
-  <release date="2024-06-05" version="0.11.0">
+  <release date="2024-07-01" version="0.12.0">
    <description>
      <p>
-       Version 0.11.0 of Supersonic
+       Version 0.12.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Automatically load fonts from the OS as needed to display CJK and other scripts</li>
-       <li>Synced lyrics support and Jellyfin lyrics support</li>
-       <li>LrcLib.net as a backup lyric source (disable in config file if desired)</li>
-       <li>Improve UX of Add to Playlist dialog</li>
-       <li>Show track thumbnails in tracklist views</li>
-       <li>Support for internet radio stations for Subsonic servers</li>
-       <li>New "option button" to right of current track title to bring up action menu</li>
-       <li>Ctrl+{backspace/delete} to remove words in text inputs</li>
-       <li>Improves performance and behavior of Random albums sort with upcoming Navidrome releases</li>
-       <li>Dynamic gradient background on Now Playing page</li>
+       <li>Enable drag-and-drop reordering of tracks in the play queue and playlists</li>
+       <li>Add command-line options to control playback</li>
+       <li>Add option to show album years in grid views</li>
+       <li>Include radio station results in Quick Search</li>
+       <li>Better stringification of play times longer than 1 hour</li>
+       <li>Add fallback logic for populating related tracks and artist top tracks if server returns none</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Last track occasionally missing in album view depending on window size</li>
-       <li>Album filter button disappearing when restoring pages from history</li>
-       <li>Artist radio button sometimes plays radio for wrong artist</li>
-       <li>Clicking Home button doesn't automatically refresh page</li>
+       <li>Add "Play next/later" options to the related tracks list on the Now Playing page</li>
+       <li>Change wording of the Add/Edit server form to be less confusing</li>
+       <li>Window occasionally misrendered into smaller space on opening for Linux over xwayland</li>
+       <li>Don't crash if server returns nil saved play queue but no Subsonic error</li>
      </ul>
 
    </description>
