@@ -212,6 +212,8 @@ func placeholderIconForContentType(c mediaprovider.ContentType) fyne.Resource {
 		return myTheme.GenreIcon
 	case mediaprovider.ContentTypePlaylist:
 		return myTheme.PlaylistIcon
+	case mediaprovider.ContentTypeRadioStation:
+		return myTheme.RadioIcon
 	default:
 		return theme.WarningIcon() // unreached
 	}
@@ -284,6 +286,8 @@ func (s *searchResult) Update(result *mediaprovider.SearchResult) {
 		secondaryText = result.ArtistName
 	case mediaprovider.ContentTypePlaylist:
 		secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("track", result.Size))
+	case mediaprovider.ContentTypeRadioStation:
+		fallthrough // result.Size is always 0 for radios
 	case mediaprovider.ContentTypeGenre:
 		if result.Size > 0 {
 			secondaryText = fmt.Sprintf("%d %s", result.Size, maybePluralize("album", result.Size))

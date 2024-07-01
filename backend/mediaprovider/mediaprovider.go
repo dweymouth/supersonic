@@ -270,6 +270,7 @@ type LyricsProvider interface {
 }
 
 type RadioProvider interface {
+	GetRadioStation(id string) (*RadioStation, error)
 	GetRadioStations() ([]*RadioStation, error)
 }
 

@@ -215,6 +215,7 @@ const (
 	ContentTypePlaylist
 	ContentTypeTrack
 	ContentTypeGenre
+	ContentTypeRadioStation
 )
 
 func (c ContentType) String() string {
@@ -229,6 +230,8 @@ func (c ContentType) String() string {
 		return "Playlist"
 	case ContentTypeGenre:
 		return "Genre"
+	case ContentTypeRadioStation:
+		return "Radio station"
 	default:
 		return "Unknown"
 	}
@@ -243,8 +246,9 @@ type SearchResult struct {
 	// for Album / Playlist: track count
 	//     Artist / Genre: album count
 	//     Track: length (seconds)
+	// for Radio: none
 	Size int
 
-	// Unset for ContentTypes Artist, Playlist, and Genre
+	// Unset for ContentTypes Artist, Playlist, Genre, and RadioStation
 	ArtistName string
 }

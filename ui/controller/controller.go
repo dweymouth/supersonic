@@ -591,6 +591,12 @@ func (c *Controller) ShowQuickSearch() {
 			c.NavigateTo(PlaylistRoute(id))
 		case mediaprovider.ContentTypeGenre:
 			c.NavigateTo(GenreRoute(id))
+		case mediaprovider.ContentTypeRadioStation:
+			if rp, ok := c.App.ServerManager.Server.(mediaprovider.RadioProvider); ok {
+				if radio, err := rp.GetRadioStation(id); err == nil {
+					go c.App.PlaybackManager.PlayRadioStation(radio)
+				}
+			}
 		}
 	})
 	c.ClosePopUpOnEscape(pop)

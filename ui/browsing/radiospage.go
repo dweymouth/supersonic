@@ -99,8 +99,7 @@ func (a *RadiosPage) load(searchOnLoad bool, scrollPos float32) {
 }
 
 func (a *RadiosPage) onPlay(station *mediaprovider.RadioStation) {
-	a.pm.LoadRadioStation(station, backend.Replace)
-	a.pm.PlayFromBeginning()
+	a.pm.PlayRadioStation(station)
 }
 
 func (a *RadiosPage) onQueue(station *mediaprovider.RadioStation, next bool) {

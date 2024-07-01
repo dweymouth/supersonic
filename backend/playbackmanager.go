@@ -234,6 +234,11 @@ func (p *PlaybackManager) LoadRadioStation(station *mediaprovider.RadioStation, 
 	p.engine.LoadRadioStation(station, queueMode)
 }
 
+func (p *PlaybackManager) PlayRadioStation(station *mediaprovider.RadioStation) error {
+	p.LoadRadioStation(station, Replace)
+	return p.PlayFromBeginning()
+}
+
 func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Track, error)) {
 	if songs, err := fetchFn(); err != nil {
 		log.Printf("error fetching tracks: %s", err.Error())

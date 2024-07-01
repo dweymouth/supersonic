@@ -18,7 +18,10 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-const cacheValidDurationSeconds = 60
+const (
+	playlistCacheValidDurationSeconds = 60
+	cacheValidDurationSeconds         = 120 // genres and radios aren't expected to change as much
+)
 
 type subsonicMediaProvider struct {
 	client          *subsonic.Client
@@ -29,6 +32,9 @@ type subsonicMediaProvider struct {
 
 	playlistsCached   []*mediaprovider.Playlist
 	playlistsCachedAt int64 // unix
+
+	radiosCached   []*mediaprovider.RadioStation
+	radiosCachedAt int64 // unix
 }
 
 func SubsonicMediaProvider(subsonicClient *subsonic.Client) mediaprovider.MediaProvider {
@@ -194,7 +200,7 @@ func (s *subsonicMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.P
 }
 
 func (s *subsonicMediaProvider) GetPlaylists() ([]*mediaprovider.Playlist, error) {
-	if s.playlistsCached != nil && time.Now().Unix()-s.playlistsCachedAt < cacheValidDurationSeconds {
+	if s.playlistsCached != nil && time.Now().Unix()-s.playlistsCachedAt < playlistCacheValidDurationSeconds {
 		return s.playlistsCached, nil
 	}
 
@@ -436,11 +442,15 @@ func (s *subsonicMediaProvider) GetPlayQueue() (*mediaprovider.SavedPlayQueue, e
 var _ mediaprovider.RadioProvider = (*subsonicMediaProvider)(nil)
 
 func (s *subsonicMediaProvider) GetRadioStations() ([]*mediaprovider.RadioStation, error) {
+	if s.radiosCached != nil && time.Now().Unix()-s.radiosCachedAt < cacheValidDurationSeconds {
+		return s.radiosCached, nil
+	}
+
 	rs, err := s.client.GetInternetRadioStations()
 	if err != nil {
 		return nil, err
 	}
-	return sharedutil.MapSlice(rs, func(rs *subsonic.InternetRadioStation) *mediaprovider.RadioStation {
+	s.radiosCached = sharedutil.MapSlice(rs, func(rs *subsonic.InternetRadioStation) *mediaprovider.RadioStation {
 		return &mediaprovider.RadioStation{
 			// TODO - subsonic library is missing ID in its radiostation object. add it
 			ID:          "radio-" + strings.ReplaceAll(rs.Name, " ", ""),
@@ -448,7 +458,23 @@ func (s *subsonicMediaProvider) GetRadioStations() ([]*mediaprovider.RadioStatio
 			HomePageURL: rs.HomePageUrl,
 			StreamURL:   rs.StreamUrl,
 		}
-	}), nil
+	})
+	s.radiosCachedAt = time.Now().Unix()
+	return s.radiosCached, nil
+}
+
+func (s *subsonicMediaProvider) GetRadioStation(id string) (*mediaprovider.RadioStation, error) {
+	rs, err := s.GetRadioStations()
+	if err != nil {
+		return nil, err
+	}
+	index := slices.IndexFunc(rs, func(r *mediaprovider.RadioStation) bool {
+		return r.ID == id
+	})
+	if index < 0 {
+		return nil, errors.New("radio station not found")
+	}
+	return rs[index], nil
 }
 
 func toTrack(ch *subsonic.Child) *mediaprovider.Track {

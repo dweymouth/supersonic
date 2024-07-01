@@ -18,6 +18,7 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 	var result *subsonic.SearchResult3
 	var playlists []*subsonic.Playlist
 	var genres []*subsonic.Genre
+	var radios []*mediaprovider.RadioStation
 
 	wg.Add(1)
 	go func() {
@@ -60,12 +61,23 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 		wg.Done()
 	}()
 
+	wg.Add(1)
+	go func() {
+		r, e := s.GetRadioStations()
+		if e == nil {
+			radios = sharedutil.FilterSlice(r, func(r *mediaprovider.RadioStation) bool {
+				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(r.Name)), queryLowerWords)
+			})
+		}
+		wg.Done()
+	}()
+
 	wg.Wait()
 	if err != nil {
 		return nil, err
 	}
 
-	results := mergeResults(result, playlists, genres)
+	results := mergeResults(result, playlists, genres, radios)
 	helpers.RankSearchResults(results, querySanitized, queryLowerWords)
 	if len(results) > maxResults {
 		results = results[:maxResults]
@@ -77,6 +89,7 @@ func mergeResults(
 	searchResult *subsonic.SearchResult3,
 	matchingPlaylists []*subsonic.Playlist,
 	matchingGenres []*subsonic.Genre,
+	matchingRadios []*mediaprovider.RadioStation,
 ) []*mediaprovider.SearchResult {
 	var results []*mediaprovider.SearchResult
 
@@ -128,6 +141,14 @@ func mergeResults(
 			ID:   g.Name,
 			Name: g.Name,
 			Size: g.AlbumCount,
+		})
+	}
+
+	for _, r := range matchingRadios {
+		results = append(results, &mediaprovider.SearchResult{
+			Type: mediaprovider.ContentTypeRadioStation,
+			ID:   r.ID,
+			Name: r.Name,
 		})
 	}
 
