@@ -7,6 +7,8 @@
 #define MyAppURL "https://github.com/dweymouth/supersonic"
 #define MyAppExeName "Supersonic.exe"
 
+#define PathToSelf ExtractFileDir(__PATHFILENAME__)
+
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
@@ -28,7 +30,7 @@ ArchitecturesAllowed=x64compatible
 ; the 64-bit view of the registry.
 ArchitecturesInstallIn64BitMode=x64compatible
 DisableProgramGroupPage=yes
-LicenseFile=C:\msys64\home\dravin\supersonic\LICENSE
+LicenseFile="{#PathToSelf}\LICENSE"
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
@@ -44,8 +46,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "C:\msys64\home\dravin\supersonic\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\msys64\home\dravin\supersonic\libmpv-2.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#PathToSelf}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#PathToSelf}\libmpv-2.dll"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
