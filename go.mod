@@ -6,7 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.5.0
 	github.com/20after4/configdir v0.1.1
 	github.com/Microsoft/go-winio v0.6.2
-	github.com/cenkalti/dominantcolor v1.0.2
+	github.com/cenkalti/dominantcolor v1.0.3
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
 	github.com/dweymouth/fyne-advanced-list v0.0.0-20240623145729-9c6b8f99bcfe
 	github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64
@@ -28,7 +28,6 @@ require (
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/danieljoos/wincred v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/fredbi/uri v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
