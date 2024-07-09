@@ -23,7 +23,7 @@ type LargeNowPlayingCard struct {
 	isRadio                 bool
 	trackName               *widget.RichText
 	artistName              *MultiHyperlink
-	albumName               *widget.Hyperlink
+	albumName               *MultiHyperlink
 	rating                  *StarRating
 	favorite                *FavoriteIcon
 	ratingFavoriteContainer *fyne.Container
@@ -40,7 +40,7 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	n := &LargeNowPlayingCard{
 		trackName:  widget.NewRichTextWithText(""),
 		artistName: NewMultiHyperlink(),
-		albumName:  widget.NewHyperlink("", nil),
+		albumName:  NewMultiHyperlink(),
 		rating:     NewStarRating(),
 		favorite:   NewFavoriteIcon(),
 		cover:      NewImagePlaceholder(myTheme.TracksIcon, 300),
@@ -69,7 +69,6 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	n.trackName.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText
 	n.trackName.Truncation = fyne.TextTruncateEllipsis
 	n.albumName.SizeName = myTheme.SizeNameSubSubHeadingText
-	n.albumName.Truncation = fyne.TextTruncateEllipsis
 	n.albumName.OnTapped = n.onAlbumNameTapped
 	n.artistName.OnTapped = n.onArtistNameTapped
 	n.artistName.SizeName = myTheme.SizeNameSubSubHeadingText
@@ -77,7 +76,7 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	return n
 }
 
-func (n *LargeNowPlayingCard) onAlbumNameTapped() {
+func (n *LargeNowPlayingCard) onAlbumNameTapped(_ string) {
 	if n.OnAlbumNameTapped != nil {
 		n.OnAlbumNameTapped()
 	}
@@ -123,15 +122,17 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 	if item == nil {
 		n.trackName.Segments[0].(*widget.TextSegment).Text = ""
 		n.artistName.BuildSegments([]string{}, []string{})
-		n.albumName.Text = ""
+		n.albumName.BuildSegments([]string{}, []string{})
 		n.rating.Rating = 0
 		n.favorite.Favorite = false
+		n.ratingFavoriteContainer.Hidden = true
+		n.Refresh()
 		return
 	}
+
 	meta := item.Metadata()
 	n.trackName.Segments[0].(*widget.TextSegment).Text = meta.Name
-	n.albumName.Text = meta.Album
-	n.albumName.Hidden = meta.AlbumID == ""
+	n.albumName.BuildSegments([]string{meta.Album}, []string{meta.AlbumID})
 
 	if tr, ok := item.(*mediaprovider.Track); ok {
 		n.artistName.BuildSegments(meta.Artists, meta.ArtistIDs)
