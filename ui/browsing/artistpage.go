@@ -72,7 +72,6 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 	a.ExtendBaseWidget(a)
 	if h := a.pool.Obtain(util.WidgetTypeArtistPageHeader); h != nil {
 		a.header = h.(*ArtistPageHeader)
-		a.header.artistPage = a
 		a.header.Clear()
 	} else {
 		a.header = NewArtistPageHeader(a)
@@ -181,7 +180,9 @@ func (a *ArtistPage) load() {
 	if err != nil {
 		log.Printf("Failed to get artist info: %s", err.Error())
 	}
-	a.header.UpdateInfo(info)
+	if !a.disposed {
+		a.header.UpdateInfo(info)
+	}
 }
 
 func (a *ArtistPage) showAlbumGrid() {
@@ -296,7 +297,7 @@ type ArtistPageHeader struct {
 	playRadioBtn   *widget.Button
 	menuBtn        *widget.Button
 	container      *fyne.Container
-	shareMenuItem  *fyne.MenuItem
+	//shareMenuItem  *fyne.MenuItem
 }
 
 func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
