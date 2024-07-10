@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"log"
+	"sort"
 	"strconv"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -192,6 +193,9 @@ func (a *ArtistPage) showAlbumGrid() {
 			a.activeView = 0 // if page still loading, will show discography view first
 			return
 		}
+		sort.Slice(a.artistInfo.Albums, func(x, y int) bool {
+			return a.artistInfo.Albums[x].Year < a.artistInfo.Albums[y].Year
+		})
 		model := sharedutil.MapSlice(a.artistInfo.Albums, func(al *mediaprovider.Album) widgets.GridViewItemModel {
 			return widgets.GridViewItemModel{
 				Name:       al.Name,
