@@ -144,9 +144,9 @@ func NewNowPlayingPage(
 	a.queueList.OnShowArtistPage = func(artistID string) {
 		a.contr.NavigateTo(controller.ArtistRoute(artistID))
 	}
-	a.queueList.OnRemoveFromQueue = func(trackIDs []string) {
+	a.queueList.OnRemoveFromQueue = func(idxs []int) {
 		a.queueList.UnselectAll()
-		a.pm.RemoveTracksFromQueue(trackIDs)
+		a.pm.RemoveTracksFromQueue(idxs)
 	}
 	a.queueList.OnSetRating = func(trackIDs []string, rating int) {
 		contr.SetTrackRatings(trackIDs, rating)
@@ -515,14 +515,7 @@ func (a *NowPlayingPage) Refresh() {
 	a.BaseWidget.Refresh()
 }
 
-func (a *NowPlayingPage) doSetNewTrackOrder(trackIDs []string, insertPos int) {
-	trackIDSet := sharedutil.ToSet(trackIDs)
-	idxs := make([]int, 0, len(trackIDs))
-	for i, tr := range a.queue {
-		if _, ok := trackIDSet[tr.Metadata().ID]; ok {
-			idxs = append(idxs, i)
-		}
-	}
+func (a *NowPlayingPage) doSetNewTrackOrder(idxs []int, insertPos int) {
 	newTracks := sharedutil.ReorderItems(a.queue, idxs, insertPos)
 	a.pm.UpdatePlayQueue(newTracks)
 }

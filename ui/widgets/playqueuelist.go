@@ -43,11 +43,11 @@ type PlayQueueList struct {
 	OnAddToPlaylist     func(trackIDs []string)
 	OnSetFavorite       func(trackIDs []string, fav bool)
 	OnSetRating         func(trackIDs []string, rating int)
-	OnRemoveFromQueue   func(itemIDs []string)
+	OnRemoveFromQueue   func(idxs []int)
 	OnDownload          func(tracks []*mediaprovider.Track, downloadName string)
 	OnShare             func(tracks []*mediaprovider.Track)
 	OnShowArtistPage    func(artistID string)
-	OnReorderItems      func(itemIDs []string, reorderTo int)
+	OnReorderItems      func(idxs []int, reorderTo int)
 
 	useNonQueueMenu bool
 	menu            *widget.PopUpMenu // ctx menu for when only tracks are selected
@@ -111,7 +111,7 @@ func NewPlayQueueList(im *backend.ImageManager, useNonQueueMenu bool) *PlayQueue
 	}
 	p.list.OnDragEnd = func(dragged, insertPos int) {
 		if p.OnReorderItems != nil {
-			p.OnReorderItems(p.selectedItemIDs(), insertPos)
+			p.OnReorderItems(p.selectedIdxs(), insertPos)
 		}
 	}
 
@@ -309,7 +309,7 @@ func (p *PlayQueueList) ensureTracksMenu() {
 	if !p.useNonQueueMenu {
 		remove := fyne.NewMenuItem("Remove from queue", func() {
 			if p.OnRemoveFromQueue != nil {
-				p.OnRemoveFromQueue(p.selectedItemIDs())
+				p.OnRemoveFromQueue(p.selectedIdxs())
 			}
 		})
 		remove.Icon = theme.ContentRemoveIcon()
@@ -330,7 +330,7 @@ func (p *PlayQueueList) ensureRadiosMenu() {
 	}
 	remove := fyne.NewMenuItem("Remove from queue", func() {
 		if p.OnRemoveFromQueue != nil {
-			p.OnRemoveFromQueue(p.selectedItemIDs())
+			p.OnRemoveFromQueue(p.selectedIdxs())
 		}
 	})
 	remove.Icon = theme.ContentRemoveIcon()
@@ -384,6 +384,12 @@ func (t *PlayQueueList) selectedItemIDs() []string {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
 	return util.SelectedItemIDs(t.items)
+}
+
+func (t *PlayQueueList) selectedIdxs() []int {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+	return util.SelectedIndexes(t.items)
 }
 
 func (p *PlayQueueList) CreateRenderer() fyne.WidgetRenderer {

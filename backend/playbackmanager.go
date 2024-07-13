@@ -267,8 +267,8 @@ func (p *PlaybackManager) OnTrackRatingChanged(id string, rating int) {
 	p.engine.OnTrackRatingChanged(id, rating)
 }
 
-func (p *PlaybackManager) RemoveTracksFromQueue(trackIDs []string) {
-	p.engine.RemoveTracksFromQueue(trackIDs)
+func (p *PlaybackManager) RemoveTracksFromQueue(idxs []int) {
+	p.engine.RemoveTracksFromQueue(idxs)
 }
 
 // Stop playback and clear the play queue.

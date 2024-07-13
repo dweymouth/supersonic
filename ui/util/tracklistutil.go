@@ -42,6 +42,16 @@ func SelectedItemIDs(items []*TrackListModel) []string {
 	})
 }
 
+func SelectedIndexes(items []*TrackListModel) []int {
+	var selected []int
+	for i, tm := range items {
+		if tm.Selected {
+			selected = append(selected, i)
+		}
+	}
+	return selected
+}
+
 func SelectItem(items []*TrackListModel, idx int) {
 	if items[idx].Selected {
 		return

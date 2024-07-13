@@ -341,15 +341,15 @@ func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error 
 	return nil
 }
 
-func (p *playbackEngine) RemoveTracksFromQueue(trackIDs []string) {
-	newQueue := make([]mediaprovider.MediaItem, 0, len(p.playQueue)-len(trackIDs))
-	idSet := sharedutil.ToSet(trackIDs)
+func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
+	newQueue := make([]mediaprovider.MediaItem, 0, len(p.playQueue)-len(idxs))
+	idxSet := sharedutil.ToSet(idxs)
 	isPlayingTrackRemoved := false
 	isNextPlayingTrackremoved := false
 	nowPlaying := p.NowPlayingIndex()
 	newNowPlaying := nowPlaying
 	for i, tr := range p.playQueue {
-		if _, ok := idSet[tr.Metadata().ID]; ok {
+		if _, ok := idxSet[i]; ok {
 			if i < nowPlaying {
 				// if removing a track earlier than the currently playing one (if any),
 				// decrement new now playing index by one to account for new position in queue
