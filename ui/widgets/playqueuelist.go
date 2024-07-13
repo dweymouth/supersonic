@@ -164,6 +164,10 @@ func (p *PlayQueueList) UnselectAll() {
 	p.list.Refresh()
 }
 
+func (p *PlayQueueList) Scroll(amount float32) {
+	p.list.ScrollToOffset(p.list.GetScrollOffset() + amount)
+}
+
 func (p *PlayQueueList) Refresh() {
 	p.list.EnableDragging = p.Reorderable
 	p.BaseWidget.Refresh()

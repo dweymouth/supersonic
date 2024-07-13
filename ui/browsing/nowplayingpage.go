@@ -262,6 +262,18 @@ func (a *NowPlayingPage) Route() controller.Route {
 	return controller.NowPlayingRoute("")
 }
 
+var _ Scrollable = (*NowPlayingPage)(nil)
+
+func (a *NowPlayingPage) Scroll(delta float32) {
+	switch a.tabs.SelectedIndex() {
+	case 0: /*play queue*/
+		a.queueList.Scroll(delta)
+	case 1: /*lyrics*/
+	case 2: /*related*/
+		a.relatedList.Scroll(delta)
+	}
+}
+
 var _ CanShowNowPlaying = (*NowPlayingPage)(nil)
 
 func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
