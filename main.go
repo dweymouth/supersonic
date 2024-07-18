@@ -73,17 +73,7 @@ func main() {
 
 	}()
 
-	mainWindow.Show()
-	mainWindow.Window.SetCloseIntercept(func() {
-		mainWindow.SaveWindowSize()
-		if myApp.Config.Application.CloseToSystemTray &&
-			mainWindow.HaveSystemTray() {
-			mainWindow.Window.Hide()
-		} else {
-			fyneApp.Quit()
-		}
-	})
-	fyneApp.Run()
+	mainWindow.ShowAndRun()
 
 	log.Println("Running shutdown tasks...")
 	myApp.Shutdown()

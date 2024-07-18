@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"runtime"
 	"strings"
 	"time"
 
@@ -87,6 +88,18 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
 	m.Controller.RefreshPageFunc = m.BrowsingPane.RefreshPage
 
+	if runtime.GOOS == "darwin" {
+		// Fyne will extract out an "About" menu item and
+		// assign its action to the native Mac "About Supersonic" menu item
+		m.Window.SetMainMenu(fyne.NewMainMenu(
+			fyne.NewMenu("File", /*name doesn't matter*/
+				fyne.NewMenuItem("About", func() {
+					m.Window.Show()
+					m.Controller.ShowAboutDialog()
+				})),
+		))
+	}
+
 	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller)
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
 	m.Window.SetContent(m.container)
@@ -139,6 +152,16 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.addNavigationButtons()
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()
+
+	m.Window.SetCloseIntercept(func() {
+		m.SaveWindowSize()
+		if app.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
+			m.Window.Hide()
+		} else {
+			fyneApp.Quit()
+		}
+	})
+
 	return m
 }
 
@@ -382,6 +405,10 @@ func (m *MainWindow) showSettingsDialog() {
 
 func (m *MainWindow) Show() {
 	m.Window.Show()
+}
+
+func (m *MainWindow) ShowAndRun() {
+	m.Window.ShowAndRun()
 }
 
 func (m *MainWindow) Canvas() fyne.Canvas {
