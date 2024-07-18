@@ -493,6 +493,13 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		artistIDs = append(artistIDs, ch.ArtistID)
 	}
 
+	var rGain mediaprovider.ReplayGainInfo
+	if rg := ch.ReplayGain; rg != nil {
+		rGain.AlbumGain = rg.AlbumGain
+		rGain.TrackGain = rg.TrackGain
+		rGain.AlbumPeak = rg.AlbumPeak
+		rGain.TrackPeak = rg.TrackPeak
+	}
 	return &mediaprovider.Track{
 		ID:          ch.ID,
 		CoverArtID:  ch.CoverArt,
@@ -513,7 +520,9 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		FilePath:    ch.Path,
 		Size:        ch.Size,
 		BitRate:     ch.BitRate,
+		ContentType: ch.ContentType,
 		Comment:     ch.Comment,
+		BPM:         ch.BPM,
 	}
 }
 

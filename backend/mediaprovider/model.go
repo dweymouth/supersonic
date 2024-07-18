@@ -102,7 +102,17 @@ type Track struct {
 	PlayCount   int
 	FilePath    string
 	BitRate     int
+	ContentType string
 	Comment     string
+	BPM         int
+	ReplayGain  ReplayGainInfo
+}
+
+type ReplayGainInfo struct {
+	TrackGain float64
+	AlbumGain float64
+	TrackPeak float64
+	AlbumPeak float64
 }
 
 type Playlist struct {

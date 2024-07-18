@@ -1,6 +1,7 @@
 package dialogs
 
 import (
+	"fmt"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -30,8 +31,8 @@ func NewTrackInfoDialog(track *mediaprovider.Track) *TrackInfoDialog {
 
 func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 	c := container.New(layout.NewFormLayout())
-	c.Add(newFormText("Title", true))
-	c.Add(newFormText(t.track.Title, false))
+
+	addFormRow(c, "Title", t.track.Title)
 
 	c.Add(newFormText("Artist", true))
 	artists := widgets.NewMultiHyperlink()
@@ -52,29 +53,55 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c.Add(album)
 
-	c.Add(newFormText("File Path", true))
-	path := widgets.NewMaxRowsLabel(2, t.track.FilePath)
-	//path.Segments[0].(*widget.TextSegment).Style.SizeName = myTheme.SizeNameSubText
-	path.Wrapping = fyne.TextWrapWord
-	path.Truncation = fyne.TextTruncateEllipsis
-	c.Add(path)
+	addFormRow(c, "Duration", util.SecondsToTimeString(float64(t.track.Duration)))
+	addFormRow(c, "File path", t.track.FilePath)
+	addFormRow(c, "Comment", t.track.Comment)
+	addFormRow(c, "Year", strconv.Itoa(t.track.Year))
+	addFormRow(c, "Track number", strconv.Itoa(t.track.TrackNumber))
+	addFormRow(c, "Disc number", strconv.Itoa(t.track.DiscNumber))
 
-	c.Add(newFormText("Comment", true))
-	c.Add(newFormText(t.track.Comment, false))
+	if t.track.BPM > 0 {
+		addFormRow(c, "BPM", strconv.Itoa(t.track.BPM))
+	}
 
-	c.Add(newFormText("Year", true))
-	c.Add(newFormText(strconv.Itoa(t.track.Year), false))
+	addFormRow(c, "Content type", t.track.ContentType)
+	addFormRow(c, "Bit rate", fmt.Sprintf("%d kbps", t.track.BitRate))
+	addFormRow(c, "File size", util.BytesToSizeString(t.track.Size))
+	addFormRow(c, "Play count", strconv.Itoa(t.track.PlayCount))
 
-	c.Add(newFormText("Bit Rate", true))
-	c.Add(newFormText(strconv.Itoa(t.track.BitRate)+"kbps", false))
+	if t.track.ReplayGain.TrackPeak > 0 {
+		addFormRow(c, "Track gain", fmt.Sprintf("%0.2f dB", t.track.ReplayGain.TrackGain))
+		addFormRow(c, "Track peak", fmt.Sprintf("%0.6f", t.track.ReplayGain.TrackPeak))
+	}
+	if t.track.ReplayGain.AlbumPeak > 0 {
+		addFormRow(c, "Album gain", fmt.Sprintf("%0.2f dB", t.track.ReplayGain.AlbumGain))
+		addFormRow(c, "Album peak", fmt.Sprintf("%0.6f", t.track.ReplayGain.AlbumPeak))
+	}
 
-	c.Add(newFormText("File Size", true))
-	c.Add(newFormText(util.BytesToSizeString(t.track.Size), false))
+	title := widget.NewRichTextWithText("Track Info")
+	title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
+	dismissBtn := widget.NewButton("Close", func() {
+		if t.OnDismiss != nil {
+			t.OnDismiss()
+		}
+	})
 
-	c.Add(newFormText("Play Count", true))
-	c.Add(newFormText(strconv.Itoa(t.track.PlayCount), false))
+	return widget.NewSimpleRenderer(
+		container.NewBorder(
+			/*top*/ container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()),
+			/*bottom*/ container.NewVBox(
+				widget.NewSeparator(),
+				container.NewHBox(layout.NewSpacer(), dismissBtn),
+			),
+			/*left/right*/ nil, nil,
+			/*center*/ container.NewScroll(c),
+		),
+	)
+}
 
-	return widget.NewSimpleRenderer(c)
+func addFormRow(c *fyne.Container, left, right string) {
+	c.Add(newFormText(left, true))
+	c.Add(newFormText(right, false))
 }
 
 func newFormText(text string, leftCol bool) *widget.RichText {
@@ -82,7 +109,7 @@ func newFormText(text string, leftCol bool) *widget.RichText {
 	if leftCol {
 		alignment = fyne.TextAlignTrailing
 	}
-	return widget.NewRichText(
+	rt := widget.NewRichText(
 		&widget.TextSegment{
 			Text: text,
 			Style: widget.RichTextStyle{
@@ -91,4 +118,8 @@ func newFormText(text string, leftCol bool) *widget.RichText {
 			},
 		},
 	)
+	if !leftCol {
+		rt.Wrapping = fyne.TextWrapWord
+	}
+	return rt
 }
