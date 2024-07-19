@@ -866,6 +866,21 @@ func (c *Controller) ShowTrackInfoDialog(track *mediaprovider.Track) {
 		pop.Hide()
 		c.doModalClosed()
 	}
+	info.OnNavigateToAlbum = func(albumID string) {
+		info.OnDismiss()
+		c.NavigateTo(AlbumRoute(albumID))
+	}
+	info.OnNavigateToArtist = func(artistID string) {
+		info.OnDismiss()
+		c.NavigateTo(ArtistRoute(artistID))
+	}
+	info.OnNavigateToGenre = func(genre string) {
+		info.OnDismiss()
+		c.NavigateTo(GenreRoute(genre))
+	}
+	info.OnCopyFilePath = func() {
+		c.MainWindow.Clipboard().SetContent(track.FilePath)
+	}
 	c.ClosePopUpOnEscape(pop)
 	winSize := c.MainWindow.Canvas().Size()
 	popMin := pop.MinSize()

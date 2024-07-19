@@ -14,7 +14,11 @@ func GetSimilarSongsFallback(mp mediaprovider.MediaProvider, track *mediaprovide
 		tracks, _ = mp.GetSimilarTracks(track.ArtistIDs[0], count)
 	}
 	if len(tracks) == 0 {
-		tracks, _ = mp.GetRandomTracks(track.Genre, count)
+		genre := ""
+		if len(track.Genres) > 0 {
+			genre = track.Genres[0]
+		}
+		tracks, _ = mp.GetRandomTracks(genre, count)
 	}
 
 	// make sure to exclude the song itself from the similar list

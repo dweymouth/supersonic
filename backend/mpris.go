@@ -254,7 +254,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	var meta mediaprovider.MediaItemMetadata
 	// metadata that can come only from tracks
 	var discNumber, trackNumber, userRating, playCount, year int
-	var genre string
+	var genres []string
 
 	if np := m.pm.NowPlaying(); np != nil && status.State != player.Stopped {
 		meta = np.Metadata()
@@ -264,7 +264,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 			userRating = track.Rating
 			playCount = track.PlayCount
 			year = track.Year
-			genre = track.Genre
+			genres = track.Genres
 		}
 	}
 	var artURL string
@@ -284,9 +284,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 		UserRating:  float64(userRating) / 5,
 		UseCount:    playCount,
 		ArtUrl:      artURL,
-	}
-	if genre != "" {
-		mprisMeta.Genre = []string{genre}
+		Genre:       genres,
 	}
 	if year != 0 {
 		mprisMeta.ContentCreated = strconv.Itoa(year)

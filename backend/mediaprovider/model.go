@@ -1,5 +1,7 @@
 package mediaprovider
 
+import "time"
+
 // Bit field flag for the ReleaseTypes property
 type ReleaseType = int32
 
@@ -90,7 +92,7 @@ type Track struct {
 	Duration    int
 	TrackNumber int
 	DiscNumber  int
-	Genre       string
+	Genres      []string
 	ArtistIDs   []string
 	ArtistNames []string
 	Album       string
@@ -100,6 +102,7 @@ type Track struct {
 	Favorite    bool
 	Size        int64
 	PlayCount   int
+	LastPlayed  time.Time
 	FilePath    string
 	BitRate     int
 	ContentType string

@@ -500,6 +500,15 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		rGain.AlbumPeak = rg.AlbumPeak
 		rGain.TrackPeak = rg.TrackPeak
 	}
+	var genres []string
+	if len(ch.Genres) > 0 {
+		genres = sharedutil.MapSlice(ch.Genres, func(idName subsonic.IDName) string {
+			return idName.Name
+		})
+	} else if ch.Genre != "" {
+		genres = []string{ch.Genre}
+	}
+
 	return &mediaprovider.Track{
 		ID:          ch.ID,
 		CoverArtID:  ch.CoverArt,
@@ -508,7 +517,7 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		Duration:    ch.Duration,
 		TrackNumber: ch.Track,
 		DiscNumber:  ch.DiscNumber,
-		Genre:       ch.Genre,
+		Genres:      genres,
 		ArtistIDs:   artistIDs,
 		ArtistNames: artistNames,
 		Album:       ch.Album,
@@ -517,12 +526,14 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		Rating:      ch.UserRating,
 		Favorite:    !ch.Starred.IsZero(),
 		PlayCount:   int(ch.PlayCount),
+		LastPlayed:  ch.Played,
 		FilePath:    ch.Path,
 		Size:        ch.Size,
 		BitRate:     ch.BitRate,
 		ContentType: ch.ContentType,
 		Comment:     ch.Comment,
 		BPM:         ch.BPM,
+		ReplayGain:  rGain,
 	}
 }
 
