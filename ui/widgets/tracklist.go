@@ -78,6 +78,7 @@ type Tracklist struct {
 	OnShare             func(trackID string)
 	OnPlaySongRadio     func(track *mediaprovider.Track)
 	OnReorderTracks     func(trackIDs []string, insertPos int)
+	OnShowTrackInfo     func(track *mediaprovider.Track)
 
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
@@ -101,6 +102,7 @@ type Tracklist struct {
 	ratingSubmenu     *fyne.MenuItem
 	shareMenuItem     *fyne.MenuItem
 	songRadioMenuItem *fyne.MenuItem
+	infoMenuItem      *fyne.MenuItem
 	container         *fyne.Container
 }
 
@@ -559,6 +561,12 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 			t.onDownload(t.selectedTracks(), "Selected tracks")
 		})
 		download.Icon = theme.DownloadIcon()
+		t.infoMenuItem = fyne.NewMenuItem("Show info...", func() {
+			if t.OnShowTrackInfo != nil {
+				t.OnShowTrackInfo(t.selectedTracks()[0])
+			}
+		})
+		t.infoMenuItem.Icon = theme.InfoIcon()
 		favorite := fyne.NewMenuItem("Set favorite", func() {
 			t.onSetFavorites(t.selectedTracks(), true, true)
 		})
@@ -568,7 +576,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		})
 		unfavorite.Icon = myTheme.NotFavoriteIcon
 		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator(),
-			playlist, download)
+			playlist, download, t.infoMenuItem)
 		t.shareMenuItem = fyne.NewMenuItem("Share...", func() {
 			t.onShare(t.selectedTracks())
 		})
@@ -587,6 +595,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	}
 	t.ratingSubmenu.Disabled = t.Options.DisableRating
 	t.shareMenuItem.Disabled = t.Options.DisableSharing || len(t.selectedTracks()) != 1
+	t.infoMenuItem.Disabled = len(t.selectedTracks()) != 1
 	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
 }
 

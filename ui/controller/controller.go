@@ -146,6 +146,7 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 	tracklist.OnShare = func(trackID string) {
 		go m.ShowShareDialog(trackID)
 	}
+	tracklist.OnShowTrackInfo = m.ShowTrackInfoDialog
 	tracklist.OnPlaySongRadio = func(track *mediaprovider.Track) {
 		go func() {
 			tracks, err := m.GetSongRadioTracks(track)
@@ -856,6 +857,38 @@ func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover i
 		c.haveModal = true
 		pop.Show()
 	}()
+}
+
+func (c *Controller) ShowTrackInfoDialog(track *mediaprovider.Track) {
+	info := dialogs.NewTrackInfoDialog(track)
+	pop := widget.NewModalPopUp(info, c.MainWindow.Canvas())
+	info.OnDismiss = func() {
+		pop.Hide()
+		c.doModalClosed()
+	}
+	info.OnNavigateToAlbum = func(albumID string) {
+		info.OnDismiss()
+		c.NavigateTo(AlbumRoute(albumID))
+	}
+	info.OnNavigateToArtist = func(artistID string) {
+		info.OnDismiss()
+		c.NavigateTo(ArtistRoute(artistID))
+	}
+	info.OnNavigateToGenre = func(genre string) {
+		info.OnDismiss()
+		c.NavigateTo(GenreRoute(genre))
+	}
+	info.OnCopyFilePath = func() {
+		c.MainWindow.Clipboard().SetContent(track.FilePath)
+	}
+	c.ClosePopUpOnEscape(pop)
+	winSize := c.MainWindow.Canvas().Size()
+	popMin := pop.MinSize()
+	width := fyne.Max(700, fyne.Max(popMin.Width, winSize.Width*0.6))
+	height := fyne.Max(500, fyne.Max(popMin.Height, winSize.Height*0.7))
+	pop.Resize(fyne.NewSize(width, height))
+	c.haveModal = true
+	pop.Show()
 }
 
 func (c *Controller) GetSongRadioTracks(sourceTrack *mediaprovider.Track) ([]*mediaprovider.Track, error) {
