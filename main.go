@@ -75,6 +75,14 @@ func main() {
 
 	}()
 
+	myApp.LocalPlayer.SetPeaksEnabled(true)
+
+	peaks := fyneApp.NewWindow("Peak meter")
+	meter := ui.NewPeakMeter(myApp.LocalPlayer.GetPeaks)
+	peaks.SetContent(meter)
+	meter.Start()
+	peaks.Show()
+
 	mainWindow.ShowAndRun()
 
 	log.Println("Running shutdown tasks...")
