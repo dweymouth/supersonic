@@ -29,6 +29,7 @@ const (
 	ColumnArtist      = "Artist"
 	ColumnTitleArtist = "Title/Artist"
 	ColumnAlbum       = "Album"
+	ColumnComposer    = "Composer"
 	ColumnTime        = "Time"
 	ColumnYear        = "Year"
 	ColumnFavorite    = "Favorite"
@@ -45,6 +46,7 @@ var (
 		{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
 		{Name: ColumnTitleArtist, Col: ListColumn{Text: "Title / Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
 		{Name: ColumnAlbum, Col: ListColumn{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		{Name: ColumnComposer, Col: ListColumn{Text: "Composer", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 		{Name: ColumnTime, Col: ListColumn{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 		{Name: ColumnYear, Col: ListColumn{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 		{Name: ColumnFavorite, Col: ListColumn{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
@@ -56,14 +58,15 @@ var (
 		{Name: ColumnPath, Col: ListColumn{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 	}
 
-	// #, Title/Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-	ExpandedTracklistRowColumnWidths = []float32{40, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
+	// #, Title/Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
+	ExpandedTracklistRowColumnWidths = []float32{40, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
 
 	CompactTracklistRowColumns = []TracklistColumn{
 		{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
 		{Name: ColumnTitle, Col: ListColumn{Text: "Title", Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
 		{Name: ColumnArtist, Col: ListColumn{Text: "Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 		{Name: ColumnAlbum, Col: ListColumn{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		{Name: ColumnComposer, Col: ListColumn{Text: "Composer", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 		{Name: ColumnTime, Col: ListColumn{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 		{Name: ColumnYear, Col: ListColumn{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 		{Name: ColumnFavorite, Col: ListColumn{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
@@ -75,8 +78,8 @@ var (
 		{Name: ColumnPath, Col: ListColumn{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 	}
 
-	// #, Title, Artist, Album, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-	CompactTracklistRowColumnWidths = []float32{40, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
+	// #, Title, Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
+	CompactTracklistRowColumnWidths = []float32{40, -1, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
 )
 
 type tracklistRowBase struct {
@@ -103,6 +106,7 @@ type tracklistRowBase struct {
 	name     *widget.RichText // for bold support
 	artist   *MultiHyperlink
 	album    *MultiHyperlink // for disabled support, if albumID is ""
+	composer *MultiHyperlink
 	dur      *widget.Label
 	year     *widget.Label
 	favorite *fyne.Container
@@ -165,7 +169,7 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 
 	v := makeVerticallyCentered // func alias
 	container := container.New(tracklist.colLayout,
-		v(t.num), titleArtistImg, v(t.album), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.comment), v(t.bitrate), v(t.size), v(t.path))
+		v(t.num), titleArtistImg, v(t.album), v(t.composer), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.comment), v(t.bitrate), v(t.size), v(t.path))
 	t.Content = container
 	t.setColVisibility = func(colNum int, vis bool) bool {
 		c := container.Objects[colNum].(*fyne.Container)
@@ -191,20 +195,21 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 	t.playingIcon = playingIcon
 
 	t.Content = container.New(tracklist.colLayout,
-		t.num, t.name, t.artist, t.album, t.dur, t.year, t.favorite, t.rating, t.plays, t.comment, t.bitrate, t.size, t.path)
+		t.num, t.name, t.artist, t.album, t.composer, t.dur, t.year, t.favorite, t.rating, t.plays, t.comment, t.bitrate, t.size, t.path)
 
 	colHiddenPtrMap := map[int]*bool{
 		2:  &t.artist.Hidden,
 		3:  &t.album.Hidden,
-		4:  &t.dur.Hidden,
-		5:  &t.year.Hidden,
-		6:  &t.favorite.Hidden,
-		7:  &t.rating.Hidden,
-		8:  &t.plays.Hidden,
-		9:  &t.comment.Hidden,
-		10: &t.bitrate.Hidden,
-		11: &t.size.Hidden,
-		12: &t.path.Hidden,
+		4:  &t.composer.Hidden,
+		5:  &t.dur.Hidden,
+		6:  &t.year.Hidden,
+		7:  &t.favorite.Hidden,
+		8:  &t.rating.Hidden,
+		9:  &t.plays.Hidden,
+		10: &t.comment.Hidden,
+		11: &t.bitrate.Hidden,
+		12: &t.size.Hidden,
+		13: &t.path.Hidden,
 	}
 	t.setColVisibility = func(colNum int, vis bool) bool {
 		ptr, ok := colHiddenPtrMap[colNum]
@@ -226,6 +231,8 @@ func (t *tracklistRowBase) create(tracklist *Tracklist) {
 	t.artist.OnTapped = tracklist.onArtistTapped
 	t.album = NewMultiHyperlink()
 	t.album.OnTapped = func(id string) { tracklist.onAlbumTapped(id) }
+	t.composer = NewMultiHyperlink()
+	t.composer.OnTapped = func(id string) { tracklist.onArtistTapped(id) }
 	t.dur = util.NewTrailingAlignLabel()
 	t.year = util.NewTrailingAlignLabel()
 	favorite := NewFavoriteIcon()
@@ -266,6 +273,7 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		t.album.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
+		t.composer.BuildSegments(tr.ComposerNames, tr.ComposerIDs)
 		t.dur.Text = util.SecondsToMMSS(float64(tr.Duration))
 		t.year.Text = strconv.Itoa(tr.Year)
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))

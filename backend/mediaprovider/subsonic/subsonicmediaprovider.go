@@ -509,31 +509,42 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		genres = []string{ch.Genre}
 	}
 
+	var composerIDs []string
+	var composers []string
+	for _, ctr := range ch.Contributors {
+		if strings.EqualFold(ctr.Role, "composer") {
+			composerIDs = append(composerIDs, ctr.Artist.ID)
+			composers = append(composers, ctr.Artist.Name)
+		}
+	}
+
 	return &mediaprovider.Track{
-		ID:          ch.ID,
-		CoverArtID:  ch.CoverArt,
-		ParentID:    ch.Parent,
-		Title:       ch.Title,
-		Duration:    ch.Duration,
-		TrackNumber: ch.Track,
-		DiscNumber:  ch.DiscNumber,
-		Genres:      genres,
-		ArtistIDs:   artistIDs,
-		ArtistNames: artistNames,
-		Album:       ch.Album,
-		AlbumID:     ch.AlbumID,
-		Year:        ch.Year,
-		Rating:      ch.UserRating,
-		Favorite:    !ch.Starred.IsZero(),
-		PlayCount:   int(ch.PlayCount),
-		LastPlayed:  ch.Played,
-		FilePath:    ch.Path,
-		Size:        ch.Size,
-		BitRate:     ch.BitRate,
-		ContentType: ch.ContentType,
-		Comment:     ch.Comment,
-		BPM:         ch.BPM,
-		ReplayGain:  rGain,
+		ID:            ch.ID,
+		CoverArtID:    ch.CoverArt,
+		ParentID:      ch.Parent,
+		Title:         ch.Title,
+		Duration:      ch.Duration,
+		TrackNumber:   ch.Track,
+		DiscNumber:    ch.DiscNumber,
+		Genres:        genres,
+		ArtistIDs:     artistIDs,
+		ArtistNames:   artistNames,
+		ComposerIDs:   composerIDs,
+		ComposerNames: composers,
+		Album:         ch.Album,
+		AlbumID:       ch.AlbumID,
+		Year:          ch.Year,
+		Rating:        ch.UserRating,
+		Favorite:      !ch.Starred.IsZero(),
+		PlayCount:     int(ch.PlayCount),
+		LastPlayed:    ch.Played,
+		FilePath:      ch.Path,
+		Size:          ch.Size,
+		BitRate:       ch.BitRate,
+		ContentType:   ch.ContentType,
+		Comment:       ch.Comment,
+		BPM:           ch.BPM,
+		ReplayGain:    rGain,
 	}
 }
 
