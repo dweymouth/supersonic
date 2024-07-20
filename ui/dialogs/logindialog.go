@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -37,7 +38,7 @@ var _ fyne.Widget = (*LoginDialog)(nil)
 func NewLoginDialog(servers []*backend.ServerConfig, pwFetch PasswordFetchFunc) *LoginDialog {
 	l := &LoginDialog{servers: servers}
 	l.ExtendBaseWidget(l)
-	titleLabel := widget.NewLabel("Login to Server")
+	titleLabel := widget.NewLabel(lang.L("Login to Server"))
 	titleLabel.TextStyle.Bold = true
 	l.passField = widget.NewPasswordEntry()
 	l.passField.OnSubmitted = func(_ string) { l.onSubmit() }
@@ -57,7 +58,7 @@ func NewLoginDialog(servers []*backend.ServerConfig, pwFetch PasswordFetchFunc) 
 	editBtn := widget.NewButtonWithIcon("", theme.DocumentCreateIcon(), l.onEditServer)
 	newBtn := widget.NewButtonWithIcon("", theme.ContentAddIcon(), l.onNewServer)
 	deleteBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() { l.onDeleteServer(l.serverSelect.SelectedIndex()) })
-	l.submitBtn = widget.NewButton("OK", l.onSubmit)
+	l.submitBtn = widget.NewButton(lang.L("OK"), l.onSubmit)
 	l.submitBtn.Importance = widget.HighImportance
 	l.promptText = widget.NewRichTextWithText("")
 	l.promptText.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameError
@@ -66,9 +67,9 @@ func NewLoginDialog(servers []*backend.ServerConfig, pwFetch PasswordFetchFunc) 
 	l.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
 		container.New(layout.NewFormLayout(),
-			widget.NewLabel("Server"),
+			widget.NewLabel(lang.L("Server")),
 			container.NewBorder(nil, nil, nil, container.NewHBox(editBtn, newBtn, deleteBtn), l.serverSelect),
-			widget.NewLabel("Password"),
+			widget.NewLabel(lang.L("Password")),
 			l.passField),
 		widget.NewSeparator(),
 		container.NewHBox(l.promptText, layout.NewSpacer(), l.submitBtn),
