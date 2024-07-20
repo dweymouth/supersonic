@@ -14,6 +14,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -42,14 +43,14 @@ func newGenresPage(contr *controller.Controller, mp mediaprovider.MediaProvider,
 	a := &GenresPage{
 		contr:     contr,
 		mp:        mp,
-		titleDisp: widget.NewRichTextWithText("Genres"),
+		titleDisp: widget.NewRichTextWithText(lang.L("Genres")),
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
 	a.list = NewGenreList(sorting)
 	a.list.OnNavTo = func(id string) { a.contr.NavigateTo(controller.GenreRoute(id)) }
 	a.searcher = widgets.NewSearchEntry()
-	a.searcher.PlaceHolder = "Search page"
+	a.searcher.PlaceHolder = lang.L("Search page")
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 	a.buildContainer()
@@ -188,15 +189,20 @@ func NewGenreListRow(layout *layouts.ColumnsLayout) *GenreListRow {
 }
 
 func NewGenreList(sorting widgets.ListHeaderSort) *GenreList {
+	albumCount := lang.L("Album count")
+	trackCount := lang.L("Track count")
+	albumW := widget.NewLabel(albumCount).MinSize().Width + 15 /*room for sort icon */
+	trackW := widget.NewLabel(trackCount).MinSize().Width + 15 /*room for sort icon */
+
 	a := &GenreList{
 		sorting:       sorting,
-		columnsLayout: layouts.NewColumnsLayout([]float32{-1, 125, 125}),
+		columnsLayout: layouts.NewColumnsLayout([]float32{-1, albumW, trackW}),
 	}
 	a.ExtendBaseWidget(a)
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
-		{Text: "Name", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Album Count", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
-		{Text: "Track Count", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
+		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: albumCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
+		{Text: trackCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
 		a.columnsLayout)
 	a.hdr.SetSorting(sorting)
 	a.hdr.OnColumnSortChanged = a.onSorted

@@ -27,6 +27,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -203,12 +204,12 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 		a.lyricsLoading = widgets.NewLoadingDots()
 		a.relatedLoading = widgets.NewLoadingDots()
 		a.tabs = container.NewAppTabs(
-			container.NewTabItem("Play Queue",
+			container.NewTabItem(lang.L("Play Queue"),
 				container.NewBorder(layout.NewSpacer(), nil, nil, nil, a.queueList)),
-			container.NewTabItem("Lyrics", container.NewStack(
+			container.NewTabItem(lang.L("Lyrics"), container.NewStack(
 				a.lyricsViewer,
 				container.NewCenter(a.lyricsLoading))),
-			container.NewTabItem("Related", container.NewStack(
+			container.NewTabItem(lang.L("Related"), container.NewStack(
 				a.relatedList,
 				container.NewCenter(a.relatedLoading))),
 		)

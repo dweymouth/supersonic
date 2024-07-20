@@ -11,6 +11,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
@@ -65,11 +66,11 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	}
 	contr.ConnectTracklistActions(t.tracklist)
 
-	t.title = widget.NewRichTextWithText("All Tracks")
+	t.title = widget.NewRichTextWithText(lang.L("All Tracks"))
 	t.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
-	t.playRandom = widget.NewButtonWithIcon("Play random", theme.ShuffleIcon, t.playRandomSongs)
+	t.playRandom = widget.NewButtonWithIcon(lang.L("Play random"), theme.ShuffleIcon, t.playRandomSongs)
 	t.searcher = widgets.NewSearchEntry()
-	t.searcher.PlaceHolder = "Search page"
+	t.searcher.PlaceHolder = lang.L("Search page")
 	t.searcher.OnSearched = t.OnSearched
 	t.createContainer()
 	t.Reload()

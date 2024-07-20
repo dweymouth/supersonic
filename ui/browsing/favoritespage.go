@@ -14,6 +14,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -85,7 +86,7 @@ func NewFavoritesPage(cfg *backend.FavoritesPageConfig, pool *util.WidgetPool, c
 }
 
 func (a *FavoritesPage) createHeader(activeBtnIdx int) {
-	a.titleDisp = widget.NewRichTextWithText("Favorites")
+	a.titleDisp = widget.NewRichTextWithText(lang.L("Favorites"))
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
@@ -94,7 +95,7 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int) {
 		widget.NewButtonWithIcon("", myTheme.ArtistIcon, a.onShowFavoriteArtists),
 		widget.NewButtonWithIcon("", myTheme.TracksIcon, a.onShowFavoriteSongs))
 	a.searcher = widgets.NewSearchEntry()
-	a.searcher.PlaceHolder = "Search page"
+	a.searcher.PlaceHolder = lang.L("Search page")
 	a.searcher.OnSearched = a.OnSearched
 	a.searcher.Entry.Text = a.searchText
 	a.filterBtn = widgets.NewAlbumFilterButton(a.filter, a.mp.GetGenres)

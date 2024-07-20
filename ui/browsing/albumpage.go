@@ -15,6 +15,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -224,10 +225,10 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		a.page.contr.NavigateTo(controller.GenreRoute(genre))
 	}
 	a.miscLabel = widget.NewLabel("")
-	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
+	playButton := widget.NewButtonWithIcon(lang.L("Play"), theme.MediaPlayIcon(), func() {
 		go a.page.pm.PlayAlbum(a.page.albumID, 0, false)
 	})
-	shuffleBtn := widget.NewButtonWithIcon("Shuffle", myTheme.ShuffleIcon, func() {
+	shuffleBtn := widget.NewButtonWithIcon(lang.L("Shuffle"), myTheme.ShuffleIcon, func() {
 		a.page.pm.LoadTracks(a.page.tracklist.GetTracks(), backend.Replace, true)
 		a.page.pm.PlayFromBeginning()
 	})
@@ -235,28 +236,28 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	menuBtn.OnTapped = func() {
 		if pop == nil {
-			playNext := fyne.NewMenuItem("Play next", func() {
+			playNext := fyne.NewMenuItem(lang.L("Play next"), func() {
 				go a.page.pm.LoadAlbum(a.albumID, backend.InsertNext, false /*shuffle*/)
 			})
 			playNext.Icon = myTheme.PlayNextIcon
-			queue := fyne.NewMenuItem("Add to queue", func() {
+			queue := fyne.NewMenuItem(lang.L("Add to queue"), func() {
 				go a.page.pm.LoadAlbum(a.albumID, backend.Append, false /*shuffle*/)
 			})
 			queue.Icon = theme.ContentAddIcon()
-			playlist := fyne.NewMenuItem("Add to playlist...", func() {
+			playlist := fyne.NewMenuItem(lang.L("Add to playlist")+"...", func() {
 				a.page.contr.DoAddTracksToPlaylistWorkflow(
 					sharedutil.TracksToIDs(a.page.tracks))
 			})
 			playlist.Icon = myTheme.PlaylistIcon
-			download := fyne.NewMenuItem("Download...", func() {
+			download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
 				a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
 			})
 			download.Icon = theme.DownloadIcon()
-			info := fyne.NewMenuItem("Show Info...", func() {
+			info := fyne.NewMenuItem(lang.L("Show info")+"...", func() {
 				a.page.contr.ShowAlbumInfoDialog(a.albumID, a.titleLabel.String(), a.cover.Image())
 			})
 			info.Icon = theme.InfoIcon()
-			a.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+			a.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
 				a.page.contr.ShowShareDialog(a.albumID)
 			})
 			a.shareMenuItem.Icon = myTheme.ShareIcon

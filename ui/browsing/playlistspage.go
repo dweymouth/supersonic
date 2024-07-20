@@ -19,6 +19,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -71,14 +72,14 @@ func newPlaylistsPage(
 		mp:                   mp,
 		contr:                contr,
 		listSort:             listSort,
-		titleDisp:            widget.NewRichTextWithText("Playlists"),
+		titleDisp:            widget.NewRichTextWithText(lang.L("Playlists")),
 		initialListScrollPos: listScrollPos,
 		initialGridScrollPos: gridScrollPos,
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
 	a.searcher = widgets.NewSearchEntry()
-	a.searcher.PlaceHolder = "Search page"
+	a.searcher.PlaceHolder = lang.L("Search page")
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 	a.viewToggle = widgets.NewToggleButtonGroup(0,
@@ -193,9 +194,11 @@ func (a *PlaylistsPage) showGridView() {
 
 func createPlaylistGridViewModel(playlists []*mediaprovider.Playlist) []widgets.GridViewItemModel {
 	return sharedutil.MapSlice(playlists, func(pl *mediaprovider.Playlist) widgets.GridViewItemModel {
-		tracks := "tracks"
+		var tracks string
 		if pl.TrackCount == 1 {
-			tracks = "track"
+			tracks = lang.L("track")
+		} else {
+			tracks = lang.L("tracks")
 		}
 		return widgets.GridViewItemModel{
 			Name:       pl.Name,
