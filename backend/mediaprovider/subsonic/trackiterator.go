@@ -12,7 +12,7 @@ func (s *subsonicMediaProvider) IterateTracks(searchQuery string) mediaprovider.
 		return &allTracksIterator{
 			s: s,
 			albumIter: s.IterateAlbums(
-				AlbumSortArtistAZ,
+				mediaprovider.AlbumSortArtistAZ,
 				mediaprovider.NewAlbumFilter(mediaprovider.AlbumFilterOptions{}),
 			),
 		}

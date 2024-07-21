@@ -9,6 +9,25 @@ import (
 	"github.com/deluan/sanitize"
 )
 
+const (
+	// set of all supported album sorts across all media providers
+	// these strings may be translated
+	AlbumSortRecentlyAdded    string = "Recently Added"
+	AlbumSortRecentlyPlayed   string = "Recently Played"
+	AlbumSortFrequentlyPlayed string = "Frequently Played"
+	AlbumSortRandom           string = "Random"
+	AlbumSortTitleAZ          string = "Title (A-Z)"
+	AlbumSortArtistAZ         string = "Artist (A-Z)"
+	AlbumSortYearAscending    string = "Year (ascending)"
+	AlbumSortYearDescending   string = "Year (descending)"
+
+	// set of all supported artist sorts across all media providers
+	// these strings may be translated
+	ArtistSortAlbumCount string = "Album Count"
+	ArtistSortNameAZ     string = "Name (A-Z)"
+	ArtistSortRandom     string = "Random"
+)
+
 type MediaIterator[M any] interface {
 	Next() *M
 }

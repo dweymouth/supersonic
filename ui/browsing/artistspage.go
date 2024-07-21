@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -46,22 +47,25 @@ func (a *artistsPageAdapter) PlaceholderResource() fyne.Resource { return myThem
 
 func (a *artistsPageAdapter) Route() controller.Route { return controller.ArtistsRoute() }
 
-func (a *artistsPageAdapter) SortOrders() ([]string, string) {
+func (a *artistsPageAdapter) SortOrders() ([]string, int) {
 	orders := a.mp.ArtistSortOrders()
-	sortOrder := a.cfg.SortOrder
-	if !slices.Contains(orders, sortOrder) {
-		sortOrder = string(orders[0])
+	sortOrder := slices.Index(orders, a.cfg.SortOrder)
+	if sortOrder < 0 {
+		sortOrder = 0
 	}
-	return orders, sortOrder
+
+	translatedOrders := sharedutil.MapSlice(orders, func(s string) string { return lang.L(s) })
+	return translatedOrders, sortOrder
 }
 
-func (a *artistsPageAdapter) SaveSortOrder(order string) {
-	a.cfg.SortOrder = order
+func (a *artistsPageAdapter) SaveSortOrder(orderIdx int) {
+	a.cfg.SortOrder = a.mp.ArtistSortOrders()[orderIdx]
 }
 
 func (a *artistsPageAdapter) ActionButton() *widget.Button { return nil }
 
-func (a *artistsPageAdapter) Iter(sortOrder string, filter mediaprovider.ArtistFilter) widgets.GridViewIterator {
+func (a *artistsPageAdapter) Iter(sortOrderIdx int, filter mediaprovider.ArtistFilter) widgets.GridViewIterator {
+	sortOrder := a.mp.ArtistSortOrders()[sortOrderIdx]
 	return widgets.NewGridViewArtistIterator(a.mp.IterateArtists(sortOrder, filter))
 }
 

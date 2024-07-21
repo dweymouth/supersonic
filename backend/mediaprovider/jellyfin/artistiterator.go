@@ -9,17 +9,13 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-const (
-	ArtistSortAlbumCount string = "Album Count"
-	ArtistSortNameAZ     string = "Name (A-Z)"
-	ArtistSortRandom     string = "Random"
-)
+const ()
 
 func (j *jellyfinMediaProvider) ArtistSortOrders() []string {
 	return []string{
-		ArtistSortAlbumCount,
-		ArtistSortNameAZ,
-		ArtistSortRandom,
+		mediaprovider.ArtistSortAlbumCount,
+		mediaprovider.ArtistSortNameAZ,
+		mediaprovider.ArtistSortRandom,
 	}
 }
 
@@ -29,10 +25,10 @@ func (j *jellyfinMediaProvider) IterateArtists(sortOrder string, filter mediapro
 	var sortFn func([]*jellyfin.Artist) []*jellyfin.Artist
 
 	if sortOrder == "" {
-		sortOrder = ArtistSortNameAZ // default
+		sortOrder = mediaprovider.ArtistSortNameAZ // default
 	}
 	switch sortOrder {
-	case ArtistSortAlbumCount:
+	case mediaprovider.ArtistSortAlbumCount:
 		// Pagination needs to be disabled, to retrieve all results in a single request, and correctly sort them.
 		disablePagination = true
 		sortFn = func(artists []*jellyfin.Artist) []*jellyfin.Artist {
@@ -41,10 +37,10 @@ func (j *jellyfinMediaProvider) IterateArtists(sortOrder string, filter mediapro
 			})
 			return artists
 		}
-	case ArtistSortNameAZ:
+	case mediaprovider.ArtistSortNameAZ:
 		jfSort.Field = jellyfin.SortByName
 		jfSort.Mode = jellyfin.SortAsc
-	case ArtistSortRandom:
+	case mediaprovider.ArtistSortRandom:
 		jfSort.Field = jellyfin.SortByRandom
 	}
 

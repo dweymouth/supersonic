@@ -11,27 +11,16 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-const (
-	AlbumSortRecentlyAdded    string = "Recently Added"
-	AlbumSortRecentlyPlayed   string = "Recently Played"
-	AlbumSortFrequentlyPlayed string = "Frequently Played"
-	AlbumSortRandom           string = "Random"
-	AlbumSortTitleAZ          string = "Title (A-Z)"
-	AlbumSortArtistAZ         string = "Artist (A-Z)"
-	AlbumSortYearAscending    string = "Year (ascending)"
-	AlbumSortYearDescending   string = "Year (descending)"
-)
-
 func (s *subsonicMediaProvider) AlbumSortOrders() []string {
 	return []string{
-		AlbumSortRecentlyAdded,
-		AlbumSortRecentlyPlayed,
-		AlbumSortFrequentlyPlayed,
-		AlbumSortRandom,
-		AlbumSortTitleAZ,
-		AlbumSortArtistAZ,
-		AlbumSortYearAscending,
-		AlbumSortYearDescending,
+		mediaprovider.AlbumSortRecentlyAdded,
+		mediaprovider.AlbumSortRecentlyPlayed,
+		mediaprovider.AlbumSortFrequentlyPlayed,
+		mediaprovider.AlbumSortRandom,
+		mediaprovider.AlbumSortTitleAZ,
+		mediaprovider.AlbumSortArtistAZ,
+		mediaprovider.AlbumSortYearAscending,
+		mediaprovider.AlbumSortYearDescending,
 	}
 }
 
@@ -86,28 +75,28 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 		return s.baseIterFromSimpleSortOrder("starred", modifiedFilter)
 	}
 	if sortOrder == "" {
-		sortOrder = AlbumSortRecentlyAdded // default
+		sortOrder = mediaprovider.AlbumSortRecentlyAdded // default
 	}
 	switch sortOrder {
-	case AlbumSortRecentlyAdded:
+	case mediaprovider.AlbumSortRecentlyAdded:
 		return s.baseIterFromSimpleSortOrder("newest", filter)
-	case AlbumSortRecentlyPlayed:
+	case mediaprovider.AlbumSortRecentlyPlayed:
 		return s.baseIterFromSimpleSortOrder("recent", filter)
-	case AlbumSortFrequentlyPlayed:
+	case mediaprovider.AlbumSortFrequentlyPlayed:
 		return s.baseIterFromSimpleSortOrder("frequent", filter)
-	case AlbumSortRandom:
+	case mediaprovider.AlbumSortRandom:
 		return s.newRandomIter(filter, s.prefetchCoverCB)
-	case AlbumSortTitleAZ:
+	case mediaprovider.AlbumSortTitleAZ:
 		return s.baseIterFromSimpleSortOrder("alphabeticalByName", filter)
-	case AlbumSortArtistAZ:
+	case mediaprovider.AlbumSortArtistAZ:
 		return s.baseIterFromSimpleSortOrder("alphabeticalByArtist", filter)
-	case AlbumSortYearAscending:
+	case mediaprovider.AlbumSortYearAscending:
 		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
 			return s.client.GetAlbumList2("byYear",
 				map[string]string{"fromYear": "0", "toYear": "3000", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
 		}
 		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
-	case AlbumSortYearDescending:
+	case mediaprovider.AlbumSortYearDescending:
 		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
 			return s.client.GetAlbumList2("byYear",
 				map[string]string{"fromYear": "3000", "toYear": "0", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})

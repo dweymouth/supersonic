@@ -62,8 +62,8 @@ func (g *genrePageAdapter) ActionButton() *widget.Button {
 	return widget.NewButtonWithIcon(lang.L("Play random"), myTheme.ShuffleIcon, fn)
 }
 
-func (a *genrePageAdapter) Iter(sortOrder string, filter mediaprovider.AlbumFilter) widgets.GridViewIterator {
-	return widgets.NewGridViewAlbumIterator(a.mp.IterateAlbums(sortOrder, filter))
+func (a *genrePageAdapter) Iter(sortOrderIdx int, filter mediaprovider.AlbumFilter) widgets.GridViewIterator {
+	return widgets.NewGridViewAlbumIterator(a.mp.IterateAlbums("", filter))
 }
 
 func (a *genrePageAdapter) SearchIter(query string, filter mediaprovider.AlbumFilter) widgets.GridViewIterator {
