@@ -9,8 +9,6 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-const ()
-
 func (j *jellyfinMediaProvider) ArtistSortOrders() []string {
 	return []string{
 		mediaprovider.ArtistSortAlbumCount,
