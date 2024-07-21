@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -37,7 +38,7 @@ func NewAboutDialog(version string) *AboutDialog {
 		widget.NewSeparator(),
 		container.NewHBox(
 			layout.NewSpacer(),
-			widget.NewButton("Close", func() {
+			widget.NewButton(lang.L("Close"), func() {
 				if a.OnDismiss != nil {
 					a.OnDismiss()
 				}
@@ -59,7 +60,7 @@ func (a *AboutDialog) buildMainTabContainer(version string) *fyne.Container {
 	title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
 	title.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameSubHeadingText
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
-	versionLbl := newCenterAlignLabel(fmt.Sprintf("version %s", version))
+	versionLbl := newCenterAlignLabel(fmt.Sprintf("%s %s", lang.L("version"), version))
 	copyright := newCenterAlignLabel(res.Copyright)
 	license := widget.NewRichTextWithText("GNU General Public License version 3 (GPL v3)")
 	ts := license.Segments[0].(*widget.TextSegment)
@@ -69,9 +70,9 @@ func (a *AboutDialog) buildMainTabContainer(version string) *fyne.Container {
 	kofiUrl, _ := url.Parse(res.KofiURL)
 	githubKofi := container.NewCenter(
 		container.New(layout.NewCustomPaddedHBoxLayout(-10),
-			widget.NewHyperlink("Github page", ghUrl),
+			widget.NewHyperlink(lang.L("Github page"), ghUrl),
 			widget.NewLabel("·"),
-			widget.NewHyperlink("Support the project", kofiUrl)),
+			widget.NewHyperlink(lang.L("Support the project"), kofiUrl)),
 	)
 
 	return container.New(&layout.CustomPaddedLayout{TopPadding: 10, BottomPadding: 10},

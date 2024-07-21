@@ -182,7 +182,7 @@ func NewNowPlayingPage(
 		a.pm.LoadItems(items, backend.InsertNext, false)
 	}
 	a.lyricsViewer = widgets.NewLyricsViewer()
-	a.statusLabel = widget.NewLabel("Stopped")
+	a.statusLabel = widget.NewLabel(lang.L("Stopped"))
 
 	a.Reload()
 	return a
@@ -538,12 +538,13 @@ func (a *NowPlayingPage) formatStatusLine() {
 	curPlayer := a.pm.CurrentPlayer()
 	playerStats := curPlayer.GetStatus()
 	lastStatus := a.statusLabel.Text
-	state := "Stopped"
+	stopped := lang.L("Stopped")
+	state := stopped
 	switch playerStats.State {
 	case player.Paused:
-		state = "Paused"
+		state = lang.L("Paused")
 	case player.Playing:
-		state = "Playing"
+		state = lang.L("Playing")
 	}
 
 	dur := 0.0
@@ -552,7 +553,7 @@ func (a *NowPlayingPage) formatStatusLine() {
 	}
 	statusSuffix := ""
 	trackNum := 0
-	if state != "Stopped" {
+	if state != stopped {
 		trackNum = a.pm.NowPlayingIndex() + 1
 		statusSuffix = fmt.Sprintf(" %s/%s",
 			util.SecondsToMMSS(playerStats.TimePos),
@@ -562,14 +563,14 @@ func (a *NowPlayingPage) formatStatusLine() {
 		len(a.queue), statusSuffix)
 
 	mediaInfo := ""
-	if state != "Stopped" {
+	if state != stopped {
 		mediaInfo = a.formatMediaInfoStr(curPlayer)
 	}
 	if mediaInfo != "" {
 		mediaInfo = " · " + mediaInfo
 	}
 
-	a.statusLabel.Text = fmt.Sprintf("%s%s | Total time: %s", status, mediaInfo, util.SecondsToTimeString(a.totalTime))
+	a.statusLabel.Text = fmt.Sprintf("%s%s | %s: %s", status, mediaInfo, lang.L("Total time"), util.SecondsToTimeString(a.totalTime))
 	if lastStatus != a.statusLabel.Text {
 		a.statusLabel.Refresh()
 	}

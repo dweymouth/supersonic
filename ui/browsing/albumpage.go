@@ -212,7 +212,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.releaseTypeLabel = widget.NewRichText(
-		&widget.TextSegment{Text: "Album", Style: util.BoldRichTextStyle},
+		&widget.TextSegment{Text: lang.L("Album"), Style: util.BoldRichTextStyle},
 		&widget.TextSegment{Text: " by", Style: widget.RichTextStyle{Inline: true}},
 	)
 	a.artistLabel = widgets.NewMultiHyperlink()
@@ -361,16 +361,16 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 	var discs string
 	if len(a.Tracks) > 0 {
 		if discCount := a.Tracks[len(a.Tracks)-1].DiscNumber; discCount > 1 {
-			discs = fmt.Sprintf("%d discs · ", discCount)
+			discs = fmt.Sprintf("%d %s · ", discCount, lang.L("discs"))
 		}
 	}
-	tracks := "tracks"
+	tracks := lang.L("tracks")
 	if a.TrackCount == 1 {
-		tracks = "track"
+		tracks = lang.L("track")
 	}
 	yearStr := strconv.Itoa(a.Year)
 	if a.ReissueYear > a.Year {
-		yearStr += fmt.Sprintf(" (reissued %d)", a.ReissueYear)
+		yearStr += fmt.Sprintf(" (%s %d)", lang.L("reissued"), a.ReissueYear)
 	}
 	return fmt.Sprintf("%s · %d %s · %s%s", yearStr, a.TrackCount, tracks, discs, util.SecondsToTimeString(float64(a.Duration)))
 }

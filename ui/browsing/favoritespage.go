@@ -365,9 +365,9 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 func buildArtistGridViewModel(artists []*mediaprovider.Artist) []widgets.GridViewItemModel {
 	model := make([]widgets.GridViewItemModel, 0)
 	for _, ar := range artists {
-		albums := "albums"
+		albums := lang.L("albums")
 		if ar.AlbumCount == 1 {
-			albums = "album"
+			albums = lang.L("album")
 		}
 		model = append(model, widgets.GridViewItemModel{
 			ID:         ar.ID,

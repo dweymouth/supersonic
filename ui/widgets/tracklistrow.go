@@ -63,9 +63,9 @@ var (
 		rating := lang.L("Rating")
 		plays := lang.L("Plays")
 		comment := lang.L("Comment")
-		bitrate := lang.L("Bitrate")
+		bitrate := lang.L("Bit rate")
 		size := lang.L("Size")
-		filepath := lang.L("File Path")
+		filepath := lang.L("File path")
 
 		CompactTracklistRowColumns = []TracklistColumn{
 			{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},

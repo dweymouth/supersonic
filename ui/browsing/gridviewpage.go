@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -149,7 +150,7 @@ func (g *GridViewPage[M, F]) createTitleAndSort() {
 
 func (g *GridViewPage[M, F]) createSearchAndFilter() {
 	g.searcher = widgets.NewSearchEntry()
-	g.searcher.PlaceHolder = "Search page"
+	g.searcher.PlaceHolder = lang.L("Search page")
 	g.searcher.Text = g.searchText
 	g.searcher.OnSearched = g.OnSearched
 	g.filterBtn = g.adapter.FilterButton()

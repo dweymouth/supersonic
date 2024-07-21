@@ -1,6 +1,8 @@
 package dialogs
 
 import (
+	"fmt"
+
 	"github.com/dweymouth/supersonic/backend"
 
 	"fyne.io/fyne/v2"
@@ -68,7 +70,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 	userField := widget.NewEntryWithData(binding.BindString(&a.Username))
 	userField.OnSubmitted = func(_ string) { focusHandler(a.passField) }
 	altHostField := widget.NewEntryWithData(binding.BindString(&a.AltHost))
-	altHostField.SetPlaceHolder(lang.L("(optional)") + " https://my-external-domain.net/music")
+	altHostField.SetPlaceHolder(fmt.Sprintf("(%s)", lang.L("optional")) + " https://my-external-domain.net/music")
 	altHostField.OnSubmitted = func(_ string) { focusHandler(userField) }
 	hostField := widget.NewEntryWithData(binding.BindString(&a.Host))
 	hostField.SetPlaceHolder("http://localhost:4533")

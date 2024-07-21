@@ -329,10 +329,10 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		}
 	}
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
-	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), func() {
+	a.playBtn = widget.NewButtonWithIcon(lang.L("Play Discography"), theme.MediaPlayIcon(), func() {
 		go a.artistPage.pm.PlayArtistDiscography(a.artistID, false /*shuffle*/)
 	})
-	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", myTheme.ShuffleIcon, func() {
+	a.playRadioBtn = widget.NewButtonWithIcon(lang.L("Play Artist Radio"), myTheme.ShuffleIcon, func() {
 		// must not pass playArtistRadio func directly to NewButton
 		// because the artistPage bound to this header can change when reused
 		a.artistPage.playArtistRadio()
@@ -342,11 +342,11 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.menuBtn = widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	a.menuBtn.OnTapped = func() {
 		if pop == nil {
-			shuffleTracks := fyne.NewMenuItem("Shuffle tracks", func() {
+			shuffleTracks := fyne.NewMenuItem(lang.L("Shuffle tracks"), func() {
 				go a.artistPage.pm.PlayArtistDiscography(a.artistID, true /*shuffle*/)
 			})
 			shuffleTracks.Icon = myTheme.TracksIcon
-			shuffleAlbums := fyne.NewMenuItem("Shuffle albums", func() {
+			shuffleAlbums := fyne.NewMenuItem(lang.L("Shuffle albums"), func() {
 				go a.artistPage.pm.ShuffleArtistAlbums(a.artistID)
 			})
 			shuffleAlbums.Icon = myTheme.AlbumIcon
@@ -416,7 +416,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 	}
 
 	if len(a.similarArtists.Objects) == 0 {
-		a.similarArtists.Add(widget.NewLabel("Similar Artists:"))
+		a.similarArtists.Add(widget.NewLabel(lang.L("Similar artists") + ":"))
 	}
 	for _, obj := range a.similarArtists.Objects {
 		obj.Hide()

@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 
@@ -270,11 +271,11 @@ func (s *searchResult) Update(result *mediaprovider.SearchResult) {
 	s.imageLoader.Load(result.CoverID)
 	s.title.SetText(result.Name)
 
-	maybePluralize := func(s string, size int) string {
+	maybePluralize := func(key string, size int) string {
 		if size != 1 {
-			return s + "s"
+			return lang.L(key + "s")
 		}
-		return s
+		return lang.L(key)
 	}
 	var secondaryText string
 	switch result.Type {

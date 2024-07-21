@@ -160,16 +160,18 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	systemTrayEnable.Checked = s.config.Application.EnableSystemTray
 
 	// save play queue settings
-	saveToServer := widget.NewRadioGroup([]string{"Locally", "To server"}, func(choice string) {
-		s.config.Application.SaveQueueToServer = choice == "To server"
+	locally := lang.L("Locally")
+	toServer := lang.L("To server")
+	saveToServer := widget.NewRadioGroup([]string{locally, toServer}, func(choice string) {
+		s.config.Application.SaveQueueToServer = choice == toServer
 	})
 	saveToServer.Horizontal = true
 	if !s.config.Application.SavePlayQueue {
 		saveToServer.Disable()
 	}
-	saveToServer.Selected = "Locally"
+	saveToServer.Selected = locally
 	if s.config.Application.SaveQueueToServer {
-		saveToServer.Selected = "To server"
+		saveToServer.Selected = toServer
 	}
 	saveQueue := widget.NewCheck(lang.L("Save play queue on exit"), func(save bool) {
 		s.config.Application.SavePlayQueue = save
@@ -233,7 +235,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	if lastScrobbleText == "" {
 		lastScrobbleText = "4" // default scrobble minutes
 	}
-	durationEnabled := widget.NewCheck("or when", func(checked bool) {
+	durationEnabled := widget.NewCheck(lang.L("or when"), func(checked bool) {
 		if !checked {
 			s.config.Scrobbling.ThresholdTimeSeconds = -1
 			lastScrobbleText = durationEntry.Text
@@ -292,14 +294,14 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 		widget.NewRichText(&widget.TextSegment{Text: "Scrobbling", Style: util.BoldRichTextStyle}),
 		scrobbleEnabled,
 		container.NewHBox(
-			widget.NewLabel("Scrobble when"),
+			widget.NewLabel(lang.L("Scrobble when")),
 			percentEntry,
-			widget.NewLabel("percent of track is played"),
+			widget.NewLabel(lang.L("percent of track is played")),
 		),
 		container.NewHBox(
 			durationEnabled,
 			durationEntry,
-			widget.NewLabel("minutes of track have been played"),
+			widget.NewLabel(lang.L("minutes of track have been played")),
 		),
 	))
 }
@@ -324,7 +326,7 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 		}
 	}
 
-	replayGainSelect := widget.NewSelect([]string{"None", "Album", "Track", "Auto"}, nil)
+	replayGainSelect := widget.NewSelect([]string{lang.L("None"), lang.L("Album"), lang.L("Track"), lang.L("Auto")}, nil)
 	replayGainSelect.OnChanged = func(_ string) {
 		switch replayGainSelect.SelectedIndex() {
 		case 0:
@@ -377,7 +379,7 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 	})
 	preventClipping.Checked = s.config.ReplayGain.PreventClipping
 
-	audioExclusive := widget.NewCheck("Audio exclusive mode", func(checked bool) {
+	audioExclusive := widget.NewCheck(lang.L("Exclusive mode"), func(checked bool) {
 		s.config.LocalPlayback.AudioExclusive = checked
 		s.onAudioExclusiveSettingsChanged()
 	})
@@ -393,20 +395,20 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 		preampGain.Disable()
 	}
 
-	return container.NewTabItem("Playback", container.NewVBox(
+	return container.NewTabItem(lang.L("Playback"), container.NewVBox(
 		disableTranscode,
 		container.New(&layout.CustomPaddedLayout{TopPadding: 5},
 			container.New(layout.NewFormLayout(),
-				widget.NewLabel("Audio device"), container.NewBorder(nil, nil, nil, util.NewHSpace(70), deviceSelect),
+				widget.NewLabel(lang.L("Audio device")), container.NewBorder(nil, nil, nil, util.NewHSpace(70), deviceSelect),
 				layout.NewSpacer(), audioExclusive,
 			)),
 		s.newSectionSeparator(),
 
 		widget.NewRichText(&widget.TextSegment{Text: "ReplayGain", Style: util.BoldRichTextStyle}),
 		container.New(layout.NewFormLayout(),
-			widget.NewLabel("ReplayGain mode"), container.NewGridWithColumns(2, replayGainSelect),
-			widget.NewLabel("ReplayGain preamp"), container.NewHBox(preampGain, widget.NewLabel("dB")),
-			widget.NewLabel("Prevent clipping"), preventClipping,
+			widget.NewLabel(lang.L("ReplayGain mode")), container.NewGridWithColumns(2, replayGainSelect),
+			widget.NewLabel(lang.L("ReplayGain preamp")), container.NewHBox(preampGain, widget.NewLabel("dB")),
+			widget.NewLabel(lang.L("Prevent clipping")), preventClipping,
 		),
 	))
 }
@@ -487,7 +489,7 @@ func (s *SettingsDialog) createExperimentalTab(window fyne.Window) *container.Ta
 	return container.NewTabItem("Experimental", container.NewVBox(
 		warningLabel,
 		s.newSectionSeparator(),
-		widget.NewRichText(&widget.TextSegment{Text: "UI Scaling", Style: util.BoldRichTextStyle}),
+		widget.NewRichText(&widget.TextSegment{Text: lang.L("UI Scaling"), Style: util.BoldRichTextStyle}),
 		uiScaleRadio,
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: "Application Font", Style: util.BoldRichTextStyle}),

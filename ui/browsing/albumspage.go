@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -27,7 +28,7 @@ func NewAlbumsPage(cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *
 	return NewGridViewPage(adapter, pool, mp, im)
 }
 
-func (a *albumsPageAdapter) Title() string { return "Albums" }
+func (a *albumsPageAdapter) Title() string { return lang.L("Albums") }
 
 func (a *albumsPageAdapter) Filter() mediaprovider.AlbumFilter {
 	if a.filter == nil {
