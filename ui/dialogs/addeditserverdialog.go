@@ -1,11 +1,14 @@
 package dialogs
 
 import (
+	"fmt"
+
 	"github.com/dweymouth/supersonic/backend"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -46,7 +49,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 
 	titleLabel := widget.NewLabel(title)
 	titleLabel.TextStyle.Bold = true
-	legacyAuthCheck := widget.NewCheckWithData("Use legacy authentication", binding.BindBool(&a.LegacyAuth))
+	legacyAuthCheck := widget.NewCheckWithData(lang.L("Use legacy authentication"), binding.BindBool(&a.LegacyAuth))
 	serverTypeChoice := widget.NewRadioGroup([]string{"Subsonic", "Jellyfin"}, func(s string) {
 		a.ServerType = backend.ServerType(s)
 		if s == string(backend.ServerTypeSubsonic) {
@@ -67,15 +70,15 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 	userField := widget.NewEntryWithData(binding.BindString(&a.Username))
 	userField.OnSubmitted = func(_ string) { focusHandler(a.passField) }
 	altHostField := widget.NewEntryWithData(binding.BindString(&a.AltHost))
-	altHostField.SetPlaceHolder("(optional) https://my-external-domain.net/music")
+	altHostField.SetPlaceHolder(fmt.Sprintf("(%s)", lang.L("optional")) + " https://my-external-domain.net/music")
 	altHostField.OnSubmitted = func(_ string) { focusHandler(userField) }
 	hostField := widget.NewEntryWithData(binding.BindString(&a.Host))
 	hostField.SetPlaceHolder("http://localhost:4533")
 	hostField.OnSubmitted = func(_ string) { focusHandler(altHostField) }
 	nickField := widget.NewEntryWithData(binding.BindString(&a.Nickname))
-	nickField.SetPlaceHolder("My Server")
+	nickField.SetPlaceHolder(lang.L("My Server"))
 	nickField.OnSubmitted = func(_ string) { focusHandler(hostField) }
-	a.submitBtn = widget.NewButton("Enter", a.doSubmit)
+	a.submitBtn = widget.NewButton(lang.L("Enter"), a.doSubmit)
 	a.submitBtn.Importance = widget.HighImportance
 	a.promptText = widget.NewRichTextWithText("")
 	a.promptText.Hidden = true
@@ -85,7 +88,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 		bottomRow = container.NewHBox(
 			a.promptText,
 			layout.NewSpacer(),
-			widget.NewButton("Cancel", a.onCancel),
+			widget.NewButton(lang.L("Cancel"), a.onCancel),
 			a.submitBtn)
 	} else {
 		bottomRow = container.NewHBox(
@@ -97,17 +100,17 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 	a.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), titleLabel, layout.NewSpacer()),
 		container.New(layout.NewFormLayout(),
-			widget.NewLabel("Type"),
+			widget.NewLabel(lang.L("Server Type")),
 			serverTypeChoice,
-			widget.NewLabel("Nickname"),
+			widget.NewLabel(lang.L("Nickname")),
 			nickField,
-			widget.NewLabel("URL"),
+			widget.NewLabel(lang.L("URL")),
 			hostField,
-			widget.NewLabel("Alt. URL"),
+			widget.NewLabel(lang.L("Alt. URL")),
 			altHostField,
-			widget.NewLabel("Username"),
+			widget.NewLabel(lang.L("Username")),
 			userField,
-			widget.NewLabel("Password"),
+			widget.NewLabel(lang.L("Password")),
 			a.passField,
 		),
 		container.NewHBox(layout.NewSpacer(), legacyAuthCheck),

@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -36,7 +37,7 @@ func NewAlbumInfoDialog(albumInfo *mediaprovider.AlbumInfo, albumName string, al
 		widget.NewSeparator(),
 		container.NewHBox(
 			layout.NewSpacer(),
-			widget.NewButton("Close", func() {
+			widget.NewButton(lang.L("Close"), func() {
 				if a.OnDismiss != nil {
 					a.OnDismiss()
 				}
@@ -61,7 +62,7 @@ func (a *AlbumInfoDialog) buildMainContainer(albumInfo *mediaprovider.AlbumInfo,
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 	title.Truncation = fyne.TextTruncateEllipsis
 
-	infoContent := widget.NewLabel("Album info not available")
+	infoContent := widget.NewLabel(lang.L("Album info not available"))
 
 	if albumInfo.Notes != "" {
 		infoContent = a.infoLabel(albumInfo.Notes)

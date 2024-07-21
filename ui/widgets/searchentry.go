@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -27,7 +28,7 @@ func NewSearchEntry() *SearchEntry {
 
 // For use only by extending widgets
 func (sf *SearchEntry) Init() {
-	sf.PlaceHolder = "Search"
+	sf.PlaceHolder = lang.L("Search")
 	sf.ActionItem = NewClearTextButton(func() {
 		sf.SetText("")
 	})

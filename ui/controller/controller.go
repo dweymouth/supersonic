@@ -25,6 +25,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -246,7 +247,7 @@ func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {
 }
 
 func (m *Controller) PromptForFirstServer() {
-	d := dialogs.NewAddEditServerDialog("Connect to Server", false, nil, m.MainWindow.Canvas().Focus)
+	d := dialogs.NewAddEditServerDialog(lang.L("Connect to Server"), false, nil, m.MainWindow.Canvas().Focus)
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func() {
 		d.DisableSubmit()
@@ -333,7 +334,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 	}
 	dlg.OnDeletePlaylist = func() {
 		pop.Hide()
-		dialog.ShowCustomConfirm("Confirm Delete Playlist", "OK", "Cancel", layout.NewSpacer(), /*custom content*/
+		dialog.ShowCustomConfirm(lang.L("Confirm Delete Playlist"), lang.L("OK"), lang.L("Cancel"), layout.NewSpacer(), /*custom content*/
 			func(ok bool) {
 				if !ok {
 					pop.Show()
@@ -380,8 +381,8 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	canceled := false
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	dlg := dialog.NewCustom("Connecting", "Cancel",
-		widget.NewLabel(fmt.Sprintf("Connecting to %s", server.Nickname)), c.MainWindow)
+	dlg := dialog.NewCustom(lang.L("Connecting"), lang.L("Cancel"),
+		widget.NewLabel(fmt.Sprintf(lang.L("Connecting to")+" %s", server.Nickname)), c.MainWindow)
 	dlg.SetOnClosed(func() {
 		canceled = true
 		cancel()
@@ -414,16 +415,16 @@ func (m *Controller) PromptForLoginAndConnect() {
 	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
 	d.OnSubmit = func(server *backend.ServerConfig, password string) {
 		d.DisableSubmit()
-		d.SetInfoText("Testing connection...")
+		d.SetInfoText(lang.L("Testing connection") + "...")
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			err := m.App.ServerManager.TestConnectionAndAuth(ctx, server.ServerConnection, password)
 			if err == backend.ErrUnreachable {
-				d.SetErrorText("Server unreachable")
+				d.SetErrorText(lang.L("Server unreachable"))
 			} else if err != nil {
-				d.SetErrorText("Authentication failed")
+				d.SetErrorText(lang.L("Authentication failed"))
 			} else {
 				pop.Hide()
 				m.trySetPasswordAndConnectToServer(server, password)
@@ -434,7 +435,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 	}
 	d.OnEditServer = func(server *backend.ServerConfig) {
 		pop.Hide()
-		editD := dialogs.NewAddEditServerDialog("Edit server", true, server, m.MainWindow.Canvas().Focus)
+		editD := dialogs.NewAddEditServerDialog(lang.L("Edit server"), true, server, m.MainWindow.Canvas().Focus)
 		editPop := widget.NewModalPopUp(editD, m.MainWindow.Canvas())
 		editD.OnSubmit = func() {
 			d.DisableSubmit()
@@ -461,7 +462,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 	}
 	d.OnNewServer = func() {
 		pop.Hide()
-		newD := dialogs.NewAddEditServerDialog("Add server", true, nil, m.MainWindow.Canvas().Focus)
+		newD := dialogs.NewAddEditServerDialog(lang.L("Add Server"), true, nil, m.MainWindow.Canvas().Focus)
 		newPop := widget.NewModalPopUp(newD, m.MainWindow.Canvas())
 		newD.OnSubmit = func() {
 			d.DisableSubmit()
@@ -491,8 +492,8 @@ func (m *Controller) PromptForLoginAndConnect() {
 	}
 	d.OnDeleteServer = func(server *backend.ServerConfig) {
 		pop.Hide()
-		dialog.ShowConfirm("Confirm delete server",
-			fmt.Sprintf("Are you sure you want to delete the server %q?", server.Nickname),
+		dialog.ShowConfirm(lang.L("Confirm Delete Server"),
+			fmt.Sprintf(lang.L("Are you sure you want to delete the server")+" %q?", server.Nickname),
 			func(ok bool) {
 				if ok {
 					m.App.ServerManager.DeleteServer(server.ID)
@@ -527,7 +528,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	devs, err := c.App.LocalPlayer.ListAudioDevices()
 	if err != nil {
 		log.Printf("error listing audio devices: %v", err)
-		devs = []mpv.AudioDevice{{Name: "auto", Description: "Autoselect device"}}
+		devs = []mpv.AudioDevice{{Name: "auto", Description: lang.L("Autoselect device")}}
 	}
 
 	curPlayer := c.App.PlaybackManager.CurrentPlayer()
@@ -634,7 +635,7 @@ func (c *Controller) tryConnectToServer(ctx context.Context, server *backend.Ser
 }
 
 func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
-	dlg.SetInfoText("Testing connection...")
+	dlg.SetInfoText(lang.L("Testing connection") + "...")
 	conn := backend.ServerConnection{
 		ServerType:  dlg.ServerType,
 		Hostname:    dlg.Host,
@@ -646,10 +647,10 @@ func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServe
 	defer cancel()
 	err := c.App.ServerManager.TestConnectionAndAuth(ctx, conn, dlg.Password)
 	if err == backend.ErrUnreachable {
-		dlg.SetErrorText("Could not reach server (wrong hostname?)")
+		dlg.SetErrorText(lang.L("Could not reach server") + fmt.Sprintf(" (%s?)", lang.L("wrong URL")))
 		return false
 	} else if err != nil {
-		dlg.SetErrorText("Authentication failed (wrong username/password)")
+		dlg.SetErrorText(lang.L("Authentication failed") + fmt.Sprintf(" (%s)", lang.L("wrong username/password")))
 		return false
 	}
 	return true
@@ -697,7 +698,7 @@ func (c *Controller) ShowShareDialog(id string) {
 		}
 
 		hyperlink := widget.NewHyperlink(shareUrl.String(), shareUrl)
-		dlg := dialog.NewCustom("Share content", "OK",
+		dlg := dialog.NewCustom(lang.L("Share content"), lang.L("OK"),
 			container.NewHBox(
 				hyperlink,
 				widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
@@ -787,7 +788,7 @@ func (c *Controller) downloadTrack(track *mediaprovider.Track, filePath string) 
 	}
 
 	log.Printf("Saved song %s to: %s\n", track.Title, filePath)
-	c.sendNotification(fmt.Sprintf("Download completed: %s", track.Title), fmt.Sprintf("Saved at: %s", filePath))
+	c.sendNotification(fmt.Sprintf(lang.L("Download completed")+": %s", track.Title), fmt.Sprintf(lang.L("Saved at")+": %s", filePath))
 }
 
 func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath, downloadName string) {
@@ -825,7 +826,7 @@ func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath, dow
 		log.Printf("Saved song %s to: %s\n", track.Title, filePath)
 	}
 
-	c.sendNotification(fmt.Sprintf("Download completed: %s", downloadName), fmt.Sprintf("Saved at: %s", filePath))
+	c.sendNotification(fmt.Sprintf(lang.L("Download completed")+": %s", downloadName), fmt.Sprintf("Saved at: %s", filePath))
 }
 
 func (c *Controller) sendNotification(title, content string) {

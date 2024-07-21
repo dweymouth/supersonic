@@ -11,6 +11,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -153,7 +154,7 @@ func NewAlbumFilterPopup(filter *AlbumFilterButton) *AlbumFilterPopup {
 	}
 
 	// setup is favorite/not favorite filters
-	a.isFavorite = widget.NewCheck("Is favorite", func(fav bool) {
+	a.isFavorite = widget.NewCheck(lang.L("Is favorite"), func(fav bool) {
 		filterOptions := a.filterBtn.filter.Options()
 		if fav {
 			a.isNotFavorite.SetChecked(false)
@@ -163,7 +164,7 @@ func NewAlbumFilterPopup(filter *AlbumFilterButton) *AlbumFilterPopup {
 		debounceOnChanged()
 	})
 	a.isFavorite.Hidden = a.filterBtn.FavoriteDisabled
-	a.isNotFavorite = widget.NewCheck("Is not favorite", func(fav bool) {
+	a.isNotFavorite = widget.NewCheck(lang.L("Is not favorite"), func(fav bool) {
 		filterOptions := a.filterBtn.filter.Options()
 		if fav {
 			a.isFavorite.SetChecked(false)
@@ -184,11 +185,11 @@ func NewAlbumFilterPopup(filter *AlbumFilterButton) *AlbumFilterPopup {
 	a.genreFilter.Hidden = a.filterBtn.GenreDisabled
 
 	// setup container
-	title := widget.NewLabel("Album filters")
+	title := widget.NewLabel(lang.L("Album filters"))
 	title.TextStyle.Bold = true
 	a.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()),
-		container.NewHBox(widget.NewLabel("Year from"), minYear, widget.NewLabel("to"), maxYear),
+		container.NewHBox(widget.NewLabel(lang.L("Year from")), minYear, widget.NewLabel("to"), maxYear),
 		container.NewHBox(a.isFavorite, a.isNotFavorite),
 		a.genreFilter,
 	)
@@ -281,7 +282,7 @@ func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []
 		},
 	)
 	g.filterText = widget.NewEntry()
-	g.filterText.SetPlaceHolder("Filter genres")
+	g.filterText.SetPlaceHolder(lang.L("Filter genres"))
 	i := NewTappableIcon(theme.ContentClearIcon())
 	i.NoPointerCursor = true
 	i.OnTapped = func() { g.filterText.SetText("") }
@@ -290,18 +291,18 @@ func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []
 	g.filterText.OnChanged = func(_ string) {
 		debouncer()
 	}
-	g.allBtn = widget.NewButton("All", func() { g.selectAllOrNoneInView(false) })
-	g.noneBtn = widget.NewButton("None", func() { g.selectAllOrNoneInView(true) })
+	g.allBtn = widget.NewButton(lang.L("All"), func() { g.selectAllOrNoneInView(false) })
+	g.noneBtn = widget.NewButton(lang.L("None"), func() { g.selectAllOrNoneInView(true) })
 
 	g.genresTitleLine = widget.NewRichText(
 		&widget.TextSegment{
-			Text: "Genres  ",
+			Text: lang.L("Genres") + "  ",
 			Style: widget.RichTextStyle{
 				Inline:    true,
 				TextStyle: fyne.TextStyle{Bold: true},
 			},
 		},
-		&widget.TextSegment{Text: "(none selected)"},
+		&widget.TextSegment{Text: fmt.Sprintf("(%s)", lang.L("none selected"))},
 	)
 	g.updateNumSelectedText()
 
@@ -378,11 +379,11 @@ func (g *GenreFilterSubsection) invokeOnChanged() {
 }
 
 func (g *GenreFilterSubsection) updateNumSelectedText() {
-	numText := "none"
+	numText := lang.L("none")
 	if l := len(g.selectedGenres); l > 0 {
 		numText = strconv.Itoa(l)
 	}
-	t := fmt.Sprintf("(%s selected)", numText)
+	t := fmt.Sprintf("(%s %s)", numText, lang.L("selected"))
 	g.genresTitleLine.Segments[1].(*widget.TextSegment).Text = t
 	g.genresTitleLine.Refresh()
 }

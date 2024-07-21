@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -61,7 +62,7 @@ type GridViewPageAdapter[M, F any] interface {
 
 	// Returns the iterator for the given sortOrder and filter.
 	// (Non-media pages can ignore the filter argument)
-	Iter(sortOrder string, filter mediaprovider.MediaFilter[M, F]) widgets.GridViewIterator
+	Iter(sortOrderIdx int, filter mediaprovider.MediaFilter[M, F]) widgets.GridViewIterator
 
 	// Returns the iterator for the given search query and filter.
 	SearchIter(query string, filter mediaprovider.MediaFilter[M, F]) widgets.GridViewIterator
@@ -76,11 +77,12 @@ type GridViewPageAdapter[M, F any] interface {
 }
 
 type SortableGridViewPageAdapter interface {
-	// Returns the list of sort orders and the initially selected sort order
-	SortOrders() ([]string, string)
+	// Returns the list of sort orders
+	// and the index of the initially selected sort order
+	SortOrders() ([]string, int)
 
-	// Saves the given sort order setting.
-	SaveSortOrder(string)
+	// Saves the given sort order setting, the selected index is passed.
+	SaveSortOrder(int)
 }
 
 type sortOrderSelect struct {
@@ -120,7 +122,7 @@ func NewGridViewPage[M, F any](
 	gp.createTitleAndSort()
 
 	_, canShare := mp.(mediaprovider.SupportsSharing)
-	iter := adapter.Iter(gp.getSortOrder(), gp.getFilter())
+	iter := adapter.Iter(gp.getSortOrderIdx(), gp.getFilter())
 	if g := pool.Obtain(util.WidgetTypeGridView); g != nil {
 		gp.grid = g.(*widgets.GridView)
 		gp.grid.Placeholder = adapter.PlaceholderResource()
@@ -143,13 +145,13 @@ func (g *GridViewPage[M, F]) createTitleAndSort() {
 	if s, ok := g.adapter.(SortableGridViewPageAdapter); ok {
 		sorts, selected := s.SortOrders()
 		g.sortOrder = NewSortOrderSelect(sorts, g.onSortOrderChanged)
-		g.sortOrder.Selected = selected
+		g.sortOrder.SetSelectedIndex(selected)
 	}
 }
 
 func (g *GridViewPage[M, F]) createSearchAndFilter() {
 	g.searcher = widgets.NewSearchEntry()
-	g.searcher.PlaceHolder = "Search page"
+	g.searcher.PlaceHolder = lang.L("Search page")
 	g.searcher.Text = g.searchText
 	g.searcher.OnSearched = g.OnSearched
 	g.filterBtn = g.adapter.FilterButton()
@@ -179,7 +181,7 @@ func (g *GridViewPage[M, F]) Reload() {
 	if g.searchText != "" {
 		g.doSearch(g.searchText)
 	} else {
-		g.grid.Reset(g.adapter.Iter(g.getSortOrder(), g.getFilter()))
+		g.grid.Reset(g.adapter.Iter(g.getSortOrderIdx(), g.getFilter()))
 	}
 }
 
@@ -222,20 +224,24 @@ func (g *GridViewPage[M, F]) doSearch(query string) {
 	g.grid.Reset(g.adapter.SearchIter(query, g.getFilter()))
 }
 
-func (g *GridViewPage[M, F]) onSortOrderChanged(order string) {
-	g.adapter.(SortableGridViewPageAdapter).SaveSortOrder(g.getSortOrder())
-	g.grid.Reset(g.adapter.Iter(g.getSortOrder(), g.getFilter()))
+func (g *GridViewPage[M, F]) onSortOrderChanged(_ string) {
+	if g.grid == nil {
+		return // callback from initializing
+	}
+
+	g.adapter.(SortableGridViewPageAdapter).SaveSortOrder(g.getSortOrderIdx())
+	g.grid.Reset(g.adapter.Iter(g.getSortOrderIdx(), g.getFilter()))
 }
 
 func (g *GridViewPage[M, F]) getFilter() mediaprovider.MediaFilter[M, F] {
 	return g.filter
 }
 
-func (g *GridViewPage[M, F]) getSortOrder() string {
+func (g *GridViewPage[M, F]) getSortOrderIdx() int {
 	if g.sortOrder != nil {
-		return g.sortOrder.Selected
+		return g.sortOrder.SelectedIndex()
 	}
-	return ""
+	return 0
 }
 
 func (g *GridViewPage[M, F]) CreateRenderer() fyne.WidgetRenderer {
@@ -249,7 +255,7 @@ type savedGridViewPage[M, F any] struct {
 	searchText      string
 	filter          mediaprovider.MediaFilter[M, F]
 	pool            *util.WidgetPool
-	sortOrder       string
+	sortOrderIdx    int
 	gridState       *widgets.GridViewState
 	searchGridState *widgets.GridViewState
 }
@@ -262,7 +268,7 @@ func (g *GridViewPage[M, F]) Save() SavedPage {
 		im:              g.im,
 		searchText:      g.searchText,
 		filter:          g.filter,
-		sortOrder:       g.getSortOrder(),
+		sortOrderIdx:    g.getSortOrderIdx(),
 		gridState:       g.gridState,
 		searchGridState: g.searchGridState,
 	}

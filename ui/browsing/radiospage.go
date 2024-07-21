@@ -15,6 +15,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -48,7 +49,7 @@ func newRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider,
 		contr:     contr,
 		rp:        rp,
 		pm:        pm,
-		titleDisp: widget.NewRichTextWithText("Internet Radio Stations"),
+		titleDisp: widget.NewRichTextWithText(lang.L("Internet Radio Stations")),
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
@@ -56,13 +57,13 @@ func newRadiosPage(contr *controller.Controller, rp mediaprovider.RadioProvider,
 	a.list.OnPlay = a.onPlay
 	a.list.OnQueue = a.onQueue
 	a.searcher = widgets.NewSearchEntry()
-	a.searcher.PlaceHolder = "Search page"
+	a.searcher.PlaceHolder = lang.L("Search page")
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 
 	a.noRadiosMsg = container.NewCenter(widgets.NewInfoMessage(
-		"No radio stations available",
-		"Configure your music server to add radio stations",
+		lang.L("No radio stations available"),
+		lang.L("Configure your music server to add radio stations"),
 	))
 	a.noRadiosMsg.Hide()
 
@@ -248,8 +249,8 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 	a.playingIcon = container.NewCenter(widget.NewIcon(playIcon))
 	a.ExtendBaseWidget(a)
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
-		{Text: "Name", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Home Page", Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
+		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: lang.L("Home Page"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
 		a.columnsLayout)
 	a.hdr.DisableSorting = true
 	a.list = widgets.NewFocusList(
@@ -314,21 +315,21 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 
 func (a *RadioList) showMenu(pos fyne.Position) {
 	if a.menu == nil {
-		play := fyne.NewMenuItem("Play", func() {
+		play := fyne.NewMenuItem(lang.L("Play"), func() {
 			if a.OnPlay != nil {
 				a.OnPlay(a.selected.Item)
 			}
 		})
 		play.Icon = theme.MediaPlayIcon()
 
-		playNext := fyne.NewMenuItem("Play next", func() {
+		playNext := fyne.NewMenuItem(lang.L("Play next"), func() {
 			if a.OnQueue != nil {
 				a.OnQueue(a.selected.Item, true)
 			}
 		})
 		playNext.Icon = myTheme.PlayNextIcon
 
-		append := fyne.NewMenuItem("Add to queue", func() {
+		append := fyne.NewMenuItem(lang.L("Add to queue"), func() {
 			if a.OnQueue != nil {
 				a.OnQueue(a.selected.Item, false)
 			}

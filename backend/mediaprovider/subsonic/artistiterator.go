@@ -14,17 +14,11 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-const (
-	ArtistSortAlbumCount string = "Album Count"
-	ArtistSortNameAZ     string = "Name (A-Z)"
-	ArtistSortRandom     string = "Random"
-)
-
 func (s *subsonicMediaProvider) ArtistSortOrders() []string {
 	return []string{
-		ArtistSortAlbumCount,
-		ArtistSortNameAZ,
-		ArtistSortRandom,
+		mediaprovider.ArtistSortAlbumCount,
+		mediaprovider.ArtistSortNameAZ,
+		mediaprovider.ArtistSortRandom,
 	}
 }
 
@@ -37,10 +31,10 @@ func filterArtistMatches(f mediaprovider.ArtistFilter, artist *subsonic.ArtistID
 
 func (s *subsonicMediaProvider) IterateArtists(sortOrder string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
 	if sortOrder == "" {
-		sortOrder = ArtistSortNameAZ // default
+		sortOrder = mediaprovider.ArtistSortNameAZ // default
 	}
 	switch sortOrder {
-	case ArtistSortAlbumCount:
+	case mediaprovider.ArtistSortAlbumCount:
 		return s.baseArtistIterFromSimpleSortOrder(
 			func(artists []*subsonic.ArtistID3) []*subsonic.ArtistID3 {
 				slices.SortStableFunc(artists, func(a, b *subsonic.ArtistID3) int {
@@ -50,7 +44,7 @@ func (s *subsonicMediaProvider) IterateArtists(sortOrder string, filter mediapro
 			},
 			filter,
 		)
-	case ArtistSortNameAZ:
+	case mediaprovider.ArtistSortNameAZ:
 		return s.baseArtistIterFromSimpleSortOrder(
 			func(artists []*subsonic.ArtistID3) []*subsonic.ArtistID3 {
 				c := collate.New(language.English, collate.Loose)
@@ -61,7 +55,7 @@ func (s *subsonicMediaProvider) IterateArtists(sortOrder string, filter mediapro
 			},
 			filter,
 		)
-	case ArtistSortRandom:
+	case mediaprovider.ArtistSortRandom:
 		return s.baseArtistIterFromSimpleSortOrder(
 			func(artists []*subsonic.ArtistID3) []*subsonic.ArtistID3 {
 				newArtists := make([]*subsonic.ArtistID3, len(artists))

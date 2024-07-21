@@ -15,6 +15,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -50,9 +51,14 @@ type ArtistPage struct {
 	container    *fyne.Container
 }
 
+const (
+	viewTopTracks   = "Top Tracks"
+	viewDiscography = "Discography"
+)
+
 func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.WidgetPool, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
 	activeView := 0
-	if cfg.InitialView == "Top Tracks" {
+	if cfg.InitialView == viewTopTracks {
 		activeView = 1
 	}
 	return newArtistPage(artistID, cfg, pool, pm, mp, im, contr, activeView, widgets.TracklistSort{})
@@ -81,7 +87,7 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 	if img, ok := im.GetCachedArtistImage(artistID); ok {
 		a.header.artistImage.SetImage(img, true /*tappable*/)
 	}
-	viewToggle := widgets.NewToggleText(0, []string{"Discography", "Top Tracks"})
+	viewToggle := widgets.NewToggleText(0, []string{lang.L("Discography"), lang.L("Top Tracks")})
 	viewToggle.SetActivatedLabel(a.activeView)
 	viewToggle.OnChanged = a.onViewChange
 	//line := canvas.NewLine(theme.TextColor())
@@ -270,9 +276,9 @@ func (a *ArtistPage) onViewChange(num int) {
 	}
 	a.activeView = num
 	if num == 1 {
-		a.cfg.InitialView = "Top Tracks"
+		a.cfg.InitialView = viewTopTracks
 	} else {
-		a.cfg.InitialView = "Discography"
+		a.cfg.InitialView = viewDiscography
 	}
 }
 
@@ -285,7 +291,7 @@ func (s *artistPageState) Restore() Page {
 	return newArtistPage(s.artistID, s.cfg, s.pool, s.pm, s.mp, s.im, s.contr, s.activeView, s.trackSort)
 }
 
-const artistBioNotAvailableStr = "Artist biography not available."
+const artistBioNotAvailableKey = "Artist biography not available."
 
 type ArtistPageHeader struct {
 	widget.BaseWidget
@@ -310,7 +316,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a := &ArtistPageHeader{
 		artistPage:     page,
 		titleDisp:      widget.NewRichTextWithText(""),
-		biographyDisp:  widgets.NewMaxRowsLabel(5, artistBioNotAvailableStr),
+		biographyDisp:  widgets.NewMaxRowsLabel(5, lang.L(artistBioNotAvailableKey)),
 		similarArtists: container.NewHBox(),
 	}
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
@@ -323,10 +329,10 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		}
 	}
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
-	a.playBtn = widget.NewButtonWithIcon("Play Discography", theme.MediaPlayIcon(), func() {
+	a.playBtn = widget.NewButtonWithIcon(lang.L("Play Discography"), theme.MediaPlayIcon(), func() {
 		go a.artistPage.pm.PlayArtistDiscography(a.artistID, false /*shuffle*/)
 	})
-	a.playRadioBtn = widget.NewButtonWithIcon("Play Artist Radio", myTheme.ShuffleIcon, func() {
+	a.playRadioBtn = widget.NewButtonWithIcon(lang.L("Play Artist Radio"), myTheme.ShuffleIcon, func() {
 		// must not pass playArtistRadio func directly to NewButton
 		// because the artistPage bound to this header can change when reused
 		a.artistPage.playArtistRadio()
@@ -336,11 +342,11 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.menuBtn = widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	a.menuBtn.OnTapped = func() {
 		if pop == nil {
-			shuffleTracks := fyne.NewMenuItem("Shuffle tracks", func() {
+			shuffleTracks := fyne.NewMenuItem(lang.L("Shuffle tracks"), func() {
 				go a.artistPage.pm.PlayArtistDiscography(a.artistID, true /*shuffle*/)
 			})
 			shuffleTracks.Icon = myTheme.TracksIcon
-			shuffleAlbums := fyne.NewMenuItem("Shuffle albums", func() {
+			shuffleAlbums := fyne.NewMenuItem(lang.L("Shuffle albums"), func() {
 				go a.artistPage.pm.ShuffleArtistAlbums(a.artistID)
 			})
 			shuffleAlbums.Icon = myTheme.AlbumIcon
@@ -374,7 +380,7 @@ func (a *ArtistPageHeader) Clear() {
 	a.artistID = ""
 	a.favoriteBtn.IsFavorited = false
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = ""
-	a.biographyDisp.Text = artistBioNotAvailableStr
+	a.biographyDisp.Text = lang.L(artistBioNotAvailableKey)
 	for _, obj := range a.similarArtists.Objects {
 		obj.Hide()
 	}
@@ -410,7 +416,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 	}
 
 	if len(a.similarArtists.Objects) == 0 {
-		a.similarArtists.Add(widget.NewLabel("Similar Artists:"))
+		a.similarArtists.Add(widget.NewLabel(lang.L("Similar artists") + ":"))
 	}
 	for _, obj := range a.similarArtists.Objects {
 		obj.Hide()

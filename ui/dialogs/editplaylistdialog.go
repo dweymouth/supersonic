@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -31,33 +32,33 @@ func NewEditPlaylistDialog(playlist *mediaprovider.Playlist, showPublicCheck boo
 	}
 	e.ExtendBaseWidget(e)
 
-	isPublicCheck := widget.NewCheckWithData("Public", binding.BindBool(&e.IsPublic))
+	isPublicCheck := widget.NewCheckWithData(lang.L("Public"), binding.BindBool(&e.IsPublic))
 	isPublicCheck.Hidden = !showPublicCheck
 	nameEntry := widget.NewEntryWithData(binding.BindString(&e.Name))
 	descriptionEntry := widget.NewEntryWithData(binding.BindString(&e.Description))
-	deleteBtn := widget.NewButton("Delete Playlist", func() {
+	deleteBtn := widget.NewButton(lang.L("Delete Playlist"), func() {
 		if e.OnDeletePlaylist != nil {
 			e.OnDeletePlaylist()
 		}
 	})
-	submitBtn := widget.NewButton("OK", func() {
+	submitBtn := widget.NewButton(lang.L("OK"), func() {
 		if e.OnUpdateMetadata != nil {
 			e.OnUpdateMetadata()
 		}
 	})
 	submitBtn.Importance = widget.HighImportance
-	cancelBtn := widget.NewButton("Cancel", func() {
+	cancelBtn := widget.NewButton(lang.L("Cancel"), func() {
 		if e.OnCanceled != nil {
 			e.OnCanceled()
 		}
 	})
 
 	e.container = container.NewVBox(
-		container.NewHBox(layout.NewSpacer(), widget.NewLabel("Edit Playlist"), layout.NewSpacer()),
+		container.NewHBox(layout.NewSpacer(), widget.NewLabel(lang.L("Edit Playlist")), layout.NewSpacer()),
 		container.New(layout.NewFormLayout(),
-			widget.NewLabel("Name"),
+			widget.NewLabel(lang.L("Name")),
 			nameEntry,
-			widget.NewLabel("Description"),
+			widget.NewLabel(lang.L("Description")),
 			descriptionEntry,
 		),
 		container.NewHBox(isPublicCheck, layout.NewSpacer(), deleteBtn),

@@ -14,6 +14,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -89,7 +90,7 @@ func newPlaylistPage(
 	a.tracklist.OnReorderTracks = a.doSetNewTrackOrder
 	_, canRate := a.sm.Server.(mediaprovider.SupportsRating)
 	_, canShare := a.sm.Server.(mediaprovider.SupportsSharing)
-	remove := fyne.NewMenuItem("Remove from playlist", a.onRemoveSelectedFromPlaylist)
+	remove := fyne.NewMenuItem(lang.L("Remove from playlist"), a.onRemoveSelectedFromPlaylist)
 	remove.Icon = theme.ContentClearIcon()
 	a.tracklist.Options = widgets.TracklistOptions{
 		Reorderable:        true,
@@ -252,17 +253,17 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.ownerLabel = util.NewTruncatingLabel()
 	a.createdAtLabel = widget.NewLabel("")
 	a.trackTimeLabel = widget.NewLabel("")
-	a.editButton = widget.NewButtonWithIcon("Edit", theme.DocumentCreateIcon(), func() {
+	a.editButton = widget.NewButtonWithIcon(lang.L("Edit"), theme.DocumentCreateIcon(), func() {
 		if a.playlistInfo != nil {
 			a.page.contr.DoEditPlaylistWorkflow(&a.playlistInfo.Playlist)
 		}
 	})
 	a.editButton.Hidden = true
-	playButton := widget.NewButtonWithIcon("Play", theme.MediaPlayIcon(), func() {
+	playButton := widget.NewButtonWithIcon(lang.L("Play"), theme.MediaPlayIcon(), func() {
 		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, false)
 		a.page.pm.PlayFromBeginning()
 	})
-	shuffleBtn := widget.NewButtonWithIcon("Shuffle", myTheme.ShuffleIcon, func() {
+	shuffleBtn := widget.NewButtonWithIcon(lang.L("Shuffle"), myTheme.ShuffleIcon, func() {
 		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, true)
 		a.page.pm.PlayFromBeginning()
 	})
@@ -270,20 +271,20 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	menuBtn.OnTapped = func() {
 		if pop == nil {
-			playNext := fyne.NewMenuItem("Play next", func() {
+			playNext := fyne.NewMenuItem(lang.L("Play next"), func() {
 				go a.page.pm.LoadPlaylist(a.page.playlistID, backend.InsertNext, false)
 			})
 			playNext.Icon = myTheme.PlayNextIcon
-			queue := fyne.NewMenuItem("Add to queue", func() {
+			queue := fyne.NewMenuItem(lang.L("Add to queue"), func() {
 				go a.page.pm.LoadPlaylist(a.page.playlistID, backend.Append, false)
 			})
 			queue.Icon = theme.ContentAddIcon()
-			playlist := fyne.NewMenuItem("Add to playlist...", func() {
+			playlist := fyne.NewMenuItem(lang.L("Add to playlist")+"...", func() {
 				a.page.contr.DoAddTracksToPlaylistWorkflow(
 					sharedutil.TracksToIDs(a.page.tracks))
 			})
 			playlist.Icon = myTheme.PlaylistIcon
-			download := fyne.NewMenuItem("Download...", func() {
+			download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
 				a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
 			})
 			download.Icon = theme.DownloadIcon()
@@ -342,17 +343,20 @@ func (a *PlaylistPageHeader) Update(playlist *mediaprovider.PlaylistWithTracks) 
 }
 
 func (a *PlaylistPageHeader) formatPlaylistOwnerStr(p *mediaprovider.PlaylistWithTracks) string {
-	pubPriv := "Public"
+	pubPriv := lang.L("Public")
 	if !p.Public {
-		pubPriv = "Private"
+		pubPriv = lang.L("Private")
 	}
-	return fmt.Sprintf("%s playlist by %s", pubPriv, p.Owner)
+	playlistBy := lang.L("playlist by")
+	return fmt.Sprintf("%s %s %s", pubPriv, playlistBy, p.Owner)
 }
 
 func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *mediaprovider.PlaylistWithTracks) string {
-	tracks := "tracks"
+	var tracks string
 	if p.TrackCount == 1 {
-		tracks = "track"
+		tracks = lang.L("track")
+	} else {
+		tracks = lang.L("tracks")
 	}
 	return fmt.Sprintf("%d %s, %s", p.TrackCount, tracks, util.SecondsToTimeString(float64(p.Duration)))
 }

@@ -3,6 +3,7 @@ package widgets
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
 	fynelyrics "github.com/dweymouth/fyne-lyrics"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -29,7 +30,7 @@ type LyricsViewer struct {
 func NewLyricsViewer() *LyricsViewer {
 	l := &LyricsViewer{
 		noLyricsMsg: container.NewCenter(NewInfoMessage(
-			"Lyrics not available", "")),
+			lang.L("Lyrics not available"), "")),
 		isEmpty: true,
 	}
 	l.ExtendBaseWidget(l)

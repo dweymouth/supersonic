@@ -19,6 +19,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -71,14 +72,14 @@ func newPlaylistsPage(
 		mp:                   mp,
 		contr:                contr,
 		listSort:             listSort,
-		titleDisp:            widget.NewRichTextWithText("Playlists"),
+		titleDisp:            widget.NewRichTextWithText(lang.L("Playlists")),
 		initialListScrollPos: listScrollPos,
 		initialGridScrollPos: gridScrollPos,
 	}
 	a.ExtendBaseWidget(a)
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style.SizeName = theme.SizeNameHeadingText
 	a.searcher = widgets.NewSearchEntry()
-	a.searcher.PlaceHolder = "Search page"
+	a.searcher.PlaceHolder = lang.L("Search page")
 	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = searchText
 	a.viewToggle = widgets.NewToggleButtonGroup(0,
@@ -193,9 +194,11 @@ func (a *PlaylistsPage) showGridView() {
 
 func createPlaylistGridViewModel(playlists []*mediaprovider.Playlist) []widgets.GridViewItemModel {
 	return sharedutil.MapSlice(playlists, func(pl *mediaprovider.Playlist) widgets.GridViewItemModel {
-		tracks := "tracks"
+		var tracks string
 		if pl.TrackCount == 1 {
-			tracks = "track"
+			tracks = lang.L("track")
+		} else {
+			tracks = lang.L("tracks")
 		}
 		return widgets.GridViewItemModel{
 			Name:       pl.Name,
@@ -334,10 +337,9 @@ type PlaylistList struct {
 
 func NewPlaylistList(initialSort widgets.ListHeaderSort) *PlaylistList {
 	a := &PlaylistList{
-		sorting:       initialSort,
-		columnsLayout: layouts.NewColumnsLayout([]float32{-1, -1, 200, 125}),
+		sorting: initialSort,
 	}
-	a.buildHeader()
+	a.buildHeaderAndLayout()
 	a.list = widgets.NewFocusList(
 		func() int {
 			return len(a.playlists)
@@ -369,12 +371,16 @@ func NewPlaylistList(initialSort widgets.ListHeaderSort) *PlaylistList {
 	return a
 }
 
-func (p *PlaylistList) buildHeader() {
+func (p *PlaylistList) buildHeaderAndLayout() {
+	trackCount := lang.L("Track count")
+	trackCountWidth := fyne.Max(125, widget.NewLabel(trackCount).MinSize().Width+15)
+	p.columnsLayout = layouts.NewColumnsLayout([]float32{-1, -1, 200, trackCountWidth})
+
 	p.header = widgets.NewListHeader([]widgets.ListColumn{
-		{Text: "Name", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Description", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Owner", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Track Count", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}, p.columnsLayout)
+		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: lang.L("Description"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: lang.L("Owner"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: trackCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}, p.columnsLayout)
 	p.header.SetSorting(p.sorting)
 	p.header.OnColumnSortChanged = p.onSorted
 }

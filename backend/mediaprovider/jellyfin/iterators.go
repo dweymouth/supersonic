@@ -9,44 +9,35 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-const (
-	AlbumSortRecentlyAdded  string = "Recently Added"
-	AlbumSortRandom         string = "Random"
-	AlbumSortTitleAZ        string = "Title (A-Z)"
-	AlbumSortArtistAZ       string = "Artist (A-Z)"
-	AlbumSortYearAscending  string = "Year (ascending)"
-	AlbumSortYearDescending string = "Year (descending)"
-)
-
 func (j *jellyfinMediaProvider) AlbumSortOrders() []string {
 	return []string{
-		AlbumSortRecentlyAdded,
-		AlbumSortRandom,
-		AlbumSortTitleAZ,
-		AlbumSortArtistAZ,
-		AlbumSortYearAscending,
-		AlbumSortYearDescending,
+		mediaprovider.AlbumSortRecentlyAdded,
+		mediaprovider.AlbumSortRandom,
+		mediaprovider.AlbumSortTitleAZ,
+		mediaprovider.AlbumSortArtistAZ,
+		mediaprovider.AlbumSortYearAscending,
+		mediaprovider.AlbumSortYearDescending,
 	}
 }
 
 func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
 	var jfSort jellyfin.Sort
 	switch sortOrder {
-	case AlbumSortRecentlyAdded:
+	case mediaprovider.AlbumSortRecentlyAdded:
 		jfSort.Field = jellyfin.SortByDateCreated
 		jfSort.Mode = jellyfin.SortDesc
-	case AlbumSortRandom:
+	case mediaprovider.AlbumSortRandom:
 		jfSort.Field = jellyfin.SortByRandom
-	case AlbumSortArtistAZ:
+	case mediaprovider.AlbumSortArtistAZ:
 		jfSort.Field = jellyfin.SortByArtist
 		jfSort.Mode = jellyfin.SortAsc
-	case AlbumSortTitleAZ:
+	case mediaprovider.AlbumSortTitleAZ:
 		jfSort.Field = jellyfin.SortByName
 		jfSort.Mode = jellyfin.SortAsc
-	case AlbumSortYearAscending:
+	case mediaprovider.AlbumSortYearAscending:
 		jfSort.Field = jellyfin.SortByYear
 		jfSort.Mode = jellyfin.SortAsc
-	case AlbumSortYearDescending:
+	case mediaprovider.AlbumSortYearDescending:
 		jfSort.Field = jellyfin.SortByYear
 		jfSort.Mode = jellyfin.SortDesc
 	}
@@ -64,7 +55,7 @@ func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 		return sharedutil.MapSlice(al, toAlbum), nil
 	}
 
-	if sortOrder == AlbumSortRandom {
+	if sortOrder == mediaprovider.AlbumSortRandom {
 		determFetcher := func(offs, limit int) ([]*mediaprovider.Album, error) {
 			al, err := j.client.GetAlbums(jellyfin.QueryOpts{
 				Sort:   jellyfin.Sort{Field: "SortName", Mode: jellyfin.SortAsc},

@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"image"
 	"strconv"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -42,44 +44,90 @@ const (
 )
 
 var (
-	ExpandedTracklistRowColumns = []TracklistColumn{
-		{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
-		{Name: ColumnTitleArtist, Col: ListColumn{Text: "Title / Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
-		{Name: ColumnAlbum, Col: ListColumn{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		{Name: ColumnComposer, Col: ListColumn{Text: "Composer", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		{Name: ColumnTime, Col: ListColumn{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnYear, Col: ListColumn{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnFavorite, Col: ListColumn{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
-		{Name: ColumnRating, Col: ListColumn{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		{Name: ColumnPlays, Col: ListColumn{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnComment, Col: ListColumn{Text: "Comment", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		{Name: ColumnBitrate, Col: ListColumn{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnSize, Col: ListColumn{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnPath, Col: ListColumn{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-	}
+	ExpandedTracklistRowColumns []TracklistColumn
 
-	// #, Title/Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-	ExpandedTracklistRowColumnWidths = []float32{40, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
+	ExpandedTracklistRowColumnWidths []float32
 
-	CompactTracklistRowColumns = []TracklistColumn{
-		{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
-		{Name: ColumnTitle, Col: ListColumn{Text: "Title", Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
-		{Name: ColumnArtist, Col: ListColumn{Text: "Artist", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		{Name: ColumnAlbum, Col: ListColumn{Text: "Album", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		{Name: ColumnComposer, Col: ListColumn{Text: "Composer", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		{Name: ColumnTime, Col: ListColumn{Text: "Time", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnYear, Col: ListColumn{Text: "Year", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnFavorite, Col: ListColumn{Text: " Fav.", Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
-		{Name: ColumnRating, Col: ListColumn{Text: "Rating", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		{Name: ColumnPlays, Col: ListColumn{Text: "Plays", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnComment, Col: ListColumn{Text: "Comment", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-		{Name: ColumnBitrate, Col: ListColumn{Text: "Bitrate", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnSize, Col: ListColumn{Text: "Size", Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
-		{Name: ColumnPath, Col: ListColumn{Text: "File Path", Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
-	}
+	CompactTracklistRowColumns []TracklistColumn
 
-	// #, Title, Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-	CompactTracklistRowColumnWidths = []float32{40, -1, -1, -1, -1, 60, 60, 55, 100, 65, -1, 75, 75, -1}
+	CompactTracklistRowColumnWidths []float32
+
+	initTracklistColumns = sync.OnceFunc(func() {
+		title := lang.L("Title")
+		artist := lang.L("Artist")
+		album := lang.L("Album")
+		composer := lang.L("Composer")
+		time := lang.L("Time")
+		year := lang.L("Year")
+		fav := lang.L("Fav.")
+		rating := lang.L("Rating")
+		plays := lang.L("Plays")
+		comment := lang.L("Comment")
+		bitrate := lang.L("Bit rate")
+		size := lang.L("Size")
+		filepath := lang.L("File path")
+
+		CompactTracklistRowColumns = []TracklistColumn{
+			{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
+			{Name: ColumnTitle, Col: ListColumn{Text: title, Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
+			{Name: ColumnArtist, Col: ListColumn{Text: artist, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnAlbum, Col: ListColumn{Text: album, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnComposer, Col: ListColumn{Text: composer, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnTime, Col: ListColumn{Text: time, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnYear, Col: ListColumn{Text: year, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnFavorite, Col: ListColumn{Text: " " + fav, Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
+			{Name: ColumnRating, Col: ListColumn{Text: rating, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnPlays, Col: ListColumn{Text: plays, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnComment, Col: ListColumn{Text: comment, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnBitrate, Col: ListColumn{Text: bitrate, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnSize, Col: ListColumn{Text: size, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnPath, Col: ListColumn{Text: filepath, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		}
+
+		ExpandedTracklistRowColumns = []TracklistColumn{
+			{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
+			{Name: ColumnTitleArtist, Col: ListColumn{Text: title + " / " + artist, Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
+			{Name: ColumnAlbum, Col: ListColumn{Text: album, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnComposer, Col: ListColumn{Text: composer, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnTime, Col: ListColumn{Text: time, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnYear, Col: ListColumn{Text: year, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnFavorite, Col: ListColumn{Text: fav, Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
+			{Name: ColumnRating, Col: ListColumn{Text: rating, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnPlays, Col: ListColumn{Text: plays, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnComment, Col: ListColumn{Text: comment, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnBitrate, Col: ListColumn{Text: bitrate, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnSize, Col: ListColumn{Text: size, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnPath, Col: ListColumn{Text: filepath, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+		}
+
+		var sortIconWidth float32 = 15
+
+		numColWidth := widget.NewLabel("9999").MinSize().Width
+		timeColWidth := fyne.Max(
+			widget.NewLabel(time).MinSize().Width+sortIconWidth,
+			widget.NewLabel("99:99").MinSize().Width)
+		yearColWidth := fyne.Max(
+			widget.NewLabel(year).MinSize().Width+sortIconWidth,
+			widget.NewLabel("2000").MinSize().Width)
+		favColWidth := fyne.Max(55,
+			widget.NewLabel(fav).MinSize().Width+sortIconWidth)
+		ratingColWidth := fyne.Max(100,
+			widget.NewLabel(rating).MinSize().Width+sortIconWidth)
+		playsColWidth := fyne.Max(
+			widget.NewLabel("9999").MinSize().Width,
+			widget.NewLabel(plays).MinSize().Width+sortIconWidth)
+		bitrateColWidth := fyne.Max(
+			widget.NewLabel("1000").MinSize().Width,
+			widget.NewLabel(bitrate).MinSize().Width+sortIconWidth)
+		sizeColWidth := fyne.Max(
+			widget.NewLabel("99.9 MB").MinSize().Width,
+			widget.NewLabel(size).MinSize().Width+sortIconWidth)
+
+		// #, Title, Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
+		CompactTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, -1, bitrateColWidth, sizeColWidth, -1}
+		// #, Title/Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
+		ExpandedTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, -1, bitrateColWidth, sizeColWidth, -1}
+	})
 )
 
 type tracklistRowBase struct {

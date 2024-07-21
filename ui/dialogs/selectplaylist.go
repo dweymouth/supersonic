@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
 	"github.com/deluan/sanitize"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -31,12 +32,12 @@ func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetche
 	}
 	sd := NewSearchDialog(
 		im,
-		"Add to playlist",
-		"Cancel",
+		lang.L("Add to playlist"),
+		lang.L("Cancel"),
 		sp.onSearched,
 	)
-	sd.ActionItem = widget.NewCheckWithData("Skip duplicate tracks", binding.BindBool(&sp.SkipDuplicates))
-	sd.PlaceholderText = "Search playlists or new playlist name"
+	sd.ActionItem = widget.NewCheckWithData(lang.L("Skip duplicate tracks"), binding.BindBool(&sp.SkipDuplicates))
+	sd.PlaceholderText = lang.L("Search playlists or new playlist name")
 	sp.SearchDialog = sd
 	return sp
 }
@@ -82,7 +83,7 @@ func (sp *SelectPlaylist) onSearched(query string) []*mediaprovider.SearchResult
 			)
 		})
 		results = append(results, &mediaprovider.SearchResult{
-			Name: fmt.Sprintf("Create new playlist: %s", query),
+			Name: fmt.Sprintf("%s: %s", lang.L("Create new playlist"), query),
 			Type: mediaprovider.ContentTypePlaylist,
 		})
 	}

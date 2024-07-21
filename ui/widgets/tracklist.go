@@ -107,6 +107,7 @@ type Tracklist struct {
 }
 
 func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCompactRows bool) *Tracklist {
+	initTracklistColumns()
 	playIcon := theme.NewThemedResource(theme.MediaPlayIcon())
 	playIcon.ColorName = theme.ColorNamePrimary
 
