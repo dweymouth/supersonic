@@ -19,6 +19,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
@@ -138,12 +139,12 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	if startupPage.Selected == "" {
 		startupPage.SetSelectedIndex(0)
 	}
-	closeToTray := widget.NewCheckWithData("Close to system tray",
+	closeToTray := widget.NewCheckWithData(lang.L("Close to system tray"),
 		binding.BindBool(&s.config.Application.CloseToSystemTray))
 	if !s.config.Application.EnableSystemTray {
 		closeToTray.Disable()
 	}
-	systemTrayEnable := widget.NewCheck("Enable system tray", func(val bool) {
+	systemTrayEnable := widget.NewCheck(lang.L("Enable system tray"), func(val bool) {
 		s.config.Application.EnableSystemTray = val
 		// TODO: see https://github.com/fyne-io/fyne/issues/3788
 		// Once Fyne supports removing/hiding an existing system tray menu,
@@ -170,7 +171,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	if s.config.Application.SaveQueueToServer {
 		saveToServer.Selected = "To server"
 	}
-	saveQueue := widget.NewCheck("Save play queue on exit", func(save bool) {
+	saveQueue := widget.NewCheck(lang.L("Save play queue on exit"), func(save bool) {
 		s.config.Application.SavePlayQueue = save
 		if save && canSaveQueueToServer {
 			saveToServer.Enable()
@@ -184,9 +185,9 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 		saveQueueHBox.Add(saveToServer)
 	}
 
-	trackNotif := widget.NewCheckWithData("Show notification on track change",
+	trackNotif := widget.NewCheckWithData(lang.L("Show notification on track change"),
 		binding.BindBool(&s.config.Application.ShowTrackChangeNotification))
-	albumGridYears := widget.NewCheck("Show year in album grid cards", func(b bool) {
+	albumGridYears := widget.NewCheck(lang.L("Show year in album grid cards"), func(b bool) {
 		s.config.AlbumsPage.ShowYears = b
 		s.config.FavoritesPage.ShowAlbumYears = b
 		if s.OnPageNeedsRefresh != nil {
@@ -256,7 +257,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 		durationEnabled.Disable()
 	}
 
-	scrobbleEnabled := widget.NewCheck("Send playback statistics to server", func(checked bool) {
+	scrobbleEnabled := widget.NewCheck(lang.L("Send playback statistics to server"), func(checked bool) {
 		s.config.Scrobbling.Enabled = checked
 		if !checked {
 			percentEntry.Disable()
@@ -274,13 +275,13 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	})
 	scrobbleEnabled.Checked = s.config.Scrobbling.Enabled
 
-	return container.NewTabItem("General", container.NewVBox(
-		container.NewBorder(nil, nil, widget.NewLabel("Theme"), /*left*/
+	return container.NewTabItem(lang.L("General"), container.NewVBox(
+		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
 			container.NewHBox(widget.NewLabel("Mode"), themeModeSelect, util.NewHSpace(5)), // right
 			themeFileSelect, // center
 		),
 		container.NewHBox(
-			widget.NewLabel("Startup page"), container.NewGridWithColumns(2, startupPage),
+			widget.NewLabel(lang.L("Startup page")), container.NewGridWithColumns(2, startupPage),
 		),
 		container.NewHBox(systemTrayEnable, closeToTray),
 		saveQueueHBox,
@@ -304,7 +305,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 }
 
 func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer bool) *container.TabItem {
-	disableTranscode := widget.NewCheckWithData("Disable server transcoding", binding.BindBool(&s.config.Transcoding.ForceRawFile))
+	disableTranscode := widget.NewCheckWithData(lang.L("Disable server transcoding"), binding.BindBool(&s.config.Transcoding.ForceRawFile))
 	deviceList := make([]string, len(s.audioDevices))
 	var selIndex int
 	for i, dev := range s.audioDevices {
@@ -411,7 +412,7 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 }
 
 func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem {
-	enabled := widget.NewCheck("Enabled", func(b bool) {
+	enabled := widget.NewCheck(lang.L("Enabled"), func(b bool) {
 		s.config.LocalPlayback.EqualizerEnabled = b
 		if s.OnEqualizerSettingsChanged != nil {
 			s.OnEqualizerSettingsChanged()
@@ -435,7 +436,7 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 		debouncer()
 	}
 	cont := container.NewBorder(enabled, nil, nil, nil, geq)
-	return container.NewTabItem("Equalizer", cont)
+	return container.NewTabItem(lang.L("Equalizer"), cont)
 }
 
 func (s *SettingsDialog) createExperimentalTab(window fyne.Window) *container.TabItem {
@@ -524,7 +525,7 @@ func (s *SettingsDialog) setRestartRequired() {
 	if ts.Text != "" {
 		return
 	}
-	ts.Text = "Restart required"
+	ts.Text = lang.L("Restart required")
 	ts.Style.ColorName = theme.ColorNameError
 	s.promptText.Refresh()
 }

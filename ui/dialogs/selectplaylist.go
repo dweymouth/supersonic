@@ -32,12 +32,12 @@ func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetche
 	}
 	sd := NewSearchDialog(
 		im,
-		"Add to playlist",
-		"Cancel",
+		lang.L("Add to playlist"),
+		lang.L("Cancel"),
 		sp.onSearched,
 	)
 	sd.ActionItem = widget.NewCheckWithData(lang.L("Skip duplicate tracks"), binding.BindBool(&sp.SkipDuplicates))
-	sd.PlaceholderText = "Search playlists or new playlist name"
+	sd.PlaceholderText = lang.L("Search playlists or new playlist name")
 	sp.SearchDialog = sd
 	return sp
 }
