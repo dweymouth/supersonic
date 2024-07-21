@@ -38,7 +38,16 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 
 	addFormRow(c, "Title", t.track.Title)
 
-	c.Add(newFormText("Artist", true))
+	c.Add(newFormText("Album", true))
+	album := widget.NewHyperlink(t.track.Album, nil)
+	album.OnTapped = func() {
+		if t.OnNavigateToAlbum != nil {
+			t.OnNavigateToAlbum(t.track.AlbumID)
+		}
+	}
+	c.Add(album)
+
+	c.Add(newFormText("Artists", true))
 	artists := widgets.NewMultiHyperlink()
 	artists.BuildSegments(t.track.ArtistNames, t.track.ArtistIDs)
 	artists.OnTapped = func(id string) {
@@ -48,14 +57,17 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c.Add(artists)
 
-	c.Add(newFormText("Album", true))
-	album := widget.NewHyperlink(t.track.Album, nil)
-	album.OnTapped = func() {
-		if t.OnNavigateToAlbum != nil {
-			t.OnNavigateToAlbum(t.track.AlbumID)
+	if len(t.track.ComposerNames) > 0 {
+		c.Add(newFormText("Composers", true))
+		composers := widgets.NewMultiHyperlink()
+		composers.BuildSegments(t.track.ComposerNames, t.track.ComposerIDs)
+		artists.OnTapped = func(id string) {
+			if t.OnNavigateToArtist != nil {
+				t.OnNavigateToArtist(id)
+			}
 		}
+		c.Add(composers)
 	}
-	c.Add(album)
 
 	if len(t.track.Genres) > 0 {
 		c.Add(newFormText("Genres", true))
