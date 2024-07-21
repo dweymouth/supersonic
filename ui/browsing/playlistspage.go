@@ -337,10 +337,9 @@ type PlaylistList struct {
 
 func NewPlaylistList(initialSort widgets.ListHeaderSort) *PlaylistList {
 	a := &PlaylistList{
-		sorting:       initialSort,
-		columnsLayout: layouts.NewColumnsLayout([]float32{-1, -1, 200, 125}),
+		sorting: initialSort,
 	}
-	a.buildHeader()
+	a.buildHeaderAndLayout()
 	a.list = widgets.NewFocusList(
 		func() int {
 			return len(a.playlists)
@@ -372,12 +371,16 @@ func NewPlaylistList(initialSort widgets.ListHeaderSort) *PlaylistList {
 	return a
 }
 
-func (p *PlaylistList) buildHeader() {
+func (p *PlaylistList) buildHeaderAndLayout() {
+	trackCount := lang.L("Track count")
+	trackCountWidth := fyne.Max(125, widget.NewLabel(trackCount).MinSize().Width+15)
+	p.columnsLayout = layouts.NewColumnsLayout([]float32{-1, -1, 200, trackCountWidth})
+
 	p.header = widgets.NewListHeader([]widgets.ListColumn{
-		{Text: "Name", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Description", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Owner", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Track Count", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}, p.columnsLayout)
+		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: lang.L("Description"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: lang.L("Owner"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: trackCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}, p.columnsLayout)
 	p.header.SetSorting(p.sorting)
 	p.header.OnColumnSortChanged = p.onSorted
 }
