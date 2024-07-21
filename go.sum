@@ -79,8 +79,8 @@ github.com/dweymouth/fyne-advanced-list v0.0.0-20240623145729-9c6b8f99bcfe h1:ow
 github.com/dweymouth/fyne-advanced-list v0.0.0-20240623145729-9c6b8f99bcfe/go.mod h1:sbOhla4VcfFb4OjXiUFTLXMPTnhRUlVrDMhB8HtWR4o=
 github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64 h1:RUIrnGY034rDMlcOui/daurwX5b+52KdUKhH9aXaDSg=
 github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64/go.mod h1:3YrjFDHMlhCsSZ/OvmJCxWm9QHSgOVWZBxnraZz9Z7c=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240721175043-f7b0391c76a6 h1:4NuEVS2zgD14ptLoMU21j6Fd23Bjoject4LjfGnCPv0=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240721175043-f7b0391c76a6/go.mod h1:9D4oT3NWeG+MLi/lP7ItZZyujHC/qqMJpoGTAYX5Uqc=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240721235224-2c49fb2028fa h1:c+1vz4rBBYuvWkc9aI2Pty5+BgVparEL7j1XJo3BT2s=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240721235224-2c49fb2028fa/go.mod h1:9D4oT3NWeG+MLi/lP7ItZZyujHC/qqMJpoGTAYX5Uqc=
 github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645 h1:KzqSaQwG3HsTZQlEtkp0BeUy9vmYZ0rq0B15qIPSiBs=
 github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/dweymouth/go-mpv v0.0.0-20230406003141-7f1858e503ee h1:ZGyJ6wp7CAfT31BugypcF/TPKEy2RrGR9JFq1JOjOpY=
