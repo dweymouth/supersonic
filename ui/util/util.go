@@ -206,7 +206,7 @@ func DisplayReleaseType(releaseTypes mediaprovider.ReleaseTypes) string {
 
 func NewRatingSubmenu(onSetRating func(int)) *fyne.MenuItem {
 	newRatingMenuItem := func(rating int) *fyne.MenuItem {
-		label := lang.L("(none)")
+		label := fmt.Sprintf("(%s)", lang.L("none"))
 		if rating > 0 {
 			label = strconv.Itoa(rating)
 		}
