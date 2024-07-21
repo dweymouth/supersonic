@@ -249,8 +249,8 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 	a.playingIcon = container.NewCenter(widget.NewIcon(playIcon))
 	a.ExtendBaseWidget(a)
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
-		{Text: "Name", Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: "Home Page", Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
+		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: lang.L("Home Page"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
 		a.columnsLayout)
 	a.hdr.DisableSorting = true
 	a.list = widgets.NewFocusList(

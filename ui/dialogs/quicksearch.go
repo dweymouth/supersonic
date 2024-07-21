@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/lang"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/util"
 )
@@ -15,7 +16,7 @@ type QuickSearch struct {
 
 func NewQuickSearch(mp mediaprovider.MediaProvider, im util.ImageFetcher) *QuickSearch {
 	q := &QuickSearch{mp: mp}
-	q.SearchDialog = NewSearchDialog(im, "Quick Search", "Close", q.onSearched)
+	q.SearchDialog = NewSearchDialog(im, lang.L("Search Everywhere"), lang.L("Close"), q.onSearched)
 	return q
 }
 

@@ -12,6 +12,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -56,24 +57,24 @@ func SecondsToTimeString(s float64) string {
 
 	var str string
 	if days > 0 {
-		daysStr := "days"
+		daysStr := lang.L("days")
 		if days == 1 {
-			daysStr = "day"
+			daysStr = lang.L("day")
 		}
 		str = fmt.Sprintf("%d %s ", days, daysStr)
 	}
 	if hr > 0 {
-		hrStr := "hrs"
+		hrStr := lang.L("hrs")
 		if hr == 1 {
-			hrStr = "hr"
+			hrStr = lang.L("hr")
 		}
 		str += fmt.Sprintf("%d %s ", hr, hrStr)
 	}
 	if min > 0 {
-		str += fmt.Sprintf("%d min ", min)
+		str += fmt.Sprintf("%d %s ", min, lang.L("min"))
 	}
 	if sec > 0 {
-		str += fmt.Sprintf("%d sec ", sec)
+		str += fmt.Sprintf("%d %s ", sec, lang.L("sec"))
 	}
 	return str[:len(str)-1]
 }
@@ -158,45 +159,45 @@ func PlaintextFromHTMLString(s string) string {
 }
 
 func DisplayReleaseType(releaseTypes mediaprovider.ReleaseTypes) string {
-	baseType := "Album"
+	baseType := lang.L("Album")
 	switch {
 	case releaseTypes&mediaprovider.ReleaseTypeAudiobook > 0:
-		baseType = "Audiobook"
+		baseType = lang.L("Audiobook")
 	case releaseTypes&mediaprovider.ReleaseTypeAudioDrama > 0:
-		baseType = "Audio Drama"
+		baseType = lang.L("Audio Drama")
 	case releaseTypes&mediaprovider.ReleaseTypeBroadcast > 0:
-		baseType = "Broadcast"
+		baseType = lang.L("Broadcast")
 	case releaseTypes&mediaprovider.ReleaseTypeDJMix > 0:
-		baseType = "DJ-Mix"
+		baseType = lang.L("DJ-Mix")
 	case releaseTypes&mediaprovider.ReleaseTypeEP > 0:
-		baseType = "EP"
+		baseType = lang.L("EP")
 	case releaseTypes&mediaprovider.ReleaseTypeFieldRecording > 0:
-		baseType = "Field Recording"
+		baseType = lang.L("Field Recording")
 	case releaseTypes&mediaprovider.ReleaseTypeInterview > 0:
-		baseType = "Interview"
+		baseType = lang.L("Interview")
 	case releaseTypes&mediaprovider.ReleaseTypeMixtape > 0:
-		baseType = "Mixtape"
+		baseType = lang.L("Mixtape")
 	case releaseTypes&mediaprovider.ReleaseTypeSingle > 0:
-		baseType = "Single"
+		baseType = lang.L("Single")
 	case releaseTypes&mediaprovider.ReleaseTypeSoundtrack > 0:
-		baseType = "Soundtrack"
+		baseType = lang.L("Soundtrack")
 	}
 
 	var modifiers []string
 	if releaseTypes&mediaprovider.ReleaseTypeLive > 0 {
-		modifiers = append(modifiers, "Live")
+		modifiers = append(modifiers, lang.L("Live"))
 	}
 	if releaseTypes&mediaprovider.ReleaseTypeDemo > 0 {
-		modifiers = append(modifiers, "Demo")
+		modifiers = append(modifiers, lang.L("Demo"))
 	}
 	if releaseTypes&mediaprovider.ReleaseTypeRemix > 0 {
-		modifiers = append(modifiers, "Remix")
+		modifiers = append(modifiers, lang.L("Remix"))
 	}
 	if releaseTypes&mediaprovider.ReleaseTypeSpokenWord > 0 {
-		modifiers = append(modifiers, "Spoken Word")
+		modifiers = append(modifiers, lang.L("Spoken Word"))
 	}
 	if releaseTypes&mediaprovider.ReleaseTypeCompilation > 0 {
-		modifiers = append(modifiers, "Compilation")
+		modifiers = append(modifiers, lang.L("Compilation"))
 	}
 
 	modifiers = append(modifiers, baseType)
@@ -205,7 +206,7 @@ func DisplayReleaseType(releaseTypes mediaprovider.ReleaseTypes) string {
 
 func NewRatingSubmenu(onSetRating func(int)) *fyne.MenuItem {
 	newRatingMenuItem := func(rating int) *fyne.MenuItem {
-		label := "(none)"
+		label := lang.L("(none)")
 		if rating > 0 {
 			label = strconv.Itoa(rating)
 		}
@@ -213,7 +214,7 @@ func NewRatingSubmenu(onSetRating func(int)) *fyne.MenuItem {
 			onSetRating(rating)
 		})
 	}
-	ratingMenu := fyne.NewMenuItem("Set rating", nil)
+	ratingMenu := fyne.NewMenuItem(lang.L("Set rating"), nil)
 	ratingMenu.Icon = theme.NewThemedResource(res.ResStarOutlineSvg)
 	ratingMenu.ChildMenu = fyne.NewMenu("", []*fyne.MenuItem{
 		newRatingMenuItem(0),

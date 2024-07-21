@@ -9,6 +9,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -58,7 +59,7 @@ func (g *genrePageAdapter) Route() controller.Route {
 
 func (g *genrePageAdapter) ActionButton() *widget.Button {
 	fn := func() { go g.pm.PlayRandomSongs(g.genre) }
-	return widget.NewButtonWithIcon("Play random", myTheme.ShuffleIcon, fn)
+	return widget.NewButtonWithIcon(lang.L("Play random"), myTheme.ShuffleIcon, fn)
 }
 
 func (a *genrePageAdapter) Iter(sortOrder string, filter mediaprovider.AlbumFilter) widgets.GridViewIterator {
