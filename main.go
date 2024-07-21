@@ -14,6 +14,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/lang"
 )
 
 func main() {
@@ -43,6 +44,7 @@ func main() {
 		os.Setenv("FYNE_SCALE", "1.1")
 	}
 
+	lang.AddTranslationsFS(res.Translations, "translations")
 	fyneApp := app.New()
 	fyneApp.SetIcon(res.ResAppicon256Png)
 
