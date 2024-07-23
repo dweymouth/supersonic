@@ -117,7 +117,7 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		// average the Foreground and Disabled colors
 		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
 		disabled := colorOrDefault(colors.Disabled, defColors.Disabled, theme.ColorNameDisabled, variant)
-		return blendColors(foreground, disabled, 0.33)
+		return BlendColors(foreground, disabled, 0.33)
 	case ColorNameHoveredIconButton:
 		if variant == theme.VariantDark {
 			return color.White
@@ -273,7 +273,7 @@ func (m *MyTheme) getVariant() fyne.ThemeVariant {
 	return fyne.CurrentApp().Settings().ThemeVariant()
 }
 
-func blendColors(a, b color.Color, fractionA float64) color.Color {
+func BlendColors(a, b color.Color, fractionA float64) color.Color {
 	ra, ga, ba, aa := a.RGBA()
 	rb, gb, bb, ab := b.RGBA()
 

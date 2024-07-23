@@ -1,19 +1,21 @@
 package ui
 
 import (
+	"fmt"
 	"image/color"
 	"math"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 )
 
 const (
-	meterRangeDB       = 60
+	meterRangeDB       = 62
 	rmsSmoothingFactor = 0.8
 	peakHoldFrames     = 60
 )
@@ -33,13 +35,7 @@ type PeakMeter struct {
 	rPeakHoldFrame uint64
 	frameCounter   uint64
 
-	lPeakRect     canvas.Rectangle
-	rPeakRect     canvas.Rectangle
-	lRMSRect      canvas.Rectangle
-	rRMSRect      canvas.Rectangle
-	lPeakHoldRect canvas.Rectangle
-	rPeakHoldRect canvas.Rectangle
-	anim          *fyne.Animation
+	anim *fyne.Animation
 }
 
 func NewPeakMeter(peakFnDB PeakFN) *PeakMeter {
@@ -89,53 +85,151 @@ func (p *PeakMeter) tick(_ float32) {
 }
 
 func (p *PeakMeter) CreateRenderer() fyne.WidgetRenderer {
+	return newPeakMeterRenderer(p)
+}
+
+type peakMeterRenderer struct {
+	p *PeakMeter
+
+	lLabel        canvas.Text
+	rLabel        canvas.Text
+	lPeakRect     canvas.Rectangle
+	rPeakRect     canvas.Rectangle
+	lRMSRect      canvas.Rectangle
+	rRMSRect      canvas.Rectangle
+	lPeakHoldRect canvas.Rectangle
+	rPeakHoldRect canvas.Rectangle
+
+	rulerLines  []canvas.Rectangle
+	rulerLabels []canvas.Text
+
+	fgColor   color.Color
+	bgColor   color.Color
+	ruleColor color.Color
+}
+
+func newPeakMeterRenderer(pm *PeakMeter) *peakMeterRenderer {
+	p := &peakMeterRenderer{p: pm}
+	p.lLabel.Text = "L"
+	p.rLabel.Text = "R"
+	numRules := int(math.Ceil(float64(meterRangeDB) / 10))
+	p.rulerLines = make([]canvas.Rectangle, numRules)
+	p.rulerLabels = make([]canvas.Text, numRules)
+	x := 0
+	for i := range p.rulerLabels {
+		p.rulerLabels[i].Text = fmt.Sprintf("%d dB", x)
+		p.rulerLabels[i].Resize(p.rulerLabels[i].MinSize())
+		x -= 10
+	}
+
+	return p
+}
+
+func (l *peakMeterRenderer) MinSize() fyne.Size {
+	return fyne.NewSize(275, 75)
+}
+
+func (l *peakMeterRenderer) Layout(size fyne.Size) {
+	topSpacing := float32(5)
+	lrLabelWidth := float32(20)
+	overflowWidth := float32(10)
+	ruleLabelHeight := float32(10)
+	meterWidth := size.Width - lrLabelWidth - overflowWidth - topSpacing
+
+	lPeakWidth := float32(math.Max(0, meterRangeDB+l.p.lPeak)/meterRangeDB) * meterWidth
+	rPeakWidth := float32(math.Max(0, meterRangeDB+l.p.rPeak)/meterRangeDB) * meterWidth
+	lRMSWidth := float32(math.Max(0, meterRangeDB+l.p.lRMS)/meterRangeDB) * meterWidth
+	rRMSWidth := float32(math.Max(0, meterRangeDB+l.p.rRMS)/meterRangeDB) * meterWidth
+	lPeakHoldPos := float32(math.Max(0, meterRangeDB+l.p.lPeakHold)/meterRangeDB) * meterWidth
+	rPeakHoldPos := float32(math.Max(0, meterRangeDB+l.p.rPeakHold)/meterRangeDB) * meterWidth
+
+	barSpacing := float32(2)
+	barHeight := size.Height/2 - barSpacing - ruleLabelHeight
+
+	labelMin := l.lLabel.MinSize()
+	l.lLabel.Move(fyne.NewPos(4, (barHeight-labelMin.Height)/2+topSpacing))
+	l.lLabel.Resize(l.lLabel.MinSize())
+	l.rLabel.Move(fyne.NewPos(4, barHeight+barSpacing+topSpacing+(barHeight-labelMin.Height)/2))
+
+	l.lPeakRect.Move(fyne.NewPos(lrLabelWidth, topSpacing))
+	l.lPeakRect.Resize(fyne.NewSize(lPeakWidth, barHeight))
+	l.rPeakRect.Move(fyne.NewPos(lrLabelWidth, barHeight+barSpacing+topSpacing))
+	l.rPeakRect.Resize(fyne.NewSize(rPeakWidth, barHeight))
+	l.lRMSRect.Move(fyne.NewPos(lrLabelWidth, topSpacing))
+	l.lRMSRect.Resize(fyne.NewSize(lRMSWidth, barHeight))
+	l.rRMSRect.Move(fyne.NewPos(lrLabelWidth, barHeight+barSpacing+topSpacing))
+	l.rRMSRect.Resize(fyne.NewSize(rRMSWidth, barHeight))
+
+	peakHoldWidth := theme.SeparatorThicknessSize() * 2
+	l.lPeakHoldRect.Move(fyne.NewPos(lPeakHoldPos+lrLabelWidth, topSpacing))
+	l.lPeakHoldRect.Resize(fyne.NewSize(peakHoldWidth, barHeight))
+	l.rPeakHoldRect.Move(fyne.NewPos(rPeakHoldPos+lrLabelWidth, barHeight+barSpacing+topSpacing))
+	l.rPeakHoldRect.Resize(fyne.NewSize(peakHoldWidth, barHeight))
+
+	ruleWidth := peakHoldWidth * 0.667
+	x := lrLabelWidth + meterWidth
+	for i := range l.rulerLines {
+		bottom := (barHeight + barSpacing) * 2
+		l.rulerLines[i].Move(fyne.NewPos(x, topSpacing))
+		l.rulerLines[i].Resize(fyne.NewSize(ruleWidth, bottom))
+		l.rulerLabels[i].Move(fyne.NewPos(x-10, bottom+topSpacing))
+		x -= meterWidth * (10 / float32(meterRangeDB))
+	}
+}
+
+func (l *peakMeterRenderer) Refresh() {
+	foreground := theme.ForegroundColor()
+	background := theme.BackgroundColor()
+	errC := theme.ErrorColor()
 	c := theme.PrimaryColor().(color.NRGBA)
 	c.A = 128
-	p.lPeakRect.FillColor = c
-	p.rPeakRect.FillColor = c
-	p.lRMSRect.FillColor = c
-	p.rRMSRect.FillColor = c
-	p.lPeakHoldRect.FillColor = theme.ForegroundColor()
-	p.rPeakHoldRect.FillColor = p.lPeakHoldRect.FillColor
-	return widget.NewSimpleRenderer(
-		container.New(
-			&peakMeterLayout{p},
-			&p.lPeakRect, &p.rPeakRect,
-			&p.lRMSRect, &p.rRMSRect,
-			&p.lPeakHoldRect, &p.rPeakHoldRect,
-		),
-	)
+	l.lLabel.Color = foreground
+	l.rLabel.Color = foreground
+	l.lLabel.TextSize = 16
+	l.rLabel.TextSize = 16
+	l.lLabel.TextStyle.Bold = true
+	l.rLabel.TextStyle.Bold = true
+	l.lPeakRect.FillColor = c
+	l.rPeakRect.FillColor = c
+	l.lRMSRect.FillColor = c
+	l.rRMSRect.FillColor = c
+
+	if l.p.lPeakHold >= -0.00001 {
+		l.lPeakHoldRect.FillColor = errC
+	} else {
+		l.lPeakHoldRect.FillColor = foreground
+	}
+	if l.p.rPeakHold >= -0.00001 {
+		l.rPeakHoldRect.FillColor = errC
+	} else {
+		l.rPeakHoldRect.FillColor = foreground
+	}
+
+	if foreground != l.fgColor || background != l.bgColor {
+		l.ruleColor = myTheme.BlendColors(foreground, background, 0.5)
+		l.fgColor = foreground
+		l.bgColor = background
+	}
+	for i := range l.rulerLines {
+		l.rulerLines[i].FillColor = l.ruleColor
+		l.rulerLabels[i].TextSize = 11
+	}
+
+	l.Layout(l.p.Size())
 }
 
-type peakMeterLayout struct {
-	p *PeakMeter
+func (l *peakMeterRenderer) Objects() []fyne.CanvasObject {
+	obj := make([]fyne.CanvasObject, 0, 6+len(l.rulerLines))
+	for i := range l.rulerLines {
+		obj = append(obj, &l.rulerLines[i], &l.rulerLabels[i])
+	}
+	return append(obj,
+		&l.lLabel, &l.rLabel,
+		&l.lPeakRect, &l.rPeakRect,
+		&l.lRMSRect, &l.rRMSRect,
+		&l.lPeakHoldRect, &l.rPeakHoldRect)
 }
 
-func (l *peakMeterLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
-	return fyne.NewSize(50, 150)
-}
-
-func (l *peakMeterLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
-	lPeakH := float32(math.Max(0, meterRangeDB+l.p.lPeak)/meterRangeDB) * size.Height
-	rPeakH := float32(math.Max(0, meterRangeDB+l.p.rPeak)/meterRangeDB) * size.Height
-	lRMSH := float32(math.Max(0, meterRangeDB+l.p.lRMS)/meterRangeDB) * size.Height
-	rRMSH := float32(math.Max(0, meterRangeDB+l.p.rRMS)/meterRangeDB) * size.Height
-	lPeakHoldPos := float32(math.Max(0, meterRangeDB+l.p.lPeakHold)/meterRangeDB) * size.Height
-	rPeakHoldPos := float32(math.Max(0, meterRangeDB+l.p.rPeakHold)/meterRangeDB) * size.Height
-
-	halfW := size.Width / 2
-	objects[0].Move(fyne.NewPos(0, size.Height-lPeakH))
-	objects[0].Resize(fyne.NewSize(halfW, lPeakH))
-	objects[1].Move(fyne.NewPos(halfW, size.Height-rPeakH))
-	objects[1].Resize(fyne.NewSize(halfW, rPeakH))
-	objects[2].Move(fyne.NewPos(0, size.Height-lRMSH))
-	objects[2].Resize(fyne.NewSize(halfW, lRMSH))
-	objects[3].Move(fyne.NewPos(halfW, size.Height-rRMSH))
-	objects[3].Resize(fyne.NewSize(halfW, rRMSH))
-
-	peakHoldHt := theme.SeparatorThicknessSize() * 2
-	objects[4].Move(fyne.NewPos(0, size.Height-lPeakHoldPos-peakHoldHt))
-	objects[4].Resize(fyne.NewSize(halfW, peakHoldHt))
-	objects[5].Move(fyne.NewPos(halfW, size.Height-rPeakHoldPos-peakHoldHt))
-	objects[5].Resize(fyne.NewSize(halfW, peakHoldHt))
+func (l *peakMeterRenderer) Destroy() {
+	l.p.Stop()
 }
