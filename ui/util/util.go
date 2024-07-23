@@ -257,6 +257,13 @@ func NewTrailingAlignLabel() *widget.Label {
 	return rt
 }
 
+func SaveWindowSize(w fyne.Window, wPtr, hPtr *int) {
+	// round sizes to even to avoid Wayland issues with 2x scaling factor
+	// https://github.com/dweymouth/supersonic/issues/212
+	*wPtr = int(math.RoundToEven(float64(w.Canvas().Size().Width)))
+	*hPtr = int(math.RoundToEven(float64(w.Canvas().Size().Height)))
+}
+
 type HSpace struct {
 	widget.BaseWidget
 

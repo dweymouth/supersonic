@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/lang"
+	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/visualizations"
 )
 
@@ -35,7 +36,15 @@ func (c *Controller) ShowPeakMeter() {
 		c.stopVisualizationAnim()
 		c.peakMeter = nil
 		win.Close()
+		util.SaveWindowSize(win,
+			&c.App.Config.PeakMeter.WindowWidth,
+			&c.App.Config.PeakMeter.WindowHeight)
 	})
+	if c.App.Config.PeakMeter.WindowHeight > 0 {
+		win.Resize(fyne.NewSize(
+			float32(c.App.Config.PeakMeter.WindowWidth),
+			float32(c.App.Config.PeakMeter.WindowHeight)))
+	}
 	c.peakMeter = visualizations.NewPeakMeter()
 	win.SetContent(c.peakMeter)
 	c.startVisualizationAnim()

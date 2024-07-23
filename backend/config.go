@@ -124,6 +124,11 @@ type TranscodingConfig struct {
 	ForceRawFile bool
 }
 
+type PeakMeterConfig struct {
+	WindowHeight int
+	WindowWidth  int
+}
+
 type Config struct {
 	Application      AppConfig
 	Servers          []*ServerConfig
@@ -141,6 +146,7 @@ type Config struct {
 	ReplayGain       ReplayGainConfig
 	Transcoding      TranscodingConfig
 	Theme            ThemeConfig
+	PeakMeter        PeakMeterConfig
 }
 
 var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists"}
@@ -220,6 +226,10 @@ func DefaultConfig(appVersionTag string) *Config {
 		},
 		Theme: ThemeConfig{
 			Appearance: "Dark",
+		},
+		PeakMeter: PeakMeterConfig{
+			WindowWidth:  375,
+			WindowHeight: 100,
 		},
 	}
 }

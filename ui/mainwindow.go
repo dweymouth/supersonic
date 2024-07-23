@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"log"
-	"math"
 	"runtime"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/dialogs"
 	"github.com/dweymouth/supersonic/ui/os"
 	"github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -432,8 +432,7 @@ func (m *MainWindow) Quit() {
 }
 
 func (m *MainWindow) SaveWindowSize() {
-	// round sizes to even to avoid Wayland issues with 2x scaling factor
-	// https://github.com/dweymouth/supersonic/issues/212
-	m.App.Config.Application.WindowHeight = int(math.RoundToEven(float64(m.Window.Canvas().Size().Height)))
-	m.App.Config.Application.WindowWidth = int(math.RoundToEven(float64(m.Window.Canvas().Size().Width)))
+	util.SaveWindowSize(m.Window,
+		&m.App.Config.Application.WindowWidth,
+		&m.App.Config.Application.WindowHeight)
 }
