@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/lang"
+	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/visualizations"
 )
@@ -47,7 +48,12 @@ func (c *Controller) ShowPeakMeter() {
 	}
 	c.peakMeter = visualizations.NewPeakMeter()
 	win.SetContent(c.peakMeter)
-	c.startVisualizationAnim()
+	if c.App.LocalPlayer.GetStatus().State == player.Playing {
+		c.startVisualizationAnim()
+	} else {
+		// TODO: why is this needed?
+		c.peakMeter.Refresh()
+	}
 	win.Show()
 }
 

@@ -17,6 +17,8 @@ const (
 	meterRangeDB       = 62
 	rmsSmoothingFactor = 0.8
 	peakHoldFrames     = 60
+
+	noiseFloorDB = -96
 )
 
 type PeakMeter struct {
@@ -33,7 +35,14 @@ type PeakMeter struct {
 }
 
 func NewPeakMeter() *PeakMeter {
-	p := &PeakMeter{}
+	p := &PeakMeter{
+		lPeak:     noiseFloorDB,
+		rPeak:     noiseFloorDB,
+		lRMS:      noiseFloorDB,
+		rRMS:      noiseFloorDB,
+		lPeakHold: noiseFloorDB,
+		rPeakHold: noiseFloorDB,
+	}
 	p.ExtendBaseWidget(p)
 	return p
 }
@@ -44,8 +53,8 @@ func NewPeakMeter() *PeakMeter {
 func (p *PeakMeter) UpdatePeaks(lPeak, rPeak, lRMS, rRMS float64) {
 	p.lPeak = lPeak
 	p.rPeak = rPeak
-	lRMS = math.Max(-96, lRMS)
-	rRMS = math.Max(-96, rRMS)
+	lRMS = math.Max(noiseFloorDB, lRMS)
+	rRMS = math.Max(noiseFloorDB, rRMS)
 	p.lRMS = rmsSmoothingFactor*p.lRMS + (1-rmsSmoothingFactor)*lRMS
 	p.rRMS = rmsSmoothingFactor*p.rRMS + (1-rmsSmoothingFactor)*rRMS
 
@@ -99,6 +108,7 @@ func newPeakMeterRenderer(pm *PeakMeter) *peakMeterRenderer {
 		p.rulerLabels[i].Resize(p.rulerLabels[i].MinSize())
 		x -= 10
 	}
+	p.Layout(pm.Size())
 
 	return p
 }
