@@ -134,27 +134,27 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		m.BrowsingPane.ClearHistory()
 		m.Controller.PromptForLoginAndConnect()
 	})
-	m.BrowsingPane.AddSettingsMenuItem("Log Out", func() { app.ServerManager.Logout(true) })
-	m.BrowsingPane.AddSettingsMenuItem("Switch Servers", func() { app.ServerManager.Logout(false) })
-	m.BrowsingPane.AddSettingsMenuItem("Rescan Library", func() { app.ServerManager.Server.RescanLibrary() })
+	m.BrowsingPane.AddSettingsMenuItem(lang.L("Log Out"), func() { app.ServerManager.Logout(true) })
+	m.BrowsingPane.AddSettingsMenuItem(lang.L("Switch Servers"), func() { app.ServerManager.Logout(false) })
+	m.BrowsingPane.AddSettingsMenuItem(lang.L("Rescan Library"), func() { app.ServerManager.Server.RescanLibrary() })
 	m.BrowsingPane.AddSettingsMenuSeparator()
 	m.BrowsingPane.AddSettingsSubmenu(lang.L("Visualizations"),
 		fyne.NewMenu("", []*fyne.MenuItem{
 			fyne.NewMenuItem(lang.L("Peak Meter"), m.Controller.ShowPeakMeter),
 		}...))
-	m.BrowsingPane.AddSettingsMenuItem("Check for Updates", func() {
+	m.BrowsingPane.AddSettingsMenuItem(lang.L("Check for Updates"), func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
 				m.ShowNewVersionDialog(displayAppName, t)
 			} else {
-				dialog.ShowInformation("No new version found",
-					"You are running the latest version of "+displayAppName,
+				dialog.ShowInformation(lang.L("No new version found"),
+					lang.L("You are running the latest version of")+" "+displayAppName,
 					m.Window)
 			}
 		}()
 	})
-	m.BrowsingPane.AddSettingsMenuItem("Settings...", m.showSettingsDialog)
-	m.BrowsingPane.AddSettingsMenuItem("About...", m.Controller.ShowAboutDialog)
+	m.BrowsingPane.AddSettingsMenuItem(lang.L("Settings")+"...", m.showSettingsDialog)
+	m.BrowsingPane.AddSettingsMenuItem(lang.L("About")+"...", m.Controller.ShowAboutDialog)
 	m.addNavigationButtons()
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()
@@ -250,30 +250,30 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
 	if desk, ok := fyneApp.(desktop.App); ok {
 		menu := fyne.NewMenu(appName,
-			fyne.NewMenuItem("Play/Pause", func() {
+			fyne.NewMenuItem(fmt.Sprintf("%s/%s", lang.L("Play"), lang.L("Pause")), func() {
 				_ = m.App.PlaybackManager.PlayPause()
 			}),
-			fyne.NewMenuItem("Previous", func() {
+			fyne.NewMenuItem(lang.L("Previous"), func() {
 				_ = m.App.PlaybackManager.SeekBackOrPrevious()
 			}),
-			fyne.NewMenuItem("Next", func() {
+			fyne.NewMenuItem(lang.L("Next"), func() {
 				_ = m.App.PlaybackManager.SeekNext()
 			}),
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem("Volume +10%", func() {
+			fyne.NewMenuItem(lang.L("Volume")+" +10%", func() {
 				vol := m.App.PlaybackManager.Volume()
 				vol = vol + int(float64(vol)*0.1)
 				// will clamp to range for us
 				m.App.PlaybackManager.SetVolume(vol)
 			}),
-			fyne.NewMenuItem("Volume -10%", func() {
+			fyne.NewMenuItem(lang.L("Volume")+" -10%", func() {
 				vol := m.App.PlaybackManager.Volume()
 				vol = vol - int(float64(vol)*0.1)
 				m.App.PlaybackManager.SetVolume(vol)
 			}),
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem("Show", m.Window.Show),
-			fyne.NewMenuItem("Hide", m.Window.Hide),
+			fyne.NewMenuItem(lang.L("Show"), m.Window.Show),
+			fyne.NewMenuItem(lang.L("Hide"), m.Window.Hide),
 		)
 		desk.SetSystemTrayMenu(menu)
 		desk.SetSystemTrayIcon(res.ResAppicon256Png)
@@ -289,8 +289,8 @@ func (m *MainWindow) ShowNewVersionDialog(appName, versionTag string) {
 	contentStr := fmt.Sprintf("A new version of %s (%s) is available",
 		appName, versionTag)
 	m.Controller.QueueShowModalFunc(func() {
-		dialog.ShowCustomConfirm("A new version is available",
-			"Go to release page", "Skip this version",
+		dialog.ShowCustomConfirm(lang.L("A new version is available"),
+			lang.L("Go to release page"), lang.L("Skip this version"),
 			widget.NewLabel(contentStr), func(show bool) {
 				if show {
 					fyne.CurrentApp().OpenURL(m.App.UpdateChecker.LatestReleaseURL())
@@ -301,7 +301,7 @@ func (m *MainWindow) ShowNewVersionDialog(appName, versionTag string) {
 }
 
 func (m *MainWindow) ShowWhatsNewDialog() {
-	dialog.ShowCustom("What's new in "+res.AppVersion, "Close", dialogs.NewWhatsNewDialog(), m.Window)
+	dialog.ShowCustom("What's new in "+res.AppVersion, lang.L("Close"), dialogs.NewWhatsNewDialog(), m.Window)
 }
 
 func (m *MainWindow) addNavigationButtons() {
