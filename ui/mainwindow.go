@@ -21,6 +21,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -80,6 +81,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		MainWindow: m.Window,
 		App:        app,
 	}
+	m.Controller.InitVisualizations()
 	m.BrowsingPane = browsing.NewBrowsingPane(app, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	// inject controller dependencies
@@ -136,6 +138,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BrowsingPane.AddSettingsMenuItem("Switch Servers", func() { app.ServerManager.Logout(false) })
 	m.BrowsingPane.AddSettingsMenuItem("Rescan Library", func() { app.ServerManager.Server.RescanLibrary() })
 	m.BrowsingPane.AddSettingsMenuSeparator()
+	m.BrowsingPane.AddSettingsMenuItem(lang.L("Show Peak Meter"), m.Controller.ShowPeakMeter)
 	m.BrowsingPane.AddSettingsMenuItem("Check for Updates", func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {

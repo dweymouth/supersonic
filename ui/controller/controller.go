@@ -36,6 +36,7 @@ type NavigationHandler func(Route)
 type CurPageFunc func() Route
 
 type Controller struct {
+	visualizationData
 	AppVersion      string
 	App             *backend.App
 	MainWindow      fyne.Window

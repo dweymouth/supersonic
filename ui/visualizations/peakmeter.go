@@ -1,10 +1,9 @@
-package ui
+package visualizations
 
 import (
 	"fmt"
 	"image/color"
 	"math"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -20,11 +19,8 @@ const (
 	peakHoldFrames     = 60
 )
 
-type PeakFN func() (float64, float64, float64, float64)
-
 type PeakMeter struct {
 	widget.BaseWidget
-	peakFnDB       PeakFN
 	lPeak          float64
 	rPeak          float64
 	lRMS           float64
@@ -34,36 +30,18 @@ type PeakMeter struct {
 	lPeakHoldFrame uint64
 	rPeakHoldFrame uint64
 	frameCounter   uint64
-
-	anim *fyne.Animation
 }
 
-func NewPeakMeter(peakFnDB PeakFN) *PeakMeter {
-	p := &PeakMeter{peakFnDB: peakFnDB}
+func NewPeakMeter() *PeakMeter {
+	p := &PeakMeter{}
 	p.ExtendBaseWidget(p)
 	return p
 }
 
-func (p *PeakMeter) Start() {
-	if p.anim != nil {
-		return
-	}
-	p.anim = fyne.NewAnimation(time.Duration(math.MaxInt64) /*until stopped*/, p.tick)
-	p.anim.Start()
-}
-
-func (p *PeakMeter) Stop() {
-	if p.anim != nil {
-		p.anim.Stop()
-		p.anim = nil
-		p.frameCounter = 0
-		p.lPeakHoldFrame = 0
-		p.rPeakHoldFrame = 0
-	}
-}
-
-func (p *PeakMeter) tick(_ float32) {
-	lPeak, rPeak, lRMS, rRMS := p.peakFnDB()
+// UpdatePeaks updates the peaks that are displayed in the meter.
+// This function is expected to be called from a fyne.Animation callback,
+// running at 60 Hz
+func (p *PeakMeter) UpdatePeaks(lPeak, rPeak, lRMS, rRMS float64) {
 	p.lPeak = lPeak
 	p.rPeak = rPeak
 	lRMS = math.Max(-96, lRMS)
@@ -231,5 +209,4 @@ func (l *peakMeterRenderer) Objects() []fyne.CanvasObject {
 }
 
 func (l *peakMeterRenderer) Destroy() {
-	l.p.Stop()
 }
