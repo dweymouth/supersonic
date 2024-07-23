@@ -90,6 +90,8 @@ type peakMeterRenderer struct {
 	rulerLines  []canvas.Rectangle
 	rulerLabels []canvas.Text
 
+	objects []fyne.CanvasObject
+
 	fgColor   color.Color
 	bgColor   color.Color
 	ruleColor color.Color
@@ -207,15 +209,18 @@ func (l *peakMeterRenderer) Refresh() {
 }
 
 func (l *peakMeterRenderer) Objects() []fyne.CanvasObject {
-	obj := make([]fyne.CanvasObject, 0, 6+len(l.rulerLines))
-	for i := range l.rulerLines {
-		obj = append(obj, &l.rulerLines[i], &l.rulerLabels[i])
+	if l.objects == nil {
+		l.objects = make([]fyne.CanvasObject, 0, 6+len(l.rulerLines))
+		for i := range l.rulerLines {
+			l.objects = append(l.objects, &l.rulerLines[i], &l.rulerLabels[i])
+		}
+		l.objects = append(l.objects,
+			&l.lLabel, &l.rLabel,
+			&l.lPeakRect, &l.rPeakRect,
+			&l.lRMSRect, &l.rRMSRect,
+			&l.lPeakHoldRect, &l.rPeakHoldRect)
 	}
-	return append(obj,
-		&l.lLabel, &l.rLabel,
-		&l.lPeakRect, &l.rPeakRect,
-		&l.lRMSRect, &l.rRMSRect,
-		&l.lPeakHoldRect, &l.rPeakHoldRect)
+	return l.objects
 }
 
 func (l *peakMeterRenderer) Destroy() {

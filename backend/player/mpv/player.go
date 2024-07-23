@@ -498,7 +498,7 @@ func (p *Player) setState(s player.State) {
 func (p *Player) setAF() error {
 	af := ""
 	if p.peaksEnabled {
-		af = "@astats:astats=metadata=1:reset=1"
+		af = "@astats:astats=metadata=1:reset=1:measure_overall=none"
 	}
 	eq := p.equalizer
 	if eq == nil || !eq.IsEnabled() {

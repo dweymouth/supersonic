@@ -138,7 +138,10 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BrowsingPane.AddSettingsMenuItem("Switch Servers", func() { app.ServerManager.Logout(false) })
 	m.BrowsingPane.AddSettingsMenuItem("Rescan Library", func() { app.ServerManager.Server.RescanLibrary() })
 	m.BrowsingPane.AddSettingsMenuSeparator()
-	m.BrowsingPane.AddSettingsMenuItem(lang.L("Show Peak Meter"), m.Controller.ShowPeakMeter)
+	m.BrowsingPane.AddSettingsSubmenu(lang.L("Visualizations"),
+		fyne.NewMenu("", []*fyne.MenuItem{
+			fyne.NewMenuItem(lang.L("Peak Meter"), m.Controller.ShowPeakMeter),
+		}...))
 	m.BrowsingPane.AddSettingsMenuItem("Check for Updates", func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
