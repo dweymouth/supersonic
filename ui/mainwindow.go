@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"log"
-	"math"
 	"runtime"
 	"strings"
 	"time"
@@ -16,11 +15,13 @@ import (
 	"github.com/dweymouth/supersonic/ui/dialogs"
 	"github.com/dweymouth/supersonic/ui/os"
 	"github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -80,6 +81,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		MainWindow: m.Window,
 		App:        app,
 	}
+	m.Controller.InitVisualizations()
 	m.BrowsingPane = browsing.NewBrowsingPane(app, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	// inject controller dependencies
@@ -136,6 +138,10 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BrowsingPane.AddSettingsMenuItem("Switch Servers", func() { app.ServerManager.Logout(false) })
 	m.BrowsingPane.AddSettingsMenuItem("Rescan Library", func() { app.ServerManager.Server.RescanLibrary() })
 	m.BrowsingPane.AddSettingsMenuSeparator()
+	m.BrowsingPane.AddSettingsSubmenu(lang.L("Visualizations"),
+		fyne.NewMenu("", []*fyne.MenuItem{
+			fyne.NewMenuItem(lang.L("Peak Meter"), m.Controller.ShowPeakMeter),
+		}...))
 	m.BrowsingPane.AddSettingsMenuItem("Check for Updates", func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
@@ -429,8 +435,7 @@ func (m *MainWindow) Quit() {
 }
 
 func (m *MainWindow) SaveWindowSize() {
-	// round sizes to even to avoid Wayland issues with 2x scaling factor
-	// https://github.com/dweymouth/supersonic/issues/212
-	m.App.Config.Application.WindowHeight = int(math.RoundToEven(float64(m.Window.Canvas().Size().Height)))
-	m.App.Config.Application.WindowWidth = int(math.RoundToEven(float64(m.Window.Canvas().Size().Width)))
+	util.SaveWindowSize(m.Window,
+		&m.App.Config.Application.WindowWidth,
+		&m.App.Config.Application.WindowHeight)
 }

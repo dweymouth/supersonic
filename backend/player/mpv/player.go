@@ -63,6 +63,7 @@ type Player struct {
 	prePausedState player.State
 	clientName     string
 	equalizer      Equalizer
+	peaksEnabled   bool
 
 	bgCancel context.CancelFunc
 
@@ -126,6 +127,7 @@ func (p *Player) Init(maxCacheMB int) error {
 		if err := m.Initialize(); err != nil {
 			return fmt.Errorf("error initializing mpv: %s", err.Error())
 		}
+
 		p.mpv = m
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -355,20 +357,7 @@ func (p *Player) SetAudioDevice(deviceName string) error {
 
 func (p *Player) SetEqualizer(eq Equalizer) error {
 	p.equalizer = eq
-	if eq == nil || !eq.IsEnabled() {
-		return p.mpv.SetPropertyString("af", "")
-	}
-	af := ""
-	if math.Abs(eq.Preamp()) > 0.01 {
-		af = fmt.Sprintf("volume=volume=%0.1fdB", eq.Preamp())
-	}
-	eqAF := eq.Curve().String()
-	if af == "" {
-		af = eqAF
-	} else if eqAF != "" {
-		af = fmt.Sprintf("%s,%s", af, eqAF)
-	}
-	return p.mpv.SetPropertyString("af", af)
+	return p.setAF()
 }
 
 func (p *Player) Equalizer() Equalizer {
@@ -453,6 +442,34 @@ func (p *Player) Destroy() {
 	}
 }
 
+func (p *Player) SetPeaksEnabled(enabled bool) error {
+	if p.peaksEnabled == enabled {
+		return nil
+	}
+	p.peaksEnabled = enabled
+	return p.setAF()
+}
+
+func (p *Player) GetPeaks() (float64, float64, float64, float64) {
+	nInf := math.Inf(-1)
+	if p.status.State != player.Playing {
+		return nInf, nInf, nInf, nInf
+	}
+	prop, err := p.mpv.GetProperty("af-metadata/astats", mpv.FORMAT_NODE)
+	if err != nil {
+		return nInf, nInf, nInf, nInf
+	}
+	m := prop.(*mpv.Node).Data.(map[string]*mpv.Node)
+	if lPeakNode, ok := m["lavfi.astats.1.Peak_level"]; ok {
+		lPeak, _ := strconv.ParseFloat(lPeakNode.Data.(string), 64)
+		rPeak, _ := strconv.ParseFloat(m["lavfi.astats.2.Peak_level"].Data.(string), 64)
+		lRMS, _ := strconv.ParseFloat(m["lavfi.astats.1.RMS_level"].Data.(string), 64)
+		rRMS, _ := strconv.ParseFloat(m["lavfi.astats.2.RMS_level"].Data.(string), 64)
+		return lPeak, rPeak, lRMS, rRMS
+	}
+	return nInf, nInf, nInf, nInf
+}
+
 // sets the state and invokes callbacks, if triggered
 func (p *Player) setState(s player.State) {
 	switch {
@@ -476,6 +493,26 @@ func (p *Player) setState(s player.State) {
 		}()
 	}
 	p.status.State = s
+}
+
+func (p *Player) setAF() error {
+	af := ""
+	if p.peaksEnabled {
+		af = "@astats:astats=metadata=1:reset=1:measure_overall=none"
+	}
+	eq := p.equalizer
+	if eq == nil || !eq.IsEnabled() {
+		return p.mpv.SetPropertyString("af", af)
+	} else if p.peaksEnabled {
+		af = af + ","
+	}
+	if math.Abs(eq.Preamp()) > 0.01 {
+		af = fmt.Sprintf("%svolume=volume=%0.1fdB", af, eq.Preamp())
+	}
+	if eqAF := eq.Curve().String(); eqAF != "" {
+		af = fmt.Sprintf("%s,%s", af, eqAF)
+	}
+	return p.mpv.SetPropertyString("af", af)
 }
 
 func (p *Player) eventHandler(ctx context.Context) {

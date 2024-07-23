@@ -74,7 +74,6 @@ func main() {
 		}
 
 	}()
-
 	mainWindow.ShowAndRun()
 
 	log.Println("Running shutdown tasks...")

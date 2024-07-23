@@ -135,6 +135,12 @@ func (b *BrowsingPane) AddSettingsMenuItem(label string, action func()) {
 		fyne.NewMenuItem(label, action))
 }
 
+func (b *BrowsingPane) AddSettingsSubmenu(label string, menu *fyne.Menu) {
+	item := fyne.NewMenuItem(label, nil)
+	item.ChildMenu = menu
+	b.settingsMenu.Items = append(b.settingsMenu.Items, item)
+}
+
 func (b *BrowsingPane) AddSettingsMenuSeparator() {
 	b.settingsMenu.Items = append(b.settingsMenu.Items,
 		fyne.NewMenuItemSeparator())
