@@ -127,6 +127,16 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
 
+	a.PlaybackManager.OnPlaying(func() {
+		SetSystemSleepDisabled(true)
+	})
+	a.PlaybackManager.OnPaused(func() {
+		SetSystemSleepDisabled(false)
+	})
+	a.PlaybackManager.OnStopped(func() {
+		SetSystemSleepDisabled(false)
+	})
+
 	// Start IPC server if another not already running in a different instance
 	if cli == nil {
 		ipc.DestroyConn() // cleanup socket possibly orphaned by crashed process
