@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -132,10 +133,16 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 		themeModeSelect.SetSelectedIndex(0)
 	}
 
-	startupPage := widget.NewSelect(backend.SupportedStartupPages, func(choice string) {
-		s.config.Application.StartupPage = choice
+	pages := util.LocalizeSlice(backend.SupportedStartupPages)
+	var startupPage *widget.Select
+	startupPage = widget.NewSelect(pages, func(_ string) {
+		s.config.Application.StartupPage = backend.SupportedStartupPages[startupPage.SelectedIndex()]
 	})
-	startupPage.SetSelected(s.config.Application.StartupPage)
+	initialIdx := slices.Index(backend.SupportedStartupPages, s.config.Application.StartupPage)
+	if initialIdx < 0 {
+		initialIdx = 0
+	}
+	startupPage.SetSelectedIndex(initialIdx)
 	if startupPage.Selected == "" {
 		startupPage.SetSelectedIndex(0)
 	}

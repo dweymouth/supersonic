@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -58,8 +57,7 @@ func (a *albumsPageAdapter) SortOrders() ([]string, int) {
 		sortOrder = 0
 	}
 
-	translatedOrders := sharedutil.MapSlice(orders, func(s string) string { return lang.L(s) })
-	return translatedOrders, sortOrder
+	return util.LocalizeSlice(orders), sortOrder
 }
 
 func (a *albumsPageAdapter) SaveSortOrder(orderIdx int) {

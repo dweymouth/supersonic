@@ -18,6 +18,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
+	"github.com/dweymouth/supersonic/sharedutil"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"golang.org/x/net/html"
 )
@@ -262,6 +263,10 @@ func SaveWindowSize(w fyne.Window, wPtr, hPtr *int) {
 	// https://github.com/dweymouth/supersonic/issues/212
 	*wPtr = int(math.RoundToEven(float64(w.Canvas().Size().Width)))
 	*hPtr = int(math.RoundToEven(float64(w.Canvas().Size().Height)))
+}
+
+func LocalizeSlice(s []string) []string {
+	return sharedutil.MapSlice(s, func(s string) string { return lang.L(s) })
 }
 
 type HSpace struct {
