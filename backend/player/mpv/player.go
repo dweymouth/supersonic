@@ -455,19 +455,11 @@ func (p *Player) GetPeaks() (float64, float64, float64, float64) {
 	if p.status.State != player.Playing {
 		return nInf, nInf, nInf, nInf
 	}
-	prop, err := p.mpv.GetProperty("af-metadata/astats", mpv.FORMAT_NODE)
+	lPeak, rPeak, lRMS, rRMS, err := p.getPeaks()
 	if err != nil {
 		return nInf, nInf, nInf, nInf
 	}
-	m := prop.(*mpv.Node).Data.(map[string]*mpv.Node)
-	if lPeakNode, ok := m["lavfi.astats.1.Peak_level"]; ok {
-		lPeak, _ := strconv.ParseFloat(lPeakNode.Data.(string), 64)
-		rPeak, _ := strconv.ParseFloat(m["lavfi.astats.2.Peak_level"].Data.(string), 64)
-		lRMS, _ := strconv.ParseFloat(m["lavfi.astats.1.RMS_level"].Data.(string), 64)
-		rRMS, _ := strconv.ParseFloat(m["lavfi.astats.2.RMS_level"].Data.(string), 64)
-		return lPeak, rPeak, lRMS, rRMS
-	}
-	return nInf, nInf, nInf, nInf
+	return lPeak, rPeak, lRMS, rRMS
 }
 
 // sets the state and invokes callbacks, if triggered
