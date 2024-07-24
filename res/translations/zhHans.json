@@ -204,5 +204,9 @@
     "Year (ascending)": "年份（升序）",
     "Year (descending)": "年份（降序）",
     "Year from": "年份从",
-    "You are running the latest version of": "您正在运行最新版本的"
+    "You are running the latest version of": "您正在运行最新版本的",
+    "Quit": "退出",
+    "Rescan Library": "重新扫描库",
+    "Search": "搜索",
+    "Owner": "拥有者"
 }
