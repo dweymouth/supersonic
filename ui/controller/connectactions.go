@@ -94,7 +94,7 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 		go func() {
 			album, err := m.App.ServerManager.Server.GetAlbum(albumID)
 			if err != nil {
-				log.Printf("error loading bum: %s", err.Error())
+				log.Printf("error loading album: %s", err.Error())
 				return
 			}
 			m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
@@ -104,7 +104,7 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 		go func() {
 			album, err := m.App.ServerManager.Server.GetAlbum(albumID)
 			if err != nil {
-				log.Printf("error loading bum: %s", err.Error())
+				log.Printf("error loading album: %s", err.Error())
 				return
 			}
 			m.ShowDownloadDialog(album.Tracks, album.Name)
@@ -133,7 +133,7 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 			tracks := m.GetArtistTracks(artistID)
 			tist, err := m.App.ServerManager.Server.GetArtist(artistID)
 			if err != nil {
-				log.Printf("error getting tist: %v", err.Error())
+				log.Printf("error getting artist: %v", err.Error())
 				return
 			}
 			m.ShowDownloadDialog(tracks, tist.Name)
