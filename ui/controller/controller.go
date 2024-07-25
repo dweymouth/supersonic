@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"image/color"
 	"io"
 	"log"
 	"net/url"
@@ -18,6 +19,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/dialogs"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
@@ -121,10 +123,18 @@ func (m *Controller) ShowPopUpPlayQueue() {
 	title := widget.NewRichTextWithText(lang.L("Play Queue"))
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 	title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
-	container := container.NewBorder(title, nil, nil, nil,
+	ctr := container.NewBorder(title, nil, nil, nil,
 		container.NewPadded(m.popUpQueue),
 	)
-	pop := widget.NewPopUp(container, m.MainWindow.Canvas())
+	pop := widget.NewPopUp(ctr, m.MainWindow.Canvas())
+	container.NewThemeOverride(pop, myTheme.WithColorTransformOverride(
+		theme.ColorNameOverlayBackground,
+		func(c color.Color) color.Color {
+			c_ := c.(color.NRGBA)
+			c_.A = 245
+			return c_
+		},
+	))
 	m.ClosePopUpOnEscape(pop)
 	minSize := fyne.NewSize(300, 400)
 	maxSize := fyne.NewSize(800, 1000)
