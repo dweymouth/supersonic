@@ -18,7 +18,7 @@ type visualizationData struct {
 	visualizationAnim *fyne.Animation
 }
 
-func (c *Controller) InitVisualizations() {
+func (c *Controller) initVisualizations() {
 	c.App.LocalPlayer.OnStopped(c.stopVisualizationAnim)
 	c.App.LocalPlayer.OnPaused(c.stopVisualizationAnim)
 	c.App.LocalPlayer.OnPlaying(func() {

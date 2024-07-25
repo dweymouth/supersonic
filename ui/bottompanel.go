@@ -106,6 +106,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.AuxControls.OnChangeLoopMode(func() {
 		pm.SetNextLoopMode()
 	})
+	bp.AuxControls.OnShowPlayQueue(contr.ShowPopUpPlayQueue)
 
 	bp.imageLoader = util.NewThumbnailLoader(im, bp.NowPlaying.SetImage)
 

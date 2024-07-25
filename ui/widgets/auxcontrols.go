@@ -19,6 +19,7 @@ type AuxControls struct {
 
 	VolumeControl *VolumeControl
 	loop          *IconButton
+	showQueue     *IconButton
 
 	container *fyne.Container
 }
@@ -27,14 +28,18 @@ func NewAuxControls(initialVolume int) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
 		loop:          NewIconButton(myTheme.RepeatIcon, nil),
+		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
 	}
 	a.loop.IconSize = IconButtonSizeSmaller
+	a.showQueue.IconSize = IconButtonSizeSmaller
 	a.container = container.NewHBox(
 		layout.NewSpacer(),
 		container.NewVBox(
 			layout.NewSpacer(),
 			a.VolumeControl,
-			container.NewHBox(layout.NewSpacer(), a.loop, util.NewHSpace(5)),
+			container.New(
+				layout.NewCustomPaddedHBoxLayout(theme.Padding()*1.5),
+				layout.NewSpacer(), a.loop, a.showQueue, util.NewHSpace(5)),
 			layout.NewSpacer(),
 		),
 	)
@@ -62,6 +67,10 @@ func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 		a.loop.Highlighted = false
 		a.loop.SetIcon(myTheme.RepeatIcon)
 	}
+}
+
+func (a *AuxControls) OnShowPlayQueue(f func()) {
+	a.showQueue.OnTapped = f
 }
 
 type volumeSlider struct {

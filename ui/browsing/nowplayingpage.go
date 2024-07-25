@@ -131,24 +131,10 @@ func NewNowPlayingPage(
 	a.queueList = widgets.NewPlayQueueList(a.im, false)
 	a.relatedList = widgets.NewPlayQueueList(a.im, true)
 	a.queueList.Reorderable = true
-	a.queueList.OnReorderItems = a.doSetNewTrackOrder
-	a.queueList.OnDownload = contr.ShowDownloadDialog
-	a.queueList.OnShare = func(tracks []*mediaprovider.Track) {
-		if len(tracks) > 0 {
-			a.contr.ShowShareDialog(tracks[0].ID)
-		}
-	}
-	a.queueList.OnAddToPlaylist = contr.DoAddTracksToPlaylistWorkflow
-	a.queueList.OnPlayItemAt = func(tracknum int) {
-		_ = a.pm.PlayTrackAt(tracknum)
-	}
-	a.queueList.OnShowArtistPage = func(artistID string) {
-		a.contr.NavigateTo(controller.ArtistRoute(artistID))
-	}
-	a.queueList.OnRemoveFromQueue = func(idxs []int) {
-		a.queueList.UnselectAll()
-		a.pm.RemoveTracksFromQueue(idxs)
-	}
+
+	a.contr.ConnectPlayQueuelistActions(a.queueList)
+	// override OnSetRating and Favorite so we can also update the
+	// LargeNowPlayingCard's displayed rating and favorite
 	a.queueList.OnSetRating = func(trackIDs []string, rating int) {
 		contr.SetTrackRatings(trackIDs, rating)
 		if slices.Contains(trackIDs, a.nowPlayingID) {
@@ -161,6 +147,7 @@ func NewNowPlayingPage(
 			a.card.SetDisplayedFavorite(fav)
 		}
 	}
+
 	a.relatedList.OnDownload = a.queueList.OnDownload
 	a.relatedList.OnShare = a.queueList.OnShare
 	a.relatedList.OnAddToPlaylist = a.queueList.OnAddToPlaylist

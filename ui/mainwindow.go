@@ -76,12 +76,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	if app.Config.Application.EnableSystemTray {
 		m.SetupSystemTrayMenu(displayAppName, fyneApp)
 	}
-	m.Controller = &controller.Controller{
-		AppVersion: appVersion,
-		MainWindow: m.Window,
-		App:        app,
-	}
-	m.Controller.InitVisualizations()
+	m.Controller = controller.New(app, appVersion, m.Window)
 	m.BrowsingPane = browsing.NewBrowsingPane(app, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	// inject controller dependencies

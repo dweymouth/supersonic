@@ -45,9 +45,35 @@ type Controller struct {
 	ReloadFunc      func()
 	RefreshPageFunc func()
 
+	popUpQueue       *widgets.PlayQueueList
 	escapablePopUp   *widget.PopUp
 	haveModal        bool
 	runOnModalClosed func()
+}
+
+func New(app *backend.App, appVersion string, mainWindow fyne.Window) *Controller {
+	c := &Controller{
+		AppVersion: appVersion,
+		MainWindow: mainWindow,
+		App:        app,
+	}
+	c.initVisualizations()
+	c.App.PlaybackManager.OnQueueChange(func() {
+		if c.popUpQueue != nil {
+			c.popUpQueue.SetItems(c.App.PlaybackManager.GetPlayQueue())
+		}
+	})
+	c.App.PlaybackManager.OnSongChange(func(track mediaprovider.MediaItem, _ *mediaprovider.Track) {
+		if c.popUpQueue == nil {
+			return
+		}
+		if track == nil {
+			c.popUpQueue.SetNowPlaying("")
+		} else {
+			c.popUpQueue.SetNowPlaying(track.Metadata().ID)
+		}
+	})
+	return c
 }
 
 func (m *Controller) NavigateTo(route Route) {
@@ -81,6 +107,38 @@ func (m *Controller) HaveModal() bool {
 	return m.haveModal
 }
 
+func (m *Controller) ShowPopUpPlayQueue() {
+	if m.popUpQueue == nil {
+		m.popUpQueue = widgets.NewPlayQueueList(m.App.ImageManager, false)
+		m.popUpQueue.Reorderable = true
+		m.popUpQueue.SetItems(m.App.PlaybackManager.GetPlayQueue())
+		m.ConnectPlayQueuelistActions(m.popUpQueue)
+	}
+	m.popUpQueue.SetNowPlaying(m.App.PlaybackManager.NowPlaying().Metadata().ID)
+	m.popUpQueue.UnselectAll()
+	m.popUpQueue.ScrollToNowPlaying()
+
+	title := widget.NewRichTextWithText(lang.L("Play Queue"))
+	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
+	title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
+	container := container.NewBorder(title, nil, nil, nil,
+		container.NewPadded(m.popUpQueue),
+	)
+	pop := widget.NewPopUp(container, m.MainWindow.Canvas())
+	m.ClosePopUpOnEscape(pop)
+	minSize := fyne.NewSize(300, 400)
+	maxSize := fyne.NewSize(800, 1000)
+	canvasSize := m.MainWindow.Canvas().Size()
+	size := minSize.Max(maxSize.Min(
+		fyne.NewSize(canvasSize.Width*0.4, canvasSize.Height*0.5),
+	))
+	pop.Resize(size)
+	pop.ShowAtPosition(fyne.NewPos(
+		canvasSize.Width-size.Width-10,
+		canvasSize.Height-size.Height-100,
+	))
+}
+
 func (m *Controller) ShowPopUpImage(img image.Image) {
 	im := canvas.NewImageFromImage(img)
 	im.FillMode = canvas.ImageFillContain
@@ -101,138 +159,6 @@ func (m *Controller) ShowPopUpImage(img image.Image) {
 		(s.Width-popS.Width)/2,
 		(s.Height-popS.Height)/2,
 	))
-}
-
-func (m *Controller) ConnectTracklistActionsWithReplayGainAlbum(tracklist *widgets.Tracklist) {
-	m.connectTracklistActionsWithReplayGainMode(tracklist, player.ReplayGainAlbum)
-}
-
-func (m *Controller) ConnectTracklistActions(tracklist *widgets.Tracklist) {
-	m.connectTracklistActionsWithReplayGainMode(tracklist, player.ReplayGainTrack)
-}
-
-func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widgets.Tracklist, mode player.ReplayGainMode) {
-	tracklist.OnAddToPlaylist = m.DoAddTracksToPlaylistWorkflow
-	tracklist.OnPlaySelectionNext = func(tracks []*mediaprovider.Track) {
-		m.App.PlaybackManager.LoadTracks(tracks, backend.InsertNext, false)
-	}
-	tracklist.OnAddToQueue = func(tracks []*mediaprovider.Track) {
-		m.App.PlaybackManager.LoadTracks(tracks, backend.Append, false)
-	}
-	tracklist.OnPlayTrackAt = func(idx int) {
-		m.App.PlaybackManager.LoadTracks(tracklist.GetTracks(), backend.Replace, false)
-		if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
-			m.App.PlaybackManager.SetReplayGainMode(mode)
-		}
-		m.App.PlaybackManager.PlayTrackAt(idx)
-	}
-	tracklist.OnPlaySelection = func(tracks []*mediaprovider.Track, shuffle bool) {
-		m.App.PlaybackManager.LoadTracks(tracks, backend.Replace, shuffle)
-		if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
-			m.App.PlaybackManager.SetReplayGainMode(mode)
-		}
-		m.App.PlaybackManager.PlayFromBeginning()
-	}
-	tracklist.OnSetFavorite = m.SetTrackFavorites
-	tracklist.OnSetRating = m.SetTrackRatings
-	tracklist.OnShowAlbumPage = func(albumID string) {
-		m.NavigateTo(AlbumRoute(albumID))
-	}
-	tracklist.OnShowArtistPage = func(artistID string) {
-		m.NavigateTo(ArtistRoute(artistID))
-	}
-	tracklist.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
-		m.ClosePopUpOnEscape(pop)
-	}
-	tracklist.OnDownload = m.ShowDownloadDialog
-	tracklist.OnShare = func(trackID string) {
-		go m.ShowShareDialog(trackID)
-	}
-	tracklist.OnShowTrackInfo = m.ShowTrackInfoDialog
-	tracklist.OnPlaySongRadio = func(track *mediaprovider.Track) {
-		go func() {
-			tracks, err := m.GetSongRadioTracks(track)
-			if err != nil {
-				log.Println("Error getting song radio: ", err)
-				return
-			}
-			m.App.PlaybackManager.LoadTracks(tracks, backend.Replace, false)
-			if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
-				m.App.PlaybackManager.SetReplayGainMode(mode)
-			}
-			m.App.PlaybackManager.PlayFromBeginning()
-		}()
-	}
-}
-
-func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
-	grid.OnAddToQueue = func(albumID string) {
-		go m.App.PlaybackManager.LoadAlbum(albumID, backend.Append, false)
-	}
-	grid.OnPlayNext = func(albumID string) {
-		go m.App.PlaybackManager.LoadAlbum(albumID, backend.InsertNext, false)
-	}
-	grid.OnPlay = func(albumID string, shuffle bool) {
-		go m.App.PlaybackManager.PlayAlbum(albumID, 0, shuffle)
-	}
-	grid.OnShowItemPage = func(albumID string) {
-		m.NavigateTo(AlbumRoute(albumID))
-	}
-	grid.OnShowSecondaryPage = func(artistID string) {
-		m.NavigateTo(ArtistRoute(artistID))
-	}
-	grid.OnAddToPlaylist = func(albumID string) {
-		go func() {
-			album, err := m.App.ServerManager.Server.GetAlbum(albumID)
-			if err != nil {
-				log.Printf("error loading album: %s", err.Error())
-				return
-			}
-			m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
-		}()
-	}
-	grid.OnDownload = func(albumID string) {
-		go func() {
-			album, err := m.App.ServerManager.Server.GetAlbum(albumID)
-			if err != nil {
-				log.Printf("error loading album: %s", err.Error())
-				return
-			}
-			m.ShowDownloadDialog(album.Tracks, album.Name)
-		}()
-	}
-	grid.OnShare = func(albumID string) {
-		go m.ShowShareDialog(albumID)
-	}
-}
-
-func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
-	grid.OnShowItemPage = func(id string) { m.NavigateTo(ArtistRoute(id)) }
-	grid.OnPlayNext = func(artistID string) {
-		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), backend.InsertNext, false)
-	}
-	grid.OnPlay = func(artistID string, shuffle bool) { go m.App.PlaybackManager.PlayArtistDiscography(artistID, shuffle) }
-	grid.OnAddToQueue = func(artistID string) {
-		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), backend.Append, false)
-	}
-	grid.OnAddToPlaylist = func(artistID string) {
-		go m.DoAddTracksToPlaylistWorkflow(
-			sharedutil.TracksToIDs(m.GetArtistTracks(artistID)))
-	}
-	grid.OnDownload = func(artistID string) {
-		go func() {
-			tracks := m.GetArtistTracks(artistID)
-			artist, err := m.App.ServerManager.Server.GetArtist(artistID)
-			if err != nil {
-				log.Printf("error getting artist: %v", err.Error())
-				return
-			}
-			m.ShowDownloadDialog(tracks, artist.Name)
-		}()
-	}
-	grid.OnShare = func(artistID string) {
-		go m.ShowShareDialog(artistID)
-	}
 }
 
 func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {

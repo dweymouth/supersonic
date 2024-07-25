@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"image"
+	"slices"
 	"strconv"
 	"sync"
 
@@ -134,6 +135,12 @@ func (p *PlayQueueList) SetItems(items []mediaprovider.MediaItem) {
 	p.Refresh()
 }
 
+func (p *PlayQueueList) Items() []mediaprovider.MediaItem {
+	return sharedutil.MapSlice(p.items, func(item *util.TrackListModel) mediaprovider.MediaItem {
+		return item.Item
+	})
+}
+
 // Sets the currently playing item ID and updates the list rendering
 func (p *PlayQueueList) SetNowPlaying(itemID string) {
 	prevNowPlaying := p.nowPlayingID
@@ -166,6 +173,15 @@ func (p *PlayQueueList) UnselectAll() {
 
 func (p *PlayQueueList) Scroll(amount float32) {
 	p.list.ScrollToOffset(p.list.GetScrollOffset() + amount)
+}
+
+func (p *PlayQueueList) ScrollToNowPlaying() {
+	idx := slices.IndexFunc(p.items, func(item *util.TrackListModel) bool {
+		return item.Item.Metadata().ID == p.nowPlayingID
+	})
+	if idx > 0 {
+		p.list.ScrollTo(idx)
+	}
 }
 
 func (p *PlayQueueList) Refresh() {
