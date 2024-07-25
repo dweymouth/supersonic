@@ -90,7 +90,7 @@
     "Is not favorite": "未收藏",
     "Last played": "上次播放",
     "Live": "現場",
-    "Locally": "本地",
+    "Locally": "到本地",
     "Log Out": "登出",
     "Login to Server": "登入到伺服器",
     "Lyrics": "歌詞",
@@ -208,5 +208,8 @@
     "Quit": "退出",
     "Rescan Library": "重新掃描庫",
     "Search": "搜索",
-    "Owner": "擁有者"
+    "Owner": "擁有者",
+    "To server": "到伺服器",
+    "Time": "時长",
+    "Fav.": "收藏"
 }
