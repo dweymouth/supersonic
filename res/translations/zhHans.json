@@ -90,7 +90,7 @@
     "Is not favorite": "未收藏",
     "Last played": "上次播放",
     "Live": "现场",
-    "Locally": "本地",
+    "Locally": "到本地",
     "Log Out": "登出",
     "Login to Server": "登录到服务器",
     "Lyrics": "歌词",
@@ -120,7 +120,7 @@
     "Play Artist Radio": "播放艺术家电台",
     "Play count": "播放次数",
     "Play Discography": "播放唱片集",
-    "Play next": "播放下一个",
+    "Play next": "下一首播放",
     "Play Queue": "播放队列",
     "Play random": "随机播放",
     "Playback": "播放",
@@ -208,5 +208,13 @@
     "Quit": "退出",
     "Rescan Library": "重新扫描库",
     "Search": "搜索",
-    "Owner": "拥有者"
+    "Owner": "拥有者",
+    "To server": "到服务器",
+    "Time": "时长",
+    "Fav.": "收藏",
+    "Set favorite": "设为收藏",
+    "Unset favorite": "取消收藏",
+    "Remove from queue": "从队列中移除",
+    "Size": "大小",
+    "Play song radio": "播放歌曲电台"
 }

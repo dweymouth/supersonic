@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fyne.io/fyne/v2/lang"
 	"log"
 	"slices"
 	"sort"
@@ -521,64 +522,64 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	if t.ctxMenu == nil {
 		t.ctxMenu = fyne.NewMenu("")
 		if !t.Options.DisablePlaybackMenu {
-			play := fyne.NewMenuItem("Play", func() {
+			play := fyne.NewMenuItem(lang.L("Play"), func() {
 				if t.OnPlaySelection != nil {
 					t.OnPlaySelection(t.selectedTracks(), false)
 				}
 			})
 			play.Icon = theme.MediaPlayIcon()
-			shuffle := fyne.NewMenuItem("Shuffle", func() {
+			shuffle := fyne.NewMenuItem(lang.L("Shuffle"), func() {
 				if t.OnPlaySelection != nil {
 					t.OnPlaySelection(t.selectedTracks(), true)
 				}
 			})
 			shuffle.Icon = myTheme.ShuffleIcon
-			playNext := fyne.NewMenuItem("Play next", func() {
+			playNext := fyne.NewMenuItem(lang.L("Play next"), func() {
 				if t.OnPlaySelection != nil {
 					t.OnPlaySelectionNext(t.selectedTracks())
 				}
 			})
 			playNext.Icon = myTheme.PlayNextIcon
-			add := fyne.NewMenuItem("Add to queue", func() {
+			add := fyne.NewMenuItem(lang.L("Add to queue"), func() {
 				if t.OnPlaySelection != nil {
 					t.OnAddToQueue(t.selectedTracks())
 				}
 			})
 			add.Icon = theme.ContentAddIcon()
-			t.songRadioMenuItem = fyne.NewMenuItem("Play song radio", func() {
+			t.songRadioMenuItem = fyne.NewMenuItem(lang.L("Play song radio"), func() {
 				t.onPlaySongRadio(t.selectedTracks())
 			})
 			t.songRadioMenuItem.Icon = myTheme.RadioIcon
 			t.ctxMenu.Items = append(t.ctxMenu.Items,
 				play, shuffle, playNext, add, t.songRadioMenuItem)
 		}
-		playlist := fyne.NewMenuItem("Add to playlist...", func() {
+		playlist := fyne.NewMenuItem(lang.L("Add to playlist")+"...", func() {
 			if t.OnAddToPlaylist != nil {
 				t.OnAddToPlaylist(t.SelectedTrackIDs())
 			}
 		})
 		playlist.Icon = myTheme.PlaylistIcon
-		download := fyne.NewMenuItem("Download...", func() {
+		download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
 			t.onDownload(t.selectedTracks(), "Selected tracks")
 		})
 		download.Icon = theme.DownloadIcon()
-		t.infoMenuItem = fyne.NewMenuItem("Show info...", func() {
+		t.infoMenuItem = fyne.NewMenuItem(lang.L("Show info")+"...", func() {
 			if t.OnShowTrackInfo != nil {
 				t.OnShowTrackInfo(t.selectedTracks()[0])
 			}
 		})
 		t.infoMenuItem.Icon = theme.InfoIcon()
-		favorite := fyne.NewMenuItem("Set favorite", func() {
+		favorite := fyne.NewMenuItem(lang.L("Set favorite"), func() {
 			t.onSetFavorites(t.selectedTracks(), true, true)
 		})
 		favorite.Icon = myTheme.FavoriteIcon
-		unfavorite := fyne.NewMenuItem("Unset favorite", func() {
+		unfavorite := fyne.NewMenuItem(lang.L("Unset favorite"), func() {
 			t.onSetFavorites(t.selectedTracks(), false, true)
 		})
 		unfavorite.Icon = myTheme.NotFavoriteIcon
 		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator(),
 			playlist, download, t.infoMenuItem)
-		t.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+		t.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
 			t.onShare(t.selectedTracks())
 		})
 		t.shareMenuItem.Icon = myTheme.ShareIcon

@@ -206,5 +206,15 @@
     "Year (ascending)": "Year (ascending)",
     "Year (descending)": "Year (descending)",
     "Year from": "Year from",
-    "You are running the latest version of": "You are running the latest version of"
+    "You are running the latest version of": "You are running the latest version of",
+    "Quit": "Quit",
+    "Rescan Library": "Rescan Library",
+    "Search": "Search",
+    "Owner": "Owner",
+    "To server": "To server",
+    "Fav.": "Fav.",
+    "Set favorite": "Set favorite",
+    "Unset favorite": "Unset favorite",
+    "Remove from queue": "Remove from queue",
+    "Play song radio": "Play song radio"
 }
