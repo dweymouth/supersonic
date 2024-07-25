@@ -13,6 +13,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -77,9 +78,9 @@ type gridViewArtistIterator struct {
 func (g gridViewArtistIterator) NextN(n int) []GridViewItemModel {
 	artists := g.iter.NextN(n)
 	return sharedutil.MapSlice(artists, func(ar *mediaprovider.Artist) GridViewItemModel {
-		albumsLabel := "albums"
+		albumsLabel := lang.L("albums")
 		if ar.AlbumCount == 1 {
-			albumsLabel = "album"
+			albumsLabel = lang.L("album")
 		}
 		return GridViewItemModel{
 			Name:       ar.Name,
@@ -409,35 +410,35 @@ func (g *GridView) cancelFetch() {
 func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
 	g.menuGridViewItemId = card.ItemID()
 	if g.menu == nil {
-		play := fyne.NewMenuItem("Play", func() { g.onPlay(g.menuGridViewItemId, false) })
+		play := fyne.NewMenuItem(lang.l("Play"), func() { g.onPlay(g.menuGridViewItemId, false) })
 		play.Icon = theme.MediaPlayIcon()
-		shuffle := fyne.NewMenuItem("Shuffle", func() { g.onPlay(g.menuGridViewItemId, true) })
+		shuffle := fyne.NewMenuItem(lang.L("Shuffle"), func() { g.onPlay(g.menuGridViewItemId, true) })
 		shuffle.Icon = myTheme.ShuffleIcon
-		queueNext := fyne.NewMenuItem("Play next", func() {
+		queueNext := fyne.NewMenuItem(lang.L("Play next"), func() {
 			if g.OnPlayNext != nil {
 				g.OnPlayNext(g.menuGridViewItemId)
 			}
 		})
 		queueNext.Icon = myTheme.PlayNextIcon
-		queue := fyne.NewMenuItem("Add to queue", func() {
+		queue := fyne.NewMenuItem(lang.L("Add to queue"), func() {
 			if g.OnAddToQueue != nil {
 				g.OnAddToQueue(g.menuGridViewItemId)
 			}
 		})
 		queue.Icon = theme.ContentAddIcon()
-		playlist := fyne.NewMenuItem("Add to playlist...", func() {
+		playlist := fyne.NewMenuItem(lang.L("Add to playlist")+"...", func() {
 			if g.OnAddToPlaylist != nil {
 				g.OnAddToPlaylist(g.menuGridViewItemId)
 			}
 		})
 		playlist.Icon = myTheme.PlaylistIcon
-		download := fyne.NewMenuItem("Download...", func() {
+		download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
 			if g.OnDownload != nil {
 				g.OnDownload(g.menuGridViewItemId)
 			}
 		})
 		download.Icon = theme.DownloadIcon()
-		g.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+		g.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
 			g.OnShare(g.menuGridViewItemId)
 		})
 		g.shareMenuItem.Icon = myTheme.ShareIcon
