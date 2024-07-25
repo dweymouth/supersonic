@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fyne.io/fyne/v2/lang"
 	"image"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -157,13 +158,13 @@ func (n *NowPlayingCard) SetImage(cover image.Image) {
 func (n *NowPlayingCard) showMenu(btnPos fyne.Position) {
 	if n.menu == nil {
 		n.ratingMenu = util.NewRatingSubmenu(n.onSetRating)
-		favorite := fyne.NewMenuItem("Set favorite", func() { n.onSetFavorite(true) })
+		favorite := fyne.NewMenuItem(lang.L("Set favorite"), func() { n.onSetFavorite(true) })
 		favorite.Icon = myTheme.FavoriteIcon
-		unfavorite := fyne.NewMenuItem("Unset favorite", func() { n.onSetFavorite(false) })
+		unfavorite := fyne.NewMenuItem(lang.L("Unset favorite"), func() { n.onSetFavorite(false) })
 		unfavorite.Icon = myTheme.NotFavoriteIcon
-		playlist := fyne.NewMenuItem("Add to playlist...", func() { n.onAddToPlaylist() })
+		playlist := fyne.NewMenuItem(lang.L("Add to playlist")+"...", func() { n.onAddToPlaylist() })
 		playlist.Icon = myTheme.PlaylistIcon
-		share := fyne.NewMenuItem("Share...", func() { n.onShare() })
+		share := fyne.NewMenuItem(lang.L("Share")+"...", func() { n.onShare() })
 		share.Icon = myTheme.ShareIcon
 
 		m := fyne.NewMenu("", favorite, unfavorite, n.ratingMenu, playlist, share)

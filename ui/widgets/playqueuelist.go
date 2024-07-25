@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fyne.io/fyne/v2/lang"
 	"image"
 	"slices"
 	"strconv"
@@ -277,31 +278,31 @@ func (p *PlayQueueList) ensureTracksMenu() {
 		menuItems = append(menuItems, fyne.NewMenuItemSeparator())
 	}
 
-	playlist := fyne.NewMenuItem("Add to playlist...", func() {
+	playlist := fyne.NewMenuItem(lang.L("Add to playlist")+"...", func() {
 		if p.OnAddToPlaylist != nil {
 			p.OnAddToPlaylist(p.selectedItemIDs())
 		}
 	})
 	playlist.Icon = myTheme.PlaylistIcon
-	download := fyne.NewMenuItem("Download...", func() {
+	download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
 		if p.OnDownload != nil {
 			p.OnDownload(p.selectedTracks(), "Selected tracks")
 		}
 	})
 	download.Icon = theme.DownloadIcon()
-	p.shareMenuItem = fyne.NewMenuItem("Share...", func() {
+	p.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
 		if p.OnShare != nil {
 			p.OnShare(p.selectedTracks())
 		}
 	})
 	p.shareMenuItem.Icon = myTheme.ShareIcon
-	favorite := fyne.NewMenuItem("Set favorite", func() {
+	favorite := fyne.NewMenuItem(lang.L("Set favorite"), func() {
 		if p.OnSetFavorite != nil {
 			p.OnSetFavorite(p.selectedItemIDs(), true)
 		}
 	})
 	favorite.Icon = myTheme.FavoriteIcon
-	unfavorite := fyne.NewMenuItem("Unset favorite", func() {
+	unfavorite := fyne.NewMenuItem(lang.L("Unset favorite"), func() {
 		if p.OnSetFavorite != nil {
 			p.OnSetFavorite(p.selectedItemIDs(), false)
 		}
@@ -323,7 +324,7 @@ func (p *PlayQueueList) ensureTracksMenu() {
 	)
 
 	if !p.useNonQueueMenu {
-		remove := fyne.NewMenuItem("Remove from queue", func() {
+		remove := fyne.NewMenuItem(lang.L("Remove from queue"), func() {
 			if p.OnRemoveFromQueue != nil {
 				p.OnRemoveFromQueue(p.selectedIdxs())
 			}
@@ -344,7 +345,7 @@ func (p *PlayQueueList) ensureRadiosMenu() {
 	if p.radiosMenu != nil {
 		return
 	}
-	remove := fyne.NewMenuItem("Remove from queue", func() {
+	remove := fyne.NewMenuItem(lang.L("Remove from queue"), func() {
 		if p.OnRemoveFromQueue != nil {
 			p.OnRemoveFromQueue(p.selectedIdxs())
 		}
@@ -357,25 +358,25 @@ func (p *PlayQueueList) ensureRadiosMenu() {
 }
 
 func (p *PlayQueueList) createQueueActionMenuItems() []*fyne.MenuItem {
-	play := fyne.NewMenuItem("Play", func() {
+	play := fyne.NewMenuItem(lang.L("Play"), func() {
 		if p.OnPlaySelection != nil {
 			p.OnPlaySelection(p.selectedItems(), false)
 		}
 	})
 	play.Icon = theme.MediaPlayIcon()
-	shuffle := fyne.NewMenuItem("Shuffle", func() {
+	shuffle := fyne.NewMenuItem(lang.L("Shuffle"), func() {
 		if p.OnPlaySelection != nil {
 			p.OnPlaySelection(p.selectedItems(), true)
 		}
 	})
 	shuffle.Icon = myTheme.ShuffleIcon
-	playNext := fyne.NewMenuItem("Play next", func() {
+	playNext := fyne.NewMenuItem(lang.L("Play next"), func() {
 		if p.OnPlaySelection != nil {
 			p.OnPlaySelectionNext(p.selectedItems())
 		}
 	})
 	playNext.Icon = myTheme.PlayNextIcon
-	add := fyne.NewMenuItem("Add to queue", func() {
+	add := fyne.NewMenuItem(lang.L("Add to queue"), func() {
 		if p.OnPlaySelection != nil {
 			p.OnAddToQueue(p.selectedItems())
 		}

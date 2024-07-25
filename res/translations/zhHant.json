@@ -120,7 +120,7 @@
     "Play Artist Radio": "播放藝術家電台",
     "Play count": "播放次數",
     "Play Discography": "播放唱片集",
-    "Play next": "播放下一個",
+    "Play next": "下一首播放",
     "Play Queue": "播放佇列",
     "Play random": "隨機播放",
     "Playback": "播放",
@@ -211,5 +211,10 @@
     "Owner": "擁有者",
     "To server": "到伺服器",
     "Time": "時长",
-    "Fav.": "收藏"
+    "Fav.": "收藏",
+    "Set favorite": "“設為收藏",
+    "Unset favorite": "取消收藏",
+    "Remove from queue": "從隊列中移除",
+    "Size": "大小",
+    "Play song radio": "播放歌曲電台"
 }

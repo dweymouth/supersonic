@@ -212,6 +212,9 @@
     "Search": "Search",
     "Owner": "Owner",
     "To server": "To server",
-    "Time": "Time",
-    "Fav.": "Fav."
+    "Fav.": "Fav.",
+    "Set favorite": "Set favorite",
+    "Unset favorite": "Unset favorite",
+    "Remove from queue": "Remove from queue",
+    "Play song radio": "Play song radio"
 }

@@ -39,7 +39,7 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 
 	addFormRow(c, lang.L("Title"), t.track.Title)
 
-	c.Add(newFormText("Album", true))
+	c.Add(newFormText(lang.L("Album"), true))
 	album := widget.NewHyperlink(t.track.Album, nil)
 	album.OnTapped = func() {
 		if t.OnNavigateToAlbum != nil {

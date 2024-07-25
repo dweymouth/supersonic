@@ -3,6 +3,7 @@ package widgets
 import (
 	"context"
 	"fmt"
+	"fyne.io/fyne/v2/lang"
 	"strconv"
 	"sync"
 
@@ -13,7 +14,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -410,7 +410,7 @@ func (g *GridView) cancelFetch() {
 func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
 	g.menuGridViewItemId = card.ItemID()
 	if g.menu == nil {
-		play := fyne.NewMenuItem(lang.l("Play"), func() { g.onPlay(g.menuGridViewItemId, false) })
+		play := fyne.NewMenuItem(lang.L("Play"), func() { g.onPlay(g.menuGridViewItemId, false) })
 		play.Icon = theme.MediaPlayIcon()
 		shuffle := fyne.NewMenuItem(lang.L("Shuffle"), func() { g.onPlay(g.menuGridViewItemId, true) })
 		shuffle.Icon = myTheme.ShuffleIcon
