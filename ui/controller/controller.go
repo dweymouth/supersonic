@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -47,10 +48,12 @@ type Controller struct {
 	ReloadFunc      func()
 	RefreshPageFunc func()
 
-	popUpQueue       *widgets.PlayQueueList
-	escapablePopUp   *widget.PopUp
-	haveModal        bool
-	runOnModalClosed func()
+	popUpQueueMutex    sync.Mutex
+	popUpQueue         *widgets.PlayQueueList
+	popUpQueueLastUsed int64
+	escapablePopUp     *widget.PopUp
+	haveModal          bool
+	runOnModalClosed   func()
 }
 
 func New(app *backend.App, appVersion string, mainWindow fyne.Window) *Controller {
@@ -110,15 +113,41 @@ func (m *Controller) HaveModal() bool {
 }
 
 func (m *Controller) ShowPopUpPlayQueue() {
+	m.popUpQueueMutex.Lock()
 	if m.popUpQueue == nil {
 		m.popUpQueue = widgets.NewPlayQueueList(m.App.ImageManager, false)
 		m.popUpQueue.Reorderable = true
 		m.popUpQueue.SetItems(m.App.PlaybackManager.GetPlayQueue())
 		m.ConnectPlayQueuelistActions(m.popUpQueue)
+
+		// free popUpQueue if it hasn't been used in awhile
+		go func() {
+			t := time.NewTicker(1 * time.Minute)
+			for range t.C {
+				m.popUpQueueMutex.Lock()
+				now := time.Now().UnixMilli()
+				if m.popUpQueueLastUsed < now-120_000 /*2 min*/ {
+					m.popUpQueue = nil
+					m.popUpQueueLastUsed = 0
+					m.popUpQueueMutex.Unlock()
+					t.Stop()
+					return
+				}
+				m.popUpQueueMutex.Unlock()
+			}
+		}()
 	}
-	m.popUpQueue.SetNowPlaying(m.App.PlaybackManager.NowPlaying().Metadata().ID)
-	m.popUpQueue.UnselectAll()
-	m.popUpQueue.ScrollToNowPlaying()
+	m.popUpQueueLastUsed = time.Now().UnixMilli()
+	popUpQueue := m.popUpQueue
+	m.popUpQueueMutex.Unlock()
+
+	npID := ""
+	if np := m.App.PlaybackManager.NowPlaying(); np != nil {
+		npID = np.Metadata().ID
+	}
+	popUpQueue.SetNowPlaying(npID)
+	popUpQueue.UnselectAll()
+	popUpQueue.ScrollToNowPlaying()
 
 	title := widget.NewRichTextWithText(lang.L("Play Queue"))
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
