@@ -1,8 +1,9 @@
 package widgets
 
 import (
-	"fyne.io/fyne/v2/lang"
 	"image"
+
+	"fyne.io/fyne/v2/lang"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -37,6 +38,7 @@ type NowPlayingCard struct {
 	OnSetRating        func(rating int)
 	OnSetFavorite      func(favorite bool)
 	OnAddToPlaylist    func()
+	OnShowTrackInfo    func()
 	OnShare            func()
 }
 
@@ -110,6 +112,12 @@ func (n *NowPlayingCard) onAddToPlaylist() {
 	}
 }
 
+func (n *NowPlayingCard) onShowTrackInfo() {
+	if n.OnShowTrackInfo != nil {
+		n.OnShowTrackInfo()
+	}
+}
+
 func (n *NowPlayingCard) onShare() {
 	if n.OnShare != nil {
 		n.OnShare()
@@ -164,10 +172,12 @@ func (n *NowPlayingCard) showMenu(btnPos fyne.Position) {
 		unfavorite.Icon = myTheme.NotFavoriteIcon
 		playlist := fyne.NewMenuItem(lang.L("Add to playlist")+"...", func() { n.onAddToPlaylist() })
 		playlist.Icon = myTheme.PlaylistIcon
+		info := fyne.NewMenuItem(lang.L("Show info")+"...", func() { n.onShowTrackInfo() })
+		info.Icon = theme.InfoIcon()
 		share := fyne.NewMenuItem(lang.L("Share")+"...", func() { n.onShare() })
 		share.Icon = myTheme.ShareIcon
 
-		m := fyne.NewMenu("", favorite, unfavorite, n.ratingMenu, playlist, share)
+		m := fyne.NewMenu("", favorite, unfavorite, n.ratingMenu, playlist, info, share)
 		n.menu = widget.NewPopUpMenu(m, fyne.CurrentApp().Driver().CanvasForObject(n))
 	}
 	menuSize := n.menu.MinSize()

@@ -78,6 +78,11 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.NowPlaying.OnTrackNameTapped = func() {
 		contr.NavigateTo(controller.NowPlayingRoute(pm.NowPlaying().Metadata().ID))
 	}
+	bp.NowPlaying.OnShowTrackInfo = func() {
+		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {
+			contr.ShowTrackInfoDialog(tr)
+		}
+	}
 	bp.NowPlaying.OnShare = func() {
 		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {
 			contr.ShowShareDialog(tr.ID)

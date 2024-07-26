@@ -150,6 +150,7 @@ func (c *Controller) ConnectPlayQueuelistActions(list *widgets.PlayQueueList) {
 		c.App.PlaybackManager.UpdatePlayQueue(newTracks)
 	}
 	list.OnDownload = c.ShowDownloadDialog
+	list.OnShowTrackInfo = c.ShowTrackInfoDialog
 	list.OnShare = func(tracks []*mediaprovider.Track) {
 		if len(tracks) > 0 {
 			c.ShowShareDialog(tracks[0].ID)

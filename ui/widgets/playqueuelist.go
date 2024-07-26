@@ -1,11 +1,12 @@
 package widgets
 
 import (
-	"fyne.io/fyne/v2/lang"
 	"image"
 	"slices"
 	"strconv"
 	"sync"
+
+	"fyne.io/fyne/v2/lang"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -47,6 +48,7 @@ type PlayQueueList struct {
 	OnSetRating         func(trackIDs []string, rating int)
 	OnRemoveFromQueue   func(idxs []int)
 	OnDownload          func(tracks []*mediaprovider.Track, downloadName string)
+	OnShowTrackInfo     func(track *mediaprovider.Track)
 	OnShare             func(tracks []*mediaprovider.Track)
 	OnShowArtistPage    func(artistID string)
 	OnReorderItems      func(idxs []int, reorderTo int)
@@ -55,6 +57,7 @@ type PlayQueueList struct {
 	menu            *widget.PopUpMenu // ctx menu for when only tracks are selected
 	radiosMenu      *widget.PopUpMenu // ctx menu for when selection contains radios
 	ratingSubmenu   *fyne.MenuItem
+	infoMenuItem    *fyne.MenuItem
 	shareMenuItem   *fyne.MenuItem
 
 	nowPlayingID string
@@ -259,6 +262,7 @@ func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	if allTracks {
 		p.ensureTracksMenu()
 		p.ratingSubmenu.Disabled = p.DisableRating
+		p.infoMenuItem.Disabled = len(selected) != 1
 		p.shareMenuItem.Disabled = p.DisableSharing || len(selected) != 1
 		menu = p.menu
 	} else {
@@ -290,6 +294,12 @@ func (p *PlayQueueList) ensureTracksMenu() {
 		}
 	})
 	download.Icon = theme.DownloadIcon()
+	p.infoMenuItem = fyne.NewMenuItem(lang.L("Show info")+"...", func() {
+		if p.OnShowTrackInfo != nil {
+			p.OnShowTrackInfo(p.selectedTracks()[0])
+		}
+	})
+	p.infoMenuItem.Icon = theme.InfoIcon()
 	p.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
 		if p.OnShare != nil {
 			p.OnShare(p.selectedTracks())
@@ -316,6 +326,7 @@ func (p *PlayQueueList) ensureTracksMenu() {
 	menuItems = append(menuItems,
 		playlist,
 		download,
+		p.infoMenuItem,
 		p.shareMenuItem,
 		fyne.NewMenuItemSeparator(),
 		favorite,
