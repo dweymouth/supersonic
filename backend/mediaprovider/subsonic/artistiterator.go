@@ -49,7 +49,13 @@ func (s *subsonicMediaProvider) IterateArtists(sortOrder string, filter mediapro
 			func(artists []*subsonic.ArtistID3) []*subsonic.ArtistID3 {
 				c := collate.New(language.English, collate.Loose)
 				slices.SortFunc(artists, func(a, b *subsonic.ArtistID3) int {
-					return c.CompareString(a.Name, b.Name)
+					sortStr := func(a *subsonic.ArtistID3) string {
+						if a.SortName != "" {
+							return a.SortName
+						}
+						return a.Name
+					}
+					return c.CompareString(sortStr(a), sortStr(b))
 				})
 				return artists
 			},
