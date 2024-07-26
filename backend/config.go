@@ -64,6 +64,7 @@ type AlbumsPageConfig struct {
 
 type ArtistPageConfig struct {
 	InitialView      string
+	DiscographySort  string
 	TracklistColumns []string
 }
 

@@ -21,6 +21,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// these strings should be keys in the translation dictionaries
+var (
+	discographySorts = []string{"Year (ascending)", "Year (descending)", "Name (A-Z)"}
+)
+
 var _ fyne.Widget = (*ArtistPage)(nil)
 
 type artistPageState struct {
@@ -46,6 +51,7 @@ type ArtistPage struct {
 
 	albumGrid    *widgets.GridView
 	tracklistCtr *fyne.Container
+	sortButton   *widgets.IconButton
 	nowPlayingID string
 	header       *ArtistPageHeader
 	container    *fyne.Container
@@ -90,9 +96,10 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 	viewToggle := widgets.NewToggleText(0, []string{lang.L("Discography"), lang.L("Top Tracks")})
 	viewToggle.SetActivatedLabel(a.activeView)
 	viewToggle.OnChanged = a.onViewChange
-	//line := canvas.NewLine(theme.TextColor())
+	a.sortButton = widgets.NewIconButton(myTheme.SortIcon, a.showAlbumSortMenu)
 	viewToggleRow := container.NewBorder(nil, nil,
-		container.NewHBox(util.NewHSpace(5), viewToggle), nil,
+		container.NewHBox(util.NewHSpace(5), viewToggle),
+		container.NewHBox(a.sortButton, util.NewHSpace(10)),
 		layout.NewSpacer(),
 	)
 	a.container = container.NewBorder(
@@ -166,6 +173,60 @@ func (a *ArtistPage) playArtistRadio() {
 	go a.pm.PlaySimilarSongs(a.artistID)
 }
 
+func (a *ArtistPage) showAlbumSortMenu() {
+	m := fyne.NewMenu("")
+	oneChecked := false
+	for i, s := range util.LocalizeSlice(discographySorts) {
+		_i := i
+		item := fyne.NewMenuItem(s, func() {
+			a.cfg.DiscographySort = discographySorts[_i]
+			a.showAlbumGrid(true /*reSort*/)
+		})
+		if discographySorts[i] == a.cfg.DiscographySort {
+			item.Checked = true
+			oneChecked = true
+		}
+		m.Items = append(m.Items, item)
+	}
+	if !oneChecked {
+		m.Items[0].Checked = true
+	}
+	btnPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(a.sortButton)
+	btnSize := a.sortButton.Size()
+	pop := widget.NewPopUpMenu(m, fyne.CurrentApp().Driver().CanvasForObject(a))
+	menuW := pop.MinSize().Width
+	pop.ShowAtPosition(fyne.NewPos(btnPos.X+btnSize.Width-menuW, btnPos.Y+btnSize.Height))
+}
+
+func (a *ArtistPage) getGridViewAlbumsModel() []widgets.GridViewItemModel {
+	if a.artistInfo == nil {
+		return nil
+	}
+	sortFunc := func(x, y int) bool {
+		return a.artistInfo.Albums[x].Year < a.artistInfo.Albums[y].Year
+	}
+	switch a.cfg.DiscographySort {
+	case discographySorts[1]: /*year descending*/
+		sortFunc = func(x, y int) bool {
+			return a.artistInfo.Albums[x].Year > a.artistInfo.Albums[y].Year
+		}
+	case discographySorts[2]: /*name*/
+		sortFunc = func(x, y int) bool {
+			return a.artistInfo.Albums[x].Name < a.artistInfo.Albums[y].Name
+		}
+	}
+
+	sort.Slice(a.artistInfo.Albums, sortFunc)
+	return sharedutil.MapSlice(a.artistInfo.Albums, func(al *mediaprovider.Album) widgets.GridViewItemModel {
+		return widgets.GridViewItemModel{
+			Name:       al.Name,
+			ID:         al.ID,
+			CoverArtID: al.CoverArtID,
+			Secondary:  []string{strconv.Itoa(al.Year)},
+		}
+	})
+}
+
 // should be called asynchronously
 func (a *ArtistPage) load() {
 	artist, err := a.mp.GetArtist(a.artistID)
@@ -179,7 +240,7 @@ func (a *ArtistPage) load() {
 	a.artistInfo = artist
 	a.header.Update(artist)
 	if a.activeView == 0 {
-		a.showAlbumGrid()
+		a.showAlbumGrid(false /*reSort*/)
 	} else {
 		a.showTopTracks()
 	}
@@ -192,24 +253,14 @@ func (a *ArtistPage) load() {
 	}
 }
 
-func (a *ArtistPage) showAlbumGrid() {
+func (a *ArtistPage) showAlbumGrid(reSort bool) {
 	if a.albumGrid == nil {
 		if a.artistInfo == nil {
 			// page not loaded yet or invalid artist
 			a.activeView = 0 // if page still loading, will show discography view first
 			return
 		}
-		sort.Slice(a.artistInfo.Albums, func(x, y int) bool {
-			return a.artistInfo.Albums[x].Year < a.artistInfo.Albums[y].Year
-		})
-		model := sharedutil.MapSlice(a.artistInfo.Albums, func(al *mediaprovider.Album) widgets.GridViewItemModel {
-			return widgets.GridViewItemModel{
-				Name:       al.Name,
-				ID:         al.ID,
-				CoverArtID: al.CoverArtID,
-				Secondary:  []string{strconv.Itoa(al.Year)},
-			}
-		})
+		model := a.getGridViewAlbumsModel()
 		if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
 			a.albumGrid = g.(*widgets.GridView)
 			a.albumGrid.Placeholder = myTheme.AlbumIcon
@@ -218,7 +269,11 @@ func (a *ArtistPage) showAlbumGrid() {
 			a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
 		}
 		a.contr.ConnectAlbumGridActions(a.albumGrid)
+	} else if reSort {
+		model := a.getGridViewAlbumsModel()
+		a.albumGrid.ResetFixed(model)
 	}
+	a.sortButton.Show()
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
 	a.container.Objects[0].Refresh()
 }
@@ -262,13 +317,14 @@ func (a *ArtistPage) showTopTracks() {
 			&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
 			tl)
 	}
+	a.sortButton.Hide()
 	a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
 	a.container.Objects[0].Refresh()
 }
 
 func (a *ArtistPage) onViewChange(num int) {
 	if num == 0 {
-		a.showAlbumGrid()
+		a.showAlbumGrid(false /*reSort*/)
 	} else {
 		// needs to request info from server if first time,
 		// so call it asynchronously
