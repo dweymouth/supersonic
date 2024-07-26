@@ -851,8 +851,8 @@ func (c *Controller) ShowTrackInfoDialog(track *mediaprovider.Track) {
 	c.ClosePopUpOnEscape(pop)
 	winSize := c.MainWindow.Canvas().Size()
 	popMin := pop.MinSize()
-	width := fyne.Max(700, fyne.Max(popMin.Width, winSize.Width*0.6))
-	height := fyne.Max(500, fyne.Max(popMin.Height, winSize.Height*0.7))
+	width := fyne.Min(750, fyne.Max(popMin.Width, winSize.Width*0.8))
+	height := fyne.Min(650, fyne.Max(popMin.Height, winSize.Height*0.8))
 	pop.Resize(fyne.NewSize(width, height))
 	c.haveModal = true
 	pop.Show()
