@@ -13,7 +13,8 @@ import (
 
 // embedded in parent controller struct
 type visualizationData struct {
-	peakMeter *visualizations.PeakMeter
+	peakMeter    *visualizations.PeakMeter
+	peakMeterWin fyne.Window
 
 	visualizationAnim *fyne.Animation
 }
@@ -29,32 +30,34 @@ func (c *Controller) initVisualizations() {
 }
 
 func (c *Controller) ShowPeakMeter() {
-	if c.peakMeter != nil {
+	if c.peakMeterWin != nil {
+		c.peakMeterWin.Show()
 		return
 	}
-	win := fyne.CurrentApp().NewWindow(lang.L("Peak Meter"))
-	win.SetCloseIntercept(func() {
+	c.peakMeterWin = fyne.CurrentApp().NewWindow(lang.L("Peak Meter"))
+	c.peakMeterWin.SetCloseIntercept(func() {
 		c.stopVisualizationAnim()
 		c.peakMeter = nil
-		win.Close()
-		util.SaveWindowSize(win,
+		util.SaveWindowSize(c.peakMeterWin,
 			&c.App.Config.PeakMeter.WindowWidth,
 			&c.App.Config.PeakMeter.WindowHeight)
+		c.peakMeterWin.Close()
+		c.peakMeterWin = nil
 	})
 	if c.App.Config.PeakMeter.WindowHeight > 0 {
-		win.Resize(fyne.NewSize(
+		c.peakMeterWin.Resize(fyne.NewSize(
 			float32(c.App.Config.PeakMeter.WindowWidth),
 			float32(c.App.Config.PeakMeter.WindowHeight)))
 	}
 	c.peakMeter = visualizations.NewPeakMeter()
-	win.SetContent(c.peakMeter)
+	c.peakMeterWin.SetContent(c.peakMeter)
 	if c.App.LocalPlayer.GetStatus().State == player.Playing {
 		c.startVisualizationAnim()
 	} else {
 		// TODO: why is this needed?
 		c.peakMeter.Refresh()
 	}
-	win.Show()
+	c.peakMeterWin.Show()
 }
 
 func (c *Controller) stopVisualizationAnim() {
