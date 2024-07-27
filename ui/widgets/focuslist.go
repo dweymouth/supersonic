@@ -126,7 +126,7 @@ func (l *FocusListRowBase) EnsureUnfocused() {
 func (l *FocusListRowBase) Tapped(*fyne.PointEvent) {
 	prevTap := l.tappedAt
 	l.tappedAt = time.Now().UnixMilli()
-	if l.tappedAt-prevTap < 300 {
+	if l.tappedAt-prevTap < fyne.CurrentApp().Driver().DoubleTapDelay().Milliseconds() {
 		if l.OnDoubleTapped != nil {
 			l.OnDoubleTapped()
 		}
