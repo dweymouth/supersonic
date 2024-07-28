@@ -1,12 +1,13 @@
 package widgets
 
 import (
-	"fyne.io/fyne/v2/lang"
 	"log"
 	"slices"
 	"sort"
 	"strings"
 	"sync"
+
+	"fyne.io/fyne/v2/lang"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -120,7 +121,10 @@ func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCo
 	if useCompactRows {
 		t.columns = CompactTracklistRowColumns
 		colWidths = CompactTracklistRowColumnWidths
-		playingIcon = container.NewCenter(container.NewHBox(util.NewHSpace(2), widget.NewIcon(playIcon)))
+		playIconImg := canvas.NewImageFromResource(playIcon)
+		playIconImg.FillMode = canvas.ImageFillContain
+		playIconImg.SetMinSize(fyne.NewSquareSize(theme.IconInlineSize() * 1.2))
+		playingIcon = container.NewCenter(container.NewHBox(util.NewHSpace(4), playIconImg))
 	} else {
 		playIconImg := canvas.NewImageFromResource(playIcon)
 		playIconImg.FillMode = canvas.ImageFillContain
