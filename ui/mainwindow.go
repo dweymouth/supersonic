@@ -13,7 +13,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/browsing"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/dialogs"
-	"github.com/dweymouth/supersonic/ui/os"
+	"github.com/dweymouth/supersonic/ui/shortcuts"
 	"github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 
@@ -23,25 +23,6 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
-)
-
-var (
-	ShortcutReload      = desktop.CustomShortcut{KeyName: fyne.KeyR, Modifier: os.ControlModifier}
-	ShortcutSearch      = desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: os.ControlModifier}
-	ShortcutQuickSearch = desktop.CustomShortcut{KeyName: fyne.KeyG, Modifier: os.ControlModifier}
-	ShortcutCloseWindow = desktop.CustomShortcut{KeyName: fyne.KeyW, Modifier: os.ControlModifier}
-
-	ShortcutNavOne   = desktop.CustomShortcut{KeyName: fyne.Key1, Modifier: os.ControlModifier}
-	ShortcutNavTwo   = desktop.CustomShortcut{KeyName: fyne.Key2, Modifier: os.ControlModifier}
-	ShortcutNavThree = desktop.CustomShortcut{KeyName: fyne.Key3, Modifier: os.ControlModifier}
-	ShortcutNavFour  = desktop.CustomShortcut{KeyName: fyne.Key4, Modifier: os.ControlModifier}
-	ShortcutNavFive  = desktop.CustomShortcut{KeyName: fyne.Key5, Modifier: os.ControlModifier}
-	ShortcutNavSix   = desktop.CustomShortcut{KeyName: fyne.Key6, Modifier: os.ControlModifier}
-	ShortcutNavSeven = desktop.CustomShortcut{KeyName: fyne.Key7, Modifier: os.ControlModifier}
-	ShortcutNavEight = desktop.CustomShortcut{KeyName: fyne.Key8, Modifier: os.ControlModifier}
-
-	NavShortcuts = []desktop.CustomShortcut{ShortcutNavOne, ShortcutNavTwo, ShortcutNavThree,
-		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix, ShortcutNavSeven, ShortcutNavEight}
 )
 
 type MainWindow struct {
@@ -328,31 +309,31 @@ func (m *MainWindow) addNavigationButtons() {
 }
 
 func (m *MainWindow) addShortcuts() {
-	for _, sh := range os.BackShortcuts {
+	for _, sh := range shortcuts.BackShortcuts {
 		m.Canvas().AddShortcut(&sh, func(_ fyne.Shortcut) {
 			m.BrowsingPane.GoBack()
 		})
 	}
-	for _, sh := range os.ForwardShortcuts {
+	for _, sh := range shortcuts.ForwardShortcuts {
 		m.Canvas().AddShortcut(&sh, func(_ fyne.Shortcut) {
 			m.BrowsingPane.GoForward()
 		})
 	}
-	if os.SettingsShortcut != nil {
-		m.Canvas().AddShortcut(os.SettingsShortcut, func(_ fyne.Shortcut) {
+	if shortcuts.SettingsShortcut != nil {
+		m.Canvas().AddShortcut(shortcuts.SettingsShortcut, func(_ fyne.Shortcut) {
 			m.showSettingsDialog()
 		})
 	}
-	if os.QuitShortcut != nil {
-		m.Canvas().AddShortcut(os.QuitShortcut, func(_ fyne.Shortcut) {
+	if shortcuts.QuitShortcut != nil {
+		m.Canvas().AddShortcut(shortcuts.QuitShortcut, func(_ fyne.Shortcut) {
 			m.Quit()
 		})
 	}
 
-	m.Canvas().AddShortcut(&ShortcutReload, func(_ fyne.Shortcut) {
+	m.Canvas().AddShortcut(&shortcuts.ShortcutReload, func(_ fyne.Shortcut) {
 		m.BrowsingPane.Reload()
 	})
-	m.Canvas().AddShortcut(&ShortcutSearch, func(_ fyne.Shortcut) {
+	m.Canvas().AddShortcut(&shortcuts.ShortcutSearch, func(_ fyne.Shortcut) {
 		if m.Controller.HaveModal() {
 			// Do not focus search widget behind modal dialog
 			return
@@ -361,7 +342,7 @@ func (m *MainWindow) addShortcuts() {
 			m.Window.Canvas().Focus(s)
 		}
 	})
-	m.Canvas().AddShortcut(&ShortcutQuickSearch, func(_ fyne.Shortcut) {
+	m.Canvas().AddShortcut(&shortcuts.ShortcutQuickSearch, func(_ fyne.Shortcut) {
 		if !m.Controller.HaveModal() {
 			m.Controller.ShowQuickSearch()
 		}
@@ -369,13 +350,13 @@ func (m *MainWindow) addShortcuts() {
 	m.Canvas().AddShortcut(&fyne.ShortcutSelectAll{}, func(_ fyne.Shortcut) {
 		m.BrowsingPane.SelectAll()
 	})
-	m.Canvas().AddShortcut(&ShortcutCloseWindow, func(_ fyne.Shortcut) {
+	m.Canvas().AddShortcut(&shortcuts.ShortcutCloseWindow, func(_ fyne.Shortcut) {
 		if m.App.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
 			m.Window.Hide()
 		}
 	})
 
-	for i, ns := range NavShortcuts {
+	for i, ns := range shortcuts.NavShortcuts {
 		m.Canvas().AddShortcut(&ns, func(i int) func(fyne.Shortcut) {
 			return func(fyne.Shortcut) {
 				m.BrowsingPane.ActivateNavigationButton(i)

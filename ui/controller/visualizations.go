@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/lang"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/ui/shortcuts"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/visualizations"
 )
@@ -35,7 +36,8 @@ func (c *Controller) ShowPeakMeter() {
 		return
 	}
 	c.peakMeterWin = fyne.CurrentApp().NewWindow(lang.L("Peak Meter"))
-	c.peakMeterWin.SetCloseIntercept(func() {
+
+	onClose := func() {
 		c.stopVisualizationAnim()
 		c.peakMeter = nil
 		util.SaveWindowSize(c.peakMeterWin,
@@ -43,6 +45,11 @@ func (c *Controller) ShowPeakMeter() {
 			&c.App.Config.PeakMeter.WindowHeight)
 		c.peakMeterWin.Close()
 		c.peakMeterWin = nil
+	}
+
+	c.peakMeterWin.SetCloseIntercept(onClose)
+	c.peakMeterWin.Canvas().AddShortcut(&shortcuts.ShortcutCloseWindow, func(_ fyne.Shortcut) {
+		onClose()
 	})
 	if c.App.Config.PeakMeter.WindowHeight > 0 {
 		c.peakMeterWin.Resize(fyne.NewSize(

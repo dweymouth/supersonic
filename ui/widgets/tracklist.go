@@ -13,7 +13,6 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
-	"github.com/dweymouth/supersonic/ui/os"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 
@@ -489,7 +488,7 @@ func (t *Tracklist) onPlayTrackAt(idx int) {
 func (t *Tracklist) onSelectTrack(idx int) {
 	if d, ok := fyne.CurrentApp().Driver().(desktop.Driver); ok {
 		mod := d.CurrentKeyModifiers()
-		if mod&os.ControlModifier != 0 {
+		if mod&fyne.KeyModifierShortcutDefault != 0 {
 			t.selectAddOrRemove(idx)
 		} else if mod&fyne.KeyModifierShift != 0 {
 			t.selectRange(idx)

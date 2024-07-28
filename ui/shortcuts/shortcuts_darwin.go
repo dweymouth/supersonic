@@ -1,6 +1,6 @@
 //go:build darwin
 
-package os
+package shortcuts
 
 import (
 	"fyne.io/fyne/v2"
