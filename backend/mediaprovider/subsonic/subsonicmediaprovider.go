@@ -120,6 +120,7 @@ func (s *subsonicMediaProvider) GetArtist(artistID string) (*mediaprovider.Artis
 		Artist: mediaprovider.Artist{
 			ID:         ar.ID,
 			Name:       ar.Name,
+			CoverArtID: ar.CoverArt,
 			Favorite:   !ar.Starred.IsZero(),
 			AlbumCount: ar.AlbumCount,
 		},
