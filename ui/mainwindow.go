@@ -137,6 +137,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		fyne.NewMenu("", []*fyne.MenuItem{
 			fyne.NewMenuItem(lang.L("Peak Meter"), m.Controller.ShowPeakMeter),
 		}...))
+	m.BrowsingPane.AddSettingsMenuSeparator()
 	m.BrowsingPane.AddSettingsMenuItem(lang.L("Check for Updates"), func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
