@@ -83,6 +83,14 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 	}
 
 	addFormRow(c, lang.L("Duration"), util.SecondsToTimeString(float64(t.track.Duration)))
+	addFormRow(c, lang.L("Comment"), t.track.Comment)
+	addFormRow(c, lang.L("Year"), strconv.Itoa(t.track.Year))
+	addFormRow(c, lang.L("Track number"), strconv.Itoa(t.track.TrackNumber))
+	addFormRow(c, lang.L("Disc number"), strconv.Itoa(t.track.DiscNumber))
+
+	if t.track.BPM > 0 {
+		addFormRow(c, lang.L("BPM"), strconv.Itoa(t.track.BPM))
+	}
 
 	copyBtn := widgets.NewIconButton(theme.ContentCopyIcon(), func() {
 		if t.OnCopyFilePath != nil {
@@ -94,15 +102,6 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 		container.NewVBox(copyBtn, layout.NewSpacer()))
 	c.Add(container.NewHBox(btnCtr, newFormText(lang.L("File path"), true)))
 	c.Add(newFormText(t.track.FilePath, false))
-
-	addFormRow(c, lang.L("Comment"), t.track.Comment)
-	addFormRow(c, lang.L("Year"), strconv.Itoa(t.track.Year))
-	addFormRow(c, lang.L("Track number"), strconv.Itoa(t.track.TrackNumber))
-	addFormRow(c, lang.L("Disc number"), strconv.Itoa(t.track.DiscNumber))
-
-	if t.track.BPM > 0 {
-		addFormRow(c, lang.L("BPM"), strconv.Itoa(t.track.BPM))
-	}
 
 	addFormRow(c, lang.L("Content type"), t.track.ContentType)
 	addFormRow(c, lang.L("Bit rate"), fmt.Sprintf("%d kbps", t.track.BitRate))
