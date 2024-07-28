@@ -46,6 +46,7 @@ type AppConfig struct {
 	DefaultPlaylistID           string
 	ShowTrackChangeNotification bool
 	EnableLrcLib                bool
+	SkipSSLVerify               bool
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
@@ -170,6 +171,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			SaveQueueToServer:           false,
 			ShowTrackChangeNotification: false,
 			EnableLrcLib:                true,
+			SkipSSLVerify:               false,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},

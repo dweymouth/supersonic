@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"log"
 	"net/http"
@@ -176,6 +177,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 			log.Printf("error creating Jellyfin client: %s", err.Error())
 			return nil, err
 		}
+		s.checkSetInsecureSkipVerify(client.HTTPClient)
 		cli = &jellyfinMP.JellyfinServer{
 			Client: *client,
 		}
@@ -186,6 +188,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				log.Printf("error creating Jellyfin alternative client: %s", err.Error())
 				return nil, err
 			}
+			s.checkSetInsecureSkipVerify(altClient.HTTPClient)
 			altCli = &jellyfinMP.JellyfinServer{
 				Client: *altClient,
 			}
@@ -200,6 +203,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				ClientName:   res.AppName,
 			},
 		}
+		s.checkSetInsecureSkipVerify(cli.(*subsonicMP.SubsonicServer).Client.Client)
 		altCli = &subsonicMP.SubsonicServer{
 			Client: subsonic.Client{
 				Client:       &http.Client{Timeout: 10 * time.Second},
@@ -209,6 +213,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				ClientName:   res.AppName,
 			},
 		}
+		s.checkSetInsecureSkipVerify(altCli.(*subsonicMP.SubsonicServer).Client.Client)
 	}
 	var authError error
 	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
@@ -236,5 +241,13 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 			return altCli, authError
 		}
 		return cli, authError
+	}
+}
+
+func (s *ServerManager) checkSetInsecureSkipVerify(cli *http.Client) {
+	if s.config.Application.SkipSSLVerify {
+		cli.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
 	}
 }
