@@ -147,7 +147,6 @@ func (m *Controller) ShowPopUpPlayQueue() {
 	}
 	popUpQueue.SetNowPlaying(npID)
 	popUpQueue.UnselectAll()
-	popUpQueue.ScrollToNowPlaying()
 
 	title := widget.NewRichTextWithText(lang.L("Play Queue"))
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
@@ -172,6 +171,7 @@ func (m *Controller) ShowPopUpPlayQueue() {
 		fyne.NewSize(canvasSize.Width*0.4, canvasSize.Height*0.5),
 	))
 	pop.Resize(size)
+	popUpQueue.ScrollToNowPlaying() // must come after resize
 	pop.ShowAtPosition(fyne.NewPos(
 		canvasSize.Width-size.Width-10,
 		canvasSize.Height-size.Height-100,
