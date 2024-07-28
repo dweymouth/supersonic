@@ -1,0 +1,8 @@
+[Details]
+  Icon = "res/appicon-512.png"
+  Name = "Supersonic"
+  Version = "0.13.0"
+
+[LinuxAndBSD]
+  Categories = ["Audio", "AudioVideo"]
+  Comment = "A lightweight cross-platform desktop client for self-hosted music servers"

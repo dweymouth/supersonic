@@ -1,7 +1,3 @@
-icon_path = ./res/appicon-512.png
-app_name = Supersonic
-app_version = 0.12.0
-
 build:
 	go build
 
@@ -9,7 +5,7 @@ build:
 # so the last 3 cmds move it over manually. This is a bit fragile though
 # since it assumes a specific location and version of the dependency
 package_macos:
-	CGO_CFLAGS="-I/usr/local/include -I/opt/homebrew/include" CGO_LDFLAGS="-L/usr/local/lib -L/opt/homebrew/lib" fyne package -os darwin -name $(app_name) -appVersion $(app_version) -icon $(icon_path)
+	CGO_CFLAGS="-I/usr/local/include -I/opt/homebrew/include" CGO_LDFLAGS="-L/usr/local/lib -L/opt/homebrew/lib" fyne package -os darwin
 
 bundledeps_macos_homebrew:
 	dylibbundler -od -b -x ./Supersonic.app/Contents/MacOS/supersonic -d ./Supersonic.app/Contents/Frameworks/ -p @executable_path/../Frameworks/
@@ -29,7 +25,7 @@ zip_macos:
 	zip --symlinks -r Supersonic.zip Supersonic.app/
 
 package_windows:
-	fyne package -os windows -name $(app_name) -appVersion $(app_version) -icon $(icon_path)
+	fyne package -os windows
 
 package_linux:
-	fyne package -os linux -name $(app_name) -appVersion $(app_version) -icon $(icon_path)
+	fyne package -os linux
