@@ -1,5 +1,27 @@
 # Change Log
 
+## [0.13.0] - 2024-07-29
+
+### Added
+- [#65](https://github.com/dweymouth/supersonic/issues/65) Add support for translations, and add Chinese and Italian translations
+- [#428](https://github.com/dweymouth/supersonic/issues/428) Add a peak/RMS meter visualization
+- [#424](https://github.com/dweymouth/supersonic/issues/424) Add track info dialog and context menu item
+- [#409](https://github.com/dweymouth/supersonic/issues/409) Add support for Composer (new tracklist column, and row in Track Info dialog)
+- [#432](https://github.com/dweymouth/supersonic/issues/432) Use artist sortName for sorting artist grid by name, f present
+- [#415](https://github.com/dweymouth/supersonic/issues/415) Add button to sort artist discography by name or year (asc or desc)
+- [#317](https://github.com/dweymouth/supersonic/issues/317) Prevent Windows from sleeping while music playing
+- Add a new button below the volume control to show a pop-up play queue
+- Add a config file option to disable SSL/TLS validation (useful for self-signed certificates)
+
+### Fixed
+- [#435](https://github.com/dweymouth/supersonic/issues/435) Japanese and possibly other scripts not truncating properly in grid views
+- [#420](https://github.com/dweymouth/supersonic/issues/420) Crash if navigating away from Artist page before cover image loaded
+- [#411](https://github.com/dweymouth/supersonic/issues/411) Regression in not detecting dark/light mode for Linux
+- [#417](https://github.com/dweymouth/supersonic/issues/417) Artist page not loading artist image for servers that don't support artist largeImageURL
+- Memory leak when querying certain MPV properties
+- [#421](https://github.com/dweymouth/supersonic/issues/421) Fixed handling of multiple instances of the same track in the play queue
+- [#302](https://github.com/dweymouth/supersonic/issues/302) Improve metadata in Linux .desktop file
+
 ## [0.12.0] - 2024-07-01
 
 ### Added
