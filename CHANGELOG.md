@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.13.0] - 2024-07-29
+## [0.13.0] - 2024-07-28
 
 ### Added
 - [#65](https://github.com/dweymouth/supersonic/issues/65) Add support for translations, and add Chinese and Italian translations

@@ -61,32 +61,39 @@
   </screenshots>
 
  <releases>
-  <release date="2024-07-01" version="0.12.0">
+  <release date="2024-07-28" version="0.13.0">
    <description>
      <p>
-       Version 0.12.0 of Supersonic
+       Version 0.13.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Enable drag-and-drop reordering of tracks in the play queue and playlists</li>
-       <li>Add command-line options to control playback</li>
-       <li>Add option to show album years in grid views</li>
-       <li>Include radio station results in Quick Search</li>
-       <li>Better stringification of play times longer than 1 hour</li>
-       <li>Add fallback logic for populating related tracks and artist top tracks if server returns none</li>
+       <li>Add support for translations, and add Chinese and Italian translations</li>
+       <li>Add a peak/RMS meter visualization</li>
+       <li>Add track info dialog and context menu item</li>
+       <li>Add support for Composer (new tracklist column, and row in Track Info dialog)</li>
+       <li>Use artist sortName for sorting artist grid by name, if present</li>
+       <li>Add button to sort artist discography by name or year (asc or desc)</li>
+       <li>Prevent Windows from sleeping while music playing</li>
+       <li>Add a new button below the volume control to show a pop-up play queue</li>
+       <li>Add a config file option to disable SSL/TLS validation (useful for self-signed certificates)</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Add "Play next/later" options to the related tracks list on the Now Playing page</li>
-       <li>Change wording of the Add/Edit server form to be less confusing</li>
-       <li>Window occasionally misrendered into smaller space on opening for Linux over xwayland</li>
-       <li>Don't crash if server returns nil saved play queue but no Subsonic error</li>
+       <li>Japanese and possibly other scripts not truncating properly in grid views</li>
+       <li>Crash if navigating away from Artist page before cover image loaded</li>
+       <li>Regression in not detecting dark/light mode for Linux</li>
+       <li>Artist page not loading artist image for servers that don't support artist largeImageURL</li>
+       <li>Memory leak when querying certain MPV properties</li>
+       <li>Fixed handling of multiple instances of the same track in the play queue</li>
+       <li>Improve metadata in Linux .desktop file</li>
+       <li>Window occasionally misrendered into smaller space on opening for Linux over xwayland (more reliable fix than last release)</li>
      </ul>
 
    </description>
