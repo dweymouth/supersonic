@@ -7,7 +7,7 @@
 - [#428](https://github.com/dweymouth/supersonic/issues/428) Add a peak/RMS meter visualization
 - [#424](https://github.com/dweymouth/supersonic/issues/424) Add track info dialog and context menu item
 - [#409](https://github.com/dweymouth/supersonic/issues/409) Add support for Composer (new tracklist column, and row in Track Info dialog)
-- [#432](https://github.com/dweymouth/supersonic/issues/432) Use artist sortName for sorting artist grid by name, f present
+- [#432](https://github.com/dweymouth/supersonic/issues/432) Use artist sortName for sorting artist grid by name, if present
 - [#415](https://github.com/dweymouth/supersonic/issues/415) Add button to sort artist discography by name or year (asc or desc)
 - [#317](https://github.com/dweymouth/supersonic/issues/317) Prevent Windows from sleeping while music playing
 - Add a new button below the volume control to show a pop-up play queue
@@ -21,6 +21,7 @@
 - Memory leak when querying certain MPV properties
 - [#421](https://github.com/dweymouth/supersonic/issues/421) Fixed handling of multiple instances of the same track in the play queue
 - [#302](https://github.com/dweymouth/supersonic/issues/302) Improve metadata in Linux .desktop file
+- Window occasionally misrendered into smaller space on opening for Linux over xwayland (more reliable fix than last release)
 
 ## [0.12.0] - 2024-07-01
 
