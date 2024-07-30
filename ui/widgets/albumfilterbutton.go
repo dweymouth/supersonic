@@ -189,7 +189,7 @@ func NewAlbumFilterPopup(filter *AlbumFilterButton) *AlbumFilterPopup {
 	title.TextStyle.Bold = true
 	a.container = container.NewVBox(
 		container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()),
-		container.NewHBox(widget.NewLabel(lang.L("Year from")), minYear, widget.NewLabel("to"), maxYear),
+		container.NewHBox(widget.NewLabel(lang.L("Year from")), minYear, widget.NewLabel(lang.L("to")), maxYear),
 		container.NewHBox(a.isFavorite, a.isNotFavorite),
 		a.genreFilter,
 	)
