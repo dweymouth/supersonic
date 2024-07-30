@@ -135,7 +135,7 @@
     "Public": "Publiczne",
     "Random": "Losowe",
     "Rating": "Ocena",
-    "reissued": "reissued",
+    "reissued": "odnowiony",
     "Recently Added": "Ostatnio dodane",
     "Recently Played": "Ostatnio odtwarzane",
     "Related": "Powiązane",
@@ -212,11 +212,11 @@
     "Search": "Szukaj",
     "Owner": "Właściciel",
     "To server": "Do serwera",
-    "Fav.": "Fav.",
+    "Fav.": "Ulub.",
     "Set favorite": "Ustaw ulubione",
     "Unset favorite": "Usuń ulubione",
     "Remove from queue": "Usuń z kolejki odtwarzania",
-    "Play song radio": "Odtwórz piosenkę z radia",
+    "Play song radio": "Odtwórz mix utworów",
     "to":"do",
     "by":"przez"
 }
