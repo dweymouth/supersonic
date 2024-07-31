@@ -164,9 +164,9 @@
     "Show info": "Mostra informazioni",
     "Show notification on track change": "Mostra notifica quando cambia la traccia",
     "Show year in album grid cards": "Mostra l'anno nella griglia degli album",
-    "Shuffle": "Mescola",
-    "Shuffle albums": "Mescola album",
-    "Shuffle tracks": "Mescola tracce",
+    "Shuffle": "Casuale",
+    "Shuffle albums": "Album casuali",
+    "Shuffle tracks": "Tracce casuali",
     "Similar artists": "Artisti simili",
     "Single": "Single",
     "Size": "Dimensione",
@@ -216,5 +216,7 @@
     "Set favorite": "Segna come preferito",
     "Unset favorite": "Rimuovi preferito",
     "Remove from queue": "Rimuovi dalla coda",
-    "Play song radio": "Avvia radio mix"
+    "Play song radio": "Avvia radio mix",
+    "to": "a",
+    "by": "by"
 }
