@@ -216,5 +216,7 @@
     "Set favorite": "Setează favorit",
     "Unset favorite": "Șterge favorit",
     "Remove from queue": "Șterge din lista de redare",
-    "Play song radio": "Redă melodie radio"
+    "Play song radio": "Redă melodie radio",
+    "to": "la",
+    "by": "de"
 }
