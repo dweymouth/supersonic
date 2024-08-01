@@ -209,14 +209,13 @@ func (m *MyTheme) ListThemeFiles() map[string]string {
 	pattern := filepath.Join(m.themeFileDir, "/*.toml")
 	files, err := filepath.Glob(pattern)
 	if err != nil {
-		log.Fatalf("Failed to glob files: %v", err)
+		log.Printf("Failed to glob files: %v", err)
 	}
 
 	result := make(map[string]string)
 	for _, filePath := range files {
 		// Clean the path to avoid issues with slashes
 		cleanPath := filepath.Clean(filePath)
-		log.Printf("Trying to read theme file: %s", cleanPath)
 
 		// Now read the theme file, using the cleaned path
 		if themeFile, err := ReadThemeFile(cleanPath); err == nil {
