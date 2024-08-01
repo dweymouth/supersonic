@@ -216,5 +216,7 @@
     "Set favorite": "Set favorite",
     "Unset favorite": "Unset favorite",
     "Remove from queue": "Remove from queue",
-    "Play song radio": "Play song radio"
+    "Play song radio": "Play song radio",
+    "to":"to",
+    "by":"by"
 }
