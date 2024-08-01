@@ -1,6 +1,11 @@
 package browsing
 
 import (
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -8,12 +13,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
-
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/lang"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/widget"
+	"slices"
 )
 
 type TracksPage struct {
@@ -24,6 +24,7 @@ type TracksPage struct {
 	nowPlayingID string
 
 	title           *widget.RichText
+	sortOrder       *sortOrderSelect
 	searcher        *widgets.SearchEntry
 	tracklist       *widgets.Tracklist
 	loader          widgets.TracklistLoader
@@ -40,6 +41,7 @@ type tracksPageState struct {
 	conf       *backend.TracksPageConfig
 	mp         mediaprovider.MediaProvider
 	im         *backend.ImageManager
+	sorterId   int
 	canRate    bool
 	canShare   bool
 }
@@ -66,9 +68,8 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	}
 	contr.ConnectTracklistActions(t.tracklist)
 
-	t.title = widget.NewRichTextWithText(lang.L("All Tracks"))
-	t.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
-	t.playRandom = widget.NewButtonWithIcon(lang.L("Play random"), theme.ShuffleIcon, t.playRandomSongs)
+	t.createTitleAndSort()
+
 	t.searcher = widgets.NewSearchEntry()
 	t.searcher.PlaceHolder = lang.L("Search page")
 	t.searcher.OnSearched = t.OnSearched
@@ -77,10 +78,50 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	return t
 }
 
+func (t *TracksPage) createTitleAndSort() {
+	t.title = widget.NewRichTextWithText(lang.L("All Tracks"))
+	sortOrders := t.mp.TrackSortOrders()
+	if len(sortOrders) > 1 {
+		sorts, selected := t.SortOrders()
+		t.sortOrder = NewSortOrderSelect(sorts, t.onSortOrderChanged)
+		t.sortOrder.SetSelectedIndex(selected)
+		t.sorterId = 0
+	}
+	t.title.Segments[0].(*widget.TextSegment).Style.SizeName = widget.RichTextStyleHeading.SizeName
+	t.playRandom = widget.NewButtonWithIcon(lang.L("Play random"), theme.ShuffleIcon, t.playRandomSongs)
+}
+
+func (t *TracksPage) SortOrders() ([]string, int) {
+	orders := t.mp.TrackSortOrders()
+	sortOrder := slices.Index(orders, t.conf.SortOrder)
+	if sortOrder < 0 {
+		sortOrder = 0
+	}
+
+	return util.LocalizeSlice(orders), sortOrder
+}
+
+func (t *TracksPage) onSortOrderChanged(_ string) {
+	t.conf.SortOrder = t.mp.TrackSortOrders()[t.getSortOrderIdx()]
+	t.Reload()
+}
+
+func (t *TracksPage) getSortOrderIdx() int {
+	if t.sortOrder != nil {
+		return t.sortOrder.SelectedIndex()
+	}
+	return 0
+}
+
 func (t *TracksPage) createContainer() {
 	playRandomVbox := container.NewVBox(layout.NewSpacer(), t.playRandom, layout.NewSpacer())
 	searchVbox := container.NewVBox(layout.NewSpacer(), t.searcher, layout.NewSpacer())
-	topRow := container.NewHBox(t.title, playRandomVbox, layout.NewSpacer(), searchVbox)
+	var topRow *fyne.Container
+	if t.sortOrder != nil {
+		topRow = container.NewHBox(t.title, container.NewCenter(t.sortOrder), playRandomVbox, layout.NewSpacer(), searchVbox)
+	} else {
+		topRow = container.NewHBox(t.title, playRandomVbox, layout.NewSpacer(), searchVbox)
+	}
 	t.container = container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
 		container.NewBorder(topRow, nil, nil, nil, t.tracklist))
 }
@@ -91,7 +132,7 @@ func (t *TracksPage) Route() controller.Route {
 
 func (t *TracksPage) Reload() {
 	t.tracklist.Clear()
-	iter := t.mp.IterateTracks("")
+	iter := t.mp.IterateTracks(t.mp.TrackSortOrders()[t.getSortOrderIdx()], "")
 	// loads asynchronously
 	t.loader = widgets.NewTracklistLoader(t.tracklist, iter)
 }
@@ -155,7 +196,7 @@ func (t *TracksPage) doSearch(query string) {
 	} else {
 		t.searchTracklist.Clear()
 	}
-	iter := t.mp.IterateTracks(query)
+	iter := t.mp.IterateTracks(t.mp.TrackSortOrders()[t.getSortOrderIdx()], query)
 	t.searchLoader = widgets.NewTracklistLoader(t.searchTracklist, iter)
 	t.container.Objects[0].(*fyne.Container).Objects[0] = t.searchTracklist
 	t.Refresh()

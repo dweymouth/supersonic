@@ -89,6 +89,7 @@ type PlaylistsPageConfig struct {
 
 type TracksPageConfig struct {
 	TracklistColumns []string
+	SortOrder        string
 }
 
 type NowPlayingPageConfig struct {
@@ -203,6 +204,7 @@ func DefaultConfig(appVersionTag string) *Config {
 		},
 		TracksPage: TracksPageConfig{
 			TracklistColumns: []string{"Album", "Time", "Plays"},
+			SortOrder:        string("Recently Added"),
 		},
 		LocalPlayback: LocalPlaybackConfig{
 			// "auto" is the name to pass to MPV for autoselecting the output device

@@ -7,12 +7,19 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
-func (s *subsonicMediaProvider) IterateTracks(searchQuery string) mediaprovider.TrackIterator {
+func (s *subsonicMediaProvider) TrackSortOrders() []string {
+	return []string{
+		mediaprovider.AlbumSortRecentlyAdded,
+		mediaprovider.AlbumSortArtistAZ,
+	}
+}
+
+func (s *subsonicMediaProvider) IterateTracks(sortOrder string, searchQuery string) mediaprovider.TrackIterator {
 	if searchQuery == "" {
 		return &allTracksIterator{
 			s: s,
 			albumIter: s.IterateAlbums(
-				mediaprovider.AlbumSortArtistAZ,
+				sortOrder,
 				mediaprovider.NewAlbumFilter(mediaprovider.AlbumFilterOptions{}),
 			),
 		}

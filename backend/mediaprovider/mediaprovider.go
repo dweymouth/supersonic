@@ -212,7 +212,7 @@ type MediaProvider interface {
 
 	IterateAlbums(sortOrder string, filter AlbumFilter) AlbumIterator
 
-	IterateTracks(searchQuery string) TrackIterator
+	IterateTracks(sortOrder string, searchQuery string) TrackIterator
 
 	SearchAlbums(searchQuery string, filter AlbumFilter) AlbumIterator
 
@@ -225,6 +225,8 @@ type MediaProvider interface {
 	GetSongRadio(trackID string, count int) ([]*Track, error)
 
 	ArtistSortOrders() []string
+
+	TrackSortOrders() []string
 
 	IterateArtists(sortOrder string, filter ArtistFilter) ArtistIterator
 

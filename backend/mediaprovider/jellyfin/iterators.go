@@ -20,6 +20,10 @@ func (j *jellyfinMediaProvider) AlbumSortOrders() []string {
 	}
 }
 
+func (j *jellyfinMediaProvider) TrackSortOrders() []string {
+	return []string{}
+}
+
 func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
 	var jfSort jellyfin.Sort
 	switch sortOrder {
@@ -83,7 +87,7 @@ func (j *jellyfinMediaProvider) SearchAlbums(searchQuery string, filter mediapro
 	return helpers.NewAlbumIterator(fetcher, filter, j.prefetchCoverCB)
 }
 
-func (j *jellyfinMediaProvider) IterateTracks(searchQuery string) mediaprovider.TrackIterator {
+func (j *jellyfinMediaProvider) IterateTracks(sortOrder string, searchQuery string) mediaprovider.TrackIterator {
 	var fetcher helpers.TrackFetchFn
 	if searchQuery == "" {
 		fetcher = func(offs, limit int) ([]*mediaprovider.Track, error) {
