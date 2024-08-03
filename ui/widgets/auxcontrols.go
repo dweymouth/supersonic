@@ -3,6 +3,7 @@ package widgets
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -31,7 +32,9 @@ func NewAuxControls(initialVolume int) *AuxControls {
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
 	}
 	a.loop.IconSize = IconButtonSizeSmaller
+	a.loop.SetToolTip(lang.L("Shuffle"))
 	a.showQueue.IconSize = IconButtonSizeSmaller
+	a.showQueue.SetToolTip(lang.L("Show play queue"))
 	a.container = container.NewHBox(
 		layout.NewSpacer(),
 		container.NewVBox(
@@ -125,6 +128,7 @@ func NewVolumeControl(initialVol int) *VolumeControl {
 	v := &VolumeControl{}
 	v.ExtendBaseWidget(v)
 	v.icon = NewIconButton(theme.VolumeUpIcon(), v.toggleMute)
+	v.icon.SetToolTip("Mute")
 	v.icon.IconSize = IconButtonSizeSmaller
 	v.slider = NewVolumeSlider(100)
 	v.lastVol = initialVol

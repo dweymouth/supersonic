@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
@@ -528,8 +529,10 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	}
 	dlg.OnPageNeedsRefresh = c.RefreshPageFunc
 	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
+	fynetooltip.AddPopUpToolTipLayer(pop)
 	dlg.OnDismiss = func() {
 		pop.Hide()
+		fynetooltip.DestroyPopUpToolTipLayer(pop)
 		c.doModalClosed()
 		c.App.SaveConfigFile()
 	}
