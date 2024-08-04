@@ -69,15 +69,14 @@ func main() {
 			if !inDelta(size, desired, 1) {
 				// window drawn at incorrect size on startup
 				scale := canvas.Scale()
-				for i := 0; i < 3 && !inDelta(size, desired, 1); i++ {
-					if i > 0 {
-						// if resize didn't work the first time, try again with slightly
-						// different desired size
-						desired.Subtract(fyne.NewSize(2, 2))
-					}
+				for i := 0; i < 5; i++ { // Max of 5 retries
+					desired := desired.Subtract(fyne.NewSize(2, 2)) // fyne resize attempt
 					SendResizeToPID(os.Getpid(), int(desired.Width*scale), int(desired.Height*scale))
-					time.Sleep(100 * time.Millisecond)
+					time.Sleep(10 * time.Millisecond)
 					size = canvas.Size()
+					if inDelta(size, desired, 1) {
+						break; // break the for loop early
+					}
 				}
 			}
 		}
