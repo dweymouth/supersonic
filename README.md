@@ -31,6 +31,7 @@ Supersonic supports any music server with a Subsonic (or OpenSubsonic) API, or J
 * [Jellyfin](https://jellyfin.org)
 * [Gonic](https://github.com/sentriz/gonic)
 * [LMS](https://github.com/epoupon/lms)
+* [Nextcloud Music](https://apps.nextcloud.com/apps/music)
 * [Airsonic-Advanced](https://github.com/airsonic-advanced/airsonic-advanced)
 * [Ampache](https://ampache.org)
 * [Funkwhale](https://www.funkwhale.audio/)
