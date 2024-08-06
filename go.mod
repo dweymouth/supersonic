@@ -8,7 +8,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/cenkalti/dominantcolor v1.0.3
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
-	github.com/dweymouth/fyne-advanced-list v0.0.0-20240623145729-9c6b8f99bcfe
+	github.com/dweymouth/fyne-advanced-list v0.0.0-20240806013530-392de9d6a2a1
 	github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64
 	github.com/dweymouth/fyne-tooltip v0.2.0
 	github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645
