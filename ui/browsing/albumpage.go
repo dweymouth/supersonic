@@ -213,7 +213,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	}
 	a.releaseTypeLabel = widget.NewRichText(
 		&widget.TextSegment{Text: lang.L("Album"), Style: util.BoldRichTextStyle},
-		&widget.TextSegment{Text: " by", Style: widget.RichTextStyle{Inline: true}},
+		&widget.TextSegment{Text: " " + lang.L("by"), Style: widget.RichTextStyle{Inline: true}},
 	)
 	a.artistLabel = widgets.NewMultiHyperlink()
 	a.artistLabel.OnTapped = func(id string) {

@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"github.com/dweymouth/supersonic/backend"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -151,7 +152,7 @@ type tracklistRowBase struct {
 	playCount  int
 
 	num      *widget.Label
-	name     *widget.RichText // for bold support
+	name     *ttwidget.RichText
 	artist   *MultiHyperlink
 	album    *MultiHyperlink // for disabled support, if albumID is ""
 	composer *MultiHyperlink
@@ -161,9 +162,9 @@ type tracklistRowBase struct {
 	rating   *StarRating
 	bitrate  *widget.Label
 	plays    *widget.Label
-	comment  *widget.Label
+	comment  *ttwidget.Label
 	size     *widget.Label
-	path     *widget.Label
+	path     *ttwidget.Label
 
 	// must be injected by extending widget
 	setColVisibility func(int, bool) bool
@@ -274,13 +275,21 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 func (t *tracklistRowBase) create(tracklist *Tracklist) {
 	t.tracklist = tracklist
 	t.num = util.NewTrailingAlignLabel()
-	t.name = util.NewTruncatingRichText()
+	t.name = util.NewTruncatingTooltipRichText()
+	t.name.OnMouseIn = t.MouseIn
+	t.name.OnMouseOut = t.MouseOut
 	t.artist = NewMultiHyperlink()
 	t.artist.OnTapped = tracklist.onArtistTapped
+	t.artist.OnMouseIn = t.MouseIn
+	t.artist.OnMouseOut = t.MouseOut
 	t.album = NewMultiHyperlink()
 	t.album.OnTapped = func(id string) { tracklist.onAlbumTapped(id) }
+	t.album.OnMouseIn = t.MouseIn
+	t.album.OnMouseOut = t.MouseOut
 	t.composer = NewMultiHyperlink()
 	t.composer.OnTapped = func(id string) { tracklist.onArtistTapped(id) }
+	t.composer.OnMouseIn = t.MouseIn
+	t.composer.OnMouseOut = t.MouseOut
 	t.dur = util.NewTrailingAlignLabel()
 	t.year = util.NewTrailingAlignLabel()
 	favorite := NewFavoriteIcon()
@@ -291,10 +300,14 @@ func (t *tracklistRowBase) create(tracklist *Tracklist) {
 	t.rating.StarSize = 16
 	t.rating.OnRatingChanged = t.setTrackRating
 	t.plays = util.NewTrailingAlignLabel()
-	t.comment = util.NewTruncatingLabel()
+	t.comment = util.NewTruncatingTooltipLabel()
+	t.comment.OnMouseIn = t.MouseIn
+	t.comment.OnMouseOut = t.MouseOut
 	t.bitrate = util.NewTrailingAlignLabel()
 	t.size = util.NewTrailingAlignLabel()
-	t.path = util.NewTruncatingLabel()
+	t.path = util.NewTruncatingTooltipLabel()
+	t.path.OnMouseIn = t.MouseIn
+	t.path.OnMouseOut = t.MouseOut
 }
 
 func (t *tracklistRowBase) SetOnTappedSecondary(f func(*fyne.PointEvent, int)) {
@@ -319,6 +332,7 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 		t.trackID = id
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
+		t.name.SetToolTip(tr.Title)
 		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		t.album.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
 		t.composer.BuildSegments(tr.ComposerNames, tr.ComposerIDs)
@@ -326,9 +340,11 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 		t.year.Text = strconv.Itoa(tr.Year)
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
 		t.comment.Text = tr.Comment
+		t.comment.SetToolTip(tr.Comment)
 		t.bitrate.Text = strconv.Itoa(tr.BitRate)
 		t.size.Text = util.BytesToSizeString(tr.Size)
 		t.path.Text = tr.FilePath
+		t.path.SetToolTip(tr.FilePath)
 		changed = true
 	}
 
