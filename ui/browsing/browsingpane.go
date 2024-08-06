@@ -88,7 +88,7 @@ func NewBrowsingPane(app *backend.App, contr *controller.Controller, onGoHome fu
 	b.forward = ttwidget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
 	b.forward.SetToolTip(lang.L("Forward"))
 	b.reload = ttwidget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
-	b.reload.SetToolTip("Reload")
+	b.reload.SetToolTip(lang.L("Reload"))
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.app.PlaybackManager.OnPlayTimeUpdate(b.onPlayTimeUpdate)
 	b.app.PlaybackManager.OnQueueChange(b.onQueueChange)
@@ -100,9 +100,9 @@ func NewBrowsingPane(app *backend.App, contr *controller.Controller, onGoHome fu
 		p.ShowAtPosition(fyne.NewPos(b.Size().Width-p.MinSize().Width+4,
 			b.navBtnsContainer.MinSize().Height+theme.Padding()))
 	})
-	b.settingsBtn.SetToolTip("Menu")
+	b.settingsBtn.SetToolTip(lang.L("Menu"))
 	quickSearchBtn := ttwidget.NewButtonWithIcon("", theme.SearchIcon(), contr.ShowQuickSearch)
-	quickSearchBtn.SetToolTip("Search Everywhere")
+	quickSearchBtn.SetToolTip(lang.L("Search Everywhere"))
 	b.settingsMenu = fyne.NewMenu("")
 	b.navBtnsContainer = container.NewHBox()
 	b.navBtnsPageMap = map[controller.PageName]fyne.Resource{}
