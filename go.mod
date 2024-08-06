@@ -8,8 +8,9 @@ require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/cenkalti/dominantcolor v1.0.3
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
-	github.com/dweymouth/fyne-advanced-list v0.0.0-20240623145729-9c6b8f99bcfe
+	github.com/dweymouth/fyne-advanced-list v0.0.0-20240806013530-392de9d6a2a1
 	github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64
+	github.com/dweymouth/fyne-tooltip v0.2.0
 	github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645
 	github.com/dweymouth/go-mpv v0.0.0-20240724002347-c5e5b36f1bbf
 	github.com/dweymouth/go-subsonic v0.0.0-20240726004217-2e8e348ad417
@@ -53,4 +54,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.5.0 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240728183020-7abcad1f4139
+replace fyne.io/fyne/v2 v2.5.0 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240805144743-24df77c3cc7e

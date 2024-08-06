@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 )
@@ -20,7 +21,7 @@ const (
 )
 
 type IconButton struct {
-	widget.BaseWidget
+	ttwidget.ToolTipWidget
 
 	Highlighted bool
 	IconSize    IconButtonSize
@@ -84,7 +85,8 @@ func (i *IconButton) TypedKey(e *fyne.KeyEvent) {
 func (i *IconButton) TypedRune(r rune) {
 }
 
-func (i *IconButton) MouseIn(*desktop.MouseEvent) {
+func (i *IconButton) MouseIn(e *desktop.MouseEvent) {
+	i.ToolTipWidget.MouseIn(e)
 	if !i.hovered {
 		defer i.Refresh()
 	}
@@ -92,13 +94,15 @@ func (i *IconButton) MouseIn(*desktop.MouseEvent) {
 }
 
 func (i *IconButton) MouseOut() {
+	i.ToolTipWidget.MouseOut()
 	if i.hovered {
 		defer i.Refresh()
 	}
 	i.hovered = false
 }
 
-func (i *IconButton) MouseMoved(*desktop.MouseEvent) {
+func (i *IconButton) MouseMoved(e *desktop.MouseEvent) {
+	i.ToolTipWidget.MouseMoved(e)
 }
 
 func (i *IconButton) MinSize() fyne.Size {

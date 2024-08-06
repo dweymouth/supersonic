@@ -3,8 +3,10 @@ package widgets
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 )
 
 type MultiHyperlink struct {
@@ -16,7 +18,9 @@ type MultiHyperlink struct {
 	// only if there is enough room
 	Suffix string
 
-	OnTapped func(string)
+	OnMouseIn  func(*desktop.MouseEvent)
+	OnMouseOut func()
+	OnTapped   func(string)
 
 	SizeName       fyne.ThemeSizeName
 	SuffixSizeName fyne.ThemeSizeName
@@ -30,7 +34,7 @@ type MultiHyperlink struct {
 	//provider *widget.RichText
 
 	objects     []fyne.CanvasObject
-	suffixLabel *widget.RichText
+	suffixLabel *ttwidget.RichText
 	content     *fyne.Container
 }
 
@@ -136,7 +140,9 @@ func (c *MultiHyperlink) layoutObjects() {
 	c.content.Objects = c.objects[:2*i-1]
 	if i == len(c.Segments) && c.Suffix != "" {
 		if c.suffixLabel == nil {
-			c.suffixLabel = widget.NewRichTextWithText("· " + c.Suffix)
+			c.suffixLabel = ttwidget.NewRichTextWithText("· " + c.Suffix)
+			c.suffixLabel.OnMouseIn = c.callOnMouseIn
+			c.suffixLabel.OnMouseOut = c.callOnMouseOut
 		} else {
 			c.suffixLabel.Segments[0].(*widget.TextSegment).Text = "· " + c.Suffix
 		}
@@ -157,14 +163,18 @@ func (c *MultiHyperlink) layoutObjects() {
 
 func (c *MultiHyperlink) updateOrReplaceLabel(obj fyne.CanvasObject, text string) fyne.CanvasObject {
 	if obj != nil {
-		if label, ok := obj.(*widget.RichText); ok {
+		if label, ok := obj.(*ttwidget.RichText); ok {
 			ts := label.Segments[0].(*widget.TextSegment)
 			ts.Text = text
 			ts.Style.SizeName = c.sizeName()
+			label.SetToolTip(text)
 			return label
 		}
 	}
-	l := widget.NewRichTextWithText(text)
+	l := ttwidget.NewRichTextWithText(text)
+	l.SetToolTip(text)
+	l.OnMouseIn = c.callOnMouseIn
+	l.OnMouseOut = c.callOnMouseOut
 	l.Segments[0].(*widget.TextSegment).Style.SizeName = c.sizeName()
 	l.Truncation = fyne.TextTruncateEllipsis
 	return l
@@ -172,18 +182,32 @@ func (c *MultiHyperlink) updateOrReplaceLabel(obj fyne.CanvasObject, text string
 
 func (c *MultiHyperlink) updateOrReplaceHyperlink(obj fyne.CanvasObject, text, link string) fyne.CanvasObject {
 	if obj != nil {
-		if l, ok := obj.(*widget.Hyperlink); ok {
+		if l, ok := obj.(*ttwidget.Hyperlink); ok {
 			l.Text = text
+			l.SetToolTip(text)
 			l.SizeName = c.sizeName()
 			l.OnTapped = func() { c.onSegmentTapped(link) }
 			return l
 		}
 	}
-	l := widget.NewHyperlink(text, nil)
+	l := ttwidget.NewHyperlink(text, nil)
+	l.SetToolTip(text)
 	l.SizeName = c.sizeName()
 	l.Truncation = fyne.TextTruncateEllipsis
 	l.OnTapped = func() { c.onSegmentTapped(link) }
 	return l
+}
+
+func (c *MultiHyperlink) callOnMouseIn(e *desktop.MouseEvent) {
+	if f := c.OnMouseIn; f != nil {
+		f(e)
+	}
+}
+
+func (c *MultiHyperlink) callOnMouseOut() {
+	if f := c.OnMouseOut; f != nil {
+		f()
+	}
 }
 
 func (c *MultiHyperlink) newSeparatorLabel() *widget.RichText {

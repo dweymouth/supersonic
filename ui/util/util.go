@@ -12,10 +12,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -252,6 +254,18 @@ func NewTruncatingLabel() *widget.Label {
 	return rt
 }
 
+func NewTruncatingTooltipRichText() *ttwidget.RichText {
+	rt := ttwidget.NewRichTextWithText("")
+	rt.Truncation = fyne.TextTruncateEllipsis
+	return rt
+}
+
+func NewTruncatingTooltipLabel() *ttwidget.Label {
+	rt := ttwidget.NewLabel("")
+	rt.Truncation = fyne.TextTruncateEllipsis
+	return rt
+}
+
 func NewTrailingAlignLabel() *widget.Label {
 	rt := widget.NewLabel("")
 	rt.Alignment = fyne.TextAlignTrailing
@@ -267,6 +281,14 @@ func SaveWindowSize(w fyne.Window, wPtr, hPtr *int) {
 
 func LocalizeSlice(s []string) []string {
 	return sharedutil.MapSlice(s, func(s string) string { return lang.L(s) })
+}
+
+type ToolTipRichText struct {
+	ttwidget.RichText
+
+	OnMouseIn  func(e *desktop.MouseEvent)
+	OnMouseOut func()
+	OnTapped   func(e *fyne.PointEvent)
 }
 
 type HSpace struct {

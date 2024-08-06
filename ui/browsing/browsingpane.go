@@ -3,6 +3,7 @@ package browsing
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -11,6 +12,8 @@ import (
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
+
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 )
 
 type Page interface {
@@ -60,14 +63,14 @@ type BrowsingPane struct {
 
 	curPage Page
 
-	home       *widget.Button
-	forward    *widget.Button
-	back       *widget.Button
-	reload     *widget.Button
+	home       *ttwidget.Button
+	forward    *ttwidget.Button
+	back       *ttwidget.Button
+	reload     *ttwidget.Button
 	history    []SavedPage
 	historyIdx int
 
-	settingsBtn      *widget.Button
+	settingsBtn      *ttwidget.Button
 	settingsMenu     *fyne.Menu
 	navBtnsContainer *fyne.Container
 	pageContainer    *fyne.Container
@@ -78,22 +81,28 @@ type BrowsingPane struct {
 func NewBrowsingPane(app *backend.App, contr *controller.Controller, onGoHome func()) *BrowsingPane {
 	b := &BrowsingPane{app: app}
 	b.ExtendBaseWidget(b)
-	b.home = widget.NewButtonWithIcon("", theme.HomeIcon(), onGoHome)
-	b.back = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
-	b.forward = widget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
-	b.reload = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
+	b.home = ttwidget.NewButtonWithIcon("", theme.HomeIcon(), onGoHome)
+	b.home.SetToolTip(lang.L("Home"))
+	b.back = ttwidget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
+	b.back.SetToolTip(lang.L("Back"))
+	b.forward = ttwidget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
+	b.forward.SetToolTip(lang.L("Forward"))
+	b.reload = ttwidget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
+	b.reload.SetToolTip(lang.L("Reload"))
 	b.app.PlaybackManager.OnSongChange(b.onSongChange)
 	b.app.PlaybackManager.OnPlayTimeUpdate(b.onPlayTimeUpdate)
 	b.app.PlaybackManager.OnQueueChange(b.onQueueChange)
 	bkgrnd := myTheme.NewThemedRectangle(myTheme.ColorNamePageBackground)
 	b.pageContainer = container.NewStack(bkgrnd, layout.NewSpacer())
-	b.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
+	b.settingsBtn = ttwidget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 		p := widget.NewPopUpMenu(b.settingsMenu,
 			fyne.CurrentApp().Driver().CanvasForObject(b.settingsBtn))
 		p.ShowAtPosition(fyne.NewPos(b.Size().Width-p.MinSize().Width+4,
 			b.navBtnsContainer.MinSize().Height+theme.Padding()))
 	})
-	quickSearchBtn := widget.NewButtonWithIcon("", theme.SearchIcon(), contr.ShowQuickSearch)
+	b.settingsBtn.SetToolTip(lang.L("Menu"))
+	quickSearchBtn := ttwidget.NewButtonWithIcon("", theme.SearchIcon(), contr.ShowQuickSearch)
+	quickSearchBtn.SetToolTip(lang.L("Search Everywhere"))
 	b.settingsMenu = fyne.NewMenu("")
 	b.navBtnsContainer = container.NewHBox()
 	b.navBtnsPageMap = map[controller.PageName]fyne.Resource{}
@@ -146,10 +155,11 @@ func (b *BrowsingPane) AddSettingsMenuSeparator() {
 		fyne.NewMenuItemSeparator())
 }
 
-func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, pageName controller.PageName, action func()) *widget.Button {
+func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, pageName controller.PageName, action func()) *ttwidget.Button {
 	// make a copy of the icon, because it can change the color
 	browsingPaneIcon := theme.NewThemedResource(icon)
-	btn := widget.NewButtonWithIcon("", browsingPaneIcon, action)
+	btn := ttwidget.NewButtonWithIcon("", browsingPaneIcon, action)
+	btn.SetToolTip(lang.L(pageName.String()))
 	b.navBtnsContainer.Add(btn)
 	b.navBtnsPageMap[pageName] = browsingPaneIcon
 	return btn
@@ -157,13 +167,13 @@ func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, pageName controll
 
 func (b *BrowsingPane) DisableNavigationButtons() {
 	for _, obj := range b.navBtnsContainer.Objects {
-		obj.(*widget.Button).Disable()
+		obj.(fyne.Disableable).Disable()
 	}
 }
 
 func (b *BrowsingPane) EnableNavigationButtons() {
 	for _, obj := range b.navBtnsContainer.Objects {
-		obj.(*widget.Button).Enable()
+		obj.(fyne.Disableable).Enable()
 	}
 }
 

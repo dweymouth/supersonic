@@ -1,12 +1,14 @@
 package widgets
 
 import (
+	"image/color"
 	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -72,6 +74,7 @@ func (g *FocusList) FocusNeighbor(curItem widget.ListItemID, up bool) {
 var _ fyne.Tappable = (*FocusListRowBase)(nil)
 var _ fyne.Widget = (*FocusListRowBase)(nil)
 var _ fyne.Focusable = (*FocusListRowBase)(nil)
+var _ desktop.Hoverable = (*FocusListRowBase)(nil)
 
 // Base type used for all list rows in widgets such as Tracklist, etc.
 type FocusListRowBase struct {
@@ -81,14 +84,16 @@ type FocusListRowBase struct {
 	Content    fyne.CanvasObject
 	Selected   bool
 	Focused    bool
+	hovered    bool
 
 	OnTapped        func()
 	OnDoubleTapped  func()
 	OnFocusNeighbor func(up bool) //TODO: func(up, selecting bool)
 
 	tappedAt      int64 // unixMillis
-	focusedRect   *canvas.Rectangle
-	selectionRect *canvas.Rectangle
+	focusedRect   canvas.Rectangle
+	selectionRect canvas.Rectangle
+	hoverRect     canvas.Rectangle
 }
 
 func (l *FocusListRowBase) SetOnTapped(f func()) {
@@ -139,12 +144,14 @@ func (l *FocusListRowBase) Tapped(*fyne.PointEvent) {
 
 func (l *FocusListRowBase) FocusGained() {
 	l.Focused = true
-	l.Refresh()
+	l.focusedRect.FillColor = theme.HoverColor()
+	l.focusedRect.Refresh()
 }
 
 func (l *FocusListRowBase) FocusLost() {
 	l.Focused = false
-	l.Refresh()
+	l.focusedRect.FillColor = color.Transparent
+	l.focusedRect.Refresh()
 }
 
 func (l *FocusListRowBase) TypedKey(e *fyne.KeyEvent) {
@@ -180,26 +187,51 @@ func (l *FocusListRowBase) TypedKey(e *fyne.KeyEvent) {
 func (l *FocusListRowBase) TypedRune(r rune) {
 }
 
+func (l *FocusListRowBase) MouseIn(e *desktop.MouseEvent) {
+	l.hovered = true
+	l.hoverRect.FillColor = theme.HoverColor()
+	l.hoverRect.Refresh()
+}
+
+func (l *FocusListRowBase) MouseMoved(e *desktop.MouseEvent) {
+}
+
+func (l *FocusListRowBase) MouseOut() {
+	l.hovered = false
+	l.hoverRect.FillColor = color.Transparent
+	l.hoverRect.Refresh()
+}
+
 func (l *FocusListRowBase) Refresh() {
-	l.focusedRect.FillColor = theme.HoverColor()
-	l.focusedRect.Hidden = !l.Focused
-	l.selectionRect.FillColor = theme.SelectionColor()
-	l.selectionRect.Hidden = !l.Selected
+	l.updateBackgroundRendering()
 	l.BaseWidget.Refresh()
 }
 
+func (l *FocusListRowBase) updateBackgroundRendering() {
+	if l.Selected {
+		l.selectionRect.FillColor = theme.SelectionColor()
+	} else {
+		l.selectionRect.FillColor = color.Transparent
+	}
+	if l.Focused {
+		l.focusedRect.FillColor = theme.HoverColor()
+	} else {
+		l.focusedRect.FillColor = color.Transparent
+	}
+	if l.hovered {
+		l.hoverRect.FillColor = theme.HoverColor()
+	} else {
+		l.hoverRect.FillColor = color.Transparent
+	}
+}
+
 func (l *FocusListRowBase) CreateRenderer() fyne.WidgetRenderer {
-	if l.selectionRect == nil {
-		l.selectionRect = canvas.NewRectangle(theme.SelectionColor())
-		l.selectionRect.CornerRadius = theme.SelectionRadiusSize()
-		l.selectionRect.Hidden = !l.Selected
-	}
-	if l.focusedRect == nil {
-		l.focusedRect = canvas.NewRectangle(theme.HoverColor())
-		l.focusedRect.CornerRadius = theme.SelectionRadiusSize()
-		l.focusedRect.Hidden = !l.Focused
-	}
+	l.selectionRect.CornerRadius = theme.SelectionRadiusSize()
+	l.focusedRect.CornerRadius = theme.SelectionRadiusSize()
+	l.hoverRect.CornerRadius = theme.SelectionRadiusSize()
+	l.updateBackgroundRendering()
+
 	return widget.NewSimpleRenderer(
-		container.NewStack(l.selectionRect, l.focusedRect, l.Content),
+		container.NewStack(&l.selectionRect, &l.focusedRect, &l.hoverRect, l.Content),
 	)
 }

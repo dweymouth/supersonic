@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -128,8 +129,11 @@ func NewPlayerControls() *PlayerControls {
 	}
 
 	pc.prev = NewIconButton(theme.MediaSkipPreviousIcon(), func() {})
+	pc.prev.SetToolTip(lang.L("Previous"))
 	pc.next = NewIconButton(theme.MediaSkipNextIcon(), func() {})
+	pc.next.SetToolTip(lang.L("Next"))
 	pc.playpause = NewIconButton(theme.MediaPlayIcon(), func() {})
+	pc.playpause.SetToolTip(lang.L("Play"))
 	pc.playpause.IconSize = IconButtonSizeBigger
 
 	buttons := container.NewHBox(layout.NewSpacer(), pc.prev, pc.playpause, pc.next, layout.NewSpacer())
@@ -165,8 +169,10 @@ func (pc *PlayerControls) OnPlayPause(f func()) {
 func (pc *PlayerControls) SetPlaying(playing bool) {
 	if playing {
 		pc.playpause.SetIcon(theme.MediaPauseIcon())
+		pc.playpause.SetToolTip(lang.L("Pause"))
 	} else {
 		pc.playpause.SetIcon(theme.MediaPlayIcon())
+		pc.playpause.SetToolTip(lang.L("Play"))
 	}
 }
 

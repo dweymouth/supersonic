@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -436,7 +437,7 @@ type PlayQueueListRow struct {
 	playingIcon fyne.CanvasObject
 	num         *widget.Label
 	cover       *ImagePlaceholder
-	title       *widget.Label
+	title       *ttwidget.Label
 	artist      *MultiHyperlink
 	time        *widget.Label
 }
@@ -447,14 +448,18 @@ func NewPlayQueueListRow(playQueueList *PlayQueueList, im *backend.ImageManager,
 		playQueueList: playQueueList,
 		num:           widget.NewLabel(""),
 		cover:         NewImagePlaceholder(myTheme.TracksIcon, playQueueListThumbnailSize),
-		title:         util.NewTruncatingLabel(),
+		title:         util.NewTruncatingTooltipLabel(),
 		artist:        NewMultiHyperlink(),
 		time:          util.NewTrailingAlignLabel(),
 	}
 	p.ExtendBaseWidget(p)
 
 	p.cover.ScaleMode = canvas.ImageScaleFastest
+	p.title.OnMouseIn = p.MouseIn
+	p.title.OnMouseOut = p.MouseOut
 	p.artist.OnTapped = playQueueList.onArtistTapped
+	p.artist.OnMouseIn = p.MouseIn
+	p.artist.OnMouseOut = p.MouseOut
 	p.OnDoubleTapped = func() {
 		playQueueList.onPlayTrackAt(p.ItemID())
 	}
@@ -490,15 +495,12 @@ func (p *PlayQueueListRow) TappedSecondary(e *fyne.PointEvent) {
 }
 
 func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
-	changed := false
 	if tm.Selected != p.Selected {
 		p.Selected = tm.Selected
-		changed = true
 	}
 
 	if num := strconv.Itoa(rowNum); p.num.Text != num {
 		p.num.Text = num
-		changed = true
 	}
 
 	// Update info that can change if this row is bound to
@@ -514,9 +516,9 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 		p.EnsureUnfocused()
 		p.trackID = meta.ID
 		p.title.Text = meta.Name
+		p.title.SetToolTip(meta.Name)
 		p.artist.BuildSegments(meta.Artists, meta.ArtistIDs)
 		p.time.Text = util.SecondsToMMSS(float64(meta.Duration))
-		changed = true
 	}
 
 	// Render whether track is playing or not
@@ -529,10 +531,11 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 		} else {
 			p.Content.(*fyne.Container).Objects[0] = container.NewCenter(p.num)
 		}
-		changed = true
 	}
 
-	if changed {
-		p.Refresh()
-	}
+	// we always need to refresh in case of light/dark change
+	// even if no info changed in the update, since the
+	// PlayQueueList is used in the pop up queue which may be
+	// hidden and re-shown after a theme variant change
+	p.Refresh()
 }
