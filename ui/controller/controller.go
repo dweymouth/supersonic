@@ -50,7 +50,8 @@ type Controller struct {
 	RefreshPageFunc func()
 
 	popUpQueueMutex    sync.Mutex
-	popUpQueue         *widgets.PlayQueueList
+	popUpQueue         *widget.PopUp
+	popUpQueueList     *widgets.PlayQueueList
 	popUpQueueLastUsed int64
 	escapablePopUp     *widget.PopUp
 	haveModal          bool
@@ -65,18 +66,22 @@ func New(app *backend.App, appVersion string, mainWindow fyne.Window) *Controlle
 	}
 	c.initVisualizations()
 	c.App.PlaybackManager.OnQueueChange(func() {
+		c.popUpQueueMutex.Lock()
+		defer c.popUpQueueMutex.Unlock()
 		if c.popUpQueue != nil {
-			c.popUpQueue.SetItems(c.App.PlaybackManager.GetPlayQueue())
+			c.popUpQueueList.SetItems(c.App.PlaybackManager.GetPlayQueue())
 		}
 	})
 	c.App.PlaybackManager.OnSongChange(func(track mediaprovider.MediaItem, _ *mediaprovider.Track) {
+		c.popUpQueueMutex.Lock()
+		defer c.popUpQueueMutex.Unlock()
 		if c.popUpQueue == nil {
 			return
 		}
 		if track == nil {
-			c.popUpQueue.SetNowPlaying("")
+			c.popUpQueueList.SetNowPlaying("")
 		} else {
-			c.popUpQueue.SetNowPlaying(track.Metadata().ID)
+			c.popUpQueueList.SetNowPlaying(track.Metadata().ID)
 		}
 	})
 	return c
@@ -116,10 +121,28 @@ func (m *Controller) HaveModal() bool {
 func (m *Controller) ShowPopUpPlayQueue() {
 	m.popUpQueueMutex.Lock()
 	if m.popUpQueue == nil {
-		m.popUpQueue = widgets.NewPlayQueueList(m.App.ImageManager, false)
-		m.popUpQueue.Reorderable = true
-		m.popUpQueue.SetItems(m.App.PlaybackManager.GetPlayQueue())
-		m.ConnectPlayQueuelistActions(m.popUpQueue)
+		m.popUpQueueList = widgets.NewPlayQueueList(m.App.ImageManager, false)
+		m.popUpQueueList.Reorderable = true
+		m.popUpQueueList.SetItems(m.App.PlaybackManager.GetPlayQueue())
+		m.ConnectPlayQueuelistActions(m.popUpQueueList)
+
+		title := widget.NewRichTextWithText(lang.L("Play Queue"))
+		title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
+		title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
+		ctr := container.NewBorder(title, nil, nil, nil,
+			container.NewPadded(m.popUpQueueList),
+		)
+		m.popUpQueue = widget.NewPopUp(ctr, m.MainWindow.Canvas())
+		fynetooltip.AddPopUpToolTipLayer(m.popUpQueue)
+
+		container.NewThemeOverride(m.popUpQueue, myTheme.WithColorTransformOverride(
+			theme.ColorNameOverlayBackground,
+			func(c color.Color) color.Color {
+				c_ := c.(color.NRGBA)
+				c_.A = 245
+				return c_
+			},
+		))
 
 		// free popUpQueue if it hasn't been used in awhile
 		go func() {
@@ -128,7 +151,9 @@ func (m *Controller) ShowPopUpPlayQueue() {
 				m.popUpQueueMutex.Lock()
 				now := time.Now().UnixMilli()
 				if m.popUpQueueLastUsed < now-120_000 /*2 min*/ {
+					fynetooltip.DestroyPopUpToolTipLayer(m.popUpQueue)
 					m.popUpQueue = nil
+					m.popUpQueueList = nil
 					m.popUpQueueLastUsed = 0
 					m.popUpQueueMutex.Unlock()
 					t.Stop()
@@ -139,31 +164,17 @@ func (m *Controller) ShowPopUpPlayQueue() {
 		}()
 	}
 	m.popUpQueueLastUsed = time.Now().UnixMilli()
-	popUpQueue := m.popUpQueue
+	popUpQueueList := m.popUpQueueList
+	pop := m.popUpQueue
 	m.popUpQueueMutex.Unlock()
 
 	npID := ""
 	if np := m.App.PlaybackManager.NowPlaying(); np != nil {
 		npID = np.Metadata().ID
 	}
-	popUpQueue.SetNowPlaying(npID)
-	popUpQueue.UnselectAll()
+	popUpQueueList.SetNowPlaying(npID)
+	popUpQueueList.UnselectAll()
 
-	title := widget.NewRichTextWithText(lang.L("Play Queue"))
-	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
-	title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
-	ctr := container.NewBorder(title, nil, nil, nil,
-		container.NewPadded(m.popUpQueue),
-	)
-	pop := widget.NewPopUp(ctr, m.MainWindow.Canvas())
-	container.NewThemeOverride(pop, myTheme.WithColorTransformOverride(
-		theme.ColorNameOverlayBackground,
-		func(c color.Color) color.Color {
-			c_ := c.(color.NRGBA)
-			c_.A = 245
-			return c_
-		},
-	))
 	m.ClosePopUpOnEscape(pop)
 	minSize := fyne.NewSize(300, 400)
 	maxSize := fyne.NewSize(800, 1000)
@@ -172,7 +183,7 @@ func (m *Controller) ShowPopUpPlayQueue() {
 		fyne.NewSize(canvasSize.Width*0.4, canvasSize.Height*0.5),
 	))
 	pop.Resize(size)
-	popUpQueue.ScrollToNowPlaying() // must come after resize
+	popUpQueueList.ScrollToNowPlaying() // must come after resize
 	pop.ShowAtPosition(fyne.NewPos(
 		canvasSize.Width-size.Width-10,
 		canvasSize.Height-size.Height-100,

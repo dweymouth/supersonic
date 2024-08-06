@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"github.com/dweymouth/supersonic/res"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -142,7 +143,7 @@ type GridViewItem struct {
 
 	itemID        string
 	secondaryIDs  []string
-	primaryText   *widget.Hyperlink
+	primaryText   *ttwidget.Hyperlink
 	secondaryText *MultiHyperlink
 	suffix        string
 	container     *fyne.Container
@@ -165,7 +166,7 @@ type GridViewItem struct {
 
 func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	g := &GridViewItem{
-		primaryText:   widget.NewHyperlink("", nil),
+		primaryText:   ttwidget.NewHyperlink("", nil),
 		secondaryText: NewMultiHyperlink(),
 		Cover:         newCoverImage(placeholderResource),
 	}
@@ -220,6 +221,7 @@ func (g *GridViewItem) Update(model GridViewItemModel) {
 	g.itemID = model.ID
 	g.secondaryIDs = model.SecondaryIDs
 	g.primaryText.SetText(model.Name)
+	g.primaryText.SetToolTip(model.Name)
 	g.secondaryText.BuildSegments(model.Secondary, model.SecondaryIDs)
 	if g.ShowSuffix {
 		g.secondaryText.Suffix = model.Suffix
