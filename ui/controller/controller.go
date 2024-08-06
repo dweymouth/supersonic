@@ -708,7 +708,7 @@ func (c *Controller) createShareURL(id string) (*url.URL, error) {
 	if err != nil {
 		log.Printf("error creating share URL: %v", err)
 		c.showError(
-			"Failed to share content. This commonly occurs when the server does not support sharing," +
+			"Failed to share content. This commonly occurs when the server does not support sharing, " +
 				"or has the feature disabled.\nPlease check the server's settings and try again.",
 		)
 		return nil, err

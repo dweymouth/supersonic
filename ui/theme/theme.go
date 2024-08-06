@@ -205,11 +205,23 @@ func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 
 // Returns a map [themeFileName] -> displayName
 func (m *MyTheme) ListThemeFiles() map[string]string {
-	files, _ := filepath.Glob(m.themeFileDir + "/*.toml")
+	// Use filepath.Join to create a cross-platform file path
+	pattern := filepath.Join(m.themeFileDir, "/*.toml")
+	files, err := filepath.Glob(pattern)
+	if err != nil {
+		log.Printf("Failed to glob files: %v", err)
+	}
+
 	result := make(map[string]string)
-	for _, filepath := range files {
-		if themeFile, err := ReadThemeFile(filepath); err == nil {
-			result[path.Base(filepath)] = themeFile.SupersonicTheme.Name
+	for _, filePath := range files {
+		// Clean the path to avoid issues with slashes
+		cleanPath := filepath.Clean(filePath)
+
+		// Now read the theme file, using the cleaned path
+		if themeFile, err := ReadThemeFile(cleanPath); err == nil {
+			result[filepath.Base(cleanPath)] = themeFile.SupersonicTheme.Name
+		} else {
+			log.Printf("Failed to load theme file: %s, error: %v", cleanPath, err)
 		}
 	}
 	return result
