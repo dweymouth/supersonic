@@ -18,6 +18,37 @@ const (
 	Radios
 )
 
+func (p PageName) String() string {
+	switch p {
+	case Album:
+		return "Album"
+	case Albums:
+		return "Albums"
+	case Artist:
+		return "Artist"
+	case Artists:
+		return "Artists"
+	case Genre:
+		return "Genre"
+	case Genres:
+		return "Genres"
+	case Favorites:
+		return "Favorites"
+	case NowPlaying:
+		return "Now Playing"
+	case Playlist:
+		return "Playlist"
+	case Playlists:
+		return "Playlists"
+	case Tracks:
+		return "All Tracks"
+	case Radios:
+		return "Internet Radio Stations"
+	default:
+		return ""
+	}
+}
+
 type Route struct {
 	Page PageName
 	Arg  string

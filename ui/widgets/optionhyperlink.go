@@ -5,13 +5,14 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 )
 
 // OptionHyperlink is a widget that displays a "vertical dots"/"more" button
 // to the right of the text, which can show a menu.
 type OptionHyperlink struct {
 	widget.BaseWidget
-	h *widget.Hyperlink
+	h *ttwidget.Hyperlink
 	b *IconButton
 
 	OnShowMenu func(btnPos fyne.Position)
@@ -21,7 +22,7 @@ type OptionHyperlink struct {
 
 func NewOptionHyperlink() *OptionHyperlink {
 	o := &OptionHyperlink{
-		h: widget.NewHyperlink("", nil),
+		h: ttwidget.NewHyperlink("", nil),
 	}
 	o.h.Truncation = fyne.TextTruncateEllipsis
 	o.b = NewIconButton(theme.MoreVerticalIcon(), func() {
@@ -34,8 +35,9 @@ func NewOptionHyperlink() *OptionHyperlink {
 	return o
 }
 
-func (o *OptionHyperlink) SetText(text string) {
+func (o *OptionHyperlink) SetTextAndToolTip(text string) {
 	o.h.SetText(text)
+	o.h.SetToolTip(text)
 	o.updatePreferredWidth()
 	o.BaseWidget.Refresh()
 }

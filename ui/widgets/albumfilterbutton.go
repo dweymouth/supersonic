@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -22,7 +23,7 @@ import (
 )
 
 type AlbumFilterButton struct {
-	widget.Button
+	ttwidget.Button
 
 	OnChanged        func()
 	GenreDisabled    bool
@@ -37,10 +38,13 @@ type AlbumFilterButton struct {
 func NewAlbumFilterButton(filter mediaprovider.AlbumFilter, fetchGenresFunc func() ([]*mediaprovider.Genre, error)) *AlbumFilterButton {
 	a := &AlbumFilterButton{
 		filter: filter,
-		Button: widget.Button{
-			Icon: theme.NewThemedResource(myTheme.FilterIcon),
+		Button: ttwidget.Button{
+			Button: widget.Button{
+				Icon: theme.NewThemedResource(myTheme.FilterIcon),
+			},
 		},
 	}
+	a.SetToolTip(lang.L("Filter albums"))
 	a.OnTapped = a.showFilterDialog
 	a.ExtendBaseWidget(a)
 	a.genreListChan = make(chan []string)

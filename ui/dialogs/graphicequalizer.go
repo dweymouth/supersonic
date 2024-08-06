@@ -1,11 +1,14 @@
 package dialogs
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -17,7 +20,8 @@ type GraphicEqualizer struct {
 	OnChanged       func(band int, gain float64)
 	OnPreampChanged func(gain float64)
 
-	container *fyne.Container
+	bandSliders []*eqSlider
+	container   *fyne.Container
 }
 
 func NewGraphicEqualizer(preamp float64, bandFreqs []string, bandGains []float64) *GraphicEqualizer {
@@ -36,7 +40,8 @@ func (g *GraphicEqualizer) buildSliders(preamp float64, bands []string, bandGain
 		layout.NewSpacer(),
 		newCaptionTextSizeLabel("-12", fyne.TextAlignTrailing),
 	)
-	bandSliders := container.New(layouts.NewGridLayoutWithColumnsAndPadding(len(bands)+2, -16))
+	g.bandSliders = make([]*eqSlider, len(bands))
+	bandSlidersCtr := container.New(layouts.NewGridLayoutWithColumnsAndPadding(len(bands)+2, -16))
 	pre := newCaptionTextSizeLabel("Pre", fyne.TextAlignCenter)
 	preampSlider := newEQSlider()
 	preampSlider.SetValue(preamp)
@@ -44,24 +49,28 @@ func (g *GraphicEqualizer) buildSliders(preamp float64, bands []string, bandGain
 		if g.OnPreampChanged != nil {
 			g.OnPreampChanged(f)
 		}
+		preampSlider.UpdateToolTip()
 	}
-	bandSliders.Add(container.NewBorder(nil, pre, nil, nil, preampSlider))
-	bandSliders.Add(container.NewBorder(nil, widget.NewLabel(""), nil, nil, rng))
+	preampSlider.UpdateToolTip()
+	bandSlidersCtr.Add(container.NewBorder(nil, pre, nil, nil, preampSlider))
+	bandSlidersCtr.Add(container.NewBorder(nil, widget.NewLabel(""), nil, nil, rng))
 	for i, band := range bands {
 		s := newEQSlider()
 		if i < len(bandGains) {
 			s.SetValue(bandGains[i])
+			s.UpdateToolTip()
 		}
-		s.OnChanged = func(i int) func(float64) {
-			return func(f float64) {
-				if g.OnChanged != nil {
-					g.OnChanged(i, f)
-				}
+		_i := i
+		s.OnChanged = func(f float64) {
+			if g.OnChanged != nil {
+				g.OnChanged(_i, f)
 			}
-		}(i)
+			g.bandSliders[_i].UpdateToolTip()
+		}
 		l := newCaptionTextSizeLabel(band, fyne.TextAlignCenter)
 		c := container.NewBorder(nil, l, nil, nil, s)
-		bandSliders.Add(c)
+		bandSlidersCtr.Add(c)
+		g.bandSliders[i] = s
 	}
 	g.container = container.NewStack(
 		container.NewBorder(nil, widget.NewLabel(""), nil, nil,
@@ -73,7 +82,7 @@ func (g *GraphicEqualizer) buildSliders(preamp float64, bands []string, bandGain
 				),
 			),
 		),
-		bandSliders,
+		bandSlidersCtr,
 	)
 }
 
@@ -90,21 +99,27 @@ func (g *GraphicEqualizer) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type eqSlider struct {
-	widget.Slider
-	tappedAt int64
+	ttwidget.Slider
 }
 
 func newEQSlider() *eqSlider {
 	s := &eqSlider{
-		Slider: widget.Slider{
-			Orientation: widget.Vertical,
-			Min:         -12,
-			Max:         12,
-			Step:        0.1,
+		Slider: ttwidget.Slider{
+			Slider: widget.Slider{
+				Orientation: widget.Vertical,
+				Min:         -12,
+				Max:         12,
+				Step:        0.1,
+			},
 		},
 	}
+	s.UpdateToolTip()
 	s.ExtendBaseWidget(s)
 	return s
+}
+
+func (s *eqSlider) UpdateToolTip() {
+	s.SetToolTip(fmt.Sprintf("%0.1f dB", s.Value))
 }
 
 // We implement our own double tapping so that the Tapped behavior

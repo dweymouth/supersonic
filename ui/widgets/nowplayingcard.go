@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 )
 
 // Shows the current album art, track name, artist name, and album name
@@ -26,7 +27,7 @@ type NowPlayingCard struct {
 
 	trackName  *OptionHyperlink
 	artistName *MultiHyperlink
-	albumName  *widget.Hyperlink
+	albumName  *ttwidget.Hyperlink
 	cover      *ImagePlaceholder
 	menu       *widget.PopUpMenu
 	ratingMenu *fyne.MenuItem
@@ -46,7 +47,7 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n := &NowPlayingCard{
 		trackName:  NewOptionHyperlink(),
 		artistName: NewMultiHyperlink(),
-		albumName:  widget.NewHyperlink("", nil),
+		albumName:  ttwidget.NewHyperlink("", nil),
 	}
 	n.ExtendBaseWidget(n)
 	n.cover = NewImagePlaceholder(myTheme.TracksIcon, 85)
@@ -135,20 +136,23 @@ func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
 
 func (n *NowPlayingCard) Update(track mediaprovider.MediaItem) {
 	if track == nil {
-		n.trackName.SetText("")
+		n.trackName.SetTextAndToolTip("")
 		n.artistName.BuildSegments([]string{}, []string{})
 		n.albumName.SetText("")
+		n.albumName.SetToolTip("")
 		n.cover.Hidden = true
 	} else {
 		n.cover.Hidden = false
-		n.trackName.SetText(track.Metadata().Name)
+		n.trackName.SetTextAndToolTip(track.Metadata().Name)
 		if tr, ok := track.(*mediaprovider.Track); ok {
 			n.artistName.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 			n.albumName.SetText(tr.Album)
+			n.albumName.SetToolTip(tr.Album)
 			n.cover.PlaceholderIcon = myTheme.TracksIcon
 		} else {
 			n.artistName.BuildSegments([]string{}, []string{})
 			n.albumName.SetText("")
+			n.albumName.SetToolTip("")
 			n.cover.PlaceholderIcon = myTheme.RadioIcon
 		}
 	}

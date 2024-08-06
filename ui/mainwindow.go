@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
@@ -40,7 +41,7 @@ type MainWindow struct {
 	container        *fyne.Container
 
 	// needs to bes shown/hidden when switching between servers based on whether they support radio
-	radioBtn *widget.Button
+	radioBtn fyne.CanvasObject
 }
 
 func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App) MainWindow {
@@ -49,6 +50,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		Window: fyneApp.NewWindow(displayAppName),
 		theme:  theme.NewMyTheme(&app.Config.Theme, app.ThemesDir()),
 	}
+	fynetooltip.SetToolTipTextSizeName(theme.SizeNameSubText)
 
 	m.theme.NormalFont = app.Config.Application.FontNormalTTF
 	m.theme.BoldFont = app.Config.Application.FontBoldTTF
@@ -80,7 +82,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 
 	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller)
 	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
-	m.Window.SetContent(m.container)
+	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.container, m.Window.Canvas()))
 	m.setInitialSize()
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		if item == nil {
@@ -191,8 +193,11 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 	}
 
 	_, supportsRadio := m.App.ServerManager.Server.(mediaprovider.RadioProvider)
-	m.radioBtn.Hidden = !supportsRadio
-	m.radioBtn.Refresh()
+	if supportsRadio {
+		m.radioBtn.Show()
+	} else {
+		m.radioBtn.Hide()
+	}
 
 	m.App.SaveConfigFile()
 
