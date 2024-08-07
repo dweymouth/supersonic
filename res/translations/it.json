@@ -213,7 +213,7 @@
     "Year": "Anno",
     "Year (ascending)": "Anno (crescente)",
     "Year (descending)": "Anno (decrescente)",
-    "Year from": "Anno da",
+    "Year from": "Dall'anno",
     "You are running the latest version of": "Stai usando la versione più recente di",
     "Quit": "Esci",
     "Rescan Library": "Ricarica libreria",
@@ -225,6 +225,6 @@
     "Unset favorite": "Rimuovi preferito",
     "Remove from queue": "Rimuovi dalla coda",
     "Play song radio": "Avvia radio mix",
-    "to": "a",
+    "to": "al",
     "by": "by"
 }
