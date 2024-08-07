@@ -6,11 +6,13 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/lang"
 )
@@ -61,12 +63,10 @@ func main() {
 
 	// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
 	workaroundWindowSize := sync.OnceFunc(func() {
+		time.Sleep(10 * time.Millisecond)
 		s := mainWindow.DesiredSize()
-		scale := mainWindow.Window.Canvas().Scale()
-		s.Width *= scale
-		s.Height *= scale
-		// exported in Supersonic Fyne fork
-		mainWindow.Window.ProcessResized(int(s.Width), int(s.Height))
+		mainWindow.Window.Resize(s.Subtract(fyne.NewSize(2, 0)))
+		mainWindow.Window.Resize(s) // back to desired size
 	})
 	fyneApp.Lifecycle().SetOnEnteredForeground(func() {
 		workaroundWindowSize()
