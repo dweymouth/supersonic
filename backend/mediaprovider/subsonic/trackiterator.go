@@ -3,8 +3,8 @@ package subsonic
 import (
 	"log"
 
-	"github.com/dweymouth/go-subsonic/subsonic"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/supersonic-app/go-subsonic/subsonic"
 )
 
 func (s *subsonicMediaProvider) IterateTracks(searchQuery string) mediaprovider.TrackIterator {

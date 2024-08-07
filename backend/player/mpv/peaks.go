@@ -4,7 +4,7 @@ package mpv
 // int mpv_get_peaks(mpv_handle* handle, double* lPeak, double* rPeak, double* lRMS, double* rRMS);
 import "C"
 import (
-	"github.com/dweymouth/go-mpv"
+	"github.com/supersonic-app/go-mpv"
 )
 
 // rather than querying peaks through m.mpv.GetProperty which necessitates
