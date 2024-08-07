@@ -12,7 +12,7 @@ require (
 	github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64
 	github.com/dweymouth/fyne-tooltip v0.2.0
 	github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645
-	github.com/dweymouth/go-mpv v0.0.0-20240724002347-c5e5b36f1bbf
+	github.com/dweymouth/go-mpv v0.0.0-20240807015218-e559655c9879
 	github.com/dweymouth/go-subsonic v0.0.0-20240726004217-2e8e348ad417
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
