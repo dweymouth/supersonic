@@ -4,7 +4,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/dweymouth/go-subsonic/subsonic"
+	"github.com/supersonic-app/go-subsonic/subsonic"
 )
 
 type searchIterBase struct {

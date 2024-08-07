@@ -7,7 +7,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/dweymouth/go-mpv"
+	"github.com/supersonic-app/go-mpv"
 	"github.com/dweymouth/supersonic/backend/player"
 )
 
