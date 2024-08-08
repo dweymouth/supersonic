@@ -81,9 +81,6 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	}
 
 	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller)
-	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
-	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.container, m.Window.Canvas()))
-	m.setInitialSize()
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		if item == nil {
 			m.Window.SetTitle(displayAppName)
@@ -138,6 +135,9 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()
 
+	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
+	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.container, m.Window.Canvas()))
+	m.setInitialSize()
 	m.Window.SetCloseIntercept(func() {
 		m.SaveWindowSize()
 		if app.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
