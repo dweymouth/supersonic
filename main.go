@@ -65,13 +65,9 @@ func main() {
 	workaroundWindowSize := sync.OnceFunc(func() {
 		time.Sleep(50 * time.Millisecond)
 		s := mainWindow.DesiredSize()
-		log.Printf("canvas size is %+v, desired size is %+v\n", mainWindow.Window.Canvas().Size(), s)
 		mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0)))
-		log.Printf("canvas size is %+v, desired size is %+v\n", mainWindow.Window.Canvas().Size(), s)
-		time.Sleep(30 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		mainWindow.Window.Resize(s) // back to desired size
-		time.Sleep(30 * time.Millisecond)
-		log.Printf("canvas size is %+v, desired size is %+v\n", mainWindow.Window.Canvas().Size(), s)
 	})
 	fyneApp.Lifecycle().SetOnEnteredForeground(func() {
 		workaroundWindowSize()
