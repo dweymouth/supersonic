@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
+	"sync"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -59,39 +59,22 @@ func main() {
 		} else {
 			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
-
-		// hacky workaround for https://github.com/fyne-io/fyne/issues/4964
-		if runtime.GOOS == "linux" {
-			time.Sleep(350 * time.Millisecond)
-			canvas := mainWindow.Window.Canvas()
-			size := canvas.Size()
-			desired := mainWindow.DesiredSize()
-			if !inDelta(size, desired, 1) {
-				// window drawn at incorrect size on startup
-				scale := canvas.Scale()
-				for i := 0; i < 3 && !inDelta(size, desired, 1); i++ {
-					if i > 0 {
-						// if resize didn't work the first time, try again with slightly
-						// different desired size
-						desired.Subtract(fyne.NewSize(2, 2))
-					}
-					SendResizeToPID(os.Getpid(), int(desired.Width*scale), int(desired.Height*scale))
-					time.Sleep(100 * time.Millisecond)
-					size = canvas.Size()
-				}
-			}
-		}
-
 	}()
+
+	// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
+	workaroundWindowSize := sync.OnceFunc(func() {
+		time.Sleep(50 * time.Millisecond)
+		s := mainWindow.DesiredSize()
+		mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0)))
+		time.Sleep(50 * time.Millisecond)
+		mainWindow.Window.Resize(s) // back to desired size
+	})
+	fyneApp.Lifecycle().SetOnEnteredForeground(func() {
+		workaroundWindowSize()
+	})
+
 	mainWindow.ShowAndRun()
 
 	log.Println("Running shutdown tasks...")
 	myApp.Shutdown()
-}
-
-func inDelta(a, b fyne.Size, delta float32) bool {
-	diffW := a.Width - b.Width
-	diffH := a.Height - b.Height
-	return diffW < delta && diffW > -delta &&
-		diffH < delta && diffH > -delta
 }

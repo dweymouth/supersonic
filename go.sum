@@ -81,8 +81,8 @@ github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64 h1:RUIrnGY03
 github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64/go.mod h1:3YrjFDHMlhCsSZ/OvmJCxWm9QHSgOVWZBxnraZz9Z7c=
 github.com/dweymouth/fyne-tooltip v0.2.0 h1:6Zy3gryctuPoQfYf8Xp3tjenioebMt11NBGW/QXIvxE=
 github.com/dweymouth/fyne-tooltip v0.2.0/go.mod h1:zEgy7p9tSVIuy2GufFbOCoK3Q04zhyDPOotlU4G3Ma4=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240805144743-24df77c3cc7e h1:FSTLNY9xV0+4/x9jKPXqUpwPZfhkAMz5ZnzLBkRirMw=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240805144743-24df77c3cc7e/go.mod h1:9D4oT3NWeG+MLi/lP7ItZZyujHC/qqMJpoGTAYX5Uqc=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240807180232-d2b0dad0b17d h1:A8HSVm7wn1aEMdT/8YPtuP5XGwasqZ5kxcdBhIfxXvU=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20240807180232-d2b0dad0b17d/go.mod h1:9D4oT3NWeG+MLi/lP7ItZZyujHC/qqMJpoGTAYX5Uqc=
 github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645 h1:KzqSaQwG3HsTZQlEtkp0BeUy9vmYZ0rq0B15qIPSiBs=
 github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
