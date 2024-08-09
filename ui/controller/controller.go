@@ -271,7 +271,8 @@ func (m *Controller) PromptForFirstServer() {
 // Depending on the results of that dialog, potentially create a new playlist
 // Add tracks to the user-specified playlist
 func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
-	sp := dialogs.NewSelectPlaylistDialog(m.App.ServerManager.Server, m.App.ImageManager, m.App.ServerManager.LoggedInUser)
+	sp := dialogs.NewSelectPlaylistDialog(m.App.ServerManager.Server, m.App.ImageManager,
+		m.App.ServerManager.LoggedInUser, m.App.Config.Application.AddToPlaylistSkipDuplicates)
 	pop := widget.NewModalPopUp(sp.SearchDialog, m.MainWindow.Canvas())
 	sp.SetOnDismiss(func() {
 		pop.Hide()
@@ -279,6 +280,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	})
 	sp.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
 		pop.Hide()
+		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
 		if id == "" /* creating new playlist */ {
 			go m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
 		} else {

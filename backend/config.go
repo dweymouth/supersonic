@@ -44,6 +44,7 @@ type AppConfig struct {
 	SavePlayQueue               bool
 	SaveQueueToServer           bool
 	DefaultPlaylistID           string
+	AddToPlaylistSkipDuplicates bool
 	ShowTrackChangeNotification bool
 	EnableLrcLib                bool
 	SkipSSLVerify               bool

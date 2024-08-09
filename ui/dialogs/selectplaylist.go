@@ -24,11 +24,11 @@ type SelectPlaylist struct {
 	SkipDuplicates    bool
 }
 
-func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetcher, loggedInUser string) *SelectPlaylist {
+func NewSelectPlaylistDialog(mp mediaprovider.MediaProvider, im util.ImageFetcher, loggedInUser string, skipDups bool) *SelectPlaylist {
 	sp := &SelectPlaylist{
 		mp:             mp,
 		loggedInUser:   loggedInUser,
-		SkipDuplicates: false,
+		SkipDuplicates: skipDups,
 	}
 	sd := NewSearchDialog(
 		im,
