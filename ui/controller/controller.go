@@ -41,13 +41,14 @@ type CurPageFunc func() Route
 
 type Controller struct {
 	visualizationData
-	AppVersion      string
-	App             *backend.App
-	MainWindow      fyne.Window
-	NavHandler      NavigationHandler
-	CurPageFunc     CurPageFunc
-	ReloadFunc      func()
-	RefreshPageFunc func()
+	AppVersion        string
+	App               *backend.App
+	MainWindow        fyne.Window
+	NavHandler        NavigationHandler
+	CurPageFunc       CurPageFunc
+	ReloadFunc        func()
+	RefreshPageFunc   func()
+	SelectAllPageFunc func()
 
 	popUpQueueMutex    sync.Mutex
 	popUpQueue         *widget.PopUp
@@ -85,6 +86,19 @@ func New(app *backend.App, appVersion string, mainWindow fyne.Window) *Controlle
 		}
 	})
 	return c
+}
+
+func (m *Controller) SelectAll() {
+	m.popUpQueueMutex.Lock()
+	if m.popUpQueue != nil && m.popUpQueue.Visible() {
+		m.popUpQueueList.SelectAll()
+		m.popUpQueueMutex.Unlock()
+		return
+	}
+	m.popUpQueueMutex.Unlock()
+	if m.SelectAllPageFunc != nil {
+		m.SelectAllPageFunc()
+	}
 }
 
 func (m *Controller) NavigateTo(route Route) {

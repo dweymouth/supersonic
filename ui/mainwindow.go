@@ -67,6 +67,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.ReloadFunc = m.BrowsingPane.Reload
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
 	m.Controller.RefreshPageFunc = m.BrowsingPane.RefreshPage
+	m.Controller.SelectAllPageFunc = m.BrowsingPane.SelectAll
 
 	if runtime.GOOS == "darwin" {
 		// Fyne will extract out an "About" menu item and
@@ -353,7 +354,7 @@ func (m *MainWindow) addShortcuts() {
 		}
 	})
 	m.Canvas().AddShortcut(&fyne.ShortcutSelectAll{}, func(_ fyne.Shortcut) {
-		m.BrowsingPane.SelectAll()
+		m.Controller.SelectAll()
 	})
 	m.Canvas().AddShortcut(&shortcuts.ShortcutCloseWindow, func(_ fyne.Shortcut) {
 		if m.App.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
