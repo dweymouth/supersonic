@@ -210,7 +210,7 @@ func (l *peakMeterRenderer) Refresh() {
 
 func (l *peakMeterRenderer) Objects() []fyne.CanvasObject {
 	if l.objects == nil {
-		l.objects = make([]fyne.CanvasObject, 0, 6+len(l.rulerLines))
+		l.objects = make([]fyne.CanvasObject, 0, 8+len(l.rulerLines))
 		for i := range l.rulerLines {
 			l.objects = append(l.objects, &l.rulerLines[i], &l.rulerLabels[i])
 		}
