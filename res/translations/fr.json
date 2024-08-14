@@ -154,7 +154,7 @@
     "Save play queue on exit": "Sauvegarder la file d'attente au moment de quitter",
     "Saved at": "Sauvegardé sur",
     "Scrobble when": "Scrobbler quand",
-    "Search Everywhere": "Recherche générale",
+    "Search Everywhere": "Rechercher dans toutes les données du serveur",
     "Search page": "Recherche",
     "Search playlists or new playlist name": "Nom de liste de lecture à rechercher ou de nouvelle liste à créer",
     "sec": "sec",
@@ -226,5 +226,5 @@
     "Remove from queue": "Retirer de la file d'attente",
     "Play song radio": "Play song radio",
     "to": "à",
-    "by": "créée par"
+    "by": "appartenant à"
 }
