@@ -123,7 +123,7 @@
     "Peak Meter": "Mesure du niveau maximum",
     "percent of track is played": "% d'une piste piste a été lu",
     "Play": "Lire",
-    "Play Artist Radio": "Lire la radio de l'artiste",
+    "Play Artist Radio": "Lire une radio basée sur l'artiste",
     "Play count": "Nombre de lectures",
     "Play Discography": "Lire la discographie",
     "Play next": "Lire après la piste en cours",
@@ -224,7 +224,7 @@
     "Set favorite": "Ajouter aux favoris",
     "Unset favorite": "Retirer des favoris",
     "Remove from queue": "Retirer de la file d'attente",
-    "Play song radio": "Play song radio",
+    "Play song radio": "Lire une radio basée sur la piste",
     "to": "à",
     "by": "appartenant à"
 }
