@@ -15,6 +15,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/driver"
 	"fyne.io/fyne/v2/lang"
 )
 
@@ -65,11 +66,19 @@ func main() {
 	// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
 	if runtime.GOOS == "linux" {
 		workaroundWindowSize := sync.OnceFunc(func() {
-			time.Sleep(50 * time.Millisecond)
-			s := mainWindow.DesiredSize()
-			mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0)))
-			time.Sleep(50 * time.Millisecond)
-			mainWindow.Window.Resize(s) // back to desired size
+			go func() {
+				isWayland := false
+				mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
+					_, isWayland = ctx.(*driver.WaylandWindowContext)
+				})
+				if !isWayland {
+					time.Sleep(50 * time.Millisecond)
+					s := mainWindow.DesiredSize()
+					mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0)))
+					time.Sleep(50 * time.Millisecond)
+					mainWindow.Window.Resize(s) // back to desired size
+				}
+			}()
 		})
 		fyneApp.Lifecycle().SetOnEnteredForeground(func() {
 			workaroundWindowSize()
