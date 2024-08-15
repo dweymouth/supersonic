@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -62,16 +63,18 @@ func main() {
 	}()
 
 	// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
-	workaroundWindowSize := sync.OnceFunc(func() {
-		time.Sleep(50 * time.Millisecond)
-		s := mainWindow.DesiredSize()
-		mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0)))
-		time.Sleep(50 * time.Millisecond)
-		mainWindow.Window.Resize(s) // back to desired size
-	})
-	fyneApp.Lifecycle().SetOnEnteredForeground(func() {
-		workaroundWindowSize()
-	})
+	if runtime.GOOS == "linux" {
+		workaroundWindowSize := sync.OnceFunc(func() {
+			time.Sleep(50 * time.Millisecond)
+			s := mainWindow.DesiredSize()
+			mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0)))
+			time.Sleep(50 * time.Millisecond)
+			mainWindow.Window.Resize(s) // back to desired size
+		})
+		fyneApp.Lifecycle().SetOnEnteredForeground(func() {
+			workaroundWindowSize()
+		})
+	}
 
 	mainWindow.ShowAndRun()
 
