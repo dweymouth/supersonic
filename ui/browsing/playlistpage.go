@@ -343,12 +343,11 @@ func (a *PlaylistPageHeader) Update(playlist *mediaprovider.PlaylistWithTracks) 
 }
 
 func (a *PlaylistPageHeader) formatPlaylistOwnerStr(p *mediaprovider.PlaylistWithTracks) string {
-	pubPriv := lang.L("Public")
+	pubPriv := lang.L("Public playlist by")
 	if !p.Public {
-		pubPriv = lang.L("Private")
+		pubPriv = lang.L("Private playlist by")
 	}
-	playlistBy := lang.L("playlist by")
-	return fmt.Sprintf("%s %s %s", pubPriv, playlistBy, p.Owner)
+	return fmt.Sprintf("%s %s", pubPriv, p.Owner)
 }
 
 func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *mediaprovider.PlaylistWithTracks) string {
