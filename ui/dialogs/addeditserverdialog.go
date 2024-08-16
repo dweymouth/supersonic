@@ -78,7 +78,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 	nickField := widget.NewEntryWithData(binding.BindString(&a.Nickname))
 	nickField.SetPlaceHolder(lang.L("My Server"))
 	nickField.OnSubmitted = func(_ string) { focusHandler(hostField) }
-	a.submitBtn = widget.NewButton(lang.L("Enter"), a.doSubmit)
+	a.submitBtn = widget.NewButtonWithIcon(lang.L("Enter"), theme.ConfirmIcon(), a.doSubmit)
 	a.submitBtn.Importance = widget.HighImportance
 	a.promptText = widget.NewRichTextWithText("")
 	a.promptText.Hidden = true
@@ -88,7 +88,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 		bottomRow = container.NewHBox(
 			a.promptText,
 			layout.NewSpacer(),
-			widget.NewButton(lang.L("Cancel"), a.onCancel),
+			widget.NewButtonWithIcon(lang.L("Cancel"), theme.CancelIcon(), a.onCancel),
 			a.submitBtn)
 	} else {
 		bottomRow = container.NewHBox(

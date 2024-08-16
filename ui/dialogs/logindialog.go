@@ -58,7 +58,7 @@ func NewLoginDialog(servers []*backend.ServerConfig, pwFetch PasswordFetchFunc) 
 	editBtn := widget.NewButtonWithIcon("", theme.DocumentCreateIcon(), l.onEditServer)
 	newBtn := widget.NewButtonWithIcon("", theme.ContentAddIcon(), l.onNewServer)
 	deleteBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() { l.onDeleteServer(l.serverSelect.SelectedIndex()) })
-	l.submitBtn = widget.NewButton(lang.L("OK"), l.onSubmit)
+	l.submitBtn = widget.NewButtonWithIcon(lang.L("OK"), theme.ConfirmIcon(), l.onSubmit)
 	l.submitBtn.Importance = widget.HighImportance
 	l.promptText = widget.NewRichTextWithText("")
 	l.promptText.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameError
