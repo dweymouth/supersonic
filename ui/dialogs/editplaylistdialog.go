@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
@@ -36,25 +37,28 @@ func NewEditPlaylistDialog(playlist *mediaprovider.Playlist, showPublicCheck boo
 	isPublicCheck.Hidden = !showPublicCheck
 	nameEntry := widget.NewEntryWithData(binding.BindString(&e.Name))
 	descriptionEntry := widget.NewEntryWithData(binding.BindString(&e.Description))
-	deleteBtn := widget.NewButton(lang.L("Delete Playlist"), func() {
+	deleteBtn := widget.NewButtonWithIcon(lang.L("Delete Playlist"), theme.DeleteIcon(), func() {
 		if e.OnDeletePlaylist != nil {
 			e.OnDeletePlaylist()
 		}
 	})
-	submitBtn := widget.NewButton(lang.L("OK"), func() {
+	submitBtn := widget.NewButtonWithIcon(lang.L("OK"), theme.ConfirmIcon(), func() {
 		if e.OnUpdateMetadata != nil {
 			e.OnUpdateMetadata()
 		}
 	})
 	submitBtn.Importance = widget.HighImportance
-	cancelBtn := widget.NewButton(lang.L("Cancel"), func() {
+	cancelBtn := widget.NewButtonWithIcon(lang.L("Cancel"), theme.CancelIcon(), func() {
 		if e.OnCanceled != nil {
 			e.OnCanceled()
 		}
 	})
 
+	title := widget.NewLabel(lang.L("Edit Playlist"))
+	title.Alignment = fyne.TextAlignCenter
+	title.TextStyle.Bold = true
 	e.container = container.NewVBox(
-		container.NewHBox(layout.NewSpacer(), widget.NewLabel(lang.L("Edit Playlist")), layout.NewSpacer()),
+		title,
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel(lang.L("Name")),
 			nameEntry,
@@ -72,7 +76,7 @@ func NewEditPlaylistDialog(playlist *mediaprovider.Playlist, showPublicCheck boo
 }
 
 func (e *EditPlaylistDialog) MinSize() fyne.Size {
-	return fyne.NewSize(300, e.BaseWidget.MinSize().Height)
+	return fyne.NewSize(400, e.BaseWidget.MinSize().Height)
 }
 
 func (e *EditPlaylistDialog) CreateRenderer() fyne.WidgetRenderer {
