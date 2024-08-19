@@ -140,6 +140,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.container, m.Window.Canvas()))
 	m.setInitialSize()
 	m.Window.SetCloseIntercept(func() {
+		app.SavePlayQueueIfEnabled()
 		m.SaveWindowSize()
 		if app.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
 			m.Window.Hide()

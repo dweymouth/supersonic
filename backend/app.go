@@ -341,20 +341,24 @@ func (a *App) Shutdown() {
 	}
 	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
-	if a.Config.Application.SavePlayQueue {
-		var queueServer mediaprovider.CanSavePlayQueue = nil
-		if a.Config.Application.SaveQueueToServer {
-			if qs, ok := a.ServerManager.Server.(mediaprovider.CanSavePlayQueue); ok {
-				queueServer = qs
-			}
-		}
-		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
-	}
 	a.PlaybackManager.Stop() // will trigger scrobble check
 	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
 	a.cancel()
 	a.LocalPlayer.Destroy()
 	a.Config.WriteConfigFile(a.configFilePath())
+}
+
+func (a *App) SavePlayQueueIfEnabled() {
+	if !a.Config.Application.SavePlayQueue {
+		return
+	}
+	var queueServer mediaprovider.CanSavePlayQueue = nil
+	if a.Config.Application.SaveQueueToServer {
+		if qs, ok := a.ServerManager.Server.(mediaprovider.CanSavePlayQueue); ok {
+			queueServer = qs
+		}
+	}
+	SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
 }
 
 func (a *App) LoadSavedPlayQueue() error {
