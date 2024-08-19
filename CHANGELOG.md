@@ -1,5 +1,21 @@
 # Change Log
 
+## [0.13.1]
+
+### Added
+- New translations: French, Polish, Portuguese (Brazillian), Romanian, Spanish
+- [#116](https://github.com/dweymouth/supersonic/issues/116) Add tool tips to buttons and truncated labels
+- [#462](https://github.com/dweymouth/supersonic/issues/462) Remember the "skip duplicate tracks" setting when adding tracks to playlists
+- [#454](https://github.com/dweymouth/supersonic/pull/454) Switch sorting on All Tracks page to recently added
+
+### Fixed
+- [#441](https://github.com/dweymouth/supersonic/issues/441) Custom themes didn't work on Windows
+- Fixed "jumpy" scrolling on MacOS
+- [#452](https://github.com/dweymouth/supersonic/issues/452) Window sometimes misdrawing on startup for Linux (even better fix than last time)
+- [#440](https://github.com/dweymouth/supersonic/issues/440) Crash when rendering certain bitmap fonts
+- Fixed some more memory leaks from communicating with MPV
+- [#446](https://github.com/dweymouth/supersonic/issues/446) Missing space in error dialog text for sharing
+
 ## [0.13.0] - 2024-07-28
 
 ### Added
