@@ -88,7 +88,7 @@ func NewSettingsDialog(
 	}
 	s.promptText = widget.NewRichTextWithText("")
 	s.content = container.NewVBox(tabs, widget.NewSeparator(),
-		container.NewHBox(s.promptText, layout.NewSpacer(), widget.NewButton("Close", func() {
+		container.NewHBox(s.promptText, layout.NewSpacer(), widget.NewButton(lang.L("Close"), func() {
 			if s.OnDismiss != nil {
 				s.OnDismiss()
 			}
@@ -333,7 +333,8 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 		}
 	}
 
-	replayGainSelect := widget.NewSelect([]string{lang.L("None"), lang.L("Album"), lang.L("Track"), lang.L("Auto")}, nil)
+	rGainOpts := []string{lang.L("None"), lang.L("Album"), lang.L("Track"), lang.L("Auto")}
+	replayGainSelect := widget.NewSelect(rGainOpts, nil)
 	replayGainSelect.OnChanged = func(_ string) {
 		switch replayGainSelect.SelectedIndex() {
 		case 0:

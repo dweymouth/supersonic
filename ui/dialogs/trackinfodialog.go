@@ -100,7 +100,7 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 	copyBtn.IconSize = widgets.IconButtonSizeSmaller
 	btnCtr := container.New(layout.NewCustomPaddedLayout(8, 0, 10, 0),
 		container.NewVBox(copyBtn, layout.NewSpacer()))
-	c.Add(container.NewHBox(btnCtr, newFormText(lang.L("File path"), true)))
+	c.Add(container.NewHBox(layout.NewSpacer(), btnCtr, newFormText(lang.L("File path"), true)))
 	c.Add(newFormText(t.track.FilePath, false))
 
 	addFormRow(c, lang.L("Content type"), t.track.ContentType)
