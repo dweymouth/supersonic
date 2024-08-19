@@ -152,7 +152,11 @@ func (m *Controller) ShowPopUpPlayQueue() {
 		container.NewThemeOverride(m.popUpQueue, myTheme.WithColorTransformOverride(
 			theme.ColorNameOverlayBackground,
 			func(c color.Color) color.Color {
-				c_ := c.(color.NRGBA)
+				if nrgba, ok := c.(color.NRGBA); ok {
+					nrgba.A = 245
+					return nrgba
+				}
+				c_ := c.(color.RGBA)
 				c_.A = 245
 				return c_
 			},
