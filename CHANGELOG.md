@@ -15,6 +15,8 @@
 - [#440](https://github.com/dweymouth/supersonic/issues/440) Crash when rendering certain bitmap fonts
 - Fixed some more memory leaks from communicating with MPV
 - [#446](https://github.com/dweymouth/supersonic/issues/446) Missing space in error dialog text for sharing
+- Play queue sometimes not saving on exit
+- Pop up play queue crashing on Windows
 
 ## [0.13.0] - 2024-07-28
 

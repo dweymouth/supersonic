@@ -61,39 +61,34 @@
   </screenshots>
 
  <releases>
-  <release date="2024-07-28" version="0.13.0">
+  <release date="2024-08-20" version="0.13.1">
    <description>
      <p>
-       Version 0.13.0 of Supersonic
+       Version 0.13.1 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Add support for translations, and add Chinese and Italian translations</li>
-       <li>Add a peak/RMS meter visualization</li>
-       <li>Add track info dialog and context menu item</li>
-       <li>Add support for Composer (new tracklist column, and row in Track Info dialog)</li>
-       <li>Use artist sortName for sorting artist grid by name, if present</li>
-       <li>Add button to sort artist discography by name or year (asc or desc)</li>
-       <li>Prevent Windows from sleeping while music playing</li>
-       <li>Add a new button below the volume control to show a pop-up play queue</li>
-       <li>Add a config file option to disable SSL/TLS validation (useful for self-signed certificates)</li>
-     </ul>
+       <li>New translations: French, Polish, Portuguese (Brazillian), Romanian, Spanish</li>
+       <li>Add tool tips to buttons and truncated labels</li>
+       <li>Remember the "skip duplicate tracks" setting when adding tracks to playlists</li>
+       <li>Switch sorting on All Tracks page to recently added</li>
+      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Japanese and possibly other scripts not truncating properly in grid views</li>
-       <li>Crash if navigating away from Artist page before cover image loaded</li>
-       <li>Regression in not detecting dark/light mode for Linux</li>
-       <li>Artist page not loading artist image for servers that don't support artist largeImageURL</li>
-       <li>Memory leak when querying certain MPV properties</li>
-       <li>Fixed handling of multiple instances of the same track in the play queue</li>
-       <li>Improve metadata in Linux .desktop file</li>
-       <li>Window occasionally misrendered into smaller space on opening for Linux over xwayland (more reliable fix than last release)</li>
+       <li>Custom themes didn't work on Windows</li>
+       <li>Pop up play queue crashing on Windows</li>
+       <li>Fixed "jumpy" scrolling on MacOS</li>
+       <li>Window sometimes misdrawing on startup for Linux (even better fix than last time)</li>
+       <li>Crash when rendering certain bitmap fonts</li>
+       <li>Fixed some more memory leaks from communicating with MPV</li>
+       <li>Missing space in error dialog text for sharing</li>
+       <li>Play queue sometimes not saving on exit</li>
      </ul>
 
    </description>
