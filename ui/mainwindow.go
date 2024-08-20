@@ -140,8 +140,14 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.container, m.Window.Canvas()))
 	m.setInitialSize()
 	m.Window.SetCloseIntercept(func() {
-		app.SavePlayQueueIfEnabled()
 		m.SaveWindowSize()
+		// save settings in case we crash during shutdown
+		// TODO: when all shutdowns exit cleanly, remove these lines
+		// as they are already executed in app.Shutdown()
+		app.Config.LocalPlayback.Volume = app.LocalPlayer.GetVolume()
+		app.SavePlayQueueIfEnabled()
+		app.SaveConfigFile()
+
 		if app.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
 			m.Window.Hide()
 		} else {

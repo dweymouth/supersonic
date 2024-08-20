@@ -336,16 +336,18 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 }
 
 func (a *App) Shutdown() {
+	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
+	a.SavePlayQueueIfEnabled()
+	a.SaveConfigFile()
+
 	if a.ipcServer != nil {
 		a.ipcServer.Shutdown(a.bgrndCtx)
 	}
 	a.MPRISHandler.Shutdown()
 	a.PlaybackManager.DisableCallbacks()
 	a.PlaybackManager.Stop() // will trigger scrobble check
-	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
 	a.cancel()
 	a.LocalPlayer.Destroy()
-	a.Config.WriteConfigFile(a.configFilePath())
 }
 
 func (a *App) SavePlayQueueIfEnabled() {
