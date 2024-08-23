@@ -32,7 +32,7 @@ func NewAuxControls(initialVolume int) *AuxControls {
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
 	}
 	a.loop.IconSize = IconButtonSizeSmaller
-	a.loop.SetToolTip(lang.L("Shuffle"))
+	a.loop.SetToolTip(lang.L("Repeat"))
 	a.showQueue.IconSize = IconButtonSizeSmaller
 	a.showQueue.SetToolTip(lang.L("Show play queue"))
 	a.container = container.NewHBox(
