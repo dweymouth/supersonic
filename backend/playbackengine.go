@@ -213,14 +213,14 @@ func (p *playbackEngine) Continue() error {
 // Load items into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *playbackEngine) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
-	newItems := p.deepCopyMediaItemSlice(items)
+	newItems := deepCopyMediaItemSlice(items)
 	return p.doLoaditems(newItems, insertQueueMode, shuffle)
 }
 
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) error {
-	newTracks := p.copyTrackSliceToMediaItemSlice(tracks)
+	newTracks := copyTrackSliceToMediaItemSlice(tracks)
 	return p.doLoaditems(newTracks, insertQueueMode, shuffle)
 }
 
@@ -288,7 +288,7 @@ func (p *playbackEngine) StopAndClearPlayQueue() {
 }
 
 func (p *playbackEngine) GetPlayQueue() []mediaprovider.MediaItem {
-	return p.deepCopyMediaItemSlice(p.playQueue)
+	return deepCopyMediaItemSlice(p.playQueue)
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
@@ -315,7 +315,7 @@ func (p *playbackEngine) OnTrackRatingChanged(id string, rating int) {
 // Does not stop playback if the currently playing track is in the new queue,
 // but updates the now playing index to point to the first instance of the track in the new queue.
 func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error {
-	newQueue := p.deepCopyMediaItemSlice(items)
+	newQueue := deepCopyMediaItemSlice(items)
 	newNowPlayingIdx := -1
 	if p.nowPlayingIdx >= 0 {
 		nowPlayingID := p.playQueue[p.nowPlayingIdx].Metadata().ID
@@ -591,7 +591,7 @@ func (p *playbackEngine) sendNowPlayingScrobble() {
 
 // creates a deep copy of the track info so that we can maintain our own state
 // (play count increases, favorite, and rating) without messing up other views' track models
-func (p *playbackEngine) deepCopyMediaItemSlice(tracks []mediaprovider.MediaItem) []mediaprovider.MediaItem {
+func deepCopyMediaItemSlice(tracks []mediaprovider.MediaItem) []mediaprovider.MediaItem {
 	newTracks := make([]mediaprovider.MediaItem, len(tracks))
 	for i, tr := range tracks {
 		newTracks[i] = tr.Copy()
@@ -599,7 +599,7 @@ func (p *playbackEngine) deepCopyMediaItemSlice(tracks []mediaprovider.MediaItem
 	return newTracks
 }
 
-func (p *playbackEngine) copyTrackSliceToMediaItemSlice(tracks []*mediaprovider.Track) []mediaprovider.MediaItem {
+func copyTrackSliceToMediaItemSlice(tracks []*mediaprovider.Track) []mediaprovider.MediaItem {
 	newTracks := make([]mediaprovider.MediaItem, len(tracks))
 	for i, tr := range tracks {
 		newTracks[i] = tr.Copy()
