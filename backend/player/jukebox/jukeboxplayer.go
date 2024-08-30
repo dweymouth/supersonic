@@ -26,11 +26,10 @@ type JukeboxPlayer struct {
 }
 
 func (j *JukeboxPlayer) SetVolume(vol int) error {
-	go func() {
-		if err := j.provider.JukeboxSetVolume(vol); err == nil {
-			j.volume = vol
-		}
-	}()
+	if err := j.provider.JukeboxSetVolume(vol); err != nil {
+		return err
+	}
+	j.volume = vol
 	return nil
 }
 
@@ -39,25 +38,21 @@ func (j *JukeboxPlayer) GetVolume() int {
 }
 
 func (j *JukeboxPlayer) PlayTrackAt(idx int) error {
-	go func() {
-		if err := j.provider.JukeboxSeek(idx, 0); err == nil {
-			j.curTrack = idx
-			j.Continue()
-		}
-	}()
-	return nil
+	if err := j.provider.JukeboxSeek(idx, 0); err != nil {
+		return err
+	}
+	j.curTrack = idx
+	return j.Continue()
 }
 
 func (j *JukeboxPlayer) Continue() error {
 	if j.state == playing {
 		return nil
 	}
-	go func() {
-		if err := j.provider.JukeboxStart(); err != nil {
-			return
-		}
-		j.state = playing
-	}()
+	if err := j.provider.JukeboxStart(); err != nil {
+		return err
+	}
+	j.state = playing
 	return nil
 }
 
@@ -65,12 +60,10 @@ func (j *JukeboxPlayer) Pause() error {
 	if j.state != playing {
 		return nil
 	}
-	go func() {
-		if err := j.provider.JukeboxStop(); err != nil {
-			return
-		}
-		j.state = paused
-	}()
+	if err := j.provider.JukeboxStop(); err != nil {
+		return err
+	}
+	j.state = paused
 	return nil
 }
 
@@ -78,12 +71,10 @@ func (j *JukeboxPlayer) Stop() error {
 	if j.state == stopped {
 		return nil
 	}
-	go func() {
-		if err := j.provider.JukeboxStop(); err != nil {
-			return
-		}
-		j.state = stopped
-	}()
+	if err := j.provider.JukeboxStop(); err != nil {
+		return err
+	}
+	j.state = stopped
 	return nil
 }
 
@@ -105,11 +96,9 @@ func (j *JukeboxPlayer) SeekNext() error {
 
 func (j *JukeboxPlayer) SeekSeconds(secs float64) error {
 	j.seeking = true
-	go func() {
-		j.provider.JukeboxSeek(j.curTrack, int(secs))
-		j.seeking = false
-	}()
-	return nil
+	err := j.provider.JukeboxSeek(j.curTrack, int(secs))
+	j.seeking = false
+	return err
 }
 
 func (j *JukeboxPlayer) IsSeeking() bool {
