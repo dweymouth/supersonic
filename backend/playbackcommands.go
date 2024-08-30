@@ -28,113 +28,120 @@ const (
 	cmdLoadRadioStation // arg: *mediaprovider.RadioStation, arg2: InsertQueueMode
 )
 
-type PlaybackCommand struct {
+type playbackCommand struct {
 	Type playbackCommandType
 	Arg  any
 	Arg2 any
 	Arg3 any
 }
 
-type CommandQueue struct {
+type playbackCommandQueue struct {
 	mutex        sync.Mutex
-	queue        []PlaybackCommand
+	queue        []playbackCommand
 	cmdAvailable *sync.Cond
-	nextChan     chan (PlaybackCommand)
+	nextChan     chan playbackCommand
 }
 
-func NewCommandQueue() *CommandQueue {
-	c := &CommandQueue{}
+func NewCommandQueue() *playbackCommandQueue {
+	c := &playbackCommandQueue{}
+	c.nextChan = make(chan playbackCommand)
 	c.cmdAvailable = sync.NewCond(&c.mutex)
 	go c.chanWriter()
 	return c
 }
 
-func (c *CommandQueue) C() <-chan PlaybackCommand {
+func (c *playbackCommandQueue) C() <-chan playbackCommand {
 	return c.nextChan
 }
 
-func (c *CommandQueue) Stop() {
+func (c *playbackCommandQueue) Stop() {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdContinue, cmdPause, cmdStop},
-		PlaybackCommand{Type: cmdStop})
+		playbackCommand{Type: cmdStop})
 }
 
-func (c *CommandQueue) Continue() {
+func (c *playbackCommandQueue) Continue() {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdContinue, cmdPause, cmdStop},
-		PlaybackCommand{Type: cmdContinue})
+		playbackCommand{Type: cmdContinue})
 }
 
-func (c *CommandQueue) Pause() {
+func (c *playbackCommandQueue) Pause() {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdContinue, cmdPause, cmdStop},
-		PlaybackCommand{Type: cmdPause})
+		playbackCommand{Type: cmdPause})
 }
 
-func (c *CommandQueue) StopAndClearPlayQueue() {
+func (c *playbackCommandQueue) PlayTrackAt(idx int) {
+	c.filterCommandsAndAdd([]playbackCommandType{cmdContinue, cmdPause, cmdStop, cmdPlayTrackAt},
+		playbackCommand{Type: cmdPlayTrackAt, Arg: idx})
+}
+
+func (c *playbackCommandQueue) StopAndClearPlayQueue() {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdContinue, cmdPause, cmdStop, cmdStopAndClearPlayQueue},
-		PlaybackCommand{Type: cmdStopAndClearPlayQueue})
+		playbackCommand{Type: cmdStopAndClearPlayQueue})
 }
 
-func (c *CommandQueue) SetVolume(vol int) {
+func (c *playbackCommandQueue) SetVolume(vol int) {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdVolume},
-		PlaybackCommand{Type: cmdVolume, Arg: vol})
+		playbackCommand{Type: cmdVolume, Arg: vol})
 }
 
-func (c *CommandQueue) SetLoopMode(mode LoopMode) {
+func (c *playbackCommandQueue) SetLoopMode(mode LoopMode) {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdLoopMode},
-		PlaybackCommand{Type: cmdLoopMode, Arg: mode})
+		playbackCommand{Type: cmdLoopMode, Arg: mode})
 }
 
-func (c *CommandQueue) SeekSeconds(s float64) {
+func (c *playbackCommandQueue) SeekSeconds(s float64) {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdSeekSeconds},
-		PlaybackCommand{Type: cmdSeekSeconds, Arg: s})
+		playbackCommand{Type: cmdSeekSeconds, Arg: s})
 }
 
-func (c *CommandQueue) SeekNext() {
+func (c *playbackCommandQueue) SeekNext() {
 	c.seekBackOrFwd(1)
 }
 
-func (c *CommandQueue) SeekBackOrPrevious() {
+func (c *playbackCommandQueue) SeekBackOrPrevious() {
 	c.seekBackOrFwd(-1)
 }
 
-func (c *CommandQueue) UpdatePlayQueue(items []mediaprovider.MediaItem) {
+func (c *playbackCommandQueue) UpdatePlayQueue(items []mediaprovider.MediaItem) {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdUpdatePlayQueue},
-		PlaybackCommand{Type: cmdUpdatePlayQueue, Arg: items})
+		playbackCommand{Type: cmdUpdatePlayQueue, Arg: items})
 }
 
-func (c *CommandQueue) RemoveItemsFromQueue(idxs []int) {
+func (c *playbackCommandQueue) RemoveItemsFromQueue(idxs []int) {
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.queue = append(c.queue, PlaybackCommand{
+	c.queue = append(c.queue, playbackCommand{
 		Type: cmdRemoveTracksFromQueue,
 		Arg:  idxs,
 	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
 }
 
-func (c *CommandQueue) LoadRadioStation(radio *mediaprovider.RadioStation, insertMode InsertQueueMode) {
+func (c *playbackCommandQueue) LoadRadioStation(radio *mediaprovider.RadioStation, insertMode InsertQueueMode) {
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.queue = append(c.queue, PlaybackCommand{
+	c.queue = append(c.queue, playbackCommand{
 		Type: cmdLoadRadioStation,
 		Arg:  radio,
 		Arg2: insertMode,
 	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
 }
 
-func (c *CommandQueue) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) {
+func (c *playbackCommandQueue) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) {
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.queue = append(c.queue, PlaybackCommand{
+	c.queue = append(c.queue, playbackCommand{
 		Type: cmdLoadItems,
 		Arg:  items,
 		Arg2: insertQueueMode,
 		Arg3: shuffle,
 	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
 }
 
-func (c *CommandQueue) filterCommandsAndAdd(excludeTypes []playbackCommandType, command PlaybackCommand) {
+func (c *playbackCommandQueue) filterCommandsAndAdd(excludeTypes []playbackCommandType, command playbackCommand) {
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
 	j := 0
 	for _, cmd := range c.queue {
 		if slices.Contains(excludeTypes, cmd.Type) {
@@ -145,12 +152,12 @@ func (c *CommandQueue) filterCommandsAndAdd(excludeTypes []playbackCommandType, 
 	}
 	c.queue = c.queue[:j]
 	c.queue = append(c.queue, command)
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
 }
 
-func (c *CommandQueue) seekBackOrFwd(direction int) {
+func (c *playbackCommandQueue) seekBackOrFwd(direction int) {
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
 	j := 0
 	n := 0
 	for _, cmd := range c.queue {
@@ -162,12 +169,14 @@ func (c *CommandQueue) seekBackOrFwd(direction int) {
 		}
 	}
 	c.queue = c.queue[:j]
-	c.queue = append(c.queue, PlaybackCommand{
+	c.queue = append(c.queue, playbackCommand{
 		Type: cmdSeekFwdBackN,
 		Arg:  n + direction})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
 }
 
-func (c *CommandQueue) chanWriter() {
+func (c *playbackCommandQueue) chanWriter() {
 	for {
 		c.mutex.Lock()
 		for len(c.queue) == 0 {

@@ -158,7 +158,7 @@ func (c *Controller) ConnectPlayQueuelistActions(list *widgets.PlayQueueList) {
 	}
 	list.OnAddToPlaylist = c.DoAddTracksToPlaylistWorkflow
 	list.OnPlayItemAt = func(tracknum int) {
-		_ = c.App.PlaybackManager.PlayTrackAt(tracknum)
+		c.App.PlaybackManager.PlayTrackAt(tracknum)
 	}
 	list.OnShowArtistPage = func(artistID string) {
 		c.NavigateTo(ArtistRoute(artistID))

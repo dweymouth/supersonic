@@ -377,9 +377,7 @@ func (a *App) LoadSavedPlayQueue() error {
 		return nil
 	}
 
-	if err := a.PlaybackManager.LoadTracks(queue.Tracks, Replace, false); err != nil {
-		return err
-	}
+	a.PlaybackManager.LoadTracks(queue.Tracks, Replace, false)
 	if queue.TrackIndex >= 0 && queue.TrackIndex < len(queue.Tracks) {
 		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
 		a.PlaybackManager.PlayTrackAt(queue.TrackIndex)

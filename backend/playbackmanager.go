@@ -2,7 +2,6 @@ package backend
 
 import (
 	"context"
-	"errors"
 	"log"
 	"math/rand"
 
@@ -13,7 +12,8 @@ import (
 // A high-level MediaProvider-aware playback engine, serves as an
 // intermediary between the frontend and various Player backends.
 type PlaybackManager struct {
-	engine *playbackEngine
+	engine   *playbackEngine
+	cmdQueue *playbackCommandQueue
 }
 
 func NewPlaybackManager(
@@ -23,9 +23,14 @@ func NewPlaybackManager(
 	scrobbleCfg *ScrobbleConfig,
 	transcodeCfg *TranscodingConfig,
 ) *PlaybackManager {
-	return &PlaybackManager{
-		engine: NewPlaybackEngine(ctx, s, p, scrobbleCfg, transcodeCfg),
+	e := NewPlaybackEngine(ctx, s, p, scrobbleCfg, transcodeCfg)
+	q := NewCommandQueue()
+	pm := &PlaybackManager{
+		engine:   e,
+		cmdQueue: q,
 	}
+	go pm.runCmdQueue(ctx)
+	return pm
 }
 
 func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
@@ -106,7 +111,8 @@ func (p *PlaybackManager) LoadAlbum(albumID string, insertQueueMode InsertQueueM
 	if err != nil {
 		return err
 	}
-	return p.LoadTracks(album.Tracks, insertQueueMode, shuffle)
+	p.LoadTracks(album.Tracks, insertQueueMode, shuffle)
+	return nil
 }
 
 // Loads the specified playlist into the play queue.
@@ -115,26 +121,28 @@ func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode Insert
 	if err != nil {
 		return err
 	}
-	return p.LoadTracks(playlist.Tracks, insertQueueMode, shuffle)
+	p.LoadTracks(playlist.Tracks, insertQueueMode, shuffle)
+	return nil
 }
 
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
-func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) error {
-	return p.engine.LoadTracks(tracks, insertQueueMode, shuffle)
+func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) {
+	items := copyTrackSliceToMediaItemSlice(tracks)
+	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
 }
 
 // Load items into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
-func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
-	return p.engine.LoadItems(items, insertQueueMode, shuffle)
+func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) {
+	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
 }
 
 // Replaces the play queue with the given set of tracks.
 // Does not stop playback if the currently playing track is in the new queue,
 // but updates the now playing index to point to the first instance of the track in the new queue.
-func (p *PlaybackManager) UpdatePlayQueue(items []mediaprovider.MediaItem) error {
-	return p.engine.UpdatePlayQueue(items)
+func (p *PlaybackManager) UpdatePlayQueue(items []mediaprovider.MediaItem) {
+	p.cmdQueue.UpdatePlayQueue(items)
 }
 
 func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool) error {
@@ -144,7 +152,8 @@ func (p *PlaybackManager) PlayAlbum(albumID string, firstTrack int, shuffle bool
 	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainAlbum)
 	}
-	return p.PlayTrackAt(firstTrack)
+	p.PlayTrackAt(firstTrack)
+	return nil
 }
 
 func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffle bool) error {
@@ -154,7 +163,8 @@ func (p *PlaybackManager) PlayPlaylist(playlistID string, firstTrack int, shuffl
 	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainTrack)
 	}
-	return p.PlayTrackAt(firstTrack)
+	p.PlayTrackAt(firstTrack)
+	return nil
 }
 
 func (p *PlaybackManager) PlayTrack(trackID string) error {
@@ -166,13 +176,14 @@ func (p *PlaybackManager) PlayTrack(trackID string) error {
 	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainTrack)
 	}
-	return p.PlayFromBeginning()
+	p.PlayFromBeginning()
+	return nil
 }
 
 func (p *PlaybackManager) ShuffleArtistAlbums(artistID string) {
 	artist, err := p.engine.sm.Server.GetArtist(artistID)
 	if err != nil {
-		log.Printf(err.Error())
+		log.Printf("failed to get artist: %v\n", err)
 		return
 	}
 	if len(artist.Albums) == 0 {
@@ -196,7 +207,7 @@ func (p *PlaybackManager) ShuffleArtistAlbums(artistID string) {
 func (p *PlaybackManager) PlayArtistDiscography(artistID string, shuffleTracks bool) {
 	tr, err := p.engine.sm.Server.GetArtistTracks(artistID)
 	if err != nil {
-		log.Printf(err.Error())
+		log.Printf("failed to get artist tracks: %v\n", err)
 		return
 	}
 	p.LoadTracks(tr, Replace, shuffleTracks)
@@ -210,12 +221,12 @@ func (p *PlaybackManager) PlayArtistDiscography(artistID string, shuffleTracks b
 	p.PlayFromBeginning()
 }
 
-func (p *PlaybackManager) PlayFromBeginning() error {
-	return p.engine.PlayTrackAt(0)
+func (p *PlaybackManager) PlayFromBeginning() {
+	p.cmdQueue.PlayTrackAt(0)
 }
 
-func (p *PlaybackManager) PlayTrackAt(idx int) error {
-	return p.engine.PlayTrackAt(idx)
+func (p *PlaybackManager) PlayTrackAt(idx int) {
+	p.cmdQueue.PlayTrackAt(idx)
 }
 
 func (p *PlaybackManager) PlayRandomSongs(genreName string) {
@@ -231,12 +242,12 @@ func (p *PlaybackManager) PlaySimilarSongs(id string) {
 }
 
 func (p *PlaybackManager) LoadRadioStation(station *mediaprovider.RadioStation, queueMode InsertQueueMode) {
-	p.engine.LoadRadioStation(station, queueMode)
+	p.cmdQueue.LoadRadioStation(station, queueMode)
 }
 
-func (p *PlaybackManager) PlayRadioStation(station *mediaprovider.RadioStation) error {
+func (p *PlaybackManager) PlayRadioStation(station *mediaprovider.RadioStation) {
 	p.LoadRadioStation(station, Replace)
-	return p.PlayFromBeginning()
+	p.PlayFromBeginning()
 }
 
 func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Track, error)) {
@@ -268,12 +279,12 @@ func (p *PlaybackManager) OnTrackRatingChanged(id string, rating int) {
 }
 
 func (p *PlaybackManager) RemoveTracksFromQueue(idxs []int) {
-	p.engine.RemoveTracksFromQueue(idxs)
+	p.cmdQueue.RemoveItemsFromQueue(idxs)
 }
 
 // Stop playback and clear the play queue.
 func (p *PlaybackManager) StopAndClearPlayQueue() {
-	p.engine.StopAndClearPlayQueue()
+	p.cmdQueue.StopAndClearPlayQueue()
 }
 
 func (p *PlaybackManager) SetReplayGainOptions(config ReplayGainConfig) {
@@ -289,17 +300,16 @@ func (p *PlaybackManager) SetReplayGainMode(mode player.ReplayGainMode) {
 func (p *PlaybackManager) SetNextLoopMode() {
 	switch p.engine.loopMode {
 	case LoopNone:
-		p.engine.SetLoopMode(LoopAll)
+		p.cmdQueue.SetLoopMode(LoopAll)
 	case LoopAll:
-		p.engine.SetLoopMode(LoopOne)
+		p.cmdQueue.SetLoopMode(LoopOne)
 	case LoopOne:
-		p.engine.SetLoopMode(LoopNone)
-
+		p.cmdQueue.SetLoopMode(LoopNone)
 	}
 }
 
 func (p *PlaybackManager) SetLoopMode(loopMode LoopMode) {
-	p.engine.SetLoopMode(loopMode)
+	p.cmdQueue.SetLoopMode(loopMode)
 }
 
 func (p *PlaybackManager) GetLoopMode() LoopMode {
@@ -310,29 +320,29 @@ func (p *PlaybackManager) PlayerStatus() player.Status {
 	return p.engine.PlayerStatus()
 }
 
-func (p *PlaybackManager) SetVolume(vol int) error {
-	return p.engine.SetVolume(vol)
+func (p *PlaybackManager) SetVolume(vol int) {
+	p.cmdQueue.SetVolume(vol)
 }
 
 func (p *PlaybackManager) Volume() int {
 	return p.engine.CurrentPlayer().GetVolume()
 }
 
-func (p *PlaybackManager) SeekNext() error {
-	return p.engine.SeekNext()
+func (p *PlaybackManager) SeekNext() {
+	p.cmdQueue.SeekNext()
 }
 
-func (p *PlaybackManager) SeekBackOrPrevious() error {
-	return p.engine.SeekBackOrPrevious()
+func (p *PlaybackManager) SeekBackOrPrevious() {
+	p.cmdQueue.SeekBackOrPrevious()
 }
 
 // Seek to given absolute position in the current track by seconds.
-func (p *PlaybackManager) SeekSeconds(sec float64) error {
-	return p.engine.SeekSeconds(sec)
+func (p *PlaybackManager) SeekSeconds(sec float64) {
+	p.cmdQueue.SeekSeconds(sec)
 }
 
 // Seek by given relative position in the current track by seconds.
-func (p *PlaybackManager) SeekBySeconds(sec float64) error {
+func (p *PlaybackManager) SeekBySeconds(sec float64) {
 	status := p.engine.PlayerStatus()
 	target := status.TimePos + sec
 	if target < 0 {
@@ -340,40 +350,79 @@ func (p *PlaybackManager) SeekBySeconds(sec float64) error {
 	} else if target > status.Duration {
 		target = status.Duration
 	}
-	return p.engine.SeekSeconds(target)
+	p.cmdQueue.SeekSeconds(target)
 }
 
 // Seek to a fractional position in the current track [0..1]
-func (p *PlaybackManager) SeekFraction(fraction float64) error {
+func (p *PlaybackManager) SeekFraction(fraction float64) {
 	if fraction < 0 {
 		fraction = 0
 	} else if fraction > 1 {
 		fraction = 1
 	}
 	target := p.engine.curTrackDuration * fraction
-	return p.engine.SeekSeconds(target)
+	p.cmdQueue.SeekSeconds(target)
 }
 
-func (p *PlaybackManager) Stop() error {
-	return p.engine.Stop()
+func (p *PlaybackManager) Stop() {
+	p.cmdQueue.Stop()
 }
 
-func (p *PlaybackManager) Pause() error {
-	return p.engine.Pause()
+func (p *PlaybackManager) Pause() {
+	p.cmdQueue.Pause()
 }
 
-func (p *PlaybackManager) Continue() error {
-	return p.engine.Continue()
+func (p *PlaybackManager) Continue() {
+	p.cmdQueue.Continue()
 }
 
-func (p *PlaybackManager) PlayPause() error {
+func (p *PlaybackManager) PlayPause() {
 	switch p.engine.PlayerStatus().State {
 	case player.Playing:
-		return p.engine.Pause()
+		p.Pause()
 	case player.Paused:
-		return p.engine.Continue()
+		p.Continue()
 	case player.Stopped:
-		return p.engine.PlayTrackAt(0)
+		p.PlayTrackAt(0)
 	}
-	return errors.New("unreached - invalid player state")
+}
+
+func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case c := <-p.cmdQueue.C():
+			switch c.Type {
+			case cmdStop:
+				p.engine.Stop()
+			case cmdContinue:
+				p.engine.Continue()
+			case cmdPause:
+				p.engine.Pause()
+			case cmdPlayTrackAt:
+				p.engine.PlayTrackAt(c.Arg.(int))
+			case cmdSeekSeconds:
+				p.engine.SeekSeconds(c.Arg.(float64))
+			case cmdSeekFwdBackN:
+				log.Println("TODO")
+			case cmdVolume:
+				p.engine.SetVolume(c.Arg.(int))
+			case cmdLoopMode:
+				p.engine.SetLoopMode(c.Arg.(LoopMode))
+			case cmdStopAndClearPlayQueue:
+				p.engine.StopAndClearPlayQueue()
+			case cmdUpdatePlayQueue:
+				p.engine.UpdatePlayQueue(c.Arg.([]mediaprovider.MediaItem))
+			case cmdRemoveTracksFromQueue:
+				p.engine.RemoveTracksFromQueue(c.Arg.([]int))
+			case cmdLoadItems:
+				p.engine.LoadItems(
+					c.Arg.([]mediaprovider.MediaItem),
+					c.Arg2.(InsertQueueMode),
+					c.Arg3.(bool),
+				)
+			}
+		}
+	}
 }
