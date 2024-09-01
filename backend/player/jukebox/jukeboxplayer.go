@@ -14,6 +14,8 @@ const (
 )
 
 type JukeboxPlayer struct {
+	player.BasePlayerCallbackImpl
+
 	provider mediaprovider.JukeboxProvider
 
 	state   int // stopped, playing, paused
@@ -49,6 +51,7 @@ func (j *JukeboxPlayer) Continue() error {
 	}
 
 	j.state = playing
+	j.InvokeOnPlaying()
 	return nil
 }
 
@@ -61,6 +64,7 @@ func (j *JukeboxPlayer) Pause() error {
 	}
 	// TODO: calculate paused at time
 	j.state = paused
+	j.InvokeOnPaused()
 	return nil
 }
 
@@ -72,6 +76,7 @@ func (j *JukeboxPlayer) Stop() error {
 		return err
 	}
 	j.state = stopped
+	j.InvokeOnStopped()
 	return nil
 }
 
@@ -112,6 +117,7 @@ func (j *JukeboxPlayer) SeekSeconds(secs float64) error {
 	j.seeking = true
 	err := j.provider.JukeboxSeek(j.curTrack, int(secs))
 	j.seeking = false
+	j.InvokeOnSeek()
 	return err
 }
 

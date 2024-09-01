@@ -7,8 +7,8 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/supersonic-app/go-mpv"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/supersonic-app/go-mpv"
 )
 
 // Error returned by many Player functions if called before the player has not been initialized.
@@ -50,6 +50,8 @@ var _ player.URLPlayer = (*Player)(nil)
 // Player encapsulates the mpv instance and provides functions
 // to control it and to check its status.
 type Player struct {
+	player.BasePlayerCallbackImpl
+
 	mpv            *mpv.Mpv
 	initialized    bool
 	vol            int
@@ -66,13 +68,6 @@ type Player struct {
 	peaksEnabled   bool
 
 	bgCancel context.CancelFunc
-
-	// callbacks
-	onPaused      []func()
-	onStopped     []func()
-	onPlaying     []func()
-	onSeek        []func()
-	onTrackChange []func()
 }
 
 // Returns a new player.
@@ -403,33 +398,6 @@ func (p *Player) IsSeeking() bool {
 	return p.seeking && p.status.State == player.Playing
 }
 
-// Registers a callback which is invoked when the player transitions to the Paused state.
-func (p *Player) OnPaused(cb func()) {
-	p.onPaused = append(p.onPaused, cb)
-}
-
-// Registers a callback which is invoked when the player transitions to the Stopped state.
-func (p *Player) OnStopped(cb func()) {
-	p.onStopped = append(p.onStopped, cb)
-}
-
-// Registers a callback which is invoked when the player transitions to the Playing state.
-func (p *Player) OnPlaying(cb func()) {
-	p.onPlaying = append(p.onPlaying, cb)
-}
-
-// Registers a callback which is invoked whenever a seek event occurs.
-func (p *Player) OnSeek(cb func()) {
-	p.onSeek = append(p.onSeek, cb)
-}
-
-// Registers a callback which is invoked when the currently playing track changes,
-// or when playback begins at any time from the Stopped state.
-// Callback is invoked with the index of the currently playing track (zero-based).
-func (p *Player) OnTrackChange(cb func()) {
-	p.onTrackChange = append(p.onTrackChange, cb)
-}
-
 // Destroy the player.
 func (p *Player) Destroy() {
 	if p.bgCancel != nil {
@@ -466,23 +434,11 @@ func (p *Player) GetPeaks() (float64, float64, float64, float64) {
 func (p *Player) setState(s player.State) {
 	switch {
 	case s == player.Playing && p.status.State != player.Playing:
-		defer func() {
-			for _, cb := range p.onPlaying {
-				cb()
-			}
-		}()
+		defer p.InvokeOnPlaying()
 	case s == player.Paused && p.status.State != player.Paused:
-		defer func() {
-			for _, cb := range p.onPaused {
-				cb()
-			}
-		}()
+		defer p.InvokeOnPaused()
 	case s == player.Stopped && p.status.State != player.Stopped:
-		defer func() {
-			for _, cb := range p.onStopped {
-				cb()
-			}
-		}()
+		defer p.InvokeOnStopped()
 	}
 	p.status.State = s
 }
@@ -523,21 +479,15 @@ func (p *Player) eventHandler(ctx context.Context) {
 					p.seeking = false
 				}
 			case mpv.EVENT_SEEK:
-				for _, cb := range p.onSeek {
-					cb()
-				}
+				p.InvokeOnSeek()
 			case mpv.EVENT_FILE_LOADED:
 				p.curPlaylistPos, _ = p.getInt64Property("playlist-pos")
 				if p.status.State == player.Paused {
 					// seek while paused switches to a new file
 					// mpv does not fire seek event in this case
-					for _, cb := range p.onSeek {
-						cb()
-					}
+					p.InvokeOnSeek()
 				}
-				for _, cb := range p.onTrackChange {
-					cb()
-				}
+				p.InvokeOnTrackChange()
 			case mpv.EVENT_IDLE:
 				p.status.Duration = 0
 				p.status.TimePos = 0

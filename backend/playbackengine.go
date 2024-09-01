@@ -279,7 +279,6 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 func (p *playbackEngine) StopAndClearPlayQueue() {
 	changed := len(p.playQueue) > 0
 	p.player.Stop()
-	p.doUpdateTimePos(false)
 	p.playQueue = nil
 	p.nowPlayingIdx = -1
 	if changed {
