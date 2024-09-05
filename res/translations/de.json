@@ -128,7 +128,7 @@
     "Play count": "Anzahl der Wiedergaben",
     "Play Discography": "Diskographie abspielen",
     "Play next": "Als nächstes abspielen",
-    "Play Queue": "Wiedergabeliste abspielen",
+    "Play Queue": "Wiedergabeliste",
     "Play random": "Zufällig abspielen",
     "Playback": "Wiedergabe",
     "Playing": "Spielt",
@@ -224,7 +224,7 @@
     "Fav.": "Fav.",
     "Set favorite": "Als Favorit markieren",
     "Unset favorite": "Von Favoriten entfernen",
-    "Remove from queue": "Aus Warteschlange entfernen",
+    "Remove from queue": "Aus Wiedergabeliste entfernen",
     "Play song radio": "Liedradio abspielen",
     "to":"bis",
     "by":"von"
