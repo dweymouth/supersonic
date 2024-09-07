@@ -345,12 +345,13 @@ func (t *Tracklist) GetTracks() []*mediaprovider.Track {
 	})
 }
 
-// Append more tracks to the tracklist. Does not issue Refresh call. Thread-safe.
+// Append more tracks to the tracklist. Thread-safe.
 func (t *Tracklist) AppendTracks(trs []*mediaprovider.Track) {
 	t.tracksMutex.Lock()
 	defer t.tracksMutex.Unlock()
 	t.tracksOrigOrder = append(t.tracks, util.ToTrackListModels(trs)...)
 	t.doSortTracks()
+	t.list.Refresh()
 }
 
 func (t *Tracklist) SelectAll() {

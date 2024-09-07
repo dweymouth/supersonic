@@ -68,7 +68,6 @@ func (t *TracklistLoader) loadMoreTracks(num int) {
 			return
 		}
 		t.tracklist.AppendTracks(t.trackBuffer)
-		t.tracklist.Refresh()
 		t.len += len(t.trackBuffer)
 	}
 	if t.done {
