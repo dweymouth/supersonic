@@ -1,13 +1,15 @@
 package widgets
 
 import (
+	"sync/atomic"
+
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
 // Component that manages lazily loading more tracks into a Tracklist
 // as the user scrolls near the bottom.
 type TracklistLoader struct {
-	disposed bool
+	disposed atomic.Bool
 
 	tracklist *Tracklist
 	iter      mediaprovider.TrackIterator
@@ -32,7 +34,7 @@ func NewTracklistLoader(tracklist *Tracklist, iter mediaprovider.TrackIterator) 
 
 // Cancels all asynchronous loads so that they will no longer modify the tracklist.
 func (t *TracklistLoader) Dispose() {
-	t.disposed = true
+	t.disposed.Store(true)
 	t.tracklist.OnTrackShown = nil
 }
 
@@ -40,7 +42,7 @@ func (t *TracklistLoader) onTrackShown(tracknum int) {
 	if tracknum > t.highestShown {
 		t.highestShown = tracknum
 	}
-	if t.highestShown >= t.len-25 && !t.fetching && !t.done && !t.disposed {
+	if t.highestShown >= t.len-25 && !t.fetching && !t.done && !t.disposed.Load() {
 		t.fetching = true
 		go t.loadMoreTracks(25)
 	}
@@ -60,11 +62,11 @@ func (t *TracklistLoader) loadMoreTracks(num int) {
 				break
 			}
 			t.trackBuffer = append(t.trackBuffer, tr)
-			if t.disposed {
+			if t.disposed.Load() {
 				break
 			}
 		}
-		if t.disposed {
+		if t.disposed.Load() {
 			return
 		}
 		t.tracklist.AppendTracks(t.trackBuffer)
