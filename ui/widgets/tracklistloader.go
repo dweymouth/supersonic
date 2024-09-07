@@ -21,7 +21,7 @@ type TracklistLoader struct {
 	highestShown int
 }
 
-func NewTracklistLoader(tracklist *Tracklist, iter mediaprovider.TrackIterator) TracklistLoader {
+func NewTracklistLoader(tracklist *Tracklist, iter mediaprovider.TrackIterator) *TracklistLoader {
 	t := TracklistLoader{
 		tracklist: tracklist,
 		iter:      iter,
@@ -29,7 +29,7 @@ func NewTracklistLoader(tracklist *Tracklist, iter mediaprovider.TrackIterator) 
 	t.tracklist.OnTrackShown = t.onTrackShown
 	t.fetching = true
 	go t.loadMoreTracks(25)
-	return t
+	return &t
 }
 
 // Cancels all asynchronous loads so that they will no longer modify the tracklist.

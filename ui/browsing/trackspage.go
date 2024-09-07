@@ -26,9 +26,9 @@ type TracksPage struct {
 	title           *widget.RichText
 	searcher        *widgets.SearchEntry
 	tracklist       *widgets.Tracklist
-	loader          widgets.TracklistLoader
+	loader          *widgets.TracklistLoader
 	searchTracklist *widgets.Tracklist
-	searchLoader    widgets.TracklistLoader
+	searchLoader    *widgets.TracklistLoader
 	playRandom      *widget.Button
 	container       *fyne.Container
 }
