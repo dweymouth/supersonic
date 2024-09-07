@@ -97,6 +97,6 @@ func RadiosRoute() Route {
 	return Route{Page: Radios}
 }
 
-func NowPlayingRoute(highlightedTrackID string) Route {
-	return Route{Page: NowPlaying, Arg: highlightedTrackID}
+func NowPlayingRoute() Route {
+	return Route{Page: NowPlaying}
 }

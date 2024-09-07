@@ -39,14 +39,15 @@ type NowPlayingPage struct {
 	nowPlayingPageState
 
 	// volatile state
-	nowPlaying   mediaprovider.MediaItem
-	nowPlayingID string
-	curLyricsID  string // id of track currently shown in lyrics
-	curRelatedID string // id of track currrently used to populate related list
-	totalTime    float64
-	lastPlayPos  float64
-	queue        []mediaprovider.MediaItem
-	related      []*mediaprovider.Track
+	nowPlaying    mediaprovider.MediaItem
+	nowPlayingID  string
+	curLyricsID   string // id of track currently shown in lyrics
+	curRelatedID  string // id of track currrently used to populate related list
+	totalTime     float64
+	lastPlayPos   float64
+	queue         []mediaprovider.MediaItem
+	related       []*mediaprovider.Track
+	alreadyLoaded bool
 
 	lyricLock   sync.Mutex
 	relatedLock sync.Mutex
@@ -241,13 +242,14 @@ func (a *NowPlayingPage) Save() SavedPage {
 	if a.imageLoadCancel != nil {
 		a.imageLoadCancel()
 	}
+	a.alreadyLoaded = false
 	nps := a.nowPlayingPageState
 	a.pool.Release(util.WidgetTypeNowPlayingPage, a)
 	return &nps
 }
 
 func (a *NowPlayingPage) Route() controller.Route {
-	return controller.NowPlayingRoute("")
+	return controller.NowPlayingRoute()
 }
 
 var _ Scrollable = (*NowPlayingPage)(nil)
@@ -271,6 +273,10 @@ func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobble
 	}
 	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(song)
 	a.queueList.SetNowPlaying(a.nowPlayingID)
+	if !a.alreadyLoaded {
+		a.queueList.ScrollToNowPlaying()
+		a.alreadyLoaded = true
+	}
 	a.relatedList.SetNowPlaying(a.nowPlayingID)
 
 	a.card.Update(song)

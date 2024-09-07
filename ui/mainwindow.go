@@ -296,7 +296,7 @@ func (m *MainWindow) ShowWhatsNewDialog() {
 
 func (m *MainWindow) addNavigationButtons() {
 	m.BrowsingPane.AddNavigationButton(theme.NowPlayingIcon, controller.NowPlaying, func() {
-		m.Router.NavigateTo(controller.NowPlayingRoute(""))
+		m.Router.NavigateTo(controller.NowPlayingRoute())
 	})
 	m.BrowsingPane.AddNavigationButton(theme.FavoriteIcon, controller.Favorites, func() {
 		m.Router.NavigateTo(controller.FavoritesRoute())

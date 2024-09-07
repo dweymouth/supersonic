@@ -50,7 +50,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
 	bp.NowPlaying.OnCoverTapped = func() {
-		contr.NavigateTo(controller.NowPlayingRoute(""))
+		contr.NavigateTo(controller.NowPlayingRoute())
 	}
 	bp.NowPlaying.OnSetFavorite = func(fav bool) {
 		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {
@@ -76,7 +76,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 		contr.NavigateTo(controller.ArtistRoute(artistID))
 	}
 	bp.NowPlaying.OnTrackNameTapped = func() {
-		contr.NavigateTo(controller.NowPlayingRoute(pm.NowPlaying().Metadata().ID))
+		contr.NavigateTo(controller.NowPlayingRoute())
 	}
 	bp.NowPlaying.OnShowTrackInfo = func() {
 		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {

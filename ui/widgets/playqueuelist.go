@@ -183,9 +183,7 @@ func (p *PlayQueueList) ScrollToNowPlaying() {
 	idx := slices.IndexFunc(p.items, func(item *util.TrackListModel) bool {
 		return item.Item.Metadata().ID == p.nowPlayingID
 	})
-	if idx > 0 {
-		p.list.ScrollTo(idx)
-	}
+	p.list.ScrollTo(idx)
 }
 
 func (p *PlayQueueList) Refresh() {
