@@ -35,4 +35,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: Supersonic.AppImage
-        path: Supersonic.AppImage
+        path: Supersonic-x86_64.AppImage
