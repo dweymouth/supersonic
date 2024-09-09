@@ -28,7 +28,6 @@ jobs:
 
     - name: make appimage
       run: |
-         cp ./public/appimage-build.sh appimage-build.sh
          chmod +x appimage-build.sh
          ./appimage-build.sh
 
