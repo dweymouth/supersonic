@@ -21,7 +21,7 @@ jobs:
         go-version: '1.21'
 
     - name: Install dependencies
-      run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev desktop-file-utils libmfx1
+      run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev desktop-file-utils libmfx1 libdvdnav4
 
     - name: Build
       run: go build
