@@ -37,7 +37,7 @@ cp /usr/lib/x86_64-linux-gnu/libXpresent.so.1 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libva-drm.so.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libva-wayland.so.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libva-x11.so.2 Supersonic.AppDir/usr/lib/
-cp /usr/lib/x86_64-linux-gnu/libcdpau.so.1 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libvdpau.so.1 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libunibreak.so.5 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libzvbi.so.0 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libsnappy.so.1 Supersonic.AppDir/usr/lib/
@@ -47,7 +47,7 @@ cp /usr/lib/x86_64-linux-gnu/librav1e.so.0 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libshine.so.3 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libSvtAv1Enc.so.1 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libx265.so.199 Supersonic.AppDir/usr/lib/
-cp /usr/lib/x86_64-linux-gnu/libxcidcore.so.4 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libxvidcore.so.4 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libvpl.so.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libpocketsphinx.so.3 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libbs2b.so.0 Supersonic.AppDir/usr/lib/
