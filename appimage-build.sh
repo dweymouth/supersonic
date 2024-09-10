@@ -25,6 +25,8 @@ cp /usr/lib/x86_64-linux-gnu/libmujs.so.3 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libcdio_cdda.so.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libcdio_paranoia.so.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libmpv.so.2 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libjpeg.so.8
+cp /usr/lib/x86_64-linux-gnu/libass.so.9
 printf '%s\n' '#!/bin/bash' 'SELF=$(readlink -f "$0")' 'HERE=${SELF%/*}' 'EXEC="${HERE}/usr/bin/supersonic"' 'export LD_LIBRARY_PATH="${HERE}/usr/lib:/usr/lib"' 'exec "${EXEC}";' > Supersonic.AppDir/AppRun
 printf '%s\n' '[Desktop Entry]' 'Name=Supersonic' 'Exec=supersonic' 'Icon=ico' 'Type=Application' 'Comment=A lightweight cross-platform desktop client for self-hosted music servers' 'Categories=AudioVideo;' > Supersonic.AppDir/"supersonic.desktop"
 chmod +x Supersonic.AppDir/AppRun
