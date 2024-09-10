@@ -9,7 +9,7 @@ cp /usr/lib/x86_64-linux-gnu/libx264.so.164 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libcodec2.so.1.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libdav1d.so.7 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libvpx.so.9 Supersonic.AppDir/usr/lib/
-cp /snap/firefox/4173/usr/lib/libmfx.so.1 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libmfx.so.1 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libavdevice.so.60 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libswresample.so.4 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libavfilter.so.9 Supersonic.AppDir/usr/lib/
@@ -25,8 +25,8 @@ cp /usr/lib/x86_64-linux-gnu/libmujs.so.3 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libcdio_cdda.so.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libcdio_paranoia.so.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libmpv.so.2 Supersonic.AppDir/usr/lib/
-cp /usr/lib/x86_64-linux-gnu/libjpeg.so.8
-cp /usr/lib/x86_64-linux-gnu/libass.so.9
+cp /usr/lib/x86_64-linux-gnu/libjpeg.so.8 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libass.so.9 Supersonic.AppDir/usr/lib/
 printf '%s\n' '#!/bin/bash' 'SELF=$(readlink -f "$0")' 'HERE=${SELF%/*}' 'EXEC="${HERE}/usr/bin/supersonic"' 'export LD_LIBRARY_PATH="${HERE}/usr/lib:/usr/lib"' 'exec "${EXEC}";' > Supersonic.AppDir/AppRun
 printf '%s\n' '[Desktop Entry]' 'Name=Supersonic' 'Exec=supersonic' 'Icon=ico' 'Type=Application' 'Comment=A lightweight cross-platform desktop client for self-hosted music servers' 'Categories=AudioVideo;' > Supersonic.AppDir/"supersonic.desktop"
 chmod +x Supersonic.AppDir/AppRun
