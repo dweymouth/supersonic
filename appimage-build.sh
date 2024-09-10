@@ -65,6 +65,20 @@ cp /usr/lib/x86_64-linux-gnu/libssh-gcrypt.so.4 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libsoxr.so.0 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libopenal.so.1 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libdc1394.so.25 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libva.so.2 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libjxl_threads.so.0.7 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libsphinxbase.so.3 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libflite_cmu_us_kal.so.1 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libdvdread.so.8 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libudfread.so.0 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libserd-0.so.0 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libsord-0.so.0 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libsratom-0.so.0 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libpgm-5.3.so.0 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libnorm.so.1 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libmbedcrypto.so.7 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libcjson.so.1 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libsndio.so.7 Supersonic.AppDir/usr/lib/
 printf '%s\n' '#!/bin/bash' 'SELF=$(readlink -f "$0")' 'HERE=${SELF%/*}' 'EXEC="${HERE}/usr/bin/supersonic"' 'export LD_LIBRARY_PATH="${HERE}/usr/lib:/usr/lib"' 'exec "${EXEC}";' > Supersonic.AppDir/AppRun
 printf '%s\n' '[Desktop Entry]' 'Name=Supersonic' 'Exec=supersonic' 'Icon=ico' 'Type=Application' 'Comment=A lightweight cross-platform desktop client for self-hosted music servers' 'Categories=AudioVideo;' > Supersonic.AppDir/"supersonic.desktop"
 chmod +x Supersonic.AppDir/AppRun
