@@ -86,6 +86,7 @@ cp /usr/lib/x86_64-linux-gnu/libhwy.so.1 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libblas.so.3 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/liblapack.so.3 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libzix-0.so.0 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libflite.so.1 Supersonic.AppDir/usr/lib/
 printf '%s\n' '#!/bin/bash' 'SELF=$(readlink -f "$0")' 'HERE=${SELF%/*}' 'EXEC="${HERE}/usr/bin/supersonic"' 'export LD_LIBRARY_PATH="${HERE}/usr/lib:/usr/lib"' 'exec "${EXEC}";' > Supersonic.AppDir/AppRun
 printf '%s\n' '[Desktop Entry]' 'Name=Supersonic' 'Exec=supersonic' 'Icon=ico' 'Type=Application' 'Comment=A lightweight cross-platform desktop client for self-hosted music servers' 'Categories=AudioVideo;' > Supersonic.AppDir/"supersonic.desktop"
 chmod +x Supersonic.AppDir/AppRun
