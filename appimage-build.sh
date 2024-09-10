@@ -69,6 +69,8 @@ cp /usr/lib/x86_64-linux-gnu/libva.so.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libjxl_threads.so.0.7 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libsphinxbase.so.3 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libflite_cmu_us_kal.so.1 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libflite_cmu_us_rms.so.1 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libflite_cmu_us_slt.so.1 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libdvdread.so.8 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libudfread.so.0 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libserd-0.so.0 Supersonic.AppDir/usr/lib/
