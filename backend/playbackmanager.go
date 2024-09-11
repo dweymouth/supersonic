@@ -405,7 +405,7 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 			case cmdSeekSeconds:
 				p.engine.SeekSeconds(c.Arg.(float64))
 			case cmdSeekFwdBackN:
-				log.Println("TODO")
+				p.engine.SeekFwdBackN(c.Arg.(int))
 			case cmdVolume:
 				p.engine.SetVolume(c.Arg.(int))
 			case cmdLoopMode:

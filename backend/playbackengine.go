@@ -183,6 +183,22 @@ func (p *playbackEngine) SeekBackOrPrevious() error {
 	return p.PlayTrackAt(p.nowPlayingIdx - 1)
 }
 
+func (p *playbackEngine) SeekFwdBackN(n int) error {
+	idx := p.nowPlayingIdx
+	if n < 0 && p.player.GetStatus().TimePos > 3 {
+		n += 1 // first seek back is just seek to beginning of current
+	}
+	if n == 0 || (idx == 0 && n < 0) {
+		return p.player.SeekSeconds(0) // seek back in current song
+	}
+	lastIdx := len(p.playQueue) - 1
+	if idx == lastIdx && n > 0 {
+		return nil // already on last track, nothing to seek next to
+	}
+	newIdx := minInt(len(p.playQueue)-1, maxInt(0, idx+n))
+	return p.PlayTrackAt(newIdx)
+}
+
 // Seek to given absolute position in the current track by seconds.
 func (p *playbackEngine) SeekSeconds(sec float64) error {
 	if p.isRadio {
@@ -666,4 +682,18 @@ func (p *playbackEngine) doUpdateTimePos(seeked bool) {
 	for _, cb := range p.onPlayTimeUpdate {
 		cb(s.TimePos, duration, seeked)
 	}
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
