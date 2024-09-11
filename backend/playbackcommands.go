@@ -35,6 +35,10 @@ type playbackCommand struct {
 	Arg3 any
 }
 
+// playbackCommandQueue is a queue to accumulate player commands from the UI
+// commands are processed by the playback engine as fast as they can, but if
+// more commands arrive before the player can respond to them, they will queue up
+// and some commands may coalesce together (e.g. multiple volume commands into just one)
 type playbackCommandQueue struct {
 	mutex        sync.Mutex
 	queue        []playbackCommand
@@ -157,21 +161,48 @@ func (c *playbackCommandQueue) filterCommandsAndAdd(excludeTypes []playbackComma
 }
 
 func (c *playbackCommandQueue) seekBackOrFwd(direction int) {
+	// find the index of the last seekBackOrFwd command
+	// in the queue that can be coalesced with this one
+	lastIdx := -1
 	c.mutex.Lock()
-	j := 0
-	n := 0
-	for _, cmd := range c.queue {
-		if cmd.Type == cmdSeekFwdBackN {
-			n += cmd.Arg.(int)
-		} else {
-			c.queue[j] = cmd
-			j++
+	done := false
+	for i := len(c.queue) - 1; i >= 0 && !done; i-- {
+		cmd := c.queue[i]
+		switch cmd.Type {
+		case cmdSeekFwdBackN:
+			lastIdx = i
+		case cmdRemoveTracksFromQueue, cmdLoadItems, cmdPlayTrackAt,
+			cmdLoadRadioStation, cmdUpdatePlayQueue, cmdStopAndClearPlayQueue:
+			// any queue-modifying command means we can't coalesce any
+			// more seekFwdBackN commands before here
+			done = true
 		}
 	}
-	c.queue = c.queue[:j]
-	c.queue = append(c.queue, playbackCommand{
-		Type: cmdSeekFwdBackN,
-		Arg:  n + direction})
+
+	if lastIdx == -1 {
+		// no coalescable seekFwdBackN commands, just append new one
+		c.queue = append(c.queue, playbackCommand{Type: cmdSeekFwdBackN, Arg: direction})
+	} else {
+		newQueue := make([]playbackCommand, 0, len(c.queue))
+		// copy over all cmds past the first coalescable idx
+		newQueue = append(newQueue, c.queue[0:lastIdx]...)
+		n := direction
+		for i := lastIdx; i < len(c.queue); i++ {
+			if cmd := c.queue[i]; cmd.Type == cmdSeekFwdBackN {
+				// coalesce this cmd with the new one
+				n += cmd.Arg.(int)
+			} else {
+				// copy over other non-seekFwdBackN command
+				newQueue = append(newQueue, cmd)
+			}
+		}
+		newQueue = append(newQueue, playbackCommand{
+			Type: cmdSeekFwdBackN,
+			Arg:  n,
+		})
+		c.queue = newQueue
+	}
+
 	c.mutex.Unlock()
 	c.cmdAvailable.Signal()
 }
