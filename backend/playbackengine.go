@@ -48,11 +48,12 @@ type playbackEngine struct {
 	latestTrackPosition float64 // cleared by checkScrobble
 	callbacksDisabled   bool
 
-	playQueue     []mediaprovider.MediaItem
-	nowPlayingIdx int
-	isRadio       bool
-	wasStopped    bool // true iff player was stopped before handleOnTrackChange invocation
-	loopMode      LoopMode
+	playQueue                  []mediaprovider.MediaItem
+	nowPlayingIdx              int
+	isRadio                    bool
+	wasStopped                 bool // true iff player was stopped before handleOnTrackChange invocation
+	noIncrementNextTrackChange bool // true iff the nowPlayingIndex should not be incremente don the next onTrackChange
+	loopMode                   LoopMode
 
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
@@ -119,8 +120,12 @@ func (p *playbackEngine) PlayTrackAt(idx int) error {
 	if idx < 0 || idx >= len(p.playQueue) {
 		return errors.New("track index out of range")
 	}
-	p.nowPlayingIdx = idx - 1
-	return p.setTrack(idx, false)
+	p.noIncrementNextTrackChange = true
+	err := p.setTrack(idx, false)
+	if err == nil {
+		p.nowPlayingIdx = idx
+	}
+	return err
 }
 
 // Gets the curently playing media item, if any.
@@ -195,7 +200,7 @@ func (p *playbackEngine) SeekFwdBackN(n int) error {
 	if idx == lastIdx && n > 0 {
 		return nil // already on last track, nothing to seek next to
 	}
-	newIdx := minInt(len(p.playQueue)-1, maxInt(0, idx+n))
+	newIdx := minInt(lastIdx, maxInt(0, idx+n))
 	return p.PlayTrackAt(newIdx)
 }
 
@@ -448,12 +453,13 @@ func (p *playbackEngine) handleOnTrackChange() {
 	if p.player.GetStatus().State == player.Playing {
 		p.playTimeStopwatch.Start()
 	}
-	if p.wasStopped || p.loopMode != LoopOne {
+	if !p.noIncrementNextTrackChange && (p.wasStopped || p.loopMode != LoopOne) {
 		p.nowPlayingIdx++
 		if p.loopMode == LoopAll && p.nowPlayingIdx == len(p.playQueue) {
 			p.nowPlayingIdx = 0 // wrapped around
 		}
 	}
+	p.noIncrementNextTrackChange = false
 	nowPlaying := p.playQueue[p.nowPlayingIdx]
 	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
 	p.isRadio = isRadio
