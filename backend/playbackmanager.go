@@ -422,6 +422,11 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					c.Arg2.(InsertQueueMode),
 					c.Arg3.(bool),
 				)
+			case cmdLoadRadioStation:
+				p.engine.LoadRadioStation(
+					c.Arg.(*mediaprovider.RadioStation),
+					c.Arg2.(InsertQueueMode),
+				)
 			}
 		}
 	}
