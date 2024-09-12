@@ -298,11 +298,16 @@ type JukeboxProvider interface {
 	JukeboxStop() error
 	JukeboxSeek(idx, seconds int) error
 	JukeboxClear() error
-	JukeboxSet(trackID string) error
 	JukeboxAdd(trackID string) error
 	JukeboxRemove(idx int) error
-	JukeboxSetVolume(vol int) error
 	JukeboxGetStatus() (*JukeboxStatus, error)
+
+	// Performs a Clear followed by an Add to set the queue
+	// to contain a single track
+	JukeboxSet(trackID string) error
+
+	// Sets the volume of the jukebox player (0-100)
+	JukeboxSetVolume(vol int) error
 }
 
 type JukeboxStatus struct {

@@ -241,13 +241,13 @@ func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
 	if desk, ok := fyneApp.(desktop.App); ok {
 		menu := fyne.NewMenu(appName,
 			fyne.NewMenuItem(fmt.Sprintf("%s/%s", lang.L("Play"), lang.L("Pause")), func() {
-				_ = m.App.PlaybackManager.PlayPause()
+				m.App.PlaybackManager.PlayPause()
 			}),
 			fyne.NewMenuItem(lang.L("Previous"), func() {
-				_ = m.App.PlaybackManager.SeekBackOrPrevious()
+				m.App.PlaybackManager.SeekBackOrPrevious()
 			}),
 			fyne.NewMenuItem(lang.L("Next"), func() {
-				_ = m.App.PlaybackManager.SeekNext()
+				m.App.PlaybackManager.SeekNext()
 			}),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem(lang.L("Volume")+" +10%", func() {

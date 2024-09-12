@@ -150,46 +150,51 @@ func (m *MPRISHandler) SupportedMimeTypes() ([]string, error) {
 // OrgMprisMediaPlayer2PlayerAdapter implementation
 
 func (m *MPRISHandler) Next() error {
-	return m.pm.SeekNext()
+	m.pm.SeekNext()
+	return nil
 }
 
 func (m *MPRISHandler) Previous() error {
-	return m.pm.SeekBackOrPrevious()
+	m.pm.SeekBackOrPrevious()
+	return nil
 }
 
 func (m *MPRISHandler) Pause() error {
 	if m.pm.PlayerStatus().State == player.Playing {
-		return m.pm.PlayPause()
+		m.pm.PlayPause()
 	}
 	return nil
 }
 
 func (m *MPRISHandler) PlayPause() error {
-	return m.pm.PlayPause()
+	m.pm.PlayPause()
+	return nil
 }
 
 func (m *MPRISHandler) Stop() error {
-	return m.pm.Stop()
+	m.pm.Stop()
+	return nil
 }
 
 func (m *MPRISHandler) Play() error {
 	switch m.pm.PlayerStatus().State {
 	case player.Paused:
-		return m.pm.PlayPause()
+		m.pm.PlayPause()
 	case player.Stopped:
-		return m.pm.PlayFromBeginning()
+		m.pm.PlayFromBeginning()
 	}
 	return nil
 }
 
 func (m *MPRISHandler) Seek(offset types.Microseconds) error {
 	// MPRIS seek command is relative to current position
-	return m.pm.SeekBySeconds(microsecondsToSeconds(offset))
+	m.pm.SeekBySeconds(microsecondsToSeconds(offset))
+	return nil
 }
 
 func (m *MPRISHandler) SetPosition(trackId string, position types.Microseconds) error {
 	if m.curTrackPath == trackId {
-		return m.pm.SeekSeconds(microsecondsToSeconds(position))
+		m.pm.SeekSeconds(microsecondsToSeconds(position))
 	}
 	return nil
 }
@@ -297,7 +302,8 @@ func (m *MPRISHandler) Volume() (float64, error) {
 }
 
 func (m *MPRISHandler) SetVolume(v float64) error {
-	return m.pm.SetVolume(int(v * 100))
+	m.pm.SetVolume(int(v * 100))
+	return nil
 }
 
 func (m *MPRISHandler) Position() (int64, error) {

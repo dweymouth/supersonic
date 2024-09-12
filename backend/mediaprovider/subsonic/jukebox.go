@@ -1,6 +1,7 @@
 package subsonic
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -24,8 +25,9 @@ func (s *subsonicMediaProvider) JukeboxClear() error {
 }
 
 func (s *subsonicMediaProvider) JukeboxSetVolume(vol int) error {
+	v := float64(vol) / 100
 	_, err := s.client.JukeboxControl("setGain",
-		map[string]string{"gain": strconv.Itoa(vol)})
+		map[string]string{"gain": fmt.Sprintf("%0.2f", v)})
 	return err
 }
 

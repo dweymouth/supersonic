@@ -1,6 +1,8 @@
 package jukebox
 
 import (
+	"time"
+
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 )
@@ -12,25 +14,27 @@ const (
 )
 
 type JukeboxPlayer struct {
+	player.BasePlayerCallbackImpl
+
 	provider mediaprovider.JukeboxProvider
 
-	state     int // stopped, playing, paused
-	volume    int
-	seeking   bool
-	numTracks int
+	state   int // stopped, playing, paused
+	volume  int
+	seeking bool
 
-	curTrack          int
-	curTrackDuration  float64
-	startTrackTime    float64
-	startedAtUnixSecs float64
+	curTrack           int
+	queueLength        int
+	curTrackDuration   float64
+	startTrackTime     float64
+	startedAtUnixMilli int64
+	nextTrackTimer     *time.Timer
 }
 
 func (j *JukeboxPlayer) SetVolume(vol int) error {
-	go func() {
-		if err := j.provider.JukeboxSetVolume(vol); err == nil {
-			j.volume = vol
-		}
-	}()
+	if err := j.provider.JukeboxSetVolume(vol); err != nil {
+		return err
+	}
+	j.volume = vol
 	return nil
 }
 
@@ -38,26 +42,16 @@ func (j *JukeboxPlayer) GetVolume() int {
 	return j.volume
 }
 
-func (j *JukeboxPlayer) PlayTrackAt(idx int) error {
-	go func() {
-		if err := j.provider.JukeboxSeek(idx, 0); err == nil {
-			j.curTrack = idx
-			j.Continue()
-		}
-	}()
-	return nil
-}
-
 func (j *JukeboxPlayer) Continue() error {
 	if j.state == playing {
 		return nil
 	}
-	go func() {
-		if err := j.provider.JukeboxStart(); err != nil {
-			return
-		}
-		j.state = playing
-	}()
+	if err := j.startAndUpdateTime(); err != nil {
+		return err
+	}
+
+	j.state = playing
+	j.InvokeOnPlaying()
 	return nil
 }
 
@@ -65,12 +59,12 @@ func (j *JukeboxPlayer) Pause() error {
 	if j.state != playing {
 		return nil
 	}
-	go func() {
-		if err := j.provider.JukeboxStop(); err != nil {
-			return
-		}
-		j.state = paused
-	}()
+	if err := j.provider.JukeboxStop(); err != nil {
+		return err
+	}
+	// TODO: calculate paused at time
+	j.state = paused
+	j.InvokeOnPaused()
 	return nil
 }
 
@@ -78,38 +72,53 @@ func (j *JukeboxPlayer) Stop() error {
 	if j.state == stopped {
 		return nil
 	}
-	go func() {
-		if err := j.provider.JukeboxStop(); err != nil {
-			return
-		}
-		j.state = stopped
-	}()
+	if err := j.provider.JukeboxStop(); err != nil {
+		return err
+	}
+	j.state = stopped
+	j.InvokeOnStopped()
 	return nil
 }
 
-func (j *JukeboxPlayer) SeekPrevious() error {
-	track := j.curTrack
-	if track > 0 {
-		track = j.curTrack - 1
+func (j *JukeboxPlayer) PlayTrack(track *mediaprovider.Track) error {
+	if err := j.provider.JukeboxSet(track.ID); err != nil {
+		return err
 	}
-	return j.PlayTrackAt(track)
+	j.startTrackTime = 0
+	if err := j.startAndUpdateTime(); err != nil {
+		return err
+	}
+
+	j.curTrack = 0
+	j.queueLength = 1
+	j.curTrackDuration = float64(track.Duration)
+
+	return nil
 }
 
-func (j *JukeboxPlayer) SeekNext() error {
-	track := j.curTrack
-	if track >= j.numTracks {
-		return nil
+func (j *JukeboxPlayer) SetNextTrack(track *mediaprovider.Track) error {
+	// we need to replace the last track in the queue, remove it first
+	if j.curTrack < j.queueLength-1 {
+		if err := j.provider.JukeboxRemove(j.curTrack + 1); err != nil {
+			return err
+		}
+		j.queueLength -= 1
 	}
-	return j.PlayTrackAt(track + 1)
+	// append the new track to the queue
+	if err := j.provider.JukeboxAdd(track.ID); err != nil {
+		return err
+	}
+	j.queueLength += 1
+	return nil
+
 }
 
 func (j *JukeboxPlayer) SeekSeconds(secs float64) error {
 	j.seeking = true
-	go func() {
-		j.provider.JukeboxSeek(j.curTrack, int(secs))
-		j.seeking = false
-	}()
-	return nil
+	err := j.provider.JukeboxSeek(j.curTrack, int(secs))
+	j.seeking = false
+	j.InvokeOnSeek()
+	return err
 }
 
 func (j *JukeboxPlayer) IsSeeking() bool {
@@ -129,4 +138,21 @@ func (j *JukeboxPlayer) GetStatus() player.Status {
 	return player.Status{
 		State: state,
 	}
+}
+
+func (j *JukeboxPlayer) startAndUpdateTime() error {
+	beforeStart := time.Now()
+	if err := j.provider.JukeboxStart(); err != nil {
+		return err
+	}
+	afterStart := time.Now()
+
+	// assume track started playing at (ie has been playing for)
+	// half the round-trip latency
+	j.startedAtUnixMilli = time.Now().Add(-afterStart.Sub(beforeStart)).UnixMilli()
+	return nil
+}
+
+func (j *JukeboxPlayer) handleNextTrack() {
+
 }

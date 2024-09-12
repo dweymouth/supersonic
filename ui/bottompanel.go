@@ -106,7 +106,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	pm.OnLoopModeChange(bp.AuxControls.SetLoopMode)
 	pm.OnVolumeChange(bp.AuxControls.VolumeControl.SetVolume)
 	bp.AuxControls.VolumeControl.OnSetVolume = func(v int) {
-		_ = pm.SetVolume(v)
+		pm.SetVolume(v)
 	}
 	bp.AuxControls.OnChangeLoopMode(func() {
 		pm.SetNextLoopMode()

@@ -48,11 +48,12 @@ type playbackEngine struct {
 	latestTrackPosition float64 // cleared by checkScrobble
 	callbacksDisabled   bool
 
-	playQueue     []mediaprovider.MediaItem
-	nowPlayingIdx int
-	isRadio       bool
-	wasStopped    bool // true iff player was stopped before handleOnTrackChange invocation
-	loopMode      LoopMode
+	playQueue                  []mediaprovider.MediaItem
+	nowPlayingIdx              int
+	isRadio                    bool
+	wasStopped                 bool // true iff player was stopped before handleOnTrackChange invocation
+	noIncrementNextTrackChange bool // true iff the nowPlayingIndex should not be incremente don the next onTrackChange
+	loopMode                   LoopMode
 
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
@@ -119,8 +120,12 @@ func (p *playbackEngine) PlayTrackAt(idx int) error {
 	if idx < 0 || idx >= len(p.playQueue) {
 		return errors.New("track index out of range")
 	}
-	p.nowPlayingIdx = idx - 1
-	return p.setTrack(idx, false)
+	p.noIncrementNextTrackChange = true
+	err := p.setTrack(idx, false)
+	if err == nil {
+		p.nowPlayingIdx = idx
+	}
+	return err
 }
 
 // Gets the curently playing media item, if any.
@@ -183,6 +188,22 @@ func (p *playbackEngine) SeekBackOrPrevious() error {
 	return p.PlayTrackAt(p.nowPlayingIdx - 1)
 }
 
+func (p *playbackEngine) SeekFwdBackN(n int) error {
+	idx := p.nowPlayingIdx
+	if n < 0 && p.player.GetStatus().TimePos > 3 {
+		n += 1 // first seek back is just seek to beginning of current
+	}
+	if n == 0 || (idx == 0 && n < 0) {
+		return p.player.SeekSeconds(0) // seek back in current song
+	}
+	lastIdx := len(p.playQueue) - 1
+	if idx == lastIdx && n > 0 {
+		return nil // already on last track, nothing to seek next to
+	}
+	newIdx := minInt(lastIdx, maxInt(0, idx+n))
+	return p.PlayTrackAt(newIdx)
+}
+
 // Seek to given absolute position in the current track by seconds.
 func (p *playbackEngine) SeekSeconds(sec float64) error {
 	if p.isRadio {
@@ -213,14 +234,14 @@ func (p *playbackEngine) Continue() error {
 // Load items into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *playbackEngine) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
-	newItems := p.deepCopyMediaItemSlice(items)
+	newItems := deepCopyMediaItemSlice(items)
 	return p.doLoaditems(newItems, insertQueueMode, shuffle)
 }
 
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) error {
-	newTracks := p.copyTrackSliceToMediaItemSlice(tracks)
+	newTracks := copyTrackSliceToMediaItemSlice(tracks)
 	return p.doLoaditems(newTracks, insertQueueMode, shuffle)
 }
 
@@ -279,7 +300,6 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 func (p *playbackEngine) StopAndClearPlayQueue() {
 	changed := len(p.playQueue) > 0
 	p.player.Stop()
-	p.doUpdateTimePos(false)
 	p.playQueue = nil
 	p.nowPlayingIdx = -1
 	if changed {
@@ -288,7 +308,7 @@ func (p *playbackEngine) StopAndClearPlayQueue() {
 }
 
 func (p *playbackEngine) GetPlayQueue() []mediaprovider.MediaItem {
-	return p.deepCopyMediaItemSlice(p.playQueue)
+	return deepCopyMediaItemSlice(p.playQueue)
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
@@ -315,7 +335,7 @@ func (p *playbackEngine) OnTrackRatingChanged(id string, rating int) {
 // Does not stop playback if the currently playing track is in the new queue,
 // but updates the now playing index to point to the first instance of the track in the new queue.
 func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error {
-	newQueue := p.deepCopyMediaItemSlice(items)
+	newQueue := deepCopyMediaItemSlice(items)
 	newNowPlayingIdx := -1
 	if p.nowPlayingIdx >= 0 {
 		nowPlayingID := p.playQueue[p.nowPlayingIdx].Metadata().ID
@@ -433,12 +453,13 @@ func (p *playbackEngine) handleOnTrackChange() {
 	if p.player.GetStatus().State == player.Playing {
 		p.playTimeStopwatch.Start()
 	}
-	if p.wasStopped || p.loopMode != LoopOne {
+	if !p.noIncrementNextTrackChange && (p.wasStopped || p.loopMode != LoopOne) {
 		p.nowPlayingIdx++
 		if p.loopMode == LoopAll && p.nowPlayingIdx == len(p.playQueue) {
 			p.nowPlayingIdx = 0 // wrapped around
 		}
 	}
+	p.noIncrementNextTrackChange = false
 	nowPlaying := p.playQueue[p.nowPlayingIdx]
 	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
 	p.isRadio = isRadio
@@ -591,7 +612,7 @@ func (p *playbackEngine) sendNowPlayingScrobble() {
 
 // creates a deep copy of the track info so that we can maintain our own state
 // (play count increases, favorite, and rating) without messing up other views' track models
-func (p *playbackEngine) deepCopyMediaItemSlice(tracks []mediaprovider.MediaItem) []mediaprovider.MediaItem {
+func deepCopyMediaItemSlice(tracks []mediaprovider.MediaItem) []mediaprovider.MediaItem {
 	newTracks := make([]mediaprovider.MediaItem, len(tracks))
 	for i, tr := range tracks {
 		newTracks[i] = tr.Copy()
@@ -599,7 +620,7 @@ func (p *playbackEngine) deepCopyMediaItemSlice(tracks []mediaprovider.MediaItem
 	return newTracks
 }
 
-func (p *playbackEngine) copyTrackSliceToMediaItemSlice(tracks []*mediaprovider.Track) []mediaprovider.MediaItem {
+func copyTrackSliceToMediaItemSlice(tracks []*mediaprovider.Track) []mediaprovider.MediaItem {
 	newTracks := make([]mediaprovider.MediaItem, len(tracks))
 	for i, tr := range tracks {
 		newTracks[i] = tr.Copy()
@@ -667,4 +688,18 @@ func (p *playbackEngine) doUpdateTimePos(seeked bool) {
 	for _, cb := range p.onPlayTimeUpdate {
 		cb(s.TimePos, duration, seeked)
 	}
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

@@ -9,16 +9,16 @@ import (
 )
 
 type PlaybackHandler interface {
-	PlayPause() error
-	Stop() error
-	Pause() error
-	Continue() error
-	SeekBackOrPrevious() error
-	SeekNext() error
-	SeekSeconds(float64) error
-	SeekBySeconds(float64) error
+	PlayPause()
+	Stop()
+	Pause()
+	Continue()
+	SeekBackOrPrevious()
+	SeekNext()
+	SeekSeconds(float64)
+	SeekBySeconds(float64)
 	Volume() int
-	SetVolume(int) error
+	SetVolume(int)
 }
 
 type IPCServer interface {
@@ -57,14 +57,12 @@ func (s *serverImpl) createHandler() http.Handler {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("The given path is not valid"))
 	})
-	m.HandleFunc(PingPath, s.makeSimpleEndpointHandler(func() error { return nil }))
-	m.HandleFunc(ShowPath, s.makeSimpleEndpointHandler(func() error {
+	m.HandleFunc(PingPath, s.makeSimpleEndpointHandler(func() {}))
+	m.HandleFunc(ShowPath, s.makeSimpleEndpointHandler(func() {
 		s.showFn()
-		return nil
 	}))
-	m.HandleFunc(QuitPath, s.makeSimpleEndpointHandler(func() error {
+	m.HandleFunc(QuitPath, s.makeSimpleEndpointHandler(func() {
 		s.quitFn()
-		return nil
 	}))
 	m.HandleFunc(PlayPath, s.makeSimpleEndpointHandler(s.pbHandler.Continue))
 	m.HandleFunc(PausePath, s.makeSimpleEndpointHandler(s.pbHandler.Pause))
@@ -77,7 +75,8 @@ func (s *serverImpl) createHandler() http.Handler {
 	m.HandleFunc(VolumePath, func(w http.ResponseWriter, r *http.Request) {
 		v := r.URL.Query().Get("v")
 		if vol, err := strconv.Atoi(v); err == nil {
-			s.writeSimpleResponse(w, s.pbHandler.SetVolume(vol))
+			s.pbHandler.SetVolume(vol)
+			s.writeOK(w)
 		} else {
 			s.writeErr(w, err)
 		}
@@ -85,28 +84,22 @@ func (s *serverImpl) createHandler() http.Handler {
 	return m
 }
 
-func (s *serverImpl) makeSimpleEndpointHandler(f func() error) func(http.ResponseWriter, *http.Request) {
+func (s *serverImpl) makeSimpleEndpointHandler(f func()) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		s.writeSimpleResponse(w, f())
+		f()
+		s.writeOK(w)
 	}
 }
 
-func (s *serverImpl) makeFloatEndpointHandler(f func(float64) error, queryParam string) func(http.ResponseWriter, *http.Request) {
+func (s *serverImpl) makeFloatEndpointHandler(f func(float64), queryParam string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		v := r.URL.Query().Get(queryParam)
 		if val, err := strconv.ParseFloat(v, 64); err == nil {
-			s.writeSimpleResponse(w, f(val))
+			f(val)
+			s.writeOK(w)
 		} else {
 			s.writeErr(w, err)
 		}
-	}
-}
-
-func (s *serverImpl) writeSimpleResponse(w http.ResponseWriter, err error) {
-	if err == nil {
-		s.writeOK(w)
-	} else {
-		s.writeErr(w, err)
 	}
 }
 
