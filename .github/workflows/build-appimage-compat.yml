@@ -1,0 +1,38 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Build AppImage
+
+on:
+  push:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Install dependencies
+      run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev desktop-file-utils
+
+    - name: Build
+      run: go build
+
+    - name: make appimage
+      run: |
+         chmod +x appimage-build-compat.sh
+         ./appimage-build.sh
+
+    - name: upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: Supersonic-compat.AppImage
+        path: Supersonic-x86_64.AppImage
