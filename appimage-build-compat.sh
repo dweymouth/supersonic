@@ -48,7 +48,7 @@ cp /usr/lib/x86_64-linux-gnu/libshine.so.3 Supersonic.AppDir/usr/lib/ #
 #cp /usr/lib/x86_64-linux-gnu/libSvtAv1Enc.so.1 Supersonic.AppDir/usr/lib/ 
 cp /usr/lib/x86_64-linux-gnu/libx265.so.199 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libxvidcore.so.4 Supersonic.AppDir/usr/lib/ #
-#cp /usr/lib/x86_64-linux-gnu/libvpl.so.2 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libslang.so.2 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libpocketsphinx.so.3 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libbs2b.so.0 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/liblilv-0.so.0 Supersonic.AppDir/usr/lib/ #
