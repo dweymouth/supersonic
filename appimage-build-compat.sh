@@ -80,7 +80,7 @@ cp /usr/lib/x86_64-linux-gnu/libpgm-5.3.so.0 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libnorm.so.1 Supersonic.AppDir/usr/lib/ #
 #cp /usr/lib/x86_64-linux-gnu/libmbedcrypto.so.7 Supersonic.AppDir/usr/lib/
 #cp /usr/lib/x86_64-linux-gnu/libcjson.so.1 Supersonic.AppDir/usr/lib/
-#cp /usr/lib/x86_64-linux-gnu/libsndio.so.7 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libsndio.so.7 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libflite_cmu_us_kal16.so.1 Supersonic.AppDir/usr/lib/ #
 #cp /usr/lib/x86_64-linux-gnu/libhwy.so.1 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libblas.so.3 Supersonic.AppDir/usr/lib/ #
