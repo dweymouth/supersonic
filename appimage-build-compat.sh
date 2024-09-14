@@ -60,7 +60,7 @@ cp /usr/lib/x86_64-linux-gnu/libgme.so.0 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libopenmpt.so.0 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libchromaprint.so.1 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/librabbitmq.so.4 Supersonic.AppDir/usr/lib/ #
-#cp /usr/lib/x86_64-linux-gnu/librist.so.4 Supersonic.AppDir/usr/lib/
+cp /usr/lib/x86_64-linux-gnu/libquadmath.so.0 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libssh-gcrypt.so.4 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libsoxr.so.0 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libopenal.so.1 Supersonic.AppDir/usr/lib/ #
