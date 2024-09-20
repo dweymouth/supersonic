@@ -142,16 +142,21 @@ func (p *playbackEngine) PlayTrackAt(idx int) error {
 // plays the track at the given queue position (NOT track index)
 // if shuffling, the actual track index is p.shuffleOrder[pos]
 func (p *playbackEngine) playAtQueuePosition(pos int) error {
-	idx := pos
-	if p.shuffle {
-		idx = p.shuffleOrder[pos]
-	}
+	idx := p.playQueuePositionToTrackIdx(pos)
 	p.noIncrementNextTrackChange = true
 	err := p.setTrack(idx, false)
 	if err == nil {
 		p.playQueuePosition = pos
 	}
 	return err
+}
+
+func (p *playbackEngine) playQueuePositionToTrackIdx(pos int) int {
+	idx := pos
+	if p.shuffle {
+		idx = p.shuffleOrder[pos]
+	}
+	return idx
 }
 
 // NowPlaying returns the curently playing media item, if any.
@@ -376,7 +381,7 @@ func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error 
 	newQueue := deepCopyMediaItemSlice(items)
 	newNowPlayingIdx := -1
 	if p.playQueuePosition >= 0 {
-		nowPlayingID := p.playQueue[p.playQueuePosition].Metadata().ID
+		nowPlayingID := p.NowPlaying().Metadata().ID
 		for i, tr := range newQueue {
 			if tr.Metadata().ID == nowPlayingID {
 				newNowPlayingIdx = i
@@ -404,6 +409,8 @@ func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error 
 }
 
 func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
+	// TODO: this logic is totally broken when shuffling
+
 	newQueue := make([]mediaprovider.MediaItem, 0, len(p.playQueue)-len(idxs))
 	idxSet := sharedutil.ToSet(idxs)
 	isPlayingTrackRemoved := false
@@ -513,7 +520,7 @@ func (p *playbackEngine) handleOnTrackChange() {
 		}
 	}
 	p.noIncrementNextTrackChange = false
-	nowPlaying := p.playQueue[p.playQueuePosition]
+	nowPlaying := p.NowPlaying()
 	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
 	p.isRadio = isRadio
 	p.wasStopped = false
@@ -576,12 +583,12 @@ func (p *playbackEngine) setNextTrackAfterQueueUpdate() {
 	}
 }
 
-func (p *playbackEngine) setTrack(pos int, next bool) error {
+func (p *playbackEngine) setTrack(idx int, next bool) error {
 	if urlP, ok := p.player.(player.URLPlayer); ok {
 		url := ""
-		if pos >= 0 {
+		if idx >= 0 {
 			var err error
-			item := p.playQueue[pos]
+			item := p.playQueue[idx]
 			if tr, ok := item.(*mediaprovider.Track); ok {
 				url, err = p.sm.Server.GetStreamURL(tr.ID, p.transcodeCfg.ForceRawFile)
 			} else {
@@ -597,8 +604,8 @@ func (p *playbackEngine) setTrack(pos int, next bool) error {
 		return urlP.PlayFile(url)
 	} else if trP, ok := p.player.(player.TrackPlayer); ok {
 		var track *mediaprovider.Track
-		if pos >= 0 {
-			track, ok = p.playQueue[pos].(*mediaprovider.Track)
+		if idx >= 0 {
+			track, ok = p.playQueue[idx].(*mediaprovider.Track)
 			if !ok {
 				return errors.New("cannot play non-Track media item with TrackPlayer")
 			}
@@ -620,7 +627,7 @@ func (p *playbackEngine) checkScrobble() {
 	if !p.scrobbleCfg.Enabled || len(p.playQueue) == 0 || p.playQueuePosition < 0 {
 		return
 	}
-	track, ok := p.playQueue[p.playQueuePosition].(*mediaprovider.Track)
+	track, ok := p.NowPlaying().(*mediaprovider.Track)
 	if !ok {
 		return // radio stations are not scrobbled
 	}
