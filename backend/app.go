@@ -119,7 +119,7 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 	}
 
 	a.ServerManager = NewServerManager(appName, a.Config, !portableMode /*use keyring*/)
-	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Scrobbling, &a.Config.Transcoding)
+	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, cacheDir)
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
