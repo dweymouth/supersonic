@@ -692,6 +692,30 @@ func (t *Tracklist) SelectedTrackIDs() []string {
 	return util.SelectedItemIDs(t.tracks)
 }
 
+// SelectedTrackIndexes returns the indexes of the selected tracks in the
+// original sort order (ie if tracklist is sorted by some column), the indexes
+// returned will correspond to the order of tracks when the list was initialized.
+func (t *Tracklist) SelectedTrackIndexes() []int {
+	t.tracksMutex.RLock()
+	defer t.tracksMutex.RUnlock()
+
+	if t.sorting.SortOrder == SortNone {
+		idx := -1
+		return sharedutil.FilterMapSlice(t.tracks, func(t *util.TrackListModel) (int, bool) {
+			idx++
+			return idx, t.Selected
+		})
+	}
+	ids := sharedutil.ToSet(util.SelectedItemIDs(t.tracks))
+	idxs := make([]int, 0, len(ids))
+	for id := range ids {
+		idxs = append(idxs, slices.IndexFunc(t.tracks, func(t *util.TrackListModel) bool {
+			return t.Item.Metadata().ID == id
+		}))
+	}
+	return idxs
+}
+
 func (t *Tracklist) lenTracks() int {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()

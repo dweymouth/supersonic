@@ -208,15 +208,7 @@ func (a *PlaylistPage) doSetNewTrackOrder(ids []string, newPos int) {
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
-	ids := a.tracklist.SelectedTrackIDs()
-	sel := sharedutil.ToSet(ids)
-	idxs := make([]int, 0, len(sel))
-	for i, tr := range a.tracks {
-		if _, ok := sel[tr.ID]; ok {
-			idxs = append(idxs, i)
-		}
-	}
-	a.sm.Server.RemovePlaylistTracks(a.playlistID, idxs)
+	a.sm.Server.RemovePlaylistTracks(a.playlistID, a.tracklist.SelectedTrackIndexes())
 	a.tracklist.UnselectAll()
 	a.Reload()
 }
