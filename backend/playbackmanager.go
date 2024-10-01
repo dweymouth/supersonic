@@ -14,6 +14,7 @@ import (
 type PlaybackManager struct {
 	engine   *playbackEngine
 	cmdQueue *playbackCommandQueue
+	cfg	 *AppConfig
 }
 
 func NewPlaybackManager(
@@ -22,12 +23,14 @@ func NewPlaybackManager(
 	p player.BasePlayer,
 	scrobbleCfg *ScrobbleConfig,
 	transcodeCfg *TranscodingConfig,
+	appCfg	     *AppConfig,
 ) *PlaybackManager {
 	e := NewPlaybackEngine(ctx, s, p, scrobbleCfg, transcodeCfg)
 	q := NewCommandQueue()
 	pm := &PlaybackManager{
 		engine:   e,
 		cmdQueue: q,
+		cfg: appCfg,
 	}
 	go pm.runCmdQueue(ctx)
 	return pm
@@ -231,13 +234,13 @@ func (p *PlaybackManager) PlayTrackAt(idx int) {
 
 func (p *PlaybackManager) PlayRandomSongs(genreName string) {
 	p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
-		return p.engine.sm.Server.GetRandomTracks(genreName, 100)
+		return p.engine.sm.Server.GetRandomTracks(genreName, p.cfg.EnqueueBatchSize)
 	})
 }
 
 func (p *PlaybackManager) PlaySimilarSongs(id string) {
 	p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
-		return p.engine.sm.Server.GetSimilarTracks(id, 100)
+		return p.engine.sm.Server.GetSimilarTracks(id, p.cfg.EnqueueBatchSize)
 	})
 }
 
