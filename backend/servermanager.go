@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -26,6 +27,7 @@ type ServerManager struct {
 	useKeyring        bool
 	prefetchCoverCB   func(string)
 	appName           string
+	appVersion        string
 	config            *Config
 	onServerConnected []func()
 	onLogout          []func()
@@ -33,8 +35,13 @@ type ServerManager struct {
 
 var ErrUnreachable = errors.New("server is unreachable")
 
-func NewServerManager(appName string, config *Config, useKeyring bool) *ServerManager {
-	return &ServerManager{appName: appName, config: config, useKeyring: useKeyring}
+func NewServerManager(appName, appVersion string, config *Config, useKeyring bool) *ServerManager {
+	return &ServerManager{
+		appName:    appName,
+		appVersion: appVersion,
+		config:     config,
+		useKeyring: useKeyring,
+	}
 }
 
 func (s *ServerManager) SetPrefetchAlbumCoverCallback(cb func(string)) {
@@ -194,8 +201,10 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 			}
 		}
 	} else {
+		ua := fmt.Sprintf("%s/%s", s.appName, s.appVersion)
 		cli = &subsonicMP.SubsonicServer{
 			Client: subsonic.Client{
+				UserAgent:    ua,
 				Client:       &http.Client{Timeout: 10 * time.Second},
 				BaseUrl:      connection.Hostname,
 				User:         connection.Username,
@@ -206,6 +215,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 		s.checkSetInsecureSkipVerify(cli.(*subsonicMP.SubsonicServer).Client.Client)
 		altCli = &subsonicMP.SubsonicServer{
 			Client: subsonic.Client{
+				UserAgent:    ua,
 				Client:       &http.Client{Timeout: 10 * time.Second},
 				BaseUrl:      connection.AltHostname,
 				User:         connection.Username,

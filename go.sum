@@ -311,8 +311,8 @@ github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXl
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/supersonic-app/go-mpv v0.1.0 h1:U+cCnLQxmpqx5mY6nMlC0J4uIdCCXUbAjpjS04XkFu8=
 github.com/supersonic-app/go-mpv v0.1.0/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
-github.com/supersonic-app/go-subsonic v0.0.0-20240807031555-2cb1ccd78f85 h1:7PpVvIoF3kUQwqRyIJcKJui8VxbkLzqWH+Ysw1g84tU=
-github.com/supersonic-app/go-subsonic v0.0.0-20240807031555-2cb1ccd78f85/go.mod h1:D+OWPXeD9owcdcoXATv5YPBGWxxVvn5k98rt5B4wMc4=
+github.com/supersonic-app/go-subsonic v0.0.0-20241017150725-a5686988ef9c h1:UsXe5/TXViPgw21zO2Fgh0F/hSl0TXox0yjRc+vT6XQ=
+github.com/supersonic-app/go-subsonic v0.0.0-20241017150725-a5686988ef9c/go.mod h1:D+OWPXeD9owcdcoXATv5YPBGWxxVvn5k98rt5B4wMc4=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

@@ -32,7 +32,7 @@ func main() {
 	}
 	// rest of flag actions are handled in backend.StartupApp
 
-	myApp, err := backend.StartupApp(res.AppName, res.DisplayName, res.AppVersionTag, res.LatestReleaseURL)
+	myApp, err := backend.StartupApp(res.AppName, res.DisplayName, res.AppVersion, res.AppVersionTag, res.LatestReleaseURL)
 	if err != nil {
 		if err != backend.ErrAnotherInstance {
 			log.Fatalf("fatal startup error: %v", err.Error())

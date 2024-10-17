@@ -66,7 +66,7 @@ func (a *App) VersionTag() string {
 	return a.appVersionTag
 }
 
-func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string) (*App, error) {
+func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleaseURL string) (*App, error) {
 	var confDir, cacheDir string
 	portableMode := false
 	if p := checkPortablePath(); p != "" {
@@ -118,7 +118,7 @@ func StartupApp(appName, displayAppName, appVersionTag, latestReleaseURL string)
 		return nil, err
 	}
 
-	a.ServerManager = NewServerManager(appName, a.Config, !portableMode /*use keyring*/)
+	a.ServerManager = NewServerManager(appName, appVersion, a.Config, !portableMode /*use keyring*/)
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, cacheDir)
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
