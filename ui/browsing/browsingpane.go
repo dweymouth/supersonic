@@ -200,14 +200,24 @@ func (b *BrowsingPane) SelectAll() {
 }
 
 func (b *BrowsingPane) ScrollUp() {
-	if s, ok := b.curPage.(Scrollable); ok {
-		s.Scroll(-75)
-	}
+	b.scrollBy(-75)
 }
 
 func (b *BrowsingPane) ScrollDown() {
+	b.scrollBy(75)
+}
+
+func (b *BrowsingPane) PageUp() {
+	b.scrollBy(-b.Size().Height * 0.9)
+}
+
+func (b *BrowsingPane) PageDown() {
+	b.scrollBy(b.Size().Height * 0.9)
+}
+
+func (b *BrowsingPane) scrollBy(increment float32) {
 	if s, ok := b.curPage.(Scrollable); ok {
-		s.Scroll(75)
+		s.Scroll(increment)
 	}
 }
 

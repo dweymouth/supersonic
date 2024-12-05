@@ -383,6 +383,10 @@ func (m *MainWindow) addShortcuts() {
 			m.BrowsingPane.ScrollUp()
 		case fyne.KeyDown:
 			m.BrowsingPane.ScrollDown()
+		case fyne.KeyPageUp:
+			m.BrowsingPane.PageUp()
+		case fyne.KeyPageDown:
+			m.BrowsingPane.PageDown()
 		case fyne.KeyEscape:
 			m.Controller.CloseEscapablePopUp()
 		case fyne.KeySpace:
