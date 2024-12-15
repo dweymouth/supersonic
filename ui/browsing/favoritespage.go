@@ -174,12 +174,6 @@ func (a *FavoritesPage) Route() controller.Route {
 	return controller.FavoritesRoute()
 }
 
-func (a *FavoritesPage) Tapped(*fyne.PointEvent) {
-	if tr := a.tracklistOrNil(); tr != nil {
-		tr.UnselectAll()
-	}
-}
-
 func (a *FavoritesPage) Reload() {
 	// reload favorite albums view
 	if a.searchText != "" {
@@ -284,6 +278,12 @@ var _ CanSelectAll = (*FavoritesPage)(nil)
 func (a *FavoritesPage) SelectAll() {
 	if a.toggleBtns.ActivatedButtonIndex() == 2 /*songs*/ && a.tracklistCtr != nil {
 		a.tracklistOrNil().SelectAll() // can't be nil in this case
+	}
+}
+
+func (a *FavoritesPage) UnselectAll() {
+	if a.toggleBtns.ActivatedButtonIndex() == 2 /*songs*/ && a.tracklistCtr != nil {
+		a.tracklistOrNil().UnselectAll() // can't be nil in this case
 	}
 }
 

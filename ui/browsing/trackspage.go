@@ -89,6 +89,18 @@ func (t *TracksPage) Route() controller.Route {
 	return controller.TracksRoute()
 }
 
+var _ CanSelectAll = (*TracksPage)(nil)
+
+func (t *TracksPage) SelectAll() {
+	// deliberate no-op since we don't want to give the impression
+	// that you can select all tracks from the server, since only
+	// some of them are actually loaded into the model
+}
+
+func (t *TracksPage) UnselectAll() {
+	t.currentTracklist().UnselectAll()
+}
+
 func (t *TracksPage) Reload() {
 	t.tracklist.Clear()
 	iter := t.mp.IterateTracks("")
@@ -159,6 +171,10 @@ func (t *TracksPage) doSearch(query string) {
 	t.searchLoader = widgets.NewTracklistLoader(t.searchTracklist, iter)
 	t.container.Objects[0].(*fyne.Container).Objects[0] = t.searchTracklist
 	t.Refresh()
+}
+
+func (t *TracksPage) currentTracklist() *widgets.Tracklist {
+	return t.container.Objects[0].(*fyne.Container).Objects[0].(*widgets.Tracklist)
 }
 
 func (t *TracksPage) CreateRenderer() fyne.WidgetRenderer {

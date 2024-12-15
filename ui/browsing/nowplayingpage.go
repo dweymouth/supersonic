@@ -470,31 +470,30 @@ func (a *NowPlayingPage) OnPlayTimeUpdate(curTime, _ float64, seeked bool) {
 	}
 }
 
+func (a *NowPlayingPage) currentTracklistOrNil() *widgets.PlayQueueList {
+	if a.tabs != nil {
+
+		switch a.tabs.SelectedIndex() {
+		case 0: /*queue*/
+			return a.queueList
+		case 2: /*related*/
+			return a.relatedList
+		}
+	}
+	return nil
+}
+
 var _ CanSelectAll = (*NowPlayingPage)(nil)
 
 func (a *NowPlayingPage) SelectAll() {
-	if a.tabs == nil {
-		return
-	}
-	switch a.tabs.SelectedIndex() {
-	case 0: /*queue*/
-		a.queueList.SelectAll()
-	case 2: /*related*/
-		a.relatedList.SelectAll()
+	if l := a.currentTracklistOrNil(); l != nil {
+		l.SelectAll()
 	}
 }
 
-var _ fyne.Tappable = (*NowPlayingPage)(nil)
-
-func (a *NowPlayingPage) Tapped(*fyne.PointEvent) {
-	if a.tabs == nil {
-		return
-	}
-	switch a.tabs.SelectedIndex() {
-	case 0: /*queue*/
-		a.queueList.UnselectAll()
-	case 2: /*related*/
-		a.relatedList.UnselectAll()
+func (a *NowPlayingPage) UnselectAll() {
+	if l := a.currentTracklistOrNil(); l != nil {
+		l.UnselectAll()
 	}
 }
 

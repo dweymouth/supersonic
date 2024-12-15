@@ -36,6 +36,7 @@ type Searchable interface {
 // Pages with selection should implement this interface to receive Ctrl+A events
 type CanSelectAll interface {
 	SelectAll()
+	UnselectAll()
 }
 
 // Pages that have one main scrollable view should implement this interface
@@ -196,6 +197,12 @@ func (b *BrowsingPane) GetSearchBarIfAny() fyne.Focusable {
 func (b *BrowsingPane) SelectAll() {
 	if s, ok := b.curPage.(CanSelectAll); ok {
 		s.SelectAll()
+	}
+}
+
+func (b *BrowsingPane) UnselectAll() {
+	if s, ok := b.curPage.(CanSelectAll); ok {
+		s.UnselectAll()
 	}
 }
 

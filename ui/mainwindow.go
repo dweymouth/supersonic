@@ -38,7 +38,7 @@ type MainWindow struct {
 	theme            *theme.MyTheme
 	haveSystemTray   bool
 	alreadyConnected bool // tracks if we have already connected to a server before
-	container        *fyne.Container
+	content          *mainWindowContent
 
 	// needs to bes shown/hidden when switching between servers based on whether they support radio
 	radioBtn fyne.CanvasObject
@@ -68,6 +68,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
 	m.Controller.RefreshPageFunc = m.BrowsingPane.RefreshPage
 	m.Controller.SelectAllPageFunc = m.BrowsingPane.SelectAll
+	m.Controller.UnselectAllPageFunc = m.BrowsingPane.UnselectAll
 
 	if runtime.GOOS == "darwin" {
 		// Fyne will extract out an "About" menu item and
@@ -136,8 +137,9 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()
 
-	m.container = container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane)
-	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.container, m.Window.Canvas()))
+	m.content = newMainWindowContent(container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane),
+		m.Controller.UnselectAll)
+	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.content, m.Window.Canvas()))
 	m.setInitialSize()
 	m.Window.SetCloseIntercept(func() {
 		m.SaveWindowSize()
@@ -432,4 +434,27 @@ func (m *MainWindow) SaveWindowSize() {
 	util.SaveWindowSize(m.Window,
 		&m.App.Config.Application.WindowWidth,
 		&m.App.Config.Application.WindowHeight)
+}
+
+// widget just so we can catch a tap event that doesn't land anywhere else
+// and call BrowsingPane.UnselectAll()
+type mainWindowContent struct {
+	widget.BaseWidget
+
+	content  fyne.CanvasObject
+	onTapped func()
+}
+
+func newMainWindowContent(content fyne.CanvasObject, onTapped func()) *mainWindowContent {
+	w := &mainWindowContent{content: content, onTapped: onTapped}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (m *mainWindowContent) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(m.content)
+}
+
+func (m *mainWindowContent) Tapped(*fyne.PointEvent) {
+	m.onTapped()
 }

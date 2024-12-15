@@ -41,14 +41,15 @@ type CurPageFunc func() Route
 
 type Controller struct {
 	visualizationData
-	AppVersion        string
-	App               *backend.App
-	MainWindow        fyne.Window
-	NavHandler        NavigationHandler
-	CurPageFunc       CurPageFunc
-	ReloadFunc        func()
-	RefreshPageFunc   func()
-	SelectAllPageFunc func()
+	AppVersion          string
+	App                 *backend.App
+	MainWindow          fyne.Window
+	NavHandler          NavigationHandler
+	CurPageFunc         CurPageFunc
+	ReloadFunc          func()
+	RefreshPageFunc     func()
+	SelectAllPageFunc   func()
+	UnselectAllPageFunc func()
 
 	popUpQueueMutex    sync.Mutex
 	popUpQueue         *widget.PopUp
@@ -98,6 +99,19 @@ func (m *Controller) SelectAll() {
 	m.popUpQueueMutex.Unlock()
 	if m.SelectAllPageFunc != nil {
 		m.SelectAllPageFunc()
+	}
+}
+
+func (m *Controller) UnselectAll() {
+	m.popUpQueueMutex.Lock()
+	if m.popUpQueue != nil && m.popUpQueue.Visible() {
+		m.popUpQueueList.UnselectAll()
+		m.popUpQueueMutex.Unlock()
+		return
+	}
+	m.popUpQueueMutex.Unlock()
+	if m.SelectAllPageFunc != nil {
+		m.UnselectAllPageFunc()
 	}
 }
 

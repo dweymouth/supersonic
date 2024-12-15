@@ -139,12 +139,14 @@ func (a *PlaylistPage) Reload() {
 	go a.load()
 }
 
-func (a *PlaylistPage) Tapped(*fyne.PointEvent) {
-	a.tracklist.UnselectAll()
-}
+var _ CanSelectAll = (*PlaylistPage)(nil)
 
 func (a *PlaylistPage) SelectAll() {
 	a.tracklist.SelectAll()
+}
+
+func (a *PlaylistPage) UnselectAll() {
+	a.tracklist.UnselectAll()
 }
 
 var _ Scrollable = (*PlaylistPage)(nil)
