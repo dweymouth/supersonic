@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"slices"
 	"sync"
 	"time"
 
@@ -46,7 +47,26 @@ func main() {
 		os.Setenv("FYNE_SCALE", "1.1")
 	}
 
-	lang.AddTranslationsFS(res.Translations, "translations")
+	// load configured app language, or all otherwise
+	lIdx := slices.IndexFunc(res.TranslationsInfo, func(t res.TranslationInfo) bool {
+		return t.Name == myApp.Config.Application.Language
+	})
+	success := false
+	if lIdx > 0 {
+		tr := res.TranslationsInfo[lIdx]
+		content, err := res.Translations.ReadFile("translations/" + tr.TranslationFileName)
+		if err == nil {
+			// "trick" Fyne into loading translations for configured language
+			// by pretending it's the translation for the system locale
+			name := lang.SystemLocale().LanguageString()
+			lang.AddTranslations(fyne.NewStaticResource(name+".json", content))
+			success = true
+		}
+	}
+	if !success {
+		lang.AddTranslationsFS(res.Translations, "translations")
+	}
+
 	fyneApp := app.New()
 	fyneApp.SetIcon(res.ResAppicon256Png)
 
