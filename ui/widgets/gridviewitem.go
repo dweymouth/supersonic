@@ -146,7 +146,6 @@ type GridViewItem struct {
 	primaryText   *ttwidget.Hyperlink
 	secondaryText *MultiHyperlink
 	suffix        string
-	container     *fyne.Container
 	focused       bool
 	focusRect     *canvas.Rectangle
 
@@ -198,18 +197,12 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 		}
 	}
 
-	g.createContainer()
-	return g
-}
-
-func (g *GridViewItem) createContainer() {
-	info := container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-17), g.primaryText, g.secondaryText)
 	g.focusRect = canvas.NewRectangle(color.Transparent)
+	g.focusRect.StrokeColor = util.MakeOpaque(theme.FocusColor())
 	g.focusRect.StrokeWidth = 3
-	coverStack := container.NewStack(g.Cover, g.focusRect)
-	c := container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-5), coverStack, info)
-	pad := layout.NewCustomPaddedLayout(10, 10, 20, 20)
-	g.container = container.New(pad, c)
+	g.focusRect.Hidden = true
+
+	return g
 }
 
 func (g *GridViewItem) NeedsUpdate(model GridViewItemModel) bool {
@@ -237,6 +230,12 @@ func (g *GridViewItem) Update(model GridViewItemModel) {
 }
 
 func (g *GridViewItem) Refresh() {
+	if g.focused {
+		g.focusRect.Show()
+	} else {
+		g.focusRect.Hide()
+	}
+
 	if g.ShowSuffix && g.secondaryText.Suffix == "" && g.suffix != "" {
 		g.secondaryText.Suffix = g.suffix
 		g.secondaryText.Refresh()
@@ -244,8 +243,6 @@ func (g *GridViewItem) Refresh() {
 		g.secondaryText.Suffix = ""
 		g.secondaryText.Refresh()
 	}
-	g.focusRect.StrokeColor = util.MakeOpaque(theme.FocusColor())
-	g.focusRect.Hidden = !g.focused
 }
 
 func (g *GridViewItem) ItemID() string {
@@ -302,7 +299,12 @@ func (g *GridViewItem) Tapped(*fyne.PointEvent) {
 }
 
 func (g *GridViewItem) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(g.container)
+	info := container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-17), g.primaryText, g.secondaryText)
+	coverStack := container.NewStack(g.Cover, g.focusRect)
+	c := container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-5), coverStack, info)
+	pad := layout.NewCustomPaddedLayout(10, 10, 20, 20)
+
+	return widget.NewSimpleRenderer(container.New(pad, c))
 }
 
 // steal hover events from underlying GridWrap to prevent unwanted
