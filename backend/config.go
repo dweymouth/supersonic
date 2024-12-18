@@ -48,7 +48,8 @@ type AppConfig struct {
 	ShowTrackChangeNotification bool
 	EnableLrcLib                bool
 	SkipSSLVerify               bool
-	EnqueueBatchSize 	    int
+	EnqueueBatchSize            int
+	Language                    string
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
@@ -174,7 +175,8 @@ func DefaultConfig(appVersionTag string) *Config {
 			ShowTrackChangeNotification: false,
 			EnableLrcLib:                true,
 			SkipSSLVerify:               false,
-			EnqueueBatchSize:	     100,
+			EnqueueBatchSize:            100,
+			Language:                    "auto",
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},
