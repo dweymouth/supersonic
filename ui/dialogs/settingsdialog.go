@@ -12,6 +12,7 @@ import (
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
+	"github.com/dweymouth/supersonic/res"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
@@ -146,6 +147,28 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	if startupPage.Selected == "" {
 		startupPage.SetSelectedIndex(0)
 	}
+
+	languageList := make([]string, len(res.TranslationsInfo)+1)
+	languageList[0] = lang.L("Auto")
+	var langSelIndex int
+	for i, tr := range res.TranslationsInfo {
+		languageList[i+1] = tr.DisplayName
+		if tr.Name == s.config.Application.Language {
+			langSelIndex = i + 1
+		}
+	}
+
+	languageSelect := widget.NewSelect(languageList, nil)
+	languageSelect.SetSelectedIndex(langSelIndex)
+	languageSelect.OnChanged = func(_ string) {
+		lang := "auto"
+		if i := languageSelect.SelectedIndex(); i > 0 {
+			lang = res.TranslationsInfo[i-1].Name
+		}
+		s.config.Application.Language = lang
+		s.setRestartRequired()
+	}
+
 	closeToTray := widget.NewCheckWithData(lang.L("Close to system tray"),
 		binding.BindBool(&s.config.Application.CloseToSystemTray))
 	if !s.config.Application.EnableSystemTray {
@@ -285,8 +308,9 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	scrobbleEnabled.Checked = s.config.Scrobbling.Enabled
 
 	return container.NewTabItem(lang.L("General"), container.NewVBox(
+		container.NewHBox(widget.NewLabel(lang.L("Language")), languageSelect),
 		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
-			container.NewHBox(widget.NewLabel("Mode"), themeModeSelect, util.NewHSpace(5)), // right
+			container.NewHBox(widget.NewLabel(lang.L("Mode")), themeModeSelect, util.NewHSpace(5)), // right
 			themeFileSelect, // center
 		),
 		container.NewHBox(

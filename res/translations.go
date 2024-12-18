@@ -17,10 +17,10 @@ var TranslationsInfo = []TranslationInfo{
 	{Name: "es", DisplayName: "Español", TranslationFileName: "es.json"},
 	{Name: "fr", DisplayName: "François", TranslationFileName: "fr.json"},
 	{Name: "it", DisplayName: "Italiano", TranslationFileName: "it.json"},
-	{Name: "ja", DisplayName: "日本語", TranslationFileName: "de.json"},
+	{Name: "ja", DisplayName: "日本語", TranslationFileName: "ja.json"},
 	{Name: "pl", DisplayName: "Polski", TranslationFileName: "pl.json"},
 	{Name: "pt_BR", DisplayName: "Português (BR)", TranslationFileName: "pt_BR.json"},
-	{Name: "ro", DisplayName: "Română", TranslationFileName: "ro"},
+	{Name: "ro", DisplayName: "Română", TranslationFileName: "ro.json"},
 	{Name: "zhHans", DisplayName: "中文", TranslationFileName: "zhHans.json"},
 	{Name: "zhHant", DisplayName: "中文 (trad.)", TranslationFileName: "zhHant.json"},
 }

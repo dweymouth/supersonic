@@ -52,7 +52,7 @@ func main() {
 		return t.Name == myApp.Config.Application.Language
 	})
 	success := false
-	if lIdx > 0 {
+	if lIdx >= 0 {
 		tr := res.TranslationsInfo[lIdx]
 		content, err := res.Translations.ReadFile("translations/" + tr.TranslationFileName)
 		if err == nil {
@@ -61,10 +61,14 @@ func main() {
 			name := lang.SystemLocale().LanguageString()
 			lang.AddTranslations(fyne.NewStaticResource(name+".json", content))
 			success = true
+		} else {
+			log.Printf("Error loading translation file %s: %s\n", tr.TranslationFileName, err.Error())
 		}
 	}
 	if !success {
-		lang.AddTranslationsFS(res.Translations, "translations")
+		if err := lang.AddTranslationsFS(res.Translations, "translations"); err != nil {
+			log.Printf("Error loading translations: %s", err.Error())
+		}
 	}
 
 	fyneApp := app.New()
