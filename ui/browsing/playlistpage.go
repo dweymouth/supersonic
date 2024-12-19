@@ -229,6 +229,8 @@ type PlaylistPageHeader struct {
 	ownerLabel       *widget.Label
 	trackTimeLabel   *widget.Label
 
+	fullSizeCoverFetching bool
+
 	container *fyne.Container
 }
 
@@ -239,6 +241,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.ExtendBaseWidget(a)
 
 	a.image = widgets.NewImagePlaceholder(myTheme.PlaylistIcon, 225)
+	a.image.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
 	a.titleLabel = util.NewTruncatingRichText()
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
@@ -324,16 +327,32 @@ func (a *PlaylistPageHeader) Update(playlist *mediaprovider.PlaylistWithTracks) 
 	var haveCover bool
 	if playlist.CoverArtID != "" {
 		if im, err := a.page.im.GetCoverThumbnail(playlist.CoverArtID); err == nil && im != nil {
-			a.image.SetImage(im, false /*tappable*/)
+			a.image.SetImage(im, true /*tappable*/)
 			haveCover = true
 		}
 	}
 	if !haveCover {
 		if im, err := a.page.im.GetCoverThumbnail(playlist.ID); err == nil && im != nil {
-			a.image.SetImage(im, false)
+			a.image.SetImage(im, true)
 		}
 	}
 	a.Refresh()
+}
+
+func (a *PlaylistPageHeader) showPopUpCover() {
+	if a.fullSizeCoverFetching || a.playlistInfo == nil {
+		return
+	}
+	a.fullSizeCoverFetching = true
+	defer func() { a.fullSizeCoverFetching = false }()
+	cover, err := a.page.im.GetFullSizeCoverArt(a.playlistInfo.CoverArtID)
+	if err != nil {
+		log.Printf("error getting full size playlist cover: %s", err.Error())
+		return
+	}
+	if a.page != nil {
+		a.page.contr.ShowPopUpImage(cover)
+	}
 }
 
 func (a *PlaylistPageHeader) formatPlaylistOwnerStr(p *mediaprovider.PlaylistWithTracks) string {
