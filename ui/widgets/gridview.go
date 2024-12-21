@@ -3,9 +3,10 @@ package widgets
 import (
 	"context"
 	"fmt"
-	"fyne.io/fyne/v2/lang"
 	"strconv"
 	"sync"
+
+	"fyne.io/fyne/v2/lang"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -329,14 +330,13 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	}
 	card.ItemIndex = itemIdx
 	g.itemForIndex[itemIdx] = card
-	card.Cover.Im.PlaceholderIcon = g.Placeholder
 	card.ShowSuffix = g.ShowSuffix
-	if !card.NeedsUpdate(item) && card.ItemIndex == itemIdx {
+	if !card.NeedsUpdate(item) {
 		// nothing to do
 		g.stateMutex.Unlock()
-		card.Refresh()
 		return
 	}
+	card.Cover.Im.PlaceholderIcon = g.Placeholder
 	g.stateMutex.Unlock()
 	card.Update(item)
 	card.ImgLoader.Load(item.CoverArtID)
