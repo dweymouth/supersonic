@@ -4,9 +4,11 @@ import (
 	"context"
 	"log"
 	"math/rand"
+	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 )
 
 // A high-level MediaProvider-aware playback engine, serves as an
@@ -14,7 +16,9 @@ import (
 type PlaybackManager struct {
 	engine   *playbackEngine
 	cmdQueue *playbackCommandQueue
-	cfg	 *AppConfig
+	cfg      *AppConfig
+
+	lastPlayTime float64
 }
 
 func NewPlaybackManager(
@@ -23,17 +27,40 @@ func NewPlaybackManager(
 	p player.BasePlayer,
 	scrobbleCfg *ScrobbleConfig,
 	transcodeCfg *TranscodingConfig,
-	appCfg	     *AppConfig,
+	appCfg *AppConfig,
 ) *PlaybackManager {
 	e := NewPlaybackEngine(ctx, s, p, scrobbleCfg, transcodeCfg)
 	q := NewCommandQueue()
 	pm := &PlaybackManager{
 		engine:   e,
 		cmdQueue: q,
-		cfg: appCfg,
+		cfg:      appCfg,
 	}
+	pm.workaroundWindowsPlaybackIssue()
 	go pm.runCmdQueue(ctx)
 	return pm
+}
+
+func (p *PlaybackManager) workaroundWindowsPlaybackIssue() {
+	// See https://github.com/dweymouth/supersonic/issues/483
+	// On Windows, MPV sometimes fails to start playback when switching to a track
+	// with a different sample rate than the previous. If this is detected,
+	// send a command to the MPV player to force restart playback.
+	p.OnPlayTimeUpdate(func(curTime, _ float64, _ bool) {
+		p.lastPlayTime = curTime
+	})
+	p.OnSongChange(func(mediaprovider.MediaItem, *mediaprovider.Track) {
+		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlayerStatus().State == player.Playing {
+			p.lastPlayTime = 0
+			go func() {
+				time.Sleep(300 * time.Millisecond)
+				if p.lastPlayTime == 0 {
+					log.Println("Play stall detected!")
+					p.cmdQueue.addCommand(playbackCommand{Type: cmdForceRestartPlayback})
+				}
+			}()
+		}
+	})
 }
 
 func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
@@ -430,6 +457,11 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					c.Arg.(*mediaprovider.RadioStation),
 					c.Arg2.(InsertQueueMode),
 				)
+			case cmdForceRestartPlayback:
+				if mpv, ok := p.engine.CurrentPlayer().(*mpv.Player); ok {
+					log.Println("Force-restarting MPV playback")
+					mpv.ForceRestartPlayback()
+				}
 			}
 		}
 	}

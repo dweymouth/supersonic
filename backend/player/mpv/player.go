@@ -311,6 +311,11 @@ func (p *Player) Continue() error {
 	return nil
 }
 
+func (p *Player) ForceRestartPlayback() error {
+	p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, true)
+	return p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, false)
+}
+
 // Get the current status of the player.
 func (p *Player) GetStatus() player.Status {
 	if !p.initialized {

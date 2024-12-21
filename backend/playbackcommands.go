@@ -26,6 +26,8 @@ const (
 	// arg3: bool (shuffle)
 	cmdLoadItems
 	cmdLoadRadioStation // arg: *mediaprovider.RadioStation, arg2: InsertQueueMode
+
+	cmdForceRestartPlayback
 )
 
 type playbackCommand struct {
@@ -140,6 +142,13 @@ func (c *playbackCommandQueue) LoadItems(items []mediaprovider.MediaItem, insert
 		Arg2: insertQueueMode,
 		Arg3: shuffle,
 	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
+}
+
+func (c *playbackCommandQueue) addCommand(command playbackCommand) {
+	c.mutex.Lock()
+	c.queue = append(c.queue, command)
 	c.mutex.Unlock()
 	c.cmdAvailable.Signal()
 }
