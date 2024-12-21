@@ -61,34 +61,36 @@
   </screenshots>
 
  <releases>
-  <release date="2024-08-20" version="0.13.1">
+  <release date="2024-12-21" version="0.13.2">
    <description>
      <p>
-       Version 0.13.1 of Supersonic
+       Version 0.13.2 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>New translations: French, Polish, Portuguese (Brazillian), Romanian, Spanish</li>
-       <li>Add tool tips to buttons and truncated labels</li>
-       <li>Remember the "skip duplicate tracks" setting when adding tracks to playlists</li>
-       <li>Switch sorting on All Tracks page to recently added</li>
+       <li>New translations: German, Japanese</li>
+       <li>Setting in config dialog to choose app language</li>
+       <li>Add config file setting to change how many tracks queued by "Play random"</li>
+       <li>Clicking on playlist cover from playlist page shows cover in pop-up</li>
       </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Custom themes didn't work on Windows</li>
-       <li>Pop up play queue crashing on Windows</li>
-       <li>Fixed "jumpy" scrolling on MacOS</li>
-       <li>Window sometimes misdrawing on startup for Linux (even better fix than last time)</li>
-       <li>Crash when rendering certain bitmap fonts</li>
-       <li>Fixed some more memory leaks from communicating with MPV</li>
-       <li>Missing space in error dialog text for sharing</li>
-       <li>Play queue sometimes not saving on exit</li>
+       <li>Fix regression in scrolling performance of album grid introduced in 0.12.0</li>
+       <li>Scroll to currently playing track when loading Now Playing page</li>
+       <li>Track with new sample rate failing to begin playback on Windows</li>
+       <li>Removing track from a playlist would remove all copies of it</li>
+       <li>Use custom HTTP User-Agent to avoid being blocked by some WAF servers</li>
+       <li>Increase base scrolling speed, add keybindings for PageUp/PageDown</li>
+       <li>Some performance improvements from updating to Fyne 2.5.3</li>
+       <li>Ensure clicking outside of tracklists can always unselect selection</li>
+       <li>A few translation updates</li>
+       <li>Wrong tooltip on repeat control</li>
      </ul>
 
    </description>

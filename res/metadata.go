@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.13.1"
+	AppVersion       = "0.13.2"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,19 +15,21 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* New translations: French, Polish, Portuguese (Brazillian), Romanian, Spanish
-* Add tool tips to buttons and truncated labels
-* Remember the "skip duplicate tracks" setting when adding tracks to playlists
-* Switch sorting on All Tracks page to recently added`
+* New translations: German, Japanese
+* Setting in config dialog to choose app language
+* Add config file setting to change how many tracks queued by "Play random"
+* Clicking on playlist cover from playlist page shows cover in pop-up (like album page)`
 
 	WhatsFixed = `
 ## Fixed
-* Custom themes didn't work on Windows
-* Pop up play queue crashing on Windows
-* Fixed "jumpy" scrolling on MacOS
-* Window sometimes misdrawing on startup for Linux (even better fix than last time)
-* Crash when rendering certain bitmap fonts
-* Fixed some more memory leaks from communicating with MPV
-* Missing space in error dialog text for sharing
-* Play queue sometimes not saving on exit`
+* Fix regression in scrolling performance of album grid introduced in 0.12.0
+* Scroll to currently playing track when loading Now Playing page
+* Track with new sample rate failing to begin playback on Windows
+* Removing track from a playlist would remove all copies of it
+* Use custom HTTP User-Agent to avoid being blocked by some WAF servers
+* Increase base scrolling speed, add keybindings for PageUp/PageDown
+* Some performance improvements from updating to Fyne 2.5.3
+* Ensure clicking outside of tracklists can always unselect selection
+* A few translation updates
+* Wrong tooltip on repeat control`
 )

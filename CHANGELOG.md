@@ -1,5 +1,25 @@
 # Change Log
 
+## [0.13.2]
+
+### Added
+- New translations: German, Japanese
+- [#510](https://github.com/dweymouth/supersonic/pull/510) Setting in config dialog to choose app language, overriding the auto-selection
+- [#490](https://github.com/dweymouth/supersonic/pull/490) Add config file setting to change how many tracks queued by "Play random"
+- Clicking on playlist cover from playlist page shows cover in pop-up (like album page)
+
+### Fixed
+- [#418](https://github.com/dweymouth/supersonic/issues/418) Fix regression in scrolling performance of album grid introduced in 0.12.0 (with "Show year in album grid" setting)
+- [#477](https://github.com/dweymouth/supersonic/issues/477) Scroll to currently playing track when loading Now Playing page
+- [#483](https://github.com/dweymouth/supersonic/issues/483) Track with new sample rate failing to begin playback on Windows
+- [#487](https://github.com/dweymouth/supersonic/issues/487) Removing track from a playlist would remove all copies of it
+- [#495](https://github.com/dweymouth/supersonic/issues/495) Use custom HTTP User-Agent to avoid being blocked by some WAF servers
+- [#506](https://github.com/dweymouth/supersonic/issues/506) Other scroll improvements: increase base scrolling speed, add keybindings for PageUp/PageDown
+- Some performance improvements from updating to Fyne 2.5.3
+- Ensure clicking outside of tracklists can always unselect selection
+- A few translation updates
+- Wrong tooltip on repeat control
+
 ## [0.13.1]
 
 ### Added
