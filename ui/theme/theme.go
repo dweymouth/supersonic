@@ -260,14 +260,18 @@ func (m *MyTheme) Font(style fyne.TextStyle) fyne.Resource {
 }
 
 func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
-	if name == SizeNameSubSubHeadingText {
+	switch name {
+	case SizeNameSubSubHeadingText:
 		return 15.5
-	} else if name == SizeNameSubText {
+	case SizeNameSubText:
 		return 13
-	} else if name == SizeNameSuffixText {
+	case SizeNameSuffixText:
 		return 12
+	case theme.SizeNameScrollBar:
+		return 14
+	default:
+		return theme.DefaultTheme().Size(name)
 	}
-	return theme.DefaultTheme().Size(name)
 }
 
 func (m *MyTheme) getVariant() fyne.ThemeVariant {
