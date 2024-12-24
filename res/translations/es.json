@@ -229,5 +229,17 @@
     "Remove from queue": "Remover de la cola",
     "Play song radio": "Reproducir canciones similares",
     "to": "a",
-    "by": "por"
+    "by": "por",
+    "Jan": "Ene",
+    "Feb": "Feb",
+    "Mar": "Mar",
+    "Apr": "Abr",
+    "May": "May",
+    "Jun": "Jun",
+    "Jul": "Jul",
+    "Aug": "Ago",
+    "Sept": "Set",
+    "Oct": "Oct",
+    "Nov": "Nov",
+    "Dec": "Dic"
 }

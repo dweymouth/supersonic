@@ -226,5 +226,17 @@
     "Remove from queue": "Rimuovi dalla coda",
     "Play song radio": "Avvia radio mix",
     "to": "al",
-    "by": "by"
+    "by": "by",
+    "Jan": "Gen",
+    "Feb": "Feb",
+    "Mar": "Mar",
+    "Apr": "Apr",
+    "May": "Mag",
+    "Jun": "Giu",
+    "Jul": "Lug",
+    "Aug": "Ago",
+    "Sept": "Set",
+    "Oct": "Ott",
+    "Nov": "Nov",
+    "Dec": "Dic"
 }
