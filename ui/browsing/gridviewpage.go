@@ -29,7 +29,7 @@ type GridViewPage[M, F any] struct {
 	searchGridState *widgets.GridViewState
 
 	title      *widget.RichText
-	sortOrder  *sortOrderSelect
+	sortOrder  *widget.Select
 	filterBtn  widgets.FilterButton[M, F]
 	filter     mediaprovider.MediaFilter[M, F]
 	searcher   *widgets.SearchEntry
@@ -85,25 +85,6 @@ type SortableGridViewPageAdapter interface {
 	SaveSortOrder(int)
 }
 
-type sortOrderSelect struct {
-	widget.Select
-}
-
-func NewSortOrderSelect(options []string, onChanged func(string)) *sortOrderSelect {
-	s := &sortOrderSelect{
-		Select: widget.Select{
-			Options:   options,
-			OnChanged: onChanged,
-		},
-	}
-	s.ExtendBaseWidget(s)
-	return s
-}
-
-func (s *sortOrderSelect) MinSize() fyne.Size {
-	return fyne.NewSize(170, s.Select.MinSize().Height)
-}
-
 func NewGridViewPage[M, F any](
 	adapter GridViewPageAdapter[M, F],
 	pool *util.WidgetPool,
@@ -144,7 +125,15 @@ func (g *GridViewPage[M, F]) createTitleAndSort() {
 	})
 	if s, ok := g.adapter.(SortableGridViewPageAdapter); ok {
 		sorts, selected := s.SortOrders()
-		g.sortOrder = NewSortOrderSelect(sorts, g.onSortOrderChanged)
+		g.sortOrder = widget.NewSelect(sorts, g.onSortOrderChanged)
+		// find longest string
+		l := ""
+		for _, s := range sorts {
+			if len(s) > len(l) {
+				l = s
+			}
+		}
+		g.sortOrder.PlaceHolder = l // props up MinSize.Width
 		g.sortOrder.SetSelectedIndex(selected)
 	}
 }
