@@ -585,7 +585,7 @@ func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
 		album.Date = mediaprovider.ItemDate{
 			Year:  ord.Year,
 			Month: ord.Month,
-			Day:   ord.Date,
+			Day:   ord.Day,
 		}
 	} else {
 		album.Date.Year = &subAlbum.Year
@@ -594,7 +594,7 @@ func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
 		album.ReissueDate = mediaprovider.ItemDate{
 			Year:  rd.Year,
 			Month: rd.Month,
-			Day:   rd.Date,
+			Day:   rd.Day,
 		}
 	}
 

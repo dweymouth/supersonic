@@ -35,8 +35,8 @@ const (
 
 func dateFormatForLocale(locale string) DateFormat {
 	var region string
-	if i := strings.Index(locale, "-"); i > 0 {
-		region = locale[i+1:]
+	if i := strings.Index(locale, "-"); i > 0 && len(locale) >= 5 {
+		region = locale[i+1 : i+3]
 	}
 	switch strings.ToUpper(region) {
 	case "US":
