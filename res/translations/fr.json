@@ -228,5 +228,17 @@
     "Remove from queue": "Retirer de la file d'attente",
     "Play song radio": "Lire une radio basée sur la piste",
     "to": "à",
-    "by": "par"
+    "by": "par",
+    "Jan": "Janv",
+    "Feb": "Févr",
+    "Mar": "Mars",
+    "Apr": "Avr",
+    "May": "Mai",
+    "Jun": "Juin",
+    "Jul": "Juil",
+    "Aug": "Août",
+    "Sept": "Sept",
+    "Oct": "Oct",
+    "Nov": "Nov",
+    "Dec": "Déc"
 }

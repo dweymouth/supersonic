@@ -228,6 +228,18 @@
     "Unset favorite": "Unset favorite",
     "Remove from queue": "Remove from queue",
     "Play song radio": "Play song radio",
-    "to":"to",
-    "by":"by"
+    "to": "to",
+    "by": "by",
+    "Jan": "Jan",
+    "Feb": "Feb",
+    "Mar": "Mar",
+    "Apr": "Apr",
+    "May": "May",
+    "Jun": "Jun",
+    "Jul": "Jul",
+    "Aug": "Aug",
+    "Sept": "Sept",
+    "Oct": "Oct",
+    "Nov": "Nov",
+    "Dec": "Dec"
 }

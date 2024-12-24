@@ -581,14 +581,21 @@ func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
 		genres = append(genres, subAlbum.Genre)
 	}
 
-	album.Year = subAlbum.Year
-	if subAlbum.OriginalReleaseDate != nil &&
-		subAlbum.OriginalReleaseDate.Year != nil &&
-		*subAlbum.OriginalReleaseDate.Year < subAlbum.Year {
-		album.Year = *subAlbum.OriginalReleaseDate.Year
+	if ord := subAlbum.OriginalReleaseDate; ord != nil && ord.Year != nil {
+		album.Date = mediaprovider.ItemDate{
+			Year:  ord.Year,
+			Month: ord.Month,
+			Day:   ord.Day,
+		}
+	} else {
+		album.Date.Year = &subAlbum.Year
 	}
-	if subAlbum.ReleaseDate != nil && subAlbum.ReleaseDate.Year != nil {
-		album.ReissueYear = *subAlbum.ReleaseDate.Year
+	if rd := subAlbum.ReleaseDate; rd != nil && rd.Year != nil {
+		album.ReissueDate = mediaprovider.ItemDate{
+			Year:  rd.Year,
+			Month: rd.Month,
+			Day:   rd.Day,
+		}
 	}
 
 	album.ID = subAlbum.ID

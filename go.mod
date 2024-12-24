@@ -17,7 +17,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.8
 	github.com/quarckster/go-mpris-server v1.0.3
 	github.com/supersonic-app/go-mpv v0.1.0
-	github.com/supersonic-app/go-subsonic v0.0.0-20241017150725-a5686988ef9c
+	github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d
 	github.com/zalando/go-keyring v0.2.1
 	golang.org/x/net v0.25.0
 	golang.org/x/text v0.16.0

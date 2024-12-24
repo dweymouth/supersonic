@@ -25,6 +25,75 @@ import (
 	"golang.org/x/net/html"
 )
 
+type DateFormat int
+
+const (
+	DateFormatDMY DateFormat = iota
+	DateFormatMDY
+	DateFormatYMD
+)
+
+func dateFormatForLocale(locale string) DateFormat {
+	var region string
+	if i := strings.Index(locale, "-"); i > 0 && len(locale) >= 5 {
+		region = locale[i+1 : i+3]
+	}
+	switch strings.ToUpper(region) {
+	case "US":
+		return DateFormatMDY
+	case "CN", "JP", "KR", "HU", "MN", "LT":
+		return DateFormatYMD
+	default:
+		return DateFormatDMY
+	}
+}
+
+func shortMonthName(month int) string {
+	var months = [12]string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"}
+	if month >= 1 && month <= 12 {
+		return lang.L(months[month-1])
+	}
+	return ""
+}
+
+func FormatItemDate(date mediaprovider.ItemDate) string {
+	var sb strings.Builder
+	df := dateFormatForLocale(fyne.CurrentDevice().Locale().String())
+	switch df {
+	case DateFormatDMY:
+		if d := date.Day; d != nil {
+			sb.WriteString(fmt.Sprintf("%d ", *d))
+		}
+		if m := date.Month; m != nil {
+			sb.WriteString(shortMonthName(*m) + " ")
+		}
+		if y := date.Year; y != nil {
+			sb.WriteString(fmt.Sprintf("%d", *y))
+		}
+	case DateFormatMDY:
+		if m := date.Month; m != nil {
+			sb.WriteString(shortMonthName(*m) + " ")
+		}
+		if d := date.Day; d != nil {
+			sb.WriteString(fmt.Sprintf("%d, ", *d))
+		}
+		if y := date.Year; y != nil {
+			sb.WriteString(fmt.Sprintf("%d", *y))
+		}
+	case DateFormatYMD:
+		if y := date.Year; y != nil {
+			sb.WriteString(fmt.Sprintf("%d ", *y))
+		}
+		if m := date.Month; m != nil {
+			sb.WriteString(shortMonthName(*m) + " ")
+		}
+		if d := date.Day; d != nil {
+			sb.WriteString(fmt.Sprintf("%d", *d))
+		}
+	}
+	return sb.String()
+}
+
 var BoldRichTextStyle = widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}, Inline: true}
 
 func MakeOpaque(c color.Color) color.Color {

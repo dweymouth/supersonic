@@ -458,7 +458,7 @@ func fillAlbum(a *jellyfin.Album, album *mediaprovider.Album) {
 	album.Duration = int(a.RunTimeTicks / runTimeTicksPerSecond)
 	album.ArtistIDs = artistIDs
 	album.ArtistNames = artistNames
-	album.Year = a.Year
+	album.Date.Year = &a.Year
 	album.TrackCount = a.ChildCount
 	album.Genres = a.Genres
 	album.Favorite = a.UserData.IsFavorite

@@ -226,6 +226,18 @@
     "Unset favorite": "Von Favoriten entfernen",
     "Remove from queue": "Aus Wiedergabeliste entfernen",
     "Play song radio": "Liedradio abspielen",
-    "to":"bis",
-    "by":"von"
+    "to": "bis",
+    "by": "von",
+    "Jan": "Jan",
+    "Feb": "Feb",
+    "Mar": "März",
+    "Apr": "Apr",
+    "May": "Mai",
+    "Jun": "Jun",
+    "Jul": "Jul",
+    "Aug": "Aug",
+    "Sept": "Sept",
+    "Oct": "Okt",
+    "Nov": "Nov",
+    "Dec": "Dec"
 }

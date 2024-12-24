@@ -61,8 +61,8 @@ func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
 			Secondary:    al.ArtistNames,
 			SecondaryIDs: al.ArtistIDs,
 		}
-		if al.Year > 0 {
-			model.Suffix = strconv.Itoa(al.Year)
+		if y := al.Date.Year; y != nil {
+			model.Suffix = strconv.Itoa(*al.Date.Year)
 		}
 		return model
 	})
