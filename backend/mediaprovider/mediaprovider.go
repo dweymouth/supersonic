@@ -106,7 +106,7 @@ func (f albumFilter) Matches(album *Album) bool {
 	if f.options.ExcludeUnfavorited && !album.Favorite {
 		return false
 	}
-	if y := album.Year; y < f.options.MinYear || (f.options.MaxYear > 0 && y > f.options.MaxYear) {
+	if y := album.YearOrZero(); y < f.options.MinYear || (f.options.MaxYear > 0 && y > f.options.MaxYear) {
 		return false
 	}
 	if len(f.options.Genres) == 0 {

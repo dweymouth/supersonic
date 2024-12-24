@@ -32,6 +32,12 @@ const (
 	ReleaseTypeSpokenWord     ReleaseType = 0x8000
 )
 
+type ItemDate struct {
+	Year  *int
+	Month *int
+	Day   *int
+}
+
 type Album struct {
 	ID           string
 	CoverArtID   string
@@ -39,12 +45,19 @@ type Album struct {
 	Duration     int
 	ArtistIDs    []string
 	ArtistNames  []string
-	Year         int
-	ReissueYear  int
+	Date         ItemDate
+	ReissueDate  ItemDate
 	Genres       []string
 	TrackCount   int
 	Favorite     bool
 	ReleaseTypes ReleaseTypes
+}
+
+func (a *Album) YearOrZero() int {
+	if a.Date.Year != nil {
+		return *a.Date.Year
+	}
+	return 0
 }
 
 type AlbumWithTracks struct {

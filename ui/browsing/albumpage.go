@@ -3,7 +3,6 @@ package browsing
 import (
 	"fmt"
 	"log"
-	"strconv"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -370,9 +369,9 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 	if a.TrackCount == 1 {
 		tracks = lang.L("track")
 	}
-	yearStr := strconv.Itoa(a.Year)
-	if a.ReissueYear > a.Year {
-		yearStr += fmt.Sprintf(" (%s %d)", lang.L("reissued"), a.ReissueYear)
+	yearStr := util.FormatItemDate(a.Date)
+	if y := a.ReissueDate.Year; y != nil && *y > a.YearOrZero() {
+		yearStr += fmt.Sprintf(" (%s %d)", lang.L("reissued"), util.FormatItemDate(a.ReissueDate))
 	}
 	return fmt.Sprintf("%s · %d %s · %s%s", yearStr, a.TrackCount, tracks, discs, util.SecondsToTimeString(float64(a.Duration)))
 }
