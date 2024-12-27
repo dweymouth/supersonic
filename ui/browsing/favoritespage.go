@@ -42,6 +42,7 @@ type FavoritesPage struct {
 	searchGridState *widgets.GridViewState
 	artistGrid      *widgets.GridView
 	tracklistCtr    *fyne.Container
+	shuffleBtn      *widget.Button
 	searcher        *widgets.SearchEntry
 	filterBtn       *widgets.AlbumFilterButton
 	titleDisp       *widget.RichText
@@ -94,6 +95,13 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int) {
 		widget.NewButtonWithIcon("", myTheme.AlbumIcon, a.onShowFavoriteAlbums),
 		widget.NewButtonWithIcon("", myTheme.ArtistIcon, a.onShowFavoriteArtists),
 		widget.NewButtonWithIcon("", myTheme.TracksIcon, a.onShowFavoriteSongs))
+	a.shuffleBtn = widget.NewButtonWithIcon(lang.L("Shuffle"), myTheme.ShuffleIcon, func() {
+		if tr := a.tracklistOrNil(); tr != nil {
+			a.pm.LoadTracks(tr.GetTracks(), backend.Replace, true /*shuffle*/)
+			a.pm.PlayFromBeginning()
+		}
+	})
+	a.shuffleBtn.Hidden = activeBtnIdx != 2 /*favorite songs*/
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.PlaceHolder = lang.L("Search page")
 	a.searcher.OnSearched = a.OnSearched
@@ -106,7 +114,13 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int) {
 func (a *FavoritesPage) createContainer(initialView fyne.CanvasObject) {
 	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
 	a.container = container.NewBorder(container.NewHBox(util.NewHSpace(9),
-		a.titleDisp, container.NewCenter(a.toggleBtns), layout.NewSpacer(), container.NewCenter(a.filterBtn), searchVbox, util.NewHSpace(15)),
+		a.titleDisp,
+		container.NewCenter(a.toggleBtns),
+		util.NewHSpace(2),
+		container.NewCenter(a.shuffleBtn),
+		layout.NewSpacer(),
+		container.NewCenter(a.filterBtn),
+		searchVbox, util.NewHSpace(15)),
 		nil, nil, nil, initialView)
 }
 
@@ -312,6 +326,7 @@ func (a *FavoritesPage) doSearchAlbums(query string) {
 func (a *FavoritesPage) onShowFavoriteAlbums() {
 	a.cfg.InitialView = "Albums" // save setting
 	a.searcher.Entry.Show()
+	a.shuffleBtn.Hide()
 	a.filterBtn.Show()
 	a.container.Objects[0] = a.albumGrid
 	a.Refresh()
@@ -319,7 +334,8 @@ func (a *FavoritesPage) onShowFavoriteAlbums() {
 
 func (a *FavoritesPage) onShowFavoriteArtists() {
 	a.cfg.InitialView = "Artists" // save setting
-	a.searcher.Entry.Hide()       // disable search on artists for now
+	a.shuffleBtn.Hide()
+	a.searcher.Entry.Hide() // disable search on artists for now
 	a.filterBtn.Hide()
 	if a.artistGrid == nil {
 		if a.pendingViewSwitch {
@@ -383,6 +399,7 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 	a.cfg.InitialView = "Songs" // save setting
 	a.searcher.Entry.Hide()     // disable search on songs for now
 	a.filterBtn.Hide()
+	a.shuffleBtn.Show()
 	if a.tracklistCtr == nil {
 		if a.pendingViewSwitch {
 			return
