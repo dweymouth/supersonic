@@ -699,21 +699,11 @@ func (t *Tracklist) SelectedTrackIndexes() []int {
 	t.tracksMutex.RLock()
 	defer t.tracksMutex.RUnlock()
 
-	if t.sorting.SortOrder == SortNone {
-		idx := -1
-		return sharedutil.FilterMapSlice(t.tracks, func(t *util.TrackListModel) (int, bool) {
-			idx++
-			return idx, t.Selected
-		})
-	}
-	ids := sharedutil.ToSet(util.SelectedItemIDs(t.tracks))
-	idxs := make([]int, 0, len(ids))
-	for id := range ids {
-		idxs = append(idxs, slices.IndexFunc(t.tracks, func(t *util.TrackListModel) bool {
-			return t.Item.Metadata().ID == id
-		}))
-	}
-	return idxs
+	idx := -1
+	return sharedutil.FilterMapSlice(t.tracksOrigOrder, func(t *util.TrackListModel) (int, bool) {
+		idx++
+		return idx, t.Selected
+	})
 }
 
 func (t *Tracklist) lenTracks() int {
