@@ -29,6 +29,10 @@ type coverImage struct {
 
 	Im                *ImagePlaceholder
 	playbtn           *canvas.Image
+	favoriteButton    *canvas.Image
+	moreButton        *canvas.Image
+	prevTheme         fyne.ThemeVariant
+	bottomPanel       *fyne.Container
 	mouseInsideBtn    bool
 	OnPlay            func()
 	OnShowPage        func()
@@ -38,9 +42,43 @@ type coverImage struct {
 var (
 	playBtnSize        = fyne.NewSize(60, 60)
 	playBtnHoveredSize = fyne.NewSize(65, 65)
+
+	resourcesInitted             bool
+	heartFilledResource          fyne.Resource
+	heartFilledHoveredResource   fyne.Resource
+	heartUnfilledResource        fyne.Resource
+	heartUnfilledHoveredResource fyne.Resource
+	moreVerticalResource         fyne.Resource
+	moreVerticalHoveredResource  fyne.Resource
+	inlineIconSize               float32
 )
 
+func initResources() {
+	if resourcesInitted {
+		return
+	}
+	resourcesInitted = true
+
+	inlineIconSize = fyne.CurrentApp().Settings().Theme().Size(theme.SizeNameInlineIcon)
+
+	// TODO: replace util.ColorizeSVG with Fyne's canvas.ColorizeSVG once
+	// https://github.com/fyne-io/fyne/pull/5345 is available in Fyne
+	c, _ := util.ColorizeSVG(myTheme.NotFavoriteIcon.Content(), myTheme.GridViewIconColor)
+	heartUnfilledResource = fyne.NewStaticResource("gridviewnotfavorite", c)
+	c, _ = util.ColorizeSVG(myTheme.NotFavoriteIcon.Content(), myTheme.GridViewHoveredIconColor)
+	heartUnfilledHoveredResource = fyne.NewStaticResource("gridviewnotfavorite_hover", c)
+	c, _ = util.ColorizeSVG(myTheme.FavoriteIcon.Content(), myTheme.GridViewIconColor)
+	heartFilledResource = fyne.NewStaticResource("gridviewfavorite", c)
+	c, _ = util.ColorizeSVG(myTheme.FavoriteIcon.Content(), myTheme.GridViewHoveredIconColor)
+	heartFilledHoveredResource = fyne.NewStaticResource("gridviewfavorite_hover", c)
+	c, _ = util.ColorizeSVG(theme.MoreVerticalIcon().Content(), myTheme.GridViewIconColor)
+	moreVerticalResource = fyne.NewStaticResource("gridviewmore", c)
+	c, _ = util.ColorizeSVG(theme.MoreVerticalIcon().Content(), myTheme.GridViewHoveredIconColor)
+	moreVerticalHoveredResource = fyne.NewStaticResource("gridviewmore_hover", c)
+}
+
 func newCoverImage(placeholderResource fyne.Resource) *coverImage {
+	initResources()
 	c := &coverImage{}
 	c.Im = NewImagePlaceholder(placeholderResource, 200)
 	c.Im.OnTapped = c.Tapped
@@ -49,13 +87,43 @@ func newCoverImage(placeholderResource fyne.Resource) *coverImage {
 	c.playbtn = &canvas.Image{FillMode: canvas.ImageFillContain, Resource: res.ResPlaybuttonPng}
 	c.playbtn.SetMinSize(playBtnSize)
 	c.playbtn.Hidden = true
+
+	c.favoriteButton = canvas.NewImageFromResource(heartUnfilledResource)
+	c.favoriteButton.SetMinSize(fyne.NewSquareSize(inlineIconSize))
+	c.moreButton = canvas.NewImageFromResource(moreVerticalResource)
+	c.moreButton.SetMinSize(fyne.NewSquareSize(inlineIconSize))
+	c.bottomPanel = container.NewStack(
+		canvas.NewVerticalGradient(color.Transparent, color.Black),
+		container.NewVBox(
+			layout.NewSpacer(), // keep the HBox pushed down
+			container.NewHBox(
+				layout.NewSpacer(),
+				c.favoriteButton,
+				c.moreButton,
+				util.NewHSpace(0),
+			),
+			container.New(
+				layout.NewCustomPaddedLayout(0, theme.Padding()*2, 0, 0),
+				layout.NewSpacer(),
+			),
+		),
+	)
+	c.bottomPanel.Hidden = true
+
 	c.ExtendBaseWidget(c)
 	return c
 }
 
 func (c *coverImage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(
-		container.NewStack(c.Im, container.NewCenter(c.playbtn)),
+		container.NewStack(
+			c.Im,
+			container.NewCenter(c.playbtn),
+			container.NewGridWithRows(2,
+				layout.NewSpacer(),
+				c.bottomPanel,
+			),
+		),
 	)
 }
 
@@ -83,12 +151,14 @@ func (c *coverImage) TappedSecondary(e *fyne.PointEvent) {
 
 func (a *coverImage) MouseIn(*desktop.MouseEvent) {
 	a.playbtn.Hidden = false
+	a.bottomPanel.Hidden = false
 	a.Refresh()
 }
 
 func (a *coverImage) MouseOut() {
 	a.mouseInsideBtn = false
 	a.playbtn.Hidden = true
+	a.bottomPanel.Hidden = true
 	a.Refresh()
 }
 

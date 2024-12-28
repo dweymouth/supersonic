@@ -33,6 +33,9 @@ const (
 )
 
 var (
+	GridViewIconColor        color.Color = color.White
+	GridViewHoveredIconColor color.Color = darkenColor(GridViewIconColor, 0.05)
+
 	AlbumIcon       fyne.Resource = theme.NewThemedResource(res.ResDiscSvg)
 	ArtistIcon      fyne.Resource = theme.NewThemedResource(res.ResPeopleSvg)
 	RadioIcon       fyne.Resource = theme.NewThemedResource(res.ResBroadcastSvg)
