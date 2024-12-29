@@ -135,9 +135,6 @@ func (c *coverImage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (c *coverImage) Cursor() desktop.Cursor {
-	if c.mouseInsideFav || c.mouseInsideMore || c.mouseInsidePlay {
-		return desktop.DefaultCursor
-	}
 	return desktop.PointerCursor
 }
 
