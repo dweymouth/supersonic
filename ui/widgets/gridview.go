@@ -60,6 +60,8 @@ func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
 			CoverArtID:   al.CoverArtID,
 			Secondary:    al.ArtistNames,
 			SecondaryIDs: al.ArtistIDs,
+			CanFavorite:  true,
+			IsFavorite:   al.Favorite,
 		}
 		if y := al.Date.Year; y != nil {
 			model.Suffix = strconv.Itoa(*al.Date.Year)
@@ -84,10 +86,12 @@ func (g gridViewArtistIterator) NextN(n int) []GridViewItemModel {
 			albumsLabel = lang.L("album")
 		}
 		return GridViewItemModel{
-			Name:       ar.Name,
-			ID:         ar.ID,
-			CoverArtID: ar.CoverArtID,
-			Secondary:  []string{fmt.Sprintf("%d %s", ar.AlbumCount, albumsLabel)},
+			Name:        ar.Name,
+			ID:          ar.ID,
+			CoverArtID:  ar.CoverArtID,
+			Secondary:   []string{fmt.Sprintf("%d %s", ar.AlbumCount, albumsLabel)},
+			CanFavorite: true,
+			IsFavorite:  ar.Favorite,
 		}
 	})
 }
@@ -129,6 +133,7 @@ type GridViewState struct {
 	OnPlayNext          func(id string)
 	OnAddToQueue        func(id string)
 	OnAddToPlaylist     func(id string)
+	OnFavorite          func(id string, fav bool)
 	OnDownload          func(id string)
 	OnShare             func(id string)
 	OnShowItemPage      func(id string)
@@ -276,6 +281,11 @@ func (g *GridView) createNewItemCard() fyne.CanvasObject {
 	card.ImgLoader = util.NewThumbnailLoader(g.imageFetcher, card.Cover.SetImage)
 	card.ImgLoader.OnBeforeLoad = func() { card.Cover.SetImage(nil) }
 	card.OnPlay = func() { g.onPlay(card.ItemID(), false) }
+	card.OnFavorite = func(fav bool) {
+		if g.OnFavorite != nil {
+			g.OnFavorite(card.itemID, fav)
+		}
+	}
 	card.OnShowSecondaryPage = func(id string) {
 		if g.OnShowSecondaryPage != nil {
 			g.OnShowSecondaryPage(id)
@@ -338,7 +348,7 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	}
 	card.Cover.Im.PlaceholderIcon = g.Placeholder
 	g.stateMutex.Unlock()
-	card.Update(item)
+	card.Update(&item)
 	card.ImgLoader.Load(item.CoverArtID)
 
 	// if user has scrolled near the bottom, fetch more
