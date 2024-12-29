@@ -84,6 +84,11 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 	grid.OnPlay = func(albumID string, shuffle bool) {
 		go m.App.PlaybackManager.PlayAlbum(albumID, 0, shuffle)
 	}
+	grid.OnFavorite = func(albumID string, favorite bool) {
+		m.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
+			AlbumIDs: []string{albumID},
+		}, favorite)
+	}
 	grid.OnShowItemPage = func(albumID string) {
 		m.NavigateTo(AlbumRoute(albumID))
 	}
@@ -127,6 +132,11 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 	grid.OnAddToPlaylist = func(artistID string) {
 		go m.DoAddTracksToPlaylistWorkflow(
 			sharedutil.TracksToIDs(m.GetArtistTracks(artistID)))
+	}
+	grid.OnFavorite = func(artistID string, favorite bool) {
+		m.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
+			ArtistIDs: []string{artistID},
+		}, favorite)
 	}
 	grid.OnDownload = func(artistID string) {
 		go func() {

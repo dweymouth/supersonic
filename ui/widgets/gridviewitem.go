@@ -30,16 +30,20 @@ type coverImage struct {
 	EnableFavorite bool
 	IsFavorite     bool
 
-	Im                *ImagePlaceholder
-	playbtn           *canvas.Image
-	favoriteButton    *canvas.Image
-	moreButton        *canvas.Image
-	prevTheme         fyne.ThemeVariant
-	bottomPanel       *fyne.Container
-	mouseInsideBtn    bool
 	OnPlay            func()
+	OnFavorite        func(bool)
 	OnShowPage        func()
 	OnShowContextMenu func(fyne.Position)
+
+	Im              *ImagePlaceholder
+	playbtn         *canvas.Image
+	favoriteButton  *canvas.Image
+	moreButton      *canvas.Image
+	prevTheme       fyne.ThemeVariant
+	bottomPanel     *fyne.Container
+	mouseInsidePlay bool
+	mouseInsideFav  bool
+	mouseInsideMore bool
 }
 
 var (
@@ -131,6 +135,9 @@ func (c *coverImage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (c *coverImage) Cursor() desktop.Cursor {
+	if c.mouseInsideFav || c.mouseInsideMore || c.mouseInsidePlay {
+		return desktop.DefaultCursor
+	}
 	return desktop.PointerCursor
 }
 
@@ -139,10 +146,18 @@ func (c *coverImage) Tapped(e *fyne.PointEvent) {
 		if c.OnPlay != nil {
 			c.OnPlay()
 		}
-		return
-	}
-	if c.OnShowPage != nil {
-		c.OnShowPage()
+	} else if c.mouseInsideFav {
+		if c.OnFavorite != nil {
+			c.IsFavorite = !c.IsFavorite
+			c.updateFavoriteIcon(true)
+			c.OnFavorite(c.IsFavorite)
+		}
+	} else if c.mouseInsideMore {
+		c.TappedSecondary(e)
+	} else {
+		if c.OnShowPage != nil {
+			c.OnShowPage()
+		}
 	}
 }
 
@@ -154,36 +169,100 @@ func (c *coverImage) TappedSecondary(e *fyne.PointEvent) {
 
 func (a *coverImage) MouseIn(*desktop.MouseEvent) {
 	a.playbtn.Hidden = false
-	if a.IsFavorite {
-		a.favoriteButton.Resource = heartFilledResource
-	} else {
-		a.favoriteButton.Resource = heartUnfilledResource
-	}
+	a.updateFavoriteIcon(false)
 	a.favoriteButton.Hidden = !a.EnableFavorite
 	a.bottomPanel.Hidden = false
 	a.Refresh()
 }
 
 func (a *coverImage) MouseOut() {
-	a.mouseInsideBtn = false
+	a.mouseInsidePlay = false
+	a.mouseInsideFav = false
+	a.mouseInsideMore = false
 	a.playbtn.Hidden = true
 	a.bottomPanel.Hidden = true
 	a.Refresh()
 }
 
 func (a *coverImage) MouseMoved(e *desktop.MouseEvent) {
-	if isInside(a.center(), a.playbtn.MinSize().Height/2, e.Position) {
-		if !a.mouseInsideBtn {
+	updateMouseInsidePlay := func(in bool) {
+		if in == a.mouseInsidePlay {
+			return
+		}
+		if in {
 			a.playbtn.SetMinSize(playBtnHoveredSize)
-			a.playbtn.Refresh()
-		}
-		a.mouseInsideBtn = true
-	} else {
-		if a.mouseInsideBtn {
+		} else {
 			a.playbtn.SetMinSize(playBtnSize)
-			a.playbtn.Refresh()
 		}
-		a.mouseInsideBtn = false
+		a.playbtn.Refresh()
+		a.mouseInsidePlay = in
+	}
+	updateMouseInsideFav := func(in bool) {
+		if in == a.mouseInsideFav {
+			return
+		}
+		if a.IsFavorite {
+			if in {
+				a.favoriteButton.Resource = heartFilledHoveredResource
+			} else {
+				a.favoriteButton.Resource = heartFilledResource
+			}
+		} else {
+			if in {
+				a.favoriteButton.Resource = heartUnfilledHoveredResource
+			} else {
+				a.favoriteButton.Resource = heartUnfilledResource
+			}
+		}
+		a.favoriteButton.Refresh()
+		a.mouseInsideFav = in
+	}
+	updateMouseInsideMore := func(in bool) {
+		if in == a.mouseInsideMore {
+			return
+		}
+		if in {
+			a.moreButton.Resource = moreVerticalHoveredResource
+		} else {
+			a.moreButton.Resource = moreVerticalResource
+		}
+		a.moreButton.Refresh()
+		a.mouseInsideMore = in
+	}
+
+	pad := theme.Padding()
+	overFavBtn := e.Position.Y > a.Size().Height-inlineIconSize-pad*3 &&
+		e.Position.X > a.Size().Width-inlineIconSize*2-pad*3 &&
+		e.Position.X < a.Size().Height-inlineIconSize-pad
+	overMoreBtn := e.Position.Y > a.Size().Height-inlineIconSize-pad*3 &&
+		e.Position.X > a.Size().Width-inlineIconSize-pad
+	if isInside(a.center(), a.playbtn.MinSize().Height/2, e.Position) {
+		updateMouseInsidePlay(true)
+		updateMouseInsideFav(false)
+		updateMouseInsideMore(false)
+	} else if overFavBtn {
+		updateMouseInsideFav(true)
+		updateMouseInsidePlay(false)
+		updateMouseInsideMore(false)
+	} else if overMoreBtn {
+		updateMouseInsideMore(true)
+		updateMouseInsideFav(false)
+		updateMouseInsidePlay(false)
+	} else {
+		updateMouseInsideFav(false)
+		updateMouseInsidePlay(false)
+		updateMouseInsideMore(false)
+	}
+}
+
+func (a *coverImage) updateFavoriteIcon(refresh bool) {
+	if a.IsFavorite {
+		a.favoriteButton.Resource = heartFilledResource
+	} else {
+		a.favoriteButton.Resource = heartUnfilledResource
+	}
+	if refresh {
+		a.favoriteButton.Refresh()
 	}
 }
 
@@ -197,7 +276,7 @@ func (a *coverImage) SetImage(im image.Image) {
 
 func (a *coverImage) ResetPlayButton() {
 	a.playbtn.SetMinSize(playBtnSize)
-	a.mouseInsideBtn = false
+	a.mouseInsidePlay = false
 	a.playbtn.Hidden = true
 }
 
@@ -222,6 +301,7 @@ type GridViewItem struct {
 
 	ShowSuffix bool
 
+	model         *GridViewItemModel
 	itemID        string
 	secondaryIDs  []string
 	primaryText   *ttwidget.Hyperlink
@@ -236,6 +316,7 @@ type GridViewItem struct {
 	ItemIndex int
 
 	OnPlay              func()
+	OnFavorite          func(bool)
 	OnShowContextMenu   func(fyne.Position)
 	OnShowItemPage      func()
 	OnShowSecondaryPage func(string)
@@ -258,6 +339,14 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	g.Cover.OnPlay = func() {
 		if g.OnPlay != nil {
 			g.OnPlay()
+		}
+	}
+	g.Cover.OnFavorite = func(fav bool) {
+		if g.model != nil {
+			g.model.IsFavorite = fav
+		}
+		if g.OnFavorite != nil {
+			g.OnFavorite(fav)
 		}
 	}
 	g.Cover.OnShowContextMenu = func(pos fyne.Position) {
@@ -292,7 +381,7 @@ func (g *GridViewItem) NeedsUpdate(model GridViewItemModel) bool {
 		(!g.ShowSuffix && g.secondaryText.Suffix != "")
 }
 
-func (g *GridViewItem) Update(model GridViewItemModel) {
+func (g *GridViewItem) Update(model *GridViewItemModel) {
 	g.Cover.IsFavorite = model.IsFavorite
 	g.Cover.EnableFavorite = model.CanFavorite
 	g.itemID = model.ID
