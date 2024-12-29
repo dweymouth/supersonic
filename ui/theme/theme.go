@@ -92,7 +92,7 @@ func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
 	return m
 }
 
-func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Color {
+func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
 	// load theme file if necessary
 	if m.loadedThemeFile == nil || m.config.ThemeFile != m.loadedThemeFilename {
 		t, err := ReadThemeFile(path.Join(m.themeFileDir, m.config.ThemeFile))
@@ -105,7 +105,7 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Col
 		m.loadedThemeFilename = m.config.ThemeFile
 	}
 
-	variant := m.getVariant()
+	variant := m.getVariant(defVariant)
 	thFile := m.loadedThemeFile
 	if !thFile.SupportsVariant(variant) {
 		thFile = m.defaultThemeFile
@@ -277,7 +277,7 @@ func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
 	}
 }
 
-func (m *MyTheme) getVariant() fyne.ThemeVariant {
+func (m *MyTheme) getVariant(defVariant fyne.ThemeVariant) fyne.ThemeVariant {
 	v := DefaultAppearance // default if config has invalid or missing setting
 	if slices.Contains(
 		[]string{string(AppearanceLight), string(AppearanceDark), string(AppearanceAuto)},
@@ -290,7 +290,7 @@ func (m *MyTheme) getVariant() fyne.ThemeVariant {
 	} else if AppearanceMode(v) == AppearanceLight {
 		return theme.VariantLight
 	}
-	return fyne.CurrentApp().Settings().ThemeVariant()
+	return defVariant
 }
 
 func BlendColors(a, b color.Color, fractionA float64) color.Color {
