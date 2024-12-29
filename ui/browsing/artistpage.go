@@ -97,6 +97,7 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 	viewToggle.SetActivatedLabel(a.activeView)
 	viewToggle.OnChanged = a.onViewChange
 	a.sortButton = widgets.NewIconButton(myTheme.SortIcon, a.showAlbumSortMenu)
+	a.sortButton.SetToolTip(lang.L("Sort"))
 	viewToggleRow := container.NewBorder(nil, nil,
 		container.NewHBox(util.NewHSpace(5), viewToggle),
 		container.NewHBox(a.sortButton, util.NewHSpace(10)),
