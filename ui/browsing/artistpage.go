@@ -219,10 +219,12 @@ func (a *ArtistPage) getGridViewAlbumsModel() []widgets.GridViewItemModel {
 	sort.Slice(a.artistInfo.Albums, sortFunc)
 	return sharedutil.MapSlice(a.artistInfo.Albums, func(al *mediaprovider.Album) widgets.GridViewItemModel {
 		return widgets.GridViewItemModel{
-			Name:       al.Name,
-			ID:         al.ID,
-			CoverArtID: al.CoverArtID,
-			Secondary:  []string{strconv.Itoa(al.YearOrZero())},
+			Name:        al.Name,
+			ID:          al.ID,
+			CoverArtID:  al.CoverArtID,
+			Secondary:   []string{strconv.Itoa(al.YearOrZero())},
+			CanFavorite: true,
+			IsFavorite:  al.Favorite,
 		}
 	})
 }

@@ -60,6 +60,8 @@ func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
 			CoverArtID:   al.CoverArtID,
 			Secondary:    al.ArtistNames,
 			SecondaryIDs: al.ArtistIDs,
+			CanFavorite:  true,
+			IsFavorite:   al.Favorite,
 		}
 		if y := al.Date.Year; y != nil {
 			model.Suffix = strconv.Itoa(*al.Date.Year)
@@ -84,10 +86,12 @@ func (g gridViewArtistIterator) NextN(n int) []GridViewItemModel {
 			albumsLabel = lang.L("album")
 		}
 		return GridViewItemModel{
-			Name:       ar.Name,
-			ID:         ar.ID,
-			CoverArtID: ar.CoverArtID,
-			Secondary:  []string{fmt.Sprintf("%d %s", ar.AlbumCount, albumsLabel)},
+			Name:        ar.Name,
+			ID:          ar.ID,
+			CoverArtID:  ar.CoverArtID,
+			Secondary:   []string{fmt.Sprintf("%d %s", ar.AlbumCount, albumsLabel)},
+			CanFavorite: true,
+			IsFavorite:  ar.Favorite,
 		}
 	})
 }

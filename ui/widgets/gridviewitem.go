@@ -27,6 +27,9 @@ var _ fyne.Widget = (*coverImage)(nil)
 type coverImage struct {
 	widget.BaseWidget
 
+	EnableFavorite bool
+	IsFavorite     bool
+
 	Im                *ImagePlaceholder
 	playbtn           *canvas.Image
 	favoriteButton    *canvas.Image
@@ -118,11 +121,11 @@ func (c *coverImage) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(
 		container.NewStack(
 			c.Im,
-			container.NewCenter(c.playbtn),
 			container.NewGridWithRows(2,
 				layout.NewSpacer(),
 				c.bottomPanel,
 			),
+			container.NewCenter(c.playbtn),
 		),
 	)
 }
@@ -151,6 +154,12 @@ func (c *coverImage) TappedSecondary(e *fyne.PointEvent) {
 
 func (a *coverImage) MouseIn(*desktop.MouseEvent) {
 	a.playbtn.Hidden = false
+	if a.IsFavorite {
+		a.favoriteButton.Resource = heartFilledResource
+	} else {
+		a.favoriteButton.Resource = heartUnfilledResource
+	}
+	a.favoriteButton.Hidden = !a.EnableFavorite
 	a.bottomPanel.Hidden = false
 	a.Refresh()
 }
@@ -204,6 +213,8 @@ type GridViewItemModel struct {
 	Secondary    []string
 	SecondaryIDs []string
 	Suffix       string
+	CanFavorite  bool
+	IsFavorite   bool
 }
 
 type GridViewItem struct {
@@ -282,6 +293,8 @@ func (g *GridViewItem) NeedsUpdate(model GridViewItemModel) bool {
 }
 
 func (g *GridViewItem) Update(model GridViewItemModel) {
+	g.Cover.IsFavorite = model.IsFavorite
+	g.Cover.EnableFavorite = model.CanFavorite
 	g.itemID = model.ID
 	g.secondaryIDs = model.SecondaryIDs
 	g.primaryText.SetText(model.Name)

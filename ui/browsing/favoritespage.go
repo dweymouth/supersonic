@@ -104,7 +104,7 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int) {
 	a.shuffleBtn.Hidden = activeBtnIdx != 2 /*favorite songs*/
 	a.searcher = widgets.NewSearchEntry()
 	a.searcher.PlaceHolder = lang.L("Search page")
-	a.searcher.OnSearched = a.OnSearched
+	a.searcher.OnSearched = a.onSearched
 	a.searcher.Entry.Text = a.searchText
 	a.filterBtn = widgets.NewAlbumFilterButton(a.filter, a.mp.GetGenres)
 	a.filterBtn.FavoriteDisabled = true
@@ -267,7 +267,7 @@ func (a *FavoritesPage) SearchWidget() fyne.Focusable {
 	return a.searcher
 }
 
-func (a *FavoritesPage) OnSearched(query string) {
+func (a *FavoritesPage) onSearched(query string) {
 	if query == "" {
 		a.albumGrid.ResetFromState(a.gridState)
 		a.searchGridState = nil
@@ -386,10 +386,12 @@ func buildArtistGridViewModel(artists []*mediaprovider.Artist) []widgets.GridVie
 			albums = lang.L("album")
 		}
 		model = append(model, widgets.GridViewItemModel{
-			ID:         ar.ID,
-			CoverArtID: ar.CoverArtID,
-			Name:       ar.Name,
-			Secondary:  []string{fmt.Sprintf("%d %s", ar.AlbumCount, albums)},
+			ID:          ar.ID,
+			CoverArtID:  ar.CoverArtID,
+			Name:        ar.Name,
+			Secondary:   []string{fmt.Sprintf("%d %s", ar.AlbumCount, albums)},
+			CanFavorite: true,
+			IsFavorite:  ar.Favorite,
 		})
 	}
 	return model
