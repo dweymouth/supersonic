@@ -98,6 +98,10 @@ type NowPlayingPageConfig struct {
 	InitialView string
 }
 
+type PlaybackConfig struct {
+	RepeatMode string
+}
+
 type LocalPlaybackConfig struct {
 	AudioDeviceName       string
 	AudioExclusive        bool
@@ -146,6 +150,7 @@ type Config struct {
 	PlaylistsPage    PlaylistsPageConfig
 	TracksPage       TracksPageConfig
 	NowPlayingConfig NowPlayingPageConfig
+	Playback         PlaybackConfig
 	LocalPlayback    LocalPlaybackConfig
 	Scrobbling       ScrobbleConfig
 	ReplayGain       ReplayGainConfig
@@ -208,6 +213,9 @@ func DefaultConfig(appVersionTag string) *Config {
 		},
 		TracksPage: TracksPageConfig{
 			TracklistColumns: []string{"Album", "Time", "Plays"},
+		},
+		Playback: PlaybackConfig{
+			RepeatMode: "None",
 		},
 		LocalPlayback: LocalPlaybackConfig{
 			// "auto" is the name to pass to MPV for autoselecting the output device

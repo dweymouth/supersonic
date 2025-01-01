@@ -25,11 +25,12 @@ func NewPlaybackManager(
 	ctx context.Context,
 	s *ServerManager,
 	p player.BasePlayer,
+	playbackCfg *PlaybackConfig,
 	scrobbleCfg *ScrobbleConfig,
 	transcodeCfg *TranscodingConfig,
 	appCfg *AppConfig,
 ) *PlaybackManager {
-	e := NewPlaybackEngine(ctx, s, p, scrobbleCfg, transcodeCfg)
+	e := NewPlaybackEngine(ctx, s, p, playbackCfg, scrobbleCfg, transcodeCfg)
 	q := NewCommandQueue()
 	pm := &PlaybackManager{
 		engine:   e,

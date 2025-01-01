@@ -78,6 +78,7 @@ func NewPlaybackEngine(
 	ctx context.Context,
 	s *ServerManager,
 	p player.BasePlayer,
+	playbackCfg *PlaybackConfig,
 	scrobbleCfg *ScrobbleConfig,
 	transcodeCfg *TranscodingConfig,
 ) *playbackEngine {
@@ -91,6 +92,12 @@ func NewPlaybackEngine(
 		transcodeCfg:  transcodeCfg,
 		nowPlayingIdx: -1,
 		wasStopped:    true,
+	}
+	switch playbackCfg.RepeatMode {
+	case "All":
+		pm.loopMode = LoopAll
+	case "One":
+		pm.loopMode = LoopOne
 	}
 	p.OnTrackChange(pm.handleOnTrackChange)
 	p.OnSeek(func() {

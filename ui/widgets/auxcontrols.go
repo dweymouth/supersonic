@@ -25,7 +25,7 @@ type AuxControls struct {
 	container *fyne.Container
 }
 
-func NewAuxControls(initialVolume int) *AuxControls {
+func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
 		loop:          NewIconButton(myTheme.RepeatIcon, nil),
@@ -33,6 +33,7 @@ func NewAuxControls(initialVolume int) *AuxControls {
 	}
 	a.loop.IconSize = IconButtonSizeSmaller
 	a.loop.SetToolTip(lang.L("Repeat"))
+	a.SetLoopMode(initialLoopMode)
 	a.showQueue.IconSize = IconButtonSizeSmaller
 	a.showQueue.SetToolTip(lang.L("Show play queue"))
 	a.container = container.NewHBox(

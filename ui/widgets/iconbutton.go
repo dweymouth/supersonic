@@ -120,10 +120,7 @@ func (i *IconButton) iconSize() fyne.Size {
 	}
 }
 
-func (i *IconButton) Refresh() {
-	if i.img == nil {
-		return
-	}
+func (i *IconButton) updateColor() {
 	if i.Highlighted || i.focused {
 		i.themed.ColorName = theme.ColorNamePrimary
 	} else if i.hovered {
@@ -131,6 +128,13 @@ func (i *IconButton) Refresh() {
 	} else {
 		i.themed.ColorName = myTheme.ColorNameIconButton
 	}
+}
+
+func (i *IconButton) Refresh() {
+	if i.img == nil {
+		return
+	}
+	i.updateColor()
 	i.img.SetMinSize(i.iconSize())
 	i.img.Refresh()
 }
@@ -141,6 +145,7 @@ func (i *IconButton) CreateRenderer() fyne.WidgetRenderer {
 		i.img = canvas.NewImageFromResource(i.themed)
 		i.img.FillMode = canvas.ImageFillContain
 		i.img.SetMinSize(i.iconSize())
+		i.updateColor()
 	}
 	return widget.NewSimpleRenderer(container.NewCenter(i.img))
 }

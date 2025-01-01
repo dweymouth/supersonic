@@ -147,6 +147,14 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		// TODO: when all shutdowns exit cleanly, remove these lines
 		// as they are already executed in app.Shutdown()
 		app.Config.LocalPlayback.Volume = app.LocalPlayer.GetVolume()
+		repeatMode := "None"
+		switch app.PlaybackManager.GetLoopMode() {
+		case backend.LoopOne:
+			repeatMode = "One"
+		case backend.LoopAll:
+			repeatMode = "All"
+		}
+		app.Config.Playback.RepeatMode = repeatMode
 		app.SavePlayQueueIfEnabled()
 		app.SaveConfigFile()
 

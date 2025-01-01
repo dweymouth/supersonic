@@ -119,7 +119,7 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	}
 
 	a.ServerManager = NewServerManager(appName, appVersion, a.Config, !portableMode /*use keyring*/)
-	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
+	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Playback, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, cacheDir)
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
@@ -336,6 +336,14 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 }
 
 func (a *App) Shutdown() {
+	repeatMode := "None"
+	switch a.PlaybackManager.GetLoopMode() {
+	case LoopOne:
+		repeatMode = "One"
+	case LoopAll:
+		repeatMode = "All"
+	}
+	a.Config.Playback.RepeatMode = repeatMode
 	a.Config.LocalPlayback.Volume = a.LocalPlayer.GetVolume()
 	a.SavePlayQueueIfEnabled()
 	a.SaveConfigFile()
