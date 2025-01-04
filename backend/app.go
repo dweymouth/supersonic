@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"debug/pe"
 	"errors"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"time"
 
@@ -60,6 +62,8 @@ type App struct {
 	cancel        context.CancelFunc
 
 	lastWrittenCfg Config
+
+	logFile *os.File
 }
 
 func (a *App) VersionTag() string {
@@ -81,7 +85,17 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	configdir.MakePath(confDir)
 	configdir.MakePath(cacheDir)
 
+	var logFile *os.File
+	if isWindowsGUI() {
+		// Can't log to console in Windows GUI app so log to file instead
+		if f, err := os.Create(filepath.Join(confDir, "supersonic.log")); err == nil {
+			log.SetOutput(f)
+			logFile = f
+		}
+	}
+
 	a := &App{
+		logFile:       logFile,
 		appName:       appName,
 		appVersionTag: appVersionTag,
 		configDir:     confDir,
@@ -336,6 +350,9 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 }
 
 func (a *App) Shutdown() {
+	if a.logFile != nil {
+		a.logFile.Close()
+	}
 	repeatMode := "None"
 	switch a.PlaybackManager.GetLoopMode() {
 	case LoopOne:
@@ -438,4 +455,31 @@ func clamp(i, min, max int) int {
 		i = max
 	}
 	return i
+}
+
+func isWindowsGUI() bool {
+	if runtime.GOOS != "windows" {
+		return false
+	}
+
+	// check executable for windows GUI flag
+	// https://stackoverflow.com/questions/58813512/is-it-possible-to-detect-if-go-binary-was-compiled-with-h-windowsgui-at-runtime
+	fileName, err := os.Executable()
+	if err != nil {
+		return false
+	}
+	fl, err := pe.Open(fileName)
+	if err != nil {
+		return false
+	}
+	defer fl.Close()
+
+	var subsystem uint16
+	if header, ok := fl.OptionalHeader.(*pe.OptionalHeader64); ok {
+		subsystem = header.Subsystem
+	} else if header, ok := fl.OptionalHeader.(*pe.OptionalHeader32); ok {
+		subsystem = header.Subsystem
+	}
+
+	return subsystem == 2 /*IMAGE_SUBSYSTEM_WINDOWS_GUI*/
 }
