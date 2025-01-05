@@ -240,5 +240,10 @@
     "Sept": "Sept",
     "Oct": "Oct",
     "Nov": "Nov",
-    "Dec": "Déc"
+    "Dec": "Déc",
+
+    "playlist.addedtracks": {
+        "one": "Une piste ajoutée à la liste de lecture",
+        "other": "{{.trackCount}} pistes ajoutées à la liste de lecture"
+    }
 }

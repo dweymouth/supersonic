@@ -228,5 +228,10 @@
     "Remove from queue": "キューから削除",
     "Play song radio": "曲をラジオで再生",
     "to":"to",
-    "by":"by"
+    "by":"by",
+
+    "playlist.addedtracks": {
+        "one": "Added {{.trackCount}} track to playlist",
+        "other": "Added {{.trackCount}} tracks to playlist"
+    }
 }

@@ -16,6 +16,11 @@ import (
 	"github.com/dweymouth/supersonic/ui/widgets"
 )
 
+const (
+	toastAutoDismissalTime = 3 * time.Second
+	toastAnimationDuration = 100 * time.Millisecond
+)
+
 type ToastOverlay struct {
 	widget.BaseWidget
 
@@ -46,7 +51,7 @@ func (t *ToastOverlay) ShowSuccessToast(message string) {
 	endPos := fyne.NewPos(s.Width-min.Width-pad, s.Height-min.Height-pad)
 	startPos := fyne.NewPos(s.Width, endPos.Y)
 	f := t.makeToastAnimFunc(endPos, false)
-	t.currentToastAnim = canvas.NewPositionAnimation(startPos, endPos, 100*time.Millisecond, f)
+	t.currentToastAnim = canvas.NewPositionAnimation(startPos, endPos, toastAnimationDuration, f)
 	t.currentToastAnim.Curve = fyne.AnimationEaseOut
 	t.currentToastAnim.Start()
 	t.Refresh()
@@ -54,7 +59,7 @@ func (t *ToastOverlay) ShowSuccessToast(message string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.dismissCancel = cancel // always canceled by dismissToast
 	go func() {
-		time.Sleep(2 * time.Second)
+		time.Sleep(toastAutoDismissalTime)
 		select {
 		case <-ctx.Done():
 			return
@@ -120,7 +125,7 @@ func (t *ToastOverlay) dismissToast() {
 	startPos := fyne.NewPos(s.Width-min.Width-pad, s.Height-min.Height-pad)
 	endPos := fyne.NewPos(s.Width, startPos.Y)
 	f := t.makeToastAnimFunc(endPos, true)
-	t.currentToastAnim = canvas.NewPositionAnimation(startPos, endPos, 100*time.Millisecond, f)
+	t.currentToastAnim = canvas.NewPositionAnimation(startPos, endPos, toastAnimationDuration, f)
 	t.currentToastAnim.Curve = fyne.AnimationEaseIn
 	t.currentToastAnim.Start()
 }

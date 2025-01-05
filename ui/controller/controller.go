@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -304,14 +305,18 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 		m.doModalClosed()
 	})
 	sp.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
+		notifySuccess := func(n int) {
+			msg := lang.LocalizePluralKey("playlist.addedtracks",
+				"Added tracks to playlist", n, map[string]string{"trackCount": strconv.Itoa(n)})
+			m.ToastProvider.ShowSuccessToast(msg)
+		}
 		pop.Hide()
 		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
 		if id == "" /* creating new playlist */ {
 			go func() {
 				err := m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
 				if err == nil {
-					// TODO: translate, adjust by plurality
-					m.ToastProvider.ShowSuccessToast(fmt.Sprintf("Added %d tracks to playlist", len(trackIDs)))
+					notifySuccess(len(trackIDs))
 				}
 			}()
 		} else {
@@ -331,8 +336,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 						})
 						err := m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
 						if err == nil {
-							// TODO: translate, adjust by plurality
-							m.ToastProvider.ShowSuccessToast(fmt.Sprintf("Added %d tracks to playlist", len(filterTrackIDs)))
+							notifySuccess(len(filterTrackIDs))
 						}
 					}
 				}()
@@ -340,8 +344,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 				go func() {
 					err := m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
 					if err == nil {
-						// TODO: translate, adjust by plurality
-						m.ToastProvider.ShowSuccessToast(fmt.Sprintf("Added %d tracks to playlist", len(trackIDs)))
+						notifySuccess(len(trackIDs))
 					}
 				}()
 			}

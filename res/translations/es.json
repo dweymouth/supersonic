@@ -241,5 +241,10 @@
     "Sept": "Set",
     "Oct": "Oct",
     "Nov": "Nov",
-    "Dec": "Dic"
+    "Dec": "Dic",
+
+    "playlist.addedtracks": {
+        "one": "Se ha añadido una pista a la lista de reproducción",
+        "other": "Se han añadido {{.trackCount}} pistas a la lista de reproducción"
+    }
 }

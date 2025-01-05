@@ -228,5 +228,10 @@
     "Remove from queue": "Usuń z kolejki odtwarzania",
     "Play song radio": "Odtwórz mix utworów",
     "to":"do",
-    "by":"przez"
+    "by":"przez",
+
+    "playlist.addedtracks": {
+        "one": "Added {{.trackCount}} track to playlist",
+        "other": "Added {{.trackCount}} tracks to playlist"
+    }
 }

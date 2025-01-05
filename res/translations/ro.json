@@ -230,5 +230,10 @@
     "Sept": "Sept",
     "Oct": "Oct",
     "Nov": "Noiem",
-    "Dec": "Dec"
+    "Dec": "Dec",
+
+    "playlist.addedtracks": {
+        "one": "Added {{.trackCount}} track to playlist",
+        "other": "Added {{.trackCount}} tracks to playlist"
+    }
 }
