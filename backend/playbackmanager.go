@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -419,6 +420,11 @@ func (p *PlaybackManager) PlayPause() {
 }
 
 func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
+	logIfErr := func(action string, err error) {
+		if err != nil {
+			log.Println("Playback error (%s): %v", action, err)
+		}
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -426,33 +432,35 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 		case c := <-p.cmdQueue.C():
 			switch c.Type {
 			case cmdStop:
-				p.engine.Stop()
+				logIfErr("Stop", p.engine.Stop())
 			case cmdContinue:
-				p.engine.Continue()
+				logIfErr("Continue", p.engine.Continue())
 			case cmdPause:
-				p.engine.Pause()
+				logIfErr("Pause", p.engine.Pause())
 			case cmdPlayTrackAt:
-				p.engine.PlayTrackAt(c.Arg.(int))
+				logIfErr("PlayTrackAt", p.engine.PlayTrackAt(c.Arg.(int)))
 			case cmdSeekSeconds:
-				p.engine.SeekSeconds(c.Arg.(float64))
+				logIfErr("SeekSeconds", p.engine.SeekSeconds(c.Arg.(float64)))
 			case cmdSeekFwdBackN:
-				p.engine.SeekFwdBackN(c.Arg.(int))
+				action := fmt.Sprintf("SeekFwdBack[%d]", c.Arg.(int))
+				logIfErr(action, p.engine.SeekFwdBackN(c.Arg.(int)))
 			case cmdVolume:
-				p.engine.SetVolume(c.Arg.(int))
+				logIfErr("Volume", p.engine.SetVolume(c.Arg.(int)))
 			case cmdLoopMode:
 				p.engine.SetLoopMode(c.Arg.(LoopMode))
 			case cmdStopAndClearPlayQueue:
 				p.engine.StopAndClearPlayQueue()
 			case cmdUpdatePlayQueue:
-				p.engine.UpdatePlayQueue(c.Arg.([]mediaprovider.MediaItem))
+				logIfErr("UpdatePlayQueue", p.engine.UpdatePlayQueue(c.Arg.([]mediaprovider.MediaItem)))
 			case cmdRemoveTracksFromQueue:
 				p.engine.RemoveTracksFromQueue(c.Arg.([]int))
 			case cmdLoadItems:
-				p.engine.LoadItems(
+				err := p.engine.LoadItems(
 					c.Arg.([]mediaprovider.MediaItem),
 					c.Arg2.(InsertQueueMode),
 					c.Arg3.(bool),
 				)
+				logIfErr("LoadItems", err)
 			case cmdLoadRadioStation:
 				p.engine.LoadRadioStation(
 					c.Arg.(*mediaprovider.RadioStation),
