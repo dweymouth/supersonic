@@ -34,6 +34,7 @@ type MainWindow struct {
 	Controller   *controller.Controller
 	BrowsingPane *browsing.BrowsingPane
 	BottomPanel  *BottomPanel
+	ToastOverlay *ToastOverlay
 
 	theme            *theme.MyTheme
 	haveSystemTray   bool
@@ -137,10 +138,19 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()
 
-	m.content = newMainWindowContent(container.NewBorder(nil, m.BottomPanel, nil, nil, m.BrowsingPane),
+	m.ToastOverlay = NewToastOverlay()
+	center := container.NewStack(m.BrowsingPane, m.ToastOverlay)
+	m.content = newMainWindowContent(container.NewBorder(nil, m.BottomPanel, nil, nil, center),
 		m.Controller.UnselectAll)
 	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.content, m.Window.Canvas()))
 	m.setInitialSize()
+
+	// TODO: Remove me!!
+	go func() {
+		time.Sleep(2 * time.Second)
+		m.ToastOverlay.ShowSuccessToast("Added 20 songs to playlist.")
+	}()
+
 	m.Window.SetCloseIntercept(func() {
 		m.SaveWindowSize()
 		// save settings in case we crash during shutdown
