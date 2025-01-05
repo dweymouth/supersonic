@@ -39,17 +39,24 @@ type NavigationHandler func(Route)
 
 type CurPageFunc func() Route
 
+type ToastProvider interface {
+	ShowSuccessToast(string)
+}
+
 type Controller struct {
 	visualizationData
-	AppVersion          string
-	App                 *backend.App
-	MainWindow          fyne.Window
+	AppVersion string
+	App        *backend.App
+	MainWindow fyne.Window
+
+	// dependencies injected from MainWindow
 	NavHandler          NavigationHandler
 	CurPageFunc         CurPageFunc
 	ReloadFunc          func()
 	RefreshPageFunc     func()
 	SelectAllPageFunc   func()
 	UnselectAllPageFunc func()
+	ToastProvider       ToastProvider
 
 	popUpQueueMutex    sync.Mutex
 	popUpQueue         *widget.PopUp
@@ -300,7 +307,13 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 		pop.Hide()
 		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
 		if id == "" /* creating new playlist */ {
-			go m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
+			go func() {
+				err := m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
+				if err == nil {
+					// TODO: translate, adjust by plurality
+					m.ToastProvider.ShowSuccessToast(fmt.Sprintf("Added %d tracks to playlist", len(trackIDs)))
+				}
+			}()
 		} else {
 			m.App.Config.Application.DefaultPlaylistID = id
 			if sp.SkipDuplicates {
@@ -316,11 +329,21 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 							_, ok := currentTrackIDs[trackID]
 							return !ok
 						})
-						m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
+						err := m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
+						if err == nil {
+							// TODO: translate, adjust by plurality
+							m.ToastProvider.ShowSuccessToast(fmt.Sprintf("Added %d tracks to playlist", len(filterTrackIDs)))
+						}
 					}
 				}()
 			} else {
-				go m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
+				go func() {
+					err := m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
+					if err == nil {
+						// TODO: translate, adjust by plurality
+						m.ToastProvider.ShowSuccessToast(fmt.Sprintf("Added %d tracks to playlist", len(trackIDs)))
+					}
+				}()
 			}
 		}
 

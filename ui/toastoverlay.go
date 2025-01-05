@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -11,6 +12,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dweymouth/supersonic/ui/util"
+	"github.com/dweymouth/supersonic/ui/widgets"
 )
 
 type ToastOverlay struct {
@@ -18,6 +21,7 @@ type ToastOverlay struct {
 
 	currentToast     *toast
 	currentToastAnim *fyne.Animation
+	dismissCancel    context.CancelFunc
 
 	container *fyne.Container
 }
@@ -32,7 +36,7 @@ func NewToastOverlay() *ToastOverlay {
 func (t *ToastOverlay) ShowSuccessToast(message string) {
 	t.cancelPreviousToast()
 
-	t.currentToast = newToast(false, message)
+	t.currentToast = newToast(false, message, t.dismissToast)
 	t.container.Objects = append(t.container.Objects, t.currentToast)
 
 	s := t.Size()
@@ -41,17 +45,38 @@ func (t *ToastOverlay) ShowSuccessToast(message string) {
 	t.currentToast.Resize(min)
 	endPos := fyne.NewPos(s.Width-min.Width-pad, s.Height-min.Height-pad)
 	startPos := fyne.NewPos(s.Width, endPos.Y)
-	t.currentToastAnim = canvas.NewPositionAnimation(startPos, endPos, 100*time.Millisecond, func(p fyne.Position) {
+	f := t.makeToastAnimFunc(endPos, false)
+	t.currentToastAnim = canvas.NewPositionAnimation(startPos, endPos, 100*time.Millisecond, f)
+	t.currentToastAnim.Curve = fyne.AnimationEaseOut
+	t.currentToastAnim.Start()
+	t.Refresh()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.dismissCancel = cancel // always canceled by dismissToast
+	go func() {
+		time.Sleep(2 * time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			t.dismissToast()
+		}
+	}()
+}
+
+func (t *ToastOverlay) makeToastAnimFunc(endPos fyne.Position, dismissal bool) func(fyne.Position) {
+	return func(p fyne.Position) {
 		if ct := t.currentToast; ct != nil {
 			ct.Move(p)
 		}
 		if p == endPos {
 			t.currentToastAnim = nil
+			if dismissal {
+				t.cancelPreviousToast()
+			}
 		}
-	})
-	t.currentToastAnim.Curve = fyne.AnimationEaseOut
-	t.currentToastAnim.Start()
-	t.Refresh()
+
+	}
 }
 
 func (t *ToastOverlay) Resize(size fyne.Size) {
@@ -73,8 +98,31 @@ func (t *ToastOverlay) cancelPreviousToast() {
 		t.currentToastAnim.Stop()
 		t.currentToastAnim = nil
 	}
+	t.container.Objects[0] = nil
 	t.container.Objects = t.container.Objects[:0]
 	t.currentToast = nil
+}
+
+func (t *ToastOverlay) dismissToast() {
+	if t.currentToast == nil {
+		return
+	}
+	if t.dismissCancel != nil {
+		t.dismissCancel()
+		t.dismissCancel = nil
+	}
+	if t.currentToastAnim != nil {
+		t.currentToastAnim.Stop()
+	}
+	s := t.Size()
+	min := t.currentToast.MinSize()
+	pad := theme.Padding()
+	startPos := fyne.NewPos(s.Width-min.Width-pad, s.Height-min.Height-pad)
+	endPos := fyne.NewPos(s.Width, startPos.Y)
+	f := t.makeToastAnimFunc(endPos, true)
+	t.currentToastAnim = canvas.NewPositionAnimation(startPos, endPos, 100*time.Millisecond, f)
+	t.currentToastAnim.Curve = fyne.AnimationEaseIn
+	t.currentToastAnim.Start()
 }
 
 func (t *ToastOverlay) CreateRenderer() fyne.WidgetRenderer {
@@ -84,18 +132,25 @@ func (t *ToastOverlay) CreateRenderer() fyne.WidgetRenderer {
 type toast struct {
 	widget.BaseWidget
 
-	isErr   bool
-	message string
+	isErr     bool
+	message   string
+	onDismiss func()
 }
 
-func newToast(isErr bool, message string) *toast {
-	t := &toast{isErr: isErr, message: message}
+func newToast(isErr bool, message string, onDismiss func()) *toast {
+	t := &toast{isErr: isErr, message: message, onDismiss: onDismiss}
 	t.ExtendBaseWidget(t)
 	return t
 }
 
 func (t *toast) CreateRenderer() fyne.WidgetRenderer {
 	return newToastRenderer(t)
+}
+
+func (t *toast) Dismiss() {
+	if t.onDismiss != nil {
+		t.onDismiss()
+	}
 }
 
 // swallow all tap/mouse events because toast is transparent
@@ -138,6 +193,12 @@ func newToastRenderer(t *toast) *toastRenderer {
 	accent := canvas.NewRectangle(th.Color(accentColor, v))
 	accent.SetMinSize(fyne.NewSize(4, 1))
 
+	close := widgets.NewIconButton(theme.CancelIcon(), t.Dismiss)
+	close.IconSize = widgets.IconButtonSizeSmaller
+
+	titleText := widget.NewRichTextWithText(title)
+	titleText.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyleSubHeading
+
 	pad := theme.Padding()
 	return &toastRenderer{
 		background:  background,
@@ -152,10 +213,11 @@ func newToastRenderer(t *toast) *toastRenderer {
 				RightPadding:  pad,
 			},
 				container.NewBorder(nil, nil, accent, nil,
-					widget.NewRichText(
-						&widget.TextSegment{Text: title, Style: widget.RichTextStyleSubHeading},
-						&widget.TextSegment{Text: t.message},
-					)),
+					container.NewVBox(
+						container.NewBorder(nil, nil, nil, container.NewHBox(close, util.NewHSpace(2)), titleText),
+						widget.NewLabel(t.message),
+					),
+				),
 			),
 		),
 	}

@@ -62,6 +62,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	}
 	m.Controller = controller.New(app, appVersion, m.Window)
 	m.BrowsingPane = browsing.NewBrowsingPane(app, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
+	m.ToastOverlay = NewToastOverlay()
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	// inject controller dependencies
 	m.Controller.NavHandler = m.Router.NavigateTo
@@ -70,6 +71,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.RefreshPageFunc = m.BrowsingPane.RefreshPage
 	m.Controller.SelectAllPageFunc = m.BrowsingPane.SelectAll
 	m.Controller.UnselectAllPageFunc = m.BrowsingPane.UnselectAll
+	m.Controller.ToastProvider = m.ToastOverlay
 
 	if runtime.GOOS == "darwin" {
 		// Fyne will extract out an "About" menu item and
@@ -138,18 +140,11 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BrowsingPane.DisableNavigationButtons()
 	m.addShortcuts()
 
-	m.ToastOverlay = NewToastOverlay()
 	center := container.NewStack(m.BrowsingPane, m.ToastOverlay)
 	m.content = newMainWindowContent(container.NewBorder(nil, m.BottomPanel, nil, nil, center),
 		m.Controller.UnselectAll)
 	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.content, m.Window.Canvas()))
 	m.setInitialSize()
-
-	// TODO: Remove me!!
-	go func() {
-		time.Sleep(2 * time.Second)
-		m.ToastOverlay.ShowSuccessToast("Added 20 songs to playlist.")
-	}()
 
 	m.Window.SetCloseIntercept(func() {
 		m.SaveWindowSize()
