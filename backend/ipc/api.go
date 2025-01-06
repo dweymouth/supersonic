@@ -3,18 +3,19 @@ package ipc
 import "fmt"
 
 const (
-	PingPath      = "/ping"
-	PlayPath      = "/transport/play"
-	PlayPausePath = "/transport/playpause"
-	PausePath     = "/transport/pause"
-	StopPath      = "/transport/stop"
-	PreviousPath  = "/transport/previous"
-	NextPath      = "/transport/next"
-	TimePosPath   = "/transport/timepos" // ?s=<seconds>
-	SeekByPath    = "/transport/seek-by" // ?s=<+/- seconds>
-	VolumePath    = "/volume"            // ?v=<vol>
-	ShowPath      = "/window/show"
-	QuitPath      = "/window/quit"
+	PingPath         = "/ping"
+	PlayPath         = "/transport/play"
+	PlayPausePath    = "/transport/playpause"
+	PausePath        = "/transport/pause"
+	StopPath         = "/transport/stop"
+	PreviousPath     = "/transport/previous"
+	NextPath         = "/transport/next"
+	TimePosPath      = "/transport/timepos" // ?s=<seconds>
+	SeekByPath       = "/transport/seek-by" // ?s=<+/- seconds>
+	VolumePath       = "/volume"            // ?v=<vol>
+	VolumeAdjustPath = "/volume/adjust"     // ?pct=<+/- percentage>
+	ShowPath         = "/window/show"
+	QuitPath         = "/window/quit"
 )
 
 type Response struct {
@@ -23,6 +24,10 @@ type Response struct {
 
 func SetVolumePath(vol int) string {
 	return fmt.Sprintf("%s?v=%d", VolumePath, vol)
+}
+
+func AdjustVolumePctPath(pct float64) string {
+	return fmt.Sprintf("%s?pct=%0.2f", VolumeAdjustPath, pct)
 }
 
 func SeekToSecondsPath(secs float64) string {

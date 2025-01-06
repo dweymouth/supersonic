@@ -68,6 +68,10 @@ func (c *Client) SetVolume(vol int) error {
 	return c.sendRequest(SetVolumePath(vol))
 }
 
+func (c *Client) AdjustVolumePct(pct float64) error {
+	return c.sendRequest(AdjustVolumePctPath(pct))
+}
+
 func (c *Client) Show() error {
 	return c.sendRequest(ShowPath)
 }

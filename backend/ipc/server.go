@@ -70,8 +70,8 @@ func (s *serverImpl) createHandler() http.Handler {
 	m.HandleFunc(StopPath, s.makeSimpleEndpointHandler(s.pbHandler.Stop))
 	m.HandleFunc(PreviousPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekBackOrPrevious))
 	m.HandleFunc(NextPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekNext))
-	m.HandleFunc(TimePosPath, s.makeFloatEndpointHandler(s.pbHandler.SeekSeconds, "s"))
-	m.HandleFunc(SeekByPath, s.makeFloatEndpointHandler(s.pbHandler.SeekBySeconds, "s"))
+	m.HandleFunc(TimePosPath, s.makeFloatEndpointHandler("s", s.pbHandler.SeekSeconds))
+	m.HandleFunc(SeekByPath, s.makeFloatEndpointHandler("s", s.pbHandler.SeekBySeconds))
 	m.HandleFunc(VolumePath, func(w http.ResponseWriter, r *http.Request) {
 		v := r.URL.Query().Get("v")
 		if vol, err := strconv.Atoi(v); err == nil {
@@ -81,6 +81,11 @@ func (s *serverImpl) createHandler() http.Handler {
 			s.writeErr(w, err)
 		}
 	})
+	m.HandleFunc(VolumeAdjustPath, s.makeFloatEndpointHandler("pct", func(pct float64) {
+		vol := s.pbHandler.Volume()
+		vol = vol + int(float64(vol)*(pct/100))
+		s.pbHandler.SetVolume(vol) // will clamp to range for us
+	}))
 	return m
 }
 
@@ -91,7 +96,7 @@ func (s *serverImpl) makeSimpleEndpointHandler(f func()) func(http.ResponseWrite
 	}
 }
 
-func (s *serverImpl) makeFloatEndpointHandler(f func(float64), queryParam string) func(http.ResponseWriter, *http.Request) {
+func (s *serverImpl) makeFloatEndpointHandler(queryParam string, f func(float64)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		v := r.URL.Query().Get(queryParam)
 		if val, err := strconv.ParseFloat(v, 64); err == nil {

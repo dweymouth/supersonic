@@ -3,12 +3,14 @@ package backend
 import (
 	"flag"
 	"strconv"
+	"strings"
 )
 
 var (
-	VolumeCLIArg int     = -1
-	SeekToCLIArg float64 = -1
-	SeekByCLIArg float64 = 0
+	VolumeCLIArg    int     = -1
+	SeekToCLIArg    float64 = -1
+	SeekByCLIArg    float64 = 0
+	VolumePctCLIArg float64 = 0
 
 	FlagPlay      = flag.Bool("play", false, "unpause or begin playback")
 	FlagPause     = flag.Bool("pause", false, "pause playback")
@@ -34,6 +36,14 @@ func init() {
 	flag.Func("seek-by", "seeks back or forward by the given number of seconds (negative or positive)", func(s string) error {
 		v, err := strconv.ParseFloat(s, 64)
 		SeekByCLIArg = v
+		return err
+	})
+	flag.Func("volume-adjust-pct", "adjusts volume up or down by the given percentage (positive or negative)", func(s string) error {
+		if strings.HasSuffix(s, "%") {
+			s = s[:len(s)-1]
+		}
+		v, err := strconv.ParseFloat(s, 64)
+		VolumePctCLIArg = v
 		return err
 	})
 }
