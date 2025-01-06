@@ -39,9 +39,17 @@ func NewToastOverlay() *ToastOverlay {
 }
 
 func (t *ToastOverlay) ShowSuccessToast(message string) {
+	t.showToast(false, message)
+}
+
+func (t *ToastOverlay) ShowErrorToast(message string) {
+	t.showToast(true, message)
+}
+
+func (t *ToastOverlay) showToast(isErr bool, message string) {
 	t.cancelPreviousToast()
 
-	t.currentToast = newToast(false, message, t.dismissToast)
+	t.currentToast = newToast(isErr, message, t.dismissToast)
 	t.container.Objects = append(t.container.Objects, t.currentToast)
 
 	s := t.Size()

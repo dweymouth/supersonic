@@ -42,6 +42,7 @@ type CurPageFunc func() Route
 
 type ToastProvider interface {
 	ShowSuccessToast(string)
+	ShowErrorToast(string)
 }
 
 type Controller struct {
@@ -310,6 +311,11 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 				"Added tracks to playlist", n, map[string]string{"trackCount": strconv.Itoa(n)})
 			m.ToastProvider.ShowSuccessToast(msg)
 		}
+		notifyError := func() {
+			m.ToastProvider.ShowErrorToast(
+				lang.L("An error occurred adding tracks to the playlist"),
+			)
+		}
 		pop.Hide()
 		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
 		if id == "" /* creating new playlist */ {
@@ -317,6 +323,9 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 				err := m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
 				if err == nil {
 					notifySuccess(len(trackIDs))
+				} else {
+					log.Println("error adding tracks to playlist: %s", err.Error())
+					notifyError()
 				}
 			}()
 		} else {
@@ -326,6 +335,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 					currentTrackIDs := make(map[string]struct{})
 					if selectedPlaylist, err := m.App.ServerManager.Server.GetPlaylist(id); err != nil {
 						log.Printf("error getting playlist: %s", err.Error())
+						notifyError()
 					} else {
 						for _, track := range selectedPlaylist.Tracks {
 							currentTrackIDs[track.ID] = struct{}{}
@@ -337,6 +347,9 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 						err := m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
 						if err == nil {
 							notifySuccess(len(filterTrackIDs))
+						} else {
+							log.Println("error adding tracks to playlist: %s", err.Error())
+							notifyError()
 						}
 					}
 				}()
@@ -345,6 +358,9 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 					err := m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
 					if err == nil {
 						notifySuccess(len(trackIDs))
+					} else {
+						log.Println("error adding tracks to playlist: %s", err.Error())
+						notifyError()
 					}
 				}()
 			}
