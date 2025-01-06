@@ -17,6 +17,7 @@
     "All": "All",
     "All Tracks": "All Tracks",
     "Alt. URL": "Alt. URL",
+    "An error occurred adding tracks to the playlist": "An error occurred adding tracks to the playlist",
     "Are you sure you want to delete the server": "Are you sure you want to delete the server",
     "Artist": "Artist",
     "Artist (A-Z)": "Artist (A-Z)",
@@ -69,6 +70,7 @@
     "Enter": "Enter",
     "EP": "EP",
     "Equalizer": "Equalizer",
+    "Error": "Error",
     "Exclusive mode": "Exclusive mode",
     "Favorites": "Favorites",
     "Field Recording": "Field Recording",
@@ -188,6 +190,7 @@
     "Spoken Word": "Spoken Word",
     "Startup page": "Startup page",
     "Stopped": "Stopped",
+    "Success": "Success",
     "Support the project": "Support the project",
     "Switch Servers": "Switch Servers",
     "Testing connection": "Testing connection",
@@ -242,5 +245,10 @@
     "Sept": "Sept",
     "Oct": "Oct",
     "Nov": "Nov",
-    "Dec": "Dec"
+    "Dec": "Dec",
+
+    "playlist.addedtracks": {
+        "one": "Added one track to playlist",
+        "other": "Added {{.trackCount}} tracks to playlist"
+    }
 }

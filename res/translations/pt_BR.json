@@ -228,5 +228,10 @@
     "Remove from queue": "Remover da fila",
     "Play song radio": "Reproduzir rádio da faixa",
     "to":"a",
-    "by":"de"
+    "by":"de",
+
+    "playlist.addedtracks": {
+        "one": "Added {{.trackCount}} track to playlist",
+        "other": "Added {{.trackCount}} tracks to playlist"
+    }
 }

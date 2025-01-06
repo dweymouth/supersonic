@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -39,17 +40,25 @@ type NavigationHandler func(Route)
 
 type CurPageFunc func() Route
 
+type ToastProvider interface {
+	ShowSuccessToast(string)
+	ShowErrorToast(string)
+}
+
 type Controller struct {
 	visualizationData
-	AppVersion          string
-	App                 *backend.App
-	MainWindow          fyne.Window
+	AppVersion string
+	App        *backend.App
+	MainWindow fyne.Window
+
+	// dependencies injected from MainWindow
 	NavHandler          NavigationHandler
 	CurPageFunc         CurPageFunc
 	ReloadFunc          func()
 	RefreshPageFunc     func()
 	SelectAllPageFunc   func()
 	UnselectAllPageFunc func()
+	ToastProvider       ToastProvider
 
 	popUpQueueMutex    sync.Mutex
 	popUpQueue         *widget.PopUp
@@ -297,10 +306,28 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 		m.doModalClosed()
 	})
 	sp.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
+		notifySuccess := func(n int) {
+			msg := lang.LocalizePluralKey("playlist.addedtracks",
+				"Added tracks to playlist", n, map[string]string{"trackCount": strconv.Itoa(n)})
+			m.ToastProvider.ShowSuccessToast(msg)
+		}
+		notifyError := func() {
+			m.ToastProvider.ShowErrorToast(
+				lang.L("An error occurred adding tracks to the playlist"),
+			)
+		}
 		pop.Hide()
 		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
 		if id == "" /* creating new playlist */ {
-			go m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
+			go func() {
+				err := m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
+				if err == nil {
+					notifySuccess(len(trackIDs))
+				} else {
+					log.Println("error adding tracks to playlist: %s", err.Error())
+					notifyError()
+				}
+			}()
 		} else {
 			m.App.Config.Application.DefaultPlaylistID = id
 			if sp.SkipDuplicates {
@@ -308,6 +335,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 					currentTrackIDs := make(map[string]struct{})
 					if selectedPlaylist, err := m.App.ServerManager.Server.GetPlaylist(id); err != nil {
 						log.Printf("error getting playlist: %s", err.Error())
+						notifyError()
 					} else {
 						for _, track := range selectedPlaylist.Tracks {
 							currentTrackIDs[track.ID] = struct{}{}
@@ -316,11 +344,25 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 							_, ok := currentTrackIDs[trackID]
 							return !ok
 						})
-						m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
+						err := m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
+						if err == nil {
+							notifySuccess(len(filterTrackIDs))
+						} else {
+							log.Println("error adding tracks to playlist: %s", err.Error())
+							notifyError()
+						}
 					}
 				}()
 			} else {
-				go m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
+				go func() {
+					err := m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
+					if err == nil {
+						notifySuccess(len(trackIDs))
+					} else {
+						log.Println("error adding tracks to playlist: %s", err.Error())
+						notifyError()
+					}
+				}()
 			}
 		}
 

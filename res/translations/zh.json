@@ -216,5 +216,10 @@
     "Unset favorite": "取消收藏",
     "Remove from queue": "从队列中移除",
     "Size": "大小",
-    "Play song radio": "播放歌曲电台"
+    "Play song radio": "播放歌曲电台",
+
+    "playlist.addedtracks": {
+        "one": "Added {{.trackCount}} track to playlist",
+        "other": "Added {{.trackCount}} tracks to playlist"
+    }
 }
