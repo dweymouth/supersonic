@@ -37,7 +37,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 	}
 	a.loop.IconSize = IconButtonSizeSmaller
 	a.loop.SetToolTip(lang.L("Repeat"))
-	a.loop.Highlighted = initialAutoplay
+	a.autoplay.Highlighted = initialAutoplay
 	//a.autoplay.IconSize = IconButtonSizeSmaller
 	a.autoplay.SetToolTip(lang.L("Autoplay"))
 	a.autoplay.OnTapped = func() {
