@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"runtime"
+	"slices"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
+	"github.com/dweymouth/supersonic/sharedutil"
 )
 
 // A high-level MediaProvider-aware playback engine, serves as an
@@ -18,6 +21,8 @@ type PlaybackManager struct {
 	engine   *playbackEngine
 	cmdQueue *playbackCommandQueue
 	cfg      *AppConfig
+
+	autoplay bool
 
 	lastPlayTime float64
 }
@@ -37,13 +42,14 @@ func NewPlaybackManager(
 		engine:   e,
 		cmdQueue: q,
 		cfg:      appCfg,
+		autoplay: playbackCfg.Autoplay,
 	}
-	pm.workaroundWindowsPlaybackIssue()
+	pm.addOnTrackChangeHook()
 	go pm.runCmdQueue(ctx)
 	return pm
 }
 
-func (p *PlaybackManager) workaroundWindowsPlaybackIssue() {
+func (p *PlaybackManager) addOnTrackChangeHook() {
 	// See https://github.com/dweymouth/supersonic/issues/483
 	// On Windows, MPV sometimes fails to start playback when switching to a track
 	// with a different sample rate than the previous. If this is detected,
@@ -51,7 +57,17 @@ func (p *PlaybackManager) workaroundWindowsPlaybackIssue() {
 	p.OnPlayTimeUpdate(func(curTime, _ float64, _ bool) {
 		p.lastPlayTime = curTime
 	})
+
 	p.OnSongChange(func(mediaprovider.MediaItem, *mediaprovider.Track) {
+		// Autoplay if enabled and we are on the last track
+		if p.autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+			p.enqueueAutoplayTracks()
+		}
+
+		if runtime.GOOS != "windows" {
+			return
+		}
+		// workaround for https://github.com/dweymouth/supersonic/issues/483 (see above comment)
 		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlayerStatus().State == player.Playing {
 			p.lastPlayTime = 0
 			go func() {
@@ -348,12 +364,23 @@ func (p *PlaybackManager) GetLoopMode() LoopMode {
 	return p.engine.loopMode
 }
 
+func (p *PlaybackManager) IsAutoplay() bool {
+	return p.autoplay
+}
+
 func (p *PlaybackManager) PlayerStatus() player.Status {
 	return p.engine.PlayerStatus()
 }
 
 func (p *PlaybackManager) SetVolume(vol int) {
 	p.cmdQueue.SetVolume(vol)
+}
+
+func (p *PlaybackManager) SetAutoplay(autoplay bool) {
+	p.autoplay = autoplay
+	if autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+		p.enqueueAutoplayTracks()
+	}
 }
 
 func (p *PlaybackManager) Volume() int {
@@ -417,6 +444,84 @@ func (p *PlaybackManager) PlayPause() {
 	case player.Stopped:
 		p.PlayTrackAt(0)
 	}
+}
+
+func (p *PlaybackManager) enqueueAutoplayTracks() {
+	nowPlaying := p.NowPlaying()
+	if nowPlaying == nil {
+		return
+	}
+
+	s := p.engine.sm.Server
+	if s == nil {
+		return
+	}
+
+	// last 500 played items
+	queue := p.GetPlayQueue()
+	if l := len(queue); l > 500 {
+		queue = queue[l-500:]
+	}
+
+	// tracks we will enqueue
+	var tracks []*mediaprovider.Track
+
+	filterRecentlyPlayed := func(tracks []*mediaprovider.Track) []*mediaprovider.Track {
+		return sharedutil.FilterSlice(tracks, func(t *mediaprovider.Track) bool {
+			return !slices.ContainsFunc(queue, func(i mediaprovider.MediaItem) bool {
+				return i.Metadata().Type == mediaprovider.MediaItemTypeTrack && i.Metadata().ID == t.ID
+			})
+		})
+	}
+
+	// since this func is invoked in a callback from the playback engine,
+	// need to do the rest async as it may take time and block other callbacks
+	go func() {
+		// first 2 strategies - similar by artist, and similar by genres - only work for tracks
+		if nowPlaying.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+			tr := nowPlaying.(*mediaprovider.Track)
+
+			// similar tracks by artist
+			if len(tr.ArtistIDs) > 0 {
+				similar, err := s.GetSimilarTracks(tr.ArtistIDs[0], p.cfg.EnqueueBatchSize)
+				if err != nil {
+					log.Println("autoplay error: failed to get similar tracks: %v", err)
+				}
+				tracks = filterRecentlyPlayed(similar)
+			}
+
+			// fallback to random tracks from genre
+			if len(tracks) == 0 {
+				for _, g := range tr.Genres {
+					if g == "" {
+						continue
+					}
+					byGenre, err := s.GetRandomTracks(g, p.cfg.EnqueueBatchSize)
+					if err != nil {
+						log.Println("autoplay error: failed to get tracks by genre: %v", err)
+					}
+					tracks = filterRecentlyPlayed(byGenre)
+					if len(tracks) > 0 {
+						break
+					}
+				}
+			}
+		}
+
+		// random tracks works regardless of the type of the last playing media
+		if len(tracks) == 0 {
+			// fallback to random tracks
+			random, err := s.GetRandomTracks("", p.cfg.EnqueueBatchSize)
+			if err != nil {
+				log.Println("autoplay error: failed to get random tracks: %v", err)
+			}
+			tracks = filterRecentlyPlayed(random)
+		}
+
+		if len(tracks) > 0 {
+			p.LoadTracks(tracks, Append, false /*no need to shuffle, already random*/)
+		}
+	}()
 }
 
 func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
