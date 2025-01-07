@@ -171,7 +171,13 @@ func (g *ArtistPage) Scroll(scrollAmt float32) {
 }
 
 func (a *ArtistPage) playArtistRadio() {
-	go a.pm.PlaySimilarSongs(a.artistID)
+	go func() {
+		err := a.pm.PlaySimilarSongs(a.artistID)
+		if err != nil {
+			log.Println("error playing similar songs: %v", err)
+			a.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play artist radio"))
+		}
+	}()
 }
 
 func (a *ArtistPage) showAlbumSortMenu() {

@@ -277,14 +277,14 @@ func (p *PlaybackManager) PlayTrackAt(idx int) {
 	p.cmdQueue.PlayTrackAt(idx)
 }
 
-func (p *PlaybackManager) PlayRandomSongs(genreName string) {
-	p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
+func (p *PlaybackManager) PlayRandomSongs(genreName string) error {
+	return p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
 		return p.engine.sm.Server.GetRandomTracks(genreName, p.cfg.EnqueueBatchSize)
 	})
 }
 
-func (p *PlaybackManager) PlaySimilarSongs(id string) {
-	p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
+func (p *PlaybackManager) PlaySimilarSongs(id string) error {
+	return p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
 		return p.engine.sm.Server.GetSimilarTracks(id, p.cfg.EnqueueBatchSize)
 	})
 }
@@ -298,15 +298,16 @@ func (p *PlaybackManager) PlayRadioStation(station *mediaprovider.RadioStation) 
 	p.PlayFromBeginning()
 }
 
-func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Track, error)) {
+func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Track, error)) error {
 	if songs, err := fetchFn(); err != nil {
-		log.Printf("error fetching tracks: %s", err.Error())
+		return err
 	} else {
 		p.LoadTracks(songs, Replace, false)
 		if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 			p.SetReplayGainMode(player.ReplayGainTrack)
 		}
 		p.PlayFromBeginning()
+		return nil
 	}
 }
 

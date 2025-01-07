@@ -1,6 +1,8 @@
 package browsing
 
 import (
+	"log"
+
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -58,7 +60,15 @@ func (g *genrePageAdapter) Route() controller.Route {
 }
 
 func (g *genrePageAdapter) ActionButton() *widget.Button {
-	fn := func() { go g.pm.PlayRandomSongs(g.genre) }
+	fn := func() {
+		go func() {
+			err := g.pm.PlayRandomSongs(g.genre)
+			if err != nil {
+				log.Println("error playing random tracks: %v", err)
+				g.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play random tracks"))
+			}
+		}()
+	}
 	return widget.NewButtonWithIcon(lang.L("Play random"), myTheme.ShuffleIcon, fn)
 }
 

@@ -1,6 +1,8 @@
 package browsing
 
 import (
+	"log"
+
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -205,7 +207,13 @@ func (s *tracksPageState) Restore() Page {
 }
 
 func (t *TracksPage) playRandomSongs() {
-	t.contr.App.PlaybackManager.PlayRandomSongs("")
+	go func() {
+		err := t.contr.App.PlaybackManager.PlayRandomSongs("")
+		if err != nil {
+			log.Println("error playing random tracks: %v", err)
+			t.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play random tracks"))
+		}
+	}()
 }
 
 func (t *TracksPage) obtainTracklist() *widgets.Tracklist {
