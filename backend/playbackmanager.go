@@ -42,7 +42,7 @@ func NewPlaybackManager(
 		engine:   e,
 		cmdQueue: q,
 		cfg:      appCfg,
-		autoplay: true, // TODO
+		autoplay: playbackCfg.Autoplay,
 	}
 	pm.addOnTrackChangeHook()
 	go pm.runCmdQueue(ctx)
@@ -364,12 +364,23 @@ func (p *PlaybackManager) GetLoopMode() LoopMode {
 	return p.engine.loopMode
 }
 
+func (p *PlaybackManager) IsAutoplay() bool {
+	return p.autoplay
+}
+
 func (p *PlaybackManager) PlayerStatus() player.Status {
 	return p.engine.PlayerStatus()
 }
 
 func (p *PlaybackManager) SetVolume(vol int) {
 	p.cmdQueue.SetVolume(vol)
+}
+
+func (p *PlaybackManager) SetAutoplay(autoplay bool) {
+	p.autoplay = autoplay
+	if autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+		p.enqueueAutoplayTracks()
+	}
 }
 
 func (p *PlaybackManager) Volume() int {

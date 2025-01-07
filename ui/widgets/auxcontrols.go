@@ -18,21 +18,34 @@ import (
 type AuxControls struct {
 	widget.BaseWidget
 
+	OnChangeAutoplay func(autoplay bool)
+
 	VolumeControl *VolumeControl
+	autoplay      *IconButton
 	loop          *IconButton
 	showQueue     *IconButton
 
 	container *fyne.Container
 }
 
-func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode) *AuxControls {
+func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initialAutoplay bool) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
+		autoplay:      NewIconButton(myTheme.AutoplayIcon, nil),
 		loop:          NewIconButton(myTheme.RepeatIcon, nil),
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
 	}
 	a.loop.IconSize = IconButtonSizeSmaller
 	a.loop.SetToolTip(lang.L("Repeat"))
+	a.loop.Highlighted = initialAutoplay
+	//a.autoplay.IconSize = IconButtonSizeSmaller
+	a.autoplay.SetToolTip(lang.L("Autoplay"))
+	a.autoplay.OnTapped = func() {
+		a.SetAutoplay(!a.autoplay.Highlighted)
+		if a.OnChangeAutoplay != nil {
+			a.OnChangeAutoplay(a.autoplay.Highlighted)
+		}
+	}
 	a.SetLoopMode(initialLoopMode)
 	a.showQueue.IconSize = IconButtonSizeSmaller
 	a.showQueue.SetToolTip(lang.L("Show play queue"))
@@ -43,7 +56,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode) *AuxCon
 			a.VolumeControl,
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(theme.Padding()*1.5),
-				layout.NewSpacer(), a.loop, a.showQueue, util.NewHSpace(5)),
+				layout.NewSpacer(), a.autoplay, a.loop, a.showQueue, util.NewHSpace(5)),
 			layout.NewSpacer(),
 		),
 	)
@@ -71,6 +84,14 @@ func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 		a.loop.Highlighted = false
 		a.loop.SetIcon(myTheme.RepeatIcon)
 	}
+}
+
+func (a *AuxControls) SetAutoplay(autoplay bool) {
+	if autoplay == a.autoplay.Highlighted {
+		return
+	}
+	a.autoplay.Highlighted = autoplay
+	a.autoplay.Refresh()
 }
 
 func (a *AuxControls) OnShowPlayQueue(f func()) {

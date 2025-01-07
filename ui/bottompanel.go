@@ -102,7 +102,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 		pm.SeekFraction(f)
 	})
 
-	bp.AuxControls = widgets.NewAuxControls(pm.Volume(), pm.GetLoopMode())
+	bp.AuxControls = widgets.NewAuxControls(pm.Volume(), pm.GetLoopMode(), pm.IsAutoplay())
 	pm.OnLoopModeChange(bp.AuxControls.SetLoopMode)
 	pm.OnVolumeChange(bp.AuxControls.VolumeControl.SetVolume)
 	bp.AuxControls.VolumeControl.OnSetVolume = func(v int) {
@@ -111,6 +111,9 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.AuxControls.OnChangeLoopMode(func() {
 		pm.SetNextLoopMode()
 	})
+	bp.AuxControls.OnChangeAutoplay = func(autoplay bool) {
+		pm.SetAutoplay(autoplay)
+	}
 	bp.AuxControls.OnShowPlayQueue(contr.ShowPopUpPlayQueue)
 
 	bp.imageLoader = util.NewThumbnailLoader(im, bp.NowPlaying.SetImage)

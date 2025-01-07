@@ -160,6 +160,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 			repeatMode = "All"
 		}
 		app.Config.Playback.RepeatMode = repeatMode
+		app.Config.Playback.Autoplay = app.PlaybackManager.IsAutoplay()
 		app.SavePlayQueueIfEnabled()
 		app.SaveConfigFile()
 

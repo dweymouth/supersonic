@@ -99,6 +99,7 @@ type NowPlayingPageConfig struct {
 }
 
 type PlaybackConfig struct {
+	Autoplay   bool
 	RepeatMode string
 }
 
@@ -215,6 +216,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			TracklistColumns: []string{"Album", "Time", "Plays"},
 		},
 		Playback: PlaybackConfig{
+			Autoplay:   false,
 			RepeatMode: "None",
 		},
 		LocalPlayback: LocalPlaybackConfig{
