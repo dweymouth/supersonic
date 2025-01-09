@@ -18,6 +18,7 @@ var TranslationsInfo = []TranslationInfo{
 	{Name: "fr", DisplayName: "Français", TranslationFileName: "fr.json"},
 	{Name: "it", DisplayName: "Italiano", TranslationFileName: "it.json"},
 	{Name: "ja", DisplayName: "日本語", TranslationFileName: "ja.json"},
+	{Name: "nl", DisplayName: "Nederlands", TranslationFileName: "nl.json"},
 	{Name: "pl", DisplayName: "Polski", TranslationFileName: "pl.json"},
 	{Name: "pt_BR", DisplayName: "Português (BR)", TranslationFileName: "pt_BR.json"},
 	{Name: "ro", DisplayName: "Română", TranslationFileName: "ro.json"},
