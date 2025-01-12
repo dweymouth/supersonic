@@ -77,7 +77,7 @@ func main() {
 	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp)
 	mainWindow.Window.SetMaster()
 	myApp.OnReactivate = mainWindow.Show
-	myApp.OnExit = mainWindow.Quit
+	myApp.OnExit = func() { fyne.Do(mainWindow.Quit) }
 
 	fyneApp.Lifecycle().SetOnEnteredForeground(sync.OnceFunc(func() {
 		defaultServer := myApp.ServerManager.GetDefaultServer()

@@ -199,7 +199,9 @@ func NewDebouncer(dur time.Duration, callOnDone func()) func() {
 		if timer != nil {
 			timer.Stop()
 		}
-		timer = time.AfterFunc(dur, callOnDone)
+		timer = time.AfterFunc(dur, func() {
+			fyne.Do(callOnDone)
+		})
 	}
 }
 
