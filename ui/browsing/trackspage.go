@@ -211,7 +211,9 @@ func (t *TracksPage) playRandomSongs() {
 		err := t.contr.App.PlaybackManager.PlayRandomSongs("")
 		if err != nil {
 			log.Println("error playing random tracks: %v", err)
-			t.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play random tracks"))
+			fyne.Do(func() {
+				t.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play random tracks"))
+			})
 		}
 	}()
 }

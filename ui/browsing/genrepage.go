@@ -65,7 +65,9 @@ func (g *genrePageAdapter) ActionButton() *widget.Button {
 			err := g.pm.PlayRandomSongs(g.genre)
 			if err != nil {
 				log.Println("error playing random tracks: %v", err)
-				g.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play random tracks"))
+				fyne.Do(func() {
+					g.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play random tracks"))
+				})
 			}
 		}()
 	}

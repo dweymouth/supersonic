@@ -150,7 +150,9 @@ func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 				log.Printf("error loading playlist: %s", err.Error())
 				return
 			}
-			a.contr.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(pl.Tracks))
+			fyne.Do(func() {
+				a.contr.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(pl.Tracks))
+			})
 		}()
 	}
 	a.gridView.OnDownload = func(id string) {
@@ -160,7 +162,7 @@ func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 				log.Printf("error loading playlist: %s", err.Error())
 				return
 			}
-			a.contr.ShowDownloadDialog(pl.Tracks, pl.Name)
+			fyne.Do(func() { a.contr.ShowDownloadDialog(pl.Tracks, pl.Name) })
 		}()
 	}
 }

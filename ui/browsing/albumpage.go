@@ -316,8 +316,10 @@ func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backe
 
 	go func() {
 		if cover, err := im.GetCoverThumbnail(album.CoverArtID); err == nil {
-			a.cover.SetImage(cover, true)
-			a.cover.Refresh()
+			fyne.Do(func() {
+				a.cover.SetImage(cover, true)
+				a.cover.Refresh()
+			})
 		} else {
 			log.Printf("error fetching cover: %v", err)
 		}
