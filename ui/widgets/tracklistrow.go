@@ -5,6 +5,7 @@ import (
 	"image"
 	"strconv"
 	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -15,8 +16,29 @@ import (
 	"fyne.io/fyne/v2/widget"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
+)
+
+var (
+	tracklistUpdateCounter = util.NewEventCounter(30)
+
+	emptyTrack = util.TrackListModel{
+		Item: &mediaprovider.Track{
+			ID:            "dummy",
+			Title:         "—",
+			ArtistIDs:     []string{"—"},
+			ArtistNames:   []string{"—"},
+			Album:         "—",
+			Genres:        []string{"—"},
+			ComposerNames: []string{"—"},
+			ComposerIDs:   []string{"—"},
+			Comment:       "—",
+			FilePath:      "—",
+			ContentType:   "—",
+		},
+	}
 )
 
 const tracklistThumbnailSize = 48
@@ -150,6 +172,9 @@ type tracklistRowBase struct {
 	isPlaying  bool
 	isFavorite bool
 	playCount  int
+
+	nextUpdateModel  *util.TrackListModel
+	nextUpdateRowNum int
 
 	num      *widget.Label
 	name     *ttwidget.RichText
@@ -318,6 +343,25 @@ func (t *tracklistRowBase) TrackID() string {
 }
 
 func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
+	if tracklistUpdateCounter.NumEventsSince(time.Now().Add(-150*time.Millisecond)) > 20 {
+		t.doUpdate(&emptyTrack, 1)
+		if t.nextUpdateModel == nil {
+			go fyne.Do(func() {
+				if t.nextUpdateModel != nil {
+					t.doUpdate(t.nextUpdateModel, t.nextUpdateRowNum)
+				}
+				t.nextUpdateModel = nil
+			})
+		}
+		t.nextUpdateModel = tm
+		t.nextUpdateRowNum = rowNum
+	} else {
+		t.nextUpdateModel = nil
+		t.doUpdate(tm, rowNum)
+	}
+}
+
+func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 	changed := false
 	if tm.Selected != t.Selected {
 		t.Selected = tm.Selected
@@ -415,6 +459,7 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 	}
 
 	if changed {
+		tracklistUpdateCounter.Add()
 		t.Refresh()
 	}
 }
