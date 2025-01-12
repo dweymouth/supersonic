@@ -133,22 +133,6 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 
 	m.Window.SetCloseIntercept(func() {
 		m.SaveWindowSize()
-		// save settings in case we crash during shutdown
-		// TODO: when all shutdowns exit cleanly, remove these lines
-		// as they are already executed in app.Shutdown()
-		app.Config.LocalPlayback.Volume = app.LocalPlayer.GetVolume()
-		repeatMode := "None"
-		switch app.PlaybackManager.GetLoopMode() {
-		case backend.LoopOne:
-			repeatMode = "One"
-		case backend.LoopAll:
-			repeatMode = "All"
-		}
-		app.Config.Playback.RepeatMode = repeatMode
-		app.Config.Playback.Autoplay = app.PlaybackManager.IsAutoplay()
-		app.SavePlayQueueIfEnabled()
-		app.SaveConfigFile()
-
 		if app.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
 			m.Window.Hide()
 		} else {

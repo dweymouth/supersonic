@@ -64,20 +64,22 @@ func (a *GenresPage) load(searchOnLoad bool, scrollPos float32) {
 	if err != nil {
 		log.Printf("error loading genres: %v", err.Error())
 	}
-	a.genres = genres
-	if searchOnLoad {
-		a.onSearched(a.searcher.Entry.Text)
-		if scrollPos != 0 {
-			a.list.list.ScrollToOffset(scrollPos)
+	fyne.Do(func() {
+		a.genres = genres
+		if searchOnLoad {
+			a.onSearched(a.searcher.Entry.Text)
+			if scrollPos != 0 {
+				a.list.list.ScrollToOffset(scrollPos)
+			}
+		} else {
+			a.list.SetGenres(a.genres)
+			if scrollPos != 0 {
+				a.list.list.ScrollToOffset(scrollPos)
+				return
+			}
+			a.list.Refresh()
 		}
-	} else {
-		a.list.SetGenres(a.genres)
-		if scrollPos != 0 {
-			a.list.list.ScrollToOffset(scrollPos)
-			return
-		}
-		a.list.Refresh()
-	}
+	})
 }
 
 func (a *GenresPage) onSearched(query string) {

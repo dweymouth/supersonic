@@ -349,6 +349,7 @@ func (a *PlaylistPageHeader) Update(playlist *mediaprovider.PlaylistWithTracks) 
 	a.Refresh()
 }
 
+// should be called asynchronously
 func (a *PlaylistPageHeader) showPopUpCover() {
 	if a.fullSizeCoverFetching || a.playlistInfo == nil {
 		return
@@ -361,7 +362,7 @@ func (a *PlaylistPageHeader) showPopUpCover() {
 		return
 	}
 	if a.page != nil {
-		a.page.contr.ShowPopUpImage(cover)
+		fyne.Do(func() { a.page.contr.ShowPopUpImage(cover) })
 	}
 }
 
