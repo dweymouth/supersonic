@@ -166,10 +166,12 @@ func (a *PlaylistPage) load() {
 		return
 	}
 	renumberTracks(playlist.Tracks)
-	a.tracks = playlist.Tracks
-	a.tracklist.SetTracks(playlist.Tracks)
-	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.header.Update(playlist)
+	fyne.Do(func() {
+		a.tracks = playlist.Tracks
+		a.tracklist.SetTracks(playlist.Tracks)
+		a.tracklist.SetNowPlaying(a.nowPlayingID)
+		a.header.Update(playlist)
+	})
 }
 
 func renumberTracks(tracks []*mediaprovider.Track) {
@@ -205,8 +207,8 @@ func (a *PlaylistPage) doSetNewTrackOrder(ids []string, newPos int) {
 				)
 			})
 		} else {
+			renumberTracks(newTracks)
 			fyne.Do(func() {
-				renumberTracks(newTracks)
 				// force-switch back to unsorted view to show new track order
 				a.tracklist.SetSorting(widgets.TracklistSort{})
 				a.tracklist.SetTracks(newTracks)

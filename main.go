@@ -75,21 +75,20 @@ func main() {
 	fyneApp.SetIcon(res.ResAppicon256Png)
 
 	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp)
+	mainWindow.Window.SetMaster()
 	myApp.OnReactivate = mainWindow.Show
 	myApp.OnExit = mainWindow.Quit
 
-	go func() {
+	fyneApp.Lifecycle().SetOnEnteredForeground(sync.OnceFunc(func() {
 		defaultServer := myApp.ServerManager.GetDefaultServer()
 		if defaultServer == nil {
-			fyne.Do(mainWindow.Controller.PromptForFirstServer)
+			mainWindow.Controller.PromptForFirstServer()
 		} else {
-			fyne.Do(func() { mainWindow.Controller.DoConnectToServerWorkflow(defaultServer) })
+			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
-	}()
 
-	// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
-	if runtime.GOOS == "linux" {
-		workaroundWindowSize := sync.OnceFunc(func() {
+		// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
+		if runtime.GOOS == "linux" {
 			isWayland := false
 			mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
 				_, isWayland = ctx.(*driver.WaylandWindowContext)
@@ -103,12 +102,8 @@ func main() {
 					fyne.Do(func() { mainWindow.Window.Resize(s) }) // back to desired size
 				}()
 			}
-		})
-		fyneApp.Lifecycle().SetOnEnteredForeground(func() {
-			workaroundWindowSize()
-		})
-	}
-
+		}
+	}))
 	mainWindow.ShowAndRun()
 
 	log.Println("Running shutdown tasks...")

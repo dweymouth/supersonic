@@ -5,7 +5,6 @@ import (
 	"slices"
 	"sort"
 	"strings"
-	"sync"
 
 	"fyne.io/fyne/v2/lang"
 
@@ -91,7 +90,6 @@ type Tracklist struct {
 	visibleColumns []bool
 	sorting        TracklistSort
 
-	tracksMutex     sync.RWMutex
 	tracks          []*util.TrackListModel
 	tracksOrigOrder []*util.TrackListModel
 
@@ -148,7 +146,7 @@ func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCo
 	}
 
 	t.list = NewFocusList(
-		t.lenTracks,
+		func() int { return len(t.tracks) },
 		func() fyne.CanvasObject {
 			var tr TracklistRow
 			if t.compactRows {
@@ -169,16 +167,13 @@ func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCo
 			return tr
 		},
 		func(itemID widget.ListItemID, item fyne.CanvasObject) {
-			t.tracksMutex.RLock()
 			// we could have removed tracks from the list in between
 			// Fyne calling the length callback and this update callback
 			// so the itemID may be out of bounds. if so, do nothing.
 			if itemID >= len(t.tracks) {
-				t.tracksMutex.RUnlock()
 				return
 			}
 			model := t.tracks[itemID]
-			t.tracksMutex.RUnlock()
 
 			tr := item.(TracklistRow)
 			if tr.TrackID() != model.Item.Metadata().ID || tr.ItemID() != itemID {
@@ -219,10 +214,8 @@ func (t *Tracklist) Scroll(amount float32) {
 	t.list.ScrollToOffset(t.list.GetScrollOffset() + amount)
 }
 
-// Gets the track at the given index. Thread-safe.
+// Gets the track at the given index.
 func (t *Tracklist) TrackAt(idx int) *mediaprovider.Track {
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
 	if idx >= len(t.tracks) {
 		log.Println("error: Tracklist.TrackAt: index out of range")
 		return nil
@@ -291,10 +284,8 @@ func (t *Tracklist) SetSorting(sorting TracklistSort) {
 // Sets the currently playing track ID and updates the list rendering
 func (t *Tracklist) SetNowPlaying(trackID string) {
 	prevNowPlaying := t.nowPlayingID
-	t.tracksMutex.RLock()
 	trPrev, idxPrev := util.FindItemByID(t.tracks, prevNowPlaying)
 	tr, idx := util.FindItemByID(t.tracks, trackID)
-	t.tracksMutex.RUnlock()
 	t.nowPlayingID = trackID
 	if trPrev != nil {
 		t.list.RefreshItem(idxPrev)
@@ -306,58 +297,46 @@ func (t *Tracklist) SetNowPlaying(trackID string) {
 
 // Increments the play count of the given track and updates the list rendering
 func (t *Tracklist) IncrementPlayCount(trackID string) {
-	t.tracksMutex.RLock()
 	tr, idx := util.FindItemByID(t.tracks, trackID)
-	t.tracksMutex.RUnlock()
 	if tr != nil {
 		tr.(*mediaprovider.Track).PlayCount += 1
 		t.list.RefreshItem(idx)
 	}
 }
 
-// Remove all tracks from the tracklist. Does not issue Refresh call. Thread-safe.
+// Remove all tracks from the tracklist. Does not issue Refresh call.
 func (t *Tracklist) Clear() {
-	t.tracksMutex.Lock()
-	defer t.tracksMutex.Unlock()
 	t.tracks = nil
 	t.tracksOrigOrder = nil
 }
 
-// Sets the tracks in the tracklist. Thread-safe.
+// Sets the tracks in the tracklist.
 func (t *Tracklist) SetTracks(trs []*mediaprovider.Track) {
 	t._setTracks(trs)
 	t.Refresh()
 }
 
 func (t *Tracklist) _setTracks(trs []*mediaprovider.Track) {
-	t.tracksMutex.Lock()
-	defer t.tracksMutex.Unlock()
 	t.tracksOrigOrder = util.ToTrackListModels(trs)
 	t.doSortTracks()
 }
 
 // Returns the tracks in the tracklist in the current display order.
 func (t *Tracklist) GetTracks() []*mediaprovider.Track {
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
 	return sharedutil.MapSlice(t.tracks, func(tm *util.TrackListModel) *mediaprovider.Track {
 		return tm.Track()
 	})
 }
 
-// Append more tracks to the tracklist. Thread-safe.
+// Append more tracks to the tracklist.
 func (t *Tracklist) AppendTracks(trs []*mediaprovider.Track) {
-	t.tracksMutex.Lock()
 	t.tracksOrigOrder = append(t.tracks, util.ToTrackListModels(trs)...)
 	t.doSortTracks()
-	t.tracksMutex.Unlock()
 	t.list.Refresh()
 }
 
 func (t *Tracklist) SelectAll() {
-	t.tracksMutex.RLock()
 	util.SelectAllItems(t.tracks)
-	t.tracksMutex.RUnlock()
 	t.list.Refresh()
 }
 
@@ -367,13 +346,10 @@ func (t *Tracklist) UnselectAll() {
 }
 
 func (t *Tracklist) unselectAll() {
-	t.tracksMutex.RLock()
 	util.UnselectAllItems(t.tracks)
-	t.tracksMutex.RUnlock()
 }
 
 func (t *Tracklist) SelectAndScrollToTrack(trackID string) {
-	t.tracksMutex.RLock()
 	idx := -1
 	for i, tr := range t.tracks {
 		if tr.Item.Metadata().ID == trackID {
@@ -383,7 +359,6 @@ func (t *Tracklist) SelectAndScrollToTrack(trackID string) {
 			tr.Selected = false
 		}
 	}
-	t.tracksMutex.RUnlock()
 	if idx >= 0 {
 		t.list.ScrollTo(idx)
 	}
@@ -474,9 +449,7 @@ func (t *Tracklist) doSortTracks() {
 
 func (t *Tracklist) onSorted(sort ListHeaderSort) {
 	t.sorting = TracklistSort{ColumnName: t.colName(sort.ColNumber), SortOrder: sort.Type}
-	t.tracksMutex.Lock()
 	t.doSortTracks()
-	t.tracksMutex.Unlock()
 	t.Refresh()
 }
 
@@ -503,20 +476,14 @@ func (t *Tracklist) onSelectTrack(idx int) {
 }
 
 func (t *Tracklist) selectAddOrRemove(idx int) {
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
 	t.tracks[idx].Selected = !t.tracks[idx].Selected
 }
 
 func (t *Tracklist) selectTrack(idx int) {
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
 	util.SelectItem(t.tracks, idx)
 }
 
 func (t *Tracklist) selectRange(idx int) {
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
 	util.SelectItemRange(t.tracks, idx)
 }
 
@@ -606,9 +573,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 }
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {
-	t.tracksMutex.RLock()
 	item, _ := util.FindItemByID(t.tracks, trackID)
-	t.tracksMutex.RUnlock()
 	t.onSetFavorites([]*mediaprovider.Track{item.(*mediaprovider.Track)}, fav, false)
 }
 
@@ -627,9 +592,7 @@ func (t *Tracklist) onSetFavorites(tracks []*mediaprovider.Track, fav bool, need
 
 func (t *Tracklist) onSetRating(trackID string, rating int) {
 	// update our own track model
-	t.tracksMutex.RLock()
 	item, _ := util.FindItemByID(t.tracks, trackID)
-	t.tracksMutex.RUnlock()
 	t.onSetRatings([]*mediaprovider.Track{item.(*mediaprovider.Track)}, rating, false)
 }
 
@@ -681,14 +644,10 @@ func (t *Tracklist) onPlaySongRadio(tracks []*mediaprovider.Track) {
 }
 
 func (t *Tracklist) selectedTracks() []*mediaprovider.Track {
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
 	return util.SelectedTracks(t.tracks)
 }
 
 func (t *Tracklist) SelectedTrackIDs() []string {
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
 	return util.SelectedItemIDs(t.tracks)
 }
 
@@ -696,20 +655,11 @@ func (t *Tracklist) SelectedTrackIDs() []string {
 // original sort order (ie if tracklist is sorted by some column), the indexes
 // returned will correspond to the order of tracks when the list was initialized.
 func (t *Tracklist) SelectedTrackIndexes() []int {
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
-
 	idx := -1
 	return sharedutil.FilterMapSlice(t.tracksOrigOrder, func(t *util.TrackListModel) (int, bool) {
 		idx++
 		return idx, t.Selected
 	})
-}
-
-func (t *Tracklist) lenTracks() int {
-	t.tracksMutex.RLock()
-	defer t.tracksMutex.RUnlock()
-	return len(t.tracks)
 }
 
 func (t *Tracklist) ColNumber(colName string) int {

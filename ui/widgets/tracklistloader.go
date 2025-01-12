@@ -3,6 +3,7 @@ package widgets
 import (
 	"sync/atomic"
 
+	"fyne.io/fyne/v2"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
@@ -69,8 +70,10 @@ func (t *TracklistLoader) loadMoreTracks(num int) {
 		if t.disposed.Load() {
 			return
 		}
-		t.tracklist.AppendTracks(t.trackBuffer)
-		t.len += len(t.trackBuffer)
+		fyne.Do(func() {
+			t.tracklist.AppendTracks(t.trackBuffer)
+			t.len += len(t.trackBuffer)
+		})
 	}
 	if t.done {
 		t.trackBuffer = nil

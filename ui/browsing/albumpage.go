@@ -168,11 +168,13 @@ func (a *AlbumPage) load() {
 	if a.disposed {
 		return
 	}
-	a.header.Update(album, a.im)
-	a.tracklist.Options.ShowDiscNumber = len(album.Tracks) > 0 && album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber
-	a.tracks = album.Tracks
-	a.tracklist.SetTracks(album.Tracks)
-	a.tracklist.SetNowPlaying(a.nowPlayingID)
+	fyne.Do(func() {
+		a.header.Update(album, a.im)
+		a.tracklist.Options.ShowDiscNumber = len(album.Tracks) > 0 && album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber
+		a.tracks = album.Tracks
+		a.tracklist.SetTracks(album.Tracks)
+		a.tracklist.SetNowPlaying(a.nowPlayingID)
+	})
 }
 
 type AlbumPageHeader struct {
@@ -344,6 +346,7 @@ func (a *AlbumPageHeader) toggleFavorited() {
 	a.page.mp.SetFavorite(params, a.toggleFavButton.IsFavorited)
 }
 
+// should be called asynchronously
 func (a *AlbumPageHeader) showPopUpCover() {
 	if a.fullSizeCoverFetching {
 		return
@@ -356,7 +359,7 @@ func (a *AlbumPageHeader) showPopUpCover() {
 		return
 	}
 	if a.page != nil {
-		a.page.contr.ShowPopUpImage(cover)
+		fyne.Do(func() { a.page.contr.ShowPopUpImage(cover) })
 	}
 }
 
