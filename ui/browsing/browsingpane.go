@@ -259,7 +259,7 @@ func (b *BrowsingPane) onSongChange(song mediaprovider.MediaItem, lastScrobbledI
 		return
 	}
 	if p, ok := b.curPage.(CanShowNowPlaying); ok {
-		p.OnSongChange(song, lastScrobbledIfAny)
+		fyne.Do(func() { p.OnSongChange(song, lastScrobbledIfAny) })
 	}
 }
 

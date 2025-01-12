@@ -75,17 +75,17 @@ func main() {
 	fyneApp.SetIcon(res.ResAppicon256Png)
 
 	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp)
+	mainWindow.Window.SetMaster()
 	myApp.OnReactivate = mainWindow.Show
 	myApp.OnExit = mainWindow.Quit
 
-	go func() {
+	fyneApp.Lifecycle().SetOnEnteredForeground(sync.OnceFunc(func() {
 		defaultServer := myApp.ServerManager.GetDefaultServer()
 		if defaultServer == nil {
-			fyne.Do(mainWindow.Controller.PromptForFirstServer)
+			mainWindow.Controller.PromptForFirstServer()
 		} else {
-			fyne.Do(func() { mainWindow.Controller.DoConnectToServerWorkflow(defaultServer) })
+			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
-	}()
 
 	startupOnceTasks := sync.OnceFunc(func() {
 		mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
