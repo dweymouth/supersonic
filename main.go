@@ -81,9 +81,9 @@ func main() {
 	go func() {
 		defaultServer := myApp.ServerManager.GetDefaultServer()
 		if defaultServer == nil {
-			mainWindow.Controller.PromptForFirstServer()
+			fyne.Do(mainWindow.Controller.PromptForFirstServer)
 		} else {
-			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
+			fyne.Do(func() { mainWindow.Controller.DoConnectToServerWorkflow(defaultServer) })
 		}
 	}()
 
@@ -98,12 +98,12 @@ func main() {
 			// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
 			_, isWayland := ctx.(*driver.WaylandWindowContext)
 			if runtime.GOOS == "linux" && !isWayland {
+				s := mainWindow.DesiredSize()
 				go func() {
 					time.Sleep(50 * time.Millisecond)
-					s := mainWindow.DesiredSize()
-					mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0)))
+					fyne.Do(func() { mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0))) })
 					time.Sleep(50 * time.Millisecond)
-					mainWindow.Window.Resize(s) // back to desired size
+					fyne.Do(func() { mainWindow.Window.Resize(s) }) // back to desired size
 				}()
 			}
 		})

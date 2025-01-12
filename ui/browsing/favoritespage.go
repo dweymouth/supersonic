@@ -207,22 +207,24 @@ func (a *FavoritesPage) Reload() {
 			if a.disposed {
 				return
 			}
-			if tr := a.tracklistOrNil(); tr != nil {
-				// refresh favorite songs view
-				tr.SetTracks(starred.Tracks)
-				if a.toggleBtns.ActivatedButtonIndex() == 2 {
-					// favorite songs view is visible
-					tr.Refresh()
+			fyne.Do(func() {
+				if tr := a.tracklistOrNil(); tr != nil {
+					// refresh favorite songs view
+					tr.SetTracks(starred.Tracks)
+					if a.toggleBtns.ActivatedButtonIndex() == 2 {
+						// favorite songs view is visible
+						tr.Refresh()
+					}
 				}
-			}
-			if a.artistGrid != nil {
-				// refresh favorite artists view
-				a.artistGrid.ResetFixed(buildArtistGridViewModel(starred.Artists))
-				if a.toggleBtns.ActivatedButtonIndex() == 1 {
-					// favorite artists view is visible
-					a.artistGrid.Refresh()
+				if a.artistGrid != nil {
+					// refresh favorite artists view
+					a.artistGrid.ResetFixed(buildArtistGridViewModel(starred.Artists))
+					if a.toggleBtns.ActivatedButtonIndex() == 1 {
+						// favorite artists view is visible
+						a.artistGrid.Refresh()
+					}
 				}
-			}
+			})
 		}()
 	}
 }
@@ -354,23 +356,25 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 			if a.disposed {
 				return
 			}
-			model := buildArtistGridViewModel(fav.Artists)
-			if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
-				a.artistGrid = g.(*widgets.GridView)
-				a.artistGrid.Placeholder = myTheme.ArtistIcon
-				a.artistGrid.ResetFixed(model)
-			} else {
-				a.artistGrid = widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
-			}
-			canShareArtists := false
-			if r, canShare := a.mp.(mediaprovider.SupportsSharing); canShare {
-				canShareArtists = r.CanShareArtists()
-			}
-			a.artistGrid.DisableSharing = !canShareArtists
-			a.contr.ConnectArtistGridActions(a.artistGrid)
-			a.container.Objects[0] = a.artistGrid
-			a.Refresh()
-			a.pendingViewSwitch = false
+			fyne.Do(func() {
+				model := buildArtistGridViewModel(fav.Artists)
+				if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
+					a.artistGrid = g.(*widgets.GridView)
+					a.artistGrid.Placeholder = myTheme.ArtistIcon
+					a.artistGrid.ResetFixed(model)
+				} else {
+					a.artistGrid = widgets.NewFixedGridView(model, a.im, myTheme.ArtistIcon)
+				}
+				canShareArtists := false
+				if r, canShare := a.mp.(mediaprovider.SupportsSharing); canShare {
+					canShareArtists = r.CanShareArtists()
+				}
+				a.artistGrid.DisableSharing = !canShareArtists
+				a.contr.ConnectArtistGridActions(a.artistGrid)
+				a.container.Objects[0] = a.artistGrid
+				a.Refresh()
+				a.pendingViewSwitch = false
+			})
 		}()
 	} else {
 		a.container.Objects[0] = a.artistGrid
@@ -419,32 +423,34 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 			if a.disposed {
 				return
 			}
-			var tracklist *widgets.Tracklist
-			if tl := a.pool.Obtain(util.WidgetTypeTracklist); tl != nil {
-				tracklist = tl.(*widgets.Tracklist)
-				tracklist.Reset()
-				tracklist.SetTracks(fav.Tracks)
-			} else {
-				tracklist = widgets.NewTracklist(fav.Tracks, a.im, false)
-			}
-			tracklist.Options = widgets.TracklistOptions{AutoNumber: true}
-			_, canRate := a.mp.(mediaprovider.SupportsRating)
-			_, canShare := a.mp.(mediaprovider.SupportsSharing)
-			tracklist.Options.DisableRating = !canRate
-			tracklist.Options.DisableSharing = !canShare
-			tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
-			tracklist.SetSorting(a.trackSort)
-			tracklist.OnVisibleColumnsChanged = func(cols []string) {
-				a.cfg.TracklistColumns = cols
-			}
-			tracklist.SetNowPlaying(a.nowPlayingID)
-			a.contr.ConnectTracklistActions(tracklist)
-			a.tracklistCtr = container.New(
-				&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
-				tracklist)
-			a.container.Objects[0] = a.tracklistCtr
-			a.Refresh()
-			a.pendingViewSwitch = false
+			fyne.Do(func() {
+				var tracklist *widgets.Tracklist
+				if tl := a.pool.Obtain(util.WidgetTypeTracklist); tl != nil {
+					tracklist = tl.(*widgets.Tracklist)
+					tracklist.Reset()
+					tracklist.SetTracks(fav.Tracks)
+				} else {
+					tracklist = widgets.NewTracklist(fav.Tracks, a.im, false)
+				}
+				tracklist.Options = widgets.TracklistOptions{AutoNumber: true}
+				_, canRate := a.mp.(mediaprovider.SupportsRating)
+				_, canShare := a.mp.(mediaprovider.SupportsSharing)
+				tracklist.Options.DisableRating = !canRate
+				tracklist.Options.DisableSharing = !canShare
+				tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
+				tracklist.SetSorting(a.trackSort)
+				tracklist.OnVisibleColumnsChanged = func(cols []string) {
+					a.cfg.TracklistColumns = cols
+				}
+				tracklist.SetNowPlaying(a.nowPlayingID)
+				a.contr.ConnectTracklistActions(tracklist)
+				a.tracklistCtr = container.New(
+					&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
+					tracklist)
+				a.container.Objects[0] = a.tracklistCtr
+				a.Refresh()
+				a.pendingViewSwitch = false
+			})
 		}()
 	} else {
 		a.container.Objects[0] = a.tracklistCtr

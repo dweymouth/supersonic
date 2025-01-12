@@ -4,6 +4,8 @@ import (
 	"context"
 	"image"
 	"log"
+
+	"fyne.io/fyne/v2"
 )
 
 // ThumbnailLoader is a utility type that exposes a single API to load
@@ -50,7 +52,7 @@ func (i *ThumbnailLoader) Load(coverID string) {
 		if err != nil {
 			log.Printf("Error loading cover image: %s", err.Error())
 		} else {
-			i.callOnLoaded(img)
+			fyne.Do(func() { i.callOnLoaded(img) })
 		}
 		i.prevLoadCancel() // Done. Release resources associated with un-cancelled ctx
 	})
