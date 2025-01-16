@@ -20,6 +20,7 @@ require (
 	github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d
 	github.com/zalando/go-keyring v0.2.1
 	golang.org/x/net v0.25.0
+	golang.org/x/sys v0.20.0
 	golang.org/x/text v0.16.0
 )
 
@@ -50,7 +51,6 @@ require (
 	github.com/yuin/goldmark v1.7.1 // indirect
 	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
-	golang.org/x/sys v0.20.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
