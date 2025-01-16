@@ -43,6 +43,10 @@ type SMTC struct {
 var smtcInstance *SMTC
 
 func InitSMTCForWindow(hwnd uintptr) (*SMTC, error) {
+	if maj, _, _ := windows.RtlGetNtVersionNumbers(); maj < 10 {
+		return nil, errors.New("SMTC is not supported on Windows versions < 10")
+	}
+
 	dll, err := windows.LoadDLL("smtc.dll")
 	if err != nil {
 		return nil, err

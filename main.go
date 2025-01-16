@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sys/windows"
-
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui"
@@ -93,11 +91,8 @@ func main() {
 		mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
 			// intialize Windows SMTC
 			if runtime.GOOS == "windows" {
-				if maj, _, _ := windows.RtlGetNtVersionNumbers(); maj >= 10 {
-					// SMTC is only available from Windows 10 (10.0.10240) onward
-					hwnd := ctx.(driver.WindowsWindowContext).HWND
-					myApp.SetupWindowsSMTC(hwnd)
-				}
+				hwnd := ctx.(driver.WindowsWindowContext).HWND
+				myApp.SetupWindowsSMTC(hwnd)
 			}
 
 			// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
