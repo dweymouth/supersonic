@@ -53,8 +53,12 @@ jobs:
         rm Supersonic.exe &&
         mv Supersonic-newbuild.exe Supersonic.exe
 
+    - name: Download smtc dll
+      run: >
+        wget https://github.com/supersonic-app/smtc-dll/releases/download/v0.0.1/SMTC.dll
+
     - name: Generate zip bundle
-      run: zip Supersonic-windows.zip Supersonic.exe libmpv-2.dll
+      run: zip Supersonic-windows.zip Supersonic.exe libmpv-2.dll SMTC.dll
 
     - name: Generate installer
       uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
