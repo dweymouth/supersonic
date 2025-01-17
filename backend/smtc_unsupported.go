@@ -28,6 +28,14 @@ func InitSMTCForWindow(hwnd uintptr) (*SMTC, error) {
 	return nil, smtcUnsupportedErr
 }
 
+func (s *SMTC) SetEnabled(enabled bool) error {
+	return smtcUnsupportedErr
+}
+
+func (s *SMTC) SetThumbnail(filepath string) error {
+	return smtcUnsupportedErr
+}
+
 func (s *SMTC) OnButtonPressed(func(SMTCButton)) {}
 
 func (s *SMTC) OnSeek(f func(millis int)) {}
