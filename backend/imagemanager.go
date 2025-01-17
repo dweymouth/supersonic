@@ -160,6 +160,15 @@ func (i *ImageManager) GetCoverArtUrl(coverID string) (string, error) {
 	return "", errors.New("cover not found")
 }
 
+// GetCoverArtURL returns the file path for the locally cached cover thumbnail, if it exists.
+func (i *ImageManager) GetCoverArtPath(coverID string) (string, error) {
+	path := i.filePathForCover(coverID)
+	if _, err := os.Stat(path); err == nil {
+		return path, nil
+	}
+	return "", errors.New("cover not found")
+}
+
 // GetCachedArtistImage returns the artist image for the given artistID from the on-disc cache, if it exists.
 func (i *ImageManager) GetCachedArtistImage(artistID string) (image.Image, bool) {
 	return i.loadLocalImage(i.filePathForArtistImage(artistID))

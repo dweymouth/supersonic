@@ -93,13 +93,13 @@ func (s *SMTC) UpdatePlaybackState(state SMTCPlaybackState) error {
 		return errors.New("SMTC DLL not available")
 	}
 
-	proc, err := s.dll.FindProc("UpdatePlaybackState")
+	proc, err := s.dll.FindProc("SetPlaybackState")
 	if err != nil {
 		return err
 	}
 
 	if hr, _, _ := proc.Call(uintptr(state)); hr < 0 {
-		return fmt.Errorf("UpdatePlaybackState failed with HRESULT=%d", hr)
+		return fmt.Errorf("SetPlaybackState failed with HRESULT=%d", hr)
 	}
 	return nil
 }
@@ -119,14 +119,14 @@ func (s *SMTC) UpdateMetadata(title, artist string) error {
 		return err
 	}
 
-	proc, err := s.dll.FindProc("UpdateMetadata")
+	proc, err := s.dll.FindProc("SetMetadata")
 	if err != nil {
 		return err
 	}
 
 	hr, _, _ := proc.Call(uintptr(unsafe.Pointer(utfTitle)), uintptr(unsafe.Pointer(utfArtist)))
 	if hr < 0 {
-		return fmt.Errorf("UpdateMetadata failed with HRESULT=%d", hr)
+		return fmt.Errorf("SetMetadata failed with HRESULT=%d", hr)
 	}
 	return nil
 }
@@ -136,14 +136,58 @@ func (s *SMTC) UpdatePosition(positionMillis, durationMillis int) error {
 		return errors.New("SMTC DLL not available")
 	}
 
-	proc, err := s.dll.FindProc("UpdatePosition")
+	proc, err := s.dll.FindProc("SetPosition")
 	if err != nil {
 		return err
 	}
 
 	hr, _, _ := proc.Call(uintptr(positionMillis), uintptr(durationMillis))
 	if hr < 0 {
-		return fmt.Errorf("UpdatePosition failed with HRESULT=%d", hr)
+		return fmt.Errorf("SetPosition failed with HRESULT=%d", hr)
+	}
+	return nil
+}
+
+func (s *SMTC) SetThumbnail(filepath string) error {
+	if s.dll == nil {
+		return errors.New("SMTC DLL not available")
+	}
+
+	proc, err := s.dll.FindProc("SetThumbnailPath")
+	if err != nil {
+		return err
+	}
+
+	utfPath, err := windows.UTF16PtrFromString(filepath)
+	if err != nil {
+		return err
+	}
+
+	hr, _, _ := proc.Call(uintptr(unsafe.Pointer(utfPath)))
+	if hr < 0 {
+		return fmt.Errorf("SetThumbnailPath failed with HRESULT=%d", hr)
+	}
+	return nil
+}
+
+func (s *SMTC) SetEnabled(enabled bool) error {
+	if s.dll == nil {
+		return errors.New("SMTC DLL not available")
+	}
+
+	proc, err := s.dll.FindProc("SetEnabled")
+	if err != nil {
+		return err
+	}
+
+	var arg uintptr = 0
+	if enabled {
+		arg = 1
+	}
+
+	hr, _, _ := proc.Call(arg)
+	if hr < 0 {
+		return fmt.Errorf("SetEnabled failed with HRESULT=%d", hr)
 	}
 	return nil
 }

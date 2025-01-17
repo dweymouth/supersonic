@@ -53,11 +53,12 @@ type App struct {
 	OnReactivate func()
 	OnExit       func()
 
-	appName       string
-	appVersionTag string
-	configDir     string
-	cacheDir      string
-	portableMode  bool
+	appName        string
+	displayAppName string
+	appVersionTag  string
+	configDir      string
+	cacheDir       string
+	portableMode   bool
 
 	isFirstLaunch bool // set by config file reader
 	bgrndCtx      context.Context
@@ -97,12 +98,13 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	}
 
 	a := &App{
-		logFile:       logFile,
-		appName:       appName,
-		appVersionTag: appVersionTag,
-		configDir:     confDir,
-		cacheDir:      cacheDir,
-		portableMode:  portableMode,
+		logFile:        logFile,
+		appName:        appName,
+		displayAppName: displayAppName,
+		appVersionTag:  appVersionTag,
+		configDir:      confDir,
+		cacheDir:       cacheDir,
+		portableMode:   portableMode,
 	}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 	a.readConfig()
@@ -343,6 +345,7 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 		return
 	}
 	a.WinSMTC = smtc
+	smtc.UpdateMetadata(a.displayAppName, "")
 
 	smtc.OnButtonPressed(func(btn SMTCButton) {
 		switch btn {
@@ -364,20 +367,35 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 
 	a.PlaybackManager.OnSongChange(func(nowPlaying mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		if nowPlaying == nil {
-			smtc.UpdateMetadata("", "")
+			smtc.UpdateMetadata("Supersonic", "")
 			return
 		}
-		artist := strings.Join(nowPlaying.Metadata().Artists, ", ")
-		smtc.UpdateMetadata(nowPlaying.Metadata().Name, artist)
-		smtc.UpdatePosition(0, nowPlaying.Metadata().Duration*1000)
+		meta := nowPlaying.Metadata()
+		smtc.UpdateMetadata(meta.Name, strings.Join(meta.Artists, ", "))
+		smtc.UpdatePosition(0, meta.Duration*1000)
+		go func() {
+			a.ImageManager.GetCoverThumbnail(meta.CoverArtID) // ensure image is cached locally
+			if path, err := a.ImageManager.GetCoverArtPath(meta.CoverArtID); err == nil {
+				smtc.SetThumbnail(path)
+			}
+		}()
 	})
 	a.PlaybackManager.OnSeek(func() {
 		dur := a.PlaybackManager.NowPlaying().Metadata().Duration
 		smtc.UpdatePosition(int(a.PlaybackManager.CurrentPlayer().GetStatus().TimePos*1000), dur*1000)
 	})
-	a.PlaybackManager.OnPlaying(func() { smtc.UpdatePlaybackState(SMTCPlaybackStatePlaying) })
-	a.PlaybackManager.OnPaused(func() { smtc.UpdatePlaybackState(SMTCPlaybackStatePaused) })
-	a.PlaybackManager.OnStopped(func() { smtc.UpdatePlaybackState(SMTCPlaybackStateStopped) })
+	a.PlaybackManager.OnPlaying(func() {
+		smtc.SetEnabled(true)
+		smtc.UpdatePlaybackState(SMTCPlaybackStatePlaying)
+	})
+	a.PlaybackManager.OnPaused(func() {
+		smtc.SetEnabled(true)
+		smtc.UpdatePlaybackState(SMTCPlaybackStatePaused)
+	})
+	a.PlaybackManager.OnStopped(func() {
+		smtc.SetEnabled(false)
+		smtc.UpdatePlaybackState(SMTCPlaybackStateStopped)
+	})
 }
 
 func (a *App) LoginToDefaultServer(string) error {
