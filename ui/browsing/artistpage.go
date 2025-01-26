@@ -361,18 +361,18 @@ const artistBioNotAvailableKey = "Artist biography not available."
 type ArtistPageHeader struct {
 	widget.BaseWidget
 
-	artistID       string
-	artistPage     *ArtistPage
-	artistImage    *widgets.ImagePlaceholder
-	artistImageID  string
-	titleDisp      *widget.RichText
-	biographyDisp  *widgets.MaxRowsLabel
-	similarArtists *fyne.Container
-	favoriteBtn    *widgets.FavoriteButton
-	playBtn        *widget.Button
-	playRadioBtn   *widget.Button
-	menuBtn        *widget.Button
-	container      *fyne.Container
+	artistID              string
+	artistPage            *ArtistPage
+	artistImage           *widgets.ImagePlaceholder
+	artistImageID         string
+	titleDisp             *widget.RichText
+	biographyDisp         *widgets.MaxRowsLabel
+	similarArtists        *fyne.Container
+	favoriteBtn           *widgets.FavoriteButton
+	playBtn               *widget.Button
+	playRadioBtn          *widget.Button
+	menuBtn               *widget.Button
+	container             *fyne.Container
 	fullSizeCoverFetching bool
 	//shareMenuItem  *fyne.MenuItem
 }
@@ -459,10 +459,12 @@ func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums, im *ba
 	a.favoriteBtn.IsFavorited = artist.Favorite
 	a.favoriteBtn.Refresh()
 	a.artistID = artist.ID
-	a.artistImageID = artist.CoverArtID
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
 	a.titleDisp.Refresh()
-
+	if artist.CoverArtID == "" {
+		return
+	}
+	a.artistImageID = artist.CoverArtID
 	go func() {
 		if cover, err := im.GetCoverThumbnail(artist.CoverArtID); err == nil {
 			a.artistImage.SetImage(cover, true)
@@ -520,18 +522,24 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 }
 
 func (a *ArtistPageHeader) showPopUpCover() {
-	if a.fullSizeCoverFetching {
-		return
-	}
-	a.fullSizeCoverFetching = true
-	defer func() { a.fullSizeCoverFetching = false }()
-	cover, err := a.artistPage.im.GetFullSizeCoverArt(a.artistImageID)
-	if err != nil {
-		log.Printf("error getting full size album cover: %s", err.Error())
-		return
-	}
-	if a.artistPage != nil {
-		a.artistPage.contr.ShowPopUpImage(cover)
+	if a.artistImageID == "" {
+		if im := a.artistImage.Image(); im != nil {
+			a.artistPage.contr.ShowPopUpImage(im)
+		}
+	} else {
+		if a.fullSizeCoverFetching {
+			return
+		}
+		a.fullSizeCoverFetching = true
+		defer func() { a.fullSizeCoverFetching = false }()
+		cover, err := a.artistPage.im.GetFullSizeCoverArt(a.artistImageID)
+		if err != nil {
+			log.Printf("error getting full size album cover: %s", err.Error())
+			return
+		}
+		if a.artistPage != nil {
+			a.artistPage.contr.ShowPopUpImage(cover)
+		}
 	}
 }
 
