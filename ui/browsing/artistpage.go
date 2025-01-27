@@ -468,7 +468,6 @@ func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums, im *ba
 	go func() {
 		if cover, err := im.GetCoverThumbnail(artist.CoverArtID); err == nil {
 			a.artistImage.SetImage(cover, true)
-			a.artistImage.Refresh()
 		} else {
 			log.Printf("error fetching cover: %v", err)
 		}
