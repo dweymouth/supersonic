@@ -247,7 +247,7 @@ func (a *ArtistPage) load() {
 		return
 	}
 	a.artistInfo = artist
-	a.header.Update(artist)
+	a.header.Update(artist, a.im)
 	if a.activeView == 0 {
 		a.showAlbumGrid(false /*reSort*/)
 	} else {
@@ -361,17 +361,19 @@ const artistBioNotAvailableKey = "Artist biography not available."
 type ArtistPageHeader struct {
 	widget.BaseWidget
 
-	artistID       string
-	artistPage     *ArtistPage
-	artistImage    *widgets.ImagePlaceholder
-	titleDisp      *widget.RichText
-	biographyDisp  *widgets.MaxRowsLabel
-	similarArtists *fyne.Container
-	favoriteBtn    *widgets.FavoriteButton
-	playBtn        *widget.Button
-	playRadioBtn   *widget.Button
-	menuBtn        *widget.Button
-	container      *fyne.Container
+	artistID              string
+	artistPage            *ArtistPage
+	artistImage           *widgets.ImagePlaceholder
+	artistImageID         string
+	titleDisp             *widget.RichText
+	biographyDisp         *widgets.MaxRowsLabel
+	similarArtists        *fyne.Container
+	favoriteBtn           *widgets.FavoriteButton
+	playBtn               *widget.Button
+	playRadioBtn          *widget.Button
+	menuBtn               *widget.Button
+	container             *fyne.Container
+	fullSizeCoverFetching bool
 	//shareMenuItem  *fyne.MenuItem
 }
 
@@ -388,11 +390,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, 225)
-	a.artistImage.OnTapped = func(*fyne.PointEvent) {
-		if im := a.artistImage.Image(); im != nil {
-			a.artistPage.contr.ShowPopUpImage(im)
-		}
-	}
+	a.artistImage.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.playBtn = widget.NewButtonWithIcon(lang.L("Play Discography"), theme.MediaPlayIcon(), func() {
 		go a.artistPage.pm.PlayArtistDiscography(a.artistID, false /*shuffle*/)
@@ -443,6 +441,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 
 func (a *ArtistPageHeader) Clear() {
 	a.artistID = ""
+	a.artistImageID = ""
 	a.favoriteBtn.IsFavorited = false
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = ""
 	a.biographyDisp.Text = lang.L(artistBioNotAvailableKey)
@@ -450,9 +449,10 @@ func (a *ArtistPageHeader) Clear() {
 		obj.Hide()
 	}
 	a.artistImage.SetImage(nil, false)
+	a.fullSizeCoverFetching = false
 }
 
-func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums) {
+func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums, im *backend.ImageManager) {
 	if artist == nil {
 		return
 	}
@@ -464,11 +464,14 @@ func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums) {
 	if artist.CoverArtID == "" {
 		return
 	}
-	if im, err := a.artistPage.im.GetCoverThumbnail(artist.CoverArtID); err != nil {
-		log.Printf("failed to load artist image: %v", err)
-	} else {
-		a.artistImage.SetImage(im, true /*tappable*/)
-	}
+	a.artistImageID = artist.CoverArtID
+	go func() {
+		if cover, err := im.GetCoverThumbnail(artist.CoverArtID); err == nil {
+			a.artistImage.SetImage(cover, true)
+		} else {
+			log.Printf("error fetching cover: %v", err)
+		}
+	}()
 }
 
 func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
@@ -513,6 +516,28 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 			if err == nil {
 				a.artistImage.SetImage(im, true /*tappable*/)
 			}
+		}
+	}
+}
+
+func (a *ArtistPageHeader) showPopUpCover() {
+	if a.artistImageID == "" {
+		if im := a.artistImage.Image(); im != nil {
+			a.artistPage.contr.ShowPopUpImage(im)
+		}
+	} else {
+		if a.fullSizeCoverFetching {
+			return
+		}
+		a.fullSizeCoverFetching = true
+		defer func() { a.fullSizeCoverFetching = false }()
+		cover, err := a.artistPage.im.GetFullSizeCoverArt(a.artistImageID)
+		if err != nil {
+			log.Printf("error getting full size album cover: %s", err.Error())
+			return
+		}
+		if a.artistPage != nil {
+			a.artistPage.contr.ShowPopUpImage(cover)
 		}
 	}
 }
