@@ -391,14 +391,16 @@ func (g *GridView) checkFetchMoreItems(count int) {
 					g.stateMutex.Lock()
 					g.items = append(g.items, items...)
 					g.stateMutex.Unlock()
-					g.loadingDots.Stop()
 					if len(items) < batchFetchSize {
 						g.done = true
 					}
 					n += len(items)
-					if len(items) > 0 {
-						g.grid.Refresh()
-					}
+					fyne.DoAndWait(func() {
+						g.loadingDots.Stop()
+						if len(items) > 0 {
+							g.grid.Refresh()
+						}
+					})
 				}
 			}
 		}
