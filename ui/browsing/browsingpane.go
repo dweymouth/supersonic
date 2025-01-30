@@ -255,30 +255,36 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 }
 
 func (b *BrowsingPane) onSongChange(song mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
-	if b.curPage == nil {
-		return
-	}
-	if p, ok := b.curPage.(CanShowNowPlaying); ok {
-		fyne.Do(func() { p.OnSongChange(song, lastScrobbledIfAny) })
-	}
+	fyne.Do(func() {
+		if b.curPage == nil {
+			return
+		}
+		if p, ok := b.curPage.(CanShowNowPlaying); ok {
+			p.OnSongChange(song, lastScrobbledIfAny)
+		}
+	})
 }
 
 func (b *BrowsingPane) onPlayTimeUpdate(cur, total float64, seeked bool) {
-	if b.curPage == nil {
-		return
-	}
-	if p, ok := b.curPage.(CanShowPlayTime); ok {
-		p.OnPlayTimeUpdate(cur, total, seeked)
-	}
+	fyne.Do(func() {
+		if b.curPage == nil {
+			return
+		}
+		if p, ok := b.curPage.(CanShowPlayTime); ok {
+			p.OnPlayTimeUpdate(cur, total, seeked)
+		}
+	})
 }
 
 func (b *BrowsingPane) onQueueChange() {
-	if b.curPage == nil {
-		return
-	}
-	if p, ok := b.curPage.(CanShowPlayQueue); ok {
-		p.OnPlayQueueChange()
-	}
+	fyne.Do(func() {
+		if b.curPage == nil {
+			return
+		}
+		if p, ok := b.curPage.(CanShowPlayQueue); ok {
+			p.OnPlayQueueChange()
+		}
+	})
 }
 
 func (b *BrowsingPane) addPageToHistory(p Page, truncate bool) {

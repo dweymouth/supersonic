@@ -108,17 +108,21 @@ func (p *PlaylistsPage) Scroll(scrollAmt float32) {
 	}
 }
 
+// should be called asynchronously
 func (a *PlaylistsPage) load(searchOnLoad bool) {
 	playlists, err := a.mp.GetPlaylists()
 	if err != nil {
 		log.Printf("error loading playlists: %v", err.Error())
 	}
-	a.playlists = playlists
-	if searchOnLoad {
-		a.onSearched(a.searcher.Entry.Text)
-	} else {
-		a.refreshView(playlists)
-	}
+
+	fyne.Do(func() {
+		a.playlists = playlists
+		if searchOnLoad {
+			a.onSearched(a.searcher.Entry.Text)
+		} else {
+			a.refreshView(playlists)
+		}
+	})
 }
 
 func (a *PlaylistsPage) createListView() {
