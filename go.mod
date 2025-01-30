@@ -10,7 +10,7 @@ require (
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
 	github.com/dweymouth/fyne-advanced-list v0.0.0-20240806013530-392de9d6a2a1
 	github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64
-	github.com/dweymouth/fyne-tooltip v0.2.0
+	github.com/dweymouth/fyne-tooltip v0.2.2-0.20250130121815-99d48eaa2e5b
 	github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
@@ -63,4 +63,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.5.3 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250112004415-0d8cb89956b0
+replace fyne.io/fyne/v2 v2.5.3 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250129162414-0b5d9f71fefd

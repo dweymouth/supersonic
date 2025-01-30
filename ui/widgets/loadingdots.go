@@ -71,7 +71,7 @@ func (l *LoadingDots) animate(ctx context.Context) {
 			l.running.Store(false)
 			return
 		case <-ticker.C:
-			l.doTick(foreground, disabled)
+			fyne.Do(func() { l.doTick(foreground, disabled) })
 		}
 	}
 }
