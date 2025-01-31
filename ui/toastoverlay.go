@@ -72,7 +72,7 @@ func (t *ToastOverlay) showToast(isErr bool, message string) {
 		case <-ctx.Done():
 			return
 		default:
-			t.dismissToast()
+			fyne.Do(t.dismissToast)
 		}
 	}()
 }
