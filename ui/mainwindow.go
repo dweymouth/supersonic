@@ -111,11 +111,13 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BrowsingPane.AddSettingsMenuItem(lang.L("Check for Updates"), func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
-				m.ShowNewVersionDialog(displayAppName, t)
+				fyne.Do(func() { m.ShowNewVersionDialog(displayAppName, t) })
 			} else {
-				dialog.ShowInformation(lang.L("No new version found"),
-					lang.L("You are running the latest version of")+" "+displayAppName,
-					m.Window)
+				fyne.Do(func() {
+					dialog.ShowInformation(lang.L("No new version found"),
+						lang.L("You are running the latest version of")+" "+displayAppName,
+						m.Window)
+				})
 			}
 		}()
 	})

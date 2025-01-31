@@ -403,7 +403,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 							log.Printf("error deleting playlist: %s", err.Error())
 						} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
 							// navigate to playlists page if user is still on the page of the deleted playlist
-							m.NavigateTo(PlaylistsRoute())
+							fyne.Do(func() { m.NavigateTo(PlaylistsRoute()) })
 						}
 					}()
 				}
@@ -418,7 +418,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 				log.Printf("error updating playlist: %s", err.Error())
 			} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
 				// if user is on playlist page, reload to get the updates
-				m.ReloadFunc()
+				fyne.Do(m.ReloadFunc)
 			}
 		}()
 	}
@@ -479,16 +479,18 @@ func (m *Controller) PromptForLoginAndConnect() {
 			defer cancel()
 
 			err := m.App.ServerManager.TestConnectionAndAuth(ctx, server.ServerConnection, password)
-			if err == backend.ErrUnreachable {
-				d.SetErrorText(lang.L("Server unreachable"))
-			} else if err != nil {
-				d.SetErrorText(lang.L("Authentication failed"))
-			} else {
-				pop.Hide()
-				m.trySetPasswordAndConnectToServer(server, password)
-				m.doModalClosed()
-			}
-			d.EnableSubmit()
+			fyne.Do(func() {
+				if err == backend.ErrUnreachable {
+					d.SetErrorText(lang.L("Server unreachable"))
+				} else if err != nil {
+					d.SetErrorText(lang.L("Authentication failed"))
+				} else {
+					pop.Hide()
+					m.trySetPasswordAndConnectToServer(server, password)
+					m.doModalClosed()
+				}
+				d.EnableSubmit()
+			})
 		}()
 	}
 	d.OnEditServer = func(server *backend.ServerConfig) {
@@ -498,18 +500,21 @@ func (m *Controller) PromptForLoginAndConnect() {
 		editD.OnSubmit = func() {
 			d.DisableSubmit()
 			go func() {
-				if m.testConnectionAndUpdateDialogText(editD) {
-					// connection is good
-					editPop.Hide()
-					server.Hostname = editD.Host
-					server.AltHostname = editD.AltHost
-					server.Nickname = editD.Nickname
-					server.Username = editD.Username
-					server.LegacyAuth = editD.LegacyAuth
-					m.trySetPasswordAndConnectToServer(server, editD.Password)
-					m.doModalClosed()
-				}
-				d.EnableSubmit()
+				success := m.testConnectionAndUpdateDialogText(editD)
+				fyne.Do(func() {
+					if success {
+						// connection is good
+						editPop.Hide()
+						server.Hostname = editD.Host
+						server.AltHostname = editD.AltHost
+						server.Nickname = editD.Nickname
+						server.Username = editD.Username
+						server.LegacyAuth = editD.LegacyAuth
+						m.trySetPasswordAndConnectToServer(server, editD.Password)
+						m.doModalClosed()
+					}
+					d.EnableSubmit()
+				})
 			}()
 		}
 		editD.OnCancel = func() {
@@ -525,21 +530,24 @@ func (m *Controller) PromptForLoginAndConnect() {
 		newD.OnSubmit = func() {
 			d.DisableSubmit()
 			go func() {
-				if m.testConnectionAndUpdateDialogText(newD) {
-					// connection is good
-					newPop.Hide()
-					conn := backend.ServerConnection{
-						ServerType:  newD.ServerType,
-						Hostname:    newD.Host,
-						AltHostname: newD.AltHost,
-						Username:    newD.Username,
-						LegacyAuth:  newD.LegacyAuth,
+				success := m.testConnectionAndUpdateDialogText(newD)
+				fyne.Do(func() {
+					if success {
+						// connection is good
+						newPop.Hide()
+						conn := backend.ServerConnection{
+							ServerType:  newD.ServerType,
+							Hostname:    newD.Host,
+							AltHostname: newD.AltHost,
+							Username:    newD.Username,
+							LegacyAuth:  newD.LegacyAuth,
+						}
+						server := m.App.ServerManager.AddServer(newD.Nickname, conn)
+						m.trySetPasswordAndConnectToServer(server, newD.Password)
+						m.doModalClosed()
 					}
-					server := m.App.ServerManager.AddServer(newD.Nickname, conn)
-					m.trySetPasswordAndConnectToServer(server, newD.Password)
-					m.doModalClosed()
-				}
-				d.EnableSubmit()
+					d.EnableSubmit()
+				})
 			}()
 		}
 		newD.OnCancel = func() {
@@ -757,24 +765,26 @@ func (c *Controller) ShowShareDialog(id string) {
 			return
 		}
 
-		hyperlink := widget.NewHyperlink(shareUrl.String(), shareUrl)
-		dlg := dialog.NewCustom(lang.L("Share content"), lang.L("OK"),
-			container.NewHBox(
-				hyperlink,
-				widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-					c.MainWindow.Clipboard().SetContent(hyperlink.Text)
-				}),
-				widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-					if shareUrl, err := c.createShareURL(id); err == nil {
-						hyperlink.Text = shareUrl.String()
-						hyperlink.URL = shareUrl
-						hyperlink.Refresh()
-					}
-				}),
-			),
-			c.MainWindow,
-		)
-		dlg.Show()
+		fyne.Do(func() {
+			hyperlink := widget.NewHyperlink(shareUrl.String(), shareUrl)
+			dlg := dialog.NewCustom(lang.L("Share content"), lang.L("OK"),
+				container.NewHBox(
+					hyperlink,
+					widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+						c.MainWindow.Clipboard().SetContent(hyperlink.Text)
+					}),
+					widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+						if shareUrl, err := c.createShareURL(id); err == nil {
+							hyperlink.Text = shareUrl.String()
+							hyperlink.URL = shareUrl
+							hyperlink.Refresh()
+						}
+					}),
+				),
+				c.MainWindow,
+			)
+			dlg.Show()
+		})
 	}()
 }
 
@@ -908,15 +918,17 @@ func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover i
 			log.Print("Error getting album info: ", err)
 			return
 		}
-		dlg := dialogs.NewAlbumInfoDialog(albumInfo, albumName, albumCover)
-		pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
-		dlg.OnDismiss = func() {
-			pop.Hide()
-			c.doModalClosed()
-		}
-		c.ClosePopUpOnEscape(pop)
-		c.haveModal = true
-		pop.Show()
+		fyne.Do(func() {
+			dlg := dialogs.NewAlbumInfoDialog(albumInfo, albumName, albumCover)
+			pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
+			dlg.OnDismiss = func() {
+				pop.Hide()
+				c.doModalClosed()
+			}
+			c.ClosePopUpOnEscape(pop)
+			c.haveModal = true
+			pop.Show()
+		})
 	}()
 }
 
