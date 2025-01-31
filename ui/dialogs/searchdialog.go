@@ -101,7 +101,7 @@ func (sd *SearchDialog) SearchQuery() string {
 
 func (sd *SearchDialog) Show() {
 	sd.BaseWidget.Show()
-	go sd.onSearched("")
+	sd.onSearched("")
 }
 
 func (sd *SearchDialog) Refresh() {
@@ -163,14 +163,18 @@ func (sd *SearchDialog) setResults(results []*mediaprovider.SearchResult) {
 func (sd *SearchDialog) onSearched(query string) {
 	sd.loadingDots.Start()
 	var results []*mediaprovider.SearchResult
-	res := sd.OnSearched(query)
-	if len(res) == 0 {
-		log.Println("No results matched the query.")
-	} else {
-		results = res
-	}
-	sd.loadingDots.Stop()
-	sd.setResults(results)
+	go func() {
+		res := sd.OnSearched(query)
+		if len(res) == 0 {
+			log.Println("No results matched the query.")
+		} else {
+			results = res
+		}
+		fyne.Do(func() {
+			sd.loadingDots.Stop()
+			sd.setResults(results)
+		})
+	}()
 }
 
 func (sd *SearchDialog) CreateRenderer() fyne.WidgetRenderer {
