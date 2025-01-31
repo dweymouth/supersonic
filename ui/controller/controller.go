@@ -307,14 +307,18 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	})
 	sp.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
 		notifySuccess := func(n int) {
-			msg := lang.LocalizePluralKey("playlist.addedtracks",
-				"Added tracks to playlist", n, map[string]string{"trackCount": strconv.Itoa(n)})
-			m.ToastProvider.ShowSuccessToast(msg)
+			fyne.Do(func() {
+				msg := lang.LocalizePluralKey("playlist.addedtracks",
+					"Added tracks to playlist", n, map[string]string{"trackCount": strconv.Itoa(n)})
+				m.ToastProvider.ShowSuccessToast(msg)
+			})
 		}
 		notifyError := func() {
-			m.ToastProvider.ShowErrorToast(
-				lang.L("An error occurred adding tracks to the playlist"),
-			)
+			fyne.Do(func() {
+				m.ToastProvider.ShowErrorToast(
+					lang.L("An error occurred adding tracks to the playlist"),
+				)
+			})
 		}
 		pop.Hide()
 		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
@@ -324,7 +328,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 				if err == nil {
 					notifySuccess(len(trackIDs))
 				} else {
-					log.Println("error adding tracks to playlist: %s", err.Error())
+					log.Printf("error adding tracks to playlist: %s", err.Error())
 					notifyError()
 				}
 			}()
@@ -348,7 +352,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 						if err == nil {
 							notifySuccess(len(filterTrackIDs))
 						} else {
-							log.Println("error adding tracks to playlist: %s", err.Error())
+							log.Printf("error adding tracks to playlist: %s", err.Error())
 							notifyError()
 						}
 					}
@@ -359,7 +363,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 					if err == nil {
 						notifySuccess(len(trackIDs))
 					} else {
-						log.Println("error adding tracks to playlist: %s", err.Error())
+						log.Printf("error adding tracks to playlist: %s", err.Error())
 						notifyError()
 					}
 				}()
