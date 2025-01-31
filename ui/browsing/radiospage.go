@@ -78,25 +78,28 @@ func (a *RadiosPage) load(searchOnLoad bool, scrollPos float32) {
 	if err != nil {
 		log.Printf("error loading radios: %v", err.Error())
 	}
-	if len(radios) == 0 {
-		a.noRadiosMsg.Show()
-	} else {
-		a.noRadiosMsg.Hide()
-	}
-	a.radios = radios
-	if searchOnLoad {
-		a.onSearched(a.searcher.Entry.Text)
-		if scrollPos != 0 {
-			a.list.list.ScrollToOffset(scrollPos)
+
+	fyne.Do(func() {
+		if len(radios) == 0 {
+			a.noRadiosMsg.Show()
+		} else {
+			a.noRadiosMsg.Hide()
 		}
-	} else {
-		a.list.SetRadios(a.radios)
-		if scrollPos != 0 {
-			a.list.list.ScrollToOffset(scrollPos)
-			return
+		a.radios = radios
+		if searchOnLoad {
+			a.onSearched(a.searcher.Entry.Text)
+			if scrollPos != 0 {
+				a.list.list.ScrollToOffset(scrollPos)
+			}
+		} else {
+			a.list.SetRadios(a.radios)
+			if scrollPos != 0 {
+				a.list.list.ScrollToOffset(scrollPos)
+				return
+			}
+			a.list.Refresh()
 		}
-		a.list.Refresh()
-	}
+	})
 }
 
 func (a *RadiosPage) onPlay(station *mediaprovider.RadioStation) {

@@ -62,16 +62,16 @@ func (l *LoadingDots) Stop() {
 func (l *LoadingDots) animate(ctx context.Context) {
 	foreground := theme.ForegroundColor()
 	disabled := theme.DisabledColor()
-	l.doTick(foreground, disabled)
 	ticker := time.NewTicker(333 * time.Millisecond)
 	for {
+		fyne.Do(func() { l.doTick(foreground, disabled) })
 		select {
 		case <-ctx.Done():
 			ticker.Stop()
 			l.running.Store(false)
 			return
 		case <-ticker.C:
-			fyne.Do(func() { l.doTick(foreground, disabled) })
+			continue
 		}
 	}
 }
