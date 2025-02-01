@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -160,7 +161,7 @@ func (i *ImageManager) GetCoverArtUrl(coverID string) (string, error) {
 	return "", errors.New("cover not found")
 }
 
-// GetCoverArtURL returns the file path for the locally cached cover thumbnail, if it exists.
+// GetCoverArtPath returns the file path for the locally cached cover thumbnail, if it exists.
 func (i *ImageManager) GetCoverArtPath(coverID string) (string, error) {
 	path := i.filePathForCover(coverID)
 	if _, err := os.Stat(path); err == nil {
@@ -315,11 +316,11 @@ func (i *ImageManager) checkRefreshLocalCover(stat os.FileInfo, coverID string, 
 }
 
 func (i *ImageManager) filePathForCover(coverID string) string {
-	return filepath.Join(i.ensureCoverCacheDir(), fmt.Sprintf("%s.jpg", coverID))
+	return filepath.Join(i.ensureCoverCacheDir(), fmt.Sprintf("%s.jpg", sanitizeFileName(coverID)))
 }
 
 func (i *ImageManager) filePathForArtistImage(id string) string {
-	return filepath.Join(i.ensureArtistCoverCacheDir(), fmt.Sprintf("%s.jpg", id))
+	return filepath.Join(i.ensureArtistCoverCacheDir(), fmt.Sprintf("%s.jpg", sanitizeFileName(id)))
 }
 
 func (i *ImageManager) writeJpeg(img image.Image, path string) error {
@@ -399,4 +400,10 @@ func (im *ImageManager) pruneOnDiskCache() {
 		}
 	}
 	im.filesWrittenSinceLastPrune = false
+}
+
+var illegalFilename = regexp.MustCompile("[" + regexp.QuoteMeta("`~!@#$%^&*+={}|/\\:;\"'<>?") + "]")
+
+func sanitizeFileName(s string) string {
+	return illegalFilename.ReplaceAllString(s, "_")
 }
