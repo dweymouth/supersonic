@@ -32,7 +32,7 @@ jobs:
          ./appimage-build.sh
 
     - name: upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Supersonic.AppImage
         path: Supersonic-x86_64.AppImage

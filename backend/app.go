@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/ipc"
@@ -45,17 +46,19 @@ type App struct {
 	LocalPlayer     *mpv.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
+	WinSMTC         *SMTC
 	ipcServer       ipc.IPCServer
 
 	// UI callbacks to be set in main
 	OnReactivate func()
 	OnExit       func()
 
-	appName       string
-	appVersionTag string
-	configDir     string
-	cacheDir      string
-	portableMode  bool
+	appName        string
+	displayAppName string
+	appVersionTag  string
+	configDir      string
+	cacheDir       string
+	portableMode   bool
 
 	isFirstLaunch bool // set by config file reader
 	bgrndCtx      context.Context
@@ -95,12 +98,13 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	}
 
 	a := &App{
-		logFile:       logFile,
-		appName:       appName,
-		appVersionTag: appVersionTag,
-		configDir:     confDir,
-		cacheDir:      cacheDir,
-		portableMode:  portableMode,
+		logFile:        logFile,
+		appName:        appName,
+		displayAppName: displayAppName,
+		appVersionTag:  appVersionTag,
+		configDir:      confDir,
+		cacheDir:       cacheDir,
+		portableMode:   portableMode,
 	}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
 	a.readConfig()
@@ -165,11 +169,14 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	}
 
 	// OS media center integrations
+	// Linux MPRIS
 	a.setupMPRIS(displayAppName)
+	// MacOS MPNowPlayingInfoCenter
 	InitMPMediaHandler(a.PlaybackManager, func(id string) (string, error) {
 		a.ImageManager.GetCoverThumbnail(id) // ensure image is cached locally
 		return a.ImageManager.GetCoverArtUrl(id)
 	})
+	// Windows SMTC is initialized from main once we have a window HWND.
 
 	a.startConfigWriter(a.bgrndCtx)
 
@@ -331,6 +338,66 @@ func (a *App) setupMPRIS(mprisAppName string) {
 	a.MPRISHandler.Start()
 }
 
+func (a *App) SetupWindowsSMTC(hwnd uintptr) {
+	smtc, err := InitSMTCForWindow(hwnd)
+	if err != nil {
+		log.Printf("error initializing SMTC: %d", err)
+		return
+	}
+	a.WinSMTC = smtc
+	smtc.UpdateMetadata(a.displayAppName, "")
+
+	smtc.OnButtonPressed(func(btn SMTCButton) {
+		switch btn {
+		case SMTCButtonPlay:
+			a.PlaybackManager.Continue()
+		case SMTCButtonPause:
+			a.PlaybackManager.Pause()
+		case SMTCButtonNext:
+			a.PlaybackManager.SeekNext()
+		case SMTCButtonPrevious:
+			a.PlaybackManager.SeekBackOrPrevious()
+		case SMTCButtonStop:
+			a.PlaybackManager.Stop()
+		}
+	})
+	smtc.OnSeek(func(millis int) {
+		a.PlaybackManager.SeekSeconds(float64(millis) / 1000)
+	})
+
+	a.PlaybackManager.OnSongChange(func(nowPlaying mediaprovider.MediaItem, _ *mediaprovider.Track) {
+		if nowPlaying == nil {
+			smtc.UpdateMetadata("Supersonic", "")
+			return
+		}
+		meta := nowPlaying.Metadata()
+		smtc.UpdateMetadata(meta.Name, strings.Join(meta.Artists, ", "))
+		smtc.UpdatePosition(0, meta.Duration*1000)
+		go func() {
+			a.ImageManager.GetCoverThumbnail(meta.CoverArtID) // ensure image is cached locally
+			if path, err := a.ImageManager.GetCoverArtPath(meta.CoverArtID); err == nil {
+				smtc.SetThumbnail(path)
+			}
+		}()
+	})
+	a.PlaybackManager.OnSeek(func() {
+		dur := a.PlaybackManager.NowPlaying().Metadata().Duration
+		smtc.UpdatePosition(int(a.PlaybackManager.CurrentPlayer().GetStatus().TimePos*1000), dur*1000)
+	})
+	a.PlaybackManager.OnPlaying(func() {
+		smtc.SetEnabled(true)
+		smtc.UpdatePlaybackState(SMTCPlaybackStatePlaying)
+	})
+	a.PlaybackManager.OnPaused(func() {
+		smtc.SetEnabled(true)
+		smtc.UpdatePlaybackState(SMTCPlaybackStatePaused)
+	})
+	a.PlaybackManager.OnStopped(func() {
+		smtc.SetEnabled(false)
+		smtc.UpdatePlaybackState(SMTCPlaybackStateStopped)
+	})
+}
+
 func (a *App) LoginToDefaultServer(string) error {
 	serverCfg := a.ServerManager.GetDefaultServer()
 	if serverCfg == nil {
@@ -370,6 +437,9 @@ func (a *App) Shutdown() {
 		a.ipcServer.Shutdown(a.bgrndCtx)
 	}
 	a.MPRISHandler.Shutdown()
+	if a.WinSMTC != nil {
+		a.WinSMTC.Shutdown()
+	}
 	a.PlaybackManager.DisableCallbacks()
 	a.PlaybackManager.Stop() // will trigger scrobble check
 	a.cancel()

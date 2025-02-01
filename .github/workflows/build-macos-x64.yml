@@ -49,13 +49,13 @@ jobs:
         mv Supersonic.zip Supersonic_HighSierra+.zip
 
     - name: Upload Big Sur+ package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Supersonic_mac_x64_BigSur+.zip
         path: Supersonic_BigSur+.zip
 
     - name: Upload High Sierra+ package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Supersonic_mac_x64_HighSierra+.zip
         path: Supersonic_HighSierra+.zip
