@@ -47,6 +47,7 @@ type AppConfig struct {
 	AddToPlaylistSkipDuplicates bool
 	ShowTrackChangeNotification bool
 	EnableLrcLib                bool
+	EnablePasswordStorage       bool
 	SkipSSLVerify               bool
 	EnqueueBatchSize            int
 	Language                    string
@@ -180,6 +181,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			SaveQueueToServer:           false,
 			ShowTrackChangeNotification: false,
 			EnableLrcLib:                true,
+			EnablePasswordStorage:       true,
 			SkipSSLVerify:               false,
 			EnqueueBatchSize:            100,
 			Language:                    "auto",
