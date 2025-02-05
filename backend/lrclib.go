@@ -16,12 +16,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/20after4/configdir"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
+const CACHE_LYRICS_FOLDER = "lyrics"
+
 func FetchLrcLibLyricsCached(name, artist, album string, durationSecs int, cacheDir string) (*mediaprovider.Lyrics, error) {
-	hash := makeTrackIdHash(name, artist, album)
-	cacheFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_lyrics.txt", hash))
+	hash := makeTrackIdHash(name, artist, album, durationSecs)
+	cachePath := filepath.Join(cacheDir, CACHE_LYRICS_FOLDER)
+	configdir.MakePath(cachePath)
+	cacheFilePath := filepath.Join(cachePath, fmt.Sprintf("%s_lyrics.txt", hash))
 
 	// File is cached. Try to use it
 	if _, err := os.Stat(cacheFilePath); err == nil {
@@ -179,9 +184,9 @@ func readCachedLyrics(cacheFile string) (*mediaprovider.Lyrics, error) {
 }
 
 // Create a "unique" hash for a song to identify it.
-func makeTrackIdHash(name, artist, album string) string {
+func makeTrackIdHash(name, artist, album string, durationSecs int) string {
 	hasher := md5.New()
-	identifier := fmt.Sprintf("%s;%s;%s", name, artist, album)
+	identifier := fmt.Sprintf("%s;%s;%s;%d", name, artist, album, durationSecs)
 	hasher.Write([]byte(identifier))
 	return hex.EncodeToString(hasher.Sum(nil))
 }
