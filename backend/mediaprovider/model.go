@@ -150,10 +150,10 @@ type PlaylistWithTracks struct {
 }
 
 type Lyrics struct {
-	Title  string
-	Artist string
-	Synced bool
-	Lines  []LyricLine
+	Title  string      `json:"title"`
+	Artist string      `json:"artist"`
+	Synced bool        `json:"synced"`
+	Lines  []LyricLine `json:"lines"`
 }
 
 type LyricLine struct {

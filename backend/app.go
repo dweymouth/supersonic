@@ -57,7 +57,7 @@ type App struct {
 	displayAppName string
 	appVersionTag  string
 	configDir      string
-	cacheDir       string
+	CacheDir       string
 	portableMode   bool
 
 	isFirstLaunch bool // set by config file reader
@@ -103,7 +103,7 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		displayAppName: displayAppName,
 		appVersionTag:  appVersionTag,
 		configDir:      confDir,
-		cacheDir:       cacheDir,
+		CacheDir:       cacheDir,
 		portableMode:   portableMode,
 	}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
@@ -411,7 +411,7 @@ func (a *App) LoginToDefaultServer(string) error {
 }
 
 func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
-	path := path.Join(a.cacheDir, serverID.String())
+	path := path.Join(a.CacheDir, serverID.String())
 	log.Printf("Deleting server cache dir: %s", path)
 	return os.RemoveAll(path)
 }
