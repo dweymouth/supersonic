@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -23,13 +24,14 @@ import (
 const lrclibCacheFolder = "lrclib"
 
 type LrcLibFetcher struct {
-	cachePath string
+	cachePath       string
+	customLrcLibUrl string
 }
 
-func NewLrcLibFetcher(baseCacheDir string) *LrcLibFetcher {
+func NewLrcLibFetcher(baseCacheDir string, customLrcLibUrl string) *LrcLibFetcher {
 	cachePath := filepath.Join(baseCacheDir, lrclibCacheFolder)
 	configdir.MakePath(cachePath)
-	return &LrcLibFetcher{cachePath: cachePath}
+	return &LrcLibFetcher{cachePath: cachePath, customLrcLibUrl: customLrcLibUrl}
 }
 
 func (l *LrcLibFetcher) FetchLrcLibLyrics(name, artist, album string, durationSecs int) (*mediaprovider.Lyrics, error) {
@@ -68,7 +70,9 @@ func (l *LrcLibFetcher) fetchFromServer(name, artist, album string, durationSecs
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://lrclib.net/api/get", nil)
+	lrclibUrl := l.getLrclibUrl()
+	fmt.Println(lrclibUrl)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, lrclibUrl, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +93,21 @@ func (l *LrcLibFetcher) fetchFromServer(name, artist, album string, durationSecs
 	defer resp.Body.Close()
 
 	return parseLrcLibResponse(resp)
+}
+
+// Returns the Lrclib url the fetcher should use, based on the configuration.
+func (l *LrcLibFetcher) getLrclibUrl() string {
+	if l.customLrcLibUrl != "" {
+		u, err := url.JoinPath(l.customLrcLibUrl, "/api/get")
+		if err == nil {
+			// Return custom cunfig url
+			return u
+		}
+
+		log.Printf("Invalid LrcLib URL passed (err: %s). Falling back to default", err)
+	}
+
+	return "https://lrclib.net/api/get"
 }
 
 func parseLrcLibResponse(resp *http.Response) (*mediaprovider.Lyrics, error) {

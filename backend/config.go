@@ -47,6 +47,7 @@ type AppConfig struct {
 	AddToPlaylistSkipDuplicates bool
 	ShowTrackChangeNotification bool
 	EnableLrcLib                bool
+	CustomLrcLibUrl             string
 	EnablePasswordStorage       bool
 	SkipSSLVerify               bool
 	EnqueueBatchSize            int
