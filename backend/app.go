@@ -48,6 +48,7 @@ type App struct {
 	MPRISHandler    *MPRISHandler
 	WinSMTC         *SMTC
 	ipcServer       ipc.IPCServer
+	LrcLibFetcher   *LrcLibFetcher
 
 	// UI callbacks to be set in main
 	OnReactivate func()
@@ -144,6 +145,9 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
+	if a.Config.Application.EnableLrcLib {
+		a.LrcLibFetcher = NewLrcLibFetcher(a.cacheDir)
+	}
 
 	a.PlaybackManager.OnPlaying(func() {
 		SetSystemSleepDisabled(true)
