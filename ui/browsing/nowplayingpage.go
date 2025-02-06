@@ -80,8 +80,7 @@ type nowPlayingPageState struct {
 	mp       mediaprovider.MediaProvider
 	canRate  bool
 	canShare bool
-	lrcLib   bool
-	cacheDir string
+	lrcFetch *backend.LrcLibFetcher
 }
 
 func NewNowPlayingPage(
@@ -94,11 +93,10 @@ func NewNowPlayingPage(
 	mp mediaprovider.MediaProvider,
 	canRate bool,
 	canShare bool,
-	lrcLibEnabled bool,
-	cacheDir string,
+	lrcLibFetcher *backend.LrcLibFetcher,
 ) *NowPlayingPage {
 	state := nowPlayingPageState{
-		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, lrcLib: lrcLibEnabled, cacheDir: cacheDir,
+		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, lrcFetch: lrcLibFetcher,
 	}
 	if page, ok := pool.Obtain(util.WidgetTypeNowPlayingPage).(*NowPlayingPage); ok && page != nil {
 		page.nowPlayingPageState = state
@@ -363,8 +361,8 @@ func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 			log.Printf("Error fetching lyrics: %v", err)
 		}
 	}
-	if lyrics == nil {
-		lyrics, err = backend.FetchLrcLibLyricsCached(song.Title, song.ArtistNames[0], song.Album, song.Duration, a.cacheDir)
+	if lyrics == nil && a.lrcFetch != nil {
+		lyrics, err = a.lrcFetch.FetchLrcLibLyrics(song.Title, song.ArtistNames[0], song.Album, song.Duration)
 		if err != nil {
 			log.Println(err.Error())
 		}
@@ -452,7 +450,7 @@ func (a *NowPlayingPage) Reload() {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.mp, s.canRate, s.canShare, s.lrcLib, s.cacheDir)
+	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.mp, s.canRate, s.canShare, s.lrcFetch)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)

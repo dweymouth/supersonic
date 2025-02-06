@@ -48,6 +48,7 @@ type App struct {
 	MPRISHandler    *MPRISHandler
 	WinSMTC         *SMTC
 	ipcServer       ipc.IPCServer
+	LrcLibFetcher   *LrcLibFetcher
 
 	// UI callbacks to be set in main
 	OnReactivate func()
@@ -57,7 +58,7 @@ type App struct {
 	displayAppName string
 	appVersionTag  string
 	configDir      string
-	CacheDir       string
+	cacheDir       string
 	portableMode   bool
 
 	isFirstLaunch bool // set by config file reader
@@ -103,7 +104,7 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		displayAppName: displayAppName,
 		appVersionTag:  appVersionTag,
 		configDir:      confDir,
-		CacheDir:       cacheDir,
+		cacheDir:       cacheDir,
 		portableMode:   portableMode,
 	}
 	a.bgrndCtx, a.cancel = context.WithCancel(context.Background())
@@ -144,6 +145,9 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
+	if a.Config.Application.EnableLrcLib {
+		a.LrcLibFetcher = NewLrcLibFetcher(a.cacheDir)
+	}
 
 	a.PlaybackManager.OnPlaying(func() {
 		SetSystemSleepDisabled(true)
@@ -411,7 +415,7 @@ func (a *App) LoginToDefaultServer(string) error {
 }
 
 func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
-	path := path.Join(a.CacheDir, serverID.String())
+	path := path.Join(a.cacheDir, serverID.String())
 	log.Printf("Deleting server cache dir: %s", path)
 	return os.RemoveAll(path)
 }

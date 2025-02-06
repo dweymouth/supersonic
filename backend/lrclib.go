@@ -20,13 +20,21 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
-const CACHE_LYRICS_FOLDER = "lyrics"
+const lrclibCacheFolder = "lrclib"
 
-func FetchLrcLibLyricsCached(name, artist, album string, durationSecs int, cacheDir string) (*mediaprovider.Lyrics, error) {
-	hash := makeTrackIdHash(name, artist, album, durationSecs)
-	cachePath := filepath.Join(cacheDir, CACHE_LYRICS_FOLDER)
+type LrcLibFetcher struct {
+	cachePath string
+}
+
+func NewLrcLibFetcher(baseCacheDir string) *LrcLibFetcher {
+	cachePath := filepath.Join(baseCacheDir, lrclibCacheFolder)
 	configdir.MakePath(cachePath)
-	cacheFilePath := filepath.Join(cachePath, fmt.Sprintf("%s_lyrics.txt", hash))
+	return &LrcLibFetcher{cachePath: cachePath}
+}
+
+func (l *LrcLibFetcher) FetchLrcLibLyrics(name, artist, album string, durationSecs int) (*mediaprovider.Lyrics, error) {
+	hash := makeTrackIdHash(name, artist, album, durationSecs)
+	cacheFilePath := filepath.Join(l.cachePath, fmt.Sprintf("%s.txt", hash))
 
 	// File is cached. Try to use it
 	if _, err := os.Stat(cacheFilePath); err == nil {
@@ -42,7 +50,7 @@ func FetchLrcLibLyricsCached(name, artist, album string, durationSecs int, cache
 	}
 
 	// Fetch the lyrics
-	lyrics, err := FetchLrcLibLyrics(name, artist, album, durationSecs)
+	lyrics, err := l.fetchFromServer(name, artist, album, durationSecs)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +64,7 @@ func FetchLrcLibLyricsCached(name, artist, album string, durationSecs int, cache
 	return lyrics, nil
 }
 
-// FetchLrcLibLyrics is a static function to search and fetch lyrics from lrclib.net
-func FetchLrcLibLyrics(name, artist, album string, durationSecs int) (*mediaprovider.Lyrics, error) {
+func (l *LrcLibFetcher) fetchFromServer(name, artist, album string, durationSecs int) (*mediaprovider.Lyrics, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
