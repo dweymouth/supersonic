@@ -79,7 +79,7 @@ func main() {
 	myApp.OnReactivate = mainWindow.Show
 	myApp.OnExit = func() { fyne.Do(mainWindow.Quit) }
 
-	fyneApp.Lifecycle().SetOnEnteredForeground(sync.OnceFunc(func() {
+	windowStartupTasks := sync.OnceFunc(func() {
 		defaultServer := myApp.ServerManager.GetDefaultServer()
 		if defaultServer == nil {
 			mainWindow.Controller.PromptForFirstServer()
@@ -87,7 +87,6 @@ func main() {
 			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
 
-	startupOnceTasks := sync.OnceFunc(func() {
 		mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
 			// intialize Windows SMTC
 			if runtime.GOOS == "windows" {
@@ -108,9 +107,7 @@ func main() {
 			}
 		})
 	})
-	fyneApp.Lifecycle().SetOnEnteredForeground(func() {
-		startupOnceTasks()
-	})
+	fyneApp.Lifecycle().SetOnEnteredForeground(windowStartupTasks)
 
 	mainWindow.ShowAndRun()
 

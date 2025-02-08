@@ -169,8 +169,8 @@ func (m *MainWindow) UpdateOnTrackChange(item mediaprovider.MediaItem) {
 						meta.Name, strings.TrimPrefix(artistDisp, " – "),
 					}
 
-					app.ImageManager.GetCoverThumbnail(meta.CoverArtID)
-					if path, err := app.ImageManager.GetCoverArtPath(meta.CoverArtID); err == nil {
+					m.App.ImageManager.GetCoverThumbnail(meta.CoverArtID)
+					if path, err := m.App.ImageManager.GetCoverArtPath(meta.CoverArtID); err == nil {
 						args = append([]string{"--icon", path}, args...)
 					}
 

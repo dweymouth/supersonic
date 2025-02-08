@@ -20,7 +20,7 @@ require (
 	github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d
 	github.com/zalando/go-keyring v0.2.6
 	golang.org/x/net v0.25.0
-	golang.org/x/sys v0.26.0
+	golang.org/x/sys v0.27.0
 	golang.org/x/text v0.21.0
 )
 
@@ -48,18 +48,10 @@ require (
 	github.com/rymdport/portal v0.3.0 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
-<<<<<<< HEAD
-	github.com/stretchr/testify v1.9.0 // indirect
-=======
 	github.com/stretchr/testify v1.10.0 // indirect
->>>>>>> 287a268 (migrate to Fyne 2.6 - WIP - updates for new threading model)
 	github.com/yuin/goldmark v1.7.1 // indirect
 	golang.org/x/image v0.23.0 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
-<<<<<<< HEAD
-=======
-	golang.org/x/sys v0.27.0 // indirect
->>>>>>> 287a268 (migrate to Fyne 2.6 - WIP - updates for new threading model)
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
