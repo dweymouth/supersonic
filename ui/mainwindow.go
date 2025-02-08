@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"log"
+	"os/exec"
 	"runtime"
 	"strings"
 	"time"
@@ -98,10 +99,35 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		}
 		m.Window.SetTitle(fmt.Sprintf("%s%s · %s", meta.Name, artistDisp, displayAppName))
 		if m.App.Config.Application.ShowTrackChangeNotification {
+			if runtime.GOOS == "linux" {
+				if notifySend, err := exec.LookPath("notify-send"); err == nil {
+					go func() {
+						args := []string{
+							"--app-name", "supersonic",
+							"--urgency", "low",
+							"--expire-time", "10000",
+							// replace previous notification
+							"--hint", "string:x-canonical-private-synchronous:supersonic-track",
+							meta.Name, strings.TrimPrefix(artistDisp, " – "),
+						}
+
+						app.ImageManager.GetCoverThumbnail(meta.CoverArtID)
+						if path, err := app.ImageManager.GetCoverArtPath(meta.CoverArtID); err == nil {
+							args = append([]string{"--icon", path}, args...)
+						}
+
+						if out, err := exec.Command(notifySend, args...).CombinedOutput(); err != nil {
+							log.Printf("notify-send error: %s %s", strings.TrimSpace(string(out)), err)
+						}
+					}()
+					return
+				}
+			}
+
 			// TODO: Once Fyne issue #2935 is resolved, show album cover
 			fyne.CurrentApp().SendNotification(&fyne.Notification{
 				Title:   meta.Name,
-				Content: artistDisp,
+				Content: strings.TrimPrefix(artistDisp, " – "),
 			})
 		}
 	})
