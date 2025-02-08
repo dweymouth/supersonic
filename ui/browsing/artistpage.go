@@ -175,7 +175,7 @@ func (a *ArtistPage) playArtistRadio() {
 		err := a.pm.PlaySimilarSongs(a.artistID)
 		if err != nil {
 			fyne.Do(func() {
-				log.Println("error playing similar songs: %v", err)
+				log.Printf("error playing similar songs: %v", err)
 				a.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play artist radio"))
 			})
 		}
@@ -245,17 +245,17 @@ func (a *ArtistPage) load() {
 		log.Printf("Failed to get artist: %s", err.Error())
 		return
 	}
-	if a.disposed {
-		return
-	}
 
 	fyne.Do(func() {
+		if a.disposed {
+			return
+		}
 		a.artistInfo = artist
 		a.header.Update(artist, a.im)
 		if a.activeView == 0 {
 			a.showAlbumGrid(false /*reSort*/)
 		} else {
-			a.showTopTracks()
+			go a.showTopTracks()
 		}
 	})
 
@@ -263,9 +263,11 @@ func (a *ArtistPage) load() {
 	if err != nil {
 		log.Printf("Failed to get artist info: %s", err.Error())
 	}
-	if !a.disposed {
-		fyne.Do(func() { a.header.UpdateInfo(info) })
-	}
+	fyne.Do(func() {
+		if !a.disposed {
+			a.header.UpdateInfo(info)
+		}
+	})
 }
 
 func (a *ArtistPage) showAlbumGrid(reSort bool) {
@@ -409,7 +411,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, 225)
-	a.artistImage.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
+	a.artistImage.OnTapped = func(*fyne.PointEvent) { a.showPopUpCover() }
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.playBtn = widget.NewButtonWithIcon(lang.L("Play Discography"), theme.MediaPlayIcon(), func() {
 		go a.artistPage.pm.PlayArtistDiscography(a.artistID, false /*shuffle*/)
@@ -541,6 +543,7 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 	}
 }
 
+// should NOT be called asynchronously
 func (a *ArtistPageHeader) showPopUpCover() {
 	if a.artistImageID == "" {
 		if im := a.artistImage.Image(); im != nil {
@@ -551,15 +554,17 @@ func (a *ArtistPageHeader) showPopUpCover() {
 			return
 		}
 		a.fullSizeCoverFetching = true
-		defer func() { a.fullSizeCoverFetching = false }()
-		cover, err := a.artistPage.im.GetFullSizeCoverArt(a.artistImageID)
-		if err != nil {
-			log.Printf("error getting full size album cover: %s", err.Error())
-			return
-		}
-		if a.artistPage != nil {
-			a.artistPage.contr.ShowPopUpImage(cover)
-		}
+		go func() {
+			defer func() { a.fullSizeCoverFetching = false }()
+			cover, err := a.artistPage.im.GetFullSizeCoverArt(a.artistImageID)
+			if err != nil {
+				log.Printf("error getting full size album cover: %s", err.Error())
+				return
+			}
+			if a.artistPage != nil {
+				fyne.Do(func() { a.artistPage.contr.ShowPopUpImage(cover) })
+			}
+		}()
 	}
 }
 
