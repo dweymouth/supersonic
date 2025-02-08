@@ -105,8 +105,12 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	})
 
 	bp.AuxControls = widgets.NewAuxControls(pm.Volume(), pm.GetLoopMode(), pm.IsAutoplay())
-	pm.OnLoopModeChange(bp.AuxControls.SetLoopMode)
-	pm.OnVolumeChange(bp.AuxControls.VolumeControl.SetVolume)
+	pm.OnLoopModeChange(func(lm backend.LoopMode) {
+		fyne.Do(func() { bp.AuxControls.SetLoopMode(lm) })
+	})
+	pm.OnVolumeChange(func(vol int) {
+		fyne.Do(func() { bp.AuxControls.VolumeControl.SetVolume(vol) })
+	})
 	bp.AuxControls.VolumeControl.OnSetVolume = func(v int) {
 		pm.SetVolume(v)
 	}
