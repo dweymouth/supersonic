@@ -1,6 +1,8 @@
 package widgets
 
 import (
+	"math"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/lang"
@@ -129,7 +131,7 @@ func (v *volumeSlider) MinSize() fyne.Size {
 }
 
 func (v *volumeSlider) Scrolled(e *fyne.ScrollEvent) {
-	v.SetValue(v.Value + float64(0.5*e.Scrolled.DY))
+	v.SetValue(v.Value + math.Max(-10, math.Min(10, float64(0.5*e.Scrolled.DY))))
 }
 
 type VolumeControl struct {
