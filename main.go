@@ -47,6 +47,10 @@ func main() {
 		os.Setenv("FYNE_SCALE", "1.1")
 	}
 
+	if myApp.Config.Application.DisableDPIDetection {
+		os.Setenv("FYNE_DISABLE_DPI_DETECTION", "true")
+	}
+
 	// load configured app language, or all otherwise
 	lIdx := slices.IndexFunc(res.TranslationsInfo, func(t res.TranslationInfo) bool {
 		return t.Name == myApp.Config.Application.Language

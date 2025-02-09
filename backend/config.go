@@ -52,6 +52,7 @@ type AppConfig struct {
 	SkipSSLVerify               bool
 	EnqueueBatchSize            int
 	Language                    string
+	DisableDPIDetection         bool
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
