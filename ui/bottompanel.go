@@ -33,19 +33,21 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 
 	pm.OnSongChange(bp.onSongChange)
 	pm.OnPlayTimeUpdate(func(cur, total float64, _ bool) {
-		if !pm.IsSeeking() {
-			bp.Controls.UpdatePlayTime(cur, total)
-		}
+		fyne.Do(func() {
+			if !pm.IsSeeking() {
+				bp.Controls.UpdatePlayTime(cur, total)
+			}
+		})
 	})
 
 	pm.OnPaused(func() {
-		bp.Controls.SetPlaying(false)
+		fyne.Do(func() { bp.Controls.SetPlaying(false) })
 	})
 	pm.OnPlaying(func() {
-		bp.Controls.SetPlaying(true)
+		fyne.Do(func() { bp.Controls.SetPlaying(true) })
 	})
 	pm.OnStopped(func() {
-		bp.Controls.SetPlaying(false)
+		fyne.Do(func() { bp.Controls.SetPlaying(false) })
 	})
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
@@ -103,8 +105,12 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	})
 
 	bp.AuxControls = widgets.NewAuxControls(pm.Volume(), pm.GetLoopMode(), pm.IsAutoplay())
-	pm.OnLoopModeChange(bp.AuxControls.SetLoopMode)
-	pm.OnVolumeChange(bp.AuxControls.VolumeControl.SetVolume)
+	pm.OnLoopModeChange(func(lm backend.LoopMode) {
+		fyne.Do(func() { bp.AuxControls.SetLoopMode(lm) })
+	})
+	pm.OnVolumeChange(func(vol int) {
+		fyne.Do(func() { bp.AuxControls.VolumeControl.SetVolume(vol) })
+	})
 	bp.AuxControls.VolumeControl.OnSetVolume = func(v int) {
 		pm.SetVolume(v)
 	}
@@ -124,13 +130,15 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 }
 
 func (bp *BottomPanel) onSongChange(song mediaprovider.MediaItem, _ *mediaprovider.Track) {
-	if song == nil {
-		bp.NowPlaying.Update(nil)
-		bp.imageLoader.Load("")
-	} else {
-		bp.NowPlaying.Update(song)
-		bp.imageLoader.Load(song.Metadata().CoverArtID)
-	}
+	fyne.Do(func() {
+		if song == nil {
+			bp.NowPlaying.Update(nil)
+			bp.imageLoader.Load("")
+		} else {
+			bp.NowPlaying.Update(song)
+			bp.imageLoader.Load(song.Metadata().CoverArtID)
+		}
+	})
 }
 
 func (bp *BottomPanel) CreateRenderer() fyne.WidgetRenderer {

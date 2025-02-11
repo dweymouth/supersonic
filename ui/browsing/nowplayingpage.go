@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cenkalti/dominantcolor"
@@ -48,9 +47,6 @@ type NowPlayingPage struct {
 	queue         []mediaprovider.MediaItem
 	related       []*mediaprovider.Track
 	alreadyLoaded bool
-
-	lyricLock   sync.Mutex
-	relatedLock sync.Mutex
 
 	// widgets for render
 	background     *canvas.LinearGradient
@@ -106,9 +102,10 @@ func NewNowPlayingPage(
 	a := &NowPlayingPage{nowPlayingPageState: state}
 	a.ExtendBaseWidget(a)
 
-	pm.OnPaused(a.formatStatusLine)
-	pm.OnPlaying(a.formatStatusLine)
-	pm.OnStopped(a.formatStatusLine)
+	doFmtStatus := func() { fyne.Do(a.formatStatusLine) }
+	pm.OnPaused(doFmtStatus)
+	pm.OnPlaying(doFmtStatus)
+	pm.OnStopped(doFmtStatus)
 
 	a.card = widgets.NewLargeNowPlayingCard()
 	a.card.OnAlbumNameTapped = func() {
@@ -297,7 +294,8 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 	if err != nil {
 		log.Printf("error loading cover art: %v\n", err)
 	}
-	a.card.SetCoverImage(img)
+
+	fyne.Do(func() { a.card.SetCoverImage(img) })
 	if img == nil {
 		return
 	}
@@ -307,24 +305,18 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 		return
 	}
 
-	evenFrame := true
+	// Fyne animation starting is currently thread-safe,
+	// despite not being marked as such
+	// TODO: if this changes, use fyne.Do
 	anim := canvas.NewColorRGBAAnimation(
 		a.background.StartColor, c, 75*time.Millisecond, func(c color.Color) {
-			// reduce fps to reduce mem allocations
-			if evenFrame {
-				a.background.StartColor = c
-				a.background.Refresh()
-			}
-			evenFrame = !evenFrame
+			a.background.StartColor = c
+			a.background.Refresh()
 		})
 	anim.Start()
-
 }
 
 func (a *NowPlayingPage) updateLyrics() {
-	a.lyricLock.Lock()
-	defer a.lyricLock.Unlock()
-
 	if a.lyricFetchCancel != nil {
 		a.lyricFetchCancel()
 	}
@@ -371,20 +363,17 @@ func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 	case <-ctx.Done():
 		return
 	default:
-		a.lyricLock.Lock()
-		a.lyricsLoading.Stop()
-		a.lyricsViewer.SetLyrics(lyrics)
-		if lyrics != nil {
-			a.lyricsViewer.OnSeeked(a.lastPlayPos)
-		}
-		a.lyricLock.Unlock()
+		fyne.Do(func() {
+			a.lyricsLoading.Stop()
+			a.lyricsViewer.SetLyrics(lyrics)
+			if lyrics != nil {
+				a.lyricsViewer.OnSeeked(a.lastPlayPos)
+			}
+		})
 	}
 }
 
 func (a *NowPlayingPage) updateRelatedList() {
-	a.relatedLock.Lock()
-	defer a.relatedLock.Unlock()
-
 	if a.relatedFetchCancel != nil {
 		a.relatedFetchCancel()
 	}
@@ -409,11 +398,11 @@ func (a *NowPlayingPage) updateRelatedList() {
 		case <-ctx.Done():
 			return
 		default:
-			a.relatedLock.Lock()
-			a.related = related
-			a.relatedList.SetTracks(a.related)
-			a.relatedLoading.Stop()
-			a.relatedLock.Unlock()
+			fyne.Do(func() {
+				a.related = related
+				a.relatedList.SetTracks(a.related)
+				a.relatedLoading.Stop()
+			})
 		}
 	}(ctx)
 }
@@ -461,8 +450,6 @@ func (a *NowPlayingPage) OnPlayTimeUpdate(curTime, _ float64, seeked bool) {
 	if a.tabs == nil || a.tabs.SelectedIndex() != 1 /*lyrics*/ {
 		return
 	}
-	a.lyricLock.Lock()
-	defer a.lyricLock.Unlock()
 	if seeked {
 		a.lyricsViewer.OnSeeked(curTime)
 	} else {

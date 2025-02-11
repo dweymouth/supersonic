@@ -166,10 +166,12 @@ func (a *PlaylistPage) load() {
 		return
 	}
 	renumberTracks(playlist.Tracks)
-	a.tracks = playlist.Tracks
-	a.tracklist.SetTracks(playlist.Tracks)
-	a.tracklist.SetNowPlaying(a.nowPlayingID)
-	a.header.Update(playlist)
+	fyne.Do(func() {
+		a.tracks = playlist.Tracks
+		a.tracklist.SetTracks(playlist.Tracks)
+		a.tracklist.SetNowPlaying(a.nowPlayingID)
+		a.header.Update(playlist)
+	})
 }
 
 func renumberTracks(tracks []*mediaprovider.Track) {
@@ -193,20 +195,28 @@ func (a *PlaylistPage) doSetNewTrackOrder(ids []string, newPos int) {
 		}
 	}
 	newTracks := sharedutil.ReorderItems(a.tracks, idxs, newPos)
+	ids = sharedutil.TracksToIDs(newTracks)
+
 	// we can't block the UI waiting for the server so assume it will succeed
 	go func() {
-		ids = sharedutil.TracksToIDs(newTracks)
 		if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 			log.Printf("error updating playlist: %s", err.Error())
+			fyne.Do(func() {
+				a.contr.ToastProvider.ShowErrorToast(
+					lang.L("An error occurred updating the playlist"),
+				)
+			})
+		} else {
+			renumberTracks(newTracks)
+			fyne.Do(func() {
+				// force-switch back to unsorted view to show new track order
+				a.tracklist.SetSorting(widgets.TracklistSort{})
+				a.tracklist.SetTracks(newTracks)
+				a.tracklist.UnselectAll()
+				a.tracks = newTracks
+			})
 		}
 	}()
-
-	renumberTracks(newTracks)
-	// force-switch back to unsorted view to show new track order
-	a.tracklist.SetSorting(widgets.TracklistSort{})
-	a.tracklist.SetTracks(newTracks)
-	a.tracklist.UnselectAll()
-	a.tracks = newTracks
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
@@ -339,6 +349,7 @@ func (a *PlaylistPageHeader) Update(playlist *mediaprovider.PlaylistWithTracks) 
 	a.Refresh()
 }
 
+// should be called asynchronously
 func (a *PlaylistPageHeader) showPopUpCover() {
 	if a.fullSizeCoverFetching || a.playlistInfo == nil {
 		return
@@ -351,7 +362,7 @@ func (a *PlaylistPageHeader) showPopUpCover() {
 		return
 	}
 	if a.page != nil {
-		a.page.contr.ShowPopUpImage(cover)
+		fyne.Do(func() { a.page.contr.ShowPopUpImage(cover) })
 	}
 }
 

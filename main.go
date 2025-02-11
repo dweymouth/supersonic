@@ -47,6 +47,10 @@ func main() {
 		os.Setenv("FYNE_SCALE", "1.1")
 	}
 
+	if myApp.Config.Application.DisableDPIDetection {
+		os.Setenv("FYNE_DISABLE_DPI_DETECTION", "true")
+	}
+
 	// load configured app language, or all otherwise
 	lIdx := slices.IndexFunc(res.TranslationsInfo, func(t res.TranslationInfo) bool {
 		return t.Name == myApp.Config.Application.Language
@@ -75,19 +79,18 @@ func main() {
 	fyneApp.SetIcon(res.ResAppicon256Png)
 
 	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp)
+	mainWindow.Window.SetMaster()
 	myApp.OnReactivate = mainWindow.Show
-	myApp.OnExit = mainWindow.Quit
+	myApp.OnExit = func() { fyne.Do(mainWindow.Quit) }
 
-	go func() {
+	windowStartupTasks := sync.OnceFunc(func() {
 		defaultServer := myApp.ServerManager.GetDefaultServer()
 		if defaultServer == nil {
 			mainWindow.Controller.PromptForFirstServer()
 		} else {
 			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
-	}()
 
-	startupOnceTasks := sync.OnceFunc(func() {
 		mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
 			// intialize Windows SMTC
 			if runtime.GOOS == "windows" {
@@ -98,19 +101,17 @@ func main() {
 			// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
 			_, isWayland := ctx.(*driver.WaylandWindowContext)
 			if runtime.GOOS == "linux" && !isWayland {
+				s := mainWindow.DesiredSize()
 				go func() {
 					time.Sleep(50 * time.Millisecond)
-					s := mainWindow.DesiredSize()
-					mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0)))
+					fyne.Do(func() { mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0))) })
 					time.Sleep(50 * time.Millisecond)
-					mainWindow.Window.Resize(s) // back to desired size
+					fyne.Do(func() { mainWindow.Window.Resize(s) }) // back to desired size
 				}()
 			}
 		})
 	})
-	fyneApp.Lifecycle().SetOnEnteredForeground(func() {
-		startupOnceTasks()
-	})
+	fyneApp.Lifecycle().SetOnEnteredForeground(windowStartupTasks)
 
 	mainWindow.ShowAndRun()
 

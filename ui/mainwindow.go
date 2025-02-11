@@ -88,48 +88,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 
 	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller)
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
-		if item == nil {
-			m.Window.SetTitle(displayAppName)
-			return
-		}
-		meta := item.Metadata()
-		artistDisp := ""
-		if tr, ok := item.(*mediaprovider.Track); ok {
-			artistDisp = " – " + strings.Join(tr.ArtistNames, ", ")
-		}
-		m.Window.SetTitle(fmt.Sprintf("%s%s · %s", meta.Name, artistDisp, displayAppName))
-		if m.App.Config.Application.ShowTrackChangeNotification {
-			if runtime.GOOS == "linux" {
-				if notifySend, err := exec.LookPath("notify-send"); err == nil {
-					go func() {
-						args := []string{
-							"--app-name", "supersonic",
-							"--urgency", "low",
-							"--expire-time", "10000",
-							// replace previous notification
-							"--hint", "string:x-canonical-private-synchronous:supersonic-track",
-							meta.Name, strings.TrimPrefix(artistDisp, " – "),
-						}
-
-						app.ImageManager.GetCoverThumbnail(meta.CoverArtID)
-						if path, err := app.ImageManager.GetCoverArtPath(meta.CoverArtID); err == nil {
-							args = append([]string{"--icon", path}, args...)
-						}
-
-						if out, err := exec.Command(notifySend, args...).CombinedOutput(); err != nil {
-							log.Printf("notify-send error: %s %s", strings.TrimSpace(string(out)), err)
-						}
-					}()
-					return
-				}
-			}
-
-			// TODO: Once Fyne issue #2935 is resolved, show album cover
-			fyne.CurrentApp().SendNotification(&fyne.Notification{
-				Title:   meta.Name,
-				Content: strings.TrimPrefix(artistDisp, " – "),
-			})
-		}
+		fyne.Do(func() { m.UpdateOnTrackChange(item) })
 	})
 	app.ServerManager.OnServerConnected(func() {
 		go m.RunOnServerConnectedTasks(app, displayAppName)
@@ -152,11 +111,13 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BrowsingPane.AddSettingsMenuItem(lang.L("Check for Updates"), func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
-				m.ShowNewVersionDialog(displayAppName, t)
+				fyne.Do(func() { m.ShowNewVersionDialog(displayAppName, t) })
 			} else {
-				dialog.ShowInformation(lang.L("No new version found"),
-					lang.L("You are running the latest version of")+" "+displayAppName,
-					m.Window)
+				fyne.Do(func() {
+					dialog.ShowInformation(lang.L("No new version found"),
+						lang.L("You are running the latest version of")+" "+displayAppName,
+						m.Window)
+				})
 			}
 		}()
 	})
@@ -174,30 +135,59 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 
 	m.Window.SetCloseIntercept(func() {
 		m.SaveWindowSize()
-		// save settings in case we crash during shutdown
-		// TODO: when all shutdowns exit cleanly, remove these lines
-		// as they are already executed in app.Shutdown()
-		app.Config.LocalPlayback.Volume = app.LocalPlayer.GetVolume()
-		repeatMode := "None"
-		switch app.PlaybackManager.GetLoopMode() {
-		case backend.LoopOne:
-			repeatMode = "One"
-		case backend.LoopAll:
-			repeatMode = "All"
-		}
-		app.Config.Playback.RepeatMode = repeatMode
-		app.Config.Playback.Autoplay = app.PlaybackManager.IsAutoplay()
-		app.SavePlayQueueIfEnabled()
-		app.SaveConfigFile()
-
 		if app.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
 			m.Window.Hide()
 		} else {
-			fyneApp.Quit()
+			m.Window.Close()
 		}
 	})
 
 	return m
+}
+
+func (m *MainWindow) UpdateOnTrackChange(item mediaprovider.MediaItem) {
+	if item == nil {
+		m.Window.SetTitle(res.DisplayName)
+		return
+	}
+	meta := item.Metadata()
+	artistDisp := ""
+	if tr, ok := item.(*mediaprovider.Track); ok {
+		artistDisp = " – " + strings.Join(tr.ArtistNames, ", ")
+	}
+	m.Window.SetTitle(fmt.Sprintf("%s%s · %s", meta.Name, artistDisp, res.DisplayName))
+	if m.App.Config.Application.ShowTrackChangeNotification {
+		if runtime.GOOS == "linux" {
+			if notifySend, err := exec.LookPath("notify-send"); err == nil {
+				go func() {
+					args := []string{
+						"--app-name", "supersonic",
+						"--urgency", "low",
+						"--expire-time", "10000",
+						// replace previous notification
+						"--hint", "string:x-canonical-private-synchronous:supersonic-track",
+						meta.Name, strings.TrimPrefix(artistDisp, " – "),
+					}
+
+					m.App.ImageManager.GetCoverThumbnail(meta.CoverArtID)
+					if path, err := m.App.ImageManager.GetCoverArtPath(meta.CoverArtID); err == nil {
+						args = append([]string{"--icon", path}, args...)
+					}
+
+					if out, err := exec.Command(notifySend, args...).CombinedOutput(); err != nil {
+						log.Printf("notify-send error: %s %s", strings.TrimSpace(string(out)), err)
+					}
+				}()
+				return
+			}
+		}
+
+		// TODO: Once Fyne issue #2935 is resolved, show album cover
+		fyne.CurrentApp().SendNotification(&fyne.Notification{
+			Title:   meta.Name,
+			Content: artistDisp,
+		})
+	}
 }
 
 func (m *MainWindow) DesiredSize() fyne.Size {
@@ -229,10 +219,6 @@ func (m *MainWindow) StartupPage() controller.Route {
 
 func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName string) {
 	time.Sleep(1 * time.Millisecond) // ensure this runs after sync tasks
-	m.BrowsingPane.EnableNavigationButtons()
-	m.Router.NavigateTo(m.StartupPage())
-	_, canRate := m.App.ServerManager.Server.(mediaprovider.SupportsRating)
-	m.BottomPanel.NowPlaying.DisableRating = !canRate
 
 	if app.Config.Application.SavePlayQueue {
 		go func() {
@@ -242,12 +228,19 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 		}()
 	}
 
-	_, supportsRadio := m.App.ServerManager.Server.(mediaprovider.RadioProvider)
-	if supportsRadio {
-		m.radioBtn.Show()
-	} else {
-		m.radioBtn.Hide()
-	}
+	fyne.Do(func() {
+		m.BrowsingPane.EnableNavigationButtons()
+		m.Router.NavigateTo(m.StartupPage())
+		_, canRate := m.App.ServerManager.Server.(mediaprovider.SupportsRating)
+		m.BottomPanel.NowPlaying.DisableRating = !canRate
+
+		_, supportsRadio := m.App.ServerManager.Server.(mediaprovider.RadioProvider)
+		if supportsRadio {
+			m.radioBtn.Show()
+		} else {
+			m.radioBtn.Hide()
+		}
+	})
 
 	m.App.SaveConfigFile()
 
@@ -257,17 +250,20 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 	}
 
 	// check if launching new version, else if found available update on startup
-	if l := app.Config.Application.LastLaunchedVersion; app.VersionTag() != l {
-		if !app.IsFirstLaunch() {
-			m.ShowWhatsNewDialog()
+	fyne.Do(func() {
+		if l := app.Config.Application.LastLaunchedVersion; app.VersionTag() != l {
+			if !app.IsFirstLaunch() {
+				m.ShowWhatsNewDialog()
+			}
+			m.App.Config.Application.LastLaunchedVersion = app.VersionTag()
+		} else if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
+			if t != app.VersionTag() {
+				m.ShowNewVersionDialog(displayAppName, t)
+			}
+			m.App.Config.Application.LastCheckedVersion = t
 		}
-		m.App.Config.Application.LastLaunchedVersion = app.VersionTag()
-	} else if t := app.UpdateChecker.VersionTagFound(); t != "" && t != app.Config.Application.LastCheckedVersion {
-		if t != app.VersionTag() {
-			m.ShowNewVersionDialog(displayAppName, t)
-		}
-		m.App.Config.Application.LastCheckedVersion = t
-	}
+	})
+
 	// register callback for the ongoing periodic update check
 	m.App.UpdateChecker.OnUpdatedVersionFound = func() {
 		t := m.App.UpdateChecker.VersionTagFound()
@@ -304,8 +300,8 @@ func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
 				m.App.PlaybackManager.SetVolume(vol)
 			}),
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem(lang.L("Show"), m.Window.Show),
-			fyne.NewMenuItem(lang.L("Hide"), m.Window.Hide),
+			fyne.NewMenuItem(lang.L("Show"), func() { fyne.Do(m.Window.Show) }),
+			fyne.NewMenuItem(lang.L("Hide"), func() { fyne.Do(m.Window.Hide) }),
 		)
 		desk.SetSystemTrayMenu(menu)
 		desk.SetSystemTrayIcon(res.ResAppicon256Png)

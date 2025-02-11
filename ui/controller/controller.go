@@ -307,14 +307,18 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 	})
 	sp.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
 		notifySuccess := func(n int) {
-			msg := lang.LocalizePluralKey("playlist.addedtracks",
-				"Added tracks to playlist", n, map[string]string{"trackCount": strconv.Itoa(n)})
-			m.ToastProvider.ShowSuccessToast(msg)
+			fyne.Do(func() {
+				msg := lang.LocalizePluralKey("playlist.addedtracks",
+					"Added tracks to playlist", n, map[string]string{"trackCount": strconv.Itoa(n)})
+				m.ToastProvider.ShowSuccessToast(msg)
+			})
 		}
 		notifyError := func() {
-			m.ToastProvider.ShowErrorToast(
-				lang.L("An error occurred adding tracks to the playlist"),
-			)
+			fyne.Do(func() {
+				m.ToastProvider.ShowErrorToast(
+					lang.L("An error occurred adding tracks to the playlist"),
+				)
+			})
 		}
 		pop.Hide()
 		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
@@ -324,7 +328,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 				if err == nil {
 					notifySuccess(len(trackIDs))
 				} else {
-					log.Println("error adding tracks to playlist: %s", err.Error())
+					log.Printf("error adding tracks to playlist: %s", err.Error())
 					notifyError()
 				}
 			}()
@@ -348,7 +352,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 						if err == nil {
 							notifySuccess(len(filterTrackIDs))
 						} else {
-							log.Println("error adding tracks to playlist: %s", err.Error())
+							log.Printf("error adding tracks to playlist: %s", err.Error())
 							notifyError()
 						}
 					}
@@ -359,7 +363,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 					if err == nil {
 						notifySuccess(len(trackIDs))
 					} else {
-						log.Println("error adding tracks to playlist: %s", err.Error())
+						log.Printf("error adding tracks to playlist: %s", err.Error())
 						notifyError()
 					}
 				}()
@@ -399,7 +403,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 							log.Printf("error deleting playlist: %s", err.Error())
 						} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
 							// navigate to playlists page if user is still on the page of the deleted playlist
-							m.NavigateTo(PlaylistsRoute())
+							fyne.Do(func() { m.NavigateTo(PlaylistsRoute()) })
 						}
 					}()
 				}
@@ -414,7 +418,7 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 				log.Printf("error updating playlist: %s", err.Error())
 			} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
 				// if user is on playlist page, reload to get the updates
-				m.ReloadFunc()
+				fyne.Do(m.ReloadFunc)
 			}
 		}()
 	}
@@ -434,7 +438,6 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	// try connecting to last used server - set up cancelable modal dialog
 	canceled := false
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	dlg := dialog.NewCustom(lang.L("Connecting"), lang.L("Cancel"),
 		widget.NewLabel(fmt.Sprintf(lang.L("Connecting to")+" %s", server.Nickname)), c.MainWindow)
 	dlg.SetOnClosed(func() {
@@ -443,25 +446,34 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	})
 	c.haveModal = true
 	dlg.Show()
+
 	// try to connect
-	if err := c.tryConnectToServer(ctx, server, pass); err != nil {
-		dlg.Hide()
-		c.haveModal = false
-		if canceled {
-			c.PromptForLoginAndConnect()
-		} else {
-			// connection failure
-			dlg := dialog.NewError(err, c.MainWindow)
-			dlg.SetOnClosed(func() {
-				c.PromptForLoginAndConnect()
+	go func() {
+		defer cancel() // make sure to free up ctx resources if user does not cancel
+
+		if err := c.tryConnectToServer(ctx, server, pass); err != nil {
+			fyne.Do(func() {
+				dlg.Hide()
+				c.haveModal = false
+				if canceled {
+					c.PromptForLoginAndConnect()
+				} else {
+					// connection failure
+					dlg := dialog.NewError(err, c.MainWindow)
+					dlg.SetOnClosed(func() {
+						c.PromptForLoginAndConnect()
+					})
+					c.haveModal = true
+					dlg.Show()
+				}
 			})
-			c.haveModal = true
-			dlg.Show()
+		} else {
+			fyne.Do(func() {
+				dlg.Hide()
+				c.haveModal = false
+			})
 		}
-	} else {
-		dlg.Hide()
-		c.haveModal = false
-	}
+	}()
 }
 
 func (m *Controller) PromptForLoginAndConnect() {
@@ -475,16 +487,18 @@ func (m *Controller) PromptForLoginAndConnect() {
 			defer cancel()
 
 			err := m.App.ServerManager.TestConnectionAndAuth(ctx, server.ServerConnection, password)
-			if err == backend.ErrUnreachable {
-				d.SetErrorText(lang.L("Server unreachable"))
-			} else if err != nil {
-				d.SetErrorText(lang.L("Authentication failed"))
-			} else {
-				pop.Hide()
-				m.trySetPasswordAndConnectToServer(server, password)
-				m.doModalClosed()
-			}
-			d.EnableSubmit()
+			fyne.Do(func() {
+				if err == backend.ErrUnreachable {
+					d.SetErrorText(lang.L("Server unreachable"))
+				} else if err != nil {
+					d.SetErrorText(lang.L("Authentication failed"))
+				} else {
+					pop.Hide()
+					m.trySetPasswordAndConnectToServer(server, password)
+					m.doModalClosed()
+				}
+				d.EnableSubmit()
+			})
 		}()
 	}
 	d.OnEditServer = func(server *backend.ServerConfig) {
@@ -494,18 +508,21 @@ func (m *Controller) PromptForLoginAndConnect() {
 		editD.OnSubmit = func() {
 			d.DisableSubmit()
 			go func() {
-				if m.testConnectionAndUpdateDialogText(editD) {
-					// connection is good
-					editPop.Hide()
-					server.Hostname = editD.Host
-					server.AltHostname = editD.AltHost
-					server.Nickname = editD.Nickname
-					server.Username = editD.Username
-					server.LegacyAuth = editD.LegacyAuth
-					m.trySetPasswordAndConnectToServer(server, editD.Password)
-					m.doModalClosed()
-				}
-				d.EnableSubmit()
+				success := m.testConnectionAndUpdateDialogText(editD)
+				fyne.Do(func() {
+					if success {
+						// connection is good
+						editPop.Hide()
+						server.Hostname = editD.Host
+						server.AltHostname = editD.AltHost
+						server.Nickname = editD.Nickname
+						server.Username = editD.Username
+						server.LegacyAuth = editD.LegacyAuth
+						m.trySetPasswordAndConnectToServer(server, editD.Password)
+						m.doModalClosed()
+					}
+					d.EnableSubmit()
+				})
 			}()
 		}
 		editD.OnCancel = func() {
@@ -521,21 +538,24 @@ func (m *Controller) PromptForLoginAndConnect() {
 		newD.OnSubmit = func() {
 			d.DisableSubmit()
 			go func() {
-				if m.testConnectionAndUpdateDialogText(newD) {
-					// connection is good
-					newPop.Hide()
-					conn := backend.ServerConnection{
-						ServerType:  newD.ServerType,
-						Hostname:    newD.Host,
-						AltHostname: newD.AltHost,
-						Username:    newD.Username,
-						LegacyAuth:  newD.LegacyAuth,
+				success := m.testConnectionAndUpdateDialogText(newD)
+				fyne.Do(func() {
+					if success {
+						// connection is good
+						newPop.Hide()
+						conn := backend.ServerConnection{
+							ServerType:  newD.ServerType,
+							Hostname:    newD.Host,
+							AltHostname: newD.AltHost,
+							Username:    newD.Username,
+							LegacyAuth:  newD.LegacyAuth,
+						}
+						server := m.App.ServerManager.AddServer(newD.Nickname, conn)
+						m.trySetPasswordAndConnectToServer(server, newD.Password)
+						m.doModalClosed()
 					}
-					server := m.App.ServerManager.AddServer(newD.Nickname, conn)
-					m.trySetPasswordAndConnectToServer(server, newD.Password)
-					m.doModalClosed()
-				}
-				d.EnableSubmit()
+					d.EnableSubmit()
+				})
 			}()
 		}
 		newD.OnCancel = func() {
@@ -753,24 +773,26 @@ func (c *Controller) ShowShareDialog(id string) {
 			return
 		}
 
-		hyperlink := widget.NewHyperlink(shareUrl.String(), shareUrl)
-		dlg := dialog.NewCustom(lang.L("Share content"), lang.L("OK"),
-			container.NewHBox(
-				hyperlink,
-				widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-					c.MainWindow.Clipboard().SetContent(hyperlink.Text)
-				}),
-				widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-					if shareUrl, err := c.createShareURL(id); err == nil {
-						hyperlink.Text = shareUrl.String()
-						hyperlink.URL = shareUrl
-						hyperlink.Refresh()
-					}
-				}),
-			),
-			c.MainWindow,
-		)
-		dlg.Show()
+		fyne.Do(func() {
+			hyperlink := widget.NewHyperlink(shareUrl.String(), shareUrl)
+			dlg := dialog.NewCustom(lang.L("Share content"), lang.L("OK"),
+				container.NewHBox(
+					hyperlink,
+					widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+						c.MainWindow.Clipboard().SetContent(hyperlink.Text)
+					}),
+					widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+						if shareUrl, err := c.createShareURL(id); err == nil {
+							hyperlink.Text = shareUrl.String()
+							hyperlink.URL = shareUrl
+							hyperlink.Refresh()
+						}
+					}),
+				),
+				c.MainWindow,
+			)
+			dlg.Show()
+		})
 	}()
 }
 
@@ -904,15 +926,17 @@ func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover i
 			log.Print("Error getting album info: ", err)
 			return
 		}
-		dlg := dialogs.NewAlbumInfoDialog(albumInfo, albumName, albumCover)
-		pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
-		dlg.OnDismiss = func() {
-			pop.Hide()
-			c.doModalClosed()
-		}
-		c.ClosePopUpOnEscape(pop)
-		c.haveModal = true
-		pop.Show()
+		fyne.Do(func() {
+			dlg := dialogs.NewAlbumInfoDialog(albumInfo, albumName, albumCover)
+			pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
+			dlg.OnDismiss = func() {
+				pop.Hide()
+				c.doModalClosed()
+			}
+			c.ClosePopUpOnEscape(pop)
+			c.haveModal = true
+			pop.Show()
+		})
 	}()
 }
 

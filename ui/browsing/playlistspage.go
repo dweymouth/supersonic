@@ -108,17 +108,21 @@ func (p *PlaylistsPage) Scroll(scrollAmt float32) {
 	}
 }
 
+// should be called asynchronously
 func (a *PlaylistsPage) load(searchOnLoad bool) {
 	playlists, err := a.mp.GetPlaylists()
 	if err != nil {
 		log.Printf("error loading playlists: %v", err.Error())
 	}
-	a.playlists = playlists
-	if searchOnLoad {
-		a.onSearched(a.searcher.Entry.Text)
-	} else {
-		a.refreshView(playlists)
-	}
+
+	fyne.Do(func() {
+		a.playlists = playlists
+		if searchOnLoad {
+			a.onSearched(a.searcher.Entry.Text)
+		} else {
+			a.refreshView(playlists)
+		}
+	})
 }
 
 func (a *PlaylistsPage) createListView() {
@@ -150,7 +154,9 @@ func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 				log.Printf("error loading playlist: %s", err.Error())
 				return
 			}
-			a.contr.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(pl.Tracks))
+			fyne.Do(func() {
+				a.contr.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(pl.Tracks))
+			})
 		}()
 	}
 	a.gridView.OnDownload = func(id string) {
@@ -160,7 +166,7 @@ func (a *PlaylistsPage) createGridView(playlists []*mediaprovider.Playlist) {
 				log.Printf("error loading playlist: %s", err.Error())
 				return
 			}
-			a.contr.ShowDownloadDialog(pl.Tracks, pl.Name)
+			fyne.Do(func() { a.contr.ShowDownloadDialog(pl.Tracks, pl.Name) })
 		}()
 	}
 }
@@ -378,7 +384,7 @@ func (p *PlaylistList) buildHeaderAndLayout() {
 
 	p.header = widgets.NewListHeader([]widgets.ListColumn{
 		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: lang.L("Description"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: lang.L("_Description"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
 		{Text: lang.L("Owner"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
 		{Text: trackCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}, p.columnsLayout)
 	p.header.SetSorting(p.sorting)

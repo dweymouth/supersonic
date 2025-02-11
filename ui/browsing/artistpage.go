@@ -174,8 +174,10 @@ func (a *ArtistPage) playArtistRadio() {
 	go func() {
 		err := a.pm.PlaySimilarSongs(a.artistID)
 		if err != nil {
-			log.Println("error playing similar songs: %v", err)
-			a.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play artist radio"))
+			fyne.Do(func() {
+				log.Printf("error playing similar songs: %v", err)
+				a.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play artist radio"))
+			})
 		}
 	}()
 }
@@ -243,23 +245,29 @@ func (a *ArtistPage) load() {
 		log.Printf("Failed to get artist: %s", err.Error())
 		return
 	}
-	if a.disposed {
-		return
-	}
-	a.artistInfo = artist
-	a.header.Update(artist, a.im)
-	if a.activeView == 0 {
-		a.showAlbumGrid(false /*reSort*/)
-	} else {
-		a.showTopTracks()
-	}
+
+	fyne.Do(func() {
+		if a.disposed {
+			return
+		}
+		a.artistInfo = artist
+		a.header.Update(artist, a.im)
+		if a.activeView == 0 {
+			a.showAlbumGrid(false /*reSort*/)
+		} else {
+			go a.showTopTracks()
+		}
+	})
+
 	info, err := a.mp.GetArtistInfo(a.artistID)
 	if err != nil {
 		log.Printf("Failed to get artist info: %s", err.Error())
 	}
-	if !a.disposed {
-		a.header.UpdateInfo(info)
-	}
+	fyne.Do(func() {
+		if !a.disposed {
+			a.header.UpdateInfo(info)
+		}
+	})
 }
 
 func (a *ArtistPage) showAlbumGrid(reSort bool) {
@@ -287,7 +295,15 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 	a.container.Objects[0].Refresh()
 }
 
+// should be called asynchronously
 func (a *ArtistPage) showTopTracks() {
+	updated := false
+	updatePage := func() {
+		a.sortButton.Hide()
+		a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
+		a.container.Objects[0].Refresh()
+	}
+
 	if a.tracklistCtr == nil {
 		if a.artistInfo == nil {
 			// page not loaded yet or invalid artist
@@ -302,33 +318,38 @@ func (a *ArtistPage) showTopTracks() {
 		if a.disposed {
 			return
 		}
-		var tl *widgets.Tracklist
-		if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
-			tl = t.(*widgets.Tracklist)
-			tl.Reset()
-			tl.SetTracks(ts)
-		} else {
-			tl = widgets.NewTracklist(ts, a.im, false)
-		}
-		tl.Options = widgets.TracklistOptions{AutoNumber: true}
-		_, canRate := a.mp.(mediaprovider.SupportsRating)
-		_, canShare := a.mp.(mediaprovider.SupportsSharing)
-		tl.Options.DisableRating = !canRate
-		tl.Options.DisableSharing = !canShare
-		tl.SetVisibleColumns(a.cfg.TracklistColumns)
-		tl.SetSorting(a.trackSort)
-		tl.OnVisibleColumnsChanged = func(cols []string) {
-			a.cfg.TracklistColumns = cols
-		}
-		tl.SetNowPlaying(a.nowPlayingID)
-		a.contr.ConnectTracklistActions(tl)
-		a.tracklistCtr = container.New(
-			&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
-			tl)
+		updated = true // mark that updatePage() will be called here
+		fyne.Do(func() {
+			var tl *widgets.Tracklist
+			if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
+				tl = t.(*widgets.Tracklist)
+				tl.Reset()
+				tl.SetTracks(ts)
+			} else {
+				tl = widgets.NewTracklist(ts, a.im, false)
+			}
+			tl.Options = widgets.TracklistOptions{AutoNumber: true}
+			_, canRate := a.mp.(mediaprovider.SupportsRating)
+			_, canShare := a.mp.(mediaprovider.SupportsSharing)
+			tl.Options.DisableRating = !canRate
+			tl.Options.DisableSharing = !canShare
+			tl.SetVisibleColumns(a.cfg.TracklistColumns)
+			tl.SetSorting(a.trackSort)
+			tl.OnVisibleColumnsChanged = func(cols []string) {
+				a.cfg.TracklistColumns = cols
+			}
+			tl.SetNowPlaying(a.nowPlayingID)
+			a.contr.ConnectTracklistActions(tl)
+			a.tracklistCtr = container.New(
+				&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
+				tl)
+			updatePage()
+		})
 	}
-	a.sortButton.Hide()
-	a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
-	a.container.Objects[0].Refresh()
+
+	if !updated {
+		fyne.Do(updatePage)
+	}
 }
 
 func (a *ArtistPage) onViewChange(num int) {
@@ -390,7 +411,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 		SizeName: theme.SizeNameHeadingText,
 	}
 	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, 225)
-	a.artistImage.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
+	a.artistImage.OnTapped = func(*fyne.PointEvent) { a.showPopUpCover() }
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.playBtn = widget.NewButtonWithIcon(lang.L("Play Discography"), theme.MediaPlayIcon(), func() {
 		go a.artistPage.pm.PlayArtistDiscography(a.artistID, false /*shuffle*/)
@@ -512,14 +533,17 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 		if a.artistImage.HaveImage() {
 			_ = a.artistPage.im.RefreshCachedArtistImageIfExpired(a.artistID, info.ImageURL)
 		} else {
-			im, err := a.artistPage.im.FetchAndCacheArtistImage(a.artistID, info.ImageURL)
-			if err == nil {
-				a.artistImage.SetImage(im, true /*tappable*/)
-			}
+			go func() {
+				im, err := a.artistPage.im.FetchAndCacheArtistImage(a.artistID, info.ImageURL)
+				if err == nil {
+					fyne.Do(func() { a.artistImage.SetImage(im, true /*tappable*/) })
+				}
+			}()
 		}
 	}
 }
 
+// should NOT be called asynchronously
 func (a *ArtistPageHeader) showPopUpCover() {
 	if a.artistImageID == "" {
 		if im := a.artistImage.Image(); im != nil {
@@ -530,15 +554,17 @@ func (a *ArtistPageHeader) showPopUpCover() {
 			return
 		}
 		a.fullSizeCoverFetching = true
-		defer func() { a.fullSizeCoverFetching = false }()
-		cover, err := a.artistPage.im.GetFullSizeCoverArt(a.artistImageID)
-		if err != nil {
-			log.Printf("error getting full size album cover: %s", err.Error())
-			return
-		}
-		if a.artistPage != nil {
-			a.artistPage.contr.ShowPopUpImage(cover)
-		}
+		go func() {
+			defer func() { a.fullSizeCoverFetching = false }()
+			cover, err := a.artistPage.im.GetFullSizeCoverArt(a.artistImageID)
+			if err != nil {
+				log.Printf("error getting full size album cover: %s", err.Error())
+				return
+			}
+			if a.artistPage != nil {
+				fyne.Do(func() { a.artistPage.contr.ShowPopUpImage(cover) })
+			}
+		}()
 	}
 }
 
