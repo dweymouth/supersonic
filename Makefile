@@ -25,7 +25,7 @@ zip_macos:
 	zip --symlinks -r Supersonic.zip Supersonic.app/
 
 package_windows:
-	fyne package -os windows
+	fyne package -os windows -tags migrated_fynedo
 
 package_linux:
-	fyne package -os linux
+	fyne package -os linux -tags migrated_fynedo
