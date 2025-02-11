@@ -62,7 +62,7 @@ func NewEditPlaylistDialog(playlist *mediaprovider.Playlist, showPublicCheck boo
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel(lang.L("Name")),
 			nameEntry,
-			widget.NewLabel(lang.L("Description")),
+			widget.NewLabel(lang.L("_Description")),
 			descriptionEntry,
 		),
 		container.NewHBox(isPublicCheck, layout.NewSpacer(), deleteBtn),

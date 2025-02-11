@@ -384,7 +384,7 @@ func (p *PlaylistList) buildHeaderAndLayout() {
 
 	p.header = widgets.NewListHeader([]widgets.ListColumn{
 		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: lang.L("Description"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+		{Text: lang.L("_Description"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
 		{Text: lang.L("Owner"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
 		{Text: trackCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}, p.columnsLayout)
 	p.header.SetSorting(p.sorting)
