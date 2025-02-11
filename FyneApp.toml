@@ -2,7 +2,6 @@
   Icon = "res/appicon-512.png"
   Name = "Supersonic"
   Version = "0.13.2"
-  Build = 6
 
 [LinuxAndBSD]
   Categories = ["Audio", "AudioVideo"]
