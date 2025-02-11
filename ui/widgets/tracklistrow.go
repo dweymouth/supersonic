@@ -346,7 +346,8 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
 	if tracklistUpdateCounter.NumEventsSince(time.Now().Add(-150*time.Millisecond)) > 20 {
 		t.doUpdate(&emptyTrack, 1)
 		if t.nextUpdateModel == nil {
-			go fyne.Do(func() {
+			// queue to run later
+			fyne.Do(func() {
 				if t.nextUpdateModel != nil {
 					t.doUpdate(t.nextUpdateModel, t.nextUpdateRowNum)
 				}
