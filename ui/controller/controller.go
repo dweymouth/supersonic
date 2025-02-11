@@ -438,7 +438,6 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	// try connecting to last used server - set up cancelable modal dialog
 	canceled := false
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	dlg := dialog.NewCustom(lang.L("Connecting"), lang.L("Cancel"),
 		widget.NewLabel(fmt.Sprintf(lang.L("Connecting to")+" %s", server.Nickname)), c.MainWindow)
 	dlg.SetOnClosed(func() {
@@ -447,25 +446,34 @@ func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
 	})
 	c.haveModal = true
 	dlg.Show()
+
 	// try to connect
-	if err := c.tryConnectToServer(ctx, server, pass); err != nil {
-		dlg.Hide()
-		c.haveModal = false
-		if canceled {
-			c.PromptForLoginAndConnect()
-		} else {
-			// connection failure
-			dlg := dialog.NewError(err, c.MainWindow)
-			dlg.SetOnClosed(func() {
-				c.PromptForLoginAndConnect()
+	go func() {
+		defer cancel() // make sure to free up ctx resources if user does not cancel
+
+		if err := c.tryConnectToServer(ctx, server, pass); err != nil {
+			fyne.Do(func() {
+				dlg.Hide()
+				c.haveModal = false
+				if canceled {
+					c.PromptForLoginAndConnect()
+				} else {
+					// connection failure
+					dlg := dialog.NewError(err, c.MainWindow)
+					dlg.SetOnClosed(func() {
+						c.PromptForLoginAndConnect()
+					})
+					c.haveModal = true
+					dlg.Show()
+				}
 			})
-			c.haveModal = true
-			dlg.Show()
+		} else {
+			fyne.Do(func() {
+				dlg.Hide()
+				c.haveModal = false
+			})
 		}
-	} else {
-		dlg.Hide()
-		c.haveModal = false
-	}
+	}()
 }
 
 func (m *Controller) PromptForLoginAndConnect() {
