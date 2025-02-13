@@ -289,6 +289,34 @@ func (p *PlaybackManager) PlaySimilarSongs(id string) error {
 	})
 }
 
+func (p *PlaybackManager) PlayRandomAlbums(genreName string) error {
+	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
+		p.SetReplayGainMode(player.ReplayGainAlbum)
+	}
+
+	mp := p.engine.sm.Server
+	var filter mediaprovider.AlbumFilter
+	if genreName != "" {
+		filter = mediaprovider.NewAlbumFilter(mediaprovider.AlbumFilterOptions{
+			Genres: []string{genreName},
+		})
+	}
+	iter := mp.IterateAlbums(mediaprovider.AlbumSortRandom, filter)
+	insertMode := Replace
+	for i := 0; i < 20; i++ {
+		al := iter.Next()
+		if al, err := mp.GetAlbum(al.ID); err == nil {
+			p.LoadTracks(al.Tracks, insertMode, false)
+			if i == 0 {
+				p.PlayFromBeginning()
+				insertMode = Append
+			}
+		}
+	}
+
+	return nil
+}
+
 func (p *PlaybackManager) LoadRadioStation(station *mediaprovider.RadioStation, queueMode InsertQueueMode) {
 	p.cmdQueue.LoadRadioStation(station, queueMode)
 }

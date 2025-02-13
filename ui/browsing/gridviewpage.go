@@ -58,7 +58,7 @@ type GridViewPageAdapter[M, F any] interface {
 	Route() controller.Route
 
 	// Returns the ActionButton for this page, if any
-	ActionButton() *widget.Button
+	ActionButton() fyne.CanvasObject
 
 	// Returns the iterator for the given sortOrder and filter.
 	// (Non-media pages can ignore the filter argument)
