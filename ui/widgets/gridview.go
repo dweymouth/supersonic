@@ -416,6 +416,7 @@ func (g *GridView) cancelFetch() {
 	if g.fetchCancel != nil {
 		g.fetchCancel()
 		g.fetchCancel = nil
+		g.loadingDots.Stop()
 	}
 }
 
