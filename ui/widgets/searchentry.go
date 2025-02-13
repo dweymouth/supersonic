@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -62,7 +63,7 @@ func (s *SearchEntry) MinSize() fyne.Size {
 }
 
 func (s *SearchEntry) updateActionButton() bool {
-	btn := s.ActionItem.(*clearTextButton)
+	btn := s.ActionItem.(*searchActionButton)
 	oldResouce := btn.Resource
 	if s.Text == "" {
 		btn.Resource = theme.SearchIcon()
@@ -72,10 +73,14 @@ func (s *SearchEntry) updateActionButton() bool {
 	return oldResouce != btn.Resource
 }
 
-var _ fyne.Tappable = (*clearTextButton)(nil)
+var _ fyne.Tappable = (*searchActionButton)(nil)
 
-type clearTextButton struct {
-	widget.Icon
+type searchActionButton struct {
+	widget.BaseWidget
+
+	Resource fyne.Resource
+
+	icon *widget.Icon
 
 	OnTapped func()
 }
@@ -86,15 +91,30 @@ func (s *SearchEntry) sendSearch(text string) {
 	}
 }
 
-func NewClearTextButton(onTapped func()) *clearTextButton {
-	c := &clearTextButton{OnTapped: onTapped}
+func NewClearTextButton(onTapped func()) *searchActionButton {
+	c := &searchActionButton{OnTapped: onTapped}
 	c.ExtendBaseWidget(c)
 	c.Resource = theme.SearchIcon()
+	c.icon = widget.NewIcon(c.Resource)
 	return c
 }
 
-func (c *clearTextButton) Tapped(*fyne.PointEvent) {
+func (c *searchActionButton) Tapped(*fyne.PointEvent) {
 	if c.OnTapped != nil {
 		c.OnTapped()
 	}
+}
+
+func (c *searchActionButton) MinSize() fyne.Size {
+	th := c.Theme()
+	return fyne.NewSquareSize(th.Size(theme.SizeNameInlineIcon) + th.Size(theme.SizeNameInnerPadding)*2)
+}
+
+func (c *searchActionButton) Refresh() {
+	c.icon.Resource = c.Resource
+	c.BaseWidget.Refresh()
+}
+
+func (c *searchActionButton) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(container.NewCenter(c.icon))
 }
