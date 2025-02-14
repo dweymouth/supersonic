@@ -102,6 +102,7 @@ type Tracklist struct {
 	shareMenuItem     *fyne.MenuItem
 	songRadioMenuItem *fyne.MenuItem
 	infoMenuItem      *fyne.MenuItem
+	loadingDots       *LoadingDots
 	container         *fyne.Container
 }
 
@@ -199,15 +200,26 @@ func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCo
 			t.OnReorderTracks(t.SelectedTrackIDs(), insertPos)
 		}
 	}
-	t.container = container.NewBorder(t.hdr, nil, nil, nil, t.list)
+	t.loadingDots = NewLoadingDots()
+	t.container = container.NewBorder(t.hdr, nil, nil, nil,
+		container.NewStack(t.list, container.NewCenter(t.loadingDots)))
 	return t
 }
 
 func (t *Tracklist) Reset() {
+	t.SetLoading(false)
 	t.Clear()
 	t.Options = TracklistOptions{}
 	t.ctxMenu = nil
 	t.SetSorting(TracklistSort{})
+}
+
+func (t *Tracklist) SetLoading(loading bool) {
+	if loading {
+		t.loadingDots.Start()
+	} else {
+		t.loadingDots.Stop()
+	}
 }
 
 func (t *Tracklist) Scroll(amount float32) {

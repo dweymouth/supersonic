@@ -3,6 +3,7 @@ package browsing
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -104,6 +105,8 @@ func newPlaylistPage(
 	a.container = container.NewBorder(
 		container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 15, BottomPadding: 10}, a.header),
 		nil, nil, nil, container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 15}, a.tracklist))
+
+	a.tracklist.SetLoading(true)
 	go a.load()
 	return a
 }
@@ -114,6 +117,7 @@ func (a *PlaylistPage) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *PlaylistPage) Save() SavedPage {
 	a.disposed = true
+	a.tracklist.SetLoading(false)
 	p := a.playlistPageState
 	p.trackSort = a.tracklist.Sorting()
 	p.widgetPool.Release(util.WidgetTypePlaylistPageHeader, a.header)
@@ -136,6 +140,7 @@ func (a *PlaylistPage) OnSongChange(item mediaprovider.MediaItem, lastScrobbledI
 }
 
 func (a *PlaylistPage) Reload() {
+	a.tracklist.SetLoading(true)
 	go a.load()
 }
 
@@ -159,7 +164,16 @@ func (a *PlaylistPage) Scroll(scrollAmt float32) {
 func (a *PlaylistPage) load() {
 	playlist, err := a.sm.Server.GetPlaylist(a.playlistID)
 	if err != nil {
-		log.Printf("Failed to get playlist: %s", err.Error())
+		msg := err.Error()
+		log.Printf("Failed to get playlist: %s", msg)
+		toastMsg := "An error occurred"
+		if strings.Contains(msg, "deadline exceeded") {
+			toastMsg = "The request timed out"
+		}
+		fyne.Do(func() {
+			a.tracklist.SetLoading(false)
+			a.contr.ToastProvider.ShowErrorToast(lang.L(toastMsg))
+		})
 		return
 	}
 	if a.disposed {
@@ -167,6 +181,7 @@ func (a *PlaylistPage) load() {
 	}
 	renumberTracks(playlist.Tracks)
 	fyne.Do(func() {
+		a.tracklist.SetLoading(false)
 		a.tracks = playlist.Tracks
 		a.tracklist.SetTracks(playlist.Tracks)
 		a.tracklist.SetNowPlaying(a.nowPlayingID)

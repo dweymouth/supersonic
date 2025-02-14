@@ -29,12 +29,14 @@ func NewTracklistLoader(tracklist *Tracklist, iter mediaprovider.TrackIterator) 
 	}
 	t.tracklist.OnTrackShown = t.onTrackShown
 	t.fetching = true
+	t.tracklist.SetLoading(true)
 	go t.loadMoreTracks(25)
 	return &t
 }
 
 // Cancels all asynchronous loads so that they will no longer modify the tracklist.
 func (t *TracklistLoader) Dispose() {
+	t.tracklist.SetLoading(false)
 	t.disposed.Store(true)
 	t.tracklist.OnTrackShown = nil
 }
@@ -71,6 +73,7 @@ func (t *TracklistLoader) loadMoreTracks(num int) {
 			return
 		}
 		fyne.Do(func() {
+			t.tracklist.SetLoading(false)
 			t.tracklist.AppendTracks(t.trackBuffer)
 			t.len += len(t.trackBuffer)
 		})

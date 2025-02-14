@@ -3,6 +3,7 @@ package browsing
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -107,6 +108,7 @@ func newAlbumPage(
 		container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 15, BottomPadding: 10}, a.header),
 		nil, nil, nil, container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 15}, a.tracklist))
 
+	a.tracklist.SetLoading(true)
 	go a.load()
 	return a
 }
@@ -117,6 +119,7 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *AlbumPage) Save() SavedPage {
 	a.disposed = true
+	a.tracklist.SetLoading(false)
 	s := a.albumPageState
 	s.sort = a.tracklist.Sorting()
 	a.header.page = nil
@@ -139,6 +142,7 @@ func (a *AlbumPage) OnSongChange(track mediaprovider.MediaItem, lastScrobbledIfA
 }
 
 func (a *AlbumPage) Reload() {
+	a.tracklist.SetLoading(true)
 	go a.load()
 }
 
@@ -162,13 +166,23 @@ func (a *AlbumPage) Scroll(scrollAmt float32) {
 func (a *AlbumPage) load() {
 	album, err := a.mp.GetAlbum(a.albumID)
 	if err != nil {
-		log.Printf("Failed to get album: %s", err.Error())
+		msg := err.Error()
+		log.Printf("Failed to get album: %s", msg)
+		toastMsg := "An error occurred"
+		if strings.Contains(msg, "deadline exceeded") {
+			toastMsg = "The request timed out"
+		}
+		fyne.Do(func() {
+			a.tracklist.SetLoading(false)
+			a.contr.ToastProvider.ShowErrorToast(lang.L(toastMsg))
+		})
 		return
 	}
 	if a.disposed {
 		return
 	}
 	fyne.Do(func() {
+		a.tracklist.SetLoading(false)
 		a.header.Update(album, a.im)
 		a.tracklist.Options.ShowDiscNumber = len(album.Tracks) > 0 && album.Tracks[0].DiscNumber != album.Tracks[len(album.Tracks)-1].DiscNumber
 		a.tracks = album.Tracks
@@ -376,7 +390,7 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 	}
 	yearStr := util.FormatItemDate(a.Date)
 	if y := a.ReissueDate.Year; y != nil && *y > a.YearOrZero() {
-		yearStr += fmt.Sprintf(" (%s %d)", lang.L("reissued"), util.FormatItemDate(a.ReissueDate))
+		yearStr += fmt.Sprintf(" (%s %s)", lang.L("reissued"), util.FormatItemDate(a.ReissueDate))
 	}
 	return fmt.Sprintf("%s · %d %s · %s%s", yearStr, a.TrackCount, tracks, discs, util.SecondsToTimeString(float64(a.Duration)))
 }
