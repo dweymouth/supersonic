@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"slices"
 	"sync"
-	"time"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/res"
@@ -96,18 +95,6 @@ func main() {
 			if runtime.GOOS == "windows" {
 				hwnd := ctx.(driver.WindowsWindowContext).HWND
 				myApp.SetupWindowsSMTC(hwnd)
-			}
-
-			// slightly hacky workaround for https://github.com/fyne-io/fyne/issues/4964
-			_, isWayland := ctx.(*driver.WaylandWindowContext)
-			if runtime.GOOS == "linux" && !isWayland {
-				s := mainWindow.DesiredSize()
-				go func() {
-					time.Sleep(50 * time.Millisecond)
-					fyne.Do(func() { mainWindow.Window.Resize(s.Subtract(fyne.NewSize(4, 0))) })
-					time.Sleep(50 * time.Millisecond)
-					fyne.Do(func() { mainWindow.Window.Resize(s) }) // back to desired size
-				}()
 			}
 		})
 	})
