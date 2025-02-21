@@ -51,7 +51,7 @@ type ArtistPage struct {
 
 	albumGrid    *widgets.GridView
 	tracklistCtr *fyne.Container
-	sortButton   *widgets.IconButton
+	sortButton   *widgets.SortChooserButton
 	nowPlayingID string
 	header       *ArtistPageHeader
 	container    *fyne.Container
@@ -96,8 +96,16 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 	viewToggle := widgets.NewToggleText(0, []string{lang.L("Discography"), lang.L("Top Tracks")})
 	viewToggle.SetActivatedLabel(a.activeView)
 	viewToggle.OnChanged = a.onViewChange
-	a.sortButton = widgets.NewIconButton(myTheme.SortIcon, a.showAlbumSortMenu)
-	a.sortButton.SetToolTip(lang.L("Sort"))
+	a.sortButton = widgets.NewSortChooserButton(util.LocalizeSlice(discographySorts), func(selIdx int) {
+		a.cfg.DiscographySort = discographySorts[selIdx]
+		a.showAlbumGrid(true /*reSort*/)
+	})
+	a.sortButton.AlignLeft = true
+	for i, sort := range discographySorts {
+		if sort == a.cfg.DiscographySort {
+			a.sortButton.SetSelectedIndex(i)
+		}
+	}
 	viewToggleRow := container.NewBorder(nil, nil,
 		container.NewHBox(util.NewHSpace(5), viewToggle),
 		container.NewHBox(a.sortButton, util.NewHSpace(10)),
@@ -180,31 +188,6 @@ func (a *ArtistPage) playArtistRadio() {
 			})
 		}
 	}()
-}
-
-func (a *ArtistPage) showAlbumSortMenu() {
-	m := fyne.NewMenu("")
-	oneChecked := false
-	for i, s := range util.LocalizeSlice(discographySorts) {
-		_i := i
-		item := fyne.NewMenuItem(s, func() {
-			a.cfg.DiscographySort = discographySorts[_i]
-			a.showAlbumGrid(true /*reSort*/)
-		})
-		if discographySorts[i] == a.cfg.DiscographySort {
-			item.Checked = true
-			oneChecked = true
-		}
-		m.Items = append(m.Items, item)
-	}
-	if !oneChecked {
-		m.Items[0].Checked = true
-	}
-	btnPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(a.sortButton)
-	btnSize := a.sortButton.Size()
-	pop := widget.NewPopUpMenu(m, fyne.CurrentApp().Driver().CanvasForObject(a))
-	menuW := pop.MinSize().Width
-	pop.ShowAtPosition(fyne.NewPos(btnPos.X+btnSize.Width-menuW, btnPos.Y+btnSize.Height))
 }
 
 func (a *ArtistPage) getGridViewAlbumsModel() []widgets.GridViewItemModel {
