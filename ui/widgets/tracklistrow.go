@@ -169,6 +169,7 @@ type tracklistRowBase struct {
 	tracklist  *Tracklist
 	trackNum   int
 	trackID    string
+	coverID    string
 	isPlaying  bool
 	isFavorite bool
 	playCount  int
@@ -202,7 +203,7 @@ type TracklistRow interface {
 	SetOnTappedSecondary(func(_ *fyne.PointEvent, trackNum int))
 
 	TrackID() string
-	Update(model *util.TrackListModel, rowNum int)
+	Update(model *util.TrackListModel, rowNum int, onDone func())
 }
 
 type ExpandedTracklistRow struct {
@@ -254,11 +255,13 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 	return t
 }
 
-func (t *ExpandedTracklistRow) Update(tm *util.TrackListModel, rowNum int) {
-	if t.trackID != tm.Track().ID {
-		t.imageLoader.Load(tm.Track().CoverArtID)
+func (t *ExpandedTracklistRow) Update(tm *util.TrackListModel, rowNum int, _ func()) {
+	if t.trackID != tm.Track().ID && t.img.HaveImage() {
+		t.img.SetImage(nil, false)
 	}
-	t.tracklistRowBase.Update(tm, rowNum)
+	t.tracklistRowBase.Update(tm, rowNum, func() {
+		t.imageLoader.Load(t.coverID)
+	})
 }
 
 func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject) *CompactTracklistRow {
@@ -342,23 +345,28 @@ func (t *tracklistRowBase) TrackID() string {
 	return t.trackID
 }
 
-func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int) {
+func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int, onUpdate func()) {
 	if tracklistUpdateCounter.NumEventsSince(time.Now().Add(-150*time.Millisecond)) > 20 {
 		t.doUpdate(&emptyTrack, 1)
 		if t.nextUpdateModel == nil {
 			// queue to run later
-			fyne.Do(func() {
-				if t.nextUpdateModel != nil {
-					t.doUpdate(t.nextUpdateModel, t.nextUpdateRowNum)
-				}
-				t.nextUpdateModel = nil
-			})
+			go func() {
+				<-time.After(10 * time.Millisecond)
+				fyne.Do(func() {
+					if t.nextUpdateModel != nil {
+						t.doUpdate(t.nextUpdateModel, t.nextUpdateRowNum)
+						onUpdate()
+					}
+					t.nextUpdateModel = nil
+				})
+			}()
 		}
 		t.nextUpdateModel = tm
 		t.nextUpdateRowNum = rowNum
 	} else {
 		t.nextUpdateModel = nil
 		t.doUpdate(tm, rowNum)
+		onUpdate()
 	}
 }
 
@@ -375,6 +383,7 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 	if id := tr.ID; id != t.trackID {
 		t.EnsureUnfocused()
 		t.trackID = id
+		t.coverID = tr.CoverArtID
 
 		t.name.Segments[0].(*widget.TextSegment).Text = tr.Title
 		t.name.SetToolTip(tr.Title)

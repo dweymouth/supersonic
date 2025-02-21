@@ -184,7 +184,7 @@ func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCo
 			if t.Options.AutoNumber {
 				i = itemID + 1
 			}
-			tr.Update(model, i)
+			tr.Update(model, i, func() {})
 			if t.OnTrackShown != nil {
 				t.OnTrackShown(itemID)
 			}
