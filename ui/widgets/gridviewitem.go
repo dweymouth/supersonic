@@ -308,9 +308,10 @@ type GridViewItem struct {
 	focusRect     *canvas.Rectangle
 
 	// updated by GridView
-	Cover     *coverImage
-	ImgLoader util.ThumbnailLoader
-	ItemIndex int
+	Cover           *coverImage
+	ImgLoader       util.ThumbnailLoader
+	ItemIndex       int
+	NextUpdateModel *GridViewItemModel
 
 	OnPlay              func()
 	OnFavorite          func(bool)

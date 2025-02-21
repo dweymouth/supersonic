@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"fyne.io/fyne/v2/lang"
 
@@ -17,6 +18,17 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+)
+
+var (
+	gridViewUpdateCounter = util.NewEventCounter(70)
+
+	emptyItem = GridViewItemModel{
+		ID:        "dummy",
+		Name:      "—",
+		Secondary: []string{"—"},
+		Suffix:    "—",
+	}
 )
 
 const batchFetchSize = 6
@@ -340,16 +352,41 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 	}
 	card.ItemIndex = itemIdx
 	g.itemForIndex[itemIdx] = card
+	g.stateMutex.Unlock()
+
 	card.ShowSuffix = g.ShowSuffix
+	card.Cover.Im.PlaceholderIcon = g.Placeholder
 	if !card.NeedsUpdate(item) {
 		// nothing to do
-		g.stateMutex.Unlock()
 		return
 	}
-	card.Cover.Im.PlaceholderIcon = g.Placeholder
-	g.stateMutex.Unlock()
-	card.Update(&item)
-	card.ImgLoader.Load(item.CoverArtID)
+
+	if gridViewUpdateCounter.NumEventsSince(time.Now().Add(-150*time.Millisecond)) > 64 {
+		if card.itemID != emptyItem.ID {
+			card.Update(&emptyItem)
+			card.ImgLoader.Load("")
+		}
+		if card.NextUpdateModel == nil {
+			// queue to run later
+			go func() {
+				<-time.After(10 * time.Millisecond)
+				fyne.Do(func() {
+					if card.NextUpdateModel != nil {
+						gridViewUpdateCounter.Add()
+						card.Update(card.NextUpdateModel)
+						card.ImgLoader.Load(card.NextUpdateModel.CoverArtID)
+					}
+					card.NextUpdateModel = nil
+				})
+			}()
+		}
+		card.NextUpdateModel = &item
+	} else {
+		card.NextUpdateModel = nil
+		gridViewUpdateCounter.Add()
+		card.Update(&item)
+		card.ImgLoader.Load(item.CoverArtID)
+	}
 
 	// if user has scrolled near the bottom, fetch more
 	if itemIdx > g.lenItems()-10 {
