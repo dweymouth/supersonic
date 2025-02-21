@@ -5,7 +5,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/lang"
-	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -60,7 +59,7 @@ func (a *artistsPageAdapter) SaveSortOrder(orderIdx int) {
 	a.cfg.SortOrder = a.mp.ArtistSortOrders()[orderIdx]
 }
 
-func (a *artistsPageAdapter) ActionButton() *widget.Button { return nil }
+func (a *artistsPageAdapter) ActionButton() fyne.CanvasObject { return nil }
 
 func (a *artistsPageAdapter) Iter(sortOrderIdx int, filter mediaprovider.ArtistFilter) widgets.GridViewIterator {
 	sortOrder := a.mp.ArtistSortOrders()[sortOrderIdx]

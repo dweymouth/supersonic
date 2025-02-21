@@ -12,7 +12,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/lang"
-	"fyne.io/fyne/v2/widget"
 )
 
 type genrePageAdapter struct {
@@ -59,19 +58,47 @@ func (g *genrePageAdapter) Route() controller.Route {
 	return controller.GenreRoute(g.genre)
 }
 
-func (g *genrePageAdapter) ActionButton() *widget.Button {
+func (g *genrePageAdapter) ActionButton() fyne.CanvasObject {
 	fn := func() {
 		go func() {
-			err := g.pm.PlayRandomSongs(g.genre)
+			var err error
+			if g.cfg.ShuffleMode == "Albums" {
+				err = g.pm.PlayRandomAlbums(g.genre)
+			} else {
+				err = g.pm.PlayRandomSongs(g.genre)
+			}
 			if err != nil {
-				log.Println("error playing random tracks: %v", err)
+				log.Printf("error playing random tracks: %v", err)
 				fyne.Do(func() {
 					g.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play random tracks"))
 				})
 			}
 		}()
 	}
-	return widget.NewButtonWithIcon(lang.L("Play random"), myTheme.ShuffleIcon, fn)
+
+	var tracks, albums *fyne.MenuItem
+
+	setShuffleMode := func(isAlbums bool) {
+		if isAlbums {
+			g.cfg.ShuffleMode = "Albums"
+		} else {
+			g.cfg.ShuffleMode = "Tracks"
+		}
+		albums.Checked = isAlbums
+		tracks.Checked = !isAlbums
+	}
+
+	tracks = fyne.NewMenuItem(lang.L("Tracks"), func() { setShuffleMode(false) })
+	tracks.Icon = myTheme.TracksIcon
+	albums = fyne.NewMenuItem(lang.L("Albums"), func() { setShuffleMode(true) })
+	albums.Icon = myTheme.AlbumIcon
+
+	isAlbums := g.cfg.ShuffleMode == "Albums"
+	albums.Checked = isAlbums
+	tracks.Checked = !isAlbums
+
+	menu := fyne.NewMenu("", tracks, albums)
+	return widgets.NewOptionButtonWithIcon(lang.L("Play random"), myTheme.ShuffleIcon, menu, fn)
 }
 
 func (a *genrePageAdapter) Iter(sortOrderIdx int, filter mediaprovider.AlbumFilter) widgets.GridViewIterator {

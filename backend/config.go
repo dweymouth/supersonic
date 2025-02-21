@@ -64,9 +64,11 @@ type AlbumPageConfig struct {
 	TracklistColumns []string
 }
 
+// shared between Albums and Genre pages
 type AlbumsPageConfig struct {
-	SortOrder string
-	ShowYears bool
+	SortOrder   string // only relevant for Albums page
+	ShowYears   bool
+	ShuffleMode string // only relevant for genre page
 }
 
 type ArtistPageConfig struct {
@@ -192,8 +194,9 @@ func DefaultConfig(appVersionTag string) *Config {
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},
 		},
 		AlbumsPage: AlbumsPageConfig{
-			SortOrder: string("Recently Added"),
-			ShowYears: false,
+			SortOrder:   string("Recently Added"),
+			ShowYears:   false,
+			ShuffleMode: "Tracks",
 		},
 		ArtistPage: ArtistPageConfig{
 			InitialView:      "Discography",

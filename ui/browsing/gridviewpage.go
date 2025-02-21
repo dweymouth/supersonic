@@ -29,7 +29,7 @@ type GridViewPage[M, F any] struct {
 	searchGridState *widgets.GridViewState
 
 	title      *widget.RichText
-	sortOrder  *widget.Select
+	sortOrder  *widgets.SortChooserButton
 	filterBtn  widgets.FilterButton[M, F]
 	filter     mediaprovider.MediaFilter[M, F]
 	searcher   *widgets.SearchEntry
@@ -58,7 +58,7 @@ type GridViewPageAdapter[M, F any] interface {
 	Route() controller.Route
 
 	// Returns the ActionButton for this page, if any
-	ActionButton() *widget.Button
+	ActionButton() fyne.CanvasObject
 
 	// Returns the iterator for the given sortOrder and filter.
 	// (Non-media pages can ignore the filter argument)
@@ -125,15 +125,7 @@ func (g *GridViewPage[M, F]) createTitleAndSort() {
 	})
 	if s, ok := g.adapter.(SortableGridViewPageAdapter); ok {
 		sorts, selected := s.SortOrders()
-		g.sortOrder = widget.NewSelect(sorts, g.onSortOrderChanged)
-		// find longest string
-		l := ""
-		for _, s := range sorts {
-			if len(s) > len(l) {
-				l = s
-			}
-		}
-		g.sortOrder.PlaceHolder = l // props up MinSize.Width
+		g.sortOrder = widgets.NewSortChooserButton(sorts, g.onSortOrderChanged)
 		g.sortOrder.SetSelectedIndex(selected)
 	}
 }
@@ -213,13 +205,13 @@ func (g *GridViewPage[M, F]) doSearch(query string) {
 	g.grid.Reset(g.adapter.SearchIter(query, g.getFilter()))
 }
 
-func (g *GridViewPage[M, F]) onSortOrderChanged(_ string) {
+func (g *GridViewPage[M, F]) onSortOrderChanged(idx int) {
 	if g.grid == nil {
 		return // callback from initializing
 	}
 
 	g.adapter.(SortableGridViewPageAdapter).SaveSortOrder(g.getSortOrderIdx())
-	g.grid.Reset(g.adapter.Iter(g.getSortOrderIdx(), g.getFilter()))
+	g.grid.Reset(g.adapter.Iter(idx, g.getFilter()))
 }
 
 func (g *GridViewPage[M, F]) getFilter() mediaprovider.MediaFilter[M, F] {

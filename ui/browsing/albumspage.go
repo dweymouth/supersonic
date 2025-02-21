@@ -1,6 +1,7 @@
 package browsing
 
 import (
+	"log"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -64,7 +65,20 @@ func (a *albumsPageAdapter) SaveSortOrder(orderIdx int) {
 	a.cfg.SortOrder = a.mp.AlbumSortOrders()[orderIdx]
 }
 
-func (a *albumsPageAdapter) ActionButton() *widget.Button { return nil }
+func (a *albumsPageAdapter) ActionButton() fyne.CanvasObject {
+	fn := func() {
+		go func() {
+			if err := a.pm.PlayRandomAlbums(""); err != nil {
+				log.Printf("error playing random albums: %v", err)
+				fyne.Do(func() {
+					a.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play random albums"))
+				})
+			}
+		}()
+	}
+
+	return widget.NewButtonWithIcon(lang.L("Play random"), myTheme.ShuffleIcon, fn)
+}
 
 func (a *albumsPageAdapter) Iter(sortOrderIdx int, filter mediaprovider.AlbumFilter) widgets.GridViewIterator {
 	sortOrder := a.mp.AlbumSortOrders()[sortOrderIdx]

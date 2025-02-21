@@ -27,9 +27,10 @@ type IconButton struct {
 	IconSize    IconButtonSize
 	OnTapped    func()
 
-	icon    fyne.Resource
-	focused bool
-	hovered bool
+	icon     fyne.Resource
+	focused  bool
+	hovered  bool
+	disabled bool
 
 	themed *theme.ThemedResource
 	img    *canvas.Image
@@ -38,6 +39,7 @@ type IconButton struct {
 var (
 	_ fyne.Tappable     = (*IconButton)(nil)
 	_ fyne.Focusable    = (*IconButton)(nil)
+	_ fyne.Disableable  = (*IconButton)(nil)
 	_ desktop.Hoverable = (*IconButton)(nil)
 )
 
@@ -56,8 +58,26 @@ func (i *IconButton) SetIcon(icon fyne.Resource) {
 	}
 }
 
+func (i *IconButton) Disable() {
+	if !i.disabled {
+		i.disabled = true
+		i.Refresh()
+	}
+}
+
+func (i *IconButton) Enable() {
+	if i.disabled {
+		i.disabled = false
+		i.Refresh()
+	}
+}
+
+func (i *IconButton) Disabled() bool {
+	return i.disabled
+}
+
 func (i *IconButton) Tapped(*fyne.PointEvent) {
-	if i.OnTapped != nil {
+	if !i.disabled && i.OnTapped != nil {
 		i.OnTapped()
 	}
 }
@@ -77,7 +97,7 @@ func (i *IconButton) FocusLost() {
 }
 
 func (i *IconButton) TypedKey(e *fyne.KeyEvent) {
-	if e.Name == fyne.KeySpace {
+	if !i.disabled && e.Name == fyne.KeySpace {
 		i.Tapped(nil)
 	}
 }
@@ -87,6 +107,10 @@ func (i *IconButton) TypedRune(r rune) {
 
 func (i *IconButton) MouseIn(e *desktop.MouseEvent) {
 	i.ToolTipWidget.MouseIn(e)
+	if i.disabled {
+		return
+	}
+
 	if !i.hovered {
 		defer i.Refresh()
 	}
@@ -95,6 +119,10 @@ func (i *IconButton) MouseIn(e *desktop.MouseEvent) {
 
 func (i *IconButton) MouseOut() {
 	i.ToolTipWidget.MouseOut()
+	if i.disabled {
+		return
+	}
+
 	if i.hovered {
 		defer i.Refresh()
 	}
@@ -121,7 +149,9 @@ func (i *IconButton) iconSize() fyne.Size {
 }
 
 func (i *IconButton) updateColor() {
-	if i.Highlighted || i.focused {
+	if i.disabled {
+		i.themed.ColorName = theme.ColorNameDisabled
+	} else if i.Highlighted || i.focused {
 		i.themed.ColorName = theme.ColorNamePrimary
 	} else if i.hovered {
 		i.themed.ColorName = myTheme.ColorNameHoveredIconButton
