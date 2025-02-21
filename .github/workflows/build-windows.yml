@@ -55,7 +55,7 @@ jobs:
 
     - name: Download smtc dll
       run: >
-        wget https://github.com/supersonic-app/smtc-dll/releases/download/v0.1.0/SMTC.dll
+        wget https://github.com/supersonic-app/smtc-dll/releases/download/v0.1.1/SMTC.dll
 
     - name: Generate zip bundle
       run: zip Supersonic-windows.zip Supersonic.exe libmpv-2.dll SMTC.dll
