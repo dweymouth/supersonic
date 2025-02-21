@@ -295,13 +295,13 @@ func (p *PlaybackManager) PlayRandomAlbums(genreName string) error {
 	}
 
 	mp := p.engine.sm.Server
-	var filter mediaprovider.AlbumFilter
+	var options mediaprovider.AlbumFilterOptions
 	if genreName != "" {
-		filter = mediaprovider.NewAlbumFilter(mediaprovider.AlbumFilterOptions{
+		options = mediaprovider.AlbumFilterOptions{
 			Genres: []string{genreName},
-		})
+		}
 	}
-	iter := mp.IterateAlbums(mediaprovider.AlbumSortRandom, filter)
+	iter := mp.IterateAlbums(mediaprovider.AlbumSortRandom, mediaprovider.NewAlbumFilter(options))
 	insertMode := Replace
 	for i := 0; i < 20; i++ {
 		al := iter.Next()
