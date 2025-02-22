@@ -65,21 +65,23 @@ func NewSettingsDialog(
 	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList, clientDecidesScrobble: clientDecidesScrobble}
 	s.ExtendBaseWidget(s)
 
-	// TODO: Once Fyne supports disableable sliders, it's probably a nicer UX
-	// to create the equalizer tab but disable it if we are not using an equalizer player
+	// TODO: It may be a nicer UX to always create the equalizer tab,
+	// but disable it if we are not using an equalizer player
 	var tabs *container.AppTabs
 	if isEqualizerPlayer {
 		tabs = container.NewAppTabs(
 			s.createGeneralTab(canSavePlayQueue),
+			s.createAppearanceTab(window),
 			s.createPlaybackTab(isLocalPlayer, isReplayGainPlayer),
 			s.createEqualizerTab(equalizerBands),
-			s.createExperimentalTab(window),
+			s.createAdvancedTab(),
 		)
 	} else {
 		tabs = container.NewAppTabs(
 			s.createGeneralTab(canSavePlayQueue),
+			s.createAppearanceTab(window),
 			s.createPlaybackTab(isLocalPlayer, isReplayGainPlayer),
-			s.createExperimentalTab(window),
+			s.createAdvancedTab(),
 		)
 	}
 
@@ -99,41 +101,6 @@ func NewSettingsDialog(
 }
 
 func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.TabItem {
-	themeNames := []string{"Default"}
-	themeFileNames := []string{""}
-	i, selIndex := 1, 0
-	for filename, displayname := range s.themeFiles {
-		themeFileNames = append(themeFileNames, filename)
-		themeNames = append(themeNames, displayname)
-		if strings.EqualFold(filename, s.config.Theme.ThemeFile) {
-			selIndex = i
-		}
-		i++
-	}
-
-	themeFileSelect := widget.NewSelect(themeNames, nil)
-	themeFileSelect.SetSelectedIndex(selIndex)
-	themeFileSelect.OnChanged = func(_ string) {
-		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
-		if s.OnThemeSettingChanged != nil {
-			s.OnThemeSettingChanged()
-		}
-	}
-	themeModeSelect := widget.NewSelect([]string{
-		string(myTheme.AppearanceDark),
-		string(myTheme.AppearanceLight),
-		string(myTheme.AppearanceAuto)}, nil)
-	themeModeSelect.OnChanged = func(_ string) {
-		s.config.Theme.Appearance = themeModeSelect.Options[themeModeSelect.SelectedIndex()]
-		if s.OnThemeSettingChanged != nil {
-			s.OnThemeSettingChanged()
-		}
-	}
-	themeModeSelect.SetSelected(s.config.Theme.Appearance)
-	if themeModeSelect.Selected == "" {
-		themeModeSelect.SetSelectedIndex(0)
-	}
-
 	pages := util.LocalizeSlice(backend.SupportedStartupPages)
 	var startupPage *widget.Select
 	startupPage = widget.NewSelect(pages, func(_ string) {
@@ -308,11 +275,8 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	scrobbleEnabled.Checked = s.config.Scrobbling.Enabled
 
 	return container.NewTabItem(lang.L("General"), container.NewVBox(
+		util.NewHSpace(0), // insert a theme.Padding amount of space at top
 		container.NewHBox(widget.NewLabel(lang.L("Language")), languageSelect),
-		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
-			container.NewHBox(widget.NewLabel(lang.L("Mode")), themeModeSelect, util.NewHSpace(5)), // right
-			themeFileSelect, // center
-		),
 		container.NewHBox(
 			widget.NewLabel(lang.L("Startup page")), container.NewGridWithColumns(2, startupPage),
 		),
@@ -473,11 +437,41 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 	return container.NewTabItem(lang.L("Equalizer"), cont)
 }
 
-func (s *SettingsDialog) createExperimentalTab(window fyne.Window) *container.TabItem {
-	warningLabel := widget.NewLabel("WARNING: these settings are experimental and may " +
-		"make the application buggy or increase system resource use. " +
-		"They may be removed in future versions.")
-	warningLabel.Wrapping = fyne.TextWrapWord
+func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabItem {
+	themeNames := []string{"Default"}
+	themeFileNames := []string{""}
+	i, selIndex := 1, 0
+	for filename, displayname := range s.themeFiles {
+		themeFileNames = append(themeFileNames, filename)
+		themeNames = append(themeNames, displayname)
+		if strings.EqualFold(filename, s.config.Theme.ThemeFile) {
+			selIndex = i
+		}
+		i++
+	}
+
+	themeFileSelect := widget.NewSelect(themeNames, nil)
+	themeFileSelect.SetSelectedIndex(selIndex)
+	themeFileSelect.OnChanged = func(_ string) {
+		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
+		if s.OnThemeSettingChanged != nil {
+			s.OnThemeSettingChanged()
+		}
+	}
+	themeModeSelect := widget.NewSelect([]string{
+		string(myTheme.AppearanceDark),
+		string(myTheme.AppearanceLight),
+		string(myTheme.AppearanceAuto)}, nil)
+	themeModeSelect.OnChanged = func(_ string) {
+		s.config.Theme.Appearance = themeModeSelect.Options[themeModeSelect.SelectedIndex()]
+		if s.OnThemeSettingChanged != nil {
+			s.OnThemeSettingChanged()
+		}
+	}
+	themeModeSelect.SetSelected(s.config.Theme.Appearance)
+	if themeModeSelect.Selected == "" {
+		themeModeSelect.SetSelectedIndex(0)
+	}
 
 	normalFontEntry := widget.NewEntry()
 	normalFontEntry.SetPlaceHolder("path to .ttf or empty to use default")
@@ -518,17 +512,62 @@ func (s *SettingsDialog) createExperimentalTab(window fyne.Window) *container.Ta
 	} else {
 		uiScaleRadio.Selected = "Normal"
 	}
-	return container.NewTabItem("Experimental", container.NewVBox(
-		warningLabel,
-		s.newSectionSeparator(),
+
+	disableDPI := widget.NewCheck(lang.L("Disable automatic DPI adjustment"), func(b bool) {
+		s.config.Application.DisableDPIDetection = b
+		s.setRestartRequired()
+	})
+	disableDPI.Checked = s.config.Application.DisableDPIDetection
+
+	return container.NewTabItem(lang.L("Appearance"), container.NewVBox(
+		util.NewHSpace(0), // insert a theme.Padding amount of space at top
+		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
+			container.NewHBox(widget.NewLabel(lang.L("Mode")), themeModeSelect, util.NewHSpace(5)), // right
+			themeFileSelect, // center
+		),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("UI Scaling"), Style: util.BoldRichTextStyle}),
 		uiScaleRadio,
+		disableDPI,
 		s.newSectionSeparator(),
-		widget.NewRichText(&widget.TextSegment{Text: "Application Font", Style: util.BoldRichTextStyle}),
+		widget.NewRichText(&widget.TextSegment{Text: lang.L("Application font"), Style: util.BoldRichTextStyle}),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel("Normal font"), container.NewBorder(nil, nil, nil, normalFontBrowse, normalFontEntry),
 			widget.NewLabel("Bold font"), container.NewBorder(nil, nil, nil, boldFontBrowse, boldFontEntry),
 		),
+	))
+}
+
+func (s *SettingsDialog) createAdvancedTab() *container.TabItem {
+	multi := widget.NewCheckWithData(lang.L("Allow multiple app instances"), binding.BindBool(&s.config.Application.AllowMultiInstance))
+	sslSkip := widget.NewCheckWithData(lang.L("Skip SSL certificate verification"), binding.BindBool(&s.config.Application.SkipSSLVerify))
+	update := widget.NewCheckWithData(lang.L("Automatically check for updates"), binding.BindBool(&s.config.Application.EnableAutoUpdateChecker))
+	lrclib := widget.NewCheckWithData(lang.L("Enable LrcLib lyrics fetcher"), binding.BindBool(&s.config.Application.EnableLrcLib))
+
+	threeDigitValidator := func(text, selText string, r rune) bool {
+		return unicode.IsDigit(r) && len(text)-len(selText) < 3
+	}
+
+	percentEntry := widgets.NewTextRestrictedEntry(threeDigitValidator)
+	percentEntry.SetMinCharWidth(3)
+	percentEntry.OnChanged = func(str string) {
+		if i, err := strconv.Atoi(str); err == nil {
+			s.config.Application.MaxImageCacheSizeMB = i
+		}
+	}
+	percentEntry.Text = strconv.Itoa(s.config.Application.MaxImageCacheSizeMB)
+
+	imgCacheCfg := container.NewHBox(
+		widget.NewLabel(lang.L("Maximum image cache size")),
+		percentEntry,
+		widget.NewLabel("MB"),
+	)
+
+	return container.NewTabItem(lang.L("Advanced"), container.NewVBox(
+		multi,
+		sslSkip,
+		update,
+		lrclib,
+		imgCacheCfg,
 	))
 }
 

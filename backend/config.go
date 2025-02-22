@@ -53,6 +53,7 @@ type AppConfig struct {
 	EnqueueBatchSize            int
 	Language                    string
 	DisableDPIDetection         bool
+	EnableAutoUpdateChecker     bool
 
 	// Experimental - may be removed in future
 	FontNormalTTF string
@@ -189,6 +190,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			SkipSSLVerify:               false,
 			EnqueueBatchSize:            100,
 			Language:                    "auto",
+			EnableAutoUpdateChecker:     true,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},

@@ -127,8 +127,10 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	log.Printf("Using config dir: %s", confDir)
 	log.Printf("Using cache dir: %s", cacheDir)
 
-	a.UpdateChecker = NewUpdateChecker(appVersionTag, latestReleaseURL, &a.Config.Application.LastCheckedVersion)
-	a.UpdateChecker.Start(a.bgrndCtx, 24*time.Hour)
+	if a.Config.Application.EnableAutoUpdateChecker {
+		a.UpdateChecker = NewUpdateChecker(appVersionTag, latestReleaseURL, &a.Config.Application.LastCheckedVersion)
+		a.UpdateChecker.Start(a.bgrndCtx, 24*time.Hour)
+	}
 
 	if err := a.initMPV(); err != nil {
 		return nil, err
