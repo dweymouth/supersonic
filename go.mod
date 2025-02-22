@@ -50,8 +50,7 @@ require (
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
 	golang.org/x/image v0.24.0 // indirect
-	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.6.0-alpha1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250208153246-b82c2bea222d
+replace fyne.io/fyne/v2 v2.6.0-alpha1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250222005659-e73d8f178006
