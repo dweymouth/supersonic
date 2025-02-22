@@ -11,8 +11,10 @@
 - [#557](https://github.com/dweymouth/supersonic/pull/557) Add album shuffle modes to Albums and Genre pages
 - [#544](https://github.com/dweymouth/supersonic/pull/544) Caching added for LrcLib lyrics, custom LrcLib URL supported in config file
 - [#549](https://github.com/dweymouth/supersonic/pull/549) Use notify-send for notifications on Linux if available
-- Favorite/menu icon buttons added to grid cards when hovered
-- Show full dates from OpenSubsonic servers when available
+- [#489](https://github.com/dweymouth/supersonic/issues/489) Add setting to disable automatic scaling adjustment for detected DPI
+- [#517](https://github.com/dweymouth/supersonic/pull/517) Favorite/menu icon buttons added to grid cards when hovered
+- [#514](https://github.com/dweymouth/supersonic/pull/514) Show full dates from OpenSubsonic servers when available
+- New Advanced settings tab exposing more config file settings to the UI
 - Log to a file instead of stdout on Windows
 
 ### Fixed
@@ -20,8 +22,9 @@
 - [#515](https://github.com/dweymouth/supersonic/issues/515) Removing track from playlist when sorted removed wrong track
 - [#540](https://github.com/dweymouth/supersonic/pull/540) Fullscreen artist images not loading in full resolution
 - [#550](https://github.com/dweymouth/supersonic/pull/550) Fix volume slider scrolling too quickly with some mice
+- [#301](https://github.com/dweymouth/supersonic/issues/301) Sometimes crashing on exit
+- [#506](https://github.com/dweymouth/supersonic/issues/506) Add list/grid debouncing to improve scrolling smoothness when scrolling very quickly
 - Loading dots not stopping if canceling a search before completion
-- Add list/grid debouncing to improve scrolling smoothness when scrolling very quickly
 - Image caching broken on some servers due to track IDs not being legal filenames
 - Migrate to Fyne 2.6 for improved stability and performance
 

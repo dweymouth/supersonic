@@ -61,36 +61,44 @@
   </screenshots>
 
  <releases>
-  <release date="2024-12-21" version="0.13.2">
+  <release date="2025-02-22" version="0.14.0">
    <description>
      <p>
-       Version 0.13.2 of Supersonic
+       Version 0.14.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>New translations: German, Japanese</li>
-       <li>Setting in config dialog to choose app language</li>
-       <li>Add config file setting to change how many tracks queued by "Play random"</li>
-       <li>Clicking on playlist cover from playlist page shows cover in pop-up</li>
-      </ul>
+       <li>New translations: Dutch</li>
+       <li>Media Key / SMTC support for Windows</li>
+       <li>Add an Autoplay mode to continually add related songs when nearing the end of queue</li>
+       <li>Shuffle button added to favorite songs view</li>
+       <li>Added toast notifications for certain UI actions</li>
+       <li>Add album shuffle modes to Albums and Genre pages</li>
+       <li>Caching added for LrcLib lyrics, custom LrcLib URL supported in config file</li>
+       <li>Use notify-send for notifications on Linux if available</li>
+       <li>Add setting to disable automatic scaling adjustment for detected DPI</li>
+       <li>New Advanced settings tab exposing more config file settings to the UI</li>
+       <li>Favorite/menu icon buttons added to grid cards when hovered</li>
+       <li>Show full dates from OpenSubsonic servers when available</li>
+       <li>Log to a file instead of stdout on Windows</li>
+     </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Fix regression in scrolling performance of album grid introduced in 0.12.0</li>
-       <li>Scroll to currently playing track when loading Now Playing page</li>
-       <li>Track with new sample rate failing to begin playback on Windows</li>
-       <li>Removing track from a playlist would remove all copies of it</li>
-       <li>Use custom HTTP User-Agent to avoid being blocked by some WAF servers</li>
-       <li>Increase base scrolling speed, add keybindings for PageUp/PageDown</li>
-       <li>Some performance improvements from updating to Fyne 2.5.3</li>
-       <li>Ensure clicking outside of tracklists can always unselect selection</li>
-       <li>A few translation updates</li>
-       <li>Wrong tooltip on repeat control</li>
+       <li>Persist repeat setting across restarts</li>
+       <li>Removing track from playlist when sorted removed wrong track</li>
+       <li>Fullscreen artist images not loading in full resolution</li>
+       <li>Fix volume slider scrolling too quickly with some mice</li>
+       <li>Loading dots not stopping if canceling a search before completion</li>
+       <li>Add list/grid debouncing to improve scrolling smoothness when scrolling very quickly</li>
+       <li>Image caching broken on some servers due to track IDs not being legal filenames</li>
+       <li>Migrate to Fyne 2.6 for improved stability and performance</li>
+       <li>Sometimes crashing on exit</li>
      </ul>
 
    </description>

@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.13.2"
+	AppVersion       = "0.14.0"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,21 +15,29 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* New translations: German, Japanese
-* Setting in config dialog to choose app language
-* Add config file setting to change how many tracks queued by "Play random"
-* Clicking on playlist cover from playlist page shows cover in pop-up (like album page)`
+* New translations: Dutch
+* Media Key / SMTC support for Windows
+* Add an Autoplay mode to continually add related songs when nearing the end of queue
+* Shuffle button added to favorite songs view
+* Added toast notifications for certain UI actions
+* Add album shuffle modes to Albums and Genre pages
+* Caching added for LrcLib lyrics, custom LrcLib URL supported in config file
+* Use notify-send for notifications on Linux if available
+* Add setting to disable automatic scaling adjustment for detected DPI
+* New Advanced settings tab exposing more config file settings to the UI
+* Favorite/menu icon buttons added to grid cards when hovered
+* Show full dates from OpenSubsonic servers when available
+* Log to a file instead of stdout on Windows`
 
 	WhatsFixed = `
 ## Fixed
-* Fix regression in scrolling performance of album grid introduced in 0.12.0
-* Scroll to currently playing track when loading Now Playing page
-* Track with new sample rate failing to begin playback on Windows
-* Removing track from a playlist would remove all copies of it
-* Use custom HTTP User-Agent to avoid being blocked by some WAF servers
-* Increase base scrolling speed, add keybindings for PageUp/PageDown
-* Some performance improvements from updating to Fyne 2.5.3
-* Ensure clicking outside of tracklists can always unselect selection
-* A few translation updates
-* Wrong tooltip on repeat control`
+* Persist repeat setting across restarts
+* Removing track from playlist when sorted removed wrong track
+* Fullscreen artist images not loading in full resolution
+* Fix volume slider scrolling too quickly with some mice
+* Loading dots not stopping if canceling a search before completion
+* Add list/grid debouncing to improve scrolling smoothness when scrolling very quickly
+* Image caching broken on some servers due to track IDs not being legal filenames
+* Migrate to Fyne 2.6 for improved stability and performance
+* Sometimes crashing on exit`
 )
