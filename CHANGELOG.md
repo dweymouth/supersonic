@@ -1,5 +1,30 @@
 # Change Log
 
+## [0.14.0]
+
+### Added
+- New translations: Dutch
+- [#533](https://github.com/dweymouth/supersonic/pull/533) Media Key / SMTC support for Windows
+- [#526](https://github.com/dweymouth/supersonic/pull/526) Add an Autoplay mode to continually add related songs when nearing the end of queue
+- [#496](https://github.com/dweymouth/supersonic/issues/469) Shuffle button added to favorite songs view
+- [#524](https://github.com/dweymouth/supersonic/pull/524) Added toast notifications for certain UI actions
+- [#557](https://github.com/dweymouth/supersonic/pull/557) Add album shuffle modes to Albums and Genre pages
+- [#544](https://github.com/dweymouth/supersonic/pull/544) Caching added for LrcLib lyrics, custom LrcLib URL supported in config file
+- [#549](https://github.com/dweymouth/supersonic/pull/549) Use notify-send for notifications on Linux if available
+- Favorite/menu icon buttons added to grid cards when hovered
+- Show full dates from OpenSubsonic servers when available
+- Log to a file instead of stdout on Windows
+
+### Fixed
+- [#496](https://github.com/dweymouth/supersonic/issues/496) Persist repeat setting across restarts
+- [#515](https://github.com/dweymouth/supersonic/issues/515) Removing track from playlist when sorted removed wrong track
+- [#540](https://github.com/dweymouth/supersonic/pull/540) Fullscreen artist images not loading in full resolution
+- [#550](https://github.com/dweymouth/supersonic/pull/550) Fix volume slider scrolling too quickly with some mice
+- Loading dots not stopping if canceling a search before completion
+- Add list/grid debouncing to improve scrolling smoothness when scrolling very quickly
+- Image caching broken on some servers due to track IDs not being legal filenames
+- Migrate to Fyne 2.6 for improved stability and performance
+
 ## [0.13.2]
 
 ### Added
