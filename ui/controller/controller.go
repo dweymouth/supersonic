@@ -691,9 +691,10 @@ func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConf
 	return c.tryConnectToServer(context.Background(), server, password)
 }
 
-// try to connect to the given server, with a 10 second timeout added to the context
+// try to connect to the given server, with the configured timeout added to the context
 func (c *Controller) tryConnectToServer(ctx context.Context, server *backend.ServerConfig, password string) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	timeout := time.Duration(c.App.Config.Application.RequestTimeoutSeconds) * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	if err := c.App.ServerManager.TestConnectionAndAuth(ctx, server.ServerConnection, password); err != nil {
 		return err

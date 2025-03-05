@@ -26,12 +26,13 @@ const lrclibCacheFolder = "lrclib"
 type LrcLibFetcher struct {
 	cachePath       string
 	customLrcLibUrl string
+	timeout         time.Duration
 }
 
-func NewLrcLibFetcher(baseCacheDir string, customLrcLibUrl string) *LrcLibFetcher {
+func NewLrcLibFetcher(baseCacheDir string, customLrcLibUrl string, timeout time.Duration) *LrcLibFetcher {
 	cachePath := filepath.Join(baseCacheDir, lrclibCacheFolder)
 	configdir.MakePath(cachePath)
-	return &LrcLibFetcher{cachePath: cachePath, customLrcLibUrl: customLrcLibUrl}
+	return &LrcLibFetcher{cachePath: cachePath, customLrcLibUrl: customLrcLibUrl, timeout: timeout}
 }
 
 func (l *LrcLibFetcher) FetchLrcLibLyrics(name, artist, album string, durationSecs int) (*mediaprovider.Lyrics, error) {
@@ -67,7 +68,7 @@ func (l *LrcLibFetcher) FetchLrcLibLyrics(name, artist, album string, durationSe
 }
 
 func (l *LrcLibFetcher) fetchFromServer(name, artist, album string, durationSecs int) (*mediaprovider.Lyrics, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), l.timeout)
 	defer cancel()
 
 	lrclibUrl := l.getLrclibUrl()
