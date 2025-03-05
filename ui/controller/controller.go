@@ -27,7 +27,6 @@ import (
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/lang"
@@ -64,7 +63,7 @@ type Controller struct {
 	popUpQueue         *widget.PopUp
 	popUpQueueList     *widgets.PlayQueueList
 	popUpQueueLastUsed int64
-	escapablePopUp     *widget.PopUp
+	escapablePopUp     fyne.CanvasObject
 	haveModal          bool
 	runOnModalClosed   func()
 }
@@ -128,7 +127,7 @@ func (m *Controller) NavigateTo(route Route) {
 	m.NavHandler(route)
 }
 
-func (m *Controller) ClosePopUpOnEscape(pop *widget.PopUp) {
+func (m *Controller) ClosePopUpOnEscape(pop fyne.CanvasObject) {
 	m.escapablePopUp = pop
 }
 
@@ -232,9 +231,6 @@ func (m *Controller) ShowPopUpPlayQueue() {
 }
 
 func (m *Controller) ShowPopUpImage(img image.Image) {
-	im := canvas.NewImageFromImage(img)
-	im.FillMode = canvas.ImageFillContain
-	pop := widget.NewPopUp(im, m.MainWindow.Canvas())
 	s := m.MainWindow.Canvas().Size()
 	var popS fyne.Size
 	if asp := util.ImageAspect(img); s.Width/s.Height > asp {
@@ -245,12 +241,11 @@ func (m *Controller) ShowPopUpImage(img image.Image) {
 		w := s.Width * 0.8
 		popS = fyne.NewSize(w, w*(1/asp))
 	}
+
+	pop := widgets.NewImagePopUp(img, m.MainWindow.Canvas(), popS)
+
 	m.ClosePopUpOnEscape(pop)
-	pop.Resize(popS)
-	pop.ShowAtPosition(fyne.NewPos(
-		(s.Width-popS.Width)/2,
-		(s.Height-popS.Height)/2,
-	))
+	pop.Show()
 }
 
 func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {
