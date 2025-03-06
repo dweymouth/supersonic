@@ -177,9 +177,10 @@ func (s *ServerManager) SetServerPassword(server *ServerConfig, password string)
 
 func (s *ServerManager) connect(connection ServerConnection, password string) (mediaprovider.Server, error) {
 	var cli, altCli mediaprovider.Server
+	timeout := time.Second * time.Duration(s.config.Application.RequestTimeoutSeconds)
 
 	if connection.ServerType == ServerTypeJellyfin {
-		client, err := jellyfin.NewClient(connection.Hostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(10*time.Second))
+		client, err := jellyfin.NewClient(connection.Hostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(timeout))
 		if err != nil {
 			log.Printf("error creating Jellyfin client: %s", err.Error())
 			return nil, err
@@ -190,7 +191,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 		}
 
 		if connection.AltHostname != "" {
-			altClient, err := jellyfin.NewClient(connection.AltHostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(10*time.Second))
+			altClient, err := jellyfin.NewClient(connection.AltHostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(timeout))
 			if err != nil {
 				log.Printf("error creating Jellyfin alternative client: %s", err.Error())
 				return nil, err
@@ -205,7 +206,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 		cli = &subsonicMP.SubsonicServer{
 			Client: subsonic.Client{
 				UserAgent:    ua,
-				Client:       &http.Client{Timeout: 10 * time.Second},
+				Client:       &http.Client{Timeout: timeout},
 				BaseUrl:      connection.Hostname,
 				User:         connection.Username,
 				PasswordAuth: connection.LegacyAuth,
@@ -216,7 +217,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 		altCli = &subsonicMP.SubsonicServer{
 			Client: subsonic.Client{
 				UserAgent:    ua,
-				Client:       &http.Client{Timeout: 10 * time.Second},
+				Client:       &http.Client{Timeout: timeout},
 				BaseUrl:      connection.AltHostname,
 				User:         connection.Username,
 				PasswordAuth: connection.LegacyAuth,

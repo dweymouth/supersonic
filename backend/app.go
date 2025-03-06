@@ -148,7 +148,8 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
 	if a.Config.Application.EnableLrcLib {
-		a.LrcLibFetcher = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl)
+		timeout := time.Duration(a.Config.Application.RequestTimeoutSeconds) * time.Second
+		a.LrcLibFetcher = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl, timeout)
 	}
 
 	a.PlaybackManager.OnPlaying(func() {
