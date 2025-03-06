@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -14,6 +15,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
@@ -275,6 +277,9 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.ownerLabel = util.NewTruncatingLabel()
 	a.createdAtLabel = widget.NewLabel("")
 	a.trackTimeLabel = widget.NewLabel("")
+
+	var buttonRow *fyne.Container
+
 	a.editButton = widget.NewButtonWithIcon(lang.L("Edit"), theme.DocumentCreateIcon(), func() {
 		if a.playlistInfo != nil {
 			a.page.contr.DoEditPlaylistWorkflow(&a.playlistInfo.Playlist)
@@ -289,6 +294,42 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, true)
 		a.page.pm.PlayFromBeginning()
 	})
+	var searchBtn *ttwidget.Button
+	var searchEntry *widgets.SearchEntry
+	searchBtn = ttwidget.NewButtonWithIcon("", theme.SearchIcon(), func() {
+		minW := searchBtn.MinSize().Width
+		if searchEntry == nil {
+			searchEntry = widgets.NewSearchEntry()
+			searchEntry.PlaceHolder = ""
+			searchEntry.Scroll = container.ScrollNone
+			searchEntry.OnFocusLost = func() {
+				if searchEntry.Text == "" {
+					searchEntry.SetPlaceHolder("")
+					fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+						f = 1 - f
+						w := (200-minW)*f + minW
+						searchEntry.SetMinWidth(w)
+						if f == 0 {
+							buttonRow.Objects[3] = searchBtn
+						}
+						buttonRow.Layout.Layout(buttonRow.Objects, buttonRow.Layout.MinSize(buttonRow.Objects))
+					}).Start()
+				}
+			}
+		}
+		buttonRow.Objects[3] = searchEntry
+		searchEntry.SetMinWidth(minW)
+		fyne.CurrentApp().Driver().CanvasForObject(a).Focus(searchEntry)
+		fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+			w := (200-minW)*f + minW
+			searchEntry.SetMinWidth(w)
+			buttonRow.Layout.Layout(buttonRow.Objects, buttonRow.Layout.MinSize(buttonRow.Objects))
+			if f == 1 {
+				searchEntry.SetPlaceHolder(lang.L("Search"))
+			}
+		}).Start()
+	})
+	searchBtn.SetToolTip(lang.L("Search"))
 	var pop *widget.PopUpMenu
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	menuBtn.OnTapped = func() {
@@ -317,13 +358,15 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+menuBtn.Size().Height))
 	}
 
+	buttonRow = container.NewHBox(a.editButton, playButton, shuffleBtn, searchBtn, menuBtn)
+
 	a.container = util.AddHeaderBackground(
 		container.NewBorder(nil, nil, a.image, nil,
 			container.NewVBox(a.titleLabel, container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
 				a.descriptionLabel,
 				a.ownerLabel,
 				a.trackTimeLabel),
-				container.NewHBox(a.editButton, playButton, shuffleBtn, menuBtn),
+				buttonRow,
 			)))
 	return a
 }
