@@ -245,8 +245,11 @@ func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
 
 func (a *PlaylistPage) onSearched(query string) {
 	if query == "" {
-		a.tracklist.Options.Reorderable = true
+		// switch back to full playlist view
+
 		ids := a.tracklist.SelectedTrackIDs()
+		a.tracklist.Options.Reorderable = true
+		a.tracklist.SetSorting(a.trackSort) // restore old sort order
 		a.tracklist.SetTracks(a.tracks)
 		// if a track was selected in the searched view,
 		// scroll to it when switching back to full playlist
@@ -256,6 +259,7 @@ func (a *PlaylistPage) onSearched(query string) {
 		return
 	}
 
+	// search tracks within the playlist
 	searched := sharedutil.FilterSlice(a.tracks, func(t *mediaprovider.Track) bool {
 		sani := func(s string) string {
 			return strings.ToLower(sanitize.Accents(s))
@@ -270,7 +274,9 @@ func (a *PlaylistPage) onSearched(query string) {
 			strings.Contains(sani(t.Comment), qLower)
 	})
 
+	a.trackSort = a.tracklist.Sorting() // save old sort order
 	a.tracklist.Options.Reorderable = false
+	a.tracklist.SetSorting(widgets.TracklistSort{})
 	a.tracklist.SetTracks(searched)
 }
 
@@ -336,7 +342,11 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 			searchEntry = widgets.NewSearchEntry()
 			searchEntry.PlaceHolder = ""
 			searchEntry.Scroll = container.ScrollNone
-			searchEntry.OnSearched = page.onSearched
+			searchEntry.OnSearched = func(s string) {
+				// we can't assign a.page.onSearched directly,
+				// since widget reuse means a.page could change
+				a.page.onSearched(s)
+			}
 			searchEntry.OnFocusLost = func() {
 				if searchEntry.Text == "" {
 					// dismissal animation
