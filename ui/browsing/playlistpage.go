@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/deluan/sanitize"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -242,6 +243,37 @@ func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
 	a.Reload()
 }
 
+func (a *PlaylistPage) onSearched(query string) {
+	if query == "" {
+		a.tracklist.Options.Reorderable = true
+		ids := a.tracklist.SelectedTrackIDs()
+		a.tracklist.SetTracks(a.tracks)
+		// if a track was selected in the searched view,
+		// scroll to it when switching back to full playlist
+		if len(ids) > 0 {
+			a.tracklist.SelectAndScrollToTrack(ids[0])
+		}
+		return
+	}
+
+	searched := sharedutil.FilterSlice(a.tracks, func(t *mediaprovider.Track) bool {
+		sani := func(s string) string {
+			return strings.ToLower(sanitize.Accents(s))
+		}
+		qLower := strings.ToLower(query)
+		return strings.Contains(sani(t.Title), qLower) ||
+			strings.Contains(sani(strings.Join(t.ArtistNames, "")), qLower) ||
+			strings.Contains(sani(t.Album), qLower) ||
+			strings.Contains(sani(strings.Join(t.Genres, "")), qLower) ||
+			strings.Contains(sani(strings.Join(t.ComposerNames, "")), qLower) ||
+			strings.Contains(fmt.Sprintf("%d", t.Year), query) ||
+			strings.Contains(sani(t.Comment), qLower)
+	})
+
+	a.tracklist.Options.Reorderable = false
+	a.tracklist.SetTracks(searched)
+}
+
 type PlaylistPageHeader struct {
 	widget.BaseWidget
 
@@ -278,8 +310,6 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a.createdAtLabel = widget.NewLabel("")
 	a.trackTimeLabel = widget.NewLabel("")
 
-	var buttonRow *fyne.Container
-
 	a.editButton = widget.NewButtonWithIcon(lang.L("Edit"), theme.DocumentCreateIcon(), func() {
 		if a.playlistInfo != nil {
 			a.page.contr.DoEditPlaylistWorkflow(&a.playlistInfo.Playlist)
@@ -294,6 +324,10 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, true)
 		a.page.pm.PlayFromBeginning()
 	})
+
+	// set up search button / entry animation pair
+	// needs reference to containing HBox container (initialized later)
+	var buttonRow *fyne.Container
 	var searchBtn *ttwidget.Button
 	var searchEntry *widgets.SearchEntry
 	searchBtn = ttwidget.NewButtonWithIcon("", theme.SearchIcon(), func() {
@@ -302,8 +336,11 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 			searchEntry = widgets.NewSearchEntry()
 			searchEntry.PlaceHolder = ""
 			searchEntry.Scroll = container.ScrollNone
+			searchEntry.OnSearched = page.onSearched
 			searchEntry.OnFocusLost = func() {
 				if searchEntry.Text == "" {
+					// dismissal animation
+					searchEntry.Scroll = container.ScrollNone
 					searchEntry.SetPlaceHolder("")
 					fyne.NewAnimation(canvas.DurationShort, func(f float32) {
 						f = 1 - f
@@ -312,6 +349,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 						if f == 0 {
 							buttonRow.Objects[3] = searchBtn
 						}
+						// re-layout container (without unneeded full refresh)
 						buttonRow.Layout.Layout(buttonRow.Objects, buttonRow.Layout.MinSize(buttonRow.Objects))
 					}).Start()
 				}
@@ -323,13 +361,17 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		fyne.NewAnimation(canvas.DurationShort, func(f float32) {
 			w := (200-minW)*f + minW
 			searchEntry.SetMinWidth(w)
+			// re-layout container (without unneeded full refresh)
 			buttonRow.Layout.Layout(buttonRow.Objects, buttonRow.Layout.MinSize(buttonRow.Objects))
 			if f == 1 {
+				searchEntry.Scroll = container.ScrollHorizontalOnly
+				searchEntry.Refresh() // needed to initialize widget's scroller
 				searchEntry.SetPlaceHolder(lang.L("Search"))
 			}
 		}).Start()
 	})
 	searchBtn.SetToolTip(lang.L("Search"))
+
 	var pop *widget.PopUpMenu
 	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
 	menuBtn.OnTapped = func() {
