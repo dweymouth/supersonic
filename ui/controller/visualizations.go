@@ -71,13 +71,13 @@ func (c *Controller) stopVisualizationAnim() {
 	if c.visualizationAnim != nil {
 		c.visualizationAnim.Stop()
 		c.visualizationAnim = nil
-		c.App.LocalPlayer.SetPeaksEnabled(false)
+		//	c.App.LocalPlayer.SetPeaksEnabled(false)
 	}
 }
 
 func (c *Controller) startVisualizationAnim() {
 	if c.visualizationAnim == nil {
-		c.App.LocalPlayer.SetPeaksEnabled(true)
+		//c.App.LocalPlayer.SetPeaksEnabled(true)
 		c.visualizationAnim = fyne.NewAnimation(
 			time.Duration(math.MaxInt64), /*until stopped*/
 			c.tickVisualizations)
@@ -86,8 +86,8 @@ func (c *Controller) startVisualizationAnim() {
 }
 
 func (c *Controller) tickVisualizations(_ float32) {
-	lP, rP, lRMS, rRMS := c.App.LocalPlayer.GetPeaks()
+	//lP, rP, lRMS, rRMS := c.App.LocalPlayer.GetPeaks()
 	if c.visualizationData.peakMeter != nil {
-		c.visualizationData.peakMeter.UpdatePeaks(lP, rP, lRMS, rRMS)
+		//c.visualizationData.peakMeter.UpdatePeaks(lP, rP, lRMS, rRMS)
 	}
 }
