@@ -18,6 +18,7 @@ require (
 	github.com/quarckster/go-mpris-server v1.0.3
 	github.com/supersonic-app/go-mpv v0.1.0
 	github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d
+	github.com/supersonic-app/go-upnpcast v0.0.0-20250312000014-e4f7242a07ce
 	github.com/zalando/go-keyring v0.2.6
 	golang.org/x/net v0.25.0
 	golang.org/x/sys v0.30.0
@@ -39,8 +40,10 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a // indirect
 	github.com/go-text/render v0.2.0 // indirect
 	github.com/go-text/typesetting v0.2.1 // indirect
+	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20241217141322-fcc2cadd6f08 // indirect
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
+	github.com/koron/go-ssdp v0.0.4 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.5.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -53,4 +56,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
+replace github.com/supersonic-app/go-upnpcast v0.0.0-20250312000014-e4f7242a07ce => ../go-upnpcast
 replace fyne.io/fyne/v2 v2.6.0-beta1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250308154116-c32a0de49bde
