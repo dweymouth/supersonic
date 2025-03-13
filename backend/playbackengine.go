@@ -48,12 +48,15 @@ type playbackEngine struct {
 	latestTrackPosition float64 // cleared by checkScrobble
 	callbacksDisabled   bool
 
-	playQueue                  []mediaprovider.MediaItem
-	nowPlayingIdx              int
-	isRadio                    bool
+	playQueue     []mediaprovider.MediaItem
+	nowPlayingIdx int
+	isRadio       bool
+	loopMode      LoopMode
+
+	// flags for handleOnTrackChange / handleOnStopped callbacks - reset to false in the callbacks
 	wasStopped                 bool // true iff player was stopped before handleOnTrackChange invocation
-	noIncrementNextTrackChange bool // true iff the nowPlayingIndex should not be incremente don the next onTrackChange
-	loopMode                   LoopMode
+	noIncrementNextTrackChange bool // true iff the nowPlayingIndex should not be incremented on the next onTrackChange
+	alreadyScrobbled           bool // true iff the previously-playing track was already scrobbled
 
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
@@ -127,6 +130,9 @@ func (p *playbackEngine) PlayTrackAt(idx int) error {
 	if idx < 0 || idx >= len(p.playQueue) {
 		return errors.New("track index out of range")
 	}
+	// scrobble current track if needed
+	p.checkScrobble()
+	p.alreadyScrobbled = true
 	p.noIncrementNextTrackChange = true
 	err := p.setTrack(idx, false)
 	if err == nil {
@@ -385,6 +391,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 				isPlayingTrackRemoved = true
 				// If we are removing the currently playing track, we need to scrobble it
 				p.checkScrobble()
+				p.alreadyScrobbled = true
 			} else if nowPlaying >= 0 && i == nowPlaying+1 {
 				isNextPlayingTrackremoved = true
 			}
@@ -456,7 +463,11 @@ func (p *playbackEngine) SetReplayGainMode(mode player.ReplayGainMode) {
 }
 
 func (p *playbackEngine) handleOnTrackChange() {
-	p.checkScrobble() // scrobble the previous song if needed
+	// scrobble the previous song if needed
+	if !p.alreadyScrobbled {
+		p.checkScrobble()
+	}
+
 	if p.player.GetStatus().State == player.Playing {
 		p.playTimeStopwatch.Start()
 	}
@@ -466,11 +477,15 @@ func (p *playbackEngine) handleOnTrackChange() {
 			p.nowPlayingIdx = 0 // wrapped around
 		}
 	}
-	p.noIncrementNextTrackChange = false
 	nowPlaying := p.playQueue[p.nowPlayingIdx]
 	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
 	p.isRadio = isRadio
+
+	// reset flags
+	p.noIncrementNextTrackChange = false
 	p.wasStopped = false
+	p.alreadyScrobbled = false
+
 	p.curTrackDuration = float64(nowPlaying.Metadata().Duration)
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
@@ -480,11 +495,14 @@ func (p *playbackEngine) handleOnTrackChange() {
 
 func (p *playbackEngine) handleOnStopped() {
 	p.playTimeStopwatch.Stop()
-	p.checkScrobble()
+	if !p.alreadyScrobbled {
+		p.checkScrobble()
+	}
 	p.stopPollTimePos()
 	p.doUpdateTimePos(false)
 	p.invokeOnSongChangeCallbacks()
 	p.invokeNoArgCallbacks(p.onStopped)
+	p.alreadyScrobbled = false
 	p.wasStopped = true
 	p.nowPlayingIdx = -1
 }
