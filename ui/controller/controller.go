@@ -16,6 +16,8 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/dialogs"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -268,56 +270,56 @@ func (c *Controller) ShowAboutDialog() {
 }
 
 func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map[string]string) {
-	/*
-		devs, err := c.App.LocalPlayer.ListAudioDevices()
-		if err != nil {
-			log.Printf("error listing audio devices: %v", err)
-			devs = []mpv.AudioDevice{{Name: "auto", Description: lang.L("Autoselect device")}}
-		}
 
-		curPlayer := c.App.PlaybackManager.CurrentPlayer()
-		_, isReplayGainPlayer := curPlayer.(player.ReplayGainPlayer)
-		_, isEqualizerPlayer := curPlayer.(*mpv.Player)
-		_, canSavePlayQueue := c.App.ServerManager.Server.(mediaprovider.CanSavePlayQueue)
-		isLocalPlayer := isEqualizerPlayer
-		bands := c.App.LocalPlayer.Equalizer().BandFrequencies()
+	devs, err := c.App.LocalPlayer.ListAudioDevices()
+	if err != nil {
+		log.Printf("error listing audio devices: %v", err)
+		devs = []mpv.AudioDevice{{Name: "auto", Description: lang.L("Autoselect device")}}
+	}
 
-		dlg := dialogs.NewSettingsDialog(c.App.Config,
-			devs, themeFiles, bands,
-			c.App.ServerManager.Server.ClientDecidesScrobble(),
-			isLocalPlayer, isReplayGainPlayer, isEqualizerPlayer, canSavePlayQueue,
-			c.MainWindow)
-		dlg.OnReplayGainSettingsChanged = func() {
-			c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
-		}
-		dlg.OnAudioExclusiveSettingChanged = func() {
-			c.App.LocalPlayer.SetAudioExclusive(c.App.Config.LocalPlayback.AudioExclusive)
-		}
-		dlg.OnAudioDeviceSettingChanged = func() {
-			c.App.LocalPlayer.SetAudioDevice(c.App.Config.LocalPlayback.AudioDeviceName)
-		}
-		dlg.OnThemeSettingChanged = themeUpdateCallbk
-		dlg.OnEqualizerSettingsChanged = func() {
-			// currently we only have one equalizer type
-			eq := c.App.LocalPlayer.Equalizer().(*mpv.ISO15BandEqualizer)
-			eq.Disabled = !c.App.Config.LocalPlayback.EqualizerEnabled
-			eq.EQPreamp = c.App.Config.LocalPlayback.EqualizerPreamp
-			copy(eq.BandGains[:], c.App.Config.LocalPlayback.GraphicEqualizerBands)
-			c.App.LocalPlayer.SetEqualizer(eq)
-		}
-		dlg.OnPageNeedsRefresh = c.RefreshPageFunc
-		pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
-		fynetooltip.AddPopUpToolTipLayer(pop)
-		dlg.OnDismiss = func() {
-			pop.Hide()
-			fynetooltip.DestroyPopUpToolTipLayer(pop)
-			c.doModalClosed()
-			c.App.SaveConfigFile()
-		}
-		c.ClosePopUpOnEscape(pop)
-		c.haveModal = true
-		pop.Show()
-	*/
+	curPlayer := c.App.PlaybackManager.CurrentPlayer()
+	_, isReplayGainPlayer := curPlayer.(player.ReplayGainPlayer)
+	_, isEqualizerPlayer := curPlayer.(*mpv.Player)
+	_, canSavePlayQueue := c.App.ServerManager.Server.(mediaprovider.CanSavePlayQueue)
+	isLocalPlayer := isEqualizerPlayer
+	bands := c.App.LocalPlayer.Equalizer().BandFrequencies()
+
+	dlg := dialogs.NewSettingsDialog(c.App.Config,
+		devs, themeFiles, bands,
+		c.App.ServerManager.Server.ClientDecidesScrobble(),
+		isLocalPlayer, isReplayGainPlayer, isEqualizerPlayer, canSavePlayQueue,
+		c.MainWindow)
+	dlg.OnReplayGainSettingsChanged = func() {
+		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
+	}
+	dlg.OnAudioExclusiveSettingChanged = func() {
+		c.App.LocalPlayer.SetAudioExclusive(c.App.Config.LocalPlayback.AudioExclusive)
+	}
+	dlg.OnAudioDeviceSettingChanged = func() {
+		c.App.LocalPlayer.SetAudioDevice(c.App.Config.LocalPlayback.AudioDeviceName)
+	}
+	dlg.OnThemeSettingChanged = themeUpdateCallbk
+	dlg.OnEqualizerSettingsChanged = func() {
+		// currently we only have one equalizer type
+		eq := c.App.LocalPlayer.Equalizer().(*mpv.ISO15BandEqualizer)
+		eq.Disabled = !c.App.Config.LocalPlayback.EqualizerEnabled
+		eq.EQPreamp = c.App.Config.LocalPlayback.EqualizerPreamp
+		copy(eq.BandGains[:], c.App.Config.LocalPlayback.GraphicEqualizerBands)
+		c.App.LocalPlayer.SetEqualizer(eq)
+	}
+	dlg.OnPageNeedsRefresh = c.RefreshPageFunc
+	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
+	fynetooltip.AddPopUpToolTipLayer(pop)
+	dlg.OnDismiss = func() {
+		pop.Hide()
+		fynetooltip.DestroyPopUpToolTipLayer(pop)
+		c.doModalClosed()
+		c.App.SaveConfigFile()
+	}
+	c.ClosePopUpOnEscape(pop)
+	c.haveModal = true
+	pop.Show()
+
 }
 
 func (c *Controller) doModalClosed() {

@@ -58,6 +58,9 @@ type playbackEngine struct {
 	noIncrementNextTrackChange bool // true iff the nowPlayingIndex should not be incremented on the next onTrackChange
 	alreadyScrobbled           bool // true iff the previously-playing track was already scrobbled
 
+	pendingPlayerChange        bool
+	pendingPlayerChangeTimePos float64
+
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
 	scrobbleCfg   *ScrobbleConfig
@@ -102,28 +105,58 @@ func NewPlaybackEngine(
 	case "One":
 		pm.loopMode = LoopOne
 	}
-	p.OnTrackChange(pm.handleOnTrackChange)
-	p.OnSeek(func() {
-		pm.doUpdateTimePos(true)
-		pm.invokeNoArgCallbacks(pm.onSeek)
-	})
-	p.OnStopped(pm.handleOnStopped)
-	p.OnPaused(func() {
-		pm.playTimeStopwatch.Stop()
-		pm.stopPollTimePos()
-		pm.invokeNoArgCallbacks(pm.onPaused)
-	})
-	p.OnPlaying(func() {
-		pm.playTimeStopwatch.Start()
-		pm.startPollTimePos()
-		pm.invokeNoArgCallbacks(pm.onPlaying)
-	})
 
+	pm.registerPlayerCallbacks(p)
 	s.OnLogout(func() {
 		pm.StopAndClearPlayQueue()
 	})
 
 	return pm
+}
+
+func (p *playbackEngine) registerPlayerCallbacks(pl player.BasePlayer) {
+	pl.OnTrackChange(p.handleOnTrackChange)
+	pl.OnSeek(func() {
+		p.doUpdateTimePos(true)
+		p.invokeNoArgCallbacks(p.onSeek)
+	})
+	pl.OnStopped(p.handleOnStopped)
+	pl.OnPaused(func() {
+		p.playTimeStopwatch.Stop()
+		p.stopPollTimePos()
+		p.invokeNoArgCallbacks(p.onPaused)
+	})
+	pl.OnPlaying(func() {
+		p.playTimeStopwatch.Start()
+		p.startPollTimePos()
+		p.invokeNoArgCallbacks(p.onPlaying)
+	})
+}
+
+func (p *playbackEngine) SetPlayer(pl player.BasePlayer) {
+	needToUnpause := false
+
+	stat := p.player.GetStatus()
+	switch stat.State {
+	case player.Stopped:
+		// nothing
+	case player.Playing:
+		p.Pause()
+		fallthrough
+	case player.Paused:
+		p.pendingPlayerChangeTimePos = stat.TimePos
+		p.pendingPlayerChange = true
+		needToUnpause = true
+	}
+
+	p.player = pl
+	p.registerPlayerCallbacks(pl)
+
+	if needToUnpause {
+		p.PlayTrackAt(p.nowPlayingIdx)
+		p.SeekSeconds(p.pendingPlayerChangeTimePos)
+		p.pendingPlayerChange = false
+	}
 }
 
 func (p *playbackEngine) PlayTrackAt(idx int) error {
@@ -238,6 +271,15 @@ func (p *playbackEngine) Pause() error {
 }
 
 func (p *playbackEngine) Continue() error {
+	if p.pendingPlayerChange {
+		err := p.PlayTrackAt(p.nowPlayingIdx)
+		if p.pendingPlayerChangeTimePos != 0 {
+			p.SeekSeconds(p.pendingPlayerChangeTimePos)
+		}
+		p.pendingPlayerChange = false
+		return err
+	}
+
 	if p.PlayerStatus().State == player.Stopped {
 		return p.PlayTrackAt(0)
 	}
