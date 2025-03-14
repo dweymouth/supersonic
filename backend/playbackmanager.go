@@ -7,12 +7,16 @@ import (
 	"math/rand"
 	"runtime"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/dlna"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/supersonic-app/go-upnpcast/device"
+	"github.com/supersonic-app/go-upnpcast/services"
 )
 
 // A high-level MediaProvider-aware playback engine, serves as an
@@ -22,9 +26,19 @@ type PlaybackManager struct {
 	cmdQueue *playbackCommandQueue
 	cfg      *AppConfig
 
+	localPlayer       player.BasePlayer
+	remotePlayersLock sync.Mutex
+	remotePlayers     []remotePlayer
+
 	autoplay bool
 
 	lastPlayTime float64
+}
+
+type remotePlayer struct {
+	Name     string
+	Protocol string
+	new      func() (player.BasePlayer, error)
 }
 
 func NewPlaybackManager(
@@ -39,10 +53,11 @@ func NewPlaybackManager(
 	e := NewPlaybackEngine(ctx, s, p, playbackCfg, scrobbleCfg, transcodeCfg)
 	q := NewCommandQueue()
 	pm := &PlaybackManager{
-		engine:   e,
-		cmdQueue: q,
-		cfg:      appCfg,
-		autoplay: playbackCfg.Autoplay,
+		engine:      e,
+		cmdQueue:    q,
+		cfg:         appCfg,
+		autoplay:    playbackCfg.Autoplay,
+		localPlayer: p,
 	}
 	pm.addOnTrackChangeHook()
 	go pm.runCmdQueue(ctx)
@@ -79,6 +94,47 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			}()
 		}
 	})
+}
+
+func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context) {
+	devices, _ := device.SearchMediaRenderers(ctx, 10, services.AVTransport, services.RenderingControl)
+
+	var discovered []remotePlayer
+	for _, d := range devices {
+		p := remotePlayer{
+			Name:     d.FriendlyName,
+			Protocol: "DLNA",
+			new: func() (player.BasePlayer, error) {
+				return dlna.NewDLNAPlayer(d)
+			},
+		}
+		discovered = append(discovered, p)
+	}
+
+	p.remotePlayersLock.Lock()
+	p.remotePlayers = discovered
+	p.remotePlayersLock.Unlock()
+}
+
+func (p *PlaybackManager) RemotePlayers() []remotePlayer {
+	p.remotePlayersLock.Lock()
+	players := p.remotePlayers
+	p.remotePlayersLock.Unlock()
+	return players
+}
+
+func (p *PlaybackManager) SetRemotePlayer(rp *remotePlayer) error {
+	if rp == nil {
+		p.engine.SetPlayer(p.localPlayer)
+		return nil
+	}
+
+	player, err := rp.new()
+	if err != nil {
+		return err
+	}
+	p.engine.SetPlayer(player)
+	return nil
 }
 
 func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
