@@ -11,18 +11,16 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/ipc"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
-	"github.com/dweymouth/supersonic/backend/player/dlna"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/google/uuid"
-	"github.com/supersonic-app/go-upnpcast/device"
-	"github.com/supersonic-app/go-upnpcast/services"
 
 	"github.com/20after4/configdir"
 	"github.com/zalando/go-keyring"
@@ -45,7 +43,7 @@ type App struct {
 	ServerManager   *ServerManager
 	ImageManager    *ImageManager
 	PlaybackManager *PlaybackManager
-	LocalPlayer     player.BasePlayer
+	LocalPlayer     *mpv.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
 	WinSMTC         *SMTC
@@ -153,6 +151,21 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		timeout := time.Duration(a.Config.Application.RequestTimeoutSeconds) * time.Second
 		a.LrcLibFetcher = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl, timeout)
 	}
+
+	// Periodically scan for remote players
+	go func() {
+		t := time.NewTicker(5 * time.Minute)
+		for {
+			a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx)
+			select {
+			case <-a.bgrndCtx.Done():
+				t.Stop()
+				return
+			case <-t.C:
+				continue
+			}
+		}
+	}()
 
 	a.PlaybackManager.OnPlaying(func() {
 		SetSystemSleepDisabled(true)
@@ -275,11 +288,7 @@ func (a *App) initMPV() error {
 	if err := p.Init(c.InMemoryCacheSizeMB); err != nil {
 		return fmt.Errorf("failed to initialize mpv player: %s", err.Error())
 	}
-	//	a.LocalPlayer = p
-	devices, _ := device.SearchMediaRenderers(context.Background(), 10, services.AVTransport)
-	if len(devices) > 0 {
-		a.LocalPlayer, _ = dlna.NewDLNAPlayer(devices[0])
-	}
+	a.LocalPlayer = p
 	return nil
 }
 
@@ -287,57 +296,55 @@ func (a *App) setupMPV() error {
 	a.Config.LocalPlayback.Volume = clamp(a.Config.LocalPlayback.Volume, 0, 100)
 	a.LocalPlayer.SetVolume(a.Config.LocalPlayback.Volume)
 
-	/*
-		devs, err := a.LocalPlayer.ListAudioDevices()
-		if err != nil {
-			return err
-		}
+	devs, err := a.LocalPlayer.ListAudioDevices()
+	if err != nil {
+		return err
+	}
 
-		desiredDevice := a.Config.LocalPlayback.AudioDeviceName
-		var desiredDeviceAvailable bool
-		for _, dev := range devs {
-			if dev.Name == desiredDevice {
-				desiredDeviceAvailable = true
-				break
-			}
+	desiredDevice := a.Config.LocalPlayback.AudioDeviceName
+	var desiredDeviceAvailable bool
+	for _, dev := range devs {
+		if dev.Name == desiredDevice {
+			desiredDeviceAvailable = true
+			break
 		}
-		if !desiredDeviceAvailable {
-			// The audio device the user has configured is not available.
-			// Use the default (autoselect) device but leave the setting unchanged,
-			// in case the device is later available on a subsequent run of the app
-			// (e.g. a USB audio device that is currently unplugged)
-			desiredDevice = "auto"
-		}
-		a.LocalPlayer.SetAudioDevice(desiredDevice)
+	}
+	if !desiredDeviceAvailable {
+		// The audio device the user has configured is not available.
+		// Use the default (autoselect) device but leave the setting unchanged,
+		// in case the device is later available on a subsequent run of the app
+		// (e.g. a USB audio device that is currently unplugged)
+		desiredDevice = "auto"
+	}
+	a.LocalPlayer.SetAudioDevice(desiredDevice)
 
-		rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack, ReplayGainAuto}
-		if !slices.Contains(rgainOpts, a.Config.ReplayGain.Mode) {
-			a.Config.ReplayGain.Mode = ReplayGainNone
-		}
-		mode := player.ReplayGainNone
-		switch a.Config.ReplayGain.Mode {
-		case ReplayGainAlbum:
-			mode = player.ReplayGainAlbum
-		case ReplayGainTrack:
-			mode = player.ReplayGainTrack
-		case ReplayGainAuto:
-			mode = player.ReplayGainTrack
-		}
+	rgainOpts := []string{ReplayGainNone, ReplayGainAlbum, ReplayGainTrack, ReplayGainAuto}
+	if !slices.Contains(rgainOpts, a.Config.ReplayGain.Mode) {
+		a.Config.ReplayGain.Mode = ReplayGainNone
+	}
+	mode := player.ReplayGainNone
+	switch a.Config.ReplayGain.Mode {
+	case ReplayGainAlbum:
+		mode = player.ReplayGainAlbum
+	case ReplayGainTrack:
+		mode = player.ReplayGainTrack
+	case ReplayGainAuto:
+		mode = player.ReplayGainTrack
+	}
 
-		a.LocalPlayer.SetReplayGainOptions(player.ReplayGainOptions{
-			Mode:            mode,
-			PreventClipping: a.Config.ReplayGain.PreventClipping,
-			PreampGain:      a.Config.ReplayGain.PreampGainDB,
-		})
-		a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
+	a.LocalPlayer.SetReplayGainOptions(player.ReplayGainOptions{
+		Mode:            mode,
+		PreventClipping: a.Config.ReplayGain.PreventClipping,
+		PreampGain:      a.Config.ReplayGain.PreampGainDB,
+	})
+	a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
 
-		eq := &mpv.ISO15BandEqualizer{
-			EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
-			Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
-		}
-		copy(eq.BandGains[:], a.Config.LocalPlayback.GraphicEqualizerBands)
-		a.LocalPlayer.SetEqualizer(eq)
-	*/
+	eq := &mpv.ISO15BandEqualizer{
+		EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
+		Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+	}
+	copy(eq.BandGains[:], a.Config.LocalPlayback.GraphicEqualizerBands)
+	a.LocalPlayer.SetEqualizer(eq)
 
 	return nil
 }

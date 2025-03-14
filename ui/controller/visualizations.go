@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/lang"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/ui/shortcuts"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/visualizations"
@@ -21,11 +22,13 @@ type visualizationData struct {
 }
 
 func (c *Controller) initVisualizations() {
-	c.App.LocalPlayer.OnStopped(c.stopVisualizationAnim)
-	c.App.LocalPlayer.OnPaused(c.stopVisualizationAnim)
-	c.App.LocalPlayer.OnPlaying(func() {
-		if c.peakMeter != nil {
-			c.startVisualizationAnim()
+	c.App.PlaybackManager.OnStopped(c.stopVisualizationAnim)
+	c.App.PlaybackManager.OnPaused(c.stopVisualizationAnim)
+	c.App.PlaybackManager.OnPlaying(func() {
+		if _, ok := c.App.PlaybackManager.CurrentPlayer().(*mpv.Player); ok {
+			if c.peakMeter != nil {
+				c.startVisualizationAnim()
+			}
 		}
 	})
 }
