@@ -1,5 +1,5 @@
 build:
-	go build
+	go build -tags migrated_fynedo
 
 # dylibbundler doesn't seem to pick up on the Python framework dependency,
 # so the last 3 cmds move it over manually. This is a bit fragile though

@@ -82,7 +82,7 @@ If you are running **Windows**, **Mac OS**, or a **Debian**-based Linux distro, 
 * ``sudo dnf install golang mpv-devel libX11-devel libXcursor-devel libXrandr-devel libXinerama-devel libXi-devel libglvnd-devel libXxf86vm-devel``
 
 ### Build
-* clone the repo, CD into the repo root, and run ``go build``
+* clone the repo, CD into the repo root, and run ``make build``
 * (note that the first build will take some time as it will download and build the UI library)
 
 ### Generate installable .tar.xz bundle
@@ -135,7 +135,7 @@ Supersonic is available in the AUR and can be built either manually with `makepk
   - ``export LIBRARY_PATH=/opt/local/lib:$LIBRARY_PATH``
 
 #### Building the application
-* clone the repo, CD into the repo root, and run ``go build``
+* clone the repo, CD into the repo root, and run ``make build``
 * (note that the first build will take some time as it will download and build the UI library)
 * run ``make package_macos`` to generate the .app bundle
 * **If** you are on Mac OS **High Sierra** through **Catalina**, run ``make bundledeps_macos_highsierra`` and you are done! Otherwise, continue reaading.
