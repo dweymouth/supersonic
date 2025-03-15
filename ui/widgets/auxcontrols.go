@@ -25,6 +25,7 @@ type AuxControls struct {
 	VolumeControl *VolumeControl
 	autoplay      *IconButton
 	loop          *IconButton
+	cast          *IconButton
 	showQueue     *IconButton
 
 	container *fyne.Container
@@ -35,10 +36,17 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 		VolumeControl: NewVolumeControl(initialVolume),
 		autoplay:      NewIconButton(myTheme.AutoplayIcon, nil),
 		loop:          NewIconButton(myTheme.RepeatIcon, nil),
+		cast:          NewIconButton(myTheme.CastIcon, nil),
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
 	}
+
 	a.loop.IconSize = IconButtonSizeSmaller
 	a.loop.SetToolTip(lang.L("Repeat"))
+	a.SetLoopMode(initialLoopMode)
+
+	a.cast.IconSize = IconButtonSizeSmaller
+	a.cast.SetToolTip(lang.L("Cast to device"))
+
 	a.autoplay.Highlighted = initialAutoplay
 	//a.autoplay.IconSize = IconButtonSizeSmaller
 	a.autoplay.SetToolTip(lang.L("Autoplay"))
@@ -48,9 +56,10 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 			a.OnChangeAutoplay(a.autoplay.Highlighted)
 		}
 	}
-	a.SetLoopMode(initialLoopMode)
+
 	a.showQueue.IconSize = IconButtonSizeSmaller
 	a.showQueue.SetToolTip(lang.L("Show play queue"))
+
 	a.container = container.NewHBox(
 		layout.NewSpacer(),
 		container.NewVBox(
@@ -58,7 +67,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 			a.VolumeControl,
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(theme.Padding()*1.5),
-				layout.NewSpacer(), a.autoplay, a.loop, a.showQueue, util.NewHSpace(5)),
+				layout.NewSpacer(), a.autoplay, a.loop, a.cast, a.showQueue, util.NewHSpace(5)),
 			layout.NewSpacer(),
 		),
 	)
@@ -88,6 +97,11 @@ func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 	}
 }
 
+func (a *AuxControls) SetIsRemotePlayer(isRemote bool) {
+	a.cast.Highlighted = isRemote
+	a.cast.Refresh()
+}
+
 func (a *AuxControls) SetAutoplay(autoplay bool) {
 	if autoplay == a.autoplay.Highlighted {
 		return
@@ -98,6 +112,10 @@ func (a *AuxControls) SetAutoplay(autoplay bool) {
 
 func (a *AuxControls) OnShowPlayQueue(f func()) {
 	a.showQueue.OnTapped = f
+}
+
+func (a *AuxControls) OnShowCastMenu(f func()) {
+	a.cast.OnTapped = f
 }
 
 type volumeSlider struct {
