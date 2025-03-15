@@ -4,8 +4,8 @@ import "github.com/dweymouth/supersonic/backend/mediaprovider"
 
 type URLPlayer interface {
 	BasePlayer
-	PlayFile(url string) error
-	SetNextFile(url string) error
+	PlayFile(url string, metadata mediaprovider.MediaItemMetadata) error
+	SetNextFile(url string, metadata mediaprovider.MediaItemMetadata) error
 }
 
 type TrackPlayer interface {

@@ -404,7 +404,7 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 	})
 	a.PlaybackManager.OnSeek(func() {
 		dur := a.PlaybackManager.NowPlaying().Metadata().Duration
-		smtc.UpdatePosition(int(a.PlaybackManager.CurrentPlayer().GetStatus().TimePos*1000), dur*1000)
+		smtc.UpdatePosition(int(a.PlaybackManager.PlayerStatus().TimePos*1000), dur*1000)
 	})
 	a.PlaybackManager.OnPlaying(func() {
 		smtc.SetEnabled(true)
@@ -465,7 +465,7 @@ func (a *App) Shutdown() {
 	a.PlaybackManager.DisableCallbacks()
 	a.PlaybackManager.Stop() // will trigger scrobble check
 	a.cancel()
-	//a.LocalPlayer.Destroy()
+	a.LocalPlayer.Destroy()
 }
 
 func (a *App) SavePlayQueueIfEnabled() {
