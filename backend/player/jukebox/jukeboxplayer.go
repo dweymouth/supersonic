@@ -140,6 +140,8 @@ func (j *JukeboxPlayer) GetStatus() player.Status {
 	}
 }
 
+func (j *JukeboxPlayer) Destroy() {}
+
 func (j *JukeboxPlayer) startAndUpdateTime() error {
 	beforeStart := time.Now()
 	if err := j.provider.JukeboxStart(); err != nil {

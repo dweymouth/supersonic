@@ -9,6 +9,7 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
@@ -154,6 +155,9 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) {
 	}
 
 	oldVol := p.player.GetVolume()
+	if _, isMPV := p.player.(*mpv.Player); !isMPV {
+		p.player.Destroy()
+	}
 	p.player = pl
 	p.registerPlayerCallbacks(pl)
 
