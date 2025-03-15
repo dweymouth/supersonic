@@ -2,6 +2,8 @@ package dlna
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -9,12 +11,16 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/supersonic-app/go-upnpcast/device"
 	"github.com/supersonic-app/go-upnpcast/services/avtransport"
+	"github.com/supersonic-app/go-upnpcast/services/renderingcontrol"
 )
 
 const (
@@ -28,10 +34,25 @@ var unimplemented = errors.New("unimplemented")
 type DLNAPlayer struct {
 	player.BasePlayerCallbackImpl
 
-	avTransport *avtransport.Client
+	avTransport   *avtransport.Client
+	renderControl *renderingcontrol.Client
 
 	state   int // stopped, playing, paused
 	seeking bool
+
+	curTrackMeta  mediaprovider.MediaItemMetadata
+	nextTrackMeta mediaprovider.MediaItemMetadata
+
+	lastSeekSecs int
+	seekedAt     time.Time
+
+	proxyServer *http.Server
+	proxyActive atomic.Bool
+	localIP     string
+	proxyPort   int
+
+	proxyURLLock sync.Mutex
+	proxyURLs    map[string]string
 }
 
 func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
@@ -39,29 +60,38 @@ func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DLNAPlayer{avTransport: avt}, nil
+	rc, err := device.RenderingControlClient()
+	if err != nil {
+		return nil, err
+	}
+	return &DLNAPlayer{
+		avTransport:   avt,
+		renderControl: rc,
+		proxyURLs:     make(map[string]string),
+	}, nil
 }
 
 func (d *DLNAPlayer) SetVolume(vol int) error {
-	return unimplemented
+	return d.renderControl.SetVolume(context.Background(), vol)
 }
 
 func (d *DLNAPlayer) GetVolume() int {
-	return 0
+	vol, _ := d.renderControl.GetVolume(context.Background())
+	return vol
 }
 
-func (d *DLNAPlayer) PlayFile(urlstr string) error {
-	ensureSetupProxies()
+func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadata) error {
+	d.ensureSetupProxy()
 
-	proxyURLLock.Lock()
-	dlnaProxyCurrent.url = urlstr
-	proxyURLLock.Unlock()
+	log.Println("playing track " + meta.Name)
+
+	d.curTrackMeta = meta
+	key := d.addURLToProxy(urlstr)
 
 	media := avtransport.MediaItem{
-		URL:   "http://" + localIP + ":8080/current",
-		Title: "Supersonic media item",
+		URL:   d.urlForItem(key),
+		Title: meta.Name,
 	}
-	log.Printf("URL %s", media.URL)
 
 	err := d.avTransport.SetAVTransportMedia(context.Background(), &media)
 	if err != nil {
@@ -71,24 +101,39 @@ func (d *DLNAPlayer) PlayFile(urlstr string) error {
 		return err
 	}
 	d.state = playing
+	d.seekedAt = time.Now()
+	d.lastSeekSecs = 0
 	d.InvokeOnPlaying()
+	d.InvokeOnTrackChange()
 	return nil
 }
 
-func (d *DLNAPlayer) SetNextFile(url string) error {
+func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadata) error {
 	var media *avtransport.MediaItem
+	d.nextTrackMeta = meta
 	if url != "" {
-		ensureSetupProxies()
+		d.ensureSetupProxy()
 
-		proxyURLLock.Lock()
-		dlnaProxyCurrent.url = url
-		proxyURLLock.Unlock()
-
+		key := d.addURLToProxy(url)
 		media = &avtransport.MediaItem{
-			URL: "http://" + localIP + ":8080/next",
+			URL:   d.urlForItem(key),
+			Title: meta.Name,
 		}
 	}
 	return d.avTransport.SetNextAVTransportMedia(context.Background(), media)
+}
+
+func (d *DLNAPlayer) addURLToProxy(url string) string {
+	hash := md5.Sum([]byte(url))
+	key := base64.StdEncoding.EncodeToString(hash[:])
+	d.proxyURLLock.Lock()
+	d.proxyURLs[key] = url
+	d.proxyURLLock.Unlock()
+	return key
+}
+
+func (d *DLNAPlayer) urlForItem(key string) string {
+	return fmt.Sprintf("http://%s:%d/%s", d.localIP, d.proxyPort, key)
 }
 
 func (d *DLNAPlayer) Continue() error {
@@ -125,6 +170,8 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 		return err
 	}
 	d.seeking = false
+	d.seekedAt = time.Now()
+	d.lastSeekSecs = int(secs)
 	d.InvokeOnSeek()
 	return nil
 }
@@ -141,10 +188,12 @@ func (d *DLNAPlayer) GetStatus() player.Status {
 		state = player.Paused
 	}
 
-	// TODO - the rest
+	time := time.Now().Sub(d.seekedAt) + time.Duration(d.lastSeekSecs)*time.Second
 
 	return player.Status{
-		State: state,
+		State:    state,
+		TimePos:  time.Seconds(),
+		Duration: float64(d.curTrackMeta.Duration),
 	}
 }
 
@@ -175,38 +224,51 @@ func getLocalIP() (string, error) {
 	return "", fmt.Errorf("no suitable interface found")
 }
 
-var (
-	localIP          string
-	proxyURLLock     sync.Mutex
-	dlnaProxyCurrent proxy
-	dlnaProxyNext    proxy
-	proxyActive      atomic.Bool
-)
-
-func ensureSetupProxies() {
-	if proxyActive.Swap(true) {
-		return // already active
+func (d *DLNAPlayer) ensureSetupProxy() error {
+	if d.proxyActive.Swap(true) {
+		return nil // already active
 	}
 
-	localIP, _ = getLocalIP()
-	log.Println(localIP)
+	var err error
+	d.localIP, err = getLocalIP()
+	if err != nil {
+		return err
+	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/current", dlnaProxyCurrent.handleRequest)
-	mux.HandleFunc("/next", dlnaProxyNext.handleRequest)
-	go http.ListenAndServe(":8080", mux)
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return err
+	}
+	d.proxyPort = listener.Addr().(*net.TCPAddr).Port
+
+	d.proxyServer = &http.Server{
+		Handler: http.HandlerFunc(d.handleRequest),
+	}
+
+	go d.proxyServer.Serve(listener)
+	return nil
 }
 
 type proxy struct {
 	url string
 }
 
-func (p *proxy) handleRequest(w http.ResponseWriter, r *http.Request) {
+func (d *DLNAPlayer) handleRequest(w http.ResponseWriter, r *http.Request) {
+	var url string
+	key := strings.TrimPrefix(r.URL.Path, "/")
+	d.proxyURLLock.Lock()
+	if u, ok := d.proxyURLs[key]; ok {
+		url = u
+	}
+	d.proxyURLLock.Unlock()
+
+	if url == "" {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("404"))
+		return
+	}
+
 	// Create a new request to the target server
-	proxyURLLock.Lock()
-	url := p.url
-	proxyURLLock.Unlock()
-	log.Println("Got request for " + url)
 	proxyReq, err := http.NewRequest(r.Method, url, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
