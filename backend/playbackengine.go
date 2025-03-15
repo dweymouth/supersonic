@@ -157,6 +157,7 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) {
 		p.SeekSeconds(p.pendingPlayerChangeTimePos)
 		p.pendingPlayerChange = false
 	}
+	p.invokeNoArgCallbacks(p.onPlayerChange)
 }
 
 func (p *playbackEngine) PlayTrackAt(idx int) error {
