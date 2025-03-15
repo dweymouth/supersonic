@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -111,6 +112,10 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	pm.OnVolumeChange(func(vol int) {
 		fyne.Do(func() { bp.AuxControls.VolumeControl.SetVolume(vol) })
 	})
+	pm.OnPlayerChange(func() {
+		_, local := pm.CurrentPlayer().(*mpv.Player)
+		fyne.Do(func() { bp.AuxControls.SetIsRemotePlayer(!local) })
+	})
 	bp.AuxControls.VolumeControl.OnSetVolume = func(v int) {
 		pm.SetVolume(v)
 	}
@@ -121,6 +126,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 		pm.SetAutoplay(autoplay)
 	}
 	bp.AuxControls.OnShowPlayQueue(contr.ShowPopUpPlayQueue)
+	bp.AuxControls.OnShowCastMenu(contr.ShowCastMenu)
 
 	bp.imageLoader = util.NewThumbnailLoader(im, bp.NowPlaying.SetImage)
 
