@@ -27,6 +27,8 @@ type BasePlayer interface {
 
 	GetStatus() Status
 
+	Destroy()
+
 	// Event API
 	OnPaused(func())
 	OnStopped(func())
