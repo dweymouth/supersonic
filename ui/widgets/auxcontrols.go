@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"math"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -163,6 +164,10 @@ type VolumeControl struct {
 	muted   bool
 	lastVol int
 
+	setVolDebouncer func()
+	delaySetVolume  bool
+	pendingVolume   int
+
 	container *fyne.Container
 }
 
@@ -178,6 +183,15 @@ func NewVolumeControl(initialVol int) *VolumeControl {
 	v.slider.Orientation = widget.Horizontal
 	v.slider.Value = float64(v.lastVol)
 	v.slider.OnChanged = v.onChanged
+
+	// for players that are slow to respond to volume changes
+	// (e.g. DLNA), delay responding to the SetVolume call
+	// to avoid hiccuping from callback "echoes"
+	v.setVolDebouncer = util.NewDebouncer(100*time.Millisecond, func() {
+		v.delaySetVolume = false
+		v.SetVolume(v.pendingVolume)
+	})
+
 	v.container = container.NewHBox(container.NewCenter(v.icon), v.slider)
 	return v
 }
@@ -185,6 +199,11 @@ func NewVolumeControl(initialVol int) *VolumeControl {
 // Sets the volume that is displayed in the slider.
 // Does not invoke OnSetVolume callback.
 func (v *VolumeControl) SetVolume(vol int) {
+	if v.delaySetVolume {
+		v.pendingVolume = vol
+		return
+	}
+
 	if (vol == v.lastVol && !v.muted) || (v.muted && vol == 0) {
 		return
 	}
@@ -195,6 +214,8 @@ func (v *VolumeControl) SetVolume(vol int) {
 
 func (v *VolumeControl) onChanged(volume float64) {
 	vol := int(volume)
+	v.delaySetVolume = true
+	v.setVolDebouncer()
 	v.lastVol = vol
 	v.muted = false
 	v.updateIconForVolume(vol)

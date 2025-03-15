@@ -197,6 +197,12 @@ func (d *DLNAPlayer) GetStatus() player.Status {
 	}
 }
 
+func (d *DLNAPlayer) Destroy() {
+	if d.proxyServer != nil {
+		go d.proxyServer.Shutdown(context.Background())
+	}
+}
+
 func getLocalIP() (string, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
