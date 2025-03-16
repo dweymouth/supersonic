@@ -163,6 +163,8 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) {
 
 	if needToUnpause {
 		p.PlayTrackAt(p.nowPlayingIdx)
+		// TODO - find a better way to wait until the players are ready
+		time.Sleep(200 * time.Millisecond)
 		p.SeekSeconds(p.pendingPlayerChangeTimePos)
 		p.pendingPlayerChange = false
 	}
