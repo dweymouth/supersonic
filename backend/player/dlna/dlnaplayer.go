@@ -41,6 +41,7 @@ type DLNAPlayer struct {
 	state   int // stopped, playing, paused
 	seeking bool
 
+	metaLock      sync.Mutex
 	curTrackMeta  mediaprovider.MediaItemMetadata
 	nextTrackMeta mediaprovider.MediaItemMetadata
 
@@ -54,6 +55,10 @@ type DLNAPlayer struct {
 
 	proxyURLLock sync.Mutex
 	proxyURLs    map[string]string
+
+	timerActive atomic.Bool
+	timer       *time.Timer
+	resetChan   chan (time.Duration)
 }
 
 func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
@@ -69,6 +74,7 @@ func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
 		avTransport:   avt,
 		renderControl: rc,
 		proxyURLs:     make(map[string]string),
+		resetChan:     make(chan time.Duration),
 	}, nil
 }
 
@@ -86,7 +92,9 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 
 	log.Println("playing track " + meta.Name)
 
+	d.metaLock.Lock()
 	d.curTrackMeta = meta
+	d.metaLock.Unlock()
 	key := d.addURLToProxy(urlstr)
 
 	media := avtransport.MediaItem{
@@ -102,6 +110,7 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 		return err
 	}
 	d.state = playing
+	d.setTrackChangeTimer(time.Duration(meta.Duration) * time.Second)
 	d.stopwatch.Reset()
 	d.stopwatch.Start()
 	d.lastStartTime = 0
@@ -112,7 +121,9 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 
 func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadata) error {
 	var media *avtransport.MediaItem
+	d.metaLock.Lock()
 	d.nextTrackMeta = meta
+	d.metaLock.Unlock()
 	if url != "" {
 		d.ensureSetupProxy()
 
@@ -129,7 +140,11 @@ func (d *DLNAPlayer) Continue() error {
 	if err := d.avTransport.Play(context.Background()); err != nil {
 		return err
 	}
+	d.metaLock.Lock()
+	nextTrackChange := time.Duration(d.curTrackMeta.Duration)*time.Second - d.curPlayPos()
+	d.metaLock.Unlock()
 	d.state = playing
+	d.setTrackChangeTimer(nextTrackChange)
 	d.stopwatch.Start()
 	d.InvokeOnPlaying()
 	return nil
@@ -139,6 +154,7 @@ func (d *DLNAPlayer) Pause() error {
 	if err := d.avTransport.Pause(context.Background()); err != nil {
 		return err
 	}
+	d.setTrackChangeTimer(0)
 	d.stopwatch.Stop()
 	d.state = paused
 	d.InvokeOnPaused()
@@ -149,6 +165,7 @@ func (d *DLNAPlayer) Stop() error {
 	if err := d.avTransport.Pause(context.Background()); err != nil {
 		return err
 	}
+	d.setTrackChangeTimer(0)
 	d.stopwatch.Reset()
 	d.lastStartTime = 0
 	d.state = stopped
@@ -164,6 +181,10 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 	}
 	d.seeking = false
 
+	d.metaLock.Lock()
+	nextTrackChange := time.Duration(d.curTrackMeta.Duration)*time.Second - time.Duration(secs)*time.Second
+	d.metaLock.Unlock()
+	d.setTrackChangeTimer(nextTrackChange)
 	d.lastStartTime = int(secs)
 	d.stopwatch.Reset()
 	if d.state == playing {
@@ -186,13 +207,15 @@ func (d *DLNAPlayer) GetStatus() player.Status {
 		state = player.Paused
 	}
 
-	time := time.Duration(d.lastStartTime)*time.Second + d.stopwatch.Elapsed()
-
 	return player.Status{
 		State:    state,
-		TimePos:  time.Seconds(),
+		TimePos:  d.curPlayPos().Seconds(),
 		Duration: float64(d.curTrackMeta.Duration),
 	}
+}
+
+func (d *DLNAPlayer) curPlayPos() time.Duration {
+	return time.Duration(d.lastStartTime)*time.Second + d.stopwatch.Elapsed()
 }
 
 func (d *DLNAPlayer) Destroy() {
@@ -233,6 +256,78 @@ func (d *DLNAPlayer) addURLToProxy(url string) string {
 	d.proxyURLs[key] = url
 	d.proxyURLLock.Unlock()
 	return key
+}
+
+func (d *DLNAPlayer) setTrackChangeTimer(dur time.Duration) {
+	if d.timerActive.Swap(true) {
+		// was active
+		log.Println("timer was active")
+		d.resetChan <- dur
+		log.Println("and reset")
+		return
+	}
+	if dur == 0 {
+		d.timerActive.Store(false)
+		return
+	}
+	log.Println("starting timer")
+
+	d.timer = time.NewTimer(dur)
+	go func() {
+		for {
+			select {
+			case dur := <-d.resetChan:
+				if dur == 0 {
+					d.timerActive.Store(false)
+					if !d.timer.Stop() {
+						select {
+						case <-d.timer.C:
+						default:
+						}
+					}
+					d.timer = nil
+					return
+				}
+				// reset the timer
+				if !d.timer.Stop() {
+					select {
+					case <-d.timer.C:
+					default:
+					}
+				}
+				d.timer.Reset(dur)
+			case <-d.timer.C:
+				d.timerActive.Store(false)
+				d.timer = nil
+				d.handleOnTrackChange()
+				return
+			}
+		}
+	}()
+}
+
+func (d *DLNAPlayer) handleOnTrackChange() {
+	stopping := false
+	d.metaLock.Lock()
+	if d.nextTrackMeta.ID == "" {
+		stopping = true
+	}
+	d.curTrackMeta = d.nextTrackMeta
+	d.nextTrackMeta = mediaprovider.MediaItemMetadata{}
+	nextTrackChange := time.Duration(d.curTrackMeta.Duration) * time.Second
+	d.metaLock.Unlock()
+
+	if stopping {
+		d.lastStartTime = 0
+		d.stopwatch.Reset()
+		d.InvokeOnStopped()
+	} else {
+		d.lastStartTime = 0
+		d.stopwatch.Reset()
+		d.stopwatch.Start()
+		d.setTrackChangeTimer(nextTrackChange)
+		d.InvokeOnTrackChange()
+	}
 }
 
 func (d *DLNAPlayer) urlForItem(key string) string {
