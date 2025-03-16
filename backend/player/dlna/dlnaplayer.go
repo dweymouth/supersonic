@@ -18,6 +18,7 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/supersonic-app/go-upnpcast/device"
 	"github.com/supersonic-app/go-upnpcast/services/avtransport"
 	"github.com/supersonic-app/go-upnpcast/services/renderingcontrol"
@@ -43,8 +44,8 @@ type DLNAPlayer struct {
 	curTrackMeta  mediaprovider.MediaItemMetadata
 	nextTrackMeta mediaprovider.MediaItemMetadata
 
-	lastSeekSecs int
-	seekedAt     time.Time
+	lastStartTime int
+	stopwatch     util.Stopwatch
 
 	proxyServer *http.Server
 	proxyActive atomic.Bool
@@ -101,8 +102,9 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 		return err
 	}
 	d.state = playing
-	d.seekedAt = time.Now()
-	d.lastSeekSecs = 0
+	d.stopwatch.Reset()
+	d.stopwatch.Start()
+	d.lastStartTime = 0
 	d.InvokeOnPlaying()
 	d.InvokeOnTrackChange()
 	return nil
@@ -123,24 +125,12 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 	return d.avTransport.SetNextAVTransportMedia(context.Background(), media)
 }
 
-func (d *DLNAPlayer) addURLToProxy(url string) string {
-	hash := md5.Sum([]byte(url))
-	key := base64.StdEncoding.EncodeToString(hash[:])
-	d.proxyURLLock.Lock()
-	d.proxyURLs[key] = url
-	d.proxyURLLock.Unlock()
-	return key
-}
-
-func (d *DLNAPlayer) urlForItem(key string) string {
-	return fmt.Sprintf("http://%s:%d/%s", d.localIP, d.proxyPort, key)
-}
-
 func (d *DLNAPlayer) Continue() error {
 	if err := d.avTransport.Play(context.Background()); err != nil {
 		return err
 	}
 	d.state = playing
+	d.stopwatch.Start()
 	d.InvokeOnPlaying()
 	return nil
 }
@@ -149,6 +139,7 @@ func (d *DLNAPlayer) Pause() error {
 	if err := d.avTransport.Pause(context.Background()); err != nil {
 		return err
 	}
+	d.stopwatch.Stop()
 	d.state = paused
 	d.InvokeOnPaused()
 	return nil
@@ -158,6 +149,8 @@ func (d *DLNAPlayer) Stop() error {
 	if err := d.avTransport.Pause(context.Background()); err != nil {
 		return err
 	}
+	d.stopwatch.Reset()
+	d.lastStartTime = 0
 	d.state = stopped
 	d.InvokeOnStopped()
 	return nil
@@ -170,8 +163,13 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 		return err
 	}
 	d.seeking = false
-	d.seekedAt = time.Now()
-	d.lastSeekSecs = int(secs)
+
+	d.lastStartTime = int(secs)
+	d.stopwatch.Reset()
+	if d.state == playing {
+		d.stopwatch.Start()
+	}
+
 	d.InvokeOnSeek()
 	return nil
 }
@@ -188,7 +186,7 @@ func (d *DLNAPlayer) GetStatus() player.Status {
 		state = player.Paused
 	}
 
-	time := time.Now().Sub(d.seekedAt) + time.Duration(d.lastSeekSecs)*time.Second
+	time := time.Duration(d.lastStartTime)*time.Second + d.stopwatch.Elapsed()
 
 	return player.Status{
 		State:    state,
@@ -203,40 +201,13 @@ func (d *DLNAPlayer) Destroy() {
 	}
 }
 
-func getLocalIP() (string, error) {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return "", err
-	}
-
-	for _, iface := range interfaces {
-		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-
-		addrs, err := iface.Addrs()
-		if err != nil {
-			return "", err
-		}
-
-		for _, addr := range addrs {
-			ipnet, ok := addr.(*net.IPNet)
-			if ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-				return ipnet.IP.String(), nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("no suitable interface found")
-}
-
 func (d *DLNAPlayer) ensureSetupProxy() error {
 	if d.proxyActive.Swap(true) {
 		return nil // already active
 	}
 
 	var err error
-	d.localIP, err = getLocalIP()
+	d.localIP, err = util.GetLocalIP()
 	if err != nil {
 		return err
 	}
@@ -255,8 +226,17 @@ func (d *DLNAPlayer) ensureSetupProxy() error {
 	return nil
 }
 
-type proxy struct {
-	url string
+func (d *DLNAPlayer) addURLToProxy(url string) string {
+	hash := md5.Sum([]byte(url))
+	key := base64.StdEncoding.EncodeToString(hash[:])
+	d.proxyURLLock.Lock()
+	d.proxyURLs[key] = url
+	d.proxyURLLock.Unlock()
+	return key
+}
+
+func (d *DLNAPlayer) urlForItem(key string) string {
+	return fmt.Sprintf("http://%s:%d/%s", d.localIP, d.proxyPort, key)
 }
 
 func (d *DLNAPlayer) handleRequest(w http.ResponseWriter, r *http.Request) {
