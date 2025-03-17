@@ -96,8 +96,8 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 	})
 }
 
-func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context) {
-	devices, _ := device.SearchMediaRenderers(ctx, 10, services.AVTransport, services.RenderingControl)
+func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, waitSec int) {
+	devices, _ := device.SearchMediaRenderers(ctx, waitSec, services.AVTransport, services.RenderingControl)
 
 	var discovered []remotePlayer
 	for _, d := range devices {
