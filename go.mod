@@ -41,6 +41,8 @@ require (
 	github.com/go-text/render v0.2.0 // indirect
 	github.com/go-text/typesetting v0.2.1 // indirect
 	github.com/h2non/filetype v1.1.3 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20241217141322-fcc2cadd6f08 // indirect
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
 	github.com/koron/go-ssdp v0.0.4 // indirect
@@ -57,4 +59,5 @@ require (
 )
 
 replace github.com/supersonic-app/go-upnpcast v0.0.0-20250312000014-e4f7242a07ce => ../go-upnpcast
+
 replace fyne.io/fyne/v2 v2.6.0-beta1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250308154116-c32a0de49bde

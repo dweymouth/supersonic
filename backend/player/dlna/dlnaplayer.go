@@ -19,6 +19,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/util"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/supersonic-app/go-upnpcast/device"
 	"github.com/supersonic-app/go-upnpcast/services/avtransport"
 	"github.com/supersonic-app/go-upnpcast/services/renderingcontrol"
@@ -62,14 +63,20 @@ type DLNAPlayer struct {
 }
 
 func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
+	retry := retryablehttp.NewClient()
+	retry.RetryMax = 3
+	cli := retry.StandardClient()
+
 	avt, err := device.AVTransportClient()
 	if err != nil {
 		return nil, err
 	}
+	avt.HTTPClient = cli
 	rc, err := device.RenderingControlClient()
 	if err != nil {
 		return nil, err
 	}
+	rc.HTTPClient = cli
 	return &DLNAPlayer{
 		avTransport:   avt,
 		renderControl: rc,
