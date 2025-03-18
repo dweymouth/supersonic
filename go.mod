@@ -58,6 +58,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/supersonic-app/go-upnpcast v0.0.0-20250312000014-e4f7242a07ce => ../go-upnpcast
-
 replace fyne.io/fyne/v2 v2.6.0-beta1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250308154116-c32a0de49bde
