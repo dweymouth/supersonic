@@ -342,7 +342,7 @@ func (t *Tracklist) GetTracks() []*mediaprovider.Track {
 
 // Append more tracks to the tracklist.
 func (t *Tracklist) AppendTracks(trs []*mediaprovider.Track) {
-	t.tracksOrigOrder = append(t.tracks, util.ToTrackListModels(trs)...)
+	t.tracksOrigOrder = append(t.tracksOrigOrder, util.ToTrackListModels(trs)...)
 	t.doSortTracks()
 	t.list.Refresh()
 }
