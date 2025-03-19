@@ -570,7 +570,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 			if len(tr.ArtistIDs) > 0 {
 				similar, err := s.GetSimilarTracks(tr.ArtistIDs[0], p.cfg.EnqueueBatchSize)
 				if err != nil {
-					log.Println("autoplay error: failed to get similar tracks: %v", err)
+					log.Printf("autoplay error: failed to get similar tracks: %v", err)
 				}
 				tracks = filterRecentlyPlayed(similar)
 			}
@@ -583,7 +583,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 					}
 					byGenre, err := s.GetRandomTracks(g, p.cfg.EnqueueBatchSize)
 					if err != nil {
-						log.Println("autoplay error: failed to get tracks by genre: %v", err)
+						log.Printf("autoplay error: failed to get tracks by genre: %v", err)
 					}
 					tracks = filterRecentlyPlayed(byGenre)
 					if len(tracks) > 0 {
@@ -598,7 +598,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 			// fallback to random tracks
 			random, err := s.GetRandomTracks("", p.cfg.EnqueueBatchSize)
 			if err != nil {
-				log.Println("autoplay error: failed to get random tracks: %v", err)
+				log.Printf("autoplay error: failed to get random tracks: %v", err)
 			}
 			tracks = filterRecentlyPlayed(random)
 		}
@@ -612,7 +612,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 	logIfErr := func(action string, err error) {
 		if err != nil {
-			log.Println("Playback error (%s): %v", action, err)
+			log.Printf("Playback error (%s): %v", action, err)
 		}
 	}
 	for {

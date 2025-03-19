@@ -65,6 +65,8 @@ type DLNAPlayer struct {
 func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
 	retry := retryablehttp.NewClient()
 	retry.RetryMax = 3
+	retry.RetryWaitMin = 100 * time.Millisecond
+	retry.Logger = retryLogger{}
 	cli := retry.StandardClient()
 
 	avt, err := device.AVTransportClient()
@@ -96,8 +98,6 @@ func (d *DLNAPlayer) GetVolume() int {
 
 func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadata) error {
 	d.ensureSetupProxy()
-
-	log.Println("playing track " + meta.Name)
 
 	d.metaLock.Lock()
 	d.curTrackMeta = meta
@@ -268,16 +268,13 @@ func (d *DLNAPlayer) addURLToProxy(url string) string {
 func (d *DLNAPlayer) setTrackChangeTimer(dur time.Duration) {
 	if d.timerActive.Swap(true) {
 		// was active
-		log.Println("timer was active")
 		d.resetChan <- dur
-		log.Println("and reset")
 		return
 	}
 	if dur == 0 {
 		d.timerActive.Store(false)
 		return
 	}
-	log.Println("starting timer")
 
 	d.timer = time.NewTimer(dur)
 	go func() {
@@ -389,5 +386,26 @@ func (d *DLNAPlayer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error copying response body:", err)
+	}
+}
+
+type retryLogger struct{}
+
+func (retryLogger) Error(msg string, keysAndValues ...interface{}) {
+	log.Println(msg, keysAndValues)
+}
+
+func (retryLogger) Info(msg string, keysAndValues ...interface{}) {
+	log.Println(msg, keysAndValues)
+}
+
+func (retryLogger) Warn(msg string, keysAndValues ...interface{}) {
+	log.Println(msg, keysAndValues)
+}
+
+func (retryLogger) Debug(msg string, keysAndValues ...interface{}) {
+	// log only retries, not every request
+	if strings.Contains(msg, "retrying request") {
+		log.Println(msg, keysAndValues)
 	}
 }
