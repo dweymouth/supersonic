@@ -512,6 +512,10 @@ func (p *PlaybackManager) Stop() {
 	p.cmdQueue.Stop()
 }
 
+func (p *PlaybackManager) Shutdown() {
+	p.cmdQueue.StopAndWait()
+}
+
 func (p *PlaybackManager) Pause() {
 	p.cmdQueue.Pause()
 }
@@ -661,6 +665,9 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					log.Println("Force-restarting MPV playback")
 					mpv.ForceRestartPlayback()
 				}
+			}
+			if c.OnDone != nil {
+				c.OnDone()
 			}
 		}
 	}

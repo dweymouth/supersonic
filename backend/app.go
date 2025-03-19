@@ -463,7 +463,7 @@ func (a *App) Shutdown() {
 		a.WinSMTC.Shutdown()
 	}
 	a.PlaybackManager.DisableCallbacks()
-	a.PlaybackManager.Stop() // will trigger scrobble check
+	a.PlaybackManager.Shutdown() // will trigger scrobble check
 	a.cancel()
 	a.LocalPlayer.Destroy()
 }
