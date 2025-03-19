@@ -153,7 +153,7 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	}
 
 	// Periodically scan for remote players
-	go a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, 5 /*waitSec*/)
+	go a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, true /*fastScan*/)
 	go func() {
 		t := time.NewTicker(5 * time.Minute)
 		for {
@@ -162,7 +162,7 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 				t.Stop()
 				return
 			case <-t.C:
-				a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, 10 /*waitSec*/)
+				a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, false)
 			}
 		}
 	}()
