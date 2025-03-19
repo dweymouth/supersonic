@@ -96,7 +96,15 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 	})
 }
 
-func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, waitSec int) {
+func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, fastScan bool) {
+	if fastScan {
+		p.scanRemotePlayers(ctx, 1 /*waitSec*/)
+		// continue to slow scan to detect players that take longer to respond
+	}
+	p.scanRemotePlayers(ctx, 10 /*waitSec*/)
+}
+
+func (p *PlaybackManager) scanRemotePlayers(ctx context.Context, waitSec int) {
 	devices, _ := device.SearchMediaRenderers(ctx, waitSec, services.AVTransport, services.RenderingControl)
 
 	var discovered []remotePlayer
