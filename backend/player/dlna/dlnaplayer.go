@@ -33,6 +33,11 @@ const (
 
 var unimplemented = errors.New("unimplemented")
 
+type proxyMapEntry struct {
+	key string
+	url string
+}
+
 type DLNAPlayer struct {
 	player.BasePlayerCallbackImpl
 
@@ -54,8 +59,12 @@ type DLNAPlayer struct {
 	localIP     string
 	proxyPort   int
 
+	// keep in order of most recently accessed at the end
+	// that way the item in proxyURLs[0] can be kicked out
+	// when adding a new URL to the proxy, since
+	// only two will need to be active at any given time
+	proxyURLs    [3]proxyMapEntry
 	proxyURLLock sync.Mutex
-	proxyURLs    map[string]string
 
 	timerActive atomic.Bool
 	timer       *time.Timer
@@ -82,7 +91,6 @@ func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
 	return &DLNAPlayer{
 		avTransport:   avt,
 		renderControl: rc,
-		proxyURLs:     make(map[string]string),
 		resetChan:     make(chan time.Duration),
 	}, nil
 }
@@ -256,15 +264,6 @@ func (d *DLNAPlayer) ensureSetupProxy() error {
 	return nil
 }
 
-func (d *DLNAPlayer) addURLToProxy(url string) string {
-	hash := md5.Sum([]byte(url))
-	key := base64.StdEncoding.EncodeToString(hash[:])
-	d.proxyURLLock.Lock()
-	d.proxyURLs[key] = url
-	d.proxyURLLock.Unlock()
-	return key
-}
-
 func (d *DLNAPlayer) setTrackChangeTimer(dur time.Duration) {
 	if d.timerActive.Swap(true) {
 		// was active
@@ -339,13 +338,8 @@ func (d *DLNAPlayer) urlForItem(key string) string {
 }
 
 func (d *DLNAPlayer) handleRequest(w http.ResponseWriter, r *http.Request) {
-	var url string
 	key := strings.TrimPrefix(r.URL.Path, "/")
-	d.proxyURLLock.Lock()
-	if u, ok := d.proxyURLs[key]; ok {
-		url = u
-	}
-	d.proxyURLLock.Unlock()
+	url, _ := d.lookupProxyURL(key)
 
 	if url == "" {
 		w.WriteHeader(http.StatusNotFound)
@@ -387,6 +381,52 @@ func (d *DLNAPlayer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error copying response body:", err)
 	}
+}
+
+func (d *DLNAPlayer) addURLToProxy(url string) string {
+	hash := md5.Sum([]byte(url))
+	key := base64.StdEncoding.EncodeToString(hash[:])
+	d.proxyURLLock.Lock()
+	defer d.proxyURLLock.Unlock()
+	d._updateProxyURL(key, url)
+	return key
+}
+
+// lookupProxyURL finds a URL by key and updates its position to most recently used
+func (d *DLNAPlayer) lookupProxyURL(key string) (string, bool) {
+	d.proxyURLLock.Lock()
+	defer d.proxyURLLock.Unlock()
+
+	for i := 0; i < len(d.proxyURLs); i++ {
+		if d.proxyURLs[i].key == key {
+			url := d.proxyURLs[i].url
+			// Move accessed entry to the most recent position
+			d._updateProxyURL(key, url)
+			return url, true
+		}
+	}
+
+	return "", false
+}
+
+func (d *DLNAPlayer) _updateProxyURL(key, url string) {
+	// Check if the key already exists, and if so, move it to the most recently used position
+	for i := 0; i < len(d.proxyURLs); i++ {
+		if d.proxyURLs[i].key == key {
+			if i < len(d.proxyURLs)-1 {
+				// Shift elements to the left from found position to the end
+				copy(d.proxyURLs[i:], d.proxyURLs[i+1:])
+			}
+			// Place updated entry at the last position
+			d.proxyURLs[len(d.proxyURLs)-1] = proxyMapEntry{key: key, url: url}
+			return
+		}
+	}
+
+	// Shift all elements left to make room for the new entry at the end
+	copy(d.proxyURLs[:], d.proxyURLs[1:])
+	// Insert new element at the most recent position
+	d.proxyURLs[len(d.proxyURLs)-1] = proxyMapEntry{key: key, url: url}
 }
 
 type retryLogger struct{}
