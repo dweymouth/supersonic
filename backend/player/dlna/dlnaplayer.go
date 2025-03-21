@@ -66,6 +66,14 @@ type DLNAPlayer struct {
 	proxyURLs    [3]proxyMapEntry
 	proxyURLLock sync.Mutex
 
+	// If SetNextAVTransport fails (e.g. because the device
+	// does not support the API/gapless), this flag is set
+	// true, and the next firing of the track change timer
+	// should clear it to false and use SetAVTransport
+	// to begin playing the item in nextTrackMeta.
+	failedToSetNext    bool
+	unsetNextMediaItem *avtransport.MediaItem
+
 	timerActive atomic.Bool
 	timer       *time.Timer
 	resetChan   chan (time.Duration)
@@ -117,11 +125,7 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 		Title: meta.Name,
 	}
 
-	err := d.avTransport.SetAVTransportMedia(context.Background(), &media)
-	if err != nil {
-		return err
-	}
-	if err := d.avTransport.Play(context.Background()); err != nil {
+	if err := d.playAVTransportMedia(&media); err != nil {
 		return err
 	}
 	d.state = playing
@@ -131,6 +135,17 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 	d.lastStartTime = 0
 	d.InvokeOnPlaying()
 	d.InvokeOnTrackChange()
+	return nil
+}
+
+func (d *DLNAPlayer) playAVTransportMedia(media *avtransport.MediaItem) error {
+	err := d.avTransport.SetAVTransportMedia(context.Background(), media)
+	if err != nil {
+		return err
+	}
+	if err := d.avTransport.Play(context.Background()); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -148,7 +163,14 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 			Title: meta.Name,
 		}
 	}
-	return d.avTransport.SetNextAVTransportMedia(context.Background(), media)
+	err := d.avTransport.SetNextAVTransportMedia(context.Background(), media)
+	if err != nil {
+		d.metaLock.Lock()
+		d.failedToSetNext = true
+		d.unsetNextMediaItem = media
+		d.metaLock.Unlock()
+	}
+	return err
 }
 
 func (d *DLNAPlayer) Continue() error {
@@ -325,6 +347,17 @@ func (d *DLNAPlayer) handleOnTrackChange() {
 		d.stopwatch.Reset()
 		d.InvokeOnStopped()
 	} else {
+		d.metaLock.Lock()
+		if d.failedToSetNext {
+			d.failedToSetNext = false
+			media := d.unsetNextMediaItem
+			d.unsetNextMediaItem = nil
+			d.metaLock.Unlock()
+			d.playAVTransportMedia(media)
+		} else {
+			d.metaLock.Unlock()
+		}
+
 		d.lastStartTime = 0
 		d.stopwatch.Reset()
 		d.stopwatch.Start()
