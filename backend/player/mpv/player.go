@@ -7,6 +7,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/supersonic-app/go-mpv"
 )
@@ -133,7 +134,7 @@ func (p *Player) Init(maxCacheMB int) error {
 }
 
 // Plays the specified file, clearing the previous play queue, if any.
-func (p *Player) PlayFile(url string) error {
+func (p *Player) PlayFile(url string, _ mediaprovider.MediaItemMetadata) error {
 	if !p.initialized {
 		return ErrUnitialized
 	}
@@ -169,7 +170,7 @@ func (p *Player) Stop() error {
 	return err
 }
 
-func (p *Player) SetNextFile(url string) error {
+func (p *Player) SetNextFile(url string, _ mediaprovider.MediaItemMetadata) error {
 	if p.lenPlaylist > p.curPlaylistPos+1 {
 		if err := p.mpv.Command([]string{"playlist-remove", strconv.Itoa(int(p.curPlaylistPos) + 1)}); err != nil {
 			return err

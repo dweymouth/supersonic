@@ -154,6 +154,26 @@ func (m *Controller) HaveModal() bool {
 	return m.haveModal
 }
 
+func (m *Controller) ShowCastMenu() {
+	devices := m.App.PlaybackManager.RemotePlayers()
+	menu := fyne.NewMenu("")
+	menu.Items = append(menu.Items, fyne.NewMenuItem(lang.L("Local player"), func() {
+		m.App.PlaybackManager.SetRemotePlayer(nil)
+	}))
+	for _, d := range devices {
+		_d := d
+		menu.Items = append(menu.Items, fyne.NewMenuItem(d.Name, func() {
+			m.App.PlaybackManager.SetRemotePlayer(&_d)
+		}))
+	}
+	pop := widget.NewPopUpMenu(menu, m.MainWindow.Canvas())
+	canvasSize := m.MainWindow.Canvas().Size()
+	pop.ShowAtPosition(fyne.NewPos(
+		canvasSize.Width-pop.MinSize().Width-10,
+		canvasSize.Height-pop.MinSize().Height-100,
+	))
+}
+
 func (m *Controller) ShowPopUpPlayQueue() {
 	m.popUpQueueMutex.Lock()
 	if m.popUpQueue == nil {
@@ -594,6 +614,7 @@ func (c *Controller) ShowAboutDialog() {
 }
 
 func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map[string]string) {
+
 	devs, err := c.App.LocalPlayer.ListAudioDevices()
 	if err != nil {
 		log.Printf("error listing audio devices: %v", err)
@@ -606,6 +627,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	_, canSavePlayQueue := c.App.ServerManager.Server.(mediaprovider.CanSavePlayQueue)
 	isLocalPlayer := isEqualizerPlayer
 	bands := c.App.LocalPlayer.Equalizer().BandFrequencies()
+
 	dlg := dialogs.NewSettingsDialog(c.App.Config,
 		devs, themeFiles, bands,
 		c.App.ServerManager.Server.ClientDecidesScrobble(),
@@ -641,6 +663,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	c.ClosePopUpOnEscape(pop)
 	c.haveModal = true
 	pop.Show()
+
 }
 
 func (c *Controller) ShowQuickSearch() {
