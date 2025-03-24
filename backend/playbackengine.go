@@ -142,16 +142,20 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) {
 	needToUnpause := false
 
 	stat := p.PlayerStatus()
+	if p.pendingPlayerChange {
+		stat.State = player.Paused
+	}
+
 	switch stat.State {
 	case player.Stopped:
 		// nothing
 	case player.Playing:
 		p.Pause()
+		needToUnpause = true
 		fallthrough
 	case player.Paused:
 		p.pendingPlayerChangeTimePos = stat.TimePos
 		p.pendingPlayerChange = true
-		needToUnpause = true
 	}
 
 	oldVol := p.player.GetVolume()
