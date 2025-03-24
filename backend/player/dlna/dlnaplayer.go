@@ -59,6 +59,9 @@ type DLNAPlayer struct {
 	localIP     string
 	proxyPort   int
 
+	pendingSeek     bool
+	pendingSeekSecs float64
+
 	// keep in order of most recently accessed at the end
 	// that way the item in proxyURLs[0] can be kicked out
 	// when adding a new URL to the proxy, since
@@ -174,6 +177,18 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 }
 
 func (d *DLNAPlayer) Continue() error {
+	if d.state == playing {
+		return nil
+	}
+
+	if d.pendingSeek {
+		d.pendingSeek = false
+		err := d.avTransport.Seek(context.Background(), int(d.pendingSeekSecs))
+		if err != nil {
+			return err
+		}
+	}
+
 	if err := d.avTransport.Play(context.Background()); err != nil {
 		return err
 	}
@@ -188,6 +203,10 @@ func (d *DLNAPlayer) Continue() error {
 }
 
 func (d *DLNAPlayer) Pause() error {
+	if d.state != playing {
+		return nil
+	}
+
 	if err := d.avTransport.Pause(context.Background()); err != nil {
 		return err
 	}
@@ -199,32 +218,47 @@ func (d *DLNAPlayer) Pause() error {
 }
 
 func (d *DLNAPlayer) Stop() error {
-	if err := d.avTransport.Pause(context.Background()); err != nil {
-		return err
+	switch d.state {
+	case stopped:
+		return nil
+	case playing:
+		if err := d.avTransport.Pause(context.Background()); err != nil {
+			return err
+		}
+		fallthrough
+	case paused:
+		d.setTrackChangeTimer(0)
+		d.stopwatch.Reset()
+		d.lastStartTime = 0
+		d.state = stopped
+		d.InvokeOnStopped()
+		return nil
+	default:
+		return errors.New("invalid player state")
 	}
-	d.setTrackChangeTimer(0)
-	d.stopwatch.Reset()
-	d.lastStartTime = 0
-	d.state = stopped
-	d.InvokeOnStopped()
-	return nil
 }
 
 func (d *DLNAPlayer) SeekSeconds(secs float64) error {
-	d.seeking = true
-	if err := d.avTransport.Seek(context.Background(), int(secs)); err != nil {
+	if d.state == paused {
+		d.pendingSeek = true
+		d.pendingSeekSecs = secs
+	} else {
+		d.seeking = true
+		if err := d.avTransport.Seek(context.Background(), int(secs)); err != nil {
+			d.seeking = false
+			return err
+		}
 		d.seeking = false
-		return err
 	}
-	d.seeking = false
 
-	d.metaLock.Lock()
-	nextTrackChange := time.Duration(d.curTrackMeta.Duration)*time.Second - time.Duration(secs)*time.Second
-	d.metaLock.Unlock()
-	d.setTrackChangeTimer(nextTrackChange)
 	d.lastStartTime = int(secs)
 	d.stopwatch.Reset()
+
 	if d.state == playing {
+		d.metaLock.Lock()
+		nextTrackChange := time.Duration(d.curTrackMeta.Duration)*time.Second - time.Duration(secs)*time.Second
+		d.metaLock.Unlock()
+		d.setTrackChangeTimer(nextTrackChange)
 		d.stopwatch.Start()
 	}
 
