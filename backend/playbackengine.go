@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
+
+// TODO: make thread-safe
 
 var (
 	ReplayGainNone  = player.ReplayGainNone.String()
@@ -138,7 +141,7 @@ func (p *playbackEngine) registerPlayerCallbacks(pl player.BasePlayer) {
 	})
 }
 
-func (p *playbackEngine) SetPlayer(pl player.BasePlayer) {
+func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	needToUnpause := false
 
 	stat := p.PlayerStatus()
@@ -150,7 +153,9 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) {
 	case player.Stopped:
 		// nothing
 	case player.Playing:
-		p.Pause()
+		if err := p.Pause(); err != nil {
+			return fmt.Errorf("failed to pause: %v", err)
+		}
 		needToUnpause = true
 		fallthrough
 	case player.Paused:
@@ -179,6 +184,7 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) {
 			cb(vol)
 		}
 	}
+	return nil
 }
 
 func (p *playbackEngine) PlayTrackAt(idx int) error {

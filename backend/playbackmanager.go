@@ -26,17 +26,19 @@ type PlaybackManager struct {
 	cmdQueue *playbackCommandQueue
 	cfg      *AppConfig
 
-	localPlayer       player.BasePlayer
-	remotePlayersLock sync.Mutex
-	remotePlayers     []remotePlayer
+	localPlayer         player.BasePlayer
+	remotePlayersLock   sync.Mutex
+	remotePlayers       []RemotePlaybackDevice
+	currentRemotePlayer *RemotePlaybackDevice
 
 	autoplay bool
 
 	lastPlayTime float64
 }
 
-type remotePlayer struct {
+type RemotePlaybackDevice struct {
 	Name     string
+	URL      string
 	Protocol string
 	new      func() (player.BasePlayer, error)
 }
@@ -107,10 +109,11 @@ func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, fastScan bool) 
 func (p *PlaybackManager) scanRemotePlayers(ctx context.Context, waitSec int) {
 	devices, _ := device.SearchMediaRenderers(ctx, waitSec, services.AVTransport, services.RenderingControl)
 
-	var discovered []remotePlayer
+	var discovered []RemotePlaybackDevice
 	for _, d := range devices {
-		p := remotePlayer{
+		p := RemotePlaybackDevice{
 			Name:     d.FriendlyName,
+			URL:      d.URL,
 			Protocol: "DLNA",
 			new: func() (player.BasePlayer, error) {
 				return dlna.NewDLNAPlayer(d)
@@ -124,16 +127,23 @@ func (p *PlaybackManager) scanRemotePlayers(ctx context.Context, waitSec int) {
 	p.remotePlayersLock.Unlock()
 }
 
-func (p *PlaybackManager) RemotePlayers() []remotePlayer {
+func (p *PlaybackManager) RemotePlayers() []RemotePlaybackDevice {
 	p.remotePlayersLock.Lock()
 	players := p.remotePlayers
 	p.remotePlayersLock.Unlock()
 	return players
 }
 
-func (p *PlaybackManager) SetRemotePlayer(rp *remotePlayer) error {
+func (p *PlaybackManager) CurrentRemotePlayer() *RemotePlaybackDevice {
+	return p.currentRemotePlayer
+}
+
+func (p *PlaybackManager) SetRemotePlayer(rp *RemotePlaybackDevice) error {
 	if rp == nil {
-		p.engine.SetPlayer(p.localPlayer)
+		if err := p.engine.SetPlayer(p.localPlayer); err != nil {
+			return err
+		}
+		p.currentRemotePlayer = nil
 		return nil
 	}
 
@@ -141,7 +151,11 @@ func (p *PlaybackManager) SetRemotePlayer(rp *remotePlayer) error {
 	if err != nil {
 		return err
 	}
-	p.engine.SetPlayer(player)
+	if err := p.engine.SetPlayer(player); err != nil {
+		return err
+	}
+
+	p.currentRemotePlayer = rp
 	return nil
 }
 

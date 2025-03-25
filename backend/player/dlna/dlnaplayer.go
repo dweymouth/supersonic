@@ -99,6 +99,14 @@ func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
 		return nil, err
 	}
 	rc.HTTPClient = cli
+
+	// ping to test connectivity
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := avt.GetTransportInfo(ctx); err != nil {
+		return nil, fmt.Errorf("failed to connect to %s", device.FriendlyName)
+	}
+
 	return &DLNAPlayer{
 		avTransport:   avt,
 		renderControl: rc,
