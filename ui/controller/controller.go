@@ -152,16 +152,31 @@ func (m *Controller) HaveModal() bool {
 }
 
 func (m *Controller) ShowCastMenu() {
+	rp := m.App.PlaybackManager.CurrentRemotePlayer()
 	devices := m.App.PlaybackManager.RemotePlayers()
-	menu := fyne.NewMenu("")
-	menu.Items = append(menu.Items, fyne.NewMenuItem(lang.L("Local player"), func() {
-		m.App.PlaybackManager.SetRemotePlayer(nil)
-	}))
+	local := fyne.NewMenuItem(lang.L("Local player"), func() {
+		go func() {
+			if err := m.App.PlaybackManager.SetRemotePlayer(nil); err != nil {
+				fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to disconnect from remote player") })
+			}
+		}()
+	})
+	local.Icon = theme.ComputerIcon()
+	local.Checked = rp == nil
+
+	menu := fyne.NewMenu("", local)
 	for _, d := range devices {
 		_d := d
-		menu.Items = append(menu.Items, fyne.NewMenuItem(d.Name, func() {
-			m.App.PlaybackManager.SetRemotePlayer(&_d)
-		}))
+		item := fyne.NewMenuItem(d.Name, func() {
+			go func() {
+				if err := m.App.PlaybackManager.SetRemotePlayer(&_d); err != nil {
+					fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to connect to " + _d.Name) })
+				}
+			}()
+		})
+		item.Icon = myTheme.CastIcon
+		item.Checked = rp != nil && _d.URL == rp.URL
+		menu.Items = append(menu.Items, item)
 	}
 	pop := widget.NewPopUpMenu(menu, m.MainWindow.Canvas())
 	canvasSize := m.MainWindow.Canvas().Size()
