@@ -431,7 +431,7 @@ func (a *NowPlayingPage) Reload() {
 	}
 	switch a.tabs.SelectedIndex() {
 	case 1: /*lyrics*/
-		a.lastPlayPos = a.pm.CurrentPlayer().GetStatus().TimePos
+		a.lastPlayPos = a.pm.PlayerStatus().TimePos
 		a.updateLyrics()
 	case 2: /*related*/
 		a.updateRelatedList()
@@ -515,7 +515,7 @@ func (a *NowPlayingPage) saveSelectedTab(tabNum int) {
 
 func (a *NowPlayingPage) formatStatusLine() {
 	curPlayer := a.pm.CurrentPlayer()
-	playerStats := curPlayer.GetStatus()
+	playerStats := a.pm.PlayerStatus()
 	lastStatus := a.statusLabel.Text
 	stopped := lang.L("Stopped")
 	state := stopped
