@@ -42,6 +42,7 @@ type PlayQueueList struct {
 	OnPlayItemAt        func(idx int)
 	OnPlaySelection     func(items []mediaprovider.MediaItem, shuffle bool)
 	OnPlaySelectionNext func(items []mediaprovider.MediaItem)
+	OnPlaySongRadio     func(track *mediaprovider.Track)
 	OnAddToQueue        func(items []mediaprovider.MediaItem)
 	OnAddToPlaylist     func(trackIDs []string)
 	OnSetFavorite       func(trackIDs []string, fav bool)
@@ -54,11 +55,8 @@ type PlayQueueList struct {
 	OnReorderItems      func(idxs []int, reorderTo int)
 
 	useNonQueueMenu bool
-	menu            *widget.PopUpMenu // ctx menu for when only tracks are selected
-	radiosMenu      *widget.PopUpMenu // ctx menu for when selection contains radios
-	ratingSubmenu   *fyne.MenuItem
-	infoMenuItem    *fyne.MenuItem
-	shareMenuItem   *fyne.MenuItem
+	menu            *util.TrackContextMenu // ctx menu for when only tracks are selected
+	radiosMenu      *widget.PopUpMenu      // ctx menu for when selection contains radios
 
 	nowPlayingID string
 
@@ -256,82 +254,24 @@ func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		}
 	}
 
-	var menu *widget.PopUpMenu
 	if allTracks {
 		p.ensureTracksMenu()
-		p.ratingSubmenu.Disabled = p.DisableRating
-		p.infoMenuItem.Disabled = len(selected) != 1
-		p.shareMenuItem.Disabled = p.DisableSharing || len(selected) != 1
-		menu = p.menu
+		p.menu.SetRatingDisabled(p.DisableRating)
+		p.menu.SetInfoDisabled(len(selected) != 1)
+		p.menu.SetShareDisabled(p.DisableSharing || len(selected) != 1)
+		p.menu.ShowAtPosition(e.AbsolutePosition, fyne.CurrentApp().Driver().CanvasForObject(p))
 	} else {
 		p.ensureRadiosMenu()
-		menu = p.radiosMenu
+		p.radiosMenu.ShowAtPosition(e.AbsolutePosition)
 	}
-	menu.ShowAtPosition(e.AbsolutePosition)
+
 }
 
 func (p *PlayQueueList) ensureTracksMenu() {
 	if p.menu != nil {
 		return
 	}
-	var menuItems []*fyne.MenuItem
-	if p.useNonQueueMenu {
-		menuItems = append(menuItems, p.createQueueActionMenuItems()...)
-		menuItems = append(menuItems, fyne.NewMenuItemSeparator())
-	}
-
-	playlist := fyne.NewMenuItem(lang.L("Add to playlist")+"...", func() {
-		if p.OnAddToPlaylist != nil {
-			p.OnAddToPlaylist(p.selectedItemIDs())
-		}
-	})
-	playlist.Icon = myTheme.PlaylistIcon
-	download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
-		if p.OnDownload != nil {
-			p.OnDownload(p.selectedTracks(), "Selected tracks")
-		}
-	})
-	download.Icon = theme.DownloadIcon()
-	p.infoMenuItem = fyne.NewMenuItem(lang.L("Show info")+"...", func() {
-		if p.OnShowTrackInfo != nil {
-			p.OnShowTrackInfo(p.selectedTracks()[0])
-		}
-	})
-	p.infoMenuItem.Icon = theme.InfoIcon()
-	p.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
-		if p.OnShare != nil {
-			p.OnShare(p.selectedTracks())
-		}
-	})
-	p.shareMenuItem.Icon = myTheme.ShareIcon
-	favorite := fyne.NewMenuItem(lang.L("Set favorite"), func() {
-		if p.OnSetFavorite != nil {
-			p.OnSetFavorite(p.selectedItemIDs(), true)
-		}
-	})
-	favorite.Icon = myTheme.FavoriteIcon
-	unfavorite := fyne.NewMenuItem(lang.L("Unset favorite"), func() {
-		if p.OnSetFavorite != nil {
-			p.OnSetFavorite(p.selectedItemIDs(), false)
-		}
-	})
-	unfavorite.Icon = myTheme.NotFavoriteIcon
-	p.ratingSubmenu = util.NewRatingSubmenu(func(rating int) {
-		if p.OnSetRating != nil {
-			p.OnSetRating(p.selectedItemIDs(), rating)
-		}
-	})
-	menuItems = append(menuItems,
-		playlist,
-		download,
-		p.infoMenuItem,
-		p.shareMenuItem,
-		fyne.NewMenuItemSeparator(),
-		favorite,
-		unfavorite,
-		p.ratingSubmenu,
-	)
-
+	var auxItems []*fyne.MenuItem
 	if !p.useNonQueueMenu {
 		remove := fyne.NewMenuItem(lang.L("Remove from queue"), func() {
 			if p.OnRemoveFromQueue != nil {
@@ -339,15 +279,40 @@ func (p *PlayQueueList) ensureTracksMenu() {
 			}
 		})
 		remove.Icon = theme.ContentRemoveIcon()
-		menuItems = append(menuItems,
-			fyne.NewMenuItemSeparator(),
-			remove)
+		auxItems = append(auxItems, remove)
 	}
-
-	p.menu = widget.NewPopUpMenu(
-		fyne.NewMenu("", menuItems...),
-		fyne.CurrentApp().Driver().CanvasForObject(p),
-	)
+	p.menu = util.NewTrackContextMenu(!p.useNonQueueMenu, auxItems)
+	p.menu.OnPlay = func(shuffle bool) {
+		p.OnPlaySelection(p.selectedItems(), shuffle)
+	}
+	p.menu.OnAddToQueue = func(next bool) {
+		if next {
+			p.OnPlaySelectionNext(p.selectedItems())
+		} else {
+			p.OnAddToQueue(p.selectedItems())
+		}
+	}
+	p.menu.OnPlaySongRadio = func() {
+		p.OnPlaySongRadio(p.selectedTracks()[0])
+	}
+	p.menu.OnDownload = func() {
+		p.OnDownload(p.selectedTracks(), "Selected tracks")
+	}
+	p.menu.OnAddToPlaylist = func() {
+		p.OnAddToPlaylist(p.selectedItemIDs())
+	}
+	p.menu.OnShowInfo = func() {
+		p.OnShowTrackInfo(p.selectedTracks()[0])
+	}
+	p.menu.OnShare = func() {
+		p.OnShare(p.selectedTracks())
+	}
+	p.menu.OnSetRating = func(rating int) {
+		p.OnSetRating(p.selectedItemIDs(), rating)
+	}
+	p.menu.OnFavorite = func(fav bool) {
+		p.OnSetFavorite(p.selectedItemIDs(), fav)
+	}
 }
 
 func (p *PlayQueueList) ensureRadiosMenu() {
@@ -364,34 +329,6 @@ func (p *PlayQueueList) ensureRadiosMenu() {
 		fyne.NewMenu("", remove),
 		fyne.CurrentApp().Driver().CanvasForObject(p),
 	)
-}
-
-func (p *PlayQueueList) createQueueActionMenuItems() []*fyne.MenuItem {
-	play := fyne.NewMenuItem(lang.L("Play"), func() {
-		if p.OnPlaySelection != nil {
-			p.OnPlaySelection(p.selectedItems(), false)
-		}
-	})
-	play.Icon = theme.MediaPlayIcon()
-	shuffle := fyne.NewMenuItem(lang.L("Shuffle"), func() {
-		if p.OnPlaySelection != nil {
-			p.OnPlaySelection(p.selectedItems(), true)
-		}
-	})
-	shuffle.Icon = myTheme.ShuffleIcon
-	playNext := fyne.NewMenuItem(lang.L("Play next"), func() {
-		if p.OnPlaySelection != nil {
-			p.OnPlaySelectionNext(p.selectedItems())
-		}
-	})
-	playNext.Icon = myTheme.PlayNextIcon
-	add := fyne.NewMenuItem(lang.L("Add to queue"), func() {
-		if p.OnPlaySelection != nil {
-			p.OnAddToQueue(p.selectedItems())
-		}
-	})
-	add.Icon = theme.ContentAddIcon()
-	return []*fyne.MenuItem{play, shuffle, playNext, add}
 }
 
 func (t *PlayQueueList) selectedItems() []mediaprovider.MediaItem {

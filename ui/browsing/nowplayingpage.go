@@ -166,6 +166,18 @@ func NewNowPlayingPage(
 	a.relatedList.OnPlaySelectionNext = func(items []mediaprovider.MediaItem) {
 		a.pm.LoadItems(items, backend.InsertNext, false)
 	}
+	a.relatedList.OnPlaySongRadio = func(track *mediaprovider.Track) {
+		go func() {
+			if err := a.pm.PlaySimilarSongs(track.ID); err != nil {
+				fyne.Do(func() {
+					a.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play song radio"))
+				})
+			}
+		}()
+	}
+	a.relatedList.OnShowTrackInfo = func(track *mediaprovider.Track) {
+		a.contr.ShowTrackInfoDialog(track)
+	}
 	a.lyricsViewer = widgets.NewLyricsViewer()
 	a.statusLabel = widget.NewLabel(lang.L("Stopped"))
 

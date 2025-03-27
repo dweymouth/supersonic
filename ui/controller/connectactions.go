@@ -9,6 +9,8 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/widgets"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -179,4 +181,14 @@ func (c *Controller) ConnectPlayQueuelistActions(list *widgets.PlayQueueList) {
 	}
 	list.OnSetRating = c.SetTrackRatings
 	list.OnSetFavorite = c.SetTrackFavorites
+	list.OnPlaySongRadio = func(track *mediaprovider.Track) {
+		go func() {
+			if err := c.App.PlaybackManager.PlaySimilarSongs(track.ID); err != nil {
+				fyne.Do(func() {
+					c.ToastProvider.ShowErrorToast(lang.L("Unable to play song radio"))
+				})
+			}
+		}()
+	}
+	list.OnShowTrackInfo = c.ShowTrackInfoDialog
 }
