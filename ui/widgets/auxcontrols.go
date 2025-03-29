@@ -98,7 +98,12 @@ func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 	}
 }
 
+func (a *AuxControls) DisableCastButton() {
+	a.cast.Disable()
+}
+
 func (a *AuxControls) SetIsRemotePlayer(isRemote bool) {
+	a.cast.Enable()
 	a.cast.Highlighted = isRemote
 	a.cast.Refresh()
 }
@@ -115,8 +120,10 @@ func (a *AuxControls) OnShowPlayQueue(f func()) {
 	a.showQueue.OnTapped = f
 }
 
-func (a *AuxControls) OnShowCastMenu(f func()) {
-	a.cast.OnTapped = f
+func (a *AuxControls) OnShowCastMenu(f func(func())) {
+	a.cast.OnTapped = func() {
+		f(a.DisableCastButton)
+	}
 }
 
 type volumeSlider struct {

@@ -151,10 +151,11 @@ func (m *Controller) HaveModal() bool {
 	return m.haveModal
 }
 
-func (m *Controller) ShowCastMenu() {
+func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
 	rp := m.App.PlaybackManager.CurrentRemotePlayer()
 	devices := m.App.PlaybackManager.RemotePlayers()
 	local := fyne.NewMenuItem(lang.L("Local player"), func() {
+		onPendingPlayerChange()
 		go func() {
 			if err := m.App.PlaybackManager.SetRemotePlayer(nil); err != nil {
 				fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to disconnect from remote player") })
@@ -168,6 +169,7 @@ func (m *Controller) ShowCastMenu() {
 	for _, d := range devices {
 		_d := d
 		item := fyne.NewMenuItem(d.Name, func() {
+			onPendingPlayerChange()
 			go func() {
 				if err := m.App.PlaybackManager.SetRemotePlayer(&_d); err != nil {
 					fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to connect to " + _d.Name) })

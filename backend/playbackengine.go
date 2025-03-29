@@ -142,6 +142,10 @@ func (p *playbackEngine) registerPlayerCallbacks(pl player.BasePlayer) {
 }
 
 func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
+	// even if we don't successfully change players,
+	// make sure UI updates if needed (eg enabling cast button)
+	defer p.invokeNoArgCallbacks(p.onPlayerChange)
+
 	needToUnpause := false
 
 	stat := p.PlayerStatus()
