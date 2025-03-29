@@ -11,7 +11,7 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-func (s *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([]*mediaprovider.SearchResult, error) {
+func (j *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([]*mediaprovider.SearchResult, error) {
 	limit := maxResults / 3
 	var wg sync.WaitGroup
 	var albums []*jellyfin.Album
@@ -22,19 +22,19 @@ func (s *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 
 	wg.Add(1)
 	go func() {
-		albumResult, _ := s.client.Search(searchQuery, jellyfin.TypeAlbum, jellyfin.Paging{Limit: limit})
+		albumResult, _ := j.client.Search(searchQuery, jellyfin.TypeAlbum, jellyfin.Paging{Limit: limit})
 		albums = albumResult.Albums
 		wg.Done()
 	}()
 	wg.Add(1)
 	go func() {
-		artistResult, _ := s.client.Search(searchQuery, jellyfin.TypeArtist, jellyfin.Paging{Limit: limit})
+		artistResult, _ := j.client.Search(searchQuery, jellyfin.TypeArtist, jellyfin.Paging{Limit: limit})
 		artists = artistResult.Artists
 		wg.Done()
 	}()
 	wg.Add(1)
 	go func() {
-		songResult, _ := s.client.Search(searchQuery, jellyfin.TypeSong, jellyfin.Paging{Limit: limit})
+		songResult, _ := j.client.Search(searchQuery, jellyfin.TypeSong, jellyfin.Paging{Limit: limit})
 		songs = songResult.Songs
 		wg.Done()
 	}()
@@ -44,7 +44,7 @@ func (s *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 
 	wg.Add(1)
 	go func() {
-		p, e := s.client.GetPlaylists()
+		p, e := j.client.GetPlaylists()
 		if e == nil {
 			playlists = sharedutil.FilterSlice(p, func(p *jellyfin.Playlist) bool {
 				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(p.Name)), queryLowerWords)
@@ -55,7 +55,7 @@ func (s *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 
 	wg.Add(1)
 	go func() {
-		g, e := s.client.GetGenres(jellyfin.Paging{})
+		g, e := j.client.GetGenres(jellyfin.Paging{})
 		if e == nil {
 			genres = sharedutil.FilterSlice(g, func(g jellyfin.NameID) bool {
 				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(g.Name)), queryLowerWords)
@@ -66,13 +66,13 @@ func (s *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 
 	wg.Wait()
 
-	results := mergeResults(albums, artists, songs, playlists, genres)
+	results := j.mergeResults(albums, artists, songs, playlists, genres)
 	helpers.RankSearchResults(results, searchQuery, queryLowerWords)
 
 	return results, nil
 }
 
-func mergeResults(
+func (j *jellyfinMediaProvider) mergeResults(
 	albums []*jellyfin.Album,
 	artists []*jellyfin.Artist,
 	songs []*jellyfin.Song,
@@ -93,6 +93,7 @@ func mergeResults(
 			Name:       al.Name,
 			ArtistName: strings.Join(sharedutil.MapSlice(al.Artists, getArtistNames), ","),
 			Size:       al.ChildCount,
+			Item:       toAlbum(al),
 		})
 	}
 
@@ -103,6 +104,7 @@ func mergeResults(
 			CoverID: ar.ID,
 			Name:    ar.Name,
 			Size:    ar.AlbumCount,
+			Item:    toArtist(ar),
 		})
 	}
 
@@ -114,6 +116,7 @@ func mergeResults(
 			Name:       tr.Name,
 			ArtistName: strings.Join(sharedutil.MapSlice(tr.Artists, getArtistNames), ","),
 			Size:       int(tr.RunTimeTicks / 10_000_000),
+			Item:       toTrack(tr),
 		})
 	}
 
@@ -124,6 +127,7 @@ func mergeResults(
 			CoverID: pl.ID,
 			Name:    pl.Name,
 			Size:    pl.SongCount,
+			Item:    j.toPlaylist(pl),
 		})
 	}
 

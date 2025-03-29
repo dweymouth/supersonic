@@ -279,4 +279,8 @@ type SearchResult struct {
 
 	// Unset for ContentTypes Artist, Playlist, Genre, and RadioStation
 	ArtistName string
+
+	// The actual item corresponding to this search result
+	// *mediaprovider.Artist for ContentTypeArtist, etc
+	Item any
 }
