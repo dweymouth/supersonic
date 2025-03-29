@@ -171,10 +171,7 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	p.registerPlayerCallbacks(pl)
 
 	if needToUnpause {
-		p.PlayTrackAt(p.nowPlayingIdx)
-		// TODO - find a better way to wait until the players are ready
-		time.Sleep(200 * time.Millisecond)
-		p.SeekSeconds(p.pendingPlayerChangeTimePos)
+		p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeTimePos)
 		p.pendingPlayerChange = false
 	}
 	p.invokeNoArgCallbacks(p.onPlayerChange)
@@ -188,6 +185,10 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 }
 
 func (p *playbackEngine) PlayTrackAt(idx int) error {
+	return p.playTrackAt(idx, 0)
+}
+
+func (p *playbackEngine) playTrackAt(idx int, startTime float64) error {
 	if idx < 0 || idx >= len(p.playQueue) {
 		return errors.New("track index out of range")
 	}
@@ -195,7 +196,7 @@ func (p *playbackEngine) PlayTrackAt(idx int) error {
 	p.checkScrobble()
 	p.alreadyScrobbled = true
 	p.pendingTrackChangeNum = idx
-	err := p.setTrack(idx, false)
+	err := p.setTrack(idx, false, startTime)
 	return err
 }
 
@@ -475,7 +476,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 			p.Stop()
 		} else {
 			p.nowPlayingIdx -= 1 // will be incremented in newtrack callback from player
-			p.setTrack(newNowPlaying, false)
+			p.setTrack(newNowPlaying, false, 0)
 		}
 		// setNextTrack and onSongChange callbacks will be handled
 		// when we receive new track event from player
@@ -617,7 +618,7 @@ func (p *playbackEngine) setNextTrackAfterQueueUpdate() {
 	}
 }
 
-func (p *playbackEngine) setTrack(idx int, next bool) error {
+func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 	if urlP, ok := p.player.(player.URLPlayer); ok {
 		url := ""
 		var meta mediaprovider.MediaItemMetadata
@@ -637,7 +638,7 @@ func (p *playbackEngine) setTrack(idx int, next bool) error {
 		if next {
 			return urlP.SetNextFile(url, meta)
 		}
-		return urlP.PlayFile(url, meta)
+		return urlP.PlayFile(url, meta, startTime)
 	} else if trP, ok := p.player.(player.TrackPlayer); ok {
 		var track *mediaprovider.Track
 		if idx >= 0 {
@@ -649,13 +650,13 @@ func (p *playbackEngine) setTrack(idx int, next bool) error {
 		if next {
 			return trP.SetNextTrack(track)
 		}
-		return trP.PlayTrack(track)
+		return trP.PlayTrack(track, startTime)
 	}
 	panic("Unsupported player type")
 }
 
 func (p *playbackEngine) setNextTrack(idx int) error {
-	return p.setTrack(idx, true)
+	return p.setTrack(idx, true, 0)
 }
 
 // call BEFORE updating p.nowPlayingIdx

@@ -123,7 +123,7 @@ func (d *DLNAPlayer) GetVolume() int {
 	return vol
 }
 
-func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadata) error {
+func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadata, startTime float64) error {
 	d.ensureSetupProxy()
 
 	d.metaLock.Lock()
@@ -139,13 +139,23 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 	if err := d.playAVTransportMedia(&media); err != nil {
 		return err
 	}
+	if startTime > 0 {
+		// TODO: do something better than this!!
+		time.Sleep(2 * time.Second)
+		d.sendSeekCmd(startTime)
+	}
 	d.state = playing
-	d.setTrackChangeTimer(time.Duration(meta.Duration) * time.Second)
+	remainingDur := meta.Duration - int(startTime)
+	d.setTrackChangeTimer(time.Duration(remainingDur) * time.Second)
 	d.stopwatch.Reset()
 	d.stopwatch.Start()
-	d.lastStartTime = 0
+	d.lastStartTime = int(startTime)
 	d.InvokeOnPlaying()
 	d.InvokeOnTrackChange()
+	if startTime > 0 {
+		d.InvokeOnSeek()
+	}
+
 	return nil
 }
 
@@ -251,12 +261,9 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 		d.pendingSeek = true
 		d.pendingSeekSecs = secs
 	} else {
-		d.seeking = true
-		if err := d.avTransport.Seek(context.Background(), int(secs)); err != nil {
-			d.seeking = false
+		if err := d.sendSeekCmd(secs); err != nil {
 			return err
 		}
-		d.seeking = false
 	}
 
 	d.lastStartTime = int(secs)
@@ -271,6 +278,16 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 	}
 
 	d.InvokeOnSeek()
+	return nil
+}
+
+func (d *DLNAPlayer) sendSeekCmd(secs float64) error {
+	d.seeking = true
+	if err := d.avTransport.Seek(context.Background(), int(secs)); err != nil {
+		d.seeking = false
+		return err
+	}
+	d.seeking = false
 	return nil
 }
 

@@ -4,13 +4,13 @@ import "github.com/dweymouth/supersonic/backend/mediaprovider"
 
 type URLPlayer interface {
 	BasePlayer
-	PlayFile(url string, metadata mediaprovider.MediaItemMetadata) error
+	PlayFile(url string, metadata mediaprovider.MediaItemMetadata, startTime float64) error
 	SetNextFile(url string, metadata mediaprovider.MediaItemMetadata) error
 }
 
 type TrackPlayer interface {
 	BasePlayer
-	PlayTrack(track *mediaprovider.Track) error
+	PlayTrack(track *mediaprovider.Track, startTime float64) error
 	SetNextTrack(track *mediaprovider.Track) error
 }
 
