@@ -496,7 +496,7 @@ func (p *Player) eventHandler(ctx context.Context) {
 			}
 			switch e.Event_Id {
 			case mpv.EVENT_PLAYBACK_RESTART:
-				p.seeking = false
+				fallthrough
 			case mpv.EVENT_SEEK:
 				p.seeking = false
 				p.InvokeOnSeek()
