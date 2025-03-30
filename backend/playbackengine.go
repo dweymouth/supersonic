@@ -140,6 +140,14 @@ func (p *playbackEngine) registerPlayerCallbacks(pl player.BasePlayer) {
 	})
 }
 
+func (p *playbackEngine) unregisterPlayerCallbacks(pl player.BasePlayer) {
+	pl.OnPaused(nil)
+	pl.OnPlaying(nil)
+	pl.OnStopped(nil)
+	pl.OnSeek(nil)
+	pl.OnTrackChange(nil)
+}
+
 func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	// even if we don't successfully change players,
 	// make sure UI updates if needed (eg enabling cast button)
@@ -162,6 +170,7 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 		p.pendingPlayerChangeTimePos = stat.TimePos
 		p.pendingPlayerChange = true
 	}
+	p.unregisterPlayerCallbacks(p.player)
 	if err := p.player.Stop(true); err != nil {
 		log.Printf("failed to stop player: %v", err)
 	}

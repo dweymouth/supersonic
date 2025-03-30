@@ -156,8 +156,10 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 	key := d.addURLToProxy(urlstr)
 
 	media := avtransport.MediaItem{
-		URL:   d.urlForItem(key),
-		Title: meta.Name,
+		URL:         d.urlForItem(key),
+		Title:       meta.Name,
+		ContentType: meta.MIMEType,
+		Seekable:    true,
 	}
 
 	if err := d.playAVTransportMedia(&media); err != nil {
@@ -224,8 +226,10 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 
 		key := d.addURLToProxy(url)
 		media = &avtransport.MediaItem{
-			URL:   d.urlForItem(key),
-			Title: meta.Name,
+			URL:         d.urlForItem(key),
+			ContentType: meta.MIMEType,
+			Title:       meta.Name,
+			Seekable:    true,
 		}
 	}
 
