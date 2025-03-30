@@ -154,7 +154,7 @@ func (m *Controller) HaveModal() bool {
 func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
 	rp := m.App.PlaybackManager.CurrentRemotePlayer()
 	devices := m.App.PlaybackManager.RemotePlayers()
-	local := fyne.NewMenuItem(lang.L("Local player"), func() {
+	local := fyne.NewMenuItem(lang.L("This computer"), func() {
 		onPendingPlayerChange()
 		go func() {
 			if err := m.App.PlaybackManager.SetRemotePlayer(nil); err != nil {

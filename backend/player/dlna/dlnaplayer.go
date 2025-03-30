@@ -41,6 +41,8 @@ type proxyMapEntry struct {
 type DLNAPlayer struct {
 	player.BasePlayerCallbackImpl
 
+	destroyed bool
+
 	avTransport   *avtransport.Client
 	renderControl *renderingcontrol.Client
 
@@ -51,8 +53,13 @@ type DLNAPlayer struct {
 	curTrackMeta  mediaprovider.MediaItemMetadata
 	nextTrackMeta mediaprovider.MediaItemMetadata
 
+	// if true, report playback time 00:00
+	// pending time sync with player after beginning playback
+	pendingPlayStart bool
+	// start playback position in seconds of the last seek/time sync
 	lastStartTime int
-	stopwatch     util.Stopwatch
+	// how long the track has been playing since last time sync
+	stopwatch util.Stopwatch
 
 	proxyServer *http.Server
 	proxyActive atomic.Bool
@@ -139,10 +146,22 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 	if err := d.playAVTransportMedia(&media); err != nil {
 		return err
 	}
+	d.pendingPlayStart = true
 	if startTime > 0 {
 		// TODO: do something better than this!!
 		time.Sleep(2 * time.Second)
-		d.sendSeekCmd(startTime)
+		if !d.destroyed {
+			d.sendSeekCmd(startTime)
+		}
+		d.pendingPlayStart = false
+	} else {
+		go func() {
+			time.Sleep(2 * time.Second)
+			if !d.destroyed {
+				d.syncPlaybackTime()
+			}
+			d.pendingPlayStart = false
+		}()
 	}
 	d.state = playing
 	remainingDur := meta.Duration - int(startTime)
@@ -278,6 +297,13 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 	}
 
 	d.InvokeOnSeek()
+
+	go func() {
+		time.Sleep(4 * time.Second)
+		if !d.destroyed {
+			d.syncPlaybackTime()
+		}
+	}()
 	return nil
 }
 
@@ -303,9 +329,13 @@ func (d *DLNAPlayer) GetStatus() player.Status {
 		state = player.Paused
 	}
 
+	var timePos float64
+	if !d.pendingPlayStart {
+		timePos = d.curPlayPos().Seconds()
+	}
 	return player.Status{
 		State:    state,
-		TimePos:  d.curPlayPos().Seconds(),
+		TimePos:  timePos,
 		Duration: float64(d.curTrackMeta.Duration),
 	}
 }
@@ -315,8 +345,22 @@ func (d *DLNAPlayer) curPlayPos() time.Duration {
 }
 
 func (d *DLNAPlayer) Destroy() {
+	d.destroyed = true
 	if d.proxyServer != nil {
 		go d.proxyServer.Shutdown(context.Background())
+	}
+}
+
+func (d *DLNAPlayer) syncPlaybackTime() {
+	start := time.Now()
+	if pos, err := d.avTransport.GetPositionInfo(context.Background()); err == nil {
+		d.lastStartTime = int(pos.RelTime.Seconds() + (time.Since(start) / 2).Seconds())
+		d.stopwatch.Reset()
+		if d.state == playing {
+			d.stopwatch.Start()
+		}
+		d.setTrackChangeTimer(time.Duration(d.curTrackMeta.Duration-d.lastStartTime) * time.Second)
+		d.InvokeOnSeek()
 	}
 }
 
@@ -422,6 +466,13 @@ func (d *DLNAPlayer) handleOnTrackChange() {
 		d.stopwatch.Start()
 		d.setTrackChangeTimer(nextTrackChange)
 		d.InvokeOnTrackChange()
+
+		go func() {
+			time.Sleep(5 * time.Second)
+			if !d.destroyed {
+				d.syncPlaybackTime()
+			}
+		}()
 	}
 }
 
