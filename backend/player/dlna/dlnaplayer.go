@@ -41,7 +41,8 @@ type proxyMapEntry struct {
 type DLNAPlayer struct {
 	player.BasePlayerCallbackImpl
 
-	destroyed bool
+	destroyed     bool
+	cancelRequest context.CancelFunc
 
 	avTransport   *avtransport.Client
 	renderControl *renderingcontrol.Client
@@ -122,15 +123,31 @@ func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
 }
 
 func (d *DLNAPlayer) SetVolume(vol int) error {
-	return d.renderControl.SetVolume(context.Background(), vol)
+	if d.destroyed {
+		return nil
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	d.cancelRequest = cancel
+	defer cancel()
+	return d.renderControl.SetVolume(ctx, vol)
 }
 
 func (d *DLNAPlayer) GetVolume() int {
-	vol, _ := d.renderControl.GetVolume(context.Background())
+	if d.destroyed {
+		return 0
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	d.cancelRequest = cancel
+	defer cancel()
+	vol, _ := d.renderControl.GetVolume(ctx)
 	return vol
 }
 
 func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadata, startTime float64) error {
+	if d.destroyed {
+		return nil
+	}
+
 	d.ensureSetupProxy()
 
 	d.metaLock.Lock()
@@ -179,17 +196,25 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 }
 
 func (d *DLNAPlayer) playAVTransportMedia(media *avtransport.MediaItem) error {
-	err := d.avTransport.SetAVTransportMedia(context.Background(), media)
+	ctx, cancel := context.WithCancel(context.Background())
+	d.cancelRequest = cancel
+	defer cancel()
+
+	err := d.avTransport.SetAVTransportMedia(ctx, media)
 	if err != nil {
 		return err
 	}
-	if err := d.avTransport.Play(context.Background()); err != nil {
+	if err := d.avTransport.Play(ctx); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadata) error {
+	if d.destroyed {
+		return nil
+	}
+
 	var media *avtransport.MediaItem
 	d.metaLock.Lock()
 	d.nextTrackMeta = meta
@@ -203,7 +228,11 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 			Title: meta.Name,
 		}
 	}
-	err := d.avTransport.SetNextAVTransportMedia(context.Background(), media)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	d.cancelRequest = cancel
+	defer cancel()
+	err := d.avTransport.SetNextAVTransportMedia(ctx, media)
 	if err != nil {
 		d.metaLock.Lock()
 		d.failedToSetNext = true
@@ -214,19 +243,23 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 }
 
 func (d *DLNAPlayer) Continue() error {
-	if d.state == playing {
+	if d.destroyed || d.state == playing {
 		return nil
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	d.cancelRequest = cancel
+	defer cancel()
+
 	if d.pendingSeek {
 		d.pendingSeek = false
-		err := d.avTransport.Seek(context.Background(), int(d.pendingSeekSecs))
+		err := d.avTransport.Seek(ctx, int(d.pendingSeekSecs))
 		if err != nil {
 			return err
 		}
 	}
 
-	if err := d.avTransport.Play(context.Background()); err != nil {
+	if err := d.avTransport.Play(ctx); err != nil {
 		return err
 	}
 	d.metaLock.Lock()
@@ -240,11 +273,14 @@ func (d *DLNAPlayer) Continue() error {
 }
 
 func (d *DLNAPlayer) Pause() error {
-	if d.state != playing {
+	if d.destroyed || d.state != playing {
 		return nil
 	}
 
-	if err := d.avTransport.Pause(context.Background()); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	d.cancelRequest = cancel
+	defer cancel()
+	if err := d.avTransport.Pause(ctx); err != nil {
 		return err
 	}
 	d.setTrackChangeTimer(0)
@@ -254,12 +290,29 @@ func (d *DLNAPlayer) Pause() error {
 	return nil
 }
 
-func (d *DLNAPlayer) Stop() error {
+func (d *DLNAPlayer) Stop(force bool) error {
+	if d.destroyed {
+		return nil
+	}
+	if force && d.cancelRequest != nil {
+		d.cancelRequest()
+	}
+
 	switch d.state {
 	case stopped:
 		return nil
 	case playing:
-		if err := d.avTransport.Pause(context.Background()); err != nil {
+		var ctx context.Context
+		var cancel context.CancelFunc
+		if force {
+			ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+		} else {
+			ctx, cancel = context.WithCancel(context.Background())
+		}
+		d.cancelRequest = cancel
+		defer cancel()
+
+		if err := d.avTransport.Pause(ctx); err != nil {
 			return err
 		}
 		fallthrough
@@ -276,6 +329,10 @@ func (d *DLNAPlayer) Stop() error {
 }
 
 func (d *DLNAPlayer) SeekSeconds(secs float64) error {
+	if d.destroyed {
+		return nil
+	}
+
 	if d.state == paused {
 		d.pendingSeek = true
 		d.pendingSeekSecs = secs
@@ -309,7 +366,9 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 
 func (d *DLNAPlayer) sendSeekCmd(secs float64) error {
 	d.seeking = true
-	if err := d.avTransport.Seek(context.Background(), int(secs)); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := d.avTransport.Seek(ctx, int(secs)); err != nil {
 		d.seeking = false
 		return err
 	}
@@ -346,8 +405,16 @@ func (d *DLNAPlayer) curPlayPos() time.Duration {
 
 func (d *DLNAPlayer) Destroy() {
 	d.destroyed = true
+	d.setTrackChangeTimer(0)
+	if d.cancelRequest != nil {
+		d.cancelRequest()
+	}
+
 	if d.proxyServer != nil {
-		go d.proxyServer.Shutdown(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		go d.proxyServer.Shutdown(ctx)
+		d.proxyServer = nil
 	}
 }
 

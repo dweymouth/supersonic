@@ -1,6 +1,8 @@
 package player
 
-import "github.com/dweymouth/supersonic/backend/mediaprovider"
+import (
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
+)
 
 type URLPlayer interface {
 	BasePlayer
@@ -17,7 +19,7 @@ type TrackPlayer interface {
 type BasePlayer interface {
 	Continue() error
 	Pause() error
-	Stop() error
+	Stop(force bool) error
 
 	SeekSeconds(secs float64) error
 	IsSeeking() bool

@@ -68,7 +68,7 @@ func (j *JukeboxPlayer) Pause() error {
 	return nil
 }
 
-func (j *JukeboxPlayer) Stop() error {
+func (j *JukeboxPlayer) Stop(_ bool) error {
 	if j.state == stopped {
 		return nil
 	}

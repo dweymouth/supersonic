@@ -139,6 +139,7 @@ func (p *PlaybackManager) CurrentRemotePlayer() *RemotePlaybackDevice {
 }
 
 func (p *PlaybackManager) SetRemotePlayer(rp *RemotePlaybackDevice) error {
+	p.cmdQueue.Clear()
 	if rp == nil {
 		if err := p.engine.SetPlayer(p.localPlayer); err != nil {
 			return err

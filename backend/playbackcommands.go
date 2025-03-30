@@ -61,6 +61,12 @@ func (c *playbackCommandQueue) C() <-chan playbackCommand {
 	return c.nextChan
 }
 
+func (c *playbackCommandQueue) Clear() {
+	c.mutex.Lock()
+	c.queue = nil
+	c.mutex.Unlock()
+}
+
 func (c *playbackCommandQueue) Stop() {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdContinue, cmdPause, cmdStop},
 		playbackCommand{Type: cmdStop})

@@ -165,7 +165,7 @@ func (p *Player) PlayFile(url string, _ mediaprovider.MediaItemMetadata, startTi
 }
 
 // Stops playback and clears the play queue.
-func (p *Player) Stop() error {
+func (p *Player) Stop(_ bool) error {
 	if !p.initialized {
 		return ErrUnitialized
 	}

@@ -3,7 +3,6 @@ package backend
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -157,14 +156,14 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	case player.Stopped:
 		// nothing
 	case player.Playing:
-		if err := p.Pause(); err != nil {
-			return fmt.Errorf("failed to pause: %v", err)
-		}
 		needToUnpause = true
 		fallthrough
 	case player.Paused:
 		p.pendingPlayerChangeTimePos = stat.TimePos
 		p.pendingPlayerChange = true
+	}
+	if err := p.player.Stop(true); err != nil {
+		log.Printf("failed to stop player: %v", err)
 	}
 
 	oldVol := p.player.GetVolume()
@@ -293,7 +292,7 @@ func (p *playbackEngine) IsSeeking() bool {
 }
 
 func (p *playbackEngine) Stop() error {
-	return p.player.Stop()
+	return p.player.Stop(false)
 }
 
 func (p *playbackEngine) Pause() error {
@@ -332,7 +331,7 @@ func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMo
 
 func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
 	if insertQueueMode == Replace {
-		p.player.Stop()
+		p.player.Stop(false)
 		p.nowPlayingIdx = -1
 		p.playQueue = nil
 	}
@@ -358,7 +357,7 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 
 func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, insertMode InsertQueueMode) {
 	if insertMode == Replace {
-		p.player.Stop()
+		p.player.Stop(false)
 		p.nowPlayingIdx = -1
 		p.playQueue = nil
 	}
@@ -384,7 +383,7 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 // Stop playback and clear the play queue.
 func (p *playbackEngine) StopAndClearPlayQueue() {
 	changed := len(p.playQueue) > 0
-	p.player.Stop()
+	p.player.Stop(false)
 	p.playQueue = nil
 	p.nowPlayingIdx = -1
 	if changed {
