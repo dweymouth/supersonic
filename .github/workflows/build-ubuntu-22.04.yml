@@ -23,9 +23,6 @@ jobs:
     - name: Install dependencies
       run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev
 
-    - name: Build
-      run: go build
-
     - name: Install Fyne tool
       run: go install fyne.io/fyne/v2/cmd/fyne@latest
 
