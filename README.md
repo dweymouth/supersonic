@@ -55,21 +55,50 @@ Supersonic supports any music server with a Subsonic (or OpenSubsonic) API, or J
 * [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs; repeat one/all)
 * [x] Lyrics support
 * [x] Internet radio station support (Subsonic)
+* [x] Cast to uPnP/DLNA devices (likely planned)
 * [ ] Server jukebox control (planned)
 * [ ] Browse by folders (planned)
-* [ ] Cast to uPnP/DLNA devices (likely planned)
 * [ ] Offline mode (eventually planned)
 * [ ] iOS/Android support (maybe eventually planned)
 
 ## Installation
 
-On Linux, Supersonic is [available as a Flatpak](https://flathub.org/apps/details/io.github.dweymouth.supersonic)! (Thank you @anarcat!) If you prefer to directly install the release build, or build from source, read below.
+Platform-specific installation instructions are listed below. In addition to the most recent stable release, you can also download the latest build from the `main` branch via the [Actions](https://github.com/dweymouth/supersonic/actions) tab to get unreleased features and bug fixes (you must be signed in to Github to do this). If you prefer to build from source, or are not running one of these OSes, then see the build instructions for your platform in the next section.
 
-If you are running **Windows**, **Mac OS**, or a **Debian**-based Linux distro, download the [latest release](https://github.com/dweymouth/supersonic/releases) for your operating system. You can also download the latest build from the `main` branch via the [Actions](https://github.com/dweymouth/supersonic/actions) tab to get unreleased features and bug fixes (you must be signed in to Github to do this). If you prefer to build from source, or are not running one of these OSes, then see the build instructions for your platform below.
+### Linux
+
+**Packages:** On Linux, Supersonic is [available as a Flatpak](https://flathub.org/apps/details/io.github.dweymouth.supersonic). (Thank you @anarcat!) Third-party packages are also available for Arch and Nix OS.
+
+**AppImage:** On the [latest release](https://github.com/dweymouth/supersonic/releases) page, you can download an AppImage package which supports any OS that can run AppImages. The MPV library is bundled in the AppImage.
+
+**(Debian) .tar.xz:** The.tar.xz builds from the Releases page support Debian-based distros. You **must** have libmpv installed on your system, and choose the correct release build (libmpv2 or libmpv1) based on which is available in your distro's package manager. On apt-based systems, run `sudo apt install libmpv1` (or libmpv2) if it is not already installed. To install the Linux release build, after ensuring the required libmpv is installed, extract the .tar.xz bundle and run `make user-install` or `sudo make install`.
+
+### Windows
+
+Download the [latest release](https://github.com/dweymouth/supersonic/releases). You can choose between the installer, or a standalone zip file which can be extracted and run without requiring system installation.
+
+### Mac OS
+
+Supersonic is available on Homebrew via a custom brew tap, or via downloading the .app bundle from the Releases page.
+
+To install Supersonic with Homebrew run:
+
+```sh
+brew tap supersonic-app/homebrew
+brew install --no-quarantine supersonic
+```
+
+The `--no-quarantine` flag is important because Supersonic is distributed without having been [notarized](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution), and therefore will not run without this.
+
+You should also include it when upgrading in future:
+
+```
+brew upgrade --no-quarantine supersonic
+```
+
+To install the downloaded .app bundle from the [Releases page](https://github.com/dweymouth/supersonic/releases), unzip and then drag Supersonic.app to the Applications folder.
 
 **Apple Silicon (M1/M2) Macs:** You will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `sudo xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
-
-**If you are on Linux** and using the build from the Releases page, you must have libmpv installed on your system, and choose the correct release build (libmpv2 or libmpv1) based on which is available in your distro's package manager. On apt-based systems, run `sudo apt install libmpv1` (or libmpv2) if it is not already installed. The Windows and Mac release builds bundle the mpv dependencies. To install the Linux release build, after ensuring the required libmpv is installed, extract the .tar.xz bundle and run `make user-install` or `sudo make install`.
 
 ## Build instructions (Linux)
 
