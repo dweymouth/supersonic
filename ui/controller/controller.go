@@ -155,6 +155,9 @@ func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
 	rp := m.App.PlaybackManager.CurrentRemotePlayer()
 	devices := m.App.PlaybackManager.RemotePlayers()
 	local := fyne.NewMenuItem(lang.L("This computer"), func() {
+		if rp == nil {
+			return // no-op. already not casting
+		}
 		onPendingPlayerChange()
 		go func() {
 			if err := m.App.PlaybackManager.SetRemotePlayer(nil); err != nil {
@@ -168,7 +171,11 @@ func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
 	menu := fyne.NewMenu("", local)
 	for _, d := range devices {
 		_d := d
+		isCurrent := rp != nil && _d.URL == rp.URL
 		item := fyne.NewMenuItem(d.Name, func() {
+			if isCurrent {
+				return // no-op.
+			}
 			onPendingPlayerChange()
 			go func() {
 				if err := m.App.PlaybackManager.SetRemotePlayer(&_d); err != nil {
@@ -177,7 +184,7 @@ func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
 			}()
 		})
 		item.Icon = myTheme.CastIcon
-		item.Checked = rp != nil && _d.URL == rp.URL
+		item.Checked = isCurrent
 		menu.Items = append(menu.Items, item)
 	}
 	pop := widget.NewPopUpMenu(menu, m.MainWindow.Canvas())

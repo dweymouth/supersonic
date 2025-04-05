@@ -54,7 +54,7 @@ func NewMPRISHandler(playerName string, pm *PlaybackManager) *MPRISHandler {
 
 	pm.OnSeek(func() {
 		if m.connErr == nil {
-			pos := secondsToMicroseconds(pm.PlayerStatus().TimePos)
+			pos := secondsToMicroseconds(pm.PlaybackStatus().TimePos)
 			m.evt.Player.OnSeek(pos)
 		}
 	})
@@ -160,7 +160,7 @@ func (m *MPRISHandler) Previous() error {
 }
 
 func (m *MPRISHandler) Pause() error {
-	if m.pm.PlayerStatus().State == player.Playing {
+	if m.pm.PlaybackStatus().State == player.Playing {
 		m.pm.PlayPause()
 	}
 	return nil
@@ -177,7 +177,7 @@ func (m *MPRISHandler) Stop() error {
 }
 
 func (m *MPRISHandler) Play() error {
-	switch m.pm.PlayerStatus().State {
+	switch m.pm.PlaybackStatus().State {
 	case player.Paused:
 		m.pm.PlayPause()
 	case player.Stopped:
@@ -204,7 +204,7 @@ func (m *MPRISHandler) OpenUri(uri string) error {
 }
 
 func (m *MPRISHandler) PlaybackStatus() (types.PlaybackStatus, error) {
-	switch m.pm.PlayerStatus().State {
+	switch m.pm.PlaybackStatus().State {
 	case player.Playing:
 		return types.PlaybackStatusPlaying, nil
 	case player.Paused:
@@ -254,7 +254,7 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 	if m.curTrackPath != "" {
 		trackObjPath = m.curTrackPath
 	}
-	status := m.pm.PlayerStatus()
+	status := m.pm.PlaybackStatus()
 
 	var meta mediaprovider.MediaItemMetadata
 	// metadata that can come only from tracks
@@ -307,7 +307,7 @@ func (m *MPRISHandler) SetVolume(v float64) error {
 }
 
 func (m *MPRISHandler) Position() (int64, error) {
-	return int64(secondsToMicroseconds(m.pm.PlayerStatus().TimePos)), nil
+	return int64(secondsToMicroseconds(m.pm.PlaybackStatus().TimePos)), nil
 }
 
 func (m *MPRISHandler) MinimumRate() (float64, error) {

@@ -84,17 +84,17 @@ func InitMPMediaHandler(playbackManager *PlaybackManager, artURLLookup func(trac
 	})
 
 	mp.playbackManager.OnSeek(func() {
-		C.update_os_now_playing_info_position(C.double(mp.playbackManager.PlayerStatus().TimePos))
+		C.update_os_now_playing_info_position(C.double(mp.playbackManager.PlaybackStatus().TimePos))
 	})
 
 	mp.playbackManager.OnPlaying(func() {
 		C.set_os_playback_state_playing()
-		C.update_os_now_playing_info_position(C.double(mp.playbackManager.PlayerStatus().TimePos))
+		C.update_os_now_playing_info_position(C.double(mp.playbackManager.PlaybackStatus().TimePos))
 	})
 
 	mp.playbackManager.OnPaused(func() {
 		C.set_os_playback_state_paused()
-		C.update_os_now_playing_info_position(C.double(mp.playbackManager.PlayerStatus().TimePos))
+		C.update_os_now_playing_info_position(C.double(mp.playbackManager.PlaybackStatus().TimePos))
 	})
 
 	return nil

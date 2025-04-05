@@ -26,7 +26,7 @@ type serializedSavedPlayQueue struct {
 // If the provided CanSavePlayQueue server is non-nil, it will also save to the server.
 func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, server mediaprovider.CanSavePlayQueue) error {
 	queue := pm.GetPlayQueue()
-	stats := pm.PlayerStatus()
+	stats := pm.PlaybackStatus()
 	trackIdx := pm.NowPlayingIndex()
 
 	trackIDs := make([]string, 0, len(queue))

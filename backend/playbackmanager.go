@@ -85,7 +85,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			return
 		}
 		// workaround for https://github.com/dweymouth/supersonic/issues/483 (see above comment)
-		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlayerStatus().State == player.Playing {
+		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlaybackStatus().State == player.Playing {
 			p.lastPlayTime = 0
 			go func() {
 				time.Sleep(300 * time.Millisecond)
@@ -476,8 +476,8 @@ func (p *PlaybackManager) IsAutoplay() bool {
 	return p.autoplay
 }
 
-func (p *PlaybackManager) PlayerStatus() player.Status {
-	return p.engine.PlayerStatus()
+func (p *PlaybackManager) PlaybackStatus() PlaybackStatus {
+	return p.engine.PlaybackStatus()
 }
 
 func (p *PlaybackManager) SetVolume(vol int) {
@@ -510,7 +510,7 @@ func (p *PlaybackManager) SeekSeconds(sec float64) {
 
 // Seek by given relative position in the current track by seconds.
 func (p *PlaybackManager) SeekBySeconds(sec float64) {
-	status := p.engine.PlayerStatus()
+	status := p.engine.PlaybackStatus()
 	target := status.TimePos + sec
 	if target < 0 {
 		target = 0
@@ -548,7 +548,7 @@ func (p *PlaybackManager) Continue() {
 }
 
 func (p *PlaybackManager) PlayPause() {
-	switch p.engine.PlayerStatus().State {
+	switch p.engine.PlaybackStatus().State {
 	case player.Playing:
 		p.Pause()
 	case player.Paused:

@@ -40,6 +40,14 @@ const (
 	LoopOne
 )
 
+type PlaybackState = player.State
+
+type PlaybackStatus struct {
+	State    PlaybackState
+	TimePos  float64
+	Duration float64
+}
+
 type playbackEngine struct {
 	ctx           context.Context
 	cancelPollPos context.CancelFunc
@@ -65,8 +73,8 @@ type playbackEngine struct {
 	// and reset this to -1
 	pendingTrackChangeNum int
 
-	pendingPlayerChange        bool
-	pendingPlayerChangeTimePos float64
+	pendingPlayerChange       bool
+	pendingPlayerChangeStatus player.Status
 
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
@@ -155,7 +163,7 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 
 	needToUnpause := false
 
-	stat := p.PlayerStatus()
+	stat := p.CurrentPlayer().GetStatus()
 	if p.pendingPlayerChange {
 		stat.State = player.Paused
 	}
@@ -165,9 +173,10 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 		// nothing
 	case player.Playing:
 		needToUnpause = true
+		p.stopPollTimePos()
 		fallthrough
 	case player.Paused:
-		p.pendingPlayerChangeTimePos = stat.TimePos
+		p.pendingPlayerChangeStatus = stat
 		p.pendingPlayerChange = true
 	}
 	p.unregisterPlayerCallbacks(p.player)
@@ -183,7 +192,7 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	p.registerPlayerCallbacks(pl)
 
 	if needToUnpause {
-		p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeTimePos)
+		p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeStatus.TimePos)
 		p.pendingPlayerChange = false
 	}
 	p.invokeNoArgCallbacks(p.onPlayerChange)
@@ -239,8 +248,16 @@ func (p *playbackEngine) GetLoopMode() LoopMode {
 	return p.loopMode
 }
 
-func (p *playbackEngine) PlayerStatus() player.Status {
-	return p.player.GetStatus()
+func (p *playbackEngine) PlaybackStatus() PlaybackStatus {
+	stat := p.pendingPlayerChangeStatus
+	if !p.pendingPlayerChange {
+		stat = p.CurrentPlayer().GetStatus()
+	}
+	return PlaybackStatus{
+		State:    stat.State,
+		TimePos:  stat.TimePos,
+		Duration: stat.Duration,
+	}
 }
 
 func (p *playbackEngine) SetVolume(vol int) error {
@@ -259,14 +276,14 @@ func (p *playbackEngine) CurrentPlayer() player.BasePlayer {
 }
 
 func (p *playbackEngine) SeekNext() error {
-	if p.PlayerStatus().State == player.Stopped {
+	if p.PlaybackStatus().State == player.Stopped {
 		return nil
 	}
 	return p.PlayTrackAt(p.nowPlayingIdx + 1)
 }
 
 func (p *playbackEngine) SeekBackOrPrevious() error {
-	if p.nowPlayingIdx == 0 || p.PlayerStatus().TimePos > 3 {
+	if p.nowPlayingIdx == 0 || p.PlaybackStatus().TimePos > 3 {
 		return p.player.SeekSeconds(0)
 	}
 	return p.PlayTrackAt(p.nowPlayingIdx - 1)
@@ -274,7 +291,7 @@ func (p *playbackEngine) SeekBackOrPrevious() error {
 
 func (p *playbackEngine) SeekFwdBackN(n int) error {
 	idx := p.nowPlayingIdx
-	if n < 0 && p.PlayerStatus().TimePos > 3 {
+	if n < 0 && p.PlaybackStatus().TimePos > 3 {
 		n += 1 // first seek back is just seek to beginning of current
 	}
 	if n == 0 || (idx == 0 && n < 0) {
@@ -310,15 +327,11 @@ func (p *playbackEngine) Pause() error {
 
 func (p *playbackEngine) Continue() error {
 	if p.pendingPlayerChange {
-		err := p.PlayTrackAt(p.nowPlayingIdx)
-		if p.pendingPlayerChangeTimePos != 0 {
-			p.SeekSeconds(p.pendingPlayerChangeTimePos)
-		}
 		p.pendingPlayerChange = false
-		return err
+		return p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeStatus.TimePos)
 	}
 
-	if p.PlayerStatus().State == player.Stopped {
+	if p.PlaybackStatus().State == player.Stopped {
 		return p.PlayTrackAt(0)
 	}
 	return p.player.Continue()
@@ -548,7 +561,7 @@ func (p *playbackEngine) handleOnTrackChange() {
 		p.checkScrobble()
 	}
 
-	if p.PlayerStatus().State == player.Playing {
+	if p.PlaybackStatus().State == player.Playing {
 		p.playTimeStopwatch.Start()
 	}
 	if p.pendingTrackChangeNum < 0 && (p.wasStopped || p.loopMode != LoopOne) {
@@ -785,7 +798,7 @@ func (p *playbackEngine) doUpdateTimePos(seeked bool) {
 	if p.callbacksDisabled {
 		return
 	}
-	s := p.PlayerStatus()
+	s := p.PlaybackStatus()
 	if s.TimePos > p.latestTrackPosition {
 		p.latestTrackPosition = s.TimePos
 	}
