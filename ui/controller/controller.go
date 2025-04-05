@@ -151,6 +151,50 @@ func (m *Controller) HaveModal() bool {
 	return m.haveModal
 }
 
+func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
+	rp := m.App.PlaybackManager.CurrentRemotePlayer()
+	devices := m.App.PlaybackManager.RemotePlayers()
+	local := fyne.NewMenuItem(lang.L("This computer"), func() {
+		if rp == nil {
+			return // no-op. already not casting
+		}
+		onPendingPlayerChange()
+		go func() {
+			if err := m.App.PlaybackManager.SetRemotePlayer(nil); err != nil {
+				fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to disconnect from remote player") })
+			}
+		}()
+	})
+	local.Icon = theme.ComputerIcon()
+	local.Checked = rp == nil
+
+	menu := fyne.NewMenu("", local)
+	for _, d := range devices {
+		_d := d
+		isCurrent := rp != nil && _d.URL == rp.URL
+		item := fyne.NewMenuItem(d.Name, func() {
+			if isCurrent {
+				return // no-op.
+			}
+			onPendingPlayerChange()
+			go func() {
+				if err := m.App.PlaybackManager.SetRemotePlayer(&_d); err != nil {
+					fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to connect to " + _d.Name) })
+				}
+			}()
+		})
+		item.Icon = myTheme.CastIcon
+		item.Checked = isCurrent
+		menu.Items = append(menu.Items, item)
+	}
+	pop := widget.NewPopUpMenu(menu, m.MainWindow.Canvas())
+	canvasSize := m.MainWindow.Canvas().Size()
+	pop.ShowAtPosition(fyne.NewPos(
+		canvasSize.Width-pop.MinSize().Width-10,
+		canvasSize.Height-pop.MinSize().Height-100,
+	))
+}
+
 func (m *Controller) ShowPopUpPlayQueue() {
 	m.popUpQueueMutex.Lock()
 	if m.popUpQueue == nil {
@@ -270,6 +314,7 @@ func (c *Controller) ShowAboutDialog() {
 }
 
 func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map[string]string) {
+
 	devs, err := c.App.LocalPlayer.ListAudioDevices()
 	if err != nil {
 		log.Printf("error listing audio devices: %v", err)
@@ -282,6 +327,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	_, canSavePlayQueue := c.App.ServerManager.Server.(mediaprovider.CanSavePlayQueue)
 	isLocalPlayer := isEqualizerPlayer
 	bands := c.App.LocalPlayer.Equalizer().BandFrequencies()
+
 	dlg := dialogs.NewSettingsDialog(c.App.Config,
 		devs, themeFiles, bands,
 		c.App.ServerManager.Server.ClientDecidesScrobble(),
@@ -317,6 +363,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	c.ClosePopUpOnEscape(pop)
 	c.haveModal = true
 	pop.Show()
+
 }
 
 func (c *Controller) doModalClosed() {

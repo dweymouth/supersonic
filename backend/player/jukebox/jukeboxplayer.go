@@ -68,7 +68,7 @@ func (j *JukeboxPlayer) Pause() error {
 	return nil
 }
 
-func (j *JukeboxPlayer) Stop() error {
+func (j *JukeboxPlayer) Stop(_ bool) error {
 	if j.state == stopped {
 		return nil
 	}
@@ -80,7 +80,7 @@ func (j *JukeboxPlayer) Stop() error {
 	return nil
 }
 
-func (j *JukeboxPlayer) PlayTrack(track *mediaprovider.Track) error {
+func (j *JukeboxPlayer) PlayTrack(track *mediaprovider.Track, _ float64) error {
 	if err := j.provider.JukeboxSet(track.ID); err != nil {
 		return err
 	}
@@ -139,6 +139,8 @@ func (j *JukeboxPlayer) GetStatus() player.Status {
 		State: state,
 	}
 }
+
+func (j *JukeboxPlayer) Destroy() {}
 
 func (j *JukeboxPlayer) startAndUpdateTime() error {
 	beforeStart := time.Now()

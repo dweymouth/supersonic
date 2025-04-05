@@ -152,6 +152,21 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		a.LrcLibFetcher = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl, timeout)
 	}
 
+	// Periodically scan for remote players
+	go a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, true /*fastScan*/)
+	go func() {
+		t := time.NewTicker(5 * time.Minute)
+		for {
+			select {
+			case <-a.bgrndCtx.Done():
+				t.Stop()
+				return
+			case <-t.C:
+				a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, false)
+			}
+		}
+	}()
+
 	a.PlaybackManager.OnPlaying(func() {
 		SetSystemSleepDisabled(true)
 	})
@@ -389,7 +404,7 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 	})
 	a.PlaybackManager.OnSeek(func() {
 		dur := a.PlaybackManager.NowPlaying().Metadata().Duration
-		smtc.UpdatePosition(int(a.PlaybackManager.CurrentPlayer().GetStatus().TimePos*1000), dur*1000)
+		smtc.UpdatePosition(int(a.PlaybackManager.PlaybackStatus().TimePos*1000), dur*1000)
 	})
 	a.PlaybackManager.OnPlaying(func() {
 		smtc.SetEnabled(true)
@@ -448,7 +463,7 @@ func (a *App) Shutdown() {
 		a.WinSMTC.Shutdown()
 	}
 	a.PlaybackManager.DisableCallbacks()
-	a.PlaybackManager.Stop() // will trigger scrobble check
+	a.PlaybackManager.Shutdown() // will trigger scrobble check
 	a.cancel()
 	a.LocalPlayer.Destroy()
 }

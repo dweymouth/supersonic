@@ -1,23 +1,25 @@
 package player
 
-import "github.com/dweymouth/supersonic/backend/mediaprovider"
+import (
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
+)
 
 type URLPlayer interface {
 	BasePlayer
-	PlayFile(url string) error
-	SetNextFile(url string) error
+	PlayFile(url string, metadata mediaprovider.MediaItemMetadata, startTime float64) error
+	SetNextFile(url string, metadata mediaprovider.MediaItemMetadata) error
 }
 
 type TrackPlayer interface {
 	BasePlayer
-	PlayTrack(track *mediaprovider.Track) error
+	PlayTrack(track *mediaprovider.Track, startTime float64) error
 	SetNextTrack(track *mediaprovider.Track) error
 }
 
 type BasePlayer interface {
 	Continue() error
 	Pause() error
-	Stop() error
+	Stop(force bool) error
 
 	SeekSeconds(secs float64) error
 	IsSeeking() bool
@@ -26,6 +28,8 @@ type BasePlayer interface {
 	GetVolume() int
 
 	GetStatus() Status
+
+	Destroy()
 
 	// Event API
 	OnPaused(func())
@@ -84,66 +88,66 @@ func (r ReplayGainMode) String() string {
 }
 
 type BasePlayerCallbackImpl struct {
-	onPaused      []func()
-	onStopped     []func()
-	onPlaying     []func()
-	onSeek        []func()
-	onTrackChange []func()
+	onPaused      func()
+	onStopped     func()
+	onPlaying     func()
+	onSeek        func()
+	onTrackChange func()
 }
 
-// Registers a callback which is invoked when the player transitions to the Paused state.
+// Sets a callback which is invoked when the player transitions to the Paused state.
 func (p *BasePlayerCallbackImpl) OnPaused(cb func()) {
-	p.onPaused = append(p.onPaused, cb)
+	p.onPaused = cb
 }
 
-// Registers a callback which is invoked when the player transitions to the Stopped state.
+// Sets a callback which is invoked when the player transitions to the Stopped state.
 func (p *BasePlayerCallbackImpl) OnStopped(cb func()) {
-	p.onStopped = append(p.onStopped, cb)
+	p.onStopped = cb
 }
 
-// Registers a callback which is invoked when the player transitions to the Playing state.
+// Sets a callback which is invoked when the player transitions to the Playing state.
 func (p *BasePlayerCallbackImpl) OnPlaying(cb func()) {
-	p.onPlaying = append(p.onPlaying, cb)
+	p.onPlaying = cb
 }
 
 // Registers a callback which is invoked whenever a seek event occurs.
 func (p *BasePlayerCallbackImpl) OnSeek(cb func()) {
-	p.onSeek = append(p.onSeek, cb)
+	p.onSeek = cb
 }
 
 // Registers a callback which is invoked when the currently playing track changes,
 // or when playback begins at any time from the Stopped state.
 // Callback is invoked with the index of the currently playing track (zero-based).
 func (p *BasePlayerCallbackImpl) OnTrackChange(cb func()) {
-	p.onTrackChange = append(p.onTrackChange, cb)
+	p.onTrackChange = cb
 }
 
 func (p *BasePlayerCallbackImpl) InvokeOnPaused() {
-	for _, cb := range p.onPaused {
-		cb()
+	if p.onPaused != nil {
+		p.onPaused()
 	}
 }
 
 func (p *BasePlayerCallbackImpl) InvokeOnPlaying() {
-	for _, cb := range p.onPlaying {
-		cb()
+	if p.onPlaying != nil {
+		p.onPlaying()
 	}
 }
 
 func (p *BasePlayerCallbackImpl) InvokeOnStopped() {
-	for _, cb := range p.onStopped {
-		cb()
+	if p.onStopped != nil {
+		p.onStopped()
 	}
 }
 
 func (p *BasePlayerCallbackImpl) InvokeOnSeek() {
-	for _, cb := range p.onSeek {
-		cb()
+	if p.onSeek != nil {
+		p.onSeek()
 	}
 }
 
 func (p *BasePlayerCallbackImpl) InvokeOnTrackChange() {
-	for _, cb := range p.onTrackChange {
-		cb()
+	if p.onTrackChange != nil {
+		p.onTrackChange()
 	}
 }

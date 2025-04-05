@@ -7,12 +7,16 @@ import (
 	"math/rand"
 	"runtime"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/dlna"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/supersonic-app/go-upnpcast/device"
+	"github.com/supersonic-app/go-upnpcast/services"
 )
 
 // A high-level MediaProvider-aware playback engine, serves as an
@@ -22,9 +26,21 @@ type PlaybackManager struct {
 	cmdQueue *playbackCommandQueue
 	cfg      *AppConfig
 
+	localPlayer         player.BasePlayer
+	remotePlayersLock   sync.Mutex
+	remotePlayers       []RemotePlaybackDevice
+	currentRemotePlayer *RemotePlaybackDevice
+
 	autoplay bool
 
 	lastPlayTime float64
+}
+
+type RemotePlaybackDevice struct {
+	Name     string
+	URL      string
+	Protocol string
+	new      func() (player.BasePlayer, error)
 }
 
 func NewPlaybackManager(
@@ -39,10 +55,11 @@ func NewPlaybackManager(
 	e := NewPlaybackEngine(ctx, s, p, playbackCfg, scrobbleCfg, transcodeCfg)
 	q := NewCommandQueue()
 	pm := &PlaybackManager{
-		engine:   e,
-		cmdQueue: q,
-		cfg:      appCfg,
-		autoplay: playbackCfg.Autoplay,
+		engine:      e,
+		cmdQueue:    q,
+		cfg:         appCfg,
+		autoplay:    playbackCfg.Autoplay,
+		localPlayer: p,
 	}
 	pm.addOnTrackChangeHook()
 	go pm.runCmdQueue(ctx)
@@ -68,7 +85,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			return
 		}
 		// workaround for https://github.com/dweymouth/supersonic/issues/483 (see above comment)
-		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlayerStatus().State == player.Playing {
+		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlaybackStatus().State == player.Playing {
 			p.lastPlayTime = 0
 			go func() {
 				time.Sleep(300 * time.Millisecond)
@@ -79,6 +96,68 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			}()
 		}
 	})
+}
+
+func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, fastScan bool) {
+	if fastScan {
+		p.scanRemotePlayers(ctx, 1 /*waitSec*/)
+		// continue to slow scan to detect players that take longer to respond
+	}
+	p.scanRemotePlayers(ctx, 10 /*waitSec*/)
+}
+
+func (p *PlaybackManager) scanRemotePlayers(ctx context.Context, waitSec int) {
+	devices, _ := device.SearchMediaRenderers(ctx, waitSec, services.AVTransport, services.RenderingControl)
+
+	var discovered []RemotePlaybackDevice
+	for _, d := range devices {
+		p := RemotePlaybackDevice{
+			Name:     d.FriendlyName,
+			URL:      d.URL,
+			Protocol: "DLNA",
+			new: func() (player.BasePlayer, error) {
+				return dlna.NewDLNAPlayer(d)
+			},
+		}
+		discovered = append(discovered, p)
+	}
+
+	p.remotePlayersLock.Lock()
+	p.remotePlayers = discovered
+	p.remotePlayersLock.Unlock()
+}
+
+func (p *PlaybackManager) RemotePlayers() []RemotePlaybackDevice {
+	p.remotePlayersLock.Lock()
+	players := p.remotePlayers
+	p.remotePlayersLock.Unlock()
+	return players
+}
+
+func (p *PlaybackManager) CurrentRemotePlayer() *RemotePlaybackDevice {
+	return p.currentRemotePlayer
+}
+
+func (p *PlaybackManager) SetRemotePlayer(rp *RemotePlaybackDevice) error {
+	p.cmdQueue.Clear()
+	if rp == nil {
+		if err := p.engine.SetPlayer(p.localPlayer); err != nil {
+			return err
+		}
+		p.currentRemotePlayer = nil
+		return nil
+	}
+
+	player, err := rp.new()
+	if err != nil {
+		return err
+	}
+	if err := p.engine.SetPlayer(player); err != nil {
+		return err
+	}
+
+	p.currentRemotePlayer = rp
+	return nil
 }
 
 func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
@@ -397,8 +476,8 @@ func (p *PlaybackManager) IsAutoplay() bool {
 	return p.autoplay
 }
 
-func (p *PlaybackManager) PlayerStatus() player.Status {
-	return p.engine.PlayerStatus()
+func (p *PlaybackManager) PlaybackStatus() PlaybackStatus {
+	return p.engine.PlaybackStatus()
 }
 
 func (p *PlaybackManager) SetVolume(vol int) {
@@ -431,7 +510,7 @@ func (p *PlaybackManager) SeekSeconds(sec float64) {
 
 // Seek by given relative position in the current track by seconds.
 func (p *PlaybackManager) SeekBySeconds(sec float64) {
-	status := p.engine.PlayerStatus()
+	status := p.engine.PlaybackStatus()
 	target := status.TimePos + sec
 	if target < 0 {
 		target = 0
@@ -456,6 +535,10 @@ func (p *PlaybackManager) Stop() {
 	p.cmdQueue.Stop()
 }
 
+func (p *PlaybackManager) Shutdown() {
+	p.cmdQueue.StopAndWait()
+}
+
 func (p *PlaybackManager) Pause() {
 	p.cmdQueue.Pause()
 }
@@ -465,7 +548,7 @@ func (p *PlaybackManager) Continue() {
 }
 
 func (p *PlaybackManager) PlayPause() {
-	switch p.engine.PlayerStatus().State {
+	switch p.engine.PlaybackStatus().State {
 	case player.Playing:
 		p.Pause()
 	case player.Paused:
@@ -514,7 +597,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 			if len(tr.ArtistIDs) > 0 {
 				similar, err := s.GetSimilarTracks(tr.ArtistIDs[0], p.cfg.EnqueueBatchSize)
 				if err != nil {
-					log.Println("autoplay error: failed to get similar tracks: %v", err)
+					log.Printf("autoplay error: failed to get similar tracks: %v", err)
 				}
 				tracks = filterRecentlyPlayed(similar)
 			}
@@ -527,7 +610,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 					}
 					byGenre, err := s.GetRandomTracks(g, p.cfg.EnqueueBatchSize)
 					if err != nil {
-						log.Println("autoplay error: failed to get tracks by genre: %v", err)
+						log.Printf("autoplay error: failed to get tracks by genre: %v", err)
 					}
 					tracks = filterRecentlyPlayed(byGenre)
 					if len(tracks) > 0 {
@@ -542,7 +625,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 			// fallback to random tracks
 			random, err := s.GetRandomTracks("", p.cfg.EnqueueBatchSize)
 			if err != nil {
-				log.Println("autoplay error: failed to get random tracks: %v", err)
+				log.Printf("autoplay error: failed to get random tracks: %v", err)
 			}
 			tracks = filterRecentlyPlayed(random)
 		}
@@ -556,7 +639,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 	logIfErr := func(action string, err error) {
 		if err != nil {
-			log.Println("Playback error (%s): %v", action, err)
+			log.Printf("Playback error (%s): %v", action, err)
 		}
 	}
 	for {
@@ -605,6 +688,9 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					log.Println("Force-restarting MPV playback")
 					mpv.ForceRestartPlayback()
 				}
+			}
+			if c.OnDone != nil {
+				c.OnDone()
 			}
 		}
 	}

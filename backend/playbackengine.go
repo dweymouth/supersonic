@@ -9,9 +9,12 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
+
+// TODO: make thread-safe
 
 var (
 	ReplayGainNone  = player.ReplayGainNone.String()
@@ -37,6 +40,14 @@ const (
 	LoopOne
 )
 
+type PlaybackState = player.State
+
+type PlaybackStatus struct {
+	State    PlaybackState
+	TimePos  float64
+	Duration float64
+}
+
 type playbackEngine struct {
 	ctx           context.Context
 	cancelPollPos context.CancelFunc
@@ -54,9 +65,16 @@ type playbackEngine struct {
 	loopMode      LoopMode
 
 	// flags for handleOnTrackChange / handleOnStopped callbacks - reset to false in the callbacks
-	wasStopped                 bool // true iff player was stopped before handleOnTrackChange invocation
-	noIncrementNextTrackChange bool // true iff the nowPlayingIndex should not be incremented on the next onTrackChange
-	alreadyScrobbled           bool // true iff the previously-playing track was already scrobbled
+	wasStopped       bool // true iff player was stopped before handleOnTrackChange invocation
+	alreadyScrobbled bool // true iff the previously-playing track was already scrobbled
+
+	// if >= 0, track number that was requested by PlayTrackAt
+	// onTrackChange callback should set nowPlayingIdx to this,
+	// and reset this to -1
+	pendingTrackChangeNum int
+
+	pendingPlayerChange       bool
+	pendingPlayerChangeStatus player.Status
 
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
@@ -102,23 +120,8 @@ func NewPlaybackEngine(
 	case "One":
 		pm.loopMode = LoopOne
 	}
-	p.OnTrackChange(pm.handleOnTrackChange)
-	p.OnSeek(func() {
-		pm.doUpdateTimePos(true)
-		pm.invokeNoArgCallbacks(pm.onSeek)
-	})
-	p.OnStopped(pm.handleOnStopped)
-	p.OnPaused(func() {
-		pm.playTimeStopwatch.Stop()
-		pm.stopPollTimePos()
-		pm.invokeNoArgCallbacks(pm.onPaused)
-	})
-	p.OnPlaying(func() {
-		pm.playTimeStopwatch.Start()
-		pm.startPollTimePos()
-		pm.invokeNoArgCallbacks(pm.onPlaying)
-	})
 
+	pm.registerPlayerCallbacks(p)
 	s.OnLogout(func() {
 		pm.StopAndClearPlayQueue()
 	})
@@ -126,18 +129,95 @@ func NewPlaybackEngine(
 	return pm
 }
 
+func (p *playbackEngine) registerPlayerCallbacks(pl player.BasePlayer) {
+	pl.OnTrackChange(p.handleOnTrackChange)
+	pl.OnSeek(func() {
+		p.doUpdateTimePos(true)
+		p.invokeNoArgCallbacks(p.onSeek)
+	})
+	pl.OnStopped(p.handleOnStopped)
+	pl.OnPaused(func() {
+		p.playTimeStopwatch.Stop()
+		p.stopPollTimePos()
+		p.invokeNoArgCallbacks(p.onPaused)
+	})
+	pl.OnPlaying(func() {
+		p.playTimeStopwatch.Start()
+		p.startPollTimePos()
+		p.invokeNoArgCallbacks(p.onPlaying)
+	})
+}
+
+func (p *playbackEngine) unregisterPlayerCallbacks(pl player.BasePlayer) {
+	pl.OnPaused(nil)
+	pl.OnPlaying(nil)
+	pl.OnStopped(nil)
+	pl.OnSeek(nil)
+	pl.OnTrackChange(nil)
+}
+
+func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
+	// even if we don't successfully change players,
+	// make sure UI updates if needed (eg enabling cast button)
+	defer p.invokeNoArgCallbacks(p.onPlayerChange)
+
+	needToUnpause := false
+
+	stat := p.CurrentPlayer().GetStatus()
+	if p.pendingPlayerChange {
+		stat.State = player.Paused
+	}
+
+	switch stat.State {
+	case player.Stopped:
+		// nothing
+	case player.Playing:
+		needToUnpause = true
+		p.stopPollTimePos()
+		fallthrough
+	case player.Paused:
+		p.pendingPlayerChangeStatus = stat
+		p.pendingPlayerChange = true
+	}
+	p.unregisterPlayerCallbacks(p.player)
+	if err := p.player.Stop(true); err != nil {
+		log.Printf("failed to stop player: %v", err)
+	}
+
+	oldVol := p.player.GetVolume()
+	if _, isMPV := p.player.(*mpv.Player); !isMPV {
+		p.player.Destroy()
+	}
+	p.player = pl
+	p.registerPlayerCallbacks(pl)
+
+	if needToUnpause {
+		p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeStatus.TimePos)
+		p.pendingPlayerChange = false
+	}
+	p.invokeNoArgCallbacks(p.onPlayerChange)
+	vol := pl.GetVolume()
+	if oldVol != vol {
+		for _, cb := range p.onVolumeChange {
+			cb(vol)
+		}
+	}
+	return nil
+}
+
 func (p *playbackEngine) PlayTrackAt(idx int) error {
+	return p.playTrackAt(idx, 0)
+}
+
+func (p *playbackEngine) playTrackAt(idx int, startTime float64) error {
 	if idx < 0 || idx >= len(p.playQueue) {
 		return errors.New("track index out of range")
 	}
 	// scrobble current track if needed
 	p.checkScrobble()
 	p.alreadyScrobbled = true
-	p.noIncrementNextTrackChange = true
-	err := p.setTrack(idx, false)
-	if err == nil {
-		p.nowPlayingIdx = idx
-	}
+	p.pendingTrackChangeNum = idx
+	err := p.setTrack(idx, false, startTime)
 	return err
 }
 
@@ -168,8 +248,16 @@ func (p *playbackEngine) GetLoopMode() LoopMode {
 	return p.loopMode
 }
 
-func (p *playbackEngine) PlayerStatus() player.Status {
-	return p.player.GetStatus()
+func (p *playbackEngine) PlaybackStatus() PlaybackStatus {
+	stat := p.pendingPlayerChangeStatus
+	if !p.pendingPlayerChange {
+		stat = p.CurrentPlayer().GetStatus()
+	}
+	return PlaybackStatus{
+		State:    stat.State,
+		TimePos:  stat.TimePos,
+		Duration: stat.Duration,
+	}
 }
 
 func (p *playbackEngine) SetVolume(vol int) error {
@@ -188,14 +276,14 @@ func (p *playbackEngine) CurrentPlayer() player.BasePlayer {
 }
 
 func (p *playbackEngine) SeekNext() error {
-	if p.CurrentPlayer().GetStatus().State == player.Stopped {
+	if p.PlaybackStatus().State == player.Stopped {
 		return nil
 	}
 	return p.PlayTrackAt(p.nowPlayingIdx + 1)
 }
 
 func (p *playbackEngine) SeekBackOrPrevious() error {
-	if p.nowPlayingIdx == 0 || p.player.GetStatus().TimePos > 3 {
+	if p.nowPlayingIdx == 0 || p.PlaybackStatus().TimePos > 3 {
 		return p.player.SeekSeconds(0)
 	}
 	return p.PlayTrackAt(p.nowPlayingIdx - 1)
@@ -203,7 +291,7 @@ func (p *playbackEngine) SeekBackOrPrevious() error {
 
 func (p *playbackEngine) SeekFwdBackN(n int) error {
 	idx := p.nowPlayingIdx
-	if n < 0 && p.player.GetStatus().TimePos > 3 {
+	if n < 0 && p.PlaybackStatus().TimePos > 3 {
 		n += 1 // first seek back is just seek to beginning of current
 	}
 	if n == 0 || (idx == 0 && n < 0) {
@@ -230,7 +318,7 @@ func (p *playbackEngine) IsSeeking() bool {
 }
 
 func (p *playbackEngine) Stop() error {
-	return p.player.Stop()
+	return p.player.Stop(false)
 }
 
 func (p *playbackEngine) Pause() error {
@@ -238,7 +326,12 @@ func (p *playbackEngine) Pause() error {
 }
 
 func (p *playbackEngine) Continue() error {
-	if p.PlayerStatus().State == player.Stopped {
+	if p.pendingPlayerChange {
+		p.pendingPlayerChange = false
+		return p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeStatus.TimePos)
+	}
+
+	if p.PlaybackStatus().State == player.Stopped {
 		return p.PlayTrackAt(0)
 	}
 	return p.player.Continue()
@@ -260,7 +353,7 @@ func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMo
 
 func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
 	if insertQueueMode == Replace {
-		p.player.Stop()
+		p.player.Stop(false)
 		p.nowPlayingIdx = -1
 		p.playQueue = nil
 	}
@@ -286,7 +379,7 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 
 func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, insertMode InsertQueueMode) {
 	if insertMode == Replace {
-		p.player.Stop()
+		p.player.Stop(false)
 		p.nowPlayingIdx = -1
 		p.playQueue = nil
 	}
@@ -312,7 +405,7 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 // Stop playback and clear the play queue.
 func (p *playbackEngine) StopAndClearPlayQueue() {
 	changed := len(p.playQueue) > 0
-	p.player.Stop()
+	p.player.Stop(false)
 	p.playQueue = nil
 	p.nowPlayingIdx = -1
 	if changed {
@@ -408,7 +501,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 			p.Stop()
 		} else {
 			p.nowPlayingIdx -= 1 // will be incremented in newtrack callback from player
-			p.setTrack(newNowPlaying, false)
+			p.setTrack(newNowPlaying, false, 0)
 		}
 		// setNextTrack and onSongChange callbacks will be handled
 		// when we receive new track event from player
@@ -468,21 +561,23 @@ func (p *playbackEngine) handleOnTrackChange() {
 		p.checkScrobble()
 	}
 
-	if p.player.GetStatus().State == player.Playing {
+	if p.PlaybackStatus().State == player.Playing {
 		p.playTimeStopwatch.Start()
 	}
-	if !p.noIncrementNextTrackChange && (p.wasStopped || p.loopMode != LoopOne) {
+	if p.pendingTrackChangeNum < 0 && (p.wasStopped || p.loopMode != LoopOne) {
 		p.nowPlayingIdx++
 		if p.loopMode == LoopAll && p.nowPlayingIdx == len(p.playQueue) {
 			p.nowPlayingIdx = 0 // wrapped around
 		}
+	} else if p.pendingTrackChangeNum >= 0 {
+		p.nowPlayingIdx = p.pendingTrackChangeNum
+		p.pendingTrackChangeNum = -1
 	}
 	nowPlaying := p.playQueue[p.nowPlayingIdx]
 	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
 	p.isRadio = isRadio
 
 	// reset flags
-	p.noIncrementNextTrackChange = false
 	p.wasStopped = false
 	p.alreadyScrobbled = false
 
@@ -548,12 +643,14 @@ func (p *playbackEngine) setNextTrackAfterQueueUpdate() {
 	}
 }
 
-func (p *playbackEngine) setTrack(idx int, next bool) error {
+func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 	if urlP, ok := p.player.(player.URLPlayer); ok {
 		url := ""
+		var meta mediaprovider.MediaItemMetadata
 		if idx >= 0 {
 			var err error
 			item := p.playQueue[idx]
+			meta = item.Metadata()
 			if tr, ok := item.(*mediaprovider.Track); ok {
 				url, err = p.sm.Server.GetStreamURL(tr.ID, p.transcodeCfg.ForceRawFile)
 			} else {
@@ -564,9 +661,9 @@ func (p *playbackEngine) setTrack(idx int, next bool) error {
 			}
 		}
 		if next {
-			return urlP.SetNextFile(url)
+			return urlP.SetNextFile(url, meta)
 		}
-		return urlP.PlayFile(url)
+		return urlP.PlayFile(url, meta, startTime)
 	} else if trP, ok := p.player.(player.TrackPlayer); ok {
 		var track *mediaprovider.Track
 		if idx >= 0 {
@@ -578,13 +675,13 @@ func (p *playbackEngine) setTrack(idx int, next bool) error {
 		if next {
 			return trP.SetNextTrack(track)
 		}
-		return trP.PlayTrack(track)
+		return trP.PlayTrack(track, startTime)
 	}
 	panic("Unsupported player type")
 }
 
 func (p *playbackEngine) setNextTrack(idx int) error {
-	return p.setTrack(idx, true)
+	return p.setTrack(idx, true, 0)
 }
 
 // call BEFORE updating p.nowPlayingIdx
@@ -701,7 +798,7 @@ func (p *playbackEngine) doUpdateTimePos(seeked bool) {
 	if p.callbacksDisabled {
 		return
 	}
-	s := p.player.GetStatus()
+	s := p.PlaybackStatus()
 	if s.TimePos > p.latestTrackPosition {
 		p.latestTrackPosition = s.TimePos
 	}

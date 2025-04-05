@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync"
 
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/supersonic-app/go-mpv"
 )
@@ -67,6 +69,9 @@ type Player struct {
 	equalizer      Equalizer
 	peaksEnabled   bool
 
+	fileLoadedLock sync.Mutex
+	fileLoadedSig  *sync.Cond
+
 	bgCancel context.CancelFunc
 }
 
@@ -79,10 +84,12 @@ func New() *Player {
 // Same as New, but sets the application name that mpv
 // reports to the system audio API.
 func NewWithClientName(c string) *Player {
-	return &Player{
+	p := &Player{
 		vol:        -1, // use 100 in Init
 		clientName: c,
 	}
+	p.fileLoadedSig = sync.NewCond(&p.fileLoadedLock)
+	return p
 }
 
 // Initializes the Player and makes it ready for playback.
@@ -133,23 +140,32 @@ func (p *Player) Init(maxCacheMB int) error {
 }
 
 // Plays the specified file, clearing the previous play queue, if any.
-func (p *Player) PlayFile(url string) error {
+func (p *Player) PlayFile(url string, _ mediaprovider.MediaItemMetadata, startTime float64) error {
 	if !p.initialized {
 		return ErrUnitialized
 	}
 	err := p.mpv.Command([]string{"loadfile", url, "replace"})
-	if err == nil {
-		p.lenPlaylist = 1
-		if p.status.State == player.Paused {
-			return p.Continue()
-		}
+	if err != nil {
+		return err
+	}
+	p.lenPlaylist = 1
+	if p.status.State == player.Paused {
+		err = p.Continue()
+	} else {
 		p.setState(player.Playing)
 	}
+	if startTime > 0 {
+		p.fileLoadedLock.Lock()
+		p.fileLoadedSig.Wait()
+		p.fileLoadedLock.Unlock()
+		p.SeekSeconds(startTime)
+	}
+
 	return err
 }
 
 // Stops playback and clears the play queue.
-func (p *Player) Stop() error {
+func (p *Player) Stop(_ bool) error {
 	if !p.initialized {
 		return ErrUnitialized
 	}
@@ -169,7 +185,7 @@ func (p *Player) Stop() error {
 	return err
 }
 
-func (p *Player) SetNextFile(url string) error {
+func (p *Player) SetNextFile(url string, _ mediaprovider.MediaItemMetadata) error {
 	if p.lenPlaylist > p.curPlaylistPos+1 {
 		if err := p.mpv.Command([]string{"playlist-remove", strconv.Itoa(int(p.curPlaylistPos) + 1)}); err != nil {
 			return err
@@ -480,10 +496,9 @@ func (p *Player) eventHandler(ctx context.Context) {
 			}
 			switch e.Event_Id {
 			case mpv.EVENT_PLAYBACK_RESTART:
-				if p.seeking {
-					p.seeking = false
-				}
+				fallthrough
 			case mpv.EVENT_SEEK:
+				p.seeking = false
 				p.InvokeOnSeek()
 			case mpv.EVENT_FILE_LOADED:
 				p.curPlaylistPos, _ = p.getInt64Property("playlist-pos")
@@ -493,6 +508,7 @@ func (p *Player) eventHandler(ctx context.Context) {
 					p.InvokeOnSeek()
 				}
 				p.InvokeOnTrackChange()
+				p.fileLoadedSig.Signal()
 			case mpv.EVENT_IDLE:
 				p.status.Duration = 0
 				p.status.TimePos = 0
