@@ -55,7 +55,7 @@ Supersonic supports any music server with a Subsonic (or OpenSubsonic) API, or J
 * [x] Shuffle and repeat playback modes (partial; shuffle album, playlist, artist radio, random songs; repeat one/all)
 * [x] Lyrics support
 * [x] Internet radio station support (Subsonic)
-* [x] Cast to uPnP/DLNA devices (likely planned)
+* [x] Cast to uPnP/DLNA devices
 * [ ] Server jukebox control (planned)
 * [ ] Browse by folders (planned)
 * [ ] Offline mode (eventually planned)
@@ -81,7 +81,7 @@ Download the [latest release](https://github.com/dweymouth/supersonic/releases).
 
 Supersonic is available on Homebrew via a custom brew tap, or via downloading the .app bundle from the Releases page.
 
-To install Supersonic with Homebrew run:
+To install Supersonic with **Homebrew** run:
 
 ```sh
 brew tap supersonic-app/homebrew
@@ -96,7 +96,7 @@ You should also include it when upgrading in future:
 brew upgrade --no-quarantine supersonic
 ```
 
-To install the downloaded .app bundle from the [Releases page](https://github.com/dweymouth/supersonic/releases), unzip and then drag Supersonic.app to the Applications folder.
+To install the **downloaded .app bundle** from the [Releases page](https://github.com/dweymouth/supersonic/releases), unzip and then drag Supersonic.app to the Applications folder.
 
 **Apple Silicon (M1/M2) Macs:** You will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `sudo xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
 
