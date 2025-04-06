@@ -84,7 +84,7 @@ Supersonic is available on Homebrew via a custom brew tap, or via downloading th
 To install Supersonic with **Homebrew** run:
 
 ```sh
-brew tap supersonic-app/homebrew
+brew tap supersonic-app/supersonic
 brew install --no-quarantine supersonic
 ```
 
