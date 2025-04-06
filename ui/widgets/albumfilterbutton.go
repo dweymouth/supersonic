@@ -199,7 +199,10 @@ func NewAlbumFilterPopup(filter *AlbumFilterButton) *AlbumFilterPopup {
 	)
 
 	go func() {
-		a.genreFilter.SetGenreList(<-a.filterBtn.genreListChan)
+		genres := <-a.filterBtn.genreListChan
+		fyne.Do(func() {
+			a.genreFilter.SetGenreList(genres)
+		})
 	}()
 
 	return a
