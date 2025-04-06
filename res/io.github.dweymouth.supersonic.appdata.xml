@@ -33,6 +33,8 @@
       <li>Sort tracklist views by column and configure visible tracklist columns</li>
       <li>Set/unset favorite and browse by favorite albums, artists, and songs</li>
       <li>Shuffle and repeat playback modes (partial; shuffle album,  playlist, artist radio, random songs)</li>
+      <li>Internet radio station support (Subsonic)</li>
+      <li>Cast to uPnP/DLNA devices</li>
     </ul>
   </description>
 
@@ -61,44 +63,29 @@
   </screenshots>
 
  <releases>
-  <release date="2025-02-22" version="0.14.0">
+  <release date="2025-04-06" version="0.15.0">
    <description>
      <p>
-       Version 0.14.0 of Supersonic
+       Version 0.15.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>New translations: Dutch</li>
-       <li>Media Key / SMTC support for Windows</li>
-       <li>Add an Autoplay mode to continually add related songs when nearing the end of queue</li>
-       <li>Shuffle button added to favorite songs view</li>
-       <li>Added toast notifications for certain UI actions</li>
-       <li>Add album shuffle modes to Albums and Genre pages</li>
-       <li>Caching added for LrcLib lyrics, custom LrcLib URL supported in config file</li>
-       <li>Use notify-send for notifications on Linux if available</li>
-       <li>Add setting to disable automatic scaling adjustment for detected DPI</li>
-       <li>New Advanced settings tab exposing more config file settings to the UI</li>
-       <li>Favorite/menu icon buttons added to grid cards when hovered</li>
-       <li>Show full dates from OpenSubsonic servers when available</li>
-       <li>Log to a file instead of stdout on Windows</li>
+       <li>Add ability to cast playback to DLNA devices</li>
+       <li>Add ability to search tracks within playlist</li>
+       <li>Add context menu actions to items in "Search Everywhere" dialog</li>
+       <li>Make server requests timeout configurable and increase default timeout</li>
+       <li>New overlay animation when showing full size covers</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Persist repeat setting across restarts</li>
-       <li>Removing track from playlist when sorted removed wrong track</li>
-       <li>Fullscreen artist images not loading in full resolution</li>
-       <li>Fix volume slider scrolling too quickly with some mice</li>
-       <li>Loading dots not stopping if canceling a search before completion</li>
-       <li>Add list/grid debouncing to improve scrolling smoothness when scrolling very quickly</li>
-       <li>Image caching broken on some servers due to track IDs not being legal filenames</li>
-       <li>Migrate to Fyne 2.6 for improved stability and performance</li>
-       <li>Sometimes crashing on exit</li>
+       <li>Wrong track scrobbled when skipping next</li>
+       <li>Regression: searching the "All Tracks" page skips some results</li>
      </ul>
 
    </description>

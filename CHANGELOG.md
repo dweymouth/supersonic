@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.15.0]
+
+### Added
+- [#582](https://github.com/dweymouth/supersonic/pull/582) Add ability to cast playback to DLNA devices
+- [#574](https://github.com/dweymouth/supersonic/pull/574) Add ability to search tracks within playlist
+- [#584](https://github.com/dweymouth/supersonic/issues/584) Add context menu actions to items in "Search Everywhere" dialog
+- [#571](https://github.com/dweymouth/supersonic/issues/571) Make server requests timeout configurable and increase default timeout
+- New overlay animation when showing full size covers
+
+### Fixed
+- [#578](https://github.com/dweymouth/supersonic/issues/578),[#530](https://github.com/dweymouth/supersonic/issues/530) Wrong track scrobbled when skipping next
+- [#580](https://github.com/dweymouth/supersonic/issues/580) Regression: searching the "All Tracks" page skips some results
+
 ## [0.14.0]
 
 ### Added
