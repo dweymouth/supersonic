@@ -403,8 +403,8 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 		}()
 	})
 	a.PlaybackManager.OnSeek(func() {
-		dur := a.PlaybackManager.NowPlaying().Metadata().Duration
-		smtc.UpdatePosition(int(a.PlaybackManager.PlaybackStatus().TimePos*1000), dur*1000)
+		playbackStatus := a.PlaybackManager.PlaybackStatus()
+		smtc.UpdatePosition(int(playbackStatus.TimePos*1000), int(playbackStatus.Duration*1000))
 	})
 	a.PlaybackManager.OnPlaying(func() {
 		smtc.SetEnabled(true)
