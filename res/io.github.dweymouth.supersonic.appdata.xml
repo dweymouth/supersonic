@@ -63,29 +63,18 @@
   </screenshots>
 
  <releases>
-  <release date="2025-04-06" version="0.15.0">
+  <release date="2025-04-07" version="0.15.1">
    <description>
      <p>
-       Version 0.15.0 of Supersonic
+       Version 0.15.1 of Supersonic
      </p>
-
-     <p>
-       Added
-     </p>
-     <ul>
-       <li>Add ability to cast playback to DLNA devices</li>
-       <li>Add ability to search tracks within playlist</li>
-       <li>Add context menu actions to items in "Search Everywhere" dialog</li>
-       <li>Make server requests timeout configurable and increase default timeout</li>
-       <li>New overlay animation when showing full size covers</li>
-     </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Wrong track scrobbled when skipping next</li>
-       <li>Regression: searching the "All Tracks" page skips some results</li>
+       <li>Fix crashing on playback on Windows</li>
+       <li>Fix crashing when clicking on album filters button</li>
      </ul>
 
    </description>

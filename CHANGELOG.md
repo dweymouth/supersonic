@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.15.1]
+
+### Fixed
+- [#591](https://github.com/dweymouth/supersonic/pull/591) Fix crashing on playback on Windows
+- Fix crashing when clicking on album filters button
+
 ## [0.15.0]
 
 ### Added

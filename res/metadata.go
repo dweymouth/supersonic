@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.15.0"
+	AppVersion       = "0.15.1"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -13,16 +13,10 @@ const (
 )
 
 var (
-	WhatsAdded = `
-## Added
-* Add ability to cast playback to DLNA devices
-* Add ability to search tracks within playlist
-* Add context menu actions to items in "Search Everywhere" dialog
-* Make server requests timeout configurable and increase default timeout
-* New overlay animation when showing full size covers`
+	WhatsAdded = ``
 
 	WhatsFixed = `
 ## Fixed
-* Wrong track scrobbled when skipping next
-* Regression: searching the "All Tracks" page skips some results`
+* Fix crashing on playback on Windows
+* Fix crashing when clicking on album filters button`
 )
