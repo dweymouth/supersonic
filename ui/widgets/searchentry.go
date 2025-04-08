@@ -17,7 +17,9 @@ import (
 type SearchEntry struct {
 	widget.Entry
 
-	OnSearched func(string)
+	minWidth    float32
+	OnSearched  func(string)
+	OnFocusLost func()
 }
 
 func NewSearchEntry() *SearchEntry {
@@ -53,13 +55,28 @@ func (s *SearchEntry) TypedKey(e *fyne.KeyEvent) {
 	s.Entry.TypedKey(e)
 }
 
+func (s *SearchEntry) FocusLost() {
+	s.Entry.FocusLost()
+	if s.OnFocusLost != nil {
+		s.OnFocusLost()
+	}
+}
+
 func (s *SearchEntry) Refresh() {
 	s.updateActionButton()
 	s.Entry.Refresh()
 }
 
+func (s *SearchEntry) SetMinWidth(w float32) {
+	s.minWidth = w
+}
+
 func (s *SearchEntry) MinSize() fyne.Size {
-	return fyne.NewSize(200, s.Entry.MinSize().Height)
+	w := s.minWidth
+	if w == 0 {
+		w = 200
+	}
+	return fyne.NewSize(w, s.Entry.MinSize().Height)
 }
 
 func (s *SearchEntry) updateActionButton() bool {

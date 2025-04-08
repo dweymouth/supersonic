@@ -30,9 +30,10 @@ type SearchDialog struct {
 	// of the dismiss buttons
 	ActionItem fyne.CanvasObject
 
-	OnDismiss    func()
-	OnNavigateTo func(mediaprovider.ContentType, string)
-	OnSearched   func(string) []*mediaprovider.SearchResult
+	OnDismiss         func()
+	OnNavigateTo      func(mediaprovider.ContentType, string)
+	OnShowContextMenu func(itemIdx int, pos fyne.Position)
+	OnSearched        func(string) []*mediaprovider.SearchResult
 
 	imgSource     util.ImageFetcher
 	resultsMutex  sync.RWMutex
@@ -324,6 +325,12 @@ func (s *searchResult) Update(result *mediaprovider.SearchResult) {
 
 func (q *searchResult) Tapped(_ *fyne.PointEvent) {
 	q.parent.onSelected(q.index)
+}
+
+func (q *searchResult) TappedSecondary(e *fyne.PointEvent) {
+	if q.parent.OnShowContextMenu != nil {
+		q.parent.OnShowContextMenu(q.index, e.AbsolutePosition)
+	}
 }
 
 func (q *searchResult) CreateRenderer() fyne.WidgetRenderer {

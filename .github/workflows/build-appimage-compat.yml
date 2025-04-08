@@ -24,7 +24,7 @@ jobs:
       run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev desktop-file-utils
 
     - name: Build
-      run: go build
+      run: make build
 
     - name: make appimage
       run: |

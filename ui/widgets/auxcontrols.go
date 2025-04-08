@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"math"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -25,6 +26,7 @@ type AuxControls struct {
 	VolumeControl *VolumeControl
 	autoplay      *IconButton
 	loop          *IconButton
+	cast          *IconButton
 	showQueue     *IconButton
 
 	container *fyne.Container
@@ -35,10 +37,17 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 		VolumeControl: NewVolumeControl(initialVolume),
 		autoplay:      NewIconButton(myTheme.AutoplayIcon, nil),
 		loop:          NewIconButton(myTheme.RepeatIcon, nil),
+		cast:          NewIconButton(myTheme.CastIcon, nil),
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
 	}
+
 	a.loop.IconSize = IconButtonSizeSmaller
 	a.loop.SetToolTip(lang.L("Repeat"))
+	a.SetLoopMode(initialLoopMode)
+
+	a.cast.IconSize = IconButtonSizeSmaller
+	a.cast.SetToolTip(lang.L("Cast to device"))
+
 	a.autoplay.Highlighted = initialAutoplay
 	//a.autoplay.IconSize = IconButtonSizeSmaller
 	a.autoplay.SetToolTip(lang.L("Autoplay"))
@@ -48,9 +57,10 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 			a.OnChangeAutoplay(a.autoplay.Highlighted)
 		}
 	}
-	a.SetLoopMode(initialLoopMode)
+
 	a.showQueue.IconSize = IconButtonSizeSmaller
 	a.showQueue.SetToolTip(lang.L("Show play queue"))
+
 	a.container = container.NewHBox(
 		layout.NewSpacer(),
 		container.NewVBox(
@@ -58,7 +68,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 			a.VolumeControl,
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(theme.Padding()*1.5),
-				layout.NewSpacer(), a.autoplay, a.loop, a.showQueue, util.NewHSpace(5)),
+				layout.NewSpacer(), a.autoplay, a.loop, a.cast, a.showQueue, util.NewHSpace(5)),
 			layout.NewSpacer(),
 		),
 	)
@@ -88,6 +98,16 @@ func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 	}
 }
 
+func (a *AuxControls) DisableCastButton() {
+	a.cast.Disable()
+}
+
+func (a *AuxControls) SetIsRemotePlayer(isRemote bool) {
+	a.cast.Enable()
+	a.cast.Highlighted = isRemote
+	a.cast.Refresh()
+}
+
 func (a *AuxControls) SetAutoplay(autoplay bool) {
 	if autoplay == a.autoplay.Highlighted {
 		return
@@ -98,6 +118,12 @@ func (a *AuxControls) SetAutoplay(autoplay bool) {
 
 func (a *AuxControls) OnShowPlayQueue(f func()) {
 	a.showQueue.OnTapped = f
+}
+
+func (a *AuxControls) OnShowCastMenu(f func(func())) {
+	a.cast.OnTapped = func() {
+		f(a.DisableCastButton)
+	}
 }
 
 type volumeSlider struct {
@@ -145,6 +171,10 @@ type VolumeControl struct {
 	muted   bool
 	lastVol int
 
+	setVolDebouncer func()
+	delaySetVolume  bool
+	pendingVolume   int
+
 	container *fyne.Container
 }
 
@@ -160,6 +190,15 @@ func NewVolumeControl(initialVol int) *VolumeControl {
 	v.slider.Orientation = widget.Horizontal
 	v.slider.Value = float64(v.lastVol)
 	v.slider.OnChanged = v.onChanged
+
+	// for players that are slow to respond to volume changes
+	// (e.g. DLNA), delay responding to the SetVolume call
+	// to avoid hiccuping from callback "echoes"
+	v.setVolDebouncer = util.NewDebouncer(100*time.Millisecond, func() {
+		v.delaySetVolume = false
+		v.SetVolume(v.pendingVolume)
+	})
+
 	v.container = container.NewHBox(container.NewCenter(v.icon), v.slider)
 	return v
 }
@@ -167,6 +206,11 @@ func NewVolumeControl(initialVol int) *VolumeControl {
 // Sets the volume that is displayed in the slider.
 // Does not invoke OnSetVolume callback.
 func (v *VolumeControl) SetVolume(vol int) {
+	if v.delaySetVolume {
+		v.pendingVolume = vol
+		return
+	}
+
 	if (vol == v.lastVol && !v.muted) || (v.muted && vol == 0) {
 		return
 	}
@@ -177,6 +221,8 @@ func (v *VolumeControl) SetVolume(vol int) {
 
 func (v *VolumeControl) onChanged(volume float64) {
 	vol := int(volume)
+	v.delaySetVolume = true
+	v.setVolDebouncer()
 	v.lastVol = vol
 	v.muted = false
 	v.updateIconForVolume(vol)

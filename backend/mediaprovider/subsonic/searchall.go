@@ -101,6 +101,7 @@ func mergeResults(
 			Name:       al.Name,
 			ArtistName: getNameString(al.Artist, al.Artists),
 			Size:       al.SongCount,
+			Item:       toAlbum(al),
 		})
 	}
 
@@ -111,6 +112,7 @@ func mergeResults(
 			CoverID: ar.CoverArt,
 			Name:    ar.Name,
 			Size:    ar.AlbumCount,
+			Item:    toArtistFromID3(ar),
 		})
 	}
 
@@ -122,6 +124,7 @@ func mergeResults(
 			Name:       tr.Title,
 			ArtistName: getNameString(tr.Artist, tr.Artists),
 			Size:       tr.Duration,
+			Item:       toTrack(tr),
 		})
 	}
 
@@ -132,6 +135,7 @@ func mergeResults(
 			CoverID: pl.CoverArt,
 			Name:    pl.Name,
 			Size:    pl.SongCount,
+			Item:    toPlaylist(pl),
 		})
 	}
 
@@ -149,6 +153,7 @@ func mergeResults(
 			Type: mediaprovider.ContentTypeRadioStation,
 			ID:   r.ID,
 			Name: r.Name,
+			Item: r,
 		})
 	}
 

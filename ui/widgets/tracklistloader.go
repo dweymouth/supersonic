@@ -72,7 +72,7 @@ func (t *TracklistLoader) loadMoreTracks(num int) {
 		if t.disposed.Load() {
 			return
 		}
-		fyne.Do(func() {
+		fyne.DoAndWait(func() {
 			t.tracklist.SetLoading(false)
 			t.tracklist.AppendTracks(t.trackBuffer)
 			t.len += len(t.trackBuffer)

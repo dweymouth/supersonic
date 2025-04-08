@@ -2,7 +2,6 @@ package controller
 
 import (
 	"archive/zip"
-	"context"
 	"fmt"
 	"image"
 	"image/color"
@@ -11,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
 
@@ -30,7 +28,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/lang"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -154,6 +151,50 @@ func (m *Controller) HaveModal() bool {
 	return m.haveModal
 }
 
+func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
+	rp := m.App.PlaybackManager.CurrentRemotePlayer()
+	devices := m.App.PlaybackManager.RemotePlayers()
+	local := fyne.NewMenuItem(lang.L("This computer"), func() {
+		if rp == nil {
+			return // no-op. already not casting
+		}
+		onPendingPlayerChange()
+		go func() {
+			if err := m.App.PlaybackManager.SetRemotePlayer(nil); err != nil {
+				fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to disconnect from remote player") })
+			}
+		}()
+	})
+	local.Icon = theme.ComputerIcon()
+	local.Checked = rp == nil
+
+	menu := fyne.NewMenu("", local)
+	for _, d := range devices {
+		_d := d
+		isCurrent := rp != nil && _d.URL == rp.URL
+		item := fyne.NewMenuItem(d.Name, func() {
+			if isCurrent {
+				return // no-op.
+			}
+			onPendingPlayerChange()
+			go func() {
+				if err := m.App.PlaybackManager.SetRemotePlayer(&_d); err != nil {
+					fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to connect to " + _d.Name) })
+				}
+			}()
+		})
+		item.Icon = myTheme.CastIcon
+		item.Checked = isCurrent
+		menu.Items = append(menu.Items, item)
+	}
+	pop := widget.NewPopUpMenu(menu, m.MainWindow.Canvas())
+	canvasSize := m.MainWindow.Canvas().Size()
+	pop.ShowAtPosition(fyne.NewPos(
+		canvasSize.Width-pop.MinSize().Width-10,
+		canvasSize.Height-pop.MinSize().Height-100,
+	))
+}
+
 func (m *Controller) ShowPopUpPlayQueue() {
 	m.popUpQueueMutex.Lock()
 	if m.popUpQueue == nil {
@@ -260,327 +301,6 @@ func (m *Controller) GetArtistTracks(artistID string) []*mediaprovider.Track {
 	return nil
 }
 
-func (m *Controller) PromptForFirstServer() {
-	d := dialogs.NewAddEditServerDialog(lang.L("Connect to Server"), false, nil, m.MainWindow.Canvas().Focus)
-	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
-	d.OnSubmit = func() {
-		d.DisableSubmit()
-		go func() {
-			if m.testConnectionAndUpdateDialogText(d) {
-				// connection is good
-				pop.Hide()
-				m.doModalClosed()
-				conn := backend.ServerConnection{
-					ServerType:  d.ServerType,
-					Hostname:    d.Host,
-					AltHostname: d.AltHost,
-					Username:    d.Username,
-					LegacyAuth:  d.LegacyAuth,
-				}
-				server := m.App.ServerManager.AddServer(d.Nickname, conn)
-				if err := m.trySetPasswordAndConnectToServer(server, d.Password); err != nil {
-					log.Printf("error connecting to server: %s", err.Error())
-				}
-			}
-			d.EnableSubmit()
-		}()
-	}
-	m.haveModal = true
-	pop.Show()
-}
-
-// Show dialog to select playlist.
-// Depending on the results of that dialog, potentially create a new playlist
-// Add tracks to the user-specified playlist
-func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
-	sp := dialogs.NewSelectPlaylistDialog(m.App.ServerManager.Server, m.App.ImageManager,
-		m.App.ServerManager.LoggedInUser, m.App.Config.Application.AddToPlaylistSkipDuplicates)
-	pop := widget.NewModalPopUp(sp.SearchDialog, m.MainWindow.Canvas())
-	sp.SetOnDismiss(func() {
-		pop.Hide()
-		m.doModalClosed()
-	})
-	sp.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
-		notifySuccess := func(n int) {
-			fyne.Do(func() {
-				msg := lang.LocalizePluralKey("playlist.addedtracks",
-					"Added tracks to playlist", n, map[string]string{"trackCount": strconv.Itoa(n)})
-				m.ToastProvider.ShowSuccessToast(msg)
-			})
-		}
-		notifyError := func() {
-			fyne.Do(func() {
-				m.ToastProvider.ShowErrorToast(
-					lang.L("An error occurred adding tracks to the playlist"),
-				)
-			})
-		}
-		pop.Hide()
-		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
-		if id == "" /* creating new playlist */ {
-			go func() {
-				err := m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
-				if err == nil {
-					notifySuccess(len(trackIDs))
-				} else {
-					log.Printf("error adding tracks to playlist: %s", err.Error())
-					notifyError()
-				}
-			}()
-		} else {
-			m.App.Config.Application.DefaultPlaylistID = id
-			if sp.SkipDuplicates {
-				go func() {
-					currentTrackIDs := make(map[string]struct{})
-					if selectedPlaylist, err := m.App.ServerManager.Server.GetPlaylist(id); err != nil {
-						log.Printf("error getting playlist: %s", err.Error())
-						notifyError()
-					} else {
-						for _, track := range selectedPlaylist.Tracks {
-							currentTrackIDs[track.ID] = struct{}{}
-						}
-						filterTrackIDs := sharedutil.FilterSlice(trackIDs, func(trackID string) bool {
-							_, ok := currentTrackIDs[trackID]
-							return !ok
-						})
-						err := m.App.ServerManager.Server.AddPlaylistTracks(id, filterTrackIDs)
-						if err == nil {
-							notifySuccess(len(filterTrackIDs))
-						} else {
-							log.Printf("error adding tracks to playlist: %s", err.Error())
-							notifyError()
-						}
-					}
-				}()
-			} else {
-				go func() {
-					err := m.App.ServerManager.Server.AddPlaylistTracks(id, trackIDs)
-					if err == nil {
-						notifySuccess(len(trackIDs))
-					} else {
-						log.Printf("error adding tracks to playlist: %s", err.Error())
-						notifyError()
-					}
-				}()
-			}
-		}
-
-	})
-	m.ClosePopUpOnEscape(pop)
-	m.haveModal = true
-	min := sp.MinSize()
-	height := fyne.Max(min.Height, fyne.Min(min.Height*1.5, m.MainWindow.Canvas().Size().Height*0.7))
-	sp.SearchDialog.Show()
-	pop.Resize(fyne.NewSize(min.Width, height))
-	pop.Show()
-	m.MainWindow.Canvas().Focus(sp.GetSearchEntry())
-}
-
-func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
-	canMakePublic := m.App.ServerManager.Server.CanMakePublicPlaylist()
-	dlg := dialogs.NewEditPlaylistDialog(playlist, canMakePublic)
-	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
-	m.ClosePopUpOnEscape(pop)
-	dlg.OnCanceled = func() {
-		pop.Hide()
-		m.doModalClosed()
-	}
-	dlg.OnDeletePlaylist = func() {
-		pop.Hide()
-		dialog.ShowCustomConfirm(lang.L("Confirm Delete Playlist"), lang.L("OK"), lang.L("Cancel"), layout.NewSpacer(), /*custom content*/
-			func(ok bool) {
-				if !ok {
-					pop.Show()
-				} else {
-					m.doModalClosed()
-					go func() {
-						if err := m.App.ServerManager.Server.DeletePlaylist(playlist.ID); err != nil {
-							log.Printf("error deleting playlist: %s", err.Error())
-						} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
-							// navigate to playlists page if user is still on the page of the deleted playlist
-							fyne.Do(func() { m.NavigateTo(PlaylistsRoute()) })
-						}
-					}()
-				}
-			}, m.MainWindow)
-	}
-	dlg.OnUpdateMetadata = func() {
-		pop.Hide()
-		m.doModalClosed()
-		go func() {
-			err := m.App.ServerManager.Server.EditPlaylist(playlist.ID, dlg.Name, dlg.Description, dlg.IsPublic)
-			if err != nil {
-				log.Printf("error updating playlist: %s", err.Error())
-			} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
-				// if user is on playlist page, reload to get the updates
-				fyne.Do(m.ReloadFunc)
-			}
-		}()
-	}
-	m.haveModal = true
-	pop.Show()
-}
-
-// DoConnectToServerWorkflow does the workflow for connecting to the last active server on startup
-func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
-	pass, err := c.App.ServerManager.GetServerPassword(server.ID)
-	if err != nil {
-		log.Printf("error getting password from keyring: %v", err)
-		c.PromptForLoginAndConnect()
-		return
-	}
-
-	// try connecting to last used server - set up cancelable modal dialog
-	canceled := false
-	ctx, cancel := context.WithCancel(context.Background())
-	dlg := dialog.NewCustom(lang.L("Connecting"), lang.L("Cancel"),
-		widget.NewLabel(fmt.Sprintf(lang.L("Connecting to")+" %s", server.Nickname)), c.MainWindow)
-	dlg.SetOnClosed(func() {
-		canceled = true
-		cancel()
-	})
-	c.haveModal = true
-	dlg.Show()
-
-	// try to connect
-	go func() {
-		defer cancel() // make sure to free up ctx resources if user does not cancel
-
-		if err := c.tryConnectToServer(ctx, server, pass); err != nil {
-			fyne.Do(func() {
-				dlg.Hide()
-				c.haveModal = false
-				if canceled {
-					c.PromptForLoginAndConnect()
-				} else {
-					// connection failure
-					dlg := dialog.NewError(err, c.MainWindow)
-					dlg.SetOnClosed(func() {
-						c.PromptForLoginAndConnect()
-					})
-					c.haveModal = true
-					dlg.Show()
-				}
-			})
-		} else {
-			fyne.Do(func() {
-				dlg.Hide()
-				c.haveModal = false
-			})
-		}
-	}()
-}
-
-func (m *Controller) PromptForLoginAndConnect() {
-	d := dialogs.NewLoginDialog(m.App.Config.Servers, m.App.ServerManager.GetServerPassword)
-	pop := widget.NewModalPopUp(d, m.MainWindow.Canvas())
-	d.OnSubmit = func(server *backend.ServerConfig, password string) {
-		d.DisableSubmit()
-		d.SetInfoText(lang.L("Testing connection") + "...")
-		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			err := m.App.ServerManager.TestConnectionAndAuth(ctx, server.ServerConnection, password)
-			fyne.Do(func() {
-				if err == backend.ErrUnreachable {
-					d.SetErrorText(lang.L("Server unreachable"))
-				} else if err != nil {
-					d.SetErrorText(lang.L("Authentication failed"))
-				} else {
-					pop.Hide()
-					m.trySetPasswordAndConnectToServer(server, password)
-					m.doModalClosed()
-				}
-				d.EnableSubmit()
-			})
-		}()
-	}
-	d.OnEditServer = func(server *backend.ServerConfig) {
-		pop.Hide()
-		editD := dialogs.NewAddEditServerDialog(lang.L("Edit server"), true, server, m.MainWindow.Canvas().Focus)
-		editPop := widget.NewModalPopUp(editD, m.MainWindow.Canvas())
-		editD.OnSubmit = func() {
-			d.DisableSubmit()
-			go func() {
-				success := m.testConnectionAndUpdateDialogText(editD)
-				fyne.Do(func() {
-					if success {
-						// connection is good
-						editPop.Hide()
-						server.Hostname = editD.Host
-						server.AltHostname = editD.AltHost
-						server.Nickname = editD.Nickname
-						server.Username = editD.Username
-						server.LegacyAuth = editD.LegacyAuth
-						m.trySetPasswordAndConnectToServer(server, editD.Password)
-						m.doModalClosed()
-					}
-					d.EnableSubmit()
-				})
-			}()
-		}
-		editD.OnCancel = func() {
-			editPop.Hide()
-			pop.Show()
-		}
-		editPop.Show()
-	}
-	d.OnNewServer = func() {
-		pop.Hide()
-		newD := dialogs.NewAddEditServerDialog(lang.L("Add Server"), true, nil, m.MainWindow.Canvas().Focus)
-		newPop := widget.NewModalPopUp(newD, m.MainWindow.Canvas())
-		newD.OnSubmit = func() {
-			d.DisableSubmit()
-			go func() {
-				success := m.testConnectionAndUpdateDialogText(newD)
-				fyne.Do(func() {
-					if success {
-						// connection is good
-						newPop.Hide()
-						conn := backend.ServerConnection{
-							ServerType:  newD.ServerType,
-							Hostname:    newD.Host,
-							AltHostname: newD.AltHost,
-							Username:    newD.Username,
-							LegacyAuth:  newD.LegacyAuth,
-						}
-						server := m.App.ServerManager.AddServer(newD.Nickname, conn)
-						m.trySetPasswordAndConnectToServer(server, newD.Password)
-						m.doModalClosed()
-					}
-					d.EnableSubmit()
-				})
-			}()
-		}
-		newD.OnCancel = func() {
-			newPop.Hide()
-			pop.Show()
-		}
-		newPop.Show()
-	}
-	d.OnDeleteServer = func(server *backend.ServerConfig) {
-		pop.Hide()
-		dialog.ShowConfirm(lang.L("Confirm Delete Server"),
-			fmt.Sprintf(lang.L("Are you sure you want to delete the server")+" %q?", server.Nickname),
-			func(ok bool) {
-				if ok {
-					m.App.ServerManager.DeleteServer(server.ID)
-					m.App.DeleteServerCacheDir(server.ID)
-					d.SetServers(m.App.Config.Servers)
-				}
-				if len(m.App.Config.Servers) == 0 {
-					m.PromptForFirstServer()
-				} else {
-					pop.Show()
-				}
-			}, m.MainWindow)
-
-	}
-	m.haveModal = true
-	pop.Show()
-}
-
 func (c *Controller) ShowAboutDialog() {
 	dlg := dialogs.NewAboutDialog(c.AppVersion)
 	pop := widget.NewModalPopUp(dlg, c.MainWindow.Canvas())
@@ -594,6 +314,7 @@ func (c *Controller) ShowAboutDialog() {
 }
 
 func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map[string]string) {
+
 	devs, err := c.App.LocalPlayer.ListAudioDevices()
 	if err != nil {
 		log.Printf("error listing audio devices: %v", err)
@@ -606,6 +327,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	_, canSavePlayQueue := c.App.ServerManager.Server.(mediaprovider.CanSavePlayQueue)
 	isLocalPlayer := isEqualizerPlayer
 	bands := c.App.LocalPlayer.Equalizer().BandFrequencies()
+
 	dlg := dialogs.NewSettingsDialog(c.App.Config,
 		devs, themeFiles, bands,
 		c.App.ServerManager.Server.ClientDecidesScrobble(),
@@ -641,91 +363,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	c.ClosePopUpOnEscape(pop)
 	c.haveModal = true
 	pop.Show()
-}
 
-func (c *Controller) ShowQuickSearch() {
-	qs := dialogs.NewQuickSearch(c.App.ServerManager.Server, c.App.ImageManager)
-	pop := widget.NewModalPopUp(qs.SearchDialog, c.MainWindow.Canvas())
-	qs.SetOnDismiss(func() {
-		pop.Hide()
-		c.doModalClosed()
-	})
-	qs.SetOnNavigateTo(func(contentType mediaprovider.ContentType, id string) {
-		pop.Hide()
-		c.doModalClosed()
-		switch contentType {
-		case mediaprovider.ContentTypeAlbum:
-			c.NavigateTo(AlbumRoute(id))
-		case mediaprovider.ContentTypeArtist:
-			c.NavigateTo(ArtistRoute(id))
-		case mediaprovider.ContentTypeTrack:
-			go c.App.PlaybackManager.PlayTrack(id)
-		case mediaprovider.ContentTypePlaylist:
-			c.NavigateTo(PlaylistRoute(id))
-		case mediaprovider.ContentTypeGenre:
-			c.NavigateTo(GenreRoute(id))
-		case mediaprovider.ContentTypeRadioStation:
-			if rp, ok := c.App.ServerManager.Server.(mediaprovider.RadioProvider); ok {
-				if radio, err := rp.GetRadioStation(id); err == nil {
-					go c.App.PlaybackManager.PlayRadioStation(radio)
-				}
-			}
-		}
-	})
-	c.ClosePopUpOnEscape(pop)
-	c.haveModal = true
-	min := qs.MinSize()
-	height := fyne.Max(min.Height, fyne.Min(min.Height*1.5, c.MainWindow.Canvas().Size().Height*0.7))
-	qs.SearchDialog.Show()
-	pop.Resize(fyne.NewSize(min.Width, height))
-	pop.Show()
-	c.MainWindow.Canvas().Focus(qs.GetSearchEntry())
-}
-
-func (c *Controller) trySetPasswordAndConnectToServer(server *backend.ServerConfig, password string) error {
-	if err := c.App.ServerManager.SetServerPassword(server, password); err != nil {
-		log.Printf("error setting keyring credentials: %v", err)
-		// Don't return an error; fall back to just using the password in-memory
-		// User will need to log in with the password on subsequent runs.
-	}
-	return c.tryConnectToServer(context.Background(), server, password)
-}
-
-// try to connect to the given server, with the configured timeout added to the context
-func (c *Controller) tryConnectToServer(ctx context.Context, server *backend.ServerConfig, password string) error {
-	timeout := time.Duration(c.App.Config.Application.RequestTimeoutSeconds) * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	if err := c.App.ServerManager.TestConnectionAndAuth(ctx, server.ServerConnection, password); err != nil {
-		return err
-	}
-	if err := c.App.ServerManager.ConnectToServer(server, password); err != nil {
-		log.Printf("error connecting to server: %v", err)
-		return err
-	}
-	return nil
-}
-
-func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
-	dlg.SetInfoText(lang.L("Testing connection") + "...")
-	conn := backend.ServerConnection{
-		ServerType:  dlg.ServerType,
-		Hostname:    dlg.Host,
-		AltHostname: dlg.AltHost,
-		Username:    dlg.Username,
-		LegacyAuth:  dlg.LegacyAuth,
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err := c.App.ServerManager.TestConnectionAndAuth(ctx, conn, dlg.Password)
-	if err == backend.ErrUnreachable {
-		dlg.SetErrorText(lang.L("Could not reach server") + fmt.Sprintf(" (%s?)", lang.L("wrong URL")))
-		return false
-	} else if err != nil {
-		dlg.SetErrorText(lang.L("Authentication failed") + fmt.Sprintf(" (%s)", lang.L("wrong username/password")))
-		return false
-	}
-	return true
 }
 
 func (c *Controller) doModalClosed() {

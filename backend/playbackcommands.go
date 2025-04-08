@@ -31,10 +31,11 @@ const (
 )
 
 type playbackCommand struct {
-	Type playbackCommandType
-	Arg  any
-	Arg2 any
-	Arg3 any
+	Type   playbackCommandType
+	Arg    any
+	Arg2   any
+	Arg3   any
+	OnDone func()
 }
 
 // playbackCommandQueue is a queue to accumulate player commands from the UI
@@ -60,9 +61,22 @@ func (c *playbackCommandQueue) C() <-chan playbackCommand {
 	return c.nextChan
 }
 
+func (c *playbackCommandQueue) Clear() {
+	c.mutex.Lock()
+	c.queue = nil
+	c.mutex.Unlock()
+}
+
 func (c *playbackCommandQueue) Stop() {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdContinue, cmdPause, cmdStop},
 		playbackCommand{Type: cmdStop})
+}
+
+func (c *playbackCommandQueue) StopAndWait() {
+	done := make(chan struct{})
+	c.filterCommandsAndAdd([]playbackCommandType{cmdContinue, cmdPause, cmdStop},
+		playbackCommand{Type: cmdStop, OnDone: func() { close(done) }})
+	<-done
 }
 
 func (c *playbackCommandQueue) Continue() {

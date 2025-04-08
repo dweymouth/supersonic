@@ -6,13 +6,10 @@ import (
 	"sort"
 	"strings"
 
-	"fyne.io/fyne/v2/lang"
-
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/layouts"
-	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
@@ -93,17 +90,13 @@ type Tracklist struct {
 	tracks          []*util.TrackListModel
 	tracksOrigOrder []*util.TrackListModel
 
-	nowPlayingID      string
-	colLayout         *layouts.ColumnsLayout
-	hdr               *ListHeader
-	list              *FocusList
-	ctxMenu           *fyne.Menu
-	ratingSubmenu     *fyne.MenuItem
-	shareMenuItem     *fyne.MenuItem
-	songRadioMenuItem *fyne.MenuItem
-	infoMenuItem      *fyne.MenuItem
-	loadingDots       *LoadingDots
-	container         *fyne.Container
+	nowPlayingID string
+	colLayout    *layouts.ColumnsLayout
+	hdr          *ListHeader
+	list         *FocusList
+	ctxMenu      *util.TrackContextMenu
+	loadingDots  *LoadingDots
+	container    *fyne.Container
 }
 
 func NewTracklist(tracks []*mediaprovider.Track, im *backend.ImageManager, useCompactRows bool) *Tracklist {
@@ -342,7 +335,7 @@ func (t *Tracklist) GetTracks() []*mediaprovider.Track {
 
 // Append more tracks to the tracklist.
 func (t *Tracklist) AppendTracks(trs []*mediaprovider.Track) {
-	t.tracksOrigOrder = append(t.tracks, util.ToTrackListModels(trs)...)
+	t.tracksOrigOrder = append(t.tracksOrigOrder, util.ToTrackListModels(trs)...)
 	t.doSortTracks()
 	t.list.Refresh()
 }
@@ -491,8 +484,8 @@ func (t *Tracklist) selectAddOrRemove(idx int) {
 	t.tracks[idx].Selected = !t.tracks[idx].Selected
 }
 
-func (t *Tracklist) selectTrack(idx int) {
-	util.SelectItem(t.tracks, idx)
+func (t *Tracklist) selectTrack(idx int) bool {
+	return util.SelectItem(t.tracks, idx)
 }
 
 func (t *Tracklist) selectRange(idx int) {
@@ -500,88 +493,47 @@ func (t *Tracklist) selectRange(idx int) {
 }
 
 func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
-	t.selectTrack(trackIdx)
-	t.list.Refresh()
+	if t.selectTrack(trackIdx) {
+		t.list.Refresh()
+	}
 	if t.ctxMenu == nil {
-		t.ctxMenu = fyne.NewMenu("")
-		if !t.Options.DisablePlaybackMenu {
-			play := fyne.NewMenuItem(lang.L("Play"), func() {
-				if t.OnPlaySelection != nil {
-					t.OnPlaySelection(t.selectedTracks(), false)
-				}
-			})
-			play.Icon = theme.MediaPlayIcon()
-			shuffle := fyne.NewMenuItem(lang.L("Shuffle"), func() {
-				if t.OnPlaySelection != nil {
-					t.OnPlaySelection(t.selectedTracks(), true)
-				}
-			})
-			shuffle.Icon = myTheme.ShuffleIcon
-			playNext := fyne.NewMenuItem(lang.L("Play next"), func() {
-				if t.OnPlaySelection != nil {
-					t.OnPlaySelectionNext(t.selectedTracks())
-				}
-			})
-			playNext.Icon = myTheme.PlayNextIcon
-			add := fyne.NewMenuItem(lang.L("Add to queue"), func() {
-				if t.OnPlaySelection != nil {
-					t.OnAddToQueue(t.selectedTracks())
-				}
-			})
-			add.Icon = theme.ContentAddIcon()
-			t.songRadioMenuItem = fyne.NewMenuItem(lang.L("Play song radio"), func() {
-				t.onPlaySongRadio(t.selectedTracks())
-			})
-			t.songRadioMenuItem.Icon = myTheme.RadioIcon
-			t.ctxMenu.Items = append(t.ctxMenu.Items,
-				play, shuffle, playNext, add, t.songRadioMenuItem)
+		t.ctxMenu = util.NewTrackContextMenu(t.Options.DisablePlaybackMenu, t.Options.AuxiliaryMenuItems)
+		t.ctxMenu.OnPlay = func(shuffle bool) {
+			t.OnPlaySelection(t.selectedTracks(), shuffle)
 		}
-		playlist := fyne.NewMenuItem(lang.L("Add to playlist")+"...", func() {
-			if t.OnAddToPlaylist != nil {
-				t.OnAddToPlaylist(t.SelectedTrackIDs())
+		t.ctxMenu.OnAddToQueue = func(next bool) {
+			if next {
+				t.OnPlaySelectionNext(t.selectedTracks())
+			} else {
+				t.OnAddToQueue(t.selectedTracks())
 			}
-		})
-		playlist.Icon = myTheme.PlaylistIcon
-		download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
+		}
+		t.ctxMenu.OnPlaySongRadio = func() {
+			t.onPlaySongRadio(t.selectedTracks())
+		}
+		t.ctxMenu.OnAddToPlaylist = func() {
+			t.OnAddToPlaylist(t.SelectedTrackIDs())
+		}
+		t.ctxMenu.OnDownload = func() {
 			t.onDownload(t.selectedTracks(), "Selected tracks")
-		})
-		download.Icon = theme.DownloadIcon()
-		t.infoMenuItem = fyne.NewMenuItem(lang.L("Show info")+"...", func() {
-			if t.OnShowTrackInfo != nil {
-				t.OnShowTrackInfo(t.selectedTracks()[0])
-			}
-		})
-		t.infoMenuItem.Icon = theme.InfoIcon()
-		favorite := fyne.NewMenuItem(lang.L("Set favorite"), func() {
-			t.onSetFavorites(t.selectedTracks(), true, true)
-		})
-		favorite.Icon = myTheme.FavoriteIcon
-		unfavorite := fyne.NewMenuItem(lang.L("Unset favorite"), func() {
-			t.onSetFavorites(t.selectedTracks(), false, true)
-		})
-		unfavorite.Icon = myTheme.NotFavoriteIcon
-		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator(),
-			playlist, download, t.infoMenuItem)
-		t.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
+		}
+		t.ctxMenu.OnShowInfo = func() {
+			t.OnShowTrackInfo(t.selectedTracks()[0])
+		}
+		t.ctxMenu.OnFavorite = func(fav bool) {
+			t.onSetFavorites(t.selectedTracks(), fav, true /*needRefresh*/)
+		}
+		t.ctxMenu.OnShare = func() {
 			t.onShare(t.selectedTracks())
-		})
-		t.shareMenuItem.Icon = myTheme.ShareIcon
-		t.ctxMenu.Items = append(t.ctxMenu.Items, t.shareMenuItem)
-		t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
-		t.ctxMenu.Items = append(t.ctxMenu.Items, favorite, unfavorite)
-		t.ratingSubmenu = util.NewRatingSubmenu(func(rating int) {
-			t.onSetRatings(t.selectedTracks(), rating, true)
-		})
-		t.ctxMenu.Items = append(t.ctxMenu.Items, t.ratingSubmenu)
-		if len(t.Options.AuxiliaryMenuItems) > 0 {
-			t.ctxMenu.Items = append(t.ctxMenu.Items, fyne.NewMenuItemSeparator())
-			t.ctxMenu.Items = append(t.ctxMenu.Items, t.Options.AuxiliaryMenuItems...)
+		}
+		t.ctxMenu.OnSetRating = func(rating int) {
+			t.onSetRatings(t.selectedTracks(), rating, true /*needRefresh*/)
 		}
 	}
-	t.ratingSubmenu.Disabled = t.Options.DisableRating
-	t.shareMenuItem.Disabled = t.Options.DisableSharing || len(t.selectedTracks()) != 1
-	t.infoMenuItem.Disabled = len(t.selectedTracks()) != 1
-	widget.ShowPopUpMenuAtPosition(t.ctxMenu, fyne.CurrentApp().Driver().CanvasForObject(t), e.AbsolutePosition)
+	t.ctxMenu.SetRatingDisabled(t.Options.DisableRating)
+	t.ctxMenu.SetShareDisabled(t.Options.DisableSharing || len(t.selectedTracks()) != 1)
+	t.ctxMenu.SetInfoDisabled(len(t.selectedTracks()) != 1)
+	t.ctxMenu.ShowAtPosition(e.AbsolutePosition, fyne.CurrentApp().Driver().CanvasForObject(t))
 }
 
 func (t *Tracklist) onSetFavorite(trackID string, fav bool) {

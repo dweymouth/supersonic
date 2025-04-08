@@ -52,12 +52,13 @@ func SelectedIndexes(items []*TrackListModel) []int {
 	return selected
 }
 
-func SelectItem(items []*TrackListModel, idx int) {
+func SelectItem(items []*TrackListModel, idx int) bool {
 	if items[idx].Selected {
-		return
+		return false
 	}
 	UnselectAllItems(items)
 	items[idx].Selected = true
+	return true
 }
 
 func SelectAllItems(items []*TrackListModel) {

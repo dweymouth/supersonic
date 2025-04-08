@@ -183,6 +183,7 @@ const (
 
 type MediaItemMetadata struct {
 	Type       MediaItemType
+	MIMEType   string
 	ID         string
 	Name       string
 	Artists    []string
@@ -204,6 +205,7 @@ func (t *Track) Metadata() MediaItemMetadata {
 	}
 	return MediaItemMetadata{
 		Type:       MediaItemTypeTrack,
+		MIMEType:   t.ContentType,
 		ID:         t.ID,
 		Name:       t.Title,
 		Artists:    t.ArtistNames,
@@ -279,4 +281,8 @@ type SearchResult struct {
 
 	// Unset for ContentTypes Artist, Playlist, Genre, and RadioStation
 	ArtistName string
+
+	// The actual item corresponding to this search result
+	// *mediaprovider.Artist for ContentTypeArtist, etc
+	Item any
 }
