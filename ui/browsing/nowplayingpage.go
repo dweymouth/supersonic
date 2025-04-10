@@ -102,7 +102,7 @@ func NewNowPlayingPage(
 	a := &NowPlayingPage{nowPlayingPageState: state}
 	a.ExtendBaseWidget(a)
 
-	doFmtStatus := func() { fyne.Do(a.formatStatusLine) }
+	doFmtStatus := util.FyneDoFunc(a.formatStatusLine)
 	pm.OnPaused(doFmtStatus)
 	pm.OnPlaying(doFmtStatus)
 	pm.OnStopped(doFmtStatus)

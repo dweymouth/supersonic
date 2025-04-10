@@ -33,6 +33,12 @@ const (
 	DateFormatYMD
 )
 
+func FyneDoFunc(f func()) func() {
+	return func() {
+		fyne.Do(f)
+	}
+}
+
 func dateFormatForLocale(locale string) DateFormat {
 	var region string
 	if i := strings.Index(locale, "-"); i > 0 && len(locale) >= 5 {

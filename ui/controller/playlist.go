@@ -12,6 +12,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/dialogs"
+	"github.com/dweymouth/supersonic/ui/util"
 )
 
 // Show dialog to select playlist.
@@ -33,13 +34,11 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 				m.ToastProvider.ShowSuccessToast(msg)
 			})
 		}
-		notifyError := func() {
-			fyne.Do(func() {
-				m.ToastProvider.ShowErrorToast(
-					lang.L("An error occurred adding tracks to the playlist"),
-				)
-			})
-		}
+		notifyError := util.FyneDoFunc(func() {
+			m.ToastProvider.ShowErrorToast(
+				lang.L("An error occurred adding tracks to the playlist"),
+			)
+		})
 		pop.Hide()
 		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
 		if id == "" /* creating new playlist */ {

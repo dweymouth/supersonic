@@ -41,15 +41,9 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 		})
 	})
 
-	pm.OnPaused(func() {
-		fyne.Do(func() { bp.Controls.SetPlaying(false) })
-	})
-	pm.OnPlaying(func() {
-		fyne.Do(func() { bp.Controls.SetPlaying(true) })
-	})
-	pm.OnStopped(func() {
-		fyne.Do(func() { bp.Controls.SetPlaying(false) })
-	})
+	pm.OnPaused(util.FyneDoFunc(func() { bp.Controls.SetPlaying(false) }))
+	pm.OnPlaying(util.FyneDoFunc(func() { bp.Controls.SetPlaying(true) }))
+	pm.OnStopped(util.FyneDoFunc(func() { bp.Controls.SetPlaying(false) }))
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
 	bp.NowPlaying.OnCoverTapped = func() {

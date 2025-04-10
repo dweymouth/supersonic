@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
@@ -56,7 +55,6 @@ type Controller struct {
 	UnselectAllPageFunc func()
 	ToastProvider       ToastProvider
 
-	popUpQueueMutex    sync.Mutex
 	popUpQueue         *widget.PopUp
 	popUpQueueList     *widgets.PlayQueueList
 	popUpQueueLastUsed int64
@@ -72,49 +70,41 @@ func New(app *backend.App, appVersion string, mainWindow fyne.Window) *Controlle
 		App:        app,
 	}
 	c.initVisualizations()
-	c.App.PlaybackManager.OnQueueChange(func() {
-		c.popUpQueueMutex.Lock()
-		defer c.popUpQueueMutex.Unlock()
+	c.App.PlaybackManager.OnQueueChange(util.FyneDoFunc(func() {
 		if c.popUpQueue != nil {
 			c.popUpQueueList.SetItems(c.App.PlaybackManager.GetPlayQueue())
 		}
-	})
+	}))
 	c.App.PlaybackManager.OnSongChange(func(track mediaprovider.MediaItem, _ *mediaprovider.Track) {
-		c.popUpQueueMutex.Lock()
-		defer c.popUpQueueMutex.Unlock()
-		if c.popUpQueue == nil {
-			return
-		}
-		if track == nil {
-			c.popUpQueueList.SetNowPlaying("")
-		} else {
-			c.popUpQueueList.SetNowPlaying(track.Metadata().ID)
-		}
+		fyne.Do(func() {
+			if c.popUpQueue == nil {
+				return
+			}
+			if track == nil {
+				c.popUpQueueList.SetNowPlaying("")
+			} else {
+				c.popUpQueueList.SetNowPlaying(track.Metadata().ID)
+			}
+		})
 	})
 	return c
 }
 
 func (m *Controller) SelectAll() {
-	m.popUpQueueMutex.Lock()
 	if m.popUpQueue != nil && m.popUpQueue.Visible() {
 		m.popUpQueueList.SelectAll()
-		m.popUpQueueMutex.Unlock()
 		return
 	}
-	m.popUpQueueMutex.Unlock()
 	if m.SelectAllPageFunc != nil {
 		m.SelectAllPageFunc()
 	}
 }
 
 func (m *Controller) UnselectAll() {
-	m.popUpQueueMutex.Lock()
 	if m.popUpQueue != nil && m.popUpQueue.Visible() {
 		m.popUpQueueList.UnselectAll()
-		m.popUpQueueMutex.Unlock()
 		return
 	}
-	m.popUpQueueMutex.Unlock()
 	if m.SelectAllPageFunc != nil {
 		m.UnselectAllPageFunc()
 	}
@@ -196,7 +186,6 @@ func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
 }
 
 func (m *Controller) ShowPopUpPlayQueue() {
-	m.popUpQueueMutex.Lock()
 	if m.popUpQueue == nil {
 		m.popUpQueueList = widgets.NewPlayQueueList(m.App.ImageManager, false)
 		m.popUpQueueList.Reorderable = true
@@ -229,25 +218,23 @@ func (m *Controller) ShowPopUpPlayQueue() {
 		go func() {
 			t := time.NewTicker(1 * time.Minute)
 			for range t.C {
-				m.popUpQueueMutex.Lock()
-				now := time.Now().UnixMilli()
-				if m.popUpQueueLastUsed < now-120_000 /*2 min*/ {
-					fynetooltip.DestroyPopUpToolTipLayer(m.popUpQueue)
-					m.popUpQueue = nil
-					m.popUpQueueList = nil
-					m.popUpQueueLastUsed = 0
-					m.popUpQueueMutex.Unlock()
-					t.Stop()
-					return
-				}
-				m.popUpQueueMutex.Unlock()
+				fyne.Do(func() {
+					now := time.Now().UnixMilli()
+					if m.popUpQueueLastUsed < now-120_000 /*2 min*/ {
+						fynetooltip.DestroyPopUpToolTipLayer(m.popUpQueue)
+						m.popUpQueue = nil
+						m.popUpQueueList = nil
+						m.popUpQueueLastUsed = 0
+						t.Stop()
+						return
+					}
+				})
 			}
 		}()
 	}
 	m.popUpQueueLastUsed = time.Now().UnixMilli()
 	popUpQueueList := m.popUpQueueList
 	pop := m.popUpQueue
-	m.popUpQueueMutex.Unlock()
 
 	npID := ""
 	if np := m.App.PlaybackManager.NowPlaying(); np != nil {

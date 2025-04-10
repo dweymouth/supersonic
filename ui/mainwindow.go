@@ -300,8 +300,8 @@ func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
 				m.App.PlaybackManager.SetVolume(vol)
 			}),
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem(lang.L("Show"), func() { fyne.Do(m.Window.Show) }),
-			fyne.NewMenuItem(lang.L("Hide"), func() { fyne.Do(m.Window.Hide) }),
+			fyne.NewMenuItem(lang.L("Show"), m.Window.Show),
+			fyne.NewMenuItem(lang.L("Hide"), m.Window.Hide),
 		)
 		desk.SetSystemTrayMenu(menu)
 		desk.SetSystemTrayIcon(res.ResAppicon256Png)

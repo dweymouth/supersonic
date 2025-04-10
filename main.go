@@ -12,6 +12,7 @@ import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui"
+	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -79,8 +80,8 @@ func main() {
 
 	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp)
 	mainWindow.Window.SetMaster()
-	myApp.OnReactivate = mainWindow.Show
-	myApp.OnExit = func() { fyne.Do(mainWindow.Quit) }
+	myApp.OnReactivate = util.FyneDoFunc(mainWindow.Show)
+	myApp.OnExit = util.FyneDoFunc(mainWindow.Quit)
 
 	windowStartupTasks := sync.OnceFunc(func() {
 		defaultServer := myApp.ServerManager.GetDefaultServer()
