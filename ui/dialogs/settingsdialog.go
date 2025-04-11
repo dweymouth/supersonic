@@ -501,7 +501,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		s.doChooseTTFFile(window, boldFontEntry)
 	})
 
-	uiScaleRadio := widget.NewRadioGroup([]string{"Smaller", "Normal", "Larger"}, func(choice string) {
+	uiScaleRadio := widget.NewRadioGroup([]string{lang.L("Smaller"), lang.L("Normal"), lang.L("Larger")}, func(choice string) {
 		s.config.Application.UIScaleSize = choice
 		s.setRestartRequired()
 	})
@@ -531,8 +531,8 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("Application font"), Style: util.BoldRichTextStyle}),
 		container.New(layout.NewFormLayout(),
-			widget.NewLabel("Normal font"), container.NewBorder(nil, nil, nil, normalFontBrowse, normalFontEntry),
-			widget.NewLabel("Bold font"), container.NewBorder(nil, nil, nil, boldFontBrowse, boldFontEntry),
+			widget.NewLabel(lang.L("Normal font")), container.NewBorder(nil, nil, nil, normalFontBrowse, normalFontEntry),
+			widget.NewLabel(lang.L("Bold font")), container.NewBorder(nil, nil, nil, boldFontBrowse, boldFontEntry),
 		),
 	))
 }
