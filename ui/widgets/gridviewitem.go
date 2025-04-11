@@ -1,9 +1,12 @@
 package widgets
 
 import (
+	"bytes"
 	"image"
 	"image/color"
+	"image/png"
 	"slices"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -35,20 +38,29 @@ type coverImage struct {
 	OnShowPage        func()
 	OnShowContextMenu func(fyne.Position)
 
-	Im              *ImagePlaceholder
-	playbtn         *canvas.Image
-	favoriteButton  *canvas.Image
-	moreButton      *canvas.Image
-	prevTheme       fyne.ThemeVariant
-	bottomPanel     *fyne.Container
+	Im             *ImagePlaceholder
+	playbtn        *canvas.Image
+	favoriteButton *canvas.Image
+	moreButton     *canvas.Image
+	gradient       *canvas.LinearGradient
+	bottomPanel    *fyne.Container
+
+	mouseInAnim *fyne.Animation
+
 	mouseInsidePlay bool
 	mouseInsideFav  bool
 	mouseInsideMore bool
 }
 
 var (
-	playBtnSize        = fyne.NewSize(60, 60)
-	playBtnHoveredSize = fyne.NewSize(65, 65)
+	// N.B: Only one GridViewItem can be showing the play image
+	// at a time, so they can share this image.Image
+	playBtnImageSrc, playBtnImage image.Image
+
+	// opacity when unhovered
+	playBtnOpacity     = float32(0.85)
+	playBtnSize        = fyne.NewSquareSize(60)
+	playBtnHoveredSize = fyne.NewSquareSize(70)
 
 	resourcesInitted             bool
 	heartFilledResource          fyne.Resource
@@ -65,6 +77,9 @@ func initResources() {
 		return
 	}
 	resourcesInitted = true
+
+	playBtnImageSrc, _ = png.Decode(bytes.NewReader(res.ResPlaybuttonPng.StaticContent))
+	playBtnImage = image.NewNRGBA(playBtnImageSrc.Bounds())
 
 	inlineIconSize = fyne.CurrentApp().Settings().Theme().Size(theme.SizeNameInlineIcon)
 
@@ -91,16 +106,18 @@ func newCoverImage(placeholderResource fyne.Resource) *coverImage {
 	c.Im.OnTapped = c.Tapped
 	c.Im.OnTappedSecondary = c.TappedSecondary
 	c.Im.ScaleMode = canvas.ImageScaleFastest
-	c.playbtn = &canvas.Image{FillMode: canvas.ImageFillContain, Resource: res.ResPlaybuttonPng}
+	c.playbtn = &canvas.Image{FillMode: canvas.ImageFillContain, Image: playBtnImage}
 	c.playbtn.SetMinSize(playBtnSize)
+	c.playbtn.ScaleMode = canvas.ImageScaleFastest
 	c.playbtn.Hidden = true
 
 	c.favoriteButton = canvas.NewImageFromResource(heartUnfilledResource)
 	c.favoriteButton.SetMinSize(fyne.NewSquareSize(inlineIconSize))
 	c.moreButton = canvas.NewImageFromResource(moreVerticalResource)
 	c.moreButton.SetMinSize(fyne.NewSquareSize(inlineIconSize))
+	c.gradient = canvas.NewVerticalGradient(color.Transparent, color.Black)
 	c.bottomPanel = container.NewStack(
-		canvas.NewVerticalGradient(color.Transparent, color.Black),
+		c.gradient,
 		container.NewVBox(
 			layout.NewSpacer(), // keep the HBox pushed down
 			container.NewHBox(
@@ -165,14 +182,44 @@ func (c *coverImage) TappedSecondary(e *fyne.PointEvent) {
 }
 
 func (a *coverImage) MouseIn(*desktop.MouseEvent) {
-	a.playbtn.Hidden = false
 	a.updateFavoriteIcon(false)
-	a.favoriteButton.Hidden = !a.EnableFavorite
-	a.bottomPanel.Hidden = false
-	a.Refresh()
+
+	firstTick := true
+	a.mouseInAnim = fyne.NewAnimation(225*time.Millisecond, func(f float32) {
+		a.playbtn.Hidden = false
+		a.favoriteButton.Hidden = !a.EnableFavorite
+		a.bottomPanel.Hidden = false
+
+		if !a.mouseInsidePlay {
+			setPlayBtnTranslucency(f * float32(playBtnOpacity))
+			// else being controlled by other animation
+		}
+
+		t := float64(1 - f)
+		a.moreButton.Translucency = t
+		a.favoriteButton.Translucency = t
+		a.gradient.EndColor = color.RGBA{A: uint8(f * 255)}
+
+		if firstTick {
+			firstTick = false
+			a.Refresh()
+		} else {
+			a.playbtn.Refresh()
+			a.bottomPanel.Refresh()
+		}
+		if f == 1 {
+			a.mouseInAnim = nil
+		}
+	})
+	a.mouseInAnim.Curve = fyne.AnimationEaseIn
+	a.mouseInAnim.Start()
 }
 
 func (a *coverImage) MouseOut() {
+	if a.mouseInAnim != nil {
+		a.mouseInAnim.Stop()
+		a.mouseInAnim = nil
+	}
 	a.mouseInsidePlay = false
 	a.mouseInsideFav = false
 	a.mouseInsideMore = false
@@ -187,9 +234,21 @@ func (a *coverImage) MouseMoved(e *desktop.MouseEvent) {
 			return
 		}
 		if in {
-			a.playbtn.SetMinSize(playBtnHoveredSize)
+			fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+				t := (1-playBtnOpacity)*f + playBtnOpacity
+				setPlayBtnTranslucency(t)
+				delta := playBtnHoveredSize.Subtract(playBtnSize)
+				a.playbtn.SetMinSize(playBtnSize.Add(fyne.NewSquareSize(delta.Width * f)))
+				a.playbtn.Refresh()
+			}).Start()
 		} else {
-			a.playbtn.SetMinSize(playBtnSize)
+			fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+				t := 1 - (1-playBtnOpacity)*f
+				setPlayBtnTranslucency(t)
+				delta := playBtnHoveredSize.Subtract(playBtnSize)
+				a.playbtn.SetMinSize(playBtnHoveredSize.Subtract(fyne.NewSquareSize(delta.Height * f)))
+				a.playbtn.Refresh()
+			}).Start()
 		}
 		a.playbtn.Refresh()
 		a.mouseInsidePlay = in
@@ -280,6 +339,28 @@ func (a *coverImage) ResetPlayButton() {
 func isInside(origin fyne.Position, radius float32, point fyne.Position) bool {
 	x, y := (point.X - origin.X), (point.Y - origin.Y)
 	return x*x+y*y <= radius*radius
+}
+
+func setPlayBtnTranslucency(f float32) {
+	size := playBtnImageSrc.Bounds().Size()
+	primary := theme.Color(theme.ColorNamePrimary).(color.NRGBA)
+	for x := 0; x < size.X; x++ {
+		for y := 0; y < size.Y; y++ {
+			r, _, _, a := playBtnImageSrc.At(x, y).RGBA()
+			// using the PNG source just as an alpha mask + white play triangle
+			c := primary
+			if r > 65000 {
+				// pixel is white (play triangle)
+				c = color.NRGBA{
+					R: 255,
+					G: 255,
+					B: 255,
+				}
+			}
+			c.A = uint8(float32(a) / 257 * f)
+			playBtnImage.(*image.NRGBA).SetNRGBA(x, y, c)
+		}
+	}
 }
 
 type GridViewItemModel struct {
