@@ -175,7 +175,7 @@ func (a *FavoritesPage) Scroll(amount float32) {
 		grid = a.artistGrid
 	default:
 		if tr := a.tracklistOrNil(); tr != nil {
-			tr.Scroll(amount)
+			tr.ScrollBy(amount)
 		}
 		return
 	}

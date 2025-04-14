@@ -128,7 +128,7 @@ func (t *TracksPage) OnSongChange(item mediaprovider.MediaItem, lastScrobbledIfA
 var _ Scrollable = (*TracksPage)(nil)
 
 func (g *TracksPage) Scroll(scrollAmt float32) {
-	g.tracklist.Scroll(scrollAmt)
+	g.tracklist.ScrollBy(scrollAmt)
 }
 
 var _ Searchable = (*TracksPage)(nil)

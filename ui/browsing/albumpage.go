@@ -37,6 +37,7 @@ type AlbumPage struct {
 type albumPageState struct {
 	albumID string
 	sort    widgets.TracklistSort
+	scroll  float32
 	cfg     *backend.AlbumPageConfig
 	pool    *util.WidgetPool
 	mp      mediaprovider.MediaProvider
@@ -54,7 +55,7 @@ func NewAlbumPage(
 	im *backend.ImageManager,
 	contr *controller.Controller,
 ) *AlbumPage {
-	return newAlbumPage(albumID, cfg, pool, pm, mp, im, contr, widgets.TracklistSort{})
+	return newAlbumPage(albumID, cfg, pool, pm, mp, im, contr, widgets.TracklistSort{}, 0)
 }
 
 func newAlbumPage(
@@ -66,6 +67,7 @@ func newAlbumPage(
 	im *backend.ImageManager,
 	contr *controller.Controller,
 	sort widgets.TracklistSort,
+	scroll float32,
 ) *AlbumPage {
 	a := &AlbumPage{
 		albumPageState: albumPageState{
@@ -76,6 +78,7 @@ func newAlbumPage(
 			mp:      mp,
 			im:      im,
 			contr:   contr,
+			scroll:  scroll,
 		},
 	}
 	a.ExtendBaseWidget(a)
@@ -122,6 +125,7 @@ func (a *AlbumPage) Save() SavedPage {
 	a.tracklist.SetLoading(false)
 	s := a.albumPageState
 	s.sort = a.tracklist.Sorting()
+	s.scroll = a.tracklist.GetScrollOffset()
 	a.header.page = nil
 	a.pool.Release(util.WidgetTypeAlbumPageHeader, a.header)
 	a.tracklist.Clear()
@@ -159,7 +163,7 @@ func (a *AlbumPage) UnselectAll() {
 var _ Scrollable = (*AlbumPage)(nil)
 
 func (a *AlbumPage) Scroll(scrollAmt float32) {
-	a.tracklist.Scroll(scrollAmt)
+	a.tracklist.ScrollBy(scrollAmt)
 }
 
 // should be called asynchronously
@@ -188,6 +192,10 @@ func (a *AlbumPage) load() {
 		a.tracks = album.Tracks
 		a.tracklist.SetTracks(album.Tracks)
 		a.tracklist.SetNowPlaying(a.nowPlayingID)
+		if a.scroll != 0 {
+			a.tracklist.ScrollToOffset(a.scroll)
+			a.scroll = 0
+		}
 	})
 }
 
@@ -396,5 +404,5 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 }
 
 func (s *albumPageState) Restore() Page {
-	return newAlbumPage(s.albumID, s.cfg, s.pool, s.pm, s.mp, s.im, s.contr, s.sort)
+	return newAlbumPage(s.albumID, s.cfg, s.pool, s.pm, s.mp, s.im, s.contr, s.sort, s.scroll)
 }

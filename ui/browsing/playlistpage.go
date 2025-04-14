@@ -46,6 +46,7 @@ type playlistPageState struct {
 	pm         *backend.PlaybackManager
 	im         *backend.ImageManager
 	trackSort  widgets.TracklistSort
+	scroll     float32
 }
 
 func NewPlaylistPage(
@@ -57,7 +58,7 @@ func NewPlaylistPage(
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
 ) *PlaylistPage {
-	return newPlaylistPage(playlistID, conf, contr, pool, sm, pm, im, widgets.TracklistSort{})
+	return newPlaylistPage(playlistID, conf, contr, pool, sm, pm, im, widgets.TracklistSort{}, 0)
 }
 
 func newPlaylistPage(
@@ -69,8 +70,9 @@ func newPlaylistPage(
 	pm *backend.PlaybackManager,
 	im *backend.ImageManager,
 	trackSort widgets.TracklistSort,
+	scroll float32,
 ) *PlaylistPage {
-	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, conf: conf, contr: contr, widgetPool: pool, sm: sm, pm: pm, im: im}}
+	a := &PlaylistPage{playlistPageState: playlistPageState{playlistID: playlistID, conf: conf, contr: contr, widgetPool: pool, sm: sm, pm: pm, im: im, scroll: scroll}}
 	a.ExtendBaseWidget(a)
 	if h := a.widgetPool.Obtain(util.WidgetTypePlaylistPageHeader); h != nil {
 		a.header = h.(*PlaylistPageHeader)
@@ -123,6 +125,7 @@ func (a *PlaylistPage) Save() SavedPage {
 	a.tracklist.SetLoading(false)
 	p := a.playlistPageState
 	p.trackSort = a.tracklist.Sorting()
+	p.scroll = a.tracklist.GetScrollOffset()
 	p.widgetPool.Release(util.WidgetTypePlaylistPageHeader, a.header)
 	a.tracklist.Clear()
 	a.tracklist.OnReorderTracks = nil
@@ -160,7 +163,7 @@ func (a *PlaylistPage) UnselectAll() {
 var _ Scrollable = (*PlaylistPage)(nil)
 
 func (a *PlaylistPage) Scroll(scrollAmt float32) {
-	a.tracklist.Scroll(scrollAmt)
+	a.tracklist.ScrollBy(scrollAmt)
 }
 
 // should be called asynchronously
@@ -188,6 +191,10 @@ func (a *PlaylistPage) load() {
 		a.tracks = playlist.Tracks
 		a.tracklist.SetTracks(playlist.Tracks)
 		a.tracklist.SetNowPlaying(a.nowPlayingID)
+		if a.scroll != 0 {
+			a.tracklist.ScrollToOffset(a.scroll)
+			a.scroll = 0
+		}
 		a.header.Update(playlist)
 	})
 }
@@ -495,5 +502,5 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *mediaprovider.Playlis
 }
 
 func (s *playlistPageState) Restore() Page {
-	return newPlaylistPage(s.playlistID, s.conf, s.contr, s.widgetPool, s.sm, s.pm, s.im, s.trackSort)
+	return newPlaylistPage(s.playlistID, s.conf, s.contr, s.widgetPool, s.sm, s.pm, s.im, s.trackSort, s.scroll)
 }

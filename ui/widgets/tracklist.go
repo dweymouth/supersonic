@@ -215,8 +215,16 @@ func (t *Tracklist) SetLoading(loading bool) {
 	}
 }
 
-func (t *Tracklist) Scroll(amount float32) {
+func (t *Tracklist) ScrollBy(amount float32) {
 	t.list.ScrollToOffset(t.list.GetScrollOffset() + amount)
+}
+
+func (t *Tracklist) GetScrollOffset() float32 {
+	return t.list.GetScrollOffset()
+}
+
+func (t *Tracklist) ScrollToOffset(offset float32) {
+	t.list.ScrollToOffset(offset)
 }
 
 // Gets the track at the given index.
