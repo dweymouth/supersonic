@@ -556,6 +556,9 @@ func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover i
 			}
 			c.ClosePopUpOnEscape(pop)
 			c.haveModal = true
+			pop.Resize(pop.Content.MinSize()) // needed so that NonScrollingMinHeight can consider the width
+			h := fyne.Min(dlg.NonScrollingMinHeight(), c.MainWindow.Canvas().Size().Height*0.85)
+			pop.Resize(fyne.NewSize(dlg.MinSize().Width, h))
 			pop.Show()
 		})
 	}()

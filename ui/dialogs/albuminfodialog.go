@@ -25,15 +25,29 @@ type AlbumInfoDialog struct {
 
 	OnDismiss func()
 
-	content fyne.CanvasObject
+	mainContainer   *fyne.Container
+	bottomContainer *fyne.Container
+	content         fyne.CanvasObject
 }
 
 func NewAlbumInfoDialog(albumInfo *mediaprovider.AlbumInfo, albumName string, albumCover image.Image) *AlbumInfoDialog {
 	a := &AlbumInfoDialog{}
 	a.ExtendBaseWidget(a)
 
-	a.content = container.NewVBox(
-		a.buildMainContainer(albumInfo, albumName, albumCover),
+	a.content = container.NewBorder(nil, /*top*/
+		a.buildBottomContainer(),
+		nil /*left*/, nil, /*right*/
+		a.buildMainContainer(albumInfo, albumName, albumCover), /*content*/
+	)
+	return a
+}
+
+func (a *AlbumInfoDialog) MinSize() fyne.Size {
+	return fyne.NewSize(550, a.BaseWidget.MinSize().Height)
+}
+
+func (a *AlbumInfoDialog) buildBottomContainer() *fyne.Container {
+	a.bottomContainer = container.NewVBox(
 		widget.NewSeparator(),
 		container.NewHBox(
 			layout.NewSpacer(),
@@ -44,11 +58,7 @@ func NewAlbumInfoDialog(albumInfo *mediaprovider.AlbumInfo, albumName string, al
 			}),
 		),
 	)
-	return a
-}
-
-func (a *AlbumInfoDialog) MinSize() fyne.Size {
-	return fyne.NewSize(550, a.BaseWidget.MinSize().Height)
+	return a.bottomContainer
 }
 
 func (a *AlbumInfoDialog) buildMainContainer(albumInfo *mediaprovider.AlbumInfo, albumName string, albumCover image.Image) *fyne.Container {
@@ -70,16 +80,24 @@ func (a *AlbumInfoDialog) buildMainContainer(albumInfo *mediaprovider.AlbumInfo,
 
 	urlContainer := a.buildUrlContainer(albumInfo.LastFmUrl, albumInfo.MusicBrainzID)
 
-	return container.New(
+	a.mainContainer = container.New(
 		&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 10, TopPadding: 15, BottomPadding: 10},
-		container.NewVBox(
-			iconImage,
-			title,
-			infoContent,
-			urlContainer,
+		container.NewScroll(
+			container.NewVBox(
+				iconImage,
+				title,
+				infoContent,
+				urlContainer,
+			),
 		),
 	)
+	return a.mainContainer
+}
 
+func (a *AlbumInfoDialog) NonScrollingMinHeight() float32 {
+	l := a.mainContainer.Layout.(*layout.CustomPaddedLayout)
+	s := a.mainContainer.Objects[0].(*container.Scroll)
+	return l.TopPadding + l.BottomPadding + s.Content.MinSize().Height + theme.Padding()*3 + a.bottomContainer.MinSize().Height
 }
 
 func (a *AlbumInfoDialog) CreateRenderer() fyne.WidgetRenderer {
