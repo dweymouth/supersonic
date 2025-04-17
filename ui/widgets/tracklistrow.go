@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -393,7 +394,7 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.dur.Text = util.SecondsToMMSS(float64(tr.Duration))
 		t.year.Text = strconv.Itoa(tr.Year)
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
-		t.comment.Text = tr.Comment
+		t.comment.Text = strings.ReplaceAll(tr.Comment, "\n", " ")
 		t.comment.SetToolTip(tr.Comment)
 		t.bitrate.Text = strconv.Itoa(tr.BitRate)
 		t.size.Text = util.BytesToSizeString(tr.Size)
