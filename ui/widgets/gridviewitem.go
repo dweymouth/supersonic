@@ -62,6 +62,10 @@ var (
 	playBtnSize        = fyne.NewSquareSize(60)
 	playBtnHoveredSize = fyne.NewSquareSize(70)
 
+	// current item animating mouse out, if any
+	gridViewMouseOutAnim *fyne.Animation
+	gridViewMouseOutItem *coverImage
+
 	resourcesInitted             bool
 	heartFilledResource          fyne.Resource
 	heartFilledHoveredResource   fyne.Resource
@@ -182,6 +186,17 @@ func (c *coverImage) TappedSecondary(e *fyne.PointEvent) {
 }
 
 func (a *coverImage) MouseIn(*desktop.MouseEvent) {
+	// stop mouse out animation for different item, if any
+	if gridViewMouseOutAnim != nil {
+		gridViewMouseOutAnim.Stop()
+		gridViewMouseOutAnim = nil
+
+		gridViewMouseOutItem.bottomPanel.Hidden = true
+		gridViewMouseOutItem.playbtn.Hidden = true
+		gridViewMouseOutItem.Refresh()
+		gridViewMouseOutItem = nil
+	}
+
 	a.updateFavoriteIcon(false)
 
 	firstTick := true
@@ -220,12 +235,28 @@ func (a *coverImage) MouseOut() {
 		a.mouseInAnim.Stop()
 		a.mouseInAnim = nil
 	}
+	gridViewMouseOutAnim = fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+		t := 1 - f
+		setPlayBtnTranslucency(t * float32(playBtnOpacity))
+		a.moreButton.Translucency = float64(f)
+		a.favoriteButton.Translucency = float64(f)
+		a.gradient.EndColor = color.RGBA{A: uint8(t * 255)}
+		if f == 1 {
+			a.bottomPanel.Hidden = true
+			a.playbtn.Hidden = true
+			gridViewMouseOutAnim = nil
+			gridViewMouseOutItem = nil
+			a.Refresh()
+		} else {
+			a.playbtn.Refresh()
+			a.bottomPanel.Refresh()
+		}
+	})
+	gridViewMouseOutItem = a
+	gridViewMouseOutAnim.Start()
 	a.mouseInsidePlay = false
 	a.mouseInsideFav = false
 	a.mouseInsideMore = false
-	a.playbtn.Hidden = true
-	a.bottomPanel.Hidden = true
-	a.Refresh()
 }
 
 func (a *coverImage) MouseMoved(e *desktop.MouseEvent) {
