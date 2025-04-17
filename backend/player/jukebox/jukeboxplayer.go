@@ -30,6 +30,14 @@ type JukeboxPlayer struct {
 	nextTrackTimer     *time.Timer
 }
 
+func NewJukeboxPlayer(provider mediaprovider.JukeboxProvider) (*JukeboxPlayer, error) {
+	j := &JukeboxPlayer{
+		provider: provider,
+		volume:   -1,
+	}
+	return j, nil
+}
+
 func (j *JukeboxPlayer) SetVolume(vol int) error {
 	if err := j.provider.JukeboxSetVolume(vol); err != nil {
 		return err
@@ -39,7 +47,13 @@ func (j *JukeboxPlayer) SetVolume(vol int) error {
 }
 
 func (j *JukeboxPlayer) GetVolume() int {
-	return j.volume
+	if j.volume == -1 {
+		stat, err := j.provider.JukeboxGetStatus()
+		if err == nil {
+			j.volume = stat.Volume
+		}
+	}
+	return max(j.volume, 0)
 }
 
 func (j *JukeboxPlayer) Continue() error {

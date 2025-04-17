@@ -39,7 +39,7 @@ type proxyMapEntry struct {
 }
 
 type DLNAPlayer struct {
-	player.BasePlayerCallbackImpl
+	player.RemotePlayerBase
 
 	destroyed     bool
 	cancelRequest context.CancelFunc
@@ -84,10 +84,6 @@ type DLNAPlayer struct {
 	// to begin playing the item in nextTrackMeta.
 	failedToSetNext    bool
 	unsetNextMediaItem *avtransport.MediaItem
-
-	timerActive atomic.Bool
-	timer       *time.Timer
-	resetChan   chan (time.Duration)
 }
 
 func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
@@ -115,11 +111,12 @@ func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
 		return nil, fmt.Errorf("failed to connect to %s", device.FriendlyName)
 	}
 
-	return &DLNAPlayer{
+	d := &DLNAPlayer{
 		avTransport:   avt,
 		renderControl: rc,
-		resetChan:     make(chan time.Duration),
-	}, nil
+	}
+	d.InitRemotePlayerBase(d.handleOnTrackChange)
+	return d, nil
 }
 
 func (d *DLNAPlayer) SetVolume(vol int) error {
@@ -184,7 +181,7 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 	}
 	d.state = playing
 	remainingDur := meta.Duration - int(startTime)
-	d.setTrackChangeTimer(time.Duration(remainingDur) * time.Second)
+	d.SetTrackChangeTimer(time.Duration(remainingDur) * time.Second)
 	d.stopwatch.Reset()
 	d.stopwatch.Start()
 	d.lastStartTime = int(startTime)
@@ -270,7 +267,7 @@ func (d *DLNAPlayer) Continue() error {
 	nextTrackChange := time.Duration(d.curTrackMeta.Duration)*time.Second - d.curPlayPos()
 	d.metaLock.Unlock()
 	d.state = playing
-	d.setTrackChangeTimer(nextTrackChange)
+	d.SetTrackChangeTimer(nextTrackChange)
 	d.stopwatch.Start()
 	d.InvokeOnPlaying()
 	return nil
@@ -287,7 +284,7 @@ func (d *DLNAPlayer) Pause() error {
 	if err := d.avTransport.Pause(ctx); err != nil {
 		return err
 	}
-	d.setTrackChangeTimer(0)
+	d.SetTrackChangeTimer(0)
 	d.stopwatch.Stop()
 	d.state = paused
 	d.InvokeOnPaused()
@@ -321,7 +318,7 @@ func (d *DLNAPlayer) Stop(force bool) error {
 		}
 		fallthrough
 	case paused:
-		d.setTrackChangeTimer(0)
+		d.SetTrackChangeTimer(0)
 		d.stopwatch.Reset()
 		d.lastStartTime = 0
 		d.state = stopped
@@ -353,7 +350,7 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 		d.metaLock.Lock()
 		nextTrackChange := time.Duration(d.curTrackMeta.Duration)*time.Second - time.Duration(secs)*time.Second
 		d.metaLock.Unlock()
-		d.setTrackChangeTimer(nextTrackChange)
+		d.SetTrackChangeTimer(nextTrackChange)
 		d.stopwatch.Start()
 	}
 
@@ -409,7 +406,7 @@ func (d *DLNAPlayer) curPlayPos() time.Duration {
 
 func (d *DLNAPlayer) Destroy() {
 	d.destroyed = true
-	d.setTrackChangeTimer(0)
+	d.SetTrackChangeTimer(0)
 	if d.cancelRequest != nil {
 		d.cancelRequest()
 	}
@@ -430,7 +427,7 @@ func (d *DLNAPlayer) syncPlaybackTime() {
 		if d.state == playing {
 			d.stopwatch.Start()
 		}
-		d.setTrackChangeTimer(time.Duration(d.curTrackMeta.Duration-d.lastStartTime) * time.Second)
+		d.SetTrackChangeTimer(time.Duration(d.curTrackMeta.Duration-d.lastStartTime) * time.Second)
 		d.InvokeOnSeek()
 	}
 }
@@ -458,51 +455,6 @@ func (d *DLNAPlayer) ensureSetupProxy() error {
 
 	go d.proxyServer.Serve(listener)
 	return nil
-}
-
-func (d *DLNAPlayer) setTrackChangeTimer(dur time.Duration) {
-	if d.timerActive.Swap(true) {
-		// was active
-		d.resetChan <- dur
-		return
-	}
-	if dur == 0 {
-		d.timerActive.Store(false)
-		return
-	}
-
-	d.timer = time.NewTimer(dur)
-	go func() {
-		for {
-			select {
-			case dur := <-d.resetChan:
-				if dur == 0 {
-					d.timerActive.Store(false)
-					if !d.timer.Stop() {
-						select {
-						case <-d.timer.C:
-						default:
-						}
-					}
-					d.timer = nil
-					return
-				}
-				// reset the timer
-				if !d.timer.Stop() {
-					select {
-					case <-d.timer.C:
-					default:
-					}
-				}
-				d.timer.Reset(dur)
-			case <-d.timer.C:
-				d.timerActive.Store(false)
-				d.timer = nil
-				d.handleOnTrackChange()
-				return
-			}
-		}
-	}()
 }
 
 func (d *DLNAPlayer) handleOnTrackChange() {
@@ -535,7 +487,7 @@ func (d *DLNAPlayer) handleOnTrackChange() {
 		d.lastStartTime = 0
 		d.stopwatch.Reset()
 		d.stopwatch.Start()
-		d.setTrackChangeTimer(nextTrackChange)
+		d.SetTrackChangeTimer(nextTrackChange)
 		d.InvokeOnTrackChange()
 
 		go func() {
