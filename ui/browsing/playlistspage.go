@@ -365,7 +365,7 @@ func NewPlaylistList(initialSort widgets.ListHeaderSort) *PlaylistList {
 				row.ListItemID = id
 				row.PlaylistID = a.playlists[id].ID
 				row.nameLabel.Text = a.playlists[id].Name
-				row.descrptionLabel.Text = a.playlists[id].Description
+				row.descrptionLabel.Text = strings.ReplaceAll(a.playlists[id].Description, "\n", " ")
 				row.ownerLabel.Text = a.playlists[id].Owner
 				row.trackCountLabel.Text = strconv.Itoa(a.playlists[id].TrackCount)
 				row.Refresh()

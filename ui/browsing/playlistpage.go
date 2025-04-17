@@ -446,10 +446,9 @@ func (a *PlaylistPageHeader) Update(playlist *mediaprovider.PlaylistWithTracks) 
 	a.playlistInfo = playlist
 	a.editButton.Hidden = playlist.Owner != a.page.sm.LoggedInUser
 	a.titleLabel.Segments[0].(*widget.TextSegment).Text = playlist.Name
-	a.descriptionLabel.SetText(playlist.Description)
+	a.descriptionLabel.SetText(strings.ReplaceAll(playlist.Description, "\n", " "))
 	a.ownerLabel.SetText(a.formatPlaylistOwnerStr(playlist))
 	a.trackTimeLabel.SetText(a.formatPlaylistTrackTimeStr(playlist))
-	a.createdAtLabel.SetText("created at TODO")
 
 	var haveCover bool
 	if playlist.CoverArtID != "" {
