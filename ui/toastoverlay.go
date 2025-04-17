@@ -12,13 +12,14 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/widgets"
 )
 
 const (
 	toastAutoDismissalTime = 3 * time.Second
-	toastAnimationDuration = 100 * time.Millisecond
+	toastAnimationDuration = myTheme.AnimationDurationShort
 )
 
 type ToastOverlay struct {

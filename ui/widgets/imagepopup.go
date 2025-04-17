@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 )
 
 const (
@@ -41,7 +42,7 @@ func (i *ImagePopUp) Show() {
 		canvSize.Width/2,
 		canvSize.Height/2,
 	))
-	anim := fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+	anim := fyne.NewAnimation(myTheme.AnimationDurationShort, func(f float32) {
 		if f == 1 {
 			i.Content.(*canvas.Image).ScaleMode = canvas.ImageScaleSmooth
 		}

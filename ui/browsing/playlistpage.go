@@ -16,7 +16,6 @@ import (
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
@@ -359,7 +358,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 					// dismissal animation
 					searchEntry.Scroll = container.ScrollNone
 					searchEntry.SetPlaceHolder("")
-					fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+					fyne.NewAnimation(myTheme.AnimationDurationShort, func(f float32) {
 						f = 1 - f
 						w := (200-minW)*f + minW
 						searchEntry.SetMinWidth(w)
@@ -375,7 +374,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 		buttonRow.Objects[3] = searchEntry
 		searchEntry.SetMinWidth(minW)
 		fyne.CurrentApp().Driver().CanvasForObject(a).Focus(searchEntry)
-		fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+		fyne.NewAnimation(myTheme.AnimationDurationShort, func(f float32) {
 			w := (200-minW)*f + minW
 			searchEntry.SetMinWidth(w)
 			// re-layout container (without unneeded full refresh)

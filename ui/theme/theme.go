@@ -10,11 +10,13 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/res"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
 )
 
@@ -30,6 +32,10 @@ const (
 	SizeNameSubSubHeadingText fyne.ThemeSizeName = "subSubHeadingText" // in between Text and SubHeadingText
 	SizeNameSubText           fyne.ThemeSizeName = "subText"           // in between Text and Caption
 	SizeNameSuffixText        fyne.ThemeSizeName = "suffixText"        // a tiny bit smaller than subText
+
+	AnimationDurationShort  = canvas.DurationShort
+	AnimationDurationMedium = 225 * time.Millisecond
+	AnimationDurationLong   = canvas.DurationStandard
 )
 
 var (

@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/cenkalti/dominantcolor"
 	"github.com/dweymouth/supersonic/backend"
@@ -321,7 +320,7 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 	// despite not being marked as such
 	// TODO: if this changes, use fyne.Do
 	anim := canvas.NewColorRGBAAnimation(
-		a.background.StartColor, c, 75*time.Millisecond, func(c color.Color) {
+		a.background.StartColor, c, myTheme.AnimationDurationMedium, func(c color.Color) {
 			a.background.StartColor = c
 			a.background.Refresh()
 		})

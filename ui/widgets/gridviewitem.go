@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"image/png"
 	"slices"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -200,7 +199,7 @@ func (a *coverImage) MouseIn(*desktop.MouseEvent) {
 	a.updateFavoriteIcon(false)
 
 	firstTick := true
-	a.mouseInAnim = fyne.NewAnimation(225*time.Millisecond, func(f float32) {
+	a.mouseInAnim = fyne.NewAnimation(myTheme.AnimationDurationMedium, func(f float32) {
 		a.playbtn.Hidden = false
 		a.favoriteButton.Hidden = !a.EnableFavorite
 		a.bottomPanel.Hidden = false
@@ -235,7 +234,7 @@ func (a *coverImage) MouseOut() {
 		a.mouseInAnim.Stop()
 		a.mouseInAnim = nil
 	}
-	gridViewMouseOutAnim = fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+	gridViewMouseOutAnim = fyne.NewAnimation(myTheme.AnimationDurationShort, func(f float32) {
 		t := 1 - f
 		setPlayBtnTranslucency(t * float32(playBtnOpacity))
 		a.moreButton.Translucency = float64(f)
@@ -265,7 +264,7 @@ func (a *coverImage) MouseMoved(e *desktop.MouseEvent) {
 			return
 		}
 		if in {
-			fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+			fyne.NewAnimation(myTheme.AnimationDurationShort, func(f float32) {
 				t := (1-playBtnOpacity)*f + playBtnOpacity
 				setPlayBtnTranslucency(t)
 				delta := playBtnHoveredSize.Subtract(playBtnSize)
@@ -273,7 +272,7 @@ func (a *coverImage) MouseMoved(e *desktop.MouseEvent) {
 				a.playbtn.Refresh()
 			}).Start()
 		} else {
-			fyne.NewAnimation(canvas.DurationShort, func(f float32) {
+			fyne.NewAnimation(myTheme.AnimationDurationShort, func(f float32) {
 				t := 1 - (1-playBtnOpacity)*f
 				setPlayBtnTranslucency(t)
 				delta := playBtnHoveredSize.Subtract(playBtnSize)
