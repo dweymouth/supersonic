@@ -62,6 +62,7 @@ const (
 	ColumnRating      = "Rating"
 	ColumnPlays       = "Plays"
 	ColumnComment     = "Comment"
+	ColumnBPM         = "BPM"
 	ColumnBitrate     = "Bitrate"
 	ColumnSize        = "Size"
 	ColumnPath        = "Path"
@@ -87,6 +88,7 @@ var (
 		rating := lang.L("Rating")
 		plays := lang.L("Plays")
 		comment := lang.L("Comment")
+		bpm := lang.L("BPM")
 		bitrate := lang.L("Bit rate")
 		size := lang.L("Size")
 		filepath := lang.L("File path")
@@ -103,6 +105,7 @@ var (
 			{Name: ColumnRating, Col: ListColumn{Text: rating, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnPlays, Col: ListColumn{Text: plays, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnComment, Col: ListColumn{Text: comment, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnBPM, Col: ListColumn{Text: bpm, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnBitrate, Col: ListColumn{Text: bitrate, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnSize, Col: ListColumn{Text: size, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnPath, Col: ListColumn{Text: filepath, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
@@ -119,6 +122,7 @@ var (
 			{Name: ColumnRating, Col: ListColumn{Text: rating, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnPlays, Col: ListColumn{Text: plays, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnComment, Col: ListColumn{Text: comment, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnBPM, Col: ListColumn{Text: bpm, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnBitrate, Col: ListColumn{Text: bitrate, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnSize, Col: ListColumn{Text: size, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnPath, Col: ListColumn{Text: filepath, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
@@ -140,6 +144,9 @@ var (
 		playsColWidth := fyne.Max(
 			widget.NewLabel("9999").MinSize().Width,
 			widget.NewLabel(plays).MinSize().Width+sortIconWidth)
+		bpmColWidth := fyne.Max(
+			widget.NewLabel(bpm+"   ").MinSize().Width,
+			widget.NewLabel("9999").MinSize().Width)
 		bitrateColWidth := fyne.Max(
 			widget.NewLabel("1000").MinSize().Width,
 			widget.NewLabel(bitrate).MinSize().Width+sortIconWidth)
@@ -147,10 +154,10 @@ var (
 			widget.NewLabel("99.9 MB").MinSize().Width,
 			widget.NewLabel(size).MinSize().Width+sortIconWidth)
 
-		// #, Title, Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-		CompactTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, -1, bitrateColWidth, sizeColWidth, -1}
-		// #, Title/Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, Bitrate, Size, Path
-		ExpandedTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, -1, bitrateColWidth, sizeColWidth, -1}
+		// #, Title, Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, BPM, Bitrate, Size, Path
+		CompactTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, -1}
+		// #, Title/Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, Comment, BPM, Bitrate, Size, Path
+		ExpandedTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, -1}
 	})
 )
 
@@ -190,6 +197,7 @@ type tracklistRowBase struct {
 	bitrate  *widget.Label
 	plays    *widget.Label
 	comment  *ttwidget.Label
+	bpm      *widget.Label
 	size     *widget.Label
 	path     *ttwidget.Label
 
@@ -245,7 +253,7 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 
 	v := makeVerticallyCentered // func alias
 	container := container.New(tracklist.colLayout,
-		v(t.num), titleArtistImg, v(t.album), v(t.composer), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.comment), v(t.bitrate), v(t.size), v(t.path))
+		v(t.num), titleArtistImg, v(t.album), v(t.composer), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.comment), v(t.bpm), v(t.bitrate), v(t.size), v(t.path))
 	t.Content = container
 	t.setColVisibility = func(colNum int, vis bool) bool {
 		c := container.Objects[colNum].(*fyne.Container)
@@ -273,7 +281,7 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 	t.playingIcon = playingIcon
 
 	t.Content = container.New(tracklist.colLayout,
-		t.num, t.name, t.artist, t.album, t.composer, t.dur, t.year, t.favorite, t.rating, t.plays, t.comment, t.bitrate, t.size, t.path)
+		t.num, t.name, t.artist, t.album, t.composer, t.dur, t.year, t.favorite, t.rating, t.plays, t.comment, t.bpm, t.bitrate, t.size, t.path)
 
 	colHiddenPtrMap := map[int]*bool{
 		2:  &t.artist.Hidden,
@@ -285,9 +293,10 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 		8:  &t.rating.Hidden,
 		9:  &t.plays.Hidden,
 		10: &t.comment.Hidden,
-		11: &t.bitrate.Hidden,
-		12: &t.size.Hidden,
-		13: &t.path.Hidden,
+		11: &t.bpm.Hidden,
+		12: &t.bitrate.Hidden,
+		13: &t.size.Hidden,
+		14: &t.path.Hidden,
 	}
 	t.setColVisibility = func(colNum int, vis bool) bool {
 		ptr, ok := colHiddenPtrMap[colNum]
@@ -332,6 +341,7 @@ func (t *tracklistRowBase) create(tracklist *Tracklist) {
 	t.comment = util.NewTruncatingTooltipLabel()
 	t.comment.OnMouseIn = t.MouseIn
 	t.comment.OnMouseOut = t.MouseOut
+	t.bpm = util.NewTrailingAlignLabel()
 	t.bitrate = util.NewTrailingAlignLabel()
 	t.size = util.NewTrailingAlignLabel()
 	t.path = util.NewTruncatingTooltipLabel()
@@ -396,6 +406,7 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
 		t.comment.Text = strings.ReplaceAll(tr.Comment, "\n", " ")
 		t.comment.SetToolTip(tr.Comment)
+		t.bpm.Text = strconv.Itoa(tr.BPM)
 		t.bitrate.Text = strconv.Itoa(tr.BitRate)
 		t.size.Text = util.BytesToSizeString(tr.Size)
 		t.path.Text = tr.FilePath

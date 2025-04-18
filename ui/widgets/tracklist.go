@@ -448,6 +448,8 @@ func (t *Tracklist) doSortTracks() {
 		t.intSort(func(tr *util.TrackListModel) int64 { return int64(tr.Track().PlayCount) })
 	case ColumnComment:
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Comment })
+	case ColumnBPM:
+		t.intSort(func(tr *util.TrackListModel) int64 { return int64(tr.Track().BPM) })
 	case ColumnBitrate:
 		t.intSort(func(tr *util.TrackListModel) int64 { return int64(tr.Track().BitRate) })
 	case ColumnFavorite:
