@@ -57,7 +57,7 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 	}
 	tracklist.OnDownload = m.ShowDownloadDialog
 	tracklist.OnShare = func(trackID string) {
-		go m.ShowShareDialog(trackID)
+		m.ShowShareDialog(trackID)
 	}
 	tracklist.OnShowTrackInfo = m.ShowTrackInfoDialog
 	tracklist.OnPlaySongRadio = func(track *mediaprovider.Track) {
@@ -104,7 +104,9 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 				log.Printf("error loading album: %s", err.Error())
 				return
 			}
-			m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
+			fyne.Do(func() {
+				m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
+			})
 		}()
 	}
 	grid.OnDownload = func(albumID string) {
@@ -114,11 +116,13 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 				log.Printf("error loading album: %s", err.Error())
 				return
 			}
-			m.ShowDownloadDialog(album.Tracks, album.Name)
+			fyne.Do(func() {
+				m.ShowDownloadDialog(album.Tracks, album.Name)
+			})
 		}()
 	}
 	grid.OnShare = func(albumID string) {
-		go m.ShowShareDialog(albumID)
+		m.ShowShareDialog(albumID)
 	}
 }
 
@@ -132,7 +136,7 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 		go m.App.PlaybackManager.LoadTracks(m.GetArtistTracks(artistID), backend.Append, false)
 	}
 	grid.OnAddToPlaylist = func(artistID string) {
-		go m.DoAddTracksToPlaylistWorkflow(
+		m.DoAddTracksToPlaylistWorkflow(
 			sharedutil.TracksToIDs(m.GetArtistTracks(artistID)))
 	}
 	grid.OnFavorite = func(artistID string, favorite bool) {
@@ -148,11 +152,13 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 				log.Printf("error getting artist: %v", err.Error())
 				return
 			}
-			m.ShowDownloadDialog(tracks, tist.Name)
+			fyne.Do(func() {
+				m.ShowDownloadDialog(tracks, tist.Name)
+			})
 		}()
 	}
 	grid.OnShare = func(artistID string) {
-		go m.ShowShareDialog(artistID)
+		m.ShowShareDialog(artistID)
 	}
 }
 

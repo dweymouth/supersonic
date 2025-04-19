@@ -400,7 +400,7 @@ func (c *Controller) ShowShareDialog(id string) {
 				container.NewHBox(
 					hyperlink,
 					widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-						c.MainWindow.Clipboard().SetContent(hyperlink.Text)
+						fyne.CurrentApp().Clipboard().SetContent(hyperlink.Text)
 					}),
 					widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 						if shareUrl, err := c.createShareURL(id); err == nil {
@@ -486,8 +486,10 @@ func (c *Controller) downloadTrack(track *mediaprovider.Track, filePath string) 
 		return
 	}
 
-	log.Printf("Saved song %s to: %s\n", track.Title, filePath)
-	c.sendNotification(fmt.Sprintf(lang.L("Download completed")+": %s", track.Title), fmt.Sprintf(lang.L("Saved at")+": %s", filePath))
+	log.Printf("Saved track %q to: %s\n", track.Title, filePath)
+	fyne.Do(func() {
+		c.sendNotification(fmt.Sprintf(lang.L("Download completed")+": %s", track.Title), fmt.Sprintf(lang.L("Saved at")+": %s", filePath))
+	})
 }
 
 func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath, downloadName string) {
@@ -525,7 +527,9 @@ func (c *Controller) downloadTracks(tracks []*mediaprovider.Track, filePath, dow
 		log.Printf("Saved song %s to: %s\n", track.Title, filePath)
 	}
 
-	c.sendNotification(fmt.Sprintf(lang.L("Download completed")+": %s", downloadName), fmt.Sprintf("Saved at: %s", filePath))
+	fyne.Do(func() {
+		c.sendNotification(fmt.Sprintf(lang.L("Download completed")+": %s", downloadName), fmt.Sprintf("Saved at: %s", filePath))
+	})
 }
 
 func (c *Controller) sendNotification(title, content string) {

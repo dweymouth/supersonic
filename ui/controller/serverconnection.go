@@ -22,8 +22,10 @@ func (m *Controller) PromptForFirstServer() {
 		go func() {
 			if m.testConnectionAndUpdateDialogText(d) {
 				// connection is good
-				pop.Hide()
-				m.doModalClosed()
+				fyne.Do(func() {
+					pop.Hide()
+					m.doModalClosed()
+				})
 				conn := backend.ServerConnection{
 					ServerType:  d.ServerType,
 					Hostname:    d.Host,
@@ -35,8 +37,9 @@ func (m *Controller) PromptForFirstServer() {
 				if err := m.trySetPasswordAndConnectToServer(server, d.Password); err != nil {
 					log.Printf("error connecting to server: %s", err.Error())
 				}
+			} else {
+				fyne.Do(d.EnableSubmit)
 			}
-			d.EnableSubmit()
 		}()
 	}
 	m.haveModal = true
@@ -227,8 +230,9 @@ func (c *Controller) tryConnectToServer(ctx context.Context, server *backend.Ser
 	return nil
 }
 
+// should be called from goroutine
 func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
-	dlg.SetInfoText(lang.L("Testing connection") + "...")
+	fyne.Do(func() { dlg.SetInfoText(lang.L("Testing connection") + "...") })
 	conn := backend.ServerConnection{
 		ServerType:  dlg.ServerType,
 		Hostname:    dlg.Host,
@@ -240,10 +244,14 @@ func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServe
 	defer cancel()
 	err := c.App.ServerManager.TestConnectionAndAuth(ctx, conn, dlg.Password)
 	if err == backend.ErrUnreachable {
-		dlg.SetErrorText(lang.L("Could not reach server") + fmt.Sprintf(" (%s?)", lang.L("wrong URL")))
+		fyne.Do(func() {
+			dlg.SetErrorText(lang.L("Could not reach server") + fmt.Sprintf(" (%s?)", lang.L("wrong URL")))
+		})
 		return false
 	} else if err != nil {
-		dlg.SetErrorText(lang.L("Authentication failed") + fmt.Sprintf(" (%s)", lang.L("wrong username/password")))
+		fyne.Do(func() {
+			dlg.SetErrorText(lang.L("Authentication failed") + fmt.Sprintf(" (%s)", lang.L("wrong username/password")))
+		})
 		return false
 	}
 	return true
