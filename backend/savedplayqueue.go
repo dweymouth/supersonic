@@ -98,7 +98,7 @@ func LoadPlayQueue(filepath string, sm *ServerManager, loadFromServer bool) (*Sa
 	tracks := make([]*mediaprovider.Track, 0, len(savedData.TrackIDs))
 	mp := sm.Server
 	for i, id := range savedData.TrackIDs {
-		if tr, err := mp.GetTrack(id); err != nil {
+		if tr, err := mp.GetTrack(id); err != nil || tr == nil {
 			// ignore/skip individual track failures
 			if i < savedData.TrackIndex {
 				savedData.TrackIndex--

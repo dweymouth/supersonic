@@ -218,6 +218,9 @@ func (t *Track) Metadata() MediaItemMetadata {
 }
 
 func (t *Track) Copy() MediaItem {
+	if t == nil {
+		return nil
+	}
 	new := *t
 	return &new
 }
