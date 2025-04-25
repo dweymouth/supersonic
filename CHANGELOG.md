@@ -1,5 +1,21 @@
 # Change Log
 
+## [0.15.2]
+
+### Added
+- Improvements across a few translations
+- [#605](https://github.com/dweymouth/supersonic/issues/605) BPM column added to tracklist
+- Animate button overlays when mouse in/out of album grid
+- Album grid play button now takes color from theme
+
+### Fixed
+- [#507](https://github.com/dweymouth/supersonic/issues/507) Crashing when loading locally saved play queue with files deleted from server
+- [#595](https://github.com/dweymouth/supersonic/issues/595),[#607](https://github.com/dweymouth/supersonic/issues/607) Occasionally crashing when removing tracks from quue via the pop-up queue
+- [#602](https://github.com/dweymouth/supersonic/issues/602) Album info dialog wouldn't scroll long description text
+- Regression: Peak meter was broken since 0.15.0
+- Playlist descriptions and track comments with newlines could overflow on top of other UI elements
+- Remember scroll position when navigating the history back to an album or playlist page
+
 ## [0.15.1]
 
 ### Fixed
