@@ -373,7 +373,17 @@ func isInside(origin fyne.Position, radius float32, point fyne.Position) bool {
 
 func setPlayBtnTranslucency(f float32) {
 	size := playBtnImageSrc.Bounds().Size()
-	primary := theme.Color(theme.ColorNamePrimary).(color.NRGBA)
+
+	// get theme Primary color as color.NRGBA
+	var primary color.NRGBA
+	switch pr := theme.Color(theme.ColorNamePrimary); pr.(type) {
+	case color.NRGBA:
+		primary = pr.(color.NRGBA)
+	case color.RGBA:
+		pr := pr.(color.RGBA)
+		primary = color.NRGBA{R: pr.R, G: pr.G, B: pr.B, A: pr.A}
+	}
+
 	for x := 0; x < size.X; x++ {
 		for y := 0; y < size.Y; y++ {
 			r, _, _, a := playBtnImageSrc.At(x, y).RGBA()
@@ -381,11 +391,7 @@ func setPlayBtnTranslucency(f float32) {
 			c := primary
 			if r > 65000 {
 				// pixel is white (play triangle)
-				c = color.NRGBA{
-					R: 255,
-					G: 255,
-					B: 255,
-				}
+				c = color.NRGBA{R: 255, G: 255, B: 255}
 			}
 			c.A = uint8(float32(a) / 257 * f)
 			playBtnImage.(*image.NRGBA).SetNRGBA(x, y, c)
