@@ -1,0 +1,64 @@
+version: "2"
+run:
+  go: "1.21"
+  issues-exit-code: 1
+  tests: true
+  timeout: 10m
+linters:
+  enable:
+    - unused
+  disable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errorlint
+    - exhaustive
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - gosec
+    - gosmopolitan
+    - govet
+    - loggercheck
+    - makezero
+    - musttag
+    - nilerr
+    - nilnesserr
+    - noctx
+    - protogetter
+    - reassign
+    - recvcheck
+    - rowserrcheck
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - testifylint
+    - unparam
+    - zerologlint
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+formatters:
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
