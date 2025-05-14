@@ -509,40 +509,40 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	if t.ctxMenu == nil {
 		t.ctxMenu = util.NewTrackContextMenu(t.Options.DisablePlaybackMenu, t.Options.AuxiliaryMenuItems)
 		t.ctxMenu.OnPlay = func(shuffle bool) {
-			t.OnPlaySelection(t.selectedTracks(), shuffle)
+			t.OnPlaySelection(t.SelectedTracks(), shuffle)
 		}
 		t.ctxMenu.OnAddToQueue = func(next bool) {
 			if next {
-				t.OnPlaySelectionNext(t.selectedTracks())
+				t.OnPlaySelectionNext(t.SelectedTracks())
 			} else {
-				t.OnAddToQueue(t.selectedTracks())
+				t.OnAddToQueue(t.SelectedTracks())
 			}
 		}
 		t.ctxMenu.OnPlaySongRadio = func() {
-			t.onPlaySongRadio(t.selectedTracks())
+			t.onPlaySongRadio(t.SelectedTracks())
 		}
 		t.ctxMenu.OnAddToPlaylist = func() {
 			t.OnAddToPlaylist(t.SelectedTrackIDs())
 		}
 		t.ctxMenu.OnDownload = func() {
-			t.onDownload(t.selectedTracks(), "Selected tracks")
+			t.onDownload(t.SelectedTracks(), "Selected tracks")
 		}
 		t.ctxMenu.OnShowInfo = func() {
-			t.OnShowTrackInfo(t.selectedTracks()[0])
+			t.OnShowTrackInfo(t.SelectedTracks()[0])
 		}
 		t.ctxMenu.OnFavorite = func(fav bool) {
-			t.onSetFavorites(t.selectedTracks(), fav, true /*needRefresh*/)
+			t.onSetFavorites(t.SelectedTracks(), fav, true /*needRefresh*/)
 		}
 		t.ctxMenu.OnShare = func() {
-			t.onShare(t.selectedTracks())
+			t.onShare(t.SelectedTracks())
 		}
 		t.ctxMenu.OnSetRating = func(rating int) {
-			t.onSetRatings(t.selectedTracks(), rating, true /*needRefresh*/)
+			t.onSetRatings(t.SelectedTracks(), rating, true /*needRefresh*/)
 		}
 	}
 	t.ctxMenu.SetRatingDisabled(t.Options.DisableRating)
-	t.ctxMenu.SetShareDisabled(t.Options.DisableSharing || len(t.selectedTracks()) != 1)
-	t.ctxMenu.SetInfoDisabled(len(t.selectedTracks()) != 1)
+	t.ctxMenu.SetShareDisabled(t.Options.DisableSharing || len(t.SelectedTracks()) != 1)
+	t.ctxMenu.SetInfoDisabled(len(t.SelectedTracks()) != 1)
 	t.ctxMenu.ShowAtPosition(e.AbsolutePosition, fyne.CurrentApp().Driver().CanvasForObject(t))
 }
 
@@ -617,7 +617,7 @@ func (t *Tracklist) onPlaySongRadio(tracks []*mediaprovider.Track) {
 	}
 }
 
-func (t *Tracklist) selectedTracks() []*mediaprovider.Track {
+func (t *Tracklist) SelectedTracks() []*mediaprovider.Track {
 	return util.SelectedTracks(t.tracks)
 }
 

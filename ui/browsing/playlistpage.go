@@ -221,7 +221,6 @@ func (a *PlaylistPage) doSetNewTrackOrder(ids []string, newPos int) {
 	newTracks := sharedutil.ReorderItems(a.tracks, idxs, newPos)
 	ids = sharedutil.TracksToIDs(newTracks)
 
-	// we can't block the UI waiting for the server so assume it will succeed
 	go func() {
 		if err := a.sm.Server.ReplacePlaylistTracks(a.playlistID, ids); err != nil {
 			log.Printf("error updating playlist: %s", err.Error())
@@ -244,9 +243,24 @@ func (a *PlaylistPage) doSetNewTrackOrder(ids []string, newPos int) {
 }
 
 func (a *PlaylistPage) onRemoveSelectedFromPlaylist() {
-	a.sm.Server.RemovePlaylistTracks(a.playlistID, a.tracklist.SelectedTrackIndexes())
-	a.tracklist.UnselectAll()
-	a.Reload()
+	idxToRemove := sharedutil.MapSlice(a.tracklist.SelectedTracks(), func(t *mediaprovider.Track) int {
+		return t.TrackNumber - 1
+	})
+	go func() {
+		if err := a.sm.Server.RemovePlaylistTracks(a.playlistID, idxToRemove); err != nil {
+			log.Printf("error removing playlist tracks: %s", err.Error())
+			fyne.Do(func() {
+				a.contr.ToastProvider.ShowErrorToast(
+					lang.L("An error occurred updating the playlist"),
+				)
+			})
+		} else {
+			fyne.Do(func() {
+				a.tracklist.UnselectAll()
+				a.Reload()
+			})
+		}
+	}()
 }
 
 func (a *PlaylistPage) onSearched(query string) {
