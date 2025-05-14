@@ -29,3 +29,7 @@ package_windows:
 
 package_linux:
 	fyne package -os linux -tags migrated_fynedo
+
+.PHONY: lint
+lint:
+	golangci-lint run
