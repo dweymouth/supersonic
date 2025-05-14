@@ -154,7 +154,3 @@ func (j *JukeboxPlayer) startAndUpdateTime() error {
 	j.startedAtUnixMilli = time.Now().Add(-afterStart.Sub(beforeStart)).UnixMilli()
 	return nil
 }
-
-func (j *JukeboxPlayer) handleNextTrack() {
-
-}
