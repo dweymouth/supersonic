@@ -27,7 +27,6 @@ type JukeboxPlayer struct {
 	curTrackDuration   float64
 	startTrackTime     float64
 	startedAtUnixMilli int64
-	nextTrackTimer     *time.Timer
 }
 
 func (j *JukeboxPlayer) SetVolume(vol int) error {
