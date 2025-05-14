@@ -14,7 +14,6 @@ type ImagePopUp struct {
 
 	img         image.Image
 	desiredSize fyne.Size
-	aspect      float64
 }
 
 func NewImagePopUp(img image.Image, canv fyne.Canvas, size fyne.Size) *ImagePopUp {
