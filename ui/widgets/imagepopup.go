@@ -9,10 +9,6 @@ import (
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 )
 
-const (
-	imagePopUpLowRezDim = 128
-)
-
 type ImagePopUp struct {
 	widget.PopUp
 
