@@ -9,16 +9,11 @@ import (
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 )
 
-const (
-	imagePopUpLowRezDim = 128
-)
-
 type ImagePopUp struct {
 	widget.PopUp
 
 	img         image.Image
 	desiredSize fyne.Size
-	aspect      float64
 }
 
 func NewImagePopUp(img image.Image, canv fyne.Canvas, size fyne.Size) *ImagePopUp {

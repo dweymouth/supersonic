@@ -27,7 +27,6 @@ type JukeboxPlayer struct {
 	curTrackDuration   float64
 	startTrackTime     float64
 	startedAtUnixMilli int64
-	nextTrackTimer     *time.Timer
 }
 
 func (j *JukeboxPlayer) SetVolume(vol int) error {
@@ -153,8 +152,4 @@ func (j *JukeboxPlayer) startAndUpdateTime() error {
 	// half the round-trip latency
 	j.startedAtUnixMilli = time.Now().Add(-afterStart.Sub(beforeStart)).UnixMilli()
 	return nil
-}
-
-func (j *JukeboxPlayer) handleNextTrack() {
-
 }
