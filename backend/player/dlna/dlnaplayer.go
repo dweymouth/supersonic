@@ -31,8 +31,6 @@ const (
 	paused  = 2
 )
 
-var unimplemented = errors.New("unimplemented")
-
 type proxyMapEntry struct {
 	key string
 	url string

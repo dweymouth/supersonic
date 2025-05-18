@@ -506,11 +506,6 @@ func (a *NowPlayingPage) Refresh() {
 	a.BaseWidget.Refresh()
 }
 
-func (a *NowPlayingPage) doSetNewTrackOrder(idxs []int, insertPos int) {
-	newTracks := sharedutil.ReorderItems(a.queue, idxs, insertPos)
-	a.pm.UpdatePlayQueue(newTracks)
-}
-
 func (a *NowPlayingPage) saveSelectedTab(tabNum int) {
 	var tabName string
 	switch tabNum {
