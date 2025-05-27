@@ -91,13 +91,15 @@ func main() {
 			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
 
-		mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
-			// intialize Windows SMTC
-			if runtime.GOOS == "windows" {
-				hwnd := ctx.(driver.WindowsWindowContext).HWND
-				myApp.SetupWindowsSMTC(hwnd)
-			}
-		})
+		if myApp.Config.Application.EnableOSMediaPlayerAPIs {
+			mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
+				// intialize Windows SMTC
+				if runtime.GOOS == "windows" {
+					hwnd := ctx.(driver.WindowsWindowContext).HWND
+					myApp.SetupWindowsSMTC(hwnd)
+				}
+			})
+		}
 	})
 	fyneApp.Lifecycle().SetOnEnteredForeground(windowStartupTasks)
 

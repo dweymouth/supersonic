@@ -191,14 +191,16 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	}
 
 	// OS media center integrations
-	// Linux MPRIS
-	a.setupMPRIS(displayAppName)
-	// MacOS MPNowPlayingInfoCenter
-	InitMPMediaHandler(a.PlaybackManager, func(id string) (string, error) {
-		a.ImageManager.GetCoverThumbnail(id) // ensure image is cached locally
-		return a.ImageManager.GetCoverArtUrl(id)
-	})
-	// Windows SMTC is initialized from main once we have a window HWND.
+	if a.Config.Application.EnableOSMediaPlayerAPIs {
+		// Linux MPRIS
+		a.setupMPRIS(displayAppName)
+		// MacOS MPNowPlayingInfoCenter
+		InitMPMediaHandler(a.PlaybackManager, func(id string) (string, error) {
+			a.ImageManager.GetCoverThumbnail(id) // ensure image is cached locally
+			return a.ImageManager.GetCoverArtUrl(id)
+		})
+		// Windows SMTC is initialized from main once we have a window HWND.
+	}
 
 	a.startConfigWriter(a.bgrndCtx)
 
@@ -458,7 +460,9 @@ func (a *App) Shutdown() {
 	if a.ipcServer != nil {
 		a.ipcServer.Shutdown(a.bgrndCtx)
 	}
-	a.MPRISHandler.Shutdown()
+	if a.MPRISHandler != nil {
+		a.MPRISHandler.Shutdown()
+	}
 	if a.WinSMTC != nil {
 		a.WinSMTC.Shutdown()
 	}

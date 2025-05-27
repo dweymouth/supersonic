@@ -562,11 +562,18 @@ func (s *SettingsDialog) createAdvancedTab() *container.TabItem {
 		widget.NewLabel("MB"),
 	)
 
+	osMediaAPIs := widget.NewCheck(lang.L("Enable OS media player integration"), func(b bool) {
+		s.config.Application.EnableOSMediaPlayerAPIs = b
+		s.setRestartRequired()
+	})
+	osMediaAPIs.Checked = s.config.Application.EnableOSMediaPlayerAPIs
+
 	return container.NewTabItem(lang.L("Advanced"), container.NewVBox(
 		multi,
 		sslSkip,
 		update,
 		lrclib,
+		osMediaAPIs,
 		imgCacheCfg,
 	))
 }

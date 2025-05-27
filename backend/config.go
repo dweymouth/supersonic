@@ -55,6 +55,7 @@ type AppConfig struct {
 	DisableDPIDetection         bool
 	EnableAutoUpdateChecker     bool
 	RequestTimeoutSeconds       int
+	EnableOSMediaPlayerAPIs     bool
 
 	FontNormalTTF string
 	FontBoldTTF   string
@@ -192,6 +193,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			Language:                    "auto",
 			EnableAutoUpdateChecker:     true,
 			RequestTimeoutSeconds:       15,
+			EnableOSMediaPlayerAPIs:     true,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},
