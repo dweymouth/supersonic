@@ -36,6 +36,8 @@ const (
 var (
 	ErrNoServers       = errors.New("no servers set up")
 	ErrAnotherInstance = errors.New("another instance is running")
+
+	appInstance *App
 )
 
 type App struct {
@@ -204,7 +206,12 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 
 	a.startConfigWriter(a.bgrndCtx)
 
+	appInstance = a
 	return a, nil
+}
+
+func AppInstance() *App {
+	return appInstance
 }
 
 func (a *App) IsFirstLaunch() bool {

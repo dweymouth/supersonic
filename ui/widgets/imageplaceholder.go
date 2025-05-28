@@ -24,18 +24,18 @@ type ImagePlaceholder struct {
 	image     image.Image
 	iconImage *canvas.Image
 	border    *myTheme.ThemedRectangle
-	minSize   float32
+	minSize   fyne.Size
 
 	OnTapped          func(*fyne.PointEvent)
 	OnTappedSecondary func(*fyne.PointEvent)
 }
 
 func NewImagePlaceholder(centerIcon fyne.Resource, minSize float32) *ImagePlaceholder {
-	i := &ImagePlaceholder{minSize: minSize, PlaceholderIcon: centerIcon}
+	i := &ImagePlaceholder{minSize: fyne.NewSquareSize(minSize), PlaceholderIcon: centerIcon}
 	i.ExtendBaseWidget(i)
 	i.iconImage = canvas.NewImageFromResource(centerIcon)
 	i.iconImage.FillMode = canvas.ImageFillContain
-	i.iconImage.SetMinSize(fyne.NewSize(minSize/4, minSize/4))
+	i.iconImage.SetMinSize(fyne.NewSquareSize(minSize / 4))
 	i.imageDisp = NewTappableImage(i.onTapped)
 	i.imageDisp.OnTappedSecondary = i.onTappedSecondary
 	i.imageDisp.FillMode = canvas.ImageFillContain
@@ -88,8 +88,18 @@ func (i *ImagePlaceholder) onTappedSecondary(e *fyne.PointEvent) {
 	}
 }
 
+func (i *ImagePlaceholder) SetMinSize(size fyne.Size) {
+	if i.minSize == size {
+		return
+	}
+
+	i.minSize = size
+	d := fyne.Min(i.minSize.Width, i.minSize.Height)
+	i.iconImage.SetMinSize(fyne.NewSquareSize(d / 4))
+}
+
 func (i *ImagePlaceholder) MinSize() fyne.Size {
-	return fyne.NewSize(i.minSize, i.minSize)
+	return i.minSize
 }
 
 func (i *ImagePlaceholder) Refresh() {

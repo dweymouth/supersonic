@@ -89,6 +89,10 @@ type FavoritesPageConfig struct {
 	ShowAlbumYears   bool
 }
 
+type GridViewConfig struct {
+	CardSize float32
+}
+
 type PlaylistPageConfig struct {
 	TracklistColumns []string
 }
@@ -154,6 +158,7 @@ type Config struct {
 	ArtistPage       ArtistPageConfig
 	ArtistsPage      ArtistsPageConfig
 	FavoritesPage    FavoritesPageConfig
+	GridView         GridViewConfig
 	PlaylistPage     PlaylistPageConfig
 	PlaylistsPage    PlaylistsPageConfig
 	TracksPage       TracksPageConfig
@@ -214,6 +219,9 @@ func DefaultConfig(appVersionTag string) *Config {
 			TracklistColumns: []string{"Album", "Time", "Plays"},
 			InitialView:      "Albums",
 			ShowAlbumYears:   false,
+		},
+		GridView: GridViewConfig{
+			CardSize: 200,
 		},
 		PlaylistPage: PlaylistPageConfig{
 			TracklistColumns: []string{"Album", "Time", "Plays"},

@@ -517,6 +517,10 @@ func (g *GridViewItem) Update(model *GridViewItemModel) {
 	}
 }
 
+func (g *GridViewItem) SetSize(sideDim float32) {
+	g.Cover.Im.SetMinSize(fyne.NewSquareSize(sideDim))
+}
+
 func (g *GridViewItem) Refresh() {
 	if g.focused {
 		g.focusRect.Show()
@@ -531,6 +535,7 @@ func (g *GridViewItem) Refresh() {
 		g.secondaryText.Suffix = ""
 		g.secondaryText.Refresh()
 	}
+	canvas.Refresh(g)
 }
 
 func (g *GridViewItem) ItemID() string {

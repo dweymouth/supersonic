@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2/lang"
 
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
@@ -282,6 +283,7 @@ func (g *GridView) createGridWrap() {
 		// update func
 		func(itemID widget.GridWrapItemID, obj fyne.CanvasObject) {
 			ac := obj.(*GridViewItem)
+			ac.SetSize(backend.AppInstance().Config.GridView.CardSize)
 			g.doUpdateItemCard(int(itemID), ac)
 		},
 	)
@@ -289,6 +291,7 @@ func (g *GridView) createGridWrap() {
 
 func (g *GridView) createNewItemCard() fyne.CanvasObject {
 	card := NewGridViewItem(g.Placeholder)
+	card.SetSize(backend.AppInstance().Config.GridView.CardSize)
 	card.ItemIndex = -1
 	card.ImgLoader = util.NewThumbnailLoader(g.imageFetcher, card.Cover.SetImage)
 	card.ImgLoader.OnBeforeLoad = func() { card.Cover.SetImage(nil) }
