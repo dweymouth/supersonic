@@ -142,7 +142,10 @@ type ThemeConfig struct {
 }
 
 type TranscodingConfig struct {
-	ForceRawFile bool
+	ForceRawFile     bool
+	RequestTranscode bool
+	Codec            string
+	MaxBitRateKBPS   int
 }
 
 type PeakMeterConfig struct {
@@ -260,7 +263,10 @@ func DefaultConfig(appVersionTag string) *Config {
 			PreventClipping: true,
 		},
 		Transcoding: TranscodingConfig{
-			ForceRawFile: false,
+			ForceRawFile:     false,
+			RequestTranscode: false,
+			Codec:            "opus",
+			MaxBitRateKBPS:   160,
 		},
 		Theme: ThemeConfig{
 			Appearance: "Dark",

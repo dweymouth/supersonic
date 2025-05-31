@@ -234,9 +234,12 @@ func (s *subsonicMediaProvider) GetSimilarTracks(artistID string, count int) ([]
 	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
-func (s *subsonicMediaProvider) GetStreamURL(trackID string, forceRaw bool) (string, error) {
+func (s *subsonicMediaProvider) GetStreamURL(trackID string, transcode *mediaprovider.TranscodeSettings, forceRaw bool) (string, error) {
 	m := make(map[string]string)
-	if forceRaw {
+	if transcode != nil {
+		m["format"] = transcode.Codec
+		m["maxBitRate"] = strconv.Itoa(transcode.BitRateKBPS)
+	} else if forceRaw {
 		m["format"] = "raw"
 	}
 	u, err := s.client.GetStreamURL(trackID, m)

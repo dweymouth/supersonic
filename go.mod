@@ -11,7 +11,7 @@ require (
 	github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c
 	github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64
 	github.com/dweymouth/fyne-tooltip v0.3.0
-	github.com/dweymouth/go-jellyfin v0.0.0-20240517151952-5ceca61cb645
+	github.com/dweymouth/go-jellyfin v0.0.0-20250531151636-29591764f0a0
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-retryablehttp v0.7.7

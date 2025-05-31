@@ -302,7 +302,35 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 }
 
 func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer bool) *container.TabItem {
-	disableTranscode := widget.NewCheckWithData(lang.L("Disable server transcoding"), binding.BindBool(&s.config.Transcoding.ForceRawFile))
+	transcodeCodec := widget.NewSelectWithData([]string{"opus", "mp3"}, binding.BindString(&s.config.Transcoding.Codec))
+	transcodeBitRate := widget.NewSelectWithData([]string{"96", "128", "160", "192", "256", "320"},
+		binding.IntToString(binding.BindInt(&s.config.Transcoding.MaxBitRateKBPS)))
+	if !s.config.Transcoding.RequestTranscode {
+		transcodeCodec.Disable()
+		transcodeBitRate.Disable()
+	}
+
+	var transcode *widget.Check
+	disableTranscode := widget.NewCheck(lang.L("Disable server transcoding"), func(b bool) {
+		s.config.Transcoding.ForceRawFile = b
+		if b {
+			transcode.SetChecked(false)
+		}
+	})
+	disableTranscode.Checked = s.config.Transcoding.ForceRawFile
+	transcode = widget.NewCheck(lang.L("Transcode to"), func(b bool) {
+		s.config.Transcoding.RequestTranscode = b
+		if b {
+			disableTranscode.SetChecked(false)
+			transcodeCodec.Enable()
+			transcodeBitRate.Enable()
+		} else {
+			transcodeCodec.Disable()
+			transcodeBitRate.Disable()
+		}
+	})
+	transcode.Checked = s.config.Transcoding.RequestTranscode
+
 	deviceList := make([]string, len(s.audioDevices))
 	var selIndex int
 	for i, dev := range s.audioDevices {
@@ -392,14 +420,16 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 	}
 
 	return container.NewTabItem(lang.L("Playback"), container.NewVBox(
-		disableTranscode,
+
 		container.New(&layout.CustomPaddedLayout{TopPadding: 5},
 			container.New(layout.NewFormLayout(),
 				widget.NewLabel(lang.L("Audio device")), container.NewBorder(nil, nil, nil, util.NewHSpace(70), deviceSelect),
 				layout.NewSpacer(), audioExclusive,
 			)),
 		s.newSectionSeparator(),
-
+		disableTranscode,
+		container.NewHBox(transcode, transcodeCodec, transcodeBitRate),
+		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: "ReplayGain", Style: util.BoldRichTextStyle}),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel(lang.L("ReplayGain mode")), container.NewGridWithColumns(2, replayGainSelect),

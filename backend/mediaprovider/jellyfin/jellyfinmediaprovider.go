@@ -332,12 +332,19 @@ func (j *jellyfinMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteP
 	return err
 }
 
-func (j *jellyfinMediaProvider) GetStreamURL(trackID string, forceRaw bool) (string, error) {
-	return j.client.GetStreamURL(trackID)
+func (j *jellyfinMediaProvider) GetStreamURL(trackID string, transcode *mediaprovider.TranscodeSettings, forceRaw bool) (string, error) {
+	var jfTranscode *jellyfin.TranscodeOptions
+	if transcode != nil {
+		jfTranscode = &jellyfin.TranscodeOptions{
+			AudioCodec:   transcode.Codec,
+			AudioBitRate: uint32(transcode.BitRateKBPS * 1000),
+		}
+	}
+	return j.client.GetStreamURL(trackID, jfTranscode)
 }
 
 func (j *jellyfinMediaProvider) DownloadTrack(trackID string) (io.Reader, error) {
-	url, err := j.client.GetStreamURL(trackID)
+	url, err := j.client.GetStreamURL(trackID, nil)
 	if err != nil {
 		return nil, err
 	}

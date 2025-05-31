@@ -184,6 +184,11 @@ type LoginResponse struct {
 	IsAuthError bool
 }
 
+type TranscodeSettings struct {
+	Codec       string
+	BitRateKBPS int
+}
+
 type Server interface {
 	Login(username, password string) LoginResponse
 	MediaProvider() MediaProvider
@@ -234,7 +239,7 @@ type MediaProvider interface {
 
 	GetFavorites() (Favorites, error)
 
-	GetStreamURL(trackID string, forceRaw bool) (string, error)
+	GetStreamURL(trackID string, transcodeSettings *TranscodeSettings, forceRaw bool) (string, error)
 
 	GetTopTracks(artist Artist, count int) ([]*Track, error)
 

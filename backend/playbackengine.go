@@ -652,7 +652,14 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 			item := p.playQueue[idx]
 			meta = item.Metadata()
 			if tr, ok := item.(*mediaprovider.Track); ok {
-				url, err = p.sm.Server.GetStreamURL(tr.ID, p.transcodeCfg.ForceRawFile)
+				var ts *mediaprovider.TranscodeSettings
+				if p.transcodeCfg.RequestTranscode {
+					ts = &mediaprovider.TranscodeSettings{
+						Codec:       p.transcodeCfg.Codec,
+						BitRateKBPS: p.transcodeCfg.MaxBitRateKBPS,
+					}
+				}
+				url, err = p.sm.Server.GetStreamURL(tr.ID, ts, p.transcodeCfg.ForceRawFile)
 			} else {
 				url = item.(*mediaprovider.RadioStation).StreamURL
 			}
