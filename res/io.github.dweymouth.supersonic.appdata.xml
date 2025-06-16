@@ -63,32 +63,29 @@
   </screenshots>
 
  <releases>
-  <release date="2025-04-25" version="0.15.2">
+  <release date="2025-06-16" version="0.16.0">
    <description>
      <p>
-       Version 0.15.2 of Supersonic
+       Version 0.16.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Improvements across a few translations</li>
-       <li>BPM column added to tracklist</li>
-       <li>Animate button overlays when mouse in/out of album grid</li>
-       <li>Album grid play button now takes color from theme</li>
+       <li>Add click-to-seek to lyrics viewer for synced lyrics</li>
+       <li>Allow customization of grid card size</li>
+       <li>Add setting to request transcoding to a specific format/bitrate from server</li>
+       <li>Japanese translation improvements</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Crashing when loading locally saved play queue with files deleted from server</li>
-       <li>Occasionally crashing when removing tracks from quue via the pop-up queue</li>
-       <li>Album info dialog wouldn't scroll long description text</li>
-       <li>Regression: Peak meter was broken since 0.15.0</li>
-       <li>Playlist descriptions and track comments with newlines could overflow on top of other UI elements</li>
-       <li>Remember scroll position when navigating the history back to an album or playlist page</li>
+       <li>New setting to disable OS Now Playing APIs - workaround for Windows SMTC bugginess</li>
+       <li>Crashing with custom themes that change the Primary color</li>
+       <li>Incorrect tracks removed from playlist if removing from searched view</li>
      </ul>
 
    </description>

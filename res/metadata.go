@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.15.2"
+	AppVersion       = "0.16.0"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,17 +15,14 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* Improvements across a few translations
-* BPM column added to tracklist
-* Animate button overlays when mouse in/out of album grid
-* Album grid play button now takes color from theme`
+* Add click-to-seek to lyrics viewer for synced lyrics
+* Allow customization of grid card size
+* Add setting to request transcoding to a specific format/bitrate from server
+* Japanese translation improvements`
 
 	WhatsFixed = `
 ## Fixed
-* Crashing when loading locally saved play queue with files deleted from server
-* Occasionally crashing when removing tracks from quue via the pop-up queue
-* Album info dialog wouldn't scroll long description text
-* Regression: Peak meter was broken since 0.15.0
-* Playlist descriptions and track comments with newlines could overflow on top of other UI elements
-* Remember scroll position when navigating the history back to an album or playlist page`
+* New setting to disable OS Now Playing APIs - workaround for Windows SMTC bugginess
+* Crashing with custom themes that change the Primary color
+* Incorrect tracks removed from playlist if removing from searched view`
 )

@@ -1,5 +1,19 @@
 # Change Log
 
+## [0.16.0]
+
+### Added
+- [#519](https://github.com/dweymouth/supersonic/issues/519) Add click-to-seek to lyrics viewer for synced lyrics
+- [#625](https://github.com/dweymouth/supersonic/issues/625) Allow customization of grid card size
+- [#628](https://github.com/dweymouth/supersonic/issues/628) Add setting to request transcoding to a specific format/bitrate from server
+- [#631](https://github.com/dweymouth/supersonic/pull/631) Japanese translation improvements
+
+### Fixed
+- New setting to disable OS Now Playing APIs - workaround for Windows SMTC bugginess
+- [#612](https://github.com/dweymouth/supersonic/issues/612) Crashing with custom themes that change the Primary color
+- [#619](https://github.com/dweymouth/supersonic/issues/619) Incorrect tracks removed from playlist if removing from searched view
+
+
 ## [0.15.2]
 
 ### Added
