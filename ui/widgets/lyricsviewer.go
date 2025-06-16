@@ -5,9 +5,9 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
-	fynelyrics "github.com/dweymouth/fyne-lyrics"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/theme"
+	fynelyrics "github.com/supersonic-app/fyne-lyrics"
 )
 
 type LyricsViewer struct {
@@ -23,19 +23,34 @@ type LyricsViewer struct {
 	// for the current lyrics
 	firstUpdate bool
 
+	onSeekToLine func(int)
+
 	container *fyne.Container
 	isEmpty   bool
 }
 
-func NewLyricsViewer() *LyricsViewer {
+func NewLyricsViewer(onSeekToLine func(int)) *LyricsViewer {
 	l := &LyricsViewer{
 		noLyricsMsg: container.NewCenter(NewInfoMessage(
 			lang.L("Lyrics not available"), "")),
-		isEmpty: true,
+		isEmpty:      true,
+		onSeekToLine: onSeekToLine,
 	}
 	l.ExtendBaseWidget(l)
 	l.container = container.NewStack(l.noLyricsMsg)
 	return l
+}
+
+func (l *LyricsViewer) DisableTapToSeek() {
+	if l.viewer != nil {
+		l.viewer.OnLyricTapped = nil
+	}
+}
+
+func (l *LyricsViewer) EnableTapToSeek() {
+	if l.viewer != nil {
+		l.viewer.OnLyricTapped = l.onSeekToLine
+	}
 }
 
 func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
@@ -55,6 +70,7 @@ func (l *LyricsViewer) SetLyrics(lyrics *mediaprovider.Lyrics) {
 		l.viewer = fynelyrics.NewLyricsViewer()
 		l.viewer.ActiveLyricPosition = fynelyrics.ActiveLyricPositionUpperMiddle
 		l.viewer.InactiveLyricColorName = theme.ColorNameInactiveLyric
+		l.viewer.OnLyricTapped = l.onSeekToLine
 	}
 	lines := make([]string, len(lyrics.Lines))
 	for i, line := range lyrics.Lines {

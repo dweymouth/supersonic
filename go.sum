@@ -19,8 +19,6 @@ github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1 h1:mGvOb3zxl4vCLv+
 github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1/go.mod h1:ZNCLJfehvEf34B7BbLKjgpsL9lyW7q938w/GY1XgV4E=
 github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c h1:UXwfQ1CzSe7l8CSPr/Fyu0LViv0oRUDy3SEUafnSxdQ=
 github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c/go.mod h1:Idgzr4LYzve8IPHF1stLO1bdGQZnDKt/bT9WfJflCGw=
-github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64 h1:RUIrnGY034rDMlcOui/daurwX5b+52KdUKhH9aXaDSg=
-github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64/go.mod h1:3YrjFDHMlhCsSZ/OvmJCxWm9QHSgOVWZBxnraZz9Z7c=
 github.com/dweymouth/fyne-tooltip v0.3.0 h1:NKCyTkh9NtvnTsiHtTOtaJzRDOFYP8AckQ2tyhOh6JY=
 github.com/dweymouth/fyne-tooltip v0.3.0/go.mod h1:m04ShLW/Tp6LXrNieTumApvNgo7YSB+wi+jZTN+kDBU=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250406173843-f5cb002423a5 h1:/gxlRSmndtF8QVxV3oFjlozm2clkMlLBlfiKFtehH+M=
@@ -115,6 +113,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.3/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410 h1:wuDHCo6SU6r0KMm0EuI5FGVJCuLK4hcuPcMKmln8oCA=
+github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410/go.mod h1:XvGBPgXWkKrK+5OsoVkTcTZmwZac1Sj6miEn8q6uA20=
 github.com/supersonic-app/go-mpv v0.1.0 h1:U+cCnLQxmpqx5mY6nMlC0J4uIdCCXUbAjpjS04XkFu8=
 github.com/supersonic-app/go-mpv v0.1.0/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
 github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d h1:70+Nn7yh+cfeKqqXVTdpneFqXuvrBLyP7U6GVUsjTU4=

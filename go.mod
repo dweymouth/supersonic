@@ -9,7 +9,6 @@ require (
 	github.com/cenkalti/dominantcolor v1.0.3
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
 	github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c
-	github.com/dweymouth/fyne-lyrics v0.0.0-20240528234907-15eee7ce5e64
 	github.com/dweymouth/fyne-tooltip v0.3.0
 	github.com/dweymouth/go-jellyfin v0.0.0-20250531151636-29591764f0a0
 	github.com/godbus/dbus/v5 v5.1.0
@@ -17,6 +16,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/pelletier/go-toml/v2 v2.0.8
 	github.com/quarckster/go-mpris-server v1.0.3
+	github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410
 	github.com/supersonic-app/go-mpv v0.1.0
 	github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d
 	github.com/supersonic-app/go-upnpcast v0.0.0-20250330154256-b957204209a5

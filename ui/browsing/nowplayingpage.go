@@ -39,6 +39,7 @@ type NowPlayingPage struct {
 	// volatile state
 	nowPlaying    mediaprovider.MediaItem
 	nowPlayingID  string
+	curLyrics     *mediaprovider.Lyrics
 	curLyricsID   string // id of track currently shown in lyrics
 	curRelatedID  string // id of track currrently used to populate related list
 	totalTime     float64
@@ -177,11 +178,18 @@ func NewNowPlayingPage(
 	a.relatedList.OnShowTrackInfo = func(track *mediaprovider.Track) {
 		a.contr.ShowTrackInfoDialog(track)
 	}
-	a.lyricsViewer = widgets.NewLyricsViewer()
+	a.lyricsViewer = widgets.NewLyricsViewer(a.onSeekToLyricLine)
 	a.statusLabel = widget.NewLabel(lang.L("Stopped"))
 
 	a.Reload()
 	return a
+}
+
+func (a *NowPlayingPage) onSeekToLyricLine(lineNum int) {
+	if a.curLyrics != nil && len(a.curLyrics.Lines) > lineNum-1 {
+		time := a.curLyrics.Lines[lineNum-1].Start
+		a.pm.SeekSeconds(time)
+	}
 }
 
 func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
@@ -341,6 +349,7 @@ func (a *NowPlayingPage) updateLyrics() {
 	}
 	if a.nowPlaying == nil || a.nowPlaying.Metadata().Type == mediaprovider.MediaItemTypeRadioStation {
 		a.lyricsViewer.SetLyrics(nil)
+		a.curLyrics = nil
 		a.curLyricsID = ""
 		return
 	}
@@ -350,6 +359,7 @@ func (a *NowPlayingPage) updateLyrics() {
 	a.lyricsLoading.Start()
 	// set the widget to an empty (not nil) lyric during fetch
 	// to keep it from showing "Lyrics not available"
+	a.lyricsViewer.DisableTapToSeek()
 	a.lyricsViewer.SetLyrics(&mediaprovider.Lyrics{Synced: true,
 		Lines: []mediaprovider.LyricLine{{Text: ""}}})
 	tr, _ := a.nowPlaying.(*mediaprovider.Track)
@@ -376,7 +386,9 @@ func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 	default:
 		fyne.Do(func() {
 			a.lyricsLoading.Stop()
+			a.lyricsViewer.EnableTapToSeek()
 			a.lyricsViewer.SetLyrics(lyrics)
+			a.curLyrics = lyrics
 			if lyrics != nil {
 				a.lyricsViewer.OnSeeked(a.lastPlayPos)
 			}
