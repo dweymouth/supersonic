@@ -76,6 +76,7 @@
     "Edit Playlist": "编辑播放列表",
     "Edit server": "编辑服务器",
     "Enable LrcLib lyrics fetcher": "启用 LrcLib 歌词获取器",
+    "Enable OS media player integration": "启用系统媒体播放器集成",
     "Enable system tray": "启用系统托盘",
     "Enabled": "已启用",
     "Enter": "输入",
@@ -96,6 +97,7 @@
     "Genres": "流派",
     "Github page": "Github 页面",
     "Go to release page": "前往发布页面",
+    "Grid card size": "网格大小",
     "Hide": "隐藏",
     "Home": "主页",
     "Home Page": "主页",
@@ -227,6 +229,7 @@
     "Track number": "曲目编号",
     "Track peak": "曲目峰值",
     "tracks": "曲目",
+    "Transcode to": "转码为",
     "UI Scaling": "UI 缩放",
     "Unable to play artist radio": "无法播放艺术家电台",
     "Unable to play random tracks": "无法播放随机曲目",
@@ -268,7 +271,7 @@
     "Dec": "十二月",
 
     "playlist.addedtracks": {
-        "one": "Added one track to playlist",
-        "other": "Added {{.trackCount}} tracks to playlist"
+        "one": "已将一首曲目添加到播放列表",
+        "other": "已将 {{.trackCount}} 首曲目添加到播放列表"
     }
 }
