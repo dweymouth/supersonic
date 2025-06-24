@@ -38,6 +38,26 @@ type ItemDate struct {
 	Day   *int
 }
 
+func (i ItemDate) After(other ItemDate) bool {
+	a := []*int{i.Year, i.Month, i.Day}
+	b := []*int{other.Year, other.Month, other.Day}
+	for i := range a {
+		if a[i] == nil {
+			return false
+		}
+		if b[i] == nil {
+			return true
+		}
+		if *a[i] < *b[i] {
+			return false
+		}
+		if *a[i] > *b[i] {
+			return true
+		}
+	}
+	return false
+}
+
 type Album struct {
 	ID           string
 	CoverArtID   string

@@ -195,12 +195,12 @@ func (a *ArtistPage) getGridViewAlbumsModel() []widgets.GridViewItemModel {
 		return nil
 	}
 	sortFunc := func(x, y int) bool {
-		return a.artistInfo.Albums[x].YearOrZero() < a.artistInfo.Albums[y].YearOrZero()
+		return a.artistInfo.Albums[y].Date.After(a.artistInfo.Albums[x].Date)
 	}
 	switch a.cfg.DiscographySort {
 	case discographySorts[1]: /*year descending*/
 		sortFunc = func(x, y int) bool {
-			return a.artistInfo.Albums[x].YearOrZero() > a.artistInfo.Albums[y].YearOrZero()
+			return a.artistInfo.Albums[x].Date.After(a.artistInfo.Albums[y].Date)
 		}
 	case discographySorts[2]: /*name*/
 		sortFunc = func(x, y int) bool {
