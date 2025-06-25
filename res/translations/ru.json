@@ -277,5 +277,19 @@
         "few": "{{.trackCount}} композиции добавлены в список воспроизведения",
         "many": "{{.trackCount}} композиций добавлены в список воспроизведения",
         "other": "{{.trackCount}} композиций добавлены в список воспроизведения"
+    },
+
+    "{{.trackCount}} tracks": {
+        "one": "{{.trackCount}} композиция",
+        "few": "{{.trackCount}} композиции",
+        "many": "{{.trackCount}} композиций",
+        "other": "{{.trackCount}} композиций"
+    },
+
+    "{{.albumsCount}} albums": {
+        "one": "{{.albumsCount}} альбом",
+        "few": "{{.albumsCount}} альбома",
+        "many": "{{.albumsCount}} альбомов",
+        "other": "{{.albumsCount}} альбомов"
     }
 }

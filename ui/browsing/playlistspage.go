@@ -206,11 +206,14 @@ func createPlaylistGridViewModel(playlists []*mediaprovider.Playlist) []widgets.
 		} else {
 			tracks = lang.L("tracks")
 		}
+		fallbackTracksMsg := fmt.Sprintf("%d %s", pl.TrackCount, tracks)
+		tracksMsg := lang.LocalizePluralKey("{{.trackCount}} tracks",
+			fallbackTracksMsg, pl.TrackCount, map[string]string{"trackCount": strconv.Itoa(pl.TrackCount)})
 		return widgets.GridViewItemModel{
 			Name:       pl.Name,
 			ID:         pl.ID,
 			CoverArtID: pl.CoverArtID,
-			Secondary:  []string{fmt.Sprintf("%d %s", pl.TrackCount, tracks)},
+			Secondary:  []string{tracksMsg},
 		}
 	})
 }

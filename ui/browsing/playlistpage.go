@@ -3,6 +3,7 @@ package browsing
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/deluan/sanitize"
@@ -510,7 +511,10 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *mediaprovider.Playlis
 	} else {
 		tracks = lang.L("tracks")
 	}
-	return fmt.Sprintf("%d %s, %s", p.TrackCount, tracks, util.SecondsToTimeString(float64(p.Duration)))
+	fallbackTracksMsg := fmt.Sprintf("%d %s", p.TrackCount, tracks)
+	tracksMsg := lang.LocalizePluralKey("{{.trackCount}} tracks",
+		fallbackTracksMsg, p.TrackCount, map[string]string{"trackCount": strconv.Itoa(p.TrackCount)})
+	return fmt.Sprintf("%s, %s", tracksMsg, util.SecondsToTimeString(float64(p.Duration)))
 }
 
 func (s *playlistPageState) Restore() Page {

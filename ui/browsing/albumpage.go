@@ -3,6 +3,7 @@ package browsing
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -396,11 +397,14 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 	if a.TrackCount == 1 {
 		tracks = lang.L("track")
 	}
+	fallbackTracksMsg := fmt.Sprintf("%d %s", a.TrackCount, tracks)
+	tracksMsg := lang.LocalizePluralKey("{{.trackCount}} tracks",
+		fallbackTracksMsg, a.TrackCount, map[string]string{"trackCount": strconv.Itoa(a.TrackCount)})
 	yearStr := util.FormatItemDate(a.Date)
 	if y := a.ReissueDate.Year; y != nil && *y > a.YearOrZero() {
 		yearStr += fmt.Sprintf(" (%s %s)", lang.L("reissued"), util.FormatItemDate(a.ReissueDate))
 	}
-	return fmt.Sprintf("%s · %d %s · %s%s", yearStr, a.TrackCount, tracks, discs, util.SecondsToTimeString(float64(a.Duration)))
+	return fmt.Sprintf("%s · %s · %s%s", yearStr, tracksMsg, discs, util.SecondsToTimeString(float64(a.Duration)))
 }
 
 func (s *albumPageState) Restore() Page {
