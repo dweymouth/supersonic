@@ -98,11 +98,14 @@ func (g gridViewArtistIterator) NextN(n int) []GridViewItemModel {
 		if ar.AlbumCount == 1 {
 			albumsLabel = lang.L("album")
 		}
+		fallbackAlbumsMsg := fmt.Sprintf("%d %s", ar.AlbumCount, albumsLabel)
+		albumsMsg := lang.LocalizePluralKey("{{.albumsCount}} albums",
+			fallbackAlbumsMsg, ar.AlbumCount, map[string]string{"albumsCount": strconv.Itoa(ar.AlbumCount)})
 		return GridViewItemModel{
 			Name:        ar.Name,
 			ID:          ar.ID,
 			CoverArtID:  ar.CoverArtID,
-			Secondary:   []string{fmt.Sprintf("%d %s", ar.AlbumCount, albumsLabel)},
+			Secondary:   []string{albumsMsg},
 			CanFavorite: true,
 			IsFavorite:  ar.Favorite,
 		}

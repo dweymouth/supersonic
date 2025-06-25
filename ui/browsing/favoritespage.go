@@ -3,6 +3,7 @@ package browsing
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -389,11 +390,14 @@ func buildArtistGridViewModel(artists []*mediaprovider.Artist) []widgets.GridVie
 		if ar.AlbumCount == 1 {
 			albums = lang.L("album")
 		}
+		fallbackAlbumsMsg := fmt.Sprintf("%d %s", ar.AlbumCount, albums)
+		albumsMsg := lang.LocalizePluralKey("{{.albumsCount}} albums",
+			fallbackAlbumsMsg, ar.AlbumCount, map[string]string{"albumsCount": strconv.Itoa(ar.AlbumCount)})
 		model = append(model, widgets.GridViewItemModel{
 			ID:          ar.ID,
 			CoverArtID:  ar.CoverArtID,
 			Name:        ar.Name,
-			Secondary:   []string{fmt.Sprintf("%d %s", ar.AlbumCount, albums)},
+			Secondary:   []string{albumsMsg},
 			CanFavorite: true,
 			IsFavorite:  ar.Favorite,
 		})
