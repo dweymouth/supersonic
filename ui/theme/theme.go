@@ -134,9 +134,9 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 		if variant == theme.VariantDark {
 			return color.White
 		}
-		// For light theme, use a darker version of the foreground color instead of pure black
+		// For light theme, use a darker version of the foreground color
 		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
-		return darkenColor(foreground, 0.3)
+		return darkenColor(foreground, 0.33)
 	case ColorNameIconButton:
 		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
 		if variant == theme.VariantDark {
