@@ -131,10 +131,13 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 		disabled := colorOrDefault(colors.Disabled, defColors.Disabled, theme.ColorNameDisabled, variant)
 		return BlendColors(foreground, disabled, 0.33)
 	case ColorNameHoveredIconButton:
+		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
 		if variant == theme.VariantDark {
-			return color.White
+			// For dark theme, use a lighter version of the foreground color for hover
+			return brightenColor(foreground, 0.33)
 		}
-		return color.Black
+		// For light theme, use a darker version of the foreground color for hover
+		return darkenColor(foreground, 0.33)
 	case ColorNameIconButton:
 		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
 		if variant == theme.VariantDark {
