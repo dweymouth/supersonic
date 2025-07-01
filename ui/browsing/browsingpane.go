@@ -140,14 +140,16 @@ func (b *BrowsingPane) ClearHistory() {
 	b.updateHistoryButtons()
 }
 
-func (b *BrowsingPane) AddSettingsMenuItem(label string, action func()) {
-	b.settingsMenu.Items = append(b.settingsMenu.Items,
-		fyne.NewMenuItem(label, action))
+func (b *BrowsingPane) AddSettingsMenuItem(label string, icon fyne.Resource, action func()) {
+	item := fyne.NewMenuItem(label, action)
+	item.Icon = icon
+	b.settingsMenu.Items = append(b.settingsMenu.Items, item)
 }
 
-func (b *BrowsingPane) AddSettingsSubmenu(label string, menu *fyne.Menu) {
+func (b *BrowsingPane) AddSettingsSubmenu(label string, icon fyne.Resource, menu *fyne.Menu) {
 	item := fyne.NewMenuItem(label, nil)
 	item.ChildMenu = menu
+	item.Icon = icon
 	b.settingsMenu.Items = append(b.settingsMenu.Items, item)
 }
 

@@ -10,6 +10,7 @@ fyne bundle -append -prefix Res icons/publicdomain/heart-filled.svg >> bundled.g
 fyne bundle -append -prefix Res icons/publicdomain/heart-outline.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/infinity.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/musicnotes.svg >> bundled.go
+fyne bundle -append -prefix Res icons/publicdomain/oscilloscope.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/people.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/playlist.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/playqueue.svg >> bundled.go
