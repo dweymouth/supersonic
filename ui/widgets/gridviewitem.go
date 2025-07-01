@@ -490,7 +490,7 @@ func NewGridViewItem(placeholderResource fyne.Resource) *GridViewItem {
 	return g
 }
 
-func (g *GridViewItem) NeedsUpdate(model GridViewItemModel) bool {
+func (g *GridViewItem) NeedsUpdate(model *GridViewItemModel) bool {
 	return g.itemID != model.ID || !slices.Equal(g.secondaryIDs, model.SecondaryIDs) ||
 		(g.ShowSuffix && g.secondaryText.Suffix != model.Suffix) ||
 		(!g.ShowSuffix && g.secondaryText.Suffix != "")
