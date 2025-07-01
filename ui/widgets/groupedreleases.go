@@ -23,6 +23,8 @@ type GroupedReleasesModel struct {
 type GroupedReleases struct {
 	widget.BaseWidget
 
+	ShowSuffix bool
+
 	Model GroupedReleasesModel
 
 	OnPlay              func(id string, shuffle bool)
@@ -41,7 +43,12 @@ type GroupedReleases struct {
 	imageFetcher       util.ImageFetcher
 	cardPool           sync.Pool
 
-	content *fyne.Container
+	sections [4]groupedReleasesSection
+}
+
+type groupedReleasesSection struct {
+	title     *widget.Label
+	container *fyne.Container
 }
 
 func NewGroupedReleases(model GroupedReleasesModel, fetch util.ImageFetcher) *GroupedReleases {
@@ -51,16 +58,61 @@ func NewGroupedReleases(model GroupedReleasesModel, fetch util.ImageFetcher) *Gr
 	}
 	g.cardPool.New = func() any { return g.createNewItemCard() }
 	g.ExtendBaseWidget(g)
-	g.content = container.NewVBox()
+
+	cardSize := fyne.NewSquareSize(backend.AppInstance().Config.GridView.CardSize)
+	sections := []string{lang.L("Albums"), lang.L("Compilations"), lang.L("EPs"), lang.L("Singles")}
+	for i, s := range sections {
+		g.sections[i].title = widget.NewLabelWithStyle(s, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+		g.sections[i].container = container.NewGridWrap(cardSize)
+	}
+
 	return g
 }
 
 func (g *GroupedReleases) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(g.content)
+	vbox := container.NewVBox()
+	for i := range g.sections {
+		vbox.Add(g.sections[i].title)
+		vbox.Add(g.sections[i].container)
+	}
+	return widget.NewSimpleRenderer(container.NewVScroll(vbox))
 }
 
 func (g *GroupedReleases) Refresh() {
+	sectionItems := [4][]*GridViewItemModel{g.Model.Albums, g.Model.Compilations, g.Model.EPs, g.Model.Singles}
+	for i, items := range sectionItems {
+		lenItems := len(items)
+		objects := g.sections[i].container.Objects
+		// clear out excess cards in this section
+		for x := lenItems; x < len(objects); x++ {
+			g.cardPool.Put(objects[x])
+			objects[x] = nil
+		}
+		if lenItems > len(objects) {
+			objects = objects[:lenItems]
+		}
 
+		// update existing cards
+		for x := 0; x < len(objects); x++ {
+			g.doUpdateItemCard(objects[x].(*GridViewItem), items[x])
+		}
+		// append new ones as needed
+		for x := len(objects); x < lenItems; x++ {
+			card := g.cardPool.Get().(*GridViewItem)
+			g.doUpdateItemCard(card, items[x])
+		}
+
+		g.sections[i].container.Objects = objects
+		// if section has no albums in it, hide
+		if lenItems == 0 {
+			g.sections[i].title.Hide()
+			g.sections[i].container.Hide()
+		} else {
+			g.sections[i].title.Show()
+			g.sections[i].container.Show()
+		}
+	}
+	g.BaseWidget.Refresh()
 }
 
 func (g *GroupedReleases) createNewItemCard() fyne.CanvasObject {
@@ -136,4 +188,15 @@ func (g *GroupedReleases) onPlay(itemID string, shuffle bool) {
 	if g.OnPlay != nil {
 		g.OnPlay(itemID, shuffle)
 	}
+}
+
+func (g *GroupedReleases) doUpdateItemCard(card *GridViewItem, model *GridViewItemModel) {
+	card.ShowSuffix = g.ShowSuffix
+	if !card.NeedsUpdate(model) {
+		// nothing to do
+		return
+	}
+
+	card.Update(model)
+	card.ImgLoader.Load(model.CoverArtID)
 }
