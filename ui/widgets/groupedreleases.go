@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
@@ -48,7 +49,7 @@ type GroupedReleases struct {
 }
 
 type groupedReleasesSection struct {
-	titleRow  fyne.CanvasObject
+	titleRow  *groupedReleasesHeader
 	container *fyne.Container
 }
 
@@ -63,9 +64,15 @@ func NewGroupedReleases(model GroupedReleasesModel, fetch util.ImageFetcher) *Gr
 	cardSize := fyne.NewSquareSize(backend.AppInstance().Config.GridView.CardSize)
 	sections := []string{lang.L("Albums"), lang.L("Compilations"), lang.L("EPs"), lang.L("Singles")}
 	for i, s := range sections {
-		title := widget.NewLabelWithStyle(s, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-		title.SizeName = theme.SizeNameSubHeadingText
-		g.sections[i].titleRow = container.NewHBox(util.NewHSpace(8), title)
+		_i := i
+		g.sections[i].titleRow = newGroupedReleasesHeader(s, func(collapse bool) {
+			if collapse {
+				g.sections[_i].container.Hide()
+			} else {
+				g.sections[_i].container.Show()
+			}
+			canvas.Refresh(g)
+		})
 		g.sections[i].container = container.NewGridWrap(cardSize)
 	}
 
@@ -217,4 +224,49 @@ func (g *GroupedReleases) doUpdateItemCard(card *GridViewItem, model *GridViewIt
 
 	card.Update(model)
 	card.ImgLoader.Load(model.CoverArtID)
+}
+
+type groupedReleasesHeader struct {
+	widget.BaseWidget
+
+	title    string
+	onToggle func(bool)
+
+	icon      *widget.Icon
+	collapsed bool
+}
+
+func newGroupedReleasesHeader(title string, onToggleVisibility func(bool)) *groupedReleasesHeader {
+	g := &groupedReleasesHeader{
+		title:    title,
+		icon:     widget.NewIcon(theme.MenuDropDownIcon()),
+		onToggle: onToggleVisibility,
+	}
+	g.ExtendBaseWidget(g)
+	return g
+}
+
+func (g *groupedReleasesHeader) CreateRenderer() fyne.WidgetRenderer {
+	titleText := widget.NewLabelWithStyle(g.title, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	titleText.SizeName = theme.SizeNameSubHeadingText
+	return widget.NewSimpleRenderer(
+		container.NewHBox(util.NewHSpace(8), titleText, util.NewHSpace(-theme.Padding()*2), g.icon),
+	)
+}
+
+func (g *groupedReleasesHeader) Refresh() {
+	if g.collapsed {
+		g.icon.Resource = theme.MenuExpandIcon()
+	} else {
+		g.icon.Resource = theme.MenuDropDownIcon()
+	}
+	g.BaseWidget.Refresh()
+}
+
+var _ fyne.Tappable = (*groupedReleasesHeader)(nil)
+
+func (g *groupedReleasesHeader) Tapped(*fyne.PointEvent) {
+	g.collapsed = !g.collapsed
+	g.onToggle(g.collapsed)
+	g.Refresh()
 }
