@@ -248,21 +248,23 @@ func (a *ArtistPage) getGroupedReleasesModel() widgets.GroupedReleasesModel {
 }
 
 func (a *ArtistPage) sortAlbumsSlices(slices ...[]*mediaprovider.Album) {
+	var curSlice []*mediaprovider.Album
 	sortFunc := func(x, y int) bool {
-		return a.artistInfo.Albums[y].Date.After(a.artistInfo.Albums[x].Date)
+		return curSlice[y].Date.After(curSlice[x].Date)
 	}
 	switch a.cfg.DiscographySort {
 	case discographySorts[1]: /*year descending*/
 		sortFunc = func(x, y int) bool {
-			return a.artistInfo.Albums[x].Date.After(a.artistInfo.Albums[y].Date)
+			return curSlice[x].Date.After(curSlice[y].Date)
 		}
 	case discographySorts[2]: /*name*/
 		sortFunc = func(x, y int) bool {
-			return a.artistInfo.Albums[x].Name < a.artistInfo.Albums[y].Name
+			return curSlice[x].Name < curSlice[y].Name
 		}
 	}
 
 	for _, slice := range slices {
+		curSlice = slice
 		sort.Slice(slice, sortFunc)
 	}
 }
