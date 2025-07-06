@@ -17,6 +17,7 @@ const (
 	WidgetTypeTracklist
 	WidgetTypeCompactTracklist
 	WidgetTypeNowPlayingPage
+	WidgetTypeGroupedReleases
 
 	// keep at bottom
 	numWidgetTypes

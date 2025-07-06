@@ -362,7 +362,7 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 
 	card.ShowSuffix = g.ShowSuffix
 	card.Cover.Im.PlaceholderIcon = g.Placeholder
-	if !card.NeedsUpdate(item) {
+	if !card.NeedsUpdate(&item) {
 		// nothing to do
 		return
 	}
