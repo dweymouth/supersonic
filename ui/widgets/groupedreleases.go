@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/lang"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
@@ -47,7 +48,7 @@ type GroupedReleases struct {
 }
 
 type groupedReleasesSection struct {
-	title     *widget.Label
+	titleRow  fyne.CanvasObject
 	container *fyne.Container
 }
 
@@ -62,7 +63,9 @@ func NewGroupedReleases(model GroupedReleasesModel, fetch util.ImageFetcher) *Gr
 	cardSize := fyne.NewSquareSize(backend.AppInstance().Config.GridView.CardSize)
 	sections := []string{lang.L("Albums"), lang.L("Compilations"), lang.L("EPs"), lang.L("Singles")}
 	for i, s := range sections {
-		g.sections[i].title = widget.NewLabelWithStyle(s, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+		title := widget.NewLabelWithStyle(s, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+		title.SizeName = theme.SizeNameSubHeadingText
+		g.sections[i].titleRow = container.NewHBox(util.NewHSpace(8), title)
 		g.sections[i].container = container.NewGridWrap(cardSize)
 	}
 
@@ -72,14 +75,16 @@ func NewGroupedReleases(model GroupedReleasesModel, fetch util.ImageFetcher) *Gr
 func (g *GroupedReleases) CreateRenderer() fyne.WidgetRenderer {
 	vbox := container.NewVBox()
 	for i := range g.sections {
-		vbox.Add(g.sections[i].title)
+		vbox.Add(g.sections[i].titleRow)
 		vbox.Add(g.sections[i].container)
 	}
 	return widget.NewSimpleRenderer(container.NewVScroll(vbox))
 }
 
 func (g *GroupedReleases) Refresh() {
+	gridSize := backend.AppInstance().Config.GridView.CardSize
 	sectionItems := [4][]GridViewItemModel{g.Model.Albums, g.Model.Compilations, g.Model.EPs, g.Model.Singles}
+	layoutSize := fyne.NewSize(0, 0)
 	for i, items := range sectionItems {
 		lenItems := len(items)
 		objects := g.sections[i].container.Objects
@@ -95,21 +100,33 @@ func (g *GroupedReleases) Refresh() {
 		// update existing cards
 		for x := 0; x < len(objects); x++ {
 			g.doUpdateItemCard(objects[x].(*GridViewItem), &items[x])
+			objects[x].(*GridViewItem).SetSize(gridSize)
+			if layoutSize.IsZero() {
+				layoutSize = objects[x].MinSize()
+			}
 		}
 		// append new ones as needed
 		for x := len(objects); x < lenItems; x++ {
 			card := g.cardPool.Get().(*GridViewItem)
+			card.SetSize(gridSize)
 			g.doUpdateItemCard(card, &items[x])
 			objects = append(objects, card)
+			if layoutSize.IsZero() {
+				layoutSize = card.MinSize()
+			}
 		}
 
+		l := layout.NewGridWrapLayout(layoutSize)
+		g.sections[i].container.Layout = l
+		// needed to initialize the col count so that MinSize is correct
+		l.Layout(objects, g.Size())
 		g.sections[i].container.Objects = objects
 		// if section has no albums in it, hide
 		if lenItems == 0 {
-			g.sections[i].title.Hide()
+			g.sections[i].titleRow.Hide()
 			g.sections[i].container.Hide()
 		} else {
-			g.sections[i].title.Show()
+			g.sections[i].titleRow.Show()
 			g.sections[i].container.Show()
 		}
 	}

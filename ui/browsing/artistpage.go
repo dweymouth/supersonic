@@ -338,6 +338,7 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 	a.sortButton.Show()
 	if useGroupedReleases {
 		a.container.Objects[0].(*fyne.Container).Objects[0] = a.groupedReleases
+		a.container.Objects[0].Refresh()
 	} else {
 		a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
 	}
