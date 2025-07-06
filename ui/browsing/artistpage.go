@@ -43,6 +43,9 @@ type artistPageState struct {
 
 	gridScrollPos float32 // for album grid (or grouped releases)
 	listScrollPos float32 // for Top Tracks list
+
+	sectionVis          widgets.GroupedReleasesSectionVisibility
+	sectionVisNeedApply bool
 }
 
 type ArtistPage struct {
@@ -164,6 +167,8 @@ func (a *ArtistPage) Save() SavedPage {
 	}
 	if a.groupedReleases != nil {
 		s.gridScrollPos = a.groupedReleases.GetScrollOffset()
+		s.sectionVis = a.groupedReleases.GetSectionVisibility()
+		s.sectionVisNeedApply = true
 		a.groupedReleases.Model = widgets.GroupedReleasesModel{}
 		a.pool.Release(util.WidgetTypeGroupedReleases, a.groupedReleases)
 	}
@@ -336,6 +341,10 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 				a.groupedReleases = widgets.NewGroupedReleases(model, a.im)
 			}
 			a.contr.ConnectGroupedReleasesActions(a.groupedReleases)
+			if a.sectionVisNeedApply {
+				a.groupedReleases.SetSectionVisibility(a.sectionVis, true)
+				a.sectionVisNeedApply = false
+			}
 			if a.gridScrollPos != 0 {
 				a.groupedReleases.ScrollToOffset(a.gridScrollPos)
 				a.gridScrollPos = 0

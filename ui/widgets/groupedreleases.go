@@ -22,6 +22,13 @@ type GroupedReleasesModel struct {
 	Singles      []GridViewItemModel
 }
 
+type GroupedReleasesSectionVisibility struct {
+	Albums       bool
+	Compilations bool
+	EPs          bool
+	Singles      bool
+}
+
 type GroupedReleases struct {
 	widget.BaseWidget
 
@@ -88,6 +95,33 @@ func NewGroupedReleases(model GroupedReleasesModel, fetch util.ImageFetcher) *Gr
 	return g
 }
 
+func (g *GroupedReleases) GetSectionVisibility() GroupedReleasesSectionVisibility {
+	v := GroupedReleasesSectionVisibility{true, true, true, true}
+	if g.sections[0].titleRow.Collapsed {
+		v.Albums = false
+	}
+	if g.sections[1].titleRow.Collapsed {
+		v.Compilations = false
+	}
+	if g.sections[2].titleRow.Collapsed {
+		v.EPs = false
+	}
+	if g.sections[3].titleRow.Collapsed {
+		v.Singles = false
+	}
+	return v
+}
+
+func (g *GroupedReleases) SetSectionVisibility(v GroupedReleasesSectionVisibility, refresh bool) {
+	for i, b := range []bool{v.Albums, v.Compilations, v.EPs, v.Singles} {
+		g.sections[i].titleRow.Collapsed = !b
+		g.sections[i].container.Hidden = !b
+	}
+	if refresh {
+		g.Refresh()
+	}
+}
+
 func (g *GroupedReleases) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.container)
 }
@@ -146,7 +180,9 @@ func (g *GroupedReleases) Refresh() {
 			g.sections[i].container.Hide()
 		} else {
 			g.sections[i].titleRow.Show()
-			g.sections[i].container.Show()
+			if !g.sections[i].titleRow.Collapsed {
+				g.sections[i].container.Show()
+			}
 		}
 	}
 	g.BaseWidget.Refresh()
@@ -245,7 +281,7 @@ type groupedReleasesHeader struct {
 	onToggle func(bool)
 
 	icon      *widget.Icon
-	collapsed bool
+	Collapsed bool
 }
 
 func newGroupedReleasesHeader(title string, onToggleVisibility func(bool)) *groupedReleasesHeader {
@@ -267,7 +303,7 @@ func (g *groupedReleasesHeader) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (g *groupedReleasesHeader) Refresh() {
-	if g.collapsed {
+	if g.Collapsed {
 		g.icon.Resource = theme.MenuExpandIcon()
 	} else {
 		g.icon.Resource = theme.MenuDropDownIcon()
@@ -278,7 +314,7 @@ func (g *groupedReleasesHeader) Refresh() {
 var _ fyne.Tappable = (*groupedReleasesHeader)(nil)
 
 func (g *groupedReleasesHeader) Tapped(*fyne.PointEvent) {
-	g.collapsed = !g.collapsed
-	g.onToggle(g.collapsed)
+	g.Collapsed = !g.Collapsed
+	g.onToggle(g.Collapsed)
 	g.Refresh()
 }
