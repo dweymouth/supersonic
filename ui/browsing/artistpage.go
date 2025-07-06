@@ -40,6 +40,9 @@ type artistPageState struct {
 	mp    mediaprovider.MediaProvider
 	im    *backend.ImageManager
 	contr *controller.Controller
+
+	gridScrollPos float32 // for album grid (or grouped releases)
+	listScrollPos float32 // for Top Tracks list
 }
 
 type ArtistPage struct {
@@ -69,11 +72,7 @@ func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 	if cfg.InitialView == viewTopTracks {
 		activeView = 1
 	}
-	return newArtistPage(artistID, cfg, pool, pm, mp, im, contr, activeView, widgets.TracklistSort{})
-}
-
-func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.WidgetPool, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller, activeView int, sort widgets.TracklistSort) *ArtistPage {
-	a := &ArtistPage{artistPageState: artistPageState{
+	return newArtistPage(artistPageState{
 		artistID:   artistID,
 		cfg:        cfg,
 		pool:       pool,
@@ -82,8 +81,11 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 		im:         im,
 		contr:      contr,
 		activeView: activeView,
-		trackSort:  sort,
-	}}
+	})
+}
+
+func newArtistPage(state artistPageState) *ArtistPage {
+	a := &ArtistPage{artistPageState: state}
 	a.ExtendBaseWidget(a)
 	if h := a.pool.Obtain(util.WidgetTypeArtistPageHeader); h != nil {
 		a.header = h.(*ArtistPageHeader)
@@ -92,7 +94,7 @@ func newArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 		a.header = NewArtistPageHeader(a)
 	}
 	a.header.artistPage = a
-	if img, ok := im.GetCachedArtistImage(artistID); ok {
+	if img, ok := state.im.GetCachedArtistImage(state.artistID); ok {
 		a.header.artistImage.SetImage(img, true /*tappable*/)
 	}
 	viewToggle := widgets.NewToggleText(0, []string{lang.L("Discography"), lang.L("Top Tracks")})
@@ -148,6 +150,7 @@ func (a *ArtistPage) Save() SavedPage {
 	s := a.artistPageState
 	if a.tracklistCtr != nil {
 		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		s.listScrollPos = tl.GetScrollOffset()
 		s.trackSort = tl.Sorting()
 		tl.Clear()
 		a.pool.Release(util.WidgetTypeTracklist, tl)
@@ -155,10 +158,12 @@ func (a *ArtistPage) Save() SavedPage {
 	a.header.artistPage = nil
 	a.pool.Release(util.WidgetTypeArtistPageHeader, a.header)
 	if a.albumGrid != nil {
+		s.gridScrollPos = a.albumGrid.GetScrollOffset()
 		a.albumGrid.Clear()
 		a.pool.Release(util.WidgetTypeGridView, a.albumGrid)
 	}
 	if a.groupedReleases != nil {
+		s.gridScrollPos = a.groupedReleases.GetScrollOffset()
 		a.groupedReleases.Model = widgets.GroupedReleasesModel{}
 		a.pool.Release(util.WidgetTypeGroupedReleases, a.groupedReleases)
 	}
@@ -181,6 +186,11 @@ var _ Scrollable = (*ArtistPage)(nil)
 func (g *ArtistPage) Scroll(scrollAmt float32) {
 	if g.activeView == 0 && g.albumGrid != nil {
 		g.albumGrid.ScrollToOffset(g.albumGrid.GetScrollOffset() + scrollAmt)
+	} else if g.activeView == 0 && g.groupedReleases != nil {
+		g.groupedReleases.ScrollToOffset(g.groupedReleases.GetScrollOffset() + scrollAmt)
+	} else if g.activeView == 1 && g.tracklistCtr != nil {
+		tl := g.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		tl.ScrollBy(scrollAmt)
 	}
 }
 
@@ -326,6 +336,10 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 				a.groupedReleases = widgets.NewGroupedReleases(model, a.im)
 			}
 			a.contr.ConnectGroupedReleasesActions(a.groupedReleases)
+			if a.gridScrollPos != 0 {
+				a.groupedReleases.ScrollToOffset(a.gridScrollPos)
+				a.gridScrollPos = 0
+			}
 		} else {
 			model := a.getGridViewAlbumsModel()
 			if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
@@ -336,6 +350,10 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 				a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
 			}
 			a.contr.ConnectAlbumGridActions(a.albumGrid)
+			if a.gridScrollPos != 0 {
+				a.albumGrid.ScrollToOffset(a.gridScrollPos)
+				a.gridScrollPos = 0
+			}
 		}
 	} else if reSort {
 		if useGroupedReleases {
@@ -400,6 +418,10 @@ func (a *ArtistPage) showTopTracks() {
 			}
 			tl.SetNowPlaying(a.nowPlayingID)
 			a.contr.ConnectTracklistActions(tl)
+			if a.listScrollPos != 0 {
+				tl.ScrollToOffset(a.listScrollPos)
+				a.listScrollPos = 0
+			}
 			a.tracklistCtr = container.New(
 				&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
 				tl)
@@ -434,7 +456,7 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *artistPageState) Restore() Page {
-	return newArtistPage(s.artistID, s.cfg, s.pool, s.pm, s.mp, s.im, s.contr, s.activeView, s.trackSort)
+	return newArtistPage(*s)
 }
 
 const artistBioNotAvailableKey = "Artist biography not available."

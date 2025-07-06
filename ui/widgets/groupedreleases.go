@@ -46,6 +46,8 @@ type GroupedReleases struct {
 	cardPool           sync.Pool
 
 	sections [4]groupedReleasesSection
+
+	container *container.Scroll
 }
 
 type groupedReleasesSection struct {
@@ -76,16 +78,26 @@ func NewGroupedReleases(model GroupedReleasesModel, fetch util.ImageFetcher) *Gr
 		g.sections[i].container = container.NewGridWrap(cardSize)
 	}
 
-	return g
-}
-
-func (g *GroupedReleases) CreateRenderer() fyne.WidgetRenderer {
 	vbox := container.NewVBox()
 	for i := range g.sections {
 		vbox.Add(g.sections[i].titleRow)
 		vbox.Add(g.sections[i].container)
 	}
-	return widget.NewSimpleRenderer(container.NewVScroll(vbox))
+	g.container = container.NewVScroll(vbox)
+
+	return g
+}
+
+func (g *GroupedReleases) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(g.container)
+}
+
+func (g *GroupedReleases) GetScrollOffset() float32 {
+	return g.container.Offset.Y
+}
+
+func (g *GroupedReleases) ScrollToOffset(offs float32) {
+	g.container.ScrollToOffset(fyne.NewPos(0, offs))
 }
 
 func (g *GroupedReleases) Refresh() {
