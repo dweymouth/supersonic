@@ -49,12 +49,13 @@ type ArtistPage struct {
 
 	artistInfo *mediaprovider.ArtistWithAlbums
 
-	albumGrid    *widgets.GridView
-	tracklistCtr *fyne.Container
-	sortButton   *widgets.SortChooserButton
-	nowPlayingID string
-	header       *ArtistPageHeader
-	container    *fyne.Container
+	albumGrid       *widgets.GridView
+	groupedReleases *widgets.GroupedReleases
+	tracklistCtr    *fyne.Container
+	sortButton      *widgets.SortChooserButton
+	nowPlayingID    string
+	header          *ArtistPageHeader
+	container       *fyne.Container
 }
 
 const (
@@ -155,6 +156,10 @@ func (a *ArtistPage) Save() SavedPage {
 	if a.albumGrid != nil {
 		a.albumGrid.Clear()
 		a.pool.Release(util.WidgetTypeGridView, a.albumGrid)
+	}
+	if a.groupedReleases != nil {
+		a.groupedReleases.Model = widgets.GroupedReleasesModel{}
+		a.pool.Release(util.WidgetTypeGroupedReleases, a.groupedReleases)
 	}
 	return &s
 }
@@ -294,27 +299,48 @@ func (a *ArtistPage) load() {
 }
 
 func (a *ArtistPage) showAlbumGrid(reSort bool) {
-	if a.albumGrid == nil {
+	useGroupedReleases := a.artistInfo != nil && len(a.artistInfo.Albums) <= 50
+
+	if a.albumGrid == nil && a.groupedReleases == nil {
 		if a.artistInfo == nil {
 			// page not loaded yet or invalid artist
 			a.activeView = 0 // if page still loading, will show discography view first
 			return
 		}
-		model := a.getGridViewAlbumsModel()
-		if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
-			a.albumGrid = g.(*widgets.GridView)
-			a.albumGrid.Placeholder = myTheme.AlbumIcon
-			a.albumGrid.ResetFixed(model)
+		if useGroupedReleases {
+			model := a.getGroupedReleasesModel()
+			if g := a.pool.Obtain(util.WidgetTypeGroupedReleases); g != nil {
+				a.groupedReleases = g.(*widgets.GroupedReleases)
+				a.groupedReleases.Model = model
+			} else {
+				a.groupedReleases = widgets.NewGroupedReleases(model, a.im)
+			}
+			a.contr.ConnectGroupedReleasesActions(a.groupedReleases)
 		} else {
-			a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
+			model := a.getGridViewAlbumsModel()
+			if g := a.pool.Obtain(util.WidgetTypeGridView); g != nil {
+				a.albumGrid = g.(*widgets.GridView)
+				a.albumGrid.Placeholder = myTheme.AlbumIcon
+				a.albumGrid.ResetFixed(model)
+			} else {
+				a.albumGrid = widgets.NewFixedGridView(model, a.im, myTheme.AlbumIcon)
+			}
+			a.contr.ConnectAlbumGridActions(a.albumGrid)
 		}
-		a.contr.ConnectAlbumGridActions(a.albumGrid)
 	} else if reSort {
-		model := a.getGridViewAlbumsModel()
-		a.albumGrid.ResetFixed(model)
+		if useGroupedReleases {
+			a.groupedReleases.Model = a.getGroupedReleasesModel()
+		} else {
+			model := a.getGridViewAlbumsModel()
+			a.albumGrid.ResetFixed(model)
+		}
 	}
 	a.sortButton.Show()
-	a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
+	if useGroupedReleases {
+		a.container.Objects[0].(*fyne.Container).Objects[0] = a.groupedReleases
+	} else {
+		a.container.Objects[0].(*fyne.Container).Objects[0] = a.albumGrid
+	}
 	a.container.Objects[0].Refresh()
 }
 

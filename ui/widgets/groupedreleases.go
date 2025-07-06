@@ -88,7 +88,7 @@ func (g *GroupedReleases) Refresh() {
 			g.cardPool.Put(objects[x])
 			objects[x] = nil
 		}
-		if lenItems > len(objects) {
+		if len(objects) > lenItems {
 			objects = objects[:lenItems]
 		}
 
@@ -100,6 +100,7 @@ func (g *GroupedReleases) Refresh() {
 		for x := len(objects); x < lenItems; x++ {
 			card := g.cardPool.Get().(*GridViewItem)
 			g.doUpdateItemCard(card, &items[x])
+			objects = append(objects, card)
 		}
 
 		g.sections[i].container.Objects = objects

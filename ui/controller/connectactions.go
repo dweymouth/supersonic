@@ -97,33 +97,65 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 	grid.OnShowSecondaryPage = func(artistID string) {
 		m.NavigateTo(ArtistRoute(artistID))
 	}
-	grid.OnAddToPlaylist = func(albumID string) {
-		go func() {
-			album, err := m.App.ServerManager.Server.GetAlbum(albumID)
-			if err != nil {
-				log.Printf("error loading album: %s", err.Error())
-				return
-			}
-			fyne.Do(func() {
-				m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
-			})
-		}()
-	}
-	grid.OnDownload = func(albumID string) {
-		go func() {
-			album, err := m.App.ServerManager.Server.GetAlbum(albumID)
-			if err != nil {
-				log.Printf("error loading album: %s", err.Error())
-				return
-			}
-			fyne.Do(func() {
-				m.ShowDownloadDialog(album.Tracks, album.Name)
-			})
-		}()
-	}
+	grid.OnAddToPlaylist = m.onAddAlbumToPlaylist
+	grid.OnDownload = m.onDownloadAlbum
 	grid.OnShare = func(albumID string) {
 		m.ShowShareDialog(albumID)
 	}
+}
+
+func (m *Controller) ConnectGroupedReleasesActions(grid *widgets.GroupedReleases) {
+	grid.OnAddToQueue = func(albumID string) {
+		go m.App.PlaybackManager.LoadAlbum(albumID, backend.Append, false)
+	}
+	grid.OnPlayNext = func(albumID string) {
+		go m.App.PlaybackManager.LoadAlbum(albumID, backend.InsertNext, false)
+	}
+	grid.OnPlay = func(albumID string, shuffle bool) {
+		go m.App.PlaybackManager.PlayAlbum(albumID, 0, shuffle)
+	}
+	grid.OnFavorite = func(albumID string, favorite bool) {
+		m.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
+			AlbumIDs: []string{albumID},
+		}, favorite)
+	}
+	grid.OnShowItemPage = func(albumID string) {
+		m.NavigateTo(AlbumRoute(albumID))
+	}
+	grid.OnShowSecondaryPage = func(artistID string) {
+		m.NavigateTo(ArtistRoute(artistID))
+	}
+	grid.OnAddToPlaylist = m.onAddAlbumToPlaylist
+	grid.OnDownload = m.onDownloadAlbum
+	grid.OnShare = func(albumID string) {
+		m.ShowShareDialog(albumID)
+	}
+}
+
+func (m *Controller) onAddAlbumToPlaylist(albumID string) {
+	go func() {
+		album, err := m.App.ServerManager.Server.GetAlbum(albumID)
+		if err != nil {
+			log.Printf("error loading album: %s", err.Error())
+			return
+		}
+		fyne.Do(func() {
+			m.DoAddTracksToPlaylistWorkflow(sharedutil.TracksToIDs(album.Tracks))
+		})
+	}()
+}
+
+func (m *Controller) onDownloadAlbum(albumID string) {
+	go func() {
+		album, err := m.App.ServerManager.Server.GetAlbum(albumID)
+		if err != nil {
+			log.Printf("error loading album: %s", err.Error())
+			return
+		}
+		fyne.Do(func() {
+			m.ShowDownloadDialog(album.Tracks, album.Name)
+		})
+	}()
 }
 
 func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
