@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"log"
+	"slices"
 	"sort"
 	"strconv"
 
@@ -299,7 +300,14 @@ func (a *ArtistPage) load() {
 }
 
 func (a *ArtistPage) showAlbumGrid(reSort bool) {
-	useGroupedReleases := a.artistInfo != nil && len(a.artistInfo.Albums) <= 50
+	allAlbums := func() bool {
+		return slices.IndexFunc(a.artistInfo.Albums, func(al *mediaprovider.Album) bool {
+			return al.ReleaseTypes&mediaprovider.ReleaseTypeCompilation > 0 ||
+				al.ReleaseTypes&mediaprovider.ReleaseTypeEP > 0 ||
+				al.ReleaseTypes&mediaprovider.ReleaseTypeSingle > 0
+		}) < 0
+	}
+	useGroupedReleases := a.artistInfo != nil && len(a.artistInfo.Albums) <= 50 && !allAlbums()
 
 	if a.albumGrid == nil && a.groupedReleases == nil {
 		if a.artistInfo == nil {
