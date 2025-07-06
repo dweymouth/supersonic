@@ -194,6 +194,54 @@ func (a *ArtistPage) getGridViewAlbumsModel() []widgets.GridViewItemModel {
 	if a.artistInfo == nil {
 		return nil
 	}
+
+	a.sortAlbumsSlices(a.artistInfo.Albums)
+	return sharedutil.MapSlice(a.artistInfo.Albums, a.albumToGridViewItemModel)
+}
+
+func (a *ArtistPage) albumToGridViewItemModel(al *mediaprovider.Album) widgets.GridViewItemModel {
+	return widgets.GridViewItemModel{
+		Name:        al.Name,
+		ID:          al.ID,
+		CoverArtID:  al.CoverArtID,
+		Secondary:   []string{strconv.Itoa(al.YearOrZero())},
+		CanFavorite: true,
+		IsFavorite:  al.Favorite,
+	}
+}
+
+func (a *ArtistPage) getGroupedReleasesModel() widgets.GroupedReleasesModel {
+	if a.artistInfo == nil {
+		return widgets.GroupedReleasesModel{}
+	}
+	albums := []*mediaprovider.Album{}
+	compilations := []*mediaprovider.Album{}
+	eps := []*mediaprovider.Album{}
+	singles := []*mediaprovider.Album{}
+
+	for _, album := range a.artistInfo.Albums {
+		switch rt := album.ReleaseTypes; {
+		case rt&mediaprovider.ReleaseTypeEP > 0:
+			eps = append(eps, album)
+		case rt&mediaprovider.ReleaseTypeCompilation > 0:
+			compilations = append(compilations, album)
+		case rt&mediaprovider.ReleaseTypeSingle > 0:
+			singles = append(singles, album)
+		default:
+			albums = append(albums, album)
+		}
+	}
+
+	a.sortAlbumsSlices(albums, compilations, eps, singles)
+	return widgets.GroupedReleasesModel{
+		Albums:       sharedutil.MapSlice(albums, a.albumToGridViewItemModel),
+		Compilations: sharedutil.MapSlice(compilations, a.albumToGridViewItemModel),
+		EPs:          sharedutil.MapSlice(eps, a.albumToGridViewItemModel),
+		Singles:      sharedutil.MapSlice(singles, a.albumToGridViewItemModel),
+	}
+}
+
+func (a *ArtistPage) sortAlbumsSlices(slices ...[]*mediaprovider.Album) {
 	sortFunc := func(x, y int) bool {
 		return a.artistInfo.Albums[y].Date.After(a.artistInfo.Albums[x].Date)
 	}
@@ -208,17 +256,9 @@ func (a *ArtistPage) getGridViewAlbumsModel() []widgets.GridViewItemModel {
 		}
 	}
 
-	sort.Slice(a.artistInfo.Albums, sortFunc)
-	return sharedutil.MapSlice(a.artistInfo.Albums, func(al *mediaprovider.Album) widgets.GridViewItemModel {
-		return widgets.GridViewItemModel{
-			Name:        al.Name,
-			ID:          al.ID,
-			CoverArtID:  al.CoverArtID,
-			Secondary:   []string{strconv.Itoa(al.YearOrZero())},
-			CanFavorite: true,
-			IsFavorite:  al.Favorite,
-		}
-	})
+	for _, slice := range slices {
+		sort.Slice(slice, sortFunc)
+	}
 }
 
 // should be called asynchronously

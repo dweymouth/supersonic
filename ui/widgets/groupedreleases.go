@@ -14,10 +14,10 @@ import (
 )
 
 type GroupedReleasesModel struct {
-	Albums       []*GridViewItemModel
-	Compilations []*GridViewItemModel
-	EPs          []*GridViewItemModel
-	Singles      []*GridViewItemModel
+	Albums       []GridViewItemModel
+	Compilations []GridViewItemModel
+	EPs          []GridViewItemModel
+	Singles      []GridViewItemModel
 }
 
 type GroupedReleases struct {
@@ -79,7 +79,7 @@ func (g *GroupedReleases) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (g *GroupedReleases) Refresh() {
-	sectionItems := [4][]*GridViewItemModel{g.Model.Albums, g.Model.Compilations, g.Model.EPs, g.Model.Singles}
+	sectionItems := [4][]GridViewItemModel{g.Model.Albums, g.Model.Compilations, g.Model.EPs, g.Model.Singles}
 	for i, items := range sectionItems {
 		lenItems := len(items)
 		objects := g.sections[i].container.Objects
@@ -94,12 +94,12 @@ func (g *GroupedReleases) Refresh() {
 
 		// update existing cards
 		for x := 0; x < len(objects); x++ {
-			g.doUpdateItemCard(objects[x].(*GridViewItem), items[x])
+			g.doUpdateItemCard(objects[x].(*GridViewItem), &items[x])
 		}
 		// append new ones as needed
 		for x := len(objects); x < lenItems; x++ {
 			card := g.cardPool.Get().(*GridViewItem)
-			g.doUpdateItemCard(card, items[x])
+			g.doUpdateItemCard(card, &items[x])
 		}
 
 		g.sections[i].container.Objects = objects
