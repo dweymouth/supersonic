@@ -3,7 +3,7 @@ module github.com/dweymouth/supersonic
 go 1.21.9
 
 require (
-	fyne.io/fyne/v2 v2.6.0-beta1
+	fyne.io/fyne/v2 v2.6.1
 	github.com/20after4/configdir v0.1.1
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/cenkalti/dominantcolor v1.0.3
@@ -61,4 +61,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.6.0-beta1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250406173843-f5cb002423a5
+replace fyne.io/fyne/v2 v2.6.1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250708163637-fdac4fc871f1
