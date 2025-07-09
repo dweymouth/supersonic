@@ -269,7 +269,7 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 	m.App.UpdateChecker.OnUpdatedVersionFound = func() {
 		t := m.App.UpdateChecker.VersionTagFound()
 		if t != app.VersionTag() {
-			m.ShowNewVersionDialog(displayAppName, t)
+			fyne.Do(func() { m.ShowNewVersionDialog(displayAppName, t) })
 		}
 		m.App.Config.Application.LastCheckedVersion = t
 	}
