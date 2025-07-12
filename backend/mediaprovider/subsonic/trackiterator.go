@@ -41,22 +41,27 @@ func (a *allTracksIterator) Next() *mediaprovider.Track {
 
 	// fetch next album
 	if a.curAlbum == nil || a.curTrackIdx >= len(a.curAlbum.Tracks) {
-		al := a.albumIter.Next()
-		if al == nil {
-			a.done = true
-			return nil
+		haveNextAlbum := false
+		for !haveNextAlbum && !a.done {
+			al := a.albumIter.Next()
+			if al == nil {
+				a.done = true
+				return nil
+			}
+			alWithTracks, err := a.s.GetAlbum(al.ID)
+			if err != nil || alWithTracks == nil {
+				log.Printf("error fetching album: %s", err.Error())
+				continue // try next album
+			}
+			haveNextAlbum = true
+			if len(alWithTracks.Tracks) == 0 {
+				// in the unlikely case of an album with zero tracks,
+				// just call recursively to move to next album
+				return a.Next()
+			}
+			a.curAlbum = alWithTracks
+			a.curTrackIdx = 0
 		}
-		alWithTracks, err := a.s.GetAlbum(al.ID)
-		if err != nil {
-			log.Printf("error fetching album: %s", err.Error())
-		}
-		if len(alWithTracks.Tracks) == 0 {
-			// in the unlikely case of an album with zero tracks,
-			// just call recursively to move to next album
-			return a.Next()
-		}
-		a.curAlbum = alWithTracks
-		a.curTrackIdx = 0
 	}
 
 	tr := a.curAlbum.Tracks[a.curTrackIdx]
