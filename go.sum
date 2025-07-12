@@ -21,14 +21,16 @@ github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c h1:UX
 github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c/go.mod h1:Idgzr4LYzve8IPHF1stLO1bdGQZnDKt/bT9WfJflCGw=
 github.com/dweymouth/fyne-tooltip v0.3.0 h1:NKCyTkh9NtvnTsiHtTOtaJzRDOFYP8AckQ2tyhOh6JY=
 github.com/dweymouth/fyne-tooltip v0.3.0/go.mod h1:m04ShLW/Tp6LXrNieTumApvNgo7YSB+wi+jZTN+kDBU=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250708163637-fdac4fc871f1 h1:nuTYANeDhiuVBaRybKdiPXOFFggT8kgyMVsSVFnisGk=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250708163637-fdac4fc871f1/go.mod h1:YZt7SksjvrSNJCwbWFV32WON3mE1Sr7L41D29qMZ/lU=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250712002006-5064d705dac4 h1:Q3r94AcVL8yaF4Nrd3EQFKyLL3UN/zHPkj+My9B2vCQ=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250712002006-5064d705dac4/go.mod h1:YZt7SksjvrSNJCwbWFV32WON3mE1Sr7L41D29qMZ/lU=
 github.com/dweymouth/go-jellyfin v0.0.0-20250531151636-29591764f0a0 h1:9t1CR83uzn5Va4Nycwncmuw/NEAN64O4lf82VBPzdfE=
 github.com/dweymouth/go-jellyfin v0.0.0-20250531151636-29591764f0a0/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
 github.com/felixge/fgprof v0.9.3 h1:VvyZxILNuCiUCSXtPtYmmtGvb65nqXh2QFWc0Wpf2/g=
 github.com/felixge/fgprof v0.9.3/go.mod h1:RdbpDgzqYVh/T9fPELJyV7EYJuHB55UTEULNun8eiPw=
+github.com/fogleman/gg v1.3.0 h1:/7zJX8F6AaYQc57WQCyN9cAIz+4bCJGO9B+dyW29am8=
+github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fredbi/uri v1.1.0 h1:OqLpTXtyRg9ABReqvDGdJPqZUxs8cyBDOMXBbskCaB8=
 github.com/fredbi/uri v1.1.0/go.mod h1:aYTUoAXBOq7BLfVJ8GnKmfcuURosB1xyHDIfWeC/iW4=
 github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
@@ -53,6 +55,8 @@ github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066 h1:qCuYC
 github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066/go.mod h1:DDxDdQEnB70R8owOx3LVpEFvpMK9eeH1o2r0yZhFI9o=
 github.com/godbus/dbus/v5 v5.1.0 h1:4KLkAxT3aOY8Li4FRJe/KvhoNFFxo0m6fNuFUO8QJUk=
 github.com/godbus/dbus/v5 v5.1.0/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
+github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 h1:DACJavvAHhabrF08vX0COfcOBJRhZ8lUbR+ZWIs0Y5g=
+github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0/go.mod h1:E/TSTwGwJL78qG/PmXZO1EjYhfJinVAhrmmHX6Z8B9k=
 github.com/google/pprof v0.0.0-20211214055906-6f57359322fd h1:1FjCyPC+syAzJ5/2S8fqdZK1R22vvA0J7JZKcuOIQ7Y=
 github.com/google/pprof v0.0.0-20211214055906-6f57359322fd/go.mod h1:KgnwoLYCZ8IQu3XUZ8Nc/bM9CCZFOyjUNOSygVozoDg=
 github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 h1:El6M4kTTCOh6aBiKaUGG7oYTSPP8MxqL4YI3kZKwcP4=
