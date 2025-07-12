@@ -32,6 +32,11 @@ const (
 	ReleaseTypeSpokenWord     ReleaseType = 0x8000
 )
 
+type Library struct {
+	ID   string
+	Name string
+}
+
 type ItemDate struct {
 	Year  *int
 	Month *int

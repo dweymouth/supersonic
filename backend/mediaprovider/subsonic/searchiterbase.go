@@ -8,11 +8,12 @@ import (
 )
 
 type searchIterBase struct {
-	query        string
-	artistOffset int
-	albumOffset  int
-	songOffset   int
-	s            *subsonic.Client
+	musicFolderId string
+	query         string
+	artistOffset  int
+	albumOffset   int
+	songOffset    int
+	s             *subsonic.Client
 }
 
 func (s *searchIterBase) fetchResults() *subsonic.SearchResult3 {
@@ -20,6 +21,9 @@ func (s *searchIterBase) fetchResults() *subsonic.SearchResult3 {
 		"artistOffset": strconv.Itoa(s.artistOffset),
 		"albumOffset":  strconv.Itoa(s.albumOffset),
 		"songOffset":   strconv.Itoa(s.songOffset),
+	}
+	if s.musicFolderId != "" {
+		searchOpts["musicFolderId"] = s.musicFolderId
 	}
 	results, err := s.s.Search3(s.query, searchOpts)
 	if err != nil {

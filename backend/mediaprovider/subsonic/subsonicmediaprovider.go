@@ -24,6 +24,8 @@ const (
 )
 
 type subsonicMediaProvider struct {
+	currentLibraryID string
+
 	client          *subsonic.Client
 	prefetchCoverCB func(coverArtID string)
 
@@ -43,6 +45,21 @@ func SubsonicMediaProvider(subsonicClient *subsonic.Client) mediaprovider.MediaP
 
 func (s *subsonicMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID string)) {
 	s.prefetchCoverCB = cb
+}
+
+func (s *subsonicMediaProvider) GetLibraries() ([]mediaprovider.Library, error) {
+	folders, err := s.client.GetMusicFolders()
+	if err != nil {
+		return nil, err
+	}
+	return sharedutil.MapSlice(folders, func(f *subsonic.MusicFolder) mediaprovider.Library {
+		return mediaprovider.Library{ID: f.ID, Name: f.Name}
+	}), nil
+}
+
+func (s *subsonicMediaProvider) SetLibrary(id string) error {
+	s.currentLibraryID = id
+	return nil
 }
 
 func (s *subsonicMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
@@ -157,7 +174,11 @@ func (s *subsonicMediaProvider) GetCoverArt(id string, size int) (image.Image, e
 }
 
 func (s *subsonicMediaProvider) GetFavorites() (mediaprovider.Favorites, error) {
-	fav, err := s.client.GetStarred2(map[string]string{})
+	var params map[string]string
+	if s.currentLibraryID != "" {
+		params = map[string]string{"musicFolderId": s.currentLibraryID}
+	}
+	fav, err := s.client.GetStarred2(params)
 	if err != nil {
 		return mediaprovider.Favorites{}, err
 	}
@@ -218,6 +239,9 @@ func (s *subsonicMediaProvider) GetRandomTracks(genreName string, count int) ([]
 	opts := map[string]string{"size": strconv.Itoa(count)}
 	if genreName != "" {
 		opts["genre"] = genreName
+	}
+	if s.currentLibraryID != "" {
+		opts["musicFolderId"] = s.currentLibraryID
 	}
 	tr, err := s.client.GetRandomSongs(opts)
 	if err != nil {

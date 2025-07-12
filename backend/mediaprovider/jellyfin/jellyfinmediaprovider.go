@@ -59,6 +59,14 @@ func (j *jellyfinMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID stri
 	j.prefetchCoverCB = cb
 }
 
+func (j *jellyfinMediaProvider) GetLibraries() ([]mediaprovider.Library, error) {
+	return nil, nil
+}
+
+func (j *jellyfinMediaProvider) SetLibrary(string) error {
+	return nil
+}
+
 func (j *jellyfinMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
 	return j.client.CreatePlaylist(name, trackIDs)
 }

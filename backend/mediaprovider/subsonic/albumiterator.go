@@ -62,8 +62,11 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 		modifiedOptions.Genres = nil
 		modifiedFilter.SetOptions(modifiedOptions)
 		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
-			return s.client.GetAlbumList2("byGenre",
-				map[string]string{"genre": genre, "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
+			params := map[string]string{"genre": genre, "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)}
+			if s.currentLibraryID != "" {
+				params["musicFolderId"] = s.currentLibraryID
+			}
+			return s.client.GetAlbumList2("byGenre", params)
 		}
 		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), modifiedFilter, s.prefetchCoverCB)
 	}
@@ -92,14 +95,20 @@ func (s *subsonicMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 		return s.baseIterFromSimpleSortOrder("alphabeticalByArtist", filter)
 	case mediaprovider.AlbumSortYearAscending:
 		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
-			return s.client.GetAlbumList2("byYear",
-				map[string]string{"fromYear": "0", "toYear": "3000", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
+			params := map[string]string{"fromYear": "0", "toYear": "3000", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)}
+			if s.currentLibraryID != "" {
+				params["musicFolderId"] = s.currentLibraryID
+			}
+			return s.client.GetAlbumList2("byYear", params)
 		}
 		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	case mediaprovider.AlbumSortYearDescending:
 		fetchFn := func(offset, limit int) ([]*subsonic.AlbumID3, error) {
-			return s.client.GetAlbumList2("byYear",
-				map[string]string{"fromYear": "3000", "toYear": "0", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)})
+			params := map[string]string{"fromYear": "3000", "toYear": "0", "offset": strconv.Itoa(offset), "limit": strconv.Itoa(limit)}
+			if s.currentLibraryID != "" {
+				params["musicFolderId"] = s.currentLibraryID
+			}
+			return s.client.GetAlbumList2("byYear", params)
 		}
 		return helpers.NewAlbumIterator(makeFetchFn(fetchFn), filter, s.prefetchCoverCB)
 	default:
@@ -126,8 +135,9 @@ type searchAlbumIter struct {
 func (s *subsonicMediaProvider) newSearchAlbumIter(query string, filter mediaprovider.AlbumFilter, cb func(string)) *searchAlbumIter {
 	return &searchAlbumIter{
 		searchIterBase: searchIterBase{
-			query: query,
-			s:     s.client,
+			query:         query,
+			s:             s.client,
+			musicFolderId: s.currentLibraryID,
 		},
 		prefetchCB: cb,
 		filter:     filter,
@@ -218,6 +228,9 @@ func (s *subsonicMediaProvider) newRandomIter(filter mediaprovider.AlbumFilter, 
 				"size":   strconv.Itoa(limit),
 				"offset": strconv.Itoa(offset),
 			}
+			if s.currentLibraryID != "" {
+				args["musicFolderId"] = s.currentLibraryID
+			}
 			return s.client.GetAlbumList2("random", args)
 		}),
 		filter, s.prefetchCoverCB)
@@ -229,7 +242,11 @@ func (s *subsonicMediaProvider) baseIterFromSimpleSortOrder(sort string, filter 
 
 func (s *subsonicMediaProvider) fetchFnFromStandardSort(sort string) helpers.AlbumFetchFn {
 	return makeFetchFn(func(offset, limit int) ([]*subsonic.AlbumID3, error) {
-		return s.client.GetAlbumList2(sort, map[string]string{"size": strconv.Itoa(limit), "offset": strconv.Itoa(offset)})
+		params := map[string]string{"size": strconv.Itoa(limit), "offset": strconv.Itoa(offset)}
+		if s.currentLibraryID != "" {
+			params["musicFolderId"] = s.currentLibraryID
+		}
+		return s.client.GetAlbumList2(sort, params)
 	})
 }
 

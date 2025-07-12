@@ -95,8 +95,9 @@ type searchArtistIter struct {
 func (s *subsonicMediaProvider) newSearchArtistIter(query string, filter mediaprovider.ArtistFilter, cb func(string)) *searchArtistIter {
 	return &searchArtistIter{
 		searchIterBase: searchIterBase{
-			query: query,
-			s:     s.client,
+			query:         query,
+			s:             s.client,
+			musicFolderId: s.currentLibraryID,
 		},
 		prefetchCB:  cb,
 		filter:      filter,
@@ -165,7 +166,11 @@ func (s *subsonicMediaProvider) artistFetchFnFromStandardSort(sortFn func([]*sub
 			return nil, nil
 		}
 
-		idxs, err := s.client.GetArtists(map[string]string{})
+		var params map[string]string
+		if s.currentLibraryID != "" {
+			params = map[string]string{"musicFolderId": s.currentLibraryID}
+		}
+		idxs, err := s.client.GetArtists(params)
 		if err != nil {
 			return nil, err
 		}
