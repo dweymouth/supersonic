@@ -24,6 +24,7 @@ jobs:
           make
           wget
           zip
+          p7zip
     - uses: actions/checkout@v3
 
     - name: Set up Go
@@ -44,11 +45,8 @@ jobs:
 
     - name: Download mpv dll
       run: >
-        wget https://github.com/dweymouth/supersonic/releases/download/v0.8.0/Supersonic-0.8.0-windows-x64.zip &&
-        mv Supersonic.exe Supersonic-newbuild.exe &&
-        unzip Supersonic-0.8.0-windows-x64.zip &&
-        rm Supersonic.exe &&
-        mv Supersonic-newbuild.exe Supersonic.exe
+        wget https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20250706/mpv-dev-x86_64-v3-20250706-git-db7bc59.7z &&
+        7z x mpv-dev-x86_64-v3-20250706-git-db7bc59.7z
 
     - name: Download smtc dll
       run: >
