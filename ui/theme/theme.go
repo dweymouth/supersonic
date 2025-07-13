@@ -62,6 +62,7 @@ var (
 	RepeatOneIcon     fyne.Resource = theme.NewThemedResource(res.ResRepeatoneSvg)
 	SortIcon          fyne.Resource = theme.NewThemedResource(res.ResUpdownarrowSvg)
 	VisualizationIcon fyne.Resource = theme.NewThemedResource(res.ResOscilloscopeSvg)
+	LibraryIcon       fyne.Resource = theme.NewThemedResource(res.ResLibrarySvg)
 )
 
 type AppearanceMode string

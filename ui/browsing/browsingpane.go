@@ -153,6 +153,14 @@ func (b *BrowsingPane) AddSettingsSubmenu(label string, icon fyne.Resource, menu
 	b.settingsMenu.Items = append(b.settingsMenu.Items, item)
 }
 
+func (b *BrowsingPane) SetSubmenuForMenuItem(label string, submenu *fyne.Menu) {
+	for _, item := range b.settingsMenu.Items {
+		if item.Label == label {
+			item.ChildMenu = submenu
+		}
+	}
+}
+
 func (b *BrowsingPane) AddSettingsMenuSeparator() {
 	b.settingsMenu.Items = append(b.settingsMenu.Items,
 		fyne.NewMenuItemSeparator())
