@@ -42,6 +42,9 @@ func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 		jfSort.Mode = jellyfin.SortDesc
 	}
 	jfFilt, modifiedFilter := jfFilterFromFilter(filter)
+	if j.currentLibraryID != "" {
+		jfFilt.ParentID = j.currentLibraryID
+	}
 
 	fetcher := func(offs, limit int) ([]*mediaprovider.Album, error) {
 		al, err := j.client.GetAlbums(jellyfin.QueryOpts{
@@ -89,6 +92,9 @@ func (j *jellyfinMediaProvider) IterateTracks(searchQuery string) mediaprovider.
 		fetcher = func(offs, limit int) ([]*mediaprovider.Track, error) {
 			var opts jellyfin.QueryOpts
 			opts.Paging = jellyfin.Paging{StartIndex: offs, Limit: limit}
+			if j.currentLibraryID != "" {
+				opts.Filter.ParentID = j.currentLibraryID
+			}
 			s, err := j.client.GetSongs(opts)
 			if err != nil {
 				return nil, err

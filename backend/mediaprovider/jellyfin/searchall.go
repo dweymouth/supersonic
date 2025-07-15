@@ -55,7 +55,7 @@ func (j *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 
 	wg.Add(1)
 	go func() {
-		g, e := j.client.GetGenres(jellyfin.Paging{})
+		g, e := j.client.GetGenres(jellyfin.Paging{}, "")
 		if e == nil {
 			genres = sharedutil.FilterSlice(g, func(g jellyfin.NameID) bool {
 				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(g.Name)), queryLowerWords)

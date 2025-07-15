@@ -44,6 +44,8 @@ type jellyfinMediaProvider struct {
 	client          *jellyfin.Client
 	prefetchCoverCB func(coverArtID string)
 
+	currentLibraryID string
+
 	genresCached   []*mediaprovider.Genre
 	genresCachedAt int64 // unix
 }
@@ -60,10 +62,17 @@ func (j *jellyfinMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID stri
 }
 
 func (j *jellyfinMediaProvider) GetLibraries() ([]mediaprovider.Library, error) {
-	return nil, nil
+	v, err := j.client.GetUserViews()
+	if err != nil {
+		return nil, err
+	}
+	return sharedutil.FilterMapSlice(v, func(v *jellyfin.BaseItem) (mediaprovider.Library, bool) {
+		return mediaprovider.Library{Name: v.Name, ID: v.ID}, v.CollectionType == string(jellyfin.CollectionTypeMusic)
+	}), nil
 }
 
-func (j *jellyfinMediaProvider) SetLibrary(string) error {
+func (j *jellyfinMediaProvider) SetLibrary(id string) error {
+	j.currentLibraryID = id
 	return nil
 }
 
@@ -186,6 +195,9 @@ func (j *jellyfinMediaProvider) GetTopTracks(artist mediaprovider.Artist, limit 
 	opts.Filter.ArtistID = artist.ID
 	opts.Sort.Field = jellyfin.SortByCommunityRating
 	opts.Sort.Mode = jellyfin.SortDesc
+	if j.currentLibraryID != "" {
+		opts.Filter.ParentID = j.currentLibraryID
+	}
 	tr, err := j.client.GetSongs(opts)
 	if err != nil {
 		return nil, err
@@ -201,6 +213,9 @@ func (j *jellyfinMediaProvider) GetRandomTracks(genreName string, limit int) ([]
 	opts.Paging.Limit = limit
 	opts.Filter.Genres = []string{genreName}
 	opts.Sort.Field = jellyfin.SortByRandom
+	if j.currentLibraryID != "" {
+		opts.Filter.ParentID = j.currentLibraryID
+	}
 	tr, err := j.client.GetSongs(opts)
 	if err != nil {
 		return nil, err
@@ -266,7 +281,7 @@ func (j *jellyfinMediaProvider) GetGenres() ([]*mediaprovider.Genre, error) {
 		return j.genresCached, nil
 	}
 
-	g, err := j.client.GetGenres(jellyfin.Paging{})
+	g, err := j.client.GetGenres(jellyfin.Paging{}, "")
 	if err != nil {
 		return nil, err
 	}
