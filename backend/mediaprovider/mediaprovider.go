@@ -197,6 +197,15 @@ type Server interface {
 type MediaProvider interface {
 	SetPrefetchCoverCallback(cb func(coverArtID string))
 
+	// GetLibraries gets the list of top-level music libraries
+	// (musicFolders in Subsonic)
+	GetLibraries() ([]Library, error)
+
+	// SetLibrary sets the current library that all other
+	// MediaProvider API calls will filter to. Use empty string
+	// to reset to all libraries.
+	SetLibrary(id string) error
+
 	GetTrack(trackID string) (*Track, error)
 
 	GetAlbum(albumID string) (*AlbumWithTracks, error)

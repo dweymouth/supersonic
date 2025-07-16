@@ -54,6 +54,7 @@ func (j *jellyfinMediaProvider) IterateArtists(sortOrder string, filter mediapro
 			return j.client.GetAlbumArtists(jellyfin.QueryOpts{
 				Sort:   jfSort,
 				Paging: paging,
+				Filter: jellyfin.Filter{ParentID: j.currentLibraryID},
 			})
 		},
 		sortFn,

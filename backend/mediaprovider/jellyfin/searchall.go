@@ -20,21 +20,24 @@ func (j *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 	var genres []jellyfin.NameID
 	var playlists []*jellyfin.Playlist
 
+	var opts jellyfin.QueryOpts
+	opts.Paging.Limit = limit
+	opts.Filter.ParentID = j.currentLibraryID
 	wg.Add(1)
 	go func() {
-		albumResult, _ := j.client.Search(searchQuery, jellyfin.TypeAlbum, jellyfin.Paging{Limit: limit})
+		albumResult, _ := j.client.Search(searchQuery, jellyfin.TypeAlbum, opts)
 		albums = albumResult.Albums
 		wg.Done()
 	}()
 	wg.Add(1)
 	go func() {
-		artistResult, _ := j.client.Search(searchQuery, jellyfin.TypeArtist, jellyfin.Paging{Limit: limit})
+		artistResult, _ := j.client.Search(searchQuery, jellyfin.TypeArtist, opts)
 		artists = artistResult.Artists
 		wg.Done()
 	}()
 	wg.Add(1)
 	go func() {
-		songResult, _ := j.client.Search(searchQuery, jellyfin.TypeSong, jellyfin.Paging{Limit: limit})
+		songResult, _ := j.client.Search(searchQuery, jellyfin.TypeSong, opts)
 		songs = songResult.Songs
 		wg.Done()
 	}()
@@ -55,7 +58,7 @@ func (j *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 
 	wg.Add(1)
 	go func() {
-		g, e := j.client.GetGenres(jellyfin.Paging{})
+		g, e := j.client.GetGenres(jellyfin.Paging{}, "")
 		if e == nil {
 			genres = sharedutil.FilterSlice(g, func(g jellyfin.NameID) bool {
 				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(g.Name)), queryLowerWords)

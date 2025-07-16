@@ -44,6 +44,8 @@ type jellyfinMediaProvider struct {
 	client          *jellyfin.Client
 	prefetchCoverCB func(coverArtID string)
 
+	currentLibraryID string
+
 	genresCached   []*mediaprovider.Genre
 	genresCachedAt int64 // unix
 }
@@ -57,6 +59,22 @@ func newJellyfinMediaProvider(cli *jellyfin.Client) mediaprovider.MediaProvider 
 
 func (j *jellyfinMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID string)) {
 	j.prefetchCoverCB = cb
+}
+
+func (j *jellyfinMediaProvider) GetLibraries() ([]mediaprovider.Library, error) {
+	v, err := j.client.GetUserViews()
+	if err != nil {
+		return nil, err
+	}
+	return sharedutil.FilterMapSlice(v, func(v *jellyfin.BaseItem) (mediaprovider.Library, bool) {
+		return mediaprovider.Library{Name: v.Name, ID: v.ID}, v.CollectionType == string(jellyfin.CollectionTypeMusic)
+	}), nil
+}
+
+func (j *jellyfinMediaProvider) SetLibrary(id string) error {
+	j.currentLibraryID = id
+	j.genresCached = nil
+	return nil
 }
 
 func (j *jellyfinMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
@@ -178,6 +196,9 @@ func (j *jellyfinMediaProvider) GetTopTracks(artist mediaprovider.Artist, limit 
 	opts.Filter.ArtistID = artist.ID
 	opts.Sort.Field = jellyfin.SortByCommunityRating
 	opts.Sort.Mode = jellyfin.SortDesc
+	if j.currentLibraryID != "" {
+		opts.Filter.ParentID = j.currentLibraryID
+	}
 	tr, err := j.client.GetSongs(opts)
 	if err != nil {
 		return nil, err
@@ -193,6 +214,9 @@ func (j *jellyfinMediaProvider) GetRandomTracks(genreName string, limit int) ([]
 	opts.Paging.Limit = limit
 	opts.Filter.Genres = []string{genreName}
 	opts.Sort.Field = jellyfin.SortByRandom
+	if j.currentLibraryID != "" {
+		opts.Filter.ParentID = j.currentLibraryID
+	}
 	tr, err := j.client.GetSongs(opts)
 	if err != nil {
 		return nil, err
@@ -212,15 +236,16 @@ func (j *jellyfinMediaProvider) GetCoverArt(id string, size int) (image.Image, e
 	return j.client.GetItemImage(id, "Primary", size, 92)
 }
 
-func (s *jellyfinMediaProvider) GetFavorites() (mediaprovider.Favorites, error) {
+func (j *jellyfinMediaProvider) GetFavorites() (mediaprovider.Favorites, error) {
 	var wg sync.WaitGroup
 	var favorites mediaprovider.Favorites
 
+	var opts jellyfin.QueryOpts
+	opts.Filter.Favorite = true
+	opts.Filter.ParentID = j.currentLibraryID
 	wg.Add(1)
 	go func() {
-		var opts jellyfin.QueryOpts
-		opts.Filter.Favorite = true
-		al, err := s.client.GetAlbums(opts)
+		al, err := j.client.GetAlbums(opts)
 		if err == nil && len(al) > 0 {
 			favorites.Albums = sharedutil.MapSlice(al, toAlbum)
 		}
@@ -229,9 +254,7 @@ func (s *jellyfinMediaProvider) GetFavorites() (mediaprovider.Favorites, error) 
 
 	wg.Add(1)
 	go func() {
-		var opts jellyfin.QueryOpts
-		opts.Filter.Favorite = true
-		ar, err := s.client.GetAlbumArtists(opts)
+		ar, err := j.client.GetAlbumArtists(opts)
 		if err == nil && len(ar) > 0 {
 			favorites.Artists = sharedutil.MapSlice(ar, toArtist)
 		}
@@ -240,9 +263,7 @@ func (s *jellyfinMediaProvider) GetFavorites() (mediaprovider.Favorites, error) 
 
 	wg.Add(1)
 	go func() {
-		var opts jellyfin.QueryOpts
-		opts.Filter.Favorite = true
-		tr, err := s.client.GetSongs(opts)
+		tr, err := j.client.GetSongs(opts)
 		if err == nil && len(tr) > 0 {
 			favorites.Tracks = sharedutil.MapSlice(tr, toTrack)
 		}
@@ -258,7 +279,7 @@ func (j *jellyfinMediaProvider) GetGenres() ([]*mediaprovider.Genre, error) {
 		return j.genresCached, nil
 	}
 
-	g, err := j.client.GetGenres(jellyfin.Paging{})
+	g, err := j.client.GetGenres(jellyfin.Paging{}, j.currentLibraryID)
 	if err != nil {
 		return nil, err
 	}

@@ -23,11 +23,15 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 	wg.Add(1)
 	go func() {
 		count := strconv.Itoa(maxResults / 3)
-		res, e := s.client.Search3(searchQuery, map[string]string{
+		params := map[string]string{
 			"artistCount": count,
 			"albumCount":  count,
 			"songCount":   count,
-		})
+		}
+		if s.currentLibraryID != "" {
+			params["musicFolderId"] = s.currentLibraryID
+		}
+		res, e := s.client.Search3(searchQuery, params)
 		if e != nil {
 			err = e
 		} else {

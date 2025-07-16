@@ -19,8 +19,9 @@ func (s *subsonicMediaProvider) IterateTracks(searchQuery string) mediaprovider.
 	}
 	return &searchTracksIterator{
 		searchIterBase: searchIterBase{
-			s:     s.client,
-			query: searchQuery,
+			s:             s.client,
+			query:         searchQuery,
+			musicFolderId: s.currentLibraryID,
 		},
 		trackIDset: make(map[string]bool),
 	}

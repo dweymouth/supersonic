@@ -43,8 +43,11 @@ type MainWindow struct {
 	alreadyConnected bool // tracks if we have already connected to a server before
 	content          *mainWindowContent
 
-	// needs to bes shown/hidden when switching between servers based on whether they support radio
+	// needs to be shown/hidden when switching between servers based on whether they support radio
 	radioBtn fyne.CanvasObject
+
+	// updated when changing servers or libraries
+	librarySubmenu *fyne.Menu
 }
 
 func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App) MainWindow {
@@ -102,6 +105,8 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	})
 	m.BrowsingPane.AddSettingsMenuItem(lang.L("Log Out"), theme.LogoutIcon(), func() { app.ServerManager.Logout(true) })
 	m.BrowsingPane.AddSettingsMenuItem(lang.L("Switch Servers"), theme.LoginIcon(), func() { app.ServerManager.Logout(false) })
+	m.BrowsingPane.AddSettingsSubmenu(lang.L("Select Library"), myTheme.LibraryIcon, fyne.NewMenu("",
+		fyne.NewMenuItem(lang.L("All Libraries"), func() { /* dummy - will get replaced on server login */ })))
 	m.BrowsingPane.AddSettingsMenuItem(lang.L("Rescan Library"), theme.ViewRefreshIcon(), func() { app.ServerManager.Server.RescanLibrary() })
 	m.BrowsingPane.AddSettingsMenuSeparator()
 	m.BrowsingPane.AddSettingsSubmenu(lang.L("Visualizations"), myTheme.VisualizationIcon,
@@ -228,6 +233,49 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 			}
 		}()
 	}
+
+	doSetLibrary := func(libraryID string, menuIdx int) {
+		fyne.Do(func() {
+			m.App.ServerManager.Server.SetLibrary(libraryID)
+			// Pages in the history could contain content
+			// outside the new library, so clear history
+			m.BrowsingPane.ClearHistory()
+			// ... and reload current page for the same reason
+			m.BrowsingPane.Reload()
+			// check only the menu item for the new library
+			for i, menuItem := range m.librarySubmenu.Items {
+				menuItem.Checked = (i == menuIdx)
+			}
+		})
+	}
+
+	libraries, err := app.ServerManager.Server.GetLibraries()
+	if err != nil {
+		log.Printf("error loading server libraries: %s", err.Error())
+	}
+	libraryMenu := fyne.NewMenu("")
+	libraryMenuItemOffset := 0
+	if len(libraries) != 1 {
+		// If there is exactly one library in the list,
+		// we just want to have one menu entry with that library's name.
+		// Otherwise, add the "All Libraries" menu item at the top.
+		libraryMenu.Items = append(libraryMenu.Items,
+			fyne.NewMenuItem(lang.L("All Libraries"), func() {
+				doSetLibrary("", 0)
+			}))
+		libraryMenuItemOffset = 1
+	}
+	for i, l := range libraries {
+		_l := l
+		_i := i + libraryMenuItemOffset
+		libraryMenu.Items = append(libraryMenu.Items,
+			fyne.NewMenuItem(_l.Name, func() {
+				doSetLibrary(_l.ID, _i)
+			}))
+	}
+	m.librarySubmenu = libraryMenu
+	m.librarySubmenu.Items[0].Checked = true
+	m.BrowsingPane.SetSubmenuForMenuItem(lang.L("Select Library"), libraryMenu)
 
 	fyne.Do(func() {
 		m.BrowsingPane.EnableNavigationButtons()
