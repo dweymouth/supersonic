@@ -1,5 +1,23 @@
 # Change Log
 
+## [0.17.0]
+
+### Added
+- [#654](https://github.com/dweymouth/supersonic/pull/654) Group releases by Release Type on artist pages
+- [#655](https://github.com/dweymouth/supersonic/pull/655) Allow browsing a specific music library for servers that expose multiple libraries
+- New translations: Korean (thanks @janghw4!) and Russian (thanks @alxrem!)
+- Some updates to other translations
+
+### Fixed
+- [#451](https://github.com/dweymouth/supersonic/issues/451) Light button colors in a light theme turn dark when hovering
+- [#646](https://github.com/dweymouth/supersonic/issues/646) Use full date instead of year to sort artist discography
+- Improved rendering of text entry borders when using fractional pixel scaling
+- [#611](https://github.com/dweymouth/supersonic/issues/611) Windows: occasional crashes at startup
+- [#624](https://github.com/dweymouth/supersonic/issues/624) Windows: sporadic crashes when changing tracks due to bugs in SMTC DLL
+- [#520](https://github.com/dweymouth/supersonic/issues/520) Windows: TLS versions above 1.2 not supported by shipped libmpv-2
+- [#536](https://github.com/dweymouth/supersonic/issues/536) Windows: 32-bit (fixed-point) FLAC files cannot be played (libmpv built before ffmpeg support existed)
+- [#647](https://github.com/dweymouth/supersonic/issues/647) Windows: some radio stream URLs wouldn't play
+
 ## [0.16.0]
 
 ### Added

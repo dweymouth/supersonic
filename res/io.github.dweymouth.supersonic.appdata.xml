@@ -63,29 +63,34 @@
   </screenshots>
 
  <releases>
-  <release date="2025-06-16" version="0.16.0">
+  <release date="2025-07-16" version="0.17.0">
    <description>
      <p>
-       Version 0.16.0 of Supersonic
+       Version 0.17.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Add click-to-seek to lyrics viewer for synced lyrics</li>
+       <li>Group releases by Release Type on artist pages</li>
        <li>Allow customization of grid card size</li>
-       <li>Add setting to request transcoding to a specific format/bitrate from server</li>
-       <li>Japanese translation improvements</li>
+       <li>New translations: Korean and Russian</li>
+       <li>Some updates to other translations</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>New setting to disable OS Now Playing APIs - workaround for Windows SMTC bugginess</li>
-       <li>Crashing with custom themes that change the Primary color</li>
-       <li>Incorrect tracks removed from playlist if removing from searched view</li>
+       <li>Light button colors in a light theme turn dark when hovering</li>
+       <li>Use full date instead of year to sort artist discography</li>
+       <li>Improved rendering of text entry borders when using fractional pixel scaling</li>
+       <li>Windows: occasional crashes at startup</li>
+       <li>Windows: sporadic crashes when changing tracks due to bugs in SMTC DLL</li>
+       <li>Windows: TLS versions above 1.2 not supported by shipped libmpv-2</li>
+       <li>Windows: 32-bit (fixed-point) FLAC files cannot be played (libmpv built before ffmpeg support existed)</li>
+       <li>Windows: some radio stream URLs wouldn't play</li>
      </ul>
 
    </description>
