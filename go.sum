@@ -27,6 +27,8 @@ github.com/dweymouth/go-jellyfin v0.0.0-20250531151636-29591764f0a0 h1:9t1CR83uz
 github.com/dweymouth/go-jellyfin v0.0.0-20250531151636-29591764f0a0/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/dweymouth/go-jellyfin v0.0.0-20250715154414-d0a1630ee74f h1:7O7Cn17pwKHG7zPgNhxMabXJP1ZdmNVxCb4i8yJgVZo=
 github.com/dweymouth/go-jellyfin v0.0.0-20250715154414-d0a1630ee74f/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
+github.com/dweymouth/go-jellyfin v0.0.0-20250716005557-0ea2becece1f h1:QsKPwFpTHuYHEEuhvp4VBClkHh00bNNgQ/2Ij1bkk8M=
+github.com/dweymouth/go-jellyfin v0.0.0-20250716005557-0ea2becece1f/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
 github.com/felixge/fgprof v0.9.3 h1:VvyZxILNuCiUCSXtPtYmmtGvb65nqXh2QFWc0Wpf2/g=

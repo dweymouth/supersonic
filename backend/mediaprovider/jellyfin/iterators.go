@@ -77,7 +77,10 @@ func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 
 func (j *jellyfinMediaProvider) SearchAlbums(searchQuery string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
 	fetcher := func(offs, limit int) ([]*mediaprovider.Album, error) {
-		sr, err := j.client.Search(searchQuery, jellyfin.TypeAlbum, jellyfin.Paging{StartIndex: offs, Limit: limit})
+		var opts jellyfin.QueryOpts
+		opts.Paging = jellyfin.Paging{StartIndex: offs, Limit: limit}
+		opts.Filter.ParentID = j.currentLibraryID
+		sr, err := j.client.Search(searchQuery, jellyfin.TypeAlbum, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +106,10 @@ func (j *jellyfinMediaProvider) IterateTracks(searchQuery string) mediaprovider.
 		}
 	} else {
 		fetcher = func(offs, limit int) ([]*mediaprovider.Track, error) {
-			sr, err := j.client.Search(searchQuery, jellyfin.TypeSong, jellyfin.Paging{StartIndex: offs, Limit: limit})
+			var opts jellyfin.QueryOpts
+			opts.Paging = jellyfin.Paging{StartIndex: offs, Limit: limit}
+			opts.Filter.ParentID = j.currentLibraryID
+			sr, err := j.client.Search(searchQuery, jellyfin.TypeSong, opts)
 			if err != nil {
 				return nil, err
 			}
