@@ -44,6 +44,7 @@ type App struct {
 	Config          *Config
 	ServerManager   *ServerManager
 	ImageManager    *ImageManager
+	AudioCache      *AudioCache
 	PlaybackManager *PlaybackManager
 	LocalPlayer     *mpv.Player
 	UpdateChecker   UpdateChecker
@@ -142,8 +143,13 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	}
 
 	a.ServerManager = NewServerManager(appName, appVersion, a.Config, !portableMode && a.Config.Application.EnablePasswordStorage)
-	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Playback, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, cacheDir)
+	ac, err := NewAudioCache(a.bgrndCtx, a.ServerManager, filepath.Join(cacheDir, "audio"))
+	if err != nil {
+		log.Printf("failed to create audio cache: %s", err.Error())
+	}
+	a.AudioCache = ac
+	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Playback, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
@@ -475,6 +481,9 @@ func (a *App) Shutdown() {
 	}
 	a.PlaybackManager.DisableCallbacks()
 	a.PlaybackManager.Shutdown() // will trigger scrobble check
+	if a.AudioCache != nil {
+		a.AudioCache.Shutdown()
+	}
 	a.cancel()
 	a.LocalPlayer.Destroy()
 }
