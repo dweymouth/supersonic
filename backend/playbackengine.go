@@ -52,6 +52,7 @@ type playbackEngine struct {
 	ctx           context.Context
 	cancelPollPos context.CancelFunc
 	sm            *ServerManager
+	audiocache    *AudioCache
 	player        player.BasePlayer
 
 	playTimeStopwatch   util.Stopwatch
@@ -98,6 +99,7 @@ type playbackEngine struct {
 func NewPlaybackEngine(
 	ctx context.Context,
 	s *ServerManager,
+	c *AudioCache,
 	p player.BasePlayer,
 	playbackCfg *PlaybackConfig,
 	scrobbleCfg *ScrobbleConfig,
@@ -108,6 +110,7 @@ func NewPlaybackEngine(
 	pm := &playbackEngine{
 		ctx:           ctx,
 		sm:            s,
+		audiocache:    c,
 		player:        p,
 		scrobbleCfg:   scrobbleCfg,
 		transcodeCfg:  transcodeCfg,
@@ -555,6 +558,25 @@ func (p *playbackEngine) SetReplayGainMode(mode player.ReplayGainMode) {
 	})
 }
 
+func (p *playbackEngine) cacheNextTracks() {
+	if p.audiocache != nil {
+		// fetch up to the 2 next tracks in the queue to the cache
+		fetch := make([]AudioCacheRequest, 0, 2)
+		for _, idx := range [2]int{p.nowPlayingIdx + 1, p.nowPlayingIdx + 2} {
+			if idx < len(p.playQueue) {
+				item := p.playQueue[idx]
+				if item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+					fetch = append(fetch, AudioCacheRequest{
+						ID:          p.playQueue[idx].Metadata().ID,
+						DownloadURL: p.getMediaURLForIdx(idx),
+					})
+				}
+			}
+		}
+		p.audiocache.CacheOnly(p.NowPlaying().Metadata().ID, fetch)
+	}
+}
+
 func (p *playbackEngine) handleOnTrackChange() {
 	// scrobble the previous song if needed
 	if !p.alreadyScrobbled {
@@ -585,6 +607,7 @@ func (p *playbackEngine) handleOnTrackChange() {
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
 	p.doUpdateTimePos(false)
+	p.cacheNextTracks()
 	p.setNextTrackBasedOnLoopMode(false)
 }
 
@@ -648,23 +671,9 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 		url := ""
 		var meta mediaprovider.MediaItemMetadata
 		if idx >= 0 {
-			var err error
-			item := p.playQueue[idx]
-			meta = item.Metadata()
-			if tr, ok := item.(*mediaprovider.Track); ok {
-				var ts *mediaprovider.TranscodeSettings
-				if p.transcodeCfg.RequestTranscode {
-					ts = &mediaprovider.TranscodeSettings{
-						Codec:       p.transcodeCfg.Codec,
-						BitRateKBPS: p.transcodeCfg.MaxBitRateKBPS,
-					}
-				}
-				url, err = p.sm.Server.GetStreamURL(tr.ID, ts, p.transcodeCfg.ForceRawFile)
-			} else {
-				url = item.(*mediaprovider.RadioStation).StreamURL
-			}
-			if err != nil {
-				return err
+			url = p.getMediaURLForIdx(idx)
+			if url == "" {
+				return errors.New("no stream URL")
 			}
 		}
 		if next {
@@ -685,6 +694,24 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 		return trP.PlayTrack(track, startTime)
 	}
 	panic("Unsupported player type")
+}
+
+func (p *playbackEngine) getMediaURLForIdx(idx int) string {
+	var url string
+	item := p.playQueue[idx]
+	if tr, ok := item.(*mediaprovider.Track); ok {
+		var ts *mediaprovider.TranscodeSettings
+		if p.transcodeCfg.RequestTranscode {
+			ts = &mediaprovider.TranscodeSettings{
+				Codec:       p.transcodeCfg.Codec,
+				BitRateKBPS: p.transcodeCfg.MaxBitRateKBPS,
+			}
+		}
+		url, _ = p.sm.Server.GetStreamURL(tr.ID, ts, p.transcodeCfg.ForceRawFile)
+	} else {
+		url = item.(*mediaprovider.RadioStation).StreamURL
+	}
+	return url
 }
 
 func (p *playbackEngine) setNextTrack(idx int) error {

@@ -149,7 +149,7 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		log.Printf("failed to create audio cache: %s", err.Error())
 	}
 	a.AudioCache = ac
-	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Playback, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
+	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.AudioCache, a.LocalPlayer, &a.Config.Playback, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
