@@ -77,6 +77,11 @@ type playbackEngine struct {
 	pendingPlayerChange       bool
 	pendingPlayerChangeStatus player.Status
 
+	// Whether we need to set the next track on the Player
+	// before the current track completes (normally when 10 seconds remain
+	// in the time pos polling function)
+	needToSetNextTrack bool
+
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
 	scrobbleCfg   *ScrobbleConfig
@@ -135,7 +140,7 @@ func NewPlaybackEngine(
 func (p *playbackEngine) registerPlayerCallbacks(pl player.BasePlayer) {
 	pl.OnTrackChange(p.handleOnTrackChange)
 	pl.OnSeek(func() {
-		p.doUpdateTimePos(true)
+		p.handleTimePosUpdate(true)
 		p.invokeNoArgCallbacks(p.onSeek)
 	})
 	pl.OnStopped(p.handleOnStopped)
@@ -239,7 +244,10 @@ func (p *playbackEngine) NowPlayingIndex() int {
 func (p *playbackEngine) SetLoopMode(loopMode LoopMode) {
 	p.loopMode = loopMode
 	if p.nowPlayingIdx >= 0 {
-		p.setNextTrackBasedOnLoopMode(true)
+		// TODO - don't need when going from LoopNone to LoopAll
+		// if not on last track
+		p.needToSetNextTrack = true
+		//p.setNextTrackBasedOnLoopMode(true)
 	}
 
 	for _, cb := range p.onLoopModeChange {
@@ -304,7 +312,7 @@ func (p *playbackEngine) SeekFwdBackN(n int) error {
 	if idx == lastIdx && n > 0 {
 		return nil // already on last track, nothing to seek next to
 	}
-	newIdx := minInt(lastIdx, maxInt(0, idx+n))
+	newIdx := min(lastIdx, max(0, idx+n))
 	return p.PlayTrackAt(newIdx)
 }
 
@@ -360,7 +368,7 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 		p.nowPlayingIdx = -1
 		p.playQueue = nil
 	}
-	needToSetNext := len(items) > 0 && (insertQueueMode == InsertNext || (insertQueueMode == Append && p.nowPlayingIdx == len(p.playQueue)-1))
+	p.needToSetNextTrack = len(items) > 0 && (insertQueueMode == InsertNext || (insertQueueMode == Append && p.nowPlayingIdx == len(p.playQueue)-1))
 
 	if shuffle {
 		rand.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
@@ -372,9 +380,9 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 	}
 	p.playQueue = append(p.playQueue[:insertIdx], append(items, p.playQueue[insertIdx:]...)...)
 
-	if needToSetNext {
-		p.setNextTrack(p.nowPlayingIdx + 1)
-	}
+	//if needToSetNext {
+	//	p.setNextTrack(p.nowPlayingIdx + 1)
+	//}
 
 	p.invokeNoArgCallbacks(p.onQueueChange)
 	return nil
@@ -386,7 +394,7 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 		p.nowPlayingIdx = -1
 		p.playQueue = nil
 	}
-	needToSetNext := insertMode == InsertNext || (insertMode == Append && p.nowPlayingIdx == len(p.playQueue)-1)
+	p.needToSetNextTrack = insertMode == InsertNext || (insertMode == Append && p.nowPlayingIdx == len(p.playQueue)-1)
 	insertIdx := len(p.playQueue)
 	if insertMode == InsertNext {
 		insertIdx = p.nowPlayingIdx + 1
@@ -398,9 +406,9 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 	copy(new[len(firstHalf)+1:], p.playQueue[insertIdx:])
 	p.playQueue = new
 
-	if needToSetNext {
-		p.setNextTrack(p.nowPlayingIdx + 1)
-	}
+	//if needToSetNext {
+	//	p.setNextTrack(p.nowPlayingIdx + 1)
+	//}
 
 	p.invokeNoArgCallbacks(p.onQueueChange)
 }
@@ -460,11 +468,11 @@ func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error 
 	if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
 		return p.Stop()
 	}
-	needToUpdateNext := p.nowPlayingIdx >= 0
+	p.needToSetNextTrack = p.nowPlayingIdx >= 0
 	p.nowPlayingIdx = newNowPlayingIdx
-	if needToUpdateNext {
-		p.setNextTrackAfterQueueUpdate()
-	}
+	//if needToUpdateNext {
+	//	p.setNextTrackBasedOnLoopMode(false)
+	//}
 
 	p.invokeNoArgCallbacks(p.onQueueChange)
 	return nil
@@ -510,7 +518,8 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 		// when we receive new track event from player
 	} else if isNextPlayingTrackremoved {
 		if newNowPlaying < len(newQueue)-1 {
-			p.setNextTrack(p.nowPlayingIdx + 1)
+			p.needToSetNextTrack = true
+			//p.setNextTrack(p.nowPlayingIdx + 1)
 		} else {
 			// no next track to play
 			p.setNextTrack(-1)
@@ -606,7 +615,7 @@ func (p *playbackEngine) handleOnTrackChange() {
 	p.curTrackDuration = float64(nowPlaying.Metadata().Duration)
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
-	p.doUpdateTimePos(false)
+	p.handleTimePosUpdate(false)
 	p.cacheNextTracks()
 	p.setNextTrackBasedOnLoopMode(false)
 }
@@ -617,7 +626,7 @@ func (p *playbackEngine) handleOnStopped() {
 		p.checkScrobble()
 	}
 	p.stopPollTimePos()
-	p.doUpdateTimePos(false)
+	p.handleTimePosUpdate(false)
 	p.invokeOnSongChangeCallbacks()
 	p.invokeNoArgCallbacks(p.onStopped)
 	p.alreadyScrobbled = false
@@ -646,32 +655,23 @@ func (p *playbackEngine) setNextTrackBasedOnLoopMode(onLoopModeChange bool) {
 	}
 }
 
-func (p *playbackEngine) setNextTrackAfterQueueUpdate() {
-	switch p.loopMode {
-	case LoopNone:
-		if p.nowPlayingIdx < len(p.playQueue)-1 {
-			p.setNextTrack(p.nowPlayingIdx + 1)
-		} else {
-			// need to erase next track
-			p.setNextTrack(-1)
-		}
-	case LoopOne:
-		p.setNextTrack(p.nowPlayingIdx)
-	case LoopAll:
-		if p.nowPlayingIdx >= len(p.playQueue)-1 {
-			p.setNextTrack(0)
-		} else {
-			p.setNextTrack(p.nowPlayingIdx + 1)
-		}
-	}
-}
-
 func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 	if urlP, ok := p.player.(player.URLPlayer); ok {
 		url := ""
 		var meta mediaprovider.MediaItemMetadata
 		if idx >= 0 {
-			url = p.getMediaURLForIdx(idx)
+			item := p.playQueue[idx]
+			track, isTrack := item.(*mediaprovider.Track)
+			meta = item.Metadata()
+			if isTrack && p.audiocache != nil {
+				if filepath := p.audiocache.PathForCachedFile(track.ID); filepath != "" {
+					url = filepath
+					log.Println("playing file from cache")
+				}
+			}
+			if url == "" {
+				url = p.getMediaURLForIdx(idx)
+			}
 			if url == "" {
 				return errors.New("no stream URL")
 			}
@@ -815,7 +815,7 @@ func (p *playbackEngine) startPollTimePos() {
 				pollingTick.Stop()
 				return
 			case <-pollingTick.C:
-				p.doUpdateTimePos(false)
+				p.handleTimePosUpdate(false)
 			}
 		}
 	}()
@@ -828,11 +828,20 @@ func (p *playbackEngine) stopPollTimePos() {
 	}
 }
 
-func (p *playbackEngine) doUpdateTimePos(seeked bool) {
+func (p *playbackEngine) handleTimePosUpdate(seeked bool) {
+	s := p.PlaybackStatus()
+	var meta mediaprovider.MediaItemMetadata
+	if np := p.NowPlaying(); np != nil {
+		meta = np.Metadata()
+	}
+	isNearEnd := meta.Type != mediaprovider.MediaItemTypeRadioStation && s.TimePos > float64(meta.Duration)-10
+	if p.needToSetNextTrack && isNearEnd {
+		p.needToSetNextTrack = false
+		p.setNextTrackBasedOnLoopMode(false)
+	}
 	if p.callbacksDisabled {
 		return
 	}
-	s := p.PlaybackStatus()
 	if s.TimePos > p.latestTrackPosition {
 		p.latestTrackPosition = s.TimePos
 	}
@@ -844,18 +853,4 @@ func (p *playbackEngine) doUpdateTimePos(seeked bool) {
 	for _, cb := range p.onPlayTimeUpdate {
 		cb(s.TimePos, duration, seeked)
 	}
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

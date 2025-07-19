@@ -559,7 +559,13 @@ func (d *DLNAPlayer) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a new request to the target server
+	// if the url is a filepath for a local cached file, serve it
+	if info, err := os.Stat(url); err == nil && info.Size() > 0 {
+		http.ServeFile(w, r, url)
+		return
+	}
+
+	// Otherwise, proxy request to the music server
 	proxyReq, err := http.NewRequest(r.Method, url, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
