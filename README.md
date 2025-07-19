@@ -97,7 +97,7 @@ brew upgrade --no-quarantine supersonic
 
 **To install the downloaded .app bundle** from the [Releases page](https://github.com/dweymouth/supersonic/releases), unzip and then drag Supersonic.app to the Applications folder.
 
-:warning: **Apple Silicon (M1/M2) Macs:** You will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `sudo xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
+:warning: **Apple Silicon (M1 and newer) Macs:** You will have to remove the "quarantine bit" that Mac will automatically set, being an application downloaded from the internet. After copying the .app bundle to your Applications folder, in the terminal run `xattr -r -d com.apple.quarantine /Applications/Supersonic.app`
 
 ## Building from source
 
