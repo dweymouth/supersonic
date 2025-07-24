@@ -582,7 +582,11 @@ func (p *playbackEngine) cacheNextTracks() {
 				}
 			}
 		}
-		p.audiocache.CacheOnly(p.NowPlaying().Metadata().ID, fetch)
+		id := ""
+		if np := p.NowPlaying(); np != nil {
+			id = np.Metadata().ID
+		}
+		p.audiocache.CacheOnly(id, fetch)
 	}
 }
 

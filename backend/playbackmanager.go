@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"log"
 	"math/rand"
 	"runtime"
@@ -10,6 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/theme"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/dlna"
@@ -23,6 +27,7 @@ import (
 // intermediary between the frontend and various Player backends.
 type PlaybackManager struct {
 	engine   *playbackEngine
+	cache    *AudioCache
 	cmdQueue *playbackCommandQueue
 	cfg      *AppConfig
 
@@ -61,6 +66,7 @@ func NewPlaybackManager(
 		cfg:         appCfg,
 		autoplay:    playbackCfg.Autoplay,
 		localPlayer: p,
+		cache:       c,
 	}
 	pm.addOnTrackChangeHook()
 	go pm.runCmdQueue(ctx)
@@ -76,10 +82,48 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 		p.lastPlayTime = curTime
 	})
 
-	p.OnSongChange(func(mediaprovider.MediaItem, *mediaprovider.Track) {
+	p.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		// Autoplay if enabled and we are on the last track
 		if p.autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
 			p.enqueueAutoplayTracks()
+		}
+
+		// TODO: make more permanent
+		if p.cache != nil && item != nil {
+			go func() {
+				log.Println("begin generating waveform image")
+				if path := p.cache.PathForCachedFile(item.Metadata().ID); path != "" {
+					t := time.Now()
+					wd, err := GetWaveformDataForFile(context.Background(), path)
+					log.Printf("generate data took %0.3f milliseconds", float64(time.Since(t).Nanoseconds())/1000000)
+					if err != nil {
+						log.Println(err.Error())
+					} else {
+						log.Println("have waveform data")
+						im := NewWaveformImage()
+						var c color.Color
+						fyne.DoAndWait(func() {
+							c = fyne.CurrentApp().Settings().Theme().Color(
+								theme.ColorNamePrimary,
+								fyne.CurrentApp().Settings().ThemeVariant(),
+							)
+						})
+						log.Println("generating image...")
+						t := time.Now()
+						GenerateWaveformImage(wd, im, c)
+						log.Printf("generate image took %0.3f milliseconds", float64(time.Since(t).Nanoseconds())/1000000)
+						fyne.Do(func() {
+							w := fyne.CurrentApp().NewWindow("waveform")
+							w.SetPadded(false)
+							w.SetContent(canvas.NewImageFromImage(im))
+							w.Resize(fyne.NewSize(1024, 32))
+							w.Show()
+						})
+					}
+				} else {
+					log.Println("no cached file for waveform image")
+				}
+			}()
 		}
 
 		if runtime.GOOS != "windows" {
