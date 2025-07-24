@@ -33,6 +33,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.ExtendBaseWidget(bp)
 
 	pm.OnSongChange(bp.onSongChange)
+	pm.OnWaveformImgUpdate(bp.updateWaveformImg)
 	pm.OnPlayTimeUpdate(func(cur, total float64, _ bool) {
 		fyne.Do(func() {
 			if !pm.IsSeeking() {
@@ -138,6 +139,12 @@ func (bp *BottomPanel) onSongChange(song mediaprovider.MediaItem, _ *mediaprovid
 			bp.NowPlaying.Update(song)
 			bp.imageLoader.Load(song.Metadata().CoverArtID)
 		}
+	})
+}
+
+func (bp *BottomPanel) updateWaveformImg(img *backend.WaveformImage) {
+	fyne.Do(func() {
+		bp.Controls.UpdateWaveformImg(img)
 	})
 }
 

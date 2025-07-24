@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
@@ -82,6 +83,7 @@ type PlayerControls struct {
 	widget.BaseWidget
 
 	slider         *TrackPosSlider
+	waveform       *WaveformSeekbar
 	curTimeLabel   *labelMinSize
 	totalTimeLabel *labelMinSize
 	prev           *IconButton
@@ -116,6 +118,8 @@ func NewPlayerControls() *PlayerControls {
 
 	pc.slider = NewTrackPosSlider()
 	pc.slider.Disable()
+	pc.slider.Hide()
+	pc.waveform = NewWaveformSeekbar()
 	pc.curTimeLabel = NewLabelMinSize(util.SecondsToMMSS(0), 55)
 	pc.curTimeLabel.Alignment = fyne.TextAlignTrailing
 	pc.totalTimeLabel = NewLabelMinSize(util.SecondsToMMSS(0), 55)
@@ -138,7 +142,11 @@ func NewPlayerControls() *PlayerControls {
 
 	buttons := container.NewHBox(layout.NewSpacer(), pc.prev, pc.playpause, pc.next, layout.NewSpacer())
 
-	c := container.NewBorder(nil, nil, pc.curTimeLabel, pc.totalTimeLabel, pc.slider)
+	seekCtrl := container.NewStack(
+		pc.slider,
+		pc.waveform,
+	)
+	c := container.NewBorder(nil, nil, pc.curTimeLabel, pc.totalTimeLabel, seekCtrl)
 	pc.container = container.New(layout.NewCustomPaddedVBoxLayout(0), c, buttons)
 
 	return pc
@@ -203,8 +211,13 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 		if updated {
 			// Only update slider once a second when time label changes
 			pc.slider.SetValue(v)
+			pc.waveform.SetProgress(v)
 		}
 	}
+}
+
+func (p *PlayerControls) UpdateWaveformImg(img *backend.WaveformImage) {
+	p.waveform.UpdateImage(img)
 }
 
 func (p *PlayerControls) CreateRenderer() fyne.WidgetRenderer {

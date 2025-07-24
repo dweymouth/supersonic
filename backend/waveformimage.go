@@ -204,9 +204,6 @@ func convertToWav(ctx context.Context, inPath, outPath string) error {
 }
 
 func setPixel(img *image.NRGBA, x, y int, c color.NRGBA) {
-	if x < 0 || x >= img.Bounds().Dx() || y < 0 || y >= img.Bounds().Dy() {
-		return
-	}
 	offset := img.PixOffset(x, y)
 	img.Pix[offset+0] = c.R
 	img.Pix[offset+1] = c.G

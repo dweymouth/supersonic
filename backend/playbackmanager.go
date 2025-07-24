@@ -11,9 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/theme"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/dlna"
@@ -35,6 +32,8 @@ type PlaybackManager struct {
 	remotePlayersLock   sync.Mutex
 	remotePlayers       []RemotePlaybackDevice
 	currentRemotePlayer *RemotePlaybackDevice
+
+	onWaveformImgUpdate []func(*WaveformImage)
 
 	autoplay bool
 
@@ -91,34 +90,16 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 		// TODO: make more permanent
 		if p.cache != nil && item != nil {
 			go func() {
-				log.Println("begin generating waveform image")
 				if path := p.cache.PathForCachedFile(item.Metadata().ID); path != "" {
-					t := time.Now()
 					wd, err := GetWaveformDataForFile(context.Background(), path)
-					log.Printf("generate data took %0.3f milliseconds", float64(time.Since(t).Nanoseconds())/1000000)
 					if err != nil {
 						log.Println(err.Error())
 					} else {
-						log.Println("have waveform data")
 						im := NewWaveformImage()
-						var c color.Color
-						fyne.DoAndWait(func() {
-							c = fyne.CurrentApp().Settings().Theme().Color(
-								theme.ColorNamePrimary,
-								fyne.CurrentApp().Settings().ThemeVariant(),
-							)
-						})
-						log.Println("generating image...")
-						t := time.Now()
-						GenerateWaveformImage(wd, im, c)
-						log.Printf("generate image took %0.3f milliseconds", float64(time.Since(t).Nanoseconds())/1000000)
-						fyne.Do(func() {
-							w := fyne.CurrentApp().NewWindow("waveform")
-							w.SetPadded(false)
-							w.SetContent(canvas.NewImageFromImage(im))
-							w.Resize(fyne.NewSize(1024, 32))
-							w.Show()
-						})
+						GenerateWaveformImage(wd, im, color.White)
+						for _, cb := range p.onWaveformImgUpdate {
+							cb(im)
+						}
 					}
 				} else {
 					log.Println("no cached file for waveform image")
@@ -211,6 +192,10 @@ func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
 
 func (p *PlaybackManager) OnPlayerChange(cb func()) {
 	p.engine.onPlayerChange = append(p.engine.onPlayerChange, cb)
+}
+
+func (p *PlaybackManager) OnWaveformImgUpdate(cb func(*WaveformImage)) {
+	p.onWaveformImgUpdate = append(p.onWaveformImgUpdate, cb)
 }
 
 func (p *PlaybackManager) IsSeeking() bool {
