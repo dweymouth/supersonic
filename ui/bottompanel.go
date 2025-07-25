@@ -125,7 +125,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 
 	bp.imageLoader = util.NewThumbnailLoader(im, bp.NowPlaying.SetImage)
 
-	bp.container = container.New(layouts.NewLeftMiddleRightLayout(500),
+	bp.container = container.New(layouts.NewLeftMiddleRightLayout(300, 0.4),
 		bp.NowPlaying, bp.Controls, bp.AuxControls)
 	return bp
 }

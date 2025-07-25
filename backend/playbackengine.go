@@ -810,7 +810,7 @@ func (pm *playbackEngine) invokeNoArgCallbacks(cbs []func()) {
 func (p *playbackEngine) startPollTimePos() {
 	ctx, cancel := context.WithCancel(p.ctx)
 	p.cancelPollPos = cancel
-	pollingTick := time.NewTicker(250 * time.Millisecond)
+	pollingTick := time.NewTicker(125 * time.Millisecond)
 
 	go func() {
 		for {

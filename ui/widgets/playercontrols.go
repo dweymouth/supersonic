@@ -160,6 +160,7 @@ func (pc *PlayerControls) OnSeek(f func(float64)) {
 			f(pos)
 		}
 	}
+	pc.waveform.OnSeeked = f
 }
 
 func (pc *PlayerControls) OnSeekPrevious(f func()) {
@@ -208,10 +209,10 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 			pc.curTimeLabel.SetText(ct)
 			updated = true
 		}
+		pc.waveform.SetProgress(v)
 		if updated {
 			// Only update slider once a second when time label changes
 			pc.slider.SetValue(v)
-			pc.waveform.SetProgress(v)
 		}
 	}
 }
