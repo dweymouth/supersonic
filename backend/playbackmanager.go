@@ -3,7 +3,6 @@ package backend
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"log"
 	"math/rand"
 	"runtime"
@@ -24,6 +23,7 @@ import (
 // intermediary between the frontend and various Player backends.
 type PlaybackManager struct {
 	engine   *playbackEngine
+	wfmGen   *WaveformImageGenerator
 	cache    *AudioCache
 	cmdQueue *playbackCommandQueue
 	cfg      *AppConfig
@@ -47,13 +47,6 @@ type RemotePlaybackDevice struct {
 	new      func() (player.BasePlayer, error)
 }
 
-var zeroWaveformImage *WaveformImage
-
-func init() {
-	zeroWaveformImage = NewWaveformImage()
-	GenerateWaveformImage(&WaveformData{}, zeroWaveformImage, color.White)
-}
-
 func NewPlaybackManager(
 	ctx context.Context,
 	s *ServerManager,
@@ -74,6 +67,9 @@ func NewPlaybackManager(
 		localPlayer: p,
 		cache:       c,
 	}
+	if c != nil {
+		pm.wfmGen = NewWaveformImageGenerator(c)
+	}
 	pm.addOnTrackChangeHook()
 	go pm.runCmdQueue(ctx)
 	return pm
@@ -88,45 +84,19 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 		p.lastPlayTime = curTime
 	})
 
-	var nextWaveformImgLock sync.Mutex
-	var nextWaveformImg *WaveformImage
-	var nextWaveformImgID string
-	var cancel context.CancelFunc
+	var curWaveformJob *WaveformImageJob
+	var nextWaveformJob *WaveformImageJob
+	var refreshCancel context.CancelFunc
 
 	p.engine.onBeforeSongChange = append(p.engine.onBeforeSongChange, func(item mediaprovider.MediaItem) {
-		if p.cache != nil && item != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+		if p.wfmGen != nil && item != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
 			log.Println("preparing waveform image for next track ", item.Metadata().ID)
-			nextWaveformImgLock.Lock()
-			if cancel != nil {
-				cancel()
-			}
-			nextWaveformImgLock.Unlock()
 			id := item.Metadata().ID
-			path := p.cache.PathForCachedOrDownloadingFile(id)
-			go func() {
-				ctx, cncl := context.WithCancel(p.engine.ctx)
-				nextWaveformImgLock.Lock()
-				cancel = cncl
-				nextWaveformImgLock.Unlock()
-				wd, err := GetWaveformDataForFile(ctx, path, func() bool {
-					return p.cache.PathForCachedFile(id) != ""
-				})
-				if err != nil {
-					log.Println(err.Error())
-				} else {
-					im := NewWaveformImage()
-					GenerateWaveformImage(wd, im, color.White)
+			_ = p.cache.PathForCachedOrDownloadingFile(id)
 
-					if ctx.Err() != nil {
-						log.Println("canceled")
-					}
-					log.Println("have waveform image for track %s", item.Metadata().ID)
-					nextWaveformImgLock.Lock()
-					defer nextWaveformImgLock.Unlock()
-					nextWaveformImg = im
-					nextWaveformImgID = item.Metadata().ID
-				}
-			}()
+			curWaveformJob.Cancel()
+			curWaveformJob = nextWaveformJob
+			nextWaveformJob = p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track))
 		}
 	})
 
@@ -135,20 +105,52 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 		if p.autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
 			p.enqueueAutoplayTracks()
 		}
+		if refreshCancel != nil {
+			refreshCancel()
+		}
+
+		updateUnfinishedJob := func(job *WaveformImageJob) {
+			ctx, c := context.WithCancel(p.cache.rootCtx)
+			refreshCancel = c
+			log.Println("starting img update func")
+			go func(ctx context.Context, job *WaveformImageJob) {
+				for {
+					time.Sleep(333 * time.Millisecond)
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						log.Println("updating waveform img")
+						img := job.Get()
+						for _, cb := range p.onWaveformImgUpdate {
+							cb(img)
+						}
+						if job.Done() {
+							return
+						}
+					}
+				}
+			}(ctx, job)
+		}
 
 		if item != nil {
 			log.Println("Playing track ", item.Metadata().ID)
 			var im *WaveformImage
-			nextWaveformImgLock.Lock()
-			if nextWaveformImgID == item.Metadata().ID {
-				im = nextWaveformImg
+			done := false
+			if nextWaveformJob.ItemID == item.Metadata().ID {
+				done = nextWaveformJob.Done()
+				im = nextWaveformJob.Get()
 			}
-			nextWaveformImgLock.Unlock()
-			if im == nil {
-				im = zeroWaveformImage
-			}
-			for _, cb := range p.onWaveformImgUpdate {
-				cb(im)
+			if im != nil {
+				for _, cb := range p.onWaveformImgUpdate {
+					cb(im)
+				}
+				if !done {
+					updateUnfinishedJob(nextWaveformJob)
+				}
+			} else if tr, ok := item.(*mediaprovider.Track); ok {
+				curWaveformJob = p.wfmGen.StartWaveformGeneration(tr)
+				updateUnfinishedJob(curWaveformJob)
 			}
 		}
 

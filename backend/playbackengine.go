@@ -564,9 +564,9 @@ func (p *playbackEngine) SetReplayGainMode(mode player.ReplayGainMode) {
 func (p *playbackEngine) cacheNextTracks() {
 	if p.audiocache != nil {
 		// fetch up to the 2 next tracks in the queue to the cache
-		fetch := make([]AudioCacheRequest, 0, 2)
-		for _, idx := range [2]int{p.nowPlayingIdx + 1, p.nowPlayingIdx + 2} {
-			if idx < len(p.playQueue) {
+		fetch := make([]AudioCacheRequest, 0, 3)
+		for _, idx := range [3]int{p.nowPlayingIdx, p.nowPlayingIdx + 1, p.nowPlayingIdx + 2} {
+			if idx > 0 && idx < len(p.playQueue) {
 				item := p.playQueue[idx]
 				if item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
 					fetch = append(fetch, AudioCacheRequest{
@@ -610,7 +610,7 @@ func (p *playbackEngine) handleOnTrackChange() {
 	p.wasStopped = false
 	p.alreadyScrobbled = false
 
-	p.curTrackDuration = float64(nowPlaying.Metadata().Duration)
+	p.curTrackDuration = nowPlaying.Metadata().Duration.Seconds()
 	p.sendNowPlayingScrobble() // Must come before invokeOnChangeCallbacks b/c track may immediately be scrobbled
 	p.invokeOnSongChangeCallbacks()
 	p.handleTimePosUpdate(false)
@@ -841,7 +841,7 @@ func (p *playbackEngine) handleTimePosUpdate(seeked bool) {
 	if np := p.NowPlaying(); np != nil {
 		meta = np.Metadata()
 	}
-	isNearEnd := meta.Type != mediaprovider.MediaItemTypeRadioStation && s.TimePos > float64(meta.Duration)-10
+	isNearEnd := meta.Type != mediaprovider.MediaItemTypeRadioStation && s.TimePos > meta.Duration.Seconds()-10
 	if p.needToSetNextTrack && isNearEnd {
 		p.needToSetNextTrack = false
 		p.setNextTrack(p.nextPlayingIndex())

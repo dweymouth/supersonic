@@ -514,7 +514,7 @@ func (a *PlaylistPageHeader) formatPlaylistTrackTimeStr(p *mediaprovider.Playlis
 	fallbackTracksMsg := fmt.Sprintf("%d %s", p.TrackCount, tracks)
 	tracksMsg := lang.LocalizePluralKey("{{.trackCount}} tracks",
 		fallbackTracksMsg, p.TrackCount, map[string]string{"trackCount": strconv.Itoa(p.TrackCount)})
-	return fmt.Sprintf("%s, %s", tracksMsg, util.SecondsToTimeString(float64(p.Duration)))
+	return fmt.Sprintf("%s, %s", tracksMsg, util.SecondsToTimeString(p.Duration.Seconds()))
 }
 
 func (s *playlistPageState) Restore() Page {

@@ -409,7 +409,7 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 		}
 		meta := nowPlaying.Metadata()
 		smtc.UpdateMetadata(meta.Name, strings.Join(meta.Artists, ", "))
-		smtc.UpdatePosition(0, meta.Duration*1000)
+		smtc.UpdatePosition(0, int(meta.Duration.Milliseconds()))
 		go func() {
 			a.ImageManager.GetCoverThumbnail(meta.CoverArtID) // ensure image is cached locally
 			if path, err := a.ImageManager.GetCoverArtPath(meta.CoverArtID); err == nil {

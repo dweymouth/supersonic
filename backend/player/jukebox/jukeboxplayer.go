@@ -90,7 +90,7 @@ func (j *JukeboxPlayer) PlayTrack(track *mediaprovider.Track, _ float64) error {
 
 	j.curTrack = 0
 	j.queueLength = 1
-	j.curTrackDuration = float64(track.Duration)
+	j.curTrackDuration = track.Duration.Seconds()
 
 	return nil
 }
