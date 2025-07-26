@@ -59,6 +59,16 @@ func (a *AudioCache) PathForCachedFile(id string) string {
 	return ""
 }
 
+// PathForCachedFile returns the local filesystem path for a cached track,
+// including one that is in the process of downloading.
+// If it is not cached or downloading, it returns an empty string.
+func (a *AudioCache) PathForCachedOrDownloadingFile(id string) string {
+	if _, ok := a.entries[id]; ok {
+		return a.pathForID(id)
+	}
+	return ""
+}
+
 // cacheFile begins downloading a file (if not already downloading) and stores it
 // to the cache directory under its ID as filename. The download is asynchronous.
 func (a *AudioCache) cacheFile(id, dlURL string) {

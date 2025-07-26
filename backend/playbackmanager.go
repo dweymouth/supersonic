@@ -47,6 +47,13 @@ type RemotePlaybackDevice struct {
 	new      func() (player.BasePlayer, error)
 }
 
+var zeroWaveformImage *WaveformImage
+
+func init() {
+	zeroWaveformImage = NewWaveformImage()
+	GenerateWaveformImage(&WaveformData{}, zeroWaveformImage, color.White)
+}
+
 func NewPlaybackManager(
 	ctx context.Context,
 	s *ServerManager,
@@ -81,30 +88,68 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 		p.lastPlayTime = curTime
 	})
 
+	var nextWaveformImgLock sync.Mutex
+	var nextWaveformImg *WaveformImage
+	var nextWaveformImgID string
+	var cancel context.CancelFunc
+
+	p.engine.onBeforeSongChange = append(p.engine.onBeforeSongChange, func(item mediaprovider.MediaItem) {
+		if p.cache != nil && item != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+			log.Println("preparing waveform image for next track ", item.Metadata().ID)
+			nextWaveformImgLock.Lock()
+			if cancel != nil {
+				cancel()
+			}
+			nextWaveformImgLock.Unlock()
+			id := item.Metadata().ID
+			path := p.cache.PathForCachedOrDownloadingFile(id)
+			go func() {
+				ctx, cncl := context.WithCancel(p.engine.ctx)
+				nextWaveformImgLock.Lock()
+				cancel = cncl
+				nextWaveformImgLock.Unlock()
+				wd, err := GetWaveformDataForFile(ctx, path, func() bool {
+					return p.cache.PathForCachedFile(id) != ""
+				})
+				if err != nil {
+					log.Println(err.Error())
+				} else {
+					im := NewWaveformImage()
+					GenerateWaveformImage(wd, im, color.White)
+
+					if ctx.Err() != nil {
+						log.Println("canceled")
+					}
+					log.Println("have waveform image for track %s", item.Metadata().ID)
+					nextWaveformImgLock.Lock()
+					defer nextWaveformImgLock.Unlock()
+					nextWaveformImg = im
+					nextWaveformImgID = item.Metadata().ID
+				}
+			}()
+		}
+	})
+
 	p.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		// Autoplay if enabled and we are on the last track
 		if p.autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
 			p.enqueueAutoplayTracks()
 		}
 
-		// TODO: make more permanent
-		if p.cache != nil && item != nil {
-			go func() {
-				if path := p.cache.PathForCachedFile(item.Metadata().ID); path != "" {
-					wd, err := GetWaveformDataForFile(context.Background(), path)
-					if err != nil {
-						log.Println(err.Error())
-					} else {
-						im := NewWaveformImage()
-						GenerateWaveformImage(wd, im, color.White)
-						for _, cb := range p.onWaveformImgUpdate {
-							cb(im)
-						}
-					}
-				} else {
-					log.Println("no cached file for waveform image")
-				}
-			}()
+		if item != nil {
+			log.Println("Playing track ", item.Metadata().ID)
+			var im *WaveformImage
+			nextWaveformImgLock.Lock()
+			if nextWaveformImgID == item.Metadata().ID {
+				im = nextWaveformImg
+			}
+			nextWaveformImgLock.Unlock()
+			if im == nil {
+				im = zeroWaveformImage
+			}
+			for _, cb := range p.onWaveformImgUpdate {
+				cb(im)
+			}
 		}
 
 		if runtime.GOOS != "windows" {

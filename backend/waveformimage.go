@@ -6,10 +6,12 @@ import (
 	"image"
 	"image/color"
 	"io"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
 
+	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/go-audio/audio"
 	"github.com/go-audio/wav"
 	"github.com/supersonic-app/go-mpv"
@@ -71,9 +73,19 @@ func GenerateWaveformImage(data *WaveformData, imgbuf *WaveformImage, c color.Co
 	}
 }
 
-func GetWaveformDataForFile(ctx context.Context, fpath string) (*WaveformData, error) {
+func GetWaveformDataForFile(ctx context.Context, fpath string, fileIsDone func() bool) (*WaveformData, error) {
 	dir := filepath.Dir(fpath)
 	transcodeFile := filepath.Join(dir, filepath.Base(fpath)+"_waveform.wav")
+
+	if !fileIsDone() {
+		srv, err := util.NewFileStreamerServer(fpath, fileIsDone)
+		if err != nil {
+			return nil, err
+		}
+		fpath = srv.Addr()
+		log.Println("streaming file to MPV at ", fpath)
+		go srv.Serve()
+	}
 
 	err := convertToWav(ctx, fpath, transcodeFile)
 	if err != nil {
@@ -82,6 +94,7 @@ func GetWaveformDataForFile(ctx context.Context, fpath string) (*WaveformData, e
 
 	f, err := os.Open(transcodeFile)
 	if err != nil {
+		log.Println("error opening transcoded file")
 		return nil, err
 	}
 	defer f.Close()
@@ -199,7 +212,6 @@ func convertToWav(ctx context.Context, inPath, outPath string) error {
 
 	m.Command([]string{"loadfile", inPath, "replace"})
 
-	//log.Println("generating wav file from %s using MPV", inPath)
 	return mpvWaitForIdle(ctx, m)
 }
 
