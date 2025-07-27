@@ -37,6 +37,7 @@ type WaveformImageJob struct {
 	img      *WaveformImage
 	err      error
 	progress int // first invalid pixel in X direction
+	done     bool
 	cancel   func()
 }
 
@@ -49,7 +50,7 @@ func (w *WaveformImageJob) Cancel() {
 func (w *WaveformImageJob) Done() bool {
 	w.lock.Lock()
 	defer w.lock.Unlock()
-	return w.err != nil || w.progress >= w.img.Bounds().Dx()
+	return w.err != nil || w.done
 }
 
 func (w *WaveformImageJob) Err() error {
@@ -172,9 +173,12 @@ type waveformData struct {
 	RMS  [1024]byte
 
 	progress int // first invalid index for Peak/RMS data
+	done     bool
 }
 
 func generateWaveformImage(ctx context.Context, data *waveformData, job *WaveformImageJob) {
+	defer func() { job.done = true }()
+
 	centerY := job.img.Rect.Dy() / 2 // 16
 	top := centerY - 1
 	bottom := centerY
@@ -184,11 +188,13 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 
 	for x := 0; x < 1024; x++ {
 		for data.progress <= x {
-			time.Sleep(10 * time.Millisecond)
+			if data.done {
+				return
+			}
 			if ctx.Err() != nil {
 				return // expired
 			}
-			continue
+			time.Sleep(10 * time.Millisecond)
 		}
 
 		rms := float64(data.RMS[x]) / 255.0
@@ -214,14 +220,12 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 		}
 		job.progress = x + 1
 	}
-	log.Println("done generating image")
 }
 
 // assumes mono, 16 bit
 func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformData, millisecs int64, fileDone func() bool) error {
-	if fileDone() {
-		log.Println("Analyzing completely written file!!")
-	}
+	defer func() { data.done = true }()
+
 	f, err := os.Open(transcodeFile)
 	if err != nil {
 		log.Println("error opening transcoded file")
@@ -290,7 +294,6 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 		n, err := decoder.PCMBuffer(buf)
 		if n == 0 || err == io.EOF {
 			if fileDone() {
-				data.progress = 1024 // set progress to done
 				break
 			}
 			if err == io.EOF && !fileDone() {
@@ -330,8 +333,6 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 		data.RMS[curChunk] = float32ToByte(rms)
 		data.progress = curChunk + 1
 	}
-
-	log.Println("final chunk is", curChunk)
 
 	return nil
 }
