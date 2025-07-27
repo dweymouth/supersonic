@@ -183,11 +183,12 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 	translucentColor := color.NRGBA{R: 255, G: 255, B: 255, A: 128}
 
 	for x := 0; x < 1024; x++ {
-		if data.progress <= x {
+		for data.progress <= x {
 			time.Sleep(10 * time.Millisecond)
 			if ctx.Err() != nil {
 				return // expired
 			}
+			continue
 		}
 
 		rms := float64(data.RMS[x]) / 255.0
@@ -216,6 +217,7 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 	log.Println("done generating image")
 }
 
+// assumes mono, 16 bit
 func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformData, millisecs int64, fileDone func() bool) error {
 	if fileDone() {
 		log.Println("Analyzing completely written file!!")
@@ -226,11 +228,9 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 		return err
 	}
 	defer f.Close()
-	//defer os.Remove(transcodeFile)
+	defer os.Remove(transcodeFile)
 
-	reader := trackingReader{rs: f}
-
-	decoder := wav.NewDecoder(&reader)
+	decoder := wav.NewDecoder(f)
 	if !decoder.IsValidFile() {
 		return errors.New("invalid wav file")
 	}
@@ -247,6 +247,7 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 	buf := &audio.IntBuffer{Data: make([]int, 4096)}
 	curChunk := 0
 	chunkSamples := make([]float32, 0, samplesPerChunk)
+	bytesPerSample := int64(2 * format.NumChannels) // 16-bit = 2 bytes per channel
 
 	// file read loop
 	for {
@@ -266,10 +267,10 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 			}
 			currentSize := stat.Size()
 
-			readableBytes := currentSize - reader.Pos() // how many bytes are still available
+			// how many bytes can we read without nearing EOF
+			readableBytes := currentSize - int64(samplesPerChunk)*int64(curChunk)*bytesPerSample - 16384 //buffer for safety
 
 			// Estimate how many samples we can read
-			bytesPerSample := int64(2 * format.NumChannels) // 16-bit = 2 bytes per channel
 			maxSamples := int(readableBytes / bytesPerSample)
 
 			if maxSamples <= 0 {
@@ -279,10 +280,7 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 			}
 
 			// Resize buffer to fit only what’s safe
-			safeSamples := maxSamples
-			if safeSamples > cap(buf.Data) {
-				safeSamples = cap(buf.Data)
-			}
+			safeSamples := min(maxSamples, cap(buf.Data))
 			buf.Data = buf.Data[:safeSamples]
 		} else {
 			// File is done being written, resize read buf to the max
@@ -293,25 +291,20 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 		if n == 0 || err == io.EOF {
 			if fileDone() {
 				data.progress = 1024 // set progress to done
+				break
 			}
 			if err == io.EOF && !fileDone() {
 				return errors.New("WAV read got premature EOF")
 			}
-			break
+			continue
 		}
 		if err != nil {
 			return err
 		}
 
 		// Process samples
-		for i := 0; i < n; i += format.NumChannels {
-			sum := 0
-			for c := 0; c < format.NumChannels; c++ {
-				sum += buf.Data[i+c]
-			}
-			avg := float64(sum) / float64(format.NumChannels)
-			// TODO: this assumes 16 bit
-			sample := float32(avg / float64(1<<15)) // Normalize to [-1, 1]
+		for i := 0; i < n; i++ {
+			sample := float32(buf.Data[i]) / float32(1<<15) // Normalize to [-1, 1]
 			chunkSamples = append(chunkSamples, sample)
 
 			if len(chunkSamples) >= samplesPerChunk {
@@ -420,28 +413,4 @@ func setPixel(img *image.NRGBA, x, y int, c color.NRGBA) {
 	img.Pix[offset+1] = c.G
 	img.Pix[offset+2] = c.B
 	img.Pix[offset+3] = c.A
-}
-
-// wrap an io.ReadSeeker with support for tracking bytes read (Pos())
-type trackingReader struct {
-	rs  io.ReadSeeker
-	pos int64
-}
-
-func (t *trackingReader) Read(p []byte) (int, error) {
-	n, err := t.rs.Read(p)
-	t.pos += int64(n)
-	return n, err
-}
-
-func (t *trackingReader) Seek(offset int64, whence int) (int64, error) {
-	newPos, err := t.rs.Seek(offset, whence)
-	if err == nil {
-		t.pos = newPos
-	}
-	return newPos, err
-}
-
-func (t *trackingReader) Pos() int64 {
-	return t.pos
 }
