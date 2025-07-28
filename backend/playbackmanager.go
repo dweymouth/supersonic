@@ -119,7 +119,6 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 					case <-ctx.Done():
 						return
 					default:
-						log.Println("updating waveform img, job step", job.step)
 						img := job.Get()
 						for _, cb := range p.onWaveformImgUpdate {
 							cb(img)

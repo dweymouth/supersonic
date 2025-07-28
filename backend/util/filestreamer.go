@@ -51,7 +51,6 @@ func (fs *FileStreamerServer) Serve() error {
 		_ = fs.server.Serve(fs.listener)
 	}()
 
-	log.Println("Serving and WAITING for done")
 	<-fs.done // wait for the handler to finish
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -61,12 +60,8 @@ func (fs *FileStreamerServer) Serve() error {
 }
 
 // Handler that streams the file using chunked transfer encoding.
-func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("FILE STREAMER REQUEST")
+func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, _ *http.Request) {
 	defer close(fs.done) // signal Serve() to shut down after this request
-
-	totalWrote := 0
-	defer log.Println("File streamer wrote", totalWrote, "bytes")
 
 	file, err := os.Open(fs.Path)
 	if err != nil {
@@ -92,7 +87,7 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, r *http.Reque
 		}
 
 		if n > 0 {
-			written, err := w.Write(buf[:n])
+			_, err := w.Write(buf[:n])
 			if err != nil {
 				log.Printf("client write error: %v", err)
 				break
@@ -100,7 +95,6 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, r *http.Reque
 			if canFlush {
 				flusher.Flush()
 			}
-			totalWrote += written
 		}
 
 		if n == 0 && complete {
