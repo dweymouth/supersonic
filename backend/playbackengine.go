@@ -565,7 +565,10 @@ func (p *playbackEngine) cacheNextTracks() {
 	if p.audiocache != nil {
 		// fetch up to the 2 next tracks in the queue to the cache
 		fetch := make([]AudioCacheRequest, 0, 3)
-		for _, idx := range [3]int{p.nowPlayingIdx, p.nowPlayingIdx + 1, p.nowPlayingIdx + 2} {
+		// if nothing is playing (index = -1), treat the beginning of the queue as
+		// the "currently" playing track, since we're probably about to play it
+		npI := max(p.nowPlayingIdx, 0)
+		for _, idx := range [3]int{npI, npI + 1, npI + 2} {
 			if idx > 0 && idx < len(p.playQueue) {
 				item := p.playQueue[idx]
 				if item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
@@ -581,6 +584,7 @@ func (p *playbackEngine) cacheNextTracks() {
 			id = np.Metadata().ID
 		}
 		p.audiocache.CacheOnly(id, fetch)
+		log.Println("fetching files", sharedutil.MapSlice(fetch, func(a AudioCacheRequest) string { return a.ID }))
 	}
 }
 
@@ -663,21 +667,26 @@ func (p *playbackEngine) nextPlayingIndex() int {
 }
 
 func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
+	var item mediaprovider.MediaItem
+	var url string
+	if idx >= 0 {
+		item = p.playQueue[idx]
+		url = p.getMediaURLForIdx(idx)
+	}
+	track, isTrack := item.(*mediaprovider.Track)
+	if p.audiocache != nil && isTrack {
+		p.audiocache.CacheFile(item.Metadata().ID, p.getMediaURLForIdx(idx))
+	}
+
 	if urlP, ok := p.player.(player.URLPlayer); ok {
-		url := ""
 		var meta mediaprovider.MediaItemMetadata
 		if idx >= 0 {
-			item := p.playQueue[idx]
-			track, isTrack := item.(*mediaprovider.Track)
 			meta = item.Metadata()
 			if isTrack && p.audiocache != nil {
 				if filepath := p.audiocache.PathForCachedFile(track.ID); filepath != "" {
 					url = filepath
 					log.Println("playing file from cache")
 				}
-			}
-			if url == "" {
-				url = p.getMediaURLForIdx(idx)
 			}
 			if url == "" {
 				return errors.New("no stream URL")

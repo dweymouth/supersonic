@@ -112,7 +112,6 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 		updateUnfinishedJob := func(job *WaveformImageJob) {
 			ctx, c := context.WithCancel(p.cache.rootCtx)
 			refreshCancel = c
-			log.Println("starting img update func")
 			go func(ctx context.Context, job *WaveformImageJob) {
 				for {
 					time.Sleep(333 * time.Millisecond)
@@ -120,7 +119,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 					case <-ctx.Done():
 						return
 					default:
-						log.Println("updating waveform img")
+						log.Println("updating waveform img, job step", job.step)
 						img := job.Get()
 						for _, cb := range p.onWaveformImgUpdate {
 							cb(img)
@@ -138,6 +137,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			var im *WaveformImage
 			done := false
 			if nextWaveformJob.ItemID == item.Metadata().ID {
+				log.Println("Have waveform in progress for", item.Metadata().ID)
 				done = nextWaveformJob.Done()
 				im = nextWaveformJob.Get()
 			}

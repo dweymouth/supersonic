@@ -53,6 +53,9 @@ func NewAudioCache(ctx context.Context, s *ServerManager, baseCacheDir string) (
 // PathForCachedFile returns the local filesystem path for a cached track,
 // if the file has finished downloading. If not cached, it returns an empty string.
 func (a *AudioCache) PathForCachedFile(id string) string {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
 	if item, ok := a.entries[id]; ok && item.done {
 		return a.pathForID(id)
 	}
@@ -63,20 +66,29 @@ func (a *AudioCache) PathForCachedFile(id string) string {
 // including one that is in the process of downloading.
 // If it is not cached or downloading, it returns an empty string.
 func (a *AudioCache) PathForCachedOrDownloadingFile(id string) string {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
 	if _, ok := a.entries[id]; ok {
 		return a.pathForID(id)
 	}
 	return ""
 }
 
-// cacheFile begins downloading a file (if not already downloading) and stores it
+// CacheFile begins downloading a file (if not already downloading) and stores it
 // to the cache directory under its ID as filename. The download is asynchronous.
-func (a *AudioCache) cacheFile(id, dlURL string) {
+func (a *AudioCache) CacheFile(id, dlURL string) {
 	s := a.s.Server
 	if s == nil {
 		return
 	}
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
 
+	a.cacheFile(id, dlURL)
+}
+
+func (a *AudioCache) cacheFile(id, dlURL string) {
 	if _, ok := a.entries[id]; !ok {
 		ctx, cancel := context.WithCancel(a.rootCtx)
 		a.entries[id] = &cacheEntry{cancel: cancel}
@@ -107,9 +119,10 @@ func (a *AudioCache) CacheOnly(keep string, fetch []AudioCacheRequest) {
 		if id != keep && !slices.ContainsFunc(fetch, func(a AudioCacheRequest) bool {
 			return a.ID == id
 		}) {
-			e.cancel()
-			_ = os.Remove(a.pathForID(id))
-			delete(a.entries, id)
+			_ = e
+			//e.cancel()
+			//_ = os.Remove(a.pathForID(id))
+			//delete(a.entries, id)
 		}
 	}
 

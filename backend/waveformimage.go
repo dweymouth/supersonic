@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/go-audio/audio"
 	"github.com/go-audio/wav"
 	"github.com/supersonic-app/go-mpv"
+	"golang.org/x/sys/unix"
 )
 
 type WaveformImageGenerator struct {
@@ -39,10 +39,13 @@ type WaveformImageJob struct {
 	progress int // first invalid pixel in X direction
 	done     bool
 	cancel   func()
+
+	step int
 }
 
 func (w *WaveformImageJob) Cancel() {
 	if w != nil && w.cancel != nil {
+		w.step = -1
 		w.cancel()
 	}
 }
@@ -101,13 +104,25 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 		path := w.audioCache.PathForCachedOrDownloadingFile(job.ItemID)
 		// wait for file to begin downloading if not already
 		for path == "" {
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			if e := ctx.Err(); e != nil {
 				job.setError(e)
 				return
 			}
 			path = w.audioCache.PathForCachedOrDownloadingFile(job.ItemID)
 		}
+		// and wait for content to begin being written
+		for {
+			if s, err := os.Stat(path); err == nil && s.Size() > 0 {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+			if e := ctx.Err(); e != nil {
+				job.setError(e)
+				return
+			}
+		}
+		job.step = 1
 
 		dir := filepath.Dir(path)
 		transcodeFile := filepath.Join(dir, filepath.Base(path)+"_waveform.wav")
@@ -117,25 +132,22 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 		}
 
 		// If file isn't fully downloaded from server,
-		// stream it to MPV via HTTP so it doesn't possibly
+		// stream it to MPV via fifo so it doesn't possibly
 		// terminate the conversion to WAV early encountering EOF
 		if !fileDone() {
-			srv, err := util.NewFileStreamerServer(path, fileDone)
-			if err != nil {
-				job.setError(err)
-				return
-			}
-			path = srv.Addr()
-			log.Println("streaming file to MPV at ", path)
-			go srv.Serve()
+			fifoPath := filepath.Join(filepath.Dir(path), filepath.Base(path)+"_fifo")
+			copyFileToFifo(ctx, job, path, fifoPath, fileDone)
+			path = fifoPath // MPV will read from the FIFO
 		}
 
 		// Start converting the file to WAV for analysis
 		var wavConvertDone bool
 		go func() {
+			job.step = 2
 			err := convertToWav(ctx, path, transcodeFile)
 			wavConvertDone = true
 			if err != nil {
+				log.Println("Error converting to wav", err)
 				job.setError(err)
 			}
 		}()
@@ -145,12 +157,13 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 			if s, err := os.Stat(transcodeFile); err == nil && s.Size() > 0 {
 				break
 			}
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			if e := ctx.Err(); e != nil {
 				job.setError(e)
 				return
 			}
 		}
+		job.step = 3
 
 		// Start analyzing the converted wav file
 		data := &waveformData{}
@@ -160,10 +173,14 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 				log.Println("error analyzing wav", err.Error())
 				job.setError(err)
 			}
+			data.done = true
 		}()
 
 		// Start generating the waveform image
-		go generateWaveformImage(ctx, data, job)
+		go func() {
+			generateWaveformImage(ctx, data, job)
+			job.done = true
+		}()
 	}()
 	return job
 }
@@ -177,8 +194,6 @@ type waveformData struct {
 }
 
 func generateWaveformImage(ctx context.Context, data *waveformData, job *WaveformImageJob) {
-	defer func() { job.done = true }()
-
 	centerY := job.img.Rect.Dy() / 2 // 16
 	top := centerY - 1
 	bottom := centerY
@@ -194,7 +209,7 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 			if ctx.Err() != nil {
 				return // expired
 			}
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 		}
 
 		rms := float64(data.RMS[x]) / 255.0
@@ -222,10 +237,73 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 	}
 }
 
+func copyFileToFifo(ctx context.Context, job *WaveformImageJob, filePath, fifoPath string, fileDone func() bool) {
+	if err := unix.Mkfifo(fifoPath, 0600); err != nil {
+		job.setError(err)
+		return
+	}
+
+	go func() {
+		fifo, err := os.OpenFile(fifoPath, os.O_WRONLY, os.ModeNamedPipe)
+		if err != nil {
+			job.setError(err)
+			return
+		}
+		file, err := os.Open(filePath)
+		if err != nil {
+			job.setError(err)
+			return
+		}
+		defer file.Close()
+		defer fifo.Close()
+
+		buf := make([]byte, 4096)
+		offset := int64(0)
+
+		for {
+			if e := ctx.Err(); e != nil {
+				job.setError(e)
+				return
+			}
+
+			done := fileDone()
+			info, err := os.Stat(filePath)
+			if err != nil {
+				job.setError(err)
+				return
+			}
+			currentSize := info.Size()
+
+			// If we've read everything available so far
+			if offset >= currentSize {
+				if done {
+					return // done
+				}
+				// wait a bit for more data to be written to file
+				time.Sleep(50 * time.Millisecond)
+				continue
+			}
+
+			// Calculate how much is safe to read
+			toRead := currentSize - offset - 1
+			if toRead > int64(cap(buf)) {
+				toRead = int64(cap(buf))
+			}
+
+			n, err := file.ReadAt(buf[:toRead], offset)
+			if n > 0 {
+				if _, werr := fifo.Write(buf[:n]); werr != nil {
+					job.setError(werr)
+					return
+				}
+				offset += int64(n)
+			}
+		}
+	}()
+}
+
 // assumes mono, 16 bit
 func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformData, millisecs int64, fileDone func() bool) error {
-	defer func() { data.done = true }()
-
 	f, err := os.Open(transcodeFile)
 	if err != nil {
 		log.Println("error opening transcoded file")
@@ -254,14 +332,16 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 	bytesPerSample := int64(2 * format.NumChannels) // 16-bit = 2 bytes per channel
 
 	// file read loop
-	for {
+	doneReading := false
+	for !doneReading {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
+		fileIsDone := fileDone()
 
-		if !fileDone() {
+		if !fileIsDone {
 			// Check how many samples we can safely read without encountering EOF
 			// and adjust read buffer size accordingly
 
@@ -272,14 +352,14 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 			currentSize := stat.Size()
 
 			// how many bytes can we read without nearing EOF
-			readableBytes := currentSize - int64(samplesPerChunk)*int64(curChunk)*bytesPerSample - 16384 //buffer for safety
+			readableBytes := currentSize - int64(samplesPerChunk)*int64(curChunk)*bytesPerSample - 8192 //buffer for safety
 
 			// Estimate how many samples we can read
 			maxSamples := int(readableBytes / bytesPerSample)
 
 			if maxSamples <= 0 {
 				// Wait for more data to be written to file
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(50 * time.Millisecond)
 				continue
 			}
 
@@ -293,13 +373,14 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 
 		n, err := decoder.PCMBuffer(buf)
 		if n == 0 || err == io.EOF {
-			if fileDone() {
-				break
+			if fileIsDone {
+				doneReading = true
 			}
 			if err == io.EOF && !fileDone() {
 				return errors.New("WAV read got premature EOF")
 			}
-			continue
+		} else if fileIsDone {
+			log.Println("read samples on done file")
 		}
 		if err != nil {
 			return err
@@ -320,6 +401,7 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 				data.progress = curChunk
 				chunkSamples = chunkSamples[:0]
 				if curChunk >= 1024 {
+					doneReading = true
 					break
 				}
 			}
@@ -348,9 +430,10 @@ func computePeakAndRMS(chunk []float32) (peak float32, rms float32) {
 	var sumSquares float64
 	peak = 0.0
 	for _, v := range chunk {
-		abs := float32(math.Abs(float64(v)))
-		if abs > peak {
-			peak = abs
+		if v > peak {
+			peak = v
+		} else if v < -peak {
+			peak = -v
 		}
 		sumSquares += float64(v * v)
 	}
@@ -394,14 +477,20 @@ func convertToWav(ctx context.Context, inPath, outPath string) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			ia := m.GetPropertyString("idle-active")
-			if ia == "yes" || ia == "true" {
-				return nil
-			}
 			// use small timeout to allow detecting ctx expiry
 			// without too much delay
 			e := m.WaitEvent(0.05 /*timeout seconds*/)
 			if e.Event_Id == mpv.EVENT_IDLE {
+				if _, err := os.Stat(outPath); os.IsNotExist(err) {
+					log.Printf("WARNING! file %s does not exist after MPV convert", outPath)
+				}
+				return nil
+			}
+			ia := m.GetPropertyString("idle-active")
+			if ia == "yes" || ia == "true" {
+				if _, err := os.Stat(outPath); os.IsNotExist(err) {
+					log.Printf("WARNING! file %s does not exist after MPV convert", outPath)
+				}
 				return nil
 			}
 		}

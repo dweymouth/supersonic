@@ -32,11 +32,8 @@ func NewFileStreamerServer(path string, isComplete func() bool) (*FileStreamerSe
 		done:       make(chan struct{}),
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/stream", fs.streamHandler)
-
 	fs.server = &http.Server{
-		Handler: mux,
+		Handler: handler{fs},
 	}
 
 	return fs, nil
@@ -45,7 +42,7 @@ func NewFileStreamerServer(path string, isComplete func() bool) (*FileStreamerSe
 // Addr returns the server address (host:port).
 func (fs *FileStreamerServer) Addr() string {
 	_, port, _ := net.SplitHostPort(fs.listener.Addr().String())
-	return "http://localhost:" + port + "/stream"
+	return "http://127.0.0.1:" + port + "/"
 }
 
 // Serve starts serving and waits for a single request to complete.
@@ -54,6 +51,7 @@ func (fs *FileStreamerServer) Serve() error {
 		_ = fs.server.Serve(fs.listener)
 	}()
 
+	log.Println("Serving and WAITING for done")
 	<-fs.done // wait for the handler to finish
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -64,10 +62,15 @@ func (fs *FileStreamerServer) Serve() error {
 
 // Handler that streams the file using chunked transfer encoding.
 func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("FILE STREAMER REQUEST")
 	defer close(fs.done) // signal Serve() to shut down after this request
+
+	totalWrote := 0
+	defer log.Println("File streamer wrote", totalWrote, "bytes")
 
 	file, err := os.Open(fs.Path)
 	if err != nil {
+		log.Println("File streamer failed to open source file")
 		http.Error(w, "could not open file", http.StatusInternalServerError)
 		return
 	}
@@ -81,6 +84,7 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, r *http.Reque
 
 	buf := make([]byte, 4096)
 	for {
+		complete := fs.IsComplete()
 		n, err := file.Read(buf)
 		if err != nil && err != io.EOF {
 			log.Printf("read error: %v", err)
@@ -88,7 +92,7 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, r *http.Reque
 		}
 
 		if n > 0 {
-			_, err := w.Write(buf[:n])
+			written, err := w.Write(buf[:n])
 			if err != nil {
 				log.Printf("client write error: %v", err)
 				break
@@ -96,9 +100,10 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, r *http.Reque
 			if canFlush {
 				flusher.Flush()
 			}
+			totalWrote += written
 		}
 
-		if n == 0 && fs.IsComplete() {
+		if n == 0 && complete {
 			break
 		}
 
@@ -107,4 +112,14 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, r *http.Reque
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
+}
+
+type handler struct {
+	fs *FileStreamerServer
+}
+
+var _ http.Handler = handler{}
+
+func (h handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	h.fs.streamHandler(w, req)
 }
