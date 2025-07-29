@@ -84,34 +84,44 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 		p.lastPlayTime = curTime
 	})
 
-	var curWaveformJob *WaveformImageJob
-	var nextWaveformJob *WaveformImageJob
-	var refreshCancel context.CancelFunc
+	var waveformJobs [3]*WaveformImageJob
+	findJob := func(id string) (*WaveformImageJob, bool) {
+		for _, j := range waveformJobs {
+			if j != nil && j.ItemID == id {
+				return j, true
+			}
+		}
+		return nil, false
+	}
+	addJob := func(job *WaveformImageJob) {
+		waveformJobs[0].Cancel()
+		waveformJobs[0] = waveformJobs[1]
+		waveformJobs[1] = waveformJobs[2]
+		waveformJobs[2] = job
+	}
 
 	p.engine.onBeforeSongChange = append(p.engine.onBeforeSongChange, func(item mediaprovider.MediaItem) {
 		if p.wfmGen != nil && item != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
-			log.Println("preparing waveform image for next track ", item.Metadata().ID)
-			id := item.Metadata().ID
-			_ = p.cache.PathForCachedOrDownloadingFile(id)
-
-			curWaveformJob.Cancel()
-			curWaveformJob = nextWaveformJob
-			nextWaveformJob = p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track))
+			// start generating waveform image for next-up track
+			addJob(p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track)))
 		}
 	})
+
+	lastPlayingID := ""
+	var wfmImageUpdateCancel context.CancelFunc
 
 	p.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		// Autoplay if enabled and we are on the last track
 		if p.autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
 			p.enqueueAutoplayTracks()
 		}
-		if refreshCancel != nil {
-			refreshCancel()
+		if wfmImageUpdateCancel != nil {
+			wfmImageUpdateCancel()
 		}
 
 		updateUnfinishedJob := func(job *WaveformImageJob) {
 			ctx, c := context.WithCancel(p.cache.rootCtx)
-			refreshCancel = c
+			wfmImageUpdateCancel = c
 			go func(ctx context.Context, job *WaveformImageJob) {
 				for {
 					time.Sleep(333 * time.Millisecond)
@@ -132,24 +142,27 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 		}
 
 		if item != nil {
-			log.Println("Playing track ", item.Metadata().ID)
-			var im *WaveformImage
-			done := false
-			if nextWaveformJob.ItemID == item.Metadata().ID {
-				log.Println("Have waveform in progress for", item.Metadata().ID)
-				done = nextWaveformJob.Done()
-				im = nextWaveformJob.Get()
+			// cancel possible waveform generation job for previous track
+			if old, ok := findJob(lastPlayingID); ok {
+				old.Cancel()
 			}
-			if im != nil {
-				for _, cb := range p.onWaveformImgUpdate {
-					cb(im)
-				}
-				if !done {
-					updateUnfinishedJob(nextWaveformJob)
-				}
+			lastPlayingID = item.Metadata().ID
+
+			var job *WaveformImageJob
+			if j, ok := findJob(item.Metadata().ID); ok {
+				job = j
 			} else if tr, ok := item.(*mediaprovider.Track); ok {
-				curWaveformJob = p.wfmGen.StartWaveformGeneration(tr)
-				updateUnfinishedJob(curWaveformJob)
+				job = p.wfmGen.StartWaveformGeneration(tr)
+				addJob(job)
+			}
+			if job != nil {
+				img := job.Get()
+				for _, cb := range p.onWaveformImgUpdate {
+					cb(img)
+				}
+				if !job.done && job != nil {
+					updateUnfinishedJob(job)
+				}
 			}
 		}
 

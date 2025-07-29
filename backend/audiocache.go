@@ -100,7 +100,7 @@ func (a *AudioCache) cacheFile(id, dlURL string) {
 					e.done = true
 				}
 				a.mutex.Unlock()
-			} else if err != context.DeadlineExceeded {
+			} else if err != nil && err != context.DeadlineExceeded {
 				log.Printf("error downloading audio file: %v", err)
 			}
 			cancel() // release ctx resources when done
@@ -120,9 +120,9 @@ func (a *AudioCache) CacheOnly(keep string, fetch []AudioCacheRequest) {
 			return a.ID == id
 		}) {
 			_ = e
-			//e.cancel()
-			//_ = os.Remove(a.pathForID(id))
-			//delete(a.entries, id)
+			e.cancel()
+			_ = os.Remove(a.pathForID(id))
+			delete(a.entries, id)
 		}
 	}
 

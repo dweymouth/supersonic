@@ -584,7 +584,6 @@ func (p *playbackEngine) cacheNextTracks() {
 			id = np.Metadata().ID
 		}
 		p.audiocache.CacheOnly(id, fetch)
-		log.Println("fetching files", sharedutil.MapSlice(fetch, func(a AudioCacheRequest) string { return a.ID }))
 	}
 }
 
@@ -685,7 +684,6 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 			if isTrack && p.audiocache != nil {
 				if filepath := p.audiocache.PathForCachedFile(track.ID); filepath != "" {
 					url = filepath
-					log.Println("playing file from cache")
 				}
 			}
 			if url == "" {

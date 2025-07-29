@@ -64,7 +64,6 @@ func (w *WaveformImageJob) Err() error {
 
 func (w *WaveformImageJob) Get() *WaveformImage {
 	if w.Done() {
-		log.Println("returning image directly")
 		return w.img
 	}
 	// return a new *WaveformImage with data copied
@@ -143,7 +142,6 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 
 			path = srv.Addr()
 
-			log.Println("streaming file to MPV at ", path)
 			go srv.Serve()
 			time.Sleep(10 * time.Millisecond) // make sure server has time to come up
 		}
@@ -155,7 +153,6 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 			err := convertToWav(ctx, path, transcodeFile)
 			wavConvertDone = true
 			if err != nil {
-				log.Println("Error converting to wav", err)
 				job.setError(err)
 			}
 		}()
@@ -178,7 +175,6 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 		go func() {
 			err := analyzeWavFile(ctx, transcodeFile, data, item.Duration.Milliseconds(), func() bool { return wavConvertDone })
 			if err != nil {
-				log.Println("error analyzing wav", err.Error())
 				job.setError(err)
 			}
 			data.done = true
@@ -249,7 +245,6 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformData, millisecs int64, fileDone func() bool) error {
 	f, err := os.Open(transcodeFile)
 	if err != nil {
-		log.Println("error opening transcoded file")
 		return err
 	}
 	defer f.Close()
@@ -408,6 +403,8 @@ func convertToWav(ctx context.Context, inPath, outPath string) error {
 	if err := m.Initialize(); err != nil {
 		return err
 	}
+
+	defer m.TerminateDestroy()
 
 	m.Command([]string{"loadfile", inPath, "replace"})
 
