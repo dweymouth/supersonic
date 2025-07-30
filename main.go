@@ -103,7 +103,11 @@ func main() {
 	})
 	fyneApp.Lifecycle().SetOnEnteredForeground(windowStartupTasks)
 
-	mainWindow.ShowAndRun()
+	if *backend.FlagStartMinimized {
+		fyneApp.Run()
+	} else {
+		mainWindow.ShowAndRun()
+	}
 
 	log.Println("Running shutdown tasks...")
 	myApp.Shutdown()
