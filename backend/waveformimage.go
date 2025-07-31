@@ -28,7 +28,7 @@ type WaveformImageGenerator struct {
 type WaveformImage = image.NRGBA
 
 func NewWaveformImage() *WaveformImage {
-	return image.NewNRGBA(image.Rect(0, 0, 1024, 32))
+	return image.NewNRGBA(image.Rect(0, 0, 1024, 48))
 }
 
 type WaveformImageJob struct {
@@ -198,9 +198,9 @@ type waveformData struct {
 }
 
 func generateWaveformImage(ctx context.Context, data *waveformData, job *WaveformImageJob) {
-	centerY := job.img.Rect.Dy() / 2 // 16
-	top := centerY - 1
-	bottom := centerY
+	centerY := job.img.Rect.Dy() / 2 // 24
+	top := centerY - 1               // 23
+	bottom := centerY                // 24
 
 	opaqueColor := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	translucentColor := color.NRGBA{R: 255, G: 255, B: 255, A: 128}
@@ -216,26 +216,23 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 			time.Sleep(50 * time.Millisecond)
 		}
 
-		rms := float64(data.RMS[x]) / 255.0
-		peak := float64(data.Peak[x]) / 255.0
-
-		rmsPixels := int(rms * 16)
-		peakPixels := int((peak - rms) * 16)
+		rmsPixels := int(data.RMS[x]) * centerY / 255
+		peakPixels := int(data.Peak[x]) * centerY / 255
 
 		// Always draw at least 2 center pixels
 		setPixel(job.img, x, top, opaqueColor)
 		setPixel(job.img, x, bottom, opaqueColor)
 
 		// Draw RMS pixels (solid)
-		for i := 1; i <= rmsPixels; i++ {
+		for i := 1; i < rmsPixels; i++ {
 			setPixel(job.img, x, top-i, opaqueColor)
 			setPixel(job.img, x, bottom+i, opaqueColor)
 		}
 
 		// Draw Peak extension (translucent)
-		for i := 1; i <= peakPixels; i++ {
-			setPixel(job.img, x, top-rmsPixels-i, translucentColor)
-			setPixel(job.img, x, bottom+rmsPixels+i, translucentColor)
+		for i := max(1, rmsPixels); i < peakPixels; i++ {
+			setPixel(job.img, x, top-i, translucentColor)
+			setPixel(job.img, x, bottom+i, translucentColor)
 		}
 		job.progress = x + 1
 	}
@@ -266,7 +263,7 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 
 	buf := &audio.IntBuffer{Data: make([]int, 4096)}
 	curChunk := 0
-	chunkSamples := make([]float32, 0, samplesPerChunk)
+	chunkSamples := make([]float64, 0, samplesPerChunk)
 	bytesPerSample := int64(2 * format.NumChannels) // 16-bit = 2 bytes per channel
 
 	// file read loop
@@ -324,14 +321,14 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 
 		// Process samples
 		for i := 0; i < n; i++ {
-			sample := float32(buf.Data[i]) / float32(1<<15) // Normalize to [-1, 1]
+			sample := float64(buf.Data[i]) / float64(1<<15) // Normalize to [-1, 1]
 			chunkSamples = append(chunkSamples, sample)
 
 			if len(chunkSamples) >= samplesPerChunk {
 				if curChunk < 1024 {
 					peak, rms := computePeakAndRMS(chunkSamples)
-					data.Peak[curChunk] = float32ToByte(peak)
-					data.RMS[curChunk] = float32ToByte(rms)
+					data.Peak[curChunk] = float64ToByte(peak)
+					data.RMS[curChunk] = float64ToByte(rms)
 				}
 				curChunk++
 				data.progress = curChunk
@@ -346,8 +343,8 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 	// analyze the last chunk if it's partially filled with samples
 	if curChunk < 1024 && len(chunkSamples) > 0 {
 		peak, rms := computePeakAndRMS(chunkSamples)
-		data.Peak[curChunk] = float32ToByte(peak)
-		data.RMS[curChunk] = float32ToByte(rms)
+		data.Peak[curChunk] = float64ToByte(peak)
+		data.RMS[curChunk] = float64ToByte(rms)
 		data.progress = curChunk + 1
 	}
 
@@ -361,7 +358,7 @@ func (j *WaveformImageJob) setError(err error) {
 	j.err = err
 }
 
-func computePeakAndRMS(chunk []float32) (peak float32, rms float32) {
+func computePeakAndRMS(chunk []float64) (peak float64, rms float64) {
 	var sumSquares float64
 	peak = 0.0
 	for _, v := range chunk {
@@ -372,11 +369,11 @@ func computePeakAndRMS(chunk []float32) (peak float32, rms float32) {
 		}
 		sumSquares += float64(v * v)
 	}
-	rms = float32(math.Sqrt(sumSquares / float64(len(chunk))))
+	rms = math.Sqrt(sumSquares / float64(len(chunk)))
 	return
 }
 
-func float32ToByte(val float32) byte {
+func float64ToByte(val float64) byte {
 	if val > 1.0 {
 		val = 1.0
 	}
