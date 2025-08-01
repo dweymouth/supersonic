@@ -110,8 +110,9 @@ type NowPlayingPageConfig struct {
 }
 
 type PlaybackConfig struct {
-	Autoplay   bool
-	RepeatMode string
+	Autoplay           bool
+	RepeatMode         string
+	UseWaveformSeekbar bool
 }
 
 type LocalPlaybackConfig struct {
@@ -239,8 +240,9 @@ func DefaultConfig(appVersionTag string) *Config {
 			TracklistColumns: []string{"Album", "Time", "Plays"},
 		},
 		Playback: PlaybackConfig{
-			Autoplay:   false,
-			RepeatMode: "None",
+			Autoplay:           false,
+			RepeatMode:         "None",
+			UseWaveformSeekbar: true,
 		},
 		LocalPlayback: LocalPlaybackConfig{
 			// "auto" is the name to pass to MPV for autoselecting the output device

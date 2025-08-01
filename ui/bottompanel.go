@@ -28,7 +28,7 @@ type BottomPanel struct {
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller) *BottomPanel {
+func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller, useWaveformSeekbar bool) *BottomPanel {
 	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
 
@@ -86,7 +86,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 			contr.ShowShareDialog(tr.ID)
 		}
 	}
-	bp.Controls = widgets.NewPlayerControls()
+	bp.Controls = widgets.NewPlayerControls(useWaveformSeekbar)
 	bp.Controls.OnPlayPause(func() {
 		pm.PlayPause()
 	})

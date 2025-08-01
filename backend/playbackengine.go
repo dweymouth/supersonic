@@ -84,6 +84,7 @@ type playbackEngine struct {
 
 	// to pass to onSongChange listeners; clear once listeners have been called
 	lastScrobbled *mediaprovider.Track
+	playbackCfg   *PlaybackConfig
 	scrobbleCfg   *ScrobbleConfig
 	transcodeCfg  *TranscodingConfig
 	replayGainCfg ReplayGainConfig
@@ -118,6 +119,7 @@ func NewPlaybackEngine(
 		sm:            s,
 		audiocache:    c,
 		player:        p,
+		playbackCfg:   playbackCfg,
 		scrobbleCfg:   scrobbleCfg,
 		transcodeCfg:  transcodeCfg,
 		nowPlayingIdx: -1,
@@ -820,7 +822,11 @@ func (pm *playbackEngine) invokeNoArgCallbacks(cbs []func()) {
 func (p *playbackEngine) startPollTimePos() {
 	ctx, cancel := context.WithCancel(p.ctx)
 	p.cancelPollPos = cancel
-	pollingTick := time.NewTicker(125 * time.Millisecond)
+	pollFrequency := 250 * time.Millisecond
+	if p.playbackCfg.UseWaveformSeekbar {
+		pollFrequency = 100 * time.Millisecond
+	}
+	pollingTick := time.NewTicker(pollFrequency)
 
 	go func() {
 		for {

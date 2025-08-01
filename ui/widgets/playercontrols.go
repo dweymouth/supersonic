@@ -82,6 +82,8 @@ func (t *TrackPosSlider) IsDragging() bool {
 type PlayerControls struct {
 	widget.BaseWidget
 
+	UseWaveformSeekbar bool
+
 	slider         *TrackPosSlider
 	waveform       *WaveformSeekbar
 	curTimeLabel   *labelMinSize
@@ -112,14 +114,18 @@ func NewLabelMinSize(text string, minWidth float32) *labelMinSize {
 }
 
 // NewPlayerControls sets up the seek bar, and transport buttons.
-func NewPlayerControls() *PlayerControls {
-	pc := &PlayerControls{}
+func NewPlayerControls(useWaveformSeekbar bool) *PlayerControls {
+	pc := &PlayerControls{UseWaveformSeekbar: useWaveformSeekbar}
 	pc.ExtendBaseWidget(pc)
 
 	pc.slider = NewTrackPosSlider()
 	pc.slider.Disable()
-	pc.slider.Hide()
 	pc.waveform = NewWaveformSeekbar()
+	if useWaveformSeekbar {
+		pc.slider.Hidden = true
+	} else {
+		pc.waveform.Hidden = true
+	}
 	pc.curTimeLabel = NewLabelMinSize(util.SecondsToMMSS(0), 55)
 	pc.curTimeLabel.Alignment = fyne.TextAlignTrailing
 	pc.totalTimeLabel = NewLabelMinSize(util.SecondsToMMSS(0), 55)
@@ -219,6 +225,12 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 
 func (p *PlayerControls) UpdateWaveformImg(img *backend.WaveformImage) {
 	p.waveform.UpdateImage(img)
+}
+
+func (p *PlayerControls) Refresh() {
+	p.waveform.Hidden = !p.UseWaveformSeekbar
+	p.slider.Hidden = p.UseWaveformSeekbar
+	p.BaseWidget.Refresh()
 }
 
 func (p *PlayerControls) CreateRenderer() fyne.WidgetRenderer {

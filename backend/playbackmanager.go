@@ -37,7 +37,10 @@ type PlaybackManager struct {
 
 	autoplay bool
 
-	lastPlayTime float64
+	lastPlayTime         float64
+	lastPlayingID        string
+	wfmUpdateImageCancel context.CancelFunc
+	wfmImageJobs         [3]*WaveformImageJob
 }
 
 type RemotePlaybackDevice struct {
@@ -75,6 +78,22 @@ func NewPlaybackManager(
 	return pm
 }
 
+func (p *PlaybackManager) findWfmImageJob(id string) (*WaveformImageJob, bool) {
+	for _, j := range p.wfmImageJobs {
+		if j != nil && j.ItemID == id {
+			return j, true
+		}
+	}
+	return nil, false
+}
+
+func (p *PlaybackManager) addWfmImageJob(job *WaveformImageJob) {
+	p.wfmImageJobs[0].Cancel()
+	p.wfmImageJobs[0] = p.wfmImageJobs[1]
+	p.wfmImageJobs[1] = p.wfmImageJobs[2]
+	p.wfmImageJobs[2] = job
+}
+
 func (p *PlaybackManager) addOnTrackChangeHook() {
 	// See https://github.com/dweymouth/supersonic/issues/483
 	// On Windows, MPV sometimes fails to start playback when switching to a track
@@ -84,87 +103,21 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 		p.lastPlayTime = curTime
 	})
 
-	var waveformJobs [3]*WaveformImageJob
-	findJob := func(id string) (*WaveformImageJob, bool) {
-		for _, j := range waveformJobs {
-			if j != nil && j.ItemID == id {
-				return j, true
+	p.engine.onBeforeSongChange = append(p.engine.onBeforeSongChange, func(item mediaprovider.MediaItem) {
+		if p.engine.playbackCfg.UseWaveformSeekbar {
+			if p.wfmGen != nil && item != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+				// start generating waveform image for next-up track
+				p.addWfmImageJob(p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track)))
 			}
 		}
-		return nil, false
-	}
-	addJob := func(job *WaveformImageJob) {
-		waveformJobs[0].Cancel()
-		waveformJobs[0] = waveformJobs[1]
-		waveformJobs[1] = waveformJobs[2]
-		waveformJobs[2] = job
-	}
-
-	p.engine.onBeforeSongChange = append(p.engine.onBeforeSongChange, func(item mediaprovider.MediaItem) {
-		if p.wfmGen != nil && item != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
-			// start generating waveform image for next-up track
-			addJob(p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track)))
-		}
 	})
-
-	lastPlayingID := ""
-	var wfmImageUpdateCancel context.CancelFunc
 
 	p.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		// Autoplay if enabled and we are on the last track
 		if p.autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
 			p.enqueueAutoplayTracks()
 		}
-		if wfmImageUpdateCancel != nil {
-			wfmImageUpdateCancel()
-		}
-
-		updateUnfinishedJob := func(job *WaveformImageJob) {
-			ctx, c := context.WithCancel(p.cache.rootCtx)
-			wfmImageUpdateCancel = c
-			go func(ctx context.Context, job *WaveformImageJob) {
-				for {
-					time.Sleep(333 * time.Millisecond)
-					select {
-					case <-ctx.Done():
-						return
-					default:
-						img := job.Get()
-						for _, cb := range p.onWaveformImgUpdate {
-							cb(img)
-						}
-						if job.Done() {
-							return
-						}
-					}
-				}
-			}(ctx, job)
-		}
-
-		if item != nil {
-			// cancel possible waveform generation job for previous track
-			if old, ok := findJob(lastPlayingID); ok {
-				old.Cancel()
-			}
-			lastPlayingID = item.Metadata().ID
-
-			var job *WaveformImageJob
-			if j, ok := findJob(item.Metadata().ID); ok {
-				job = j
-			} else if tr, ok := item.(*mediaprovider.Track); ok {
-				job = p.wfmGen.StartWaveformGeneration(tr)
-				addJob(job)
-			}
-			if job != nil {
-				img := job.Get()
-				for _, cb := range p.onWaveformImgUpdate {
-					cb(img)
-				}
-				if !job.done && job != nil {
-					updateUnfinishedJob(job)
-				}
-			}
-		}
+		p.handleWaveformImageSongChange(item)
 
 		if runtime.GOOS != "windows" {
 			return
@@ -181,6 +134,62 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			}()
 		}
 	})
+}
+
+func (p *PlaybackManager) handleWaveformImageSongChange(item mediaprovider.MediaItem) {
+	if p.wfmUpdateImageCancel != nil {
+		p.wfmUpdateImageCancel()
+	}
+	if !p.engine.playbackCfg.UseWaveformSeekbar {
+		return
+	}
+
+	updateUnfinishedJob := func(job *WaveformImageJob) {
+		ctx, c := context.WithCancel(p.cache.rootCtx)
+		p.wfmUpdateImageCancel = c
+		go func(ctx context.Context, job *WaveformImageJob) {
+			for {
+				time.Sleep(333 * time.Millisecond)
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					img := job.Get()
+					for _, cb := range p.onWaveformImgUpdate {
+						cb(img)
+					}
+					if job.Done() {
+						return
+					}
+				}
+			}
+		}(ctx, job)
+	}
+
+	if item != nil {
+		// cancel possible waveform generation job for previous track
+		if old, ok := p.findWfmImageJob(p.lastPlayingID); ok {
+			old.Cancel()
+		}
+		p.lastPlayingID = item.Metadata().ID
+
+		var job *WaveformImageJob
+		if j, ok := p.findWfmImageJob(item.Metadata().ID); ok {
+			job = j
+		} else if tr, ok := item.(*mediaprovider.Track); ok {
+			job = p.wfmGen.StartWaveformGeneration(tr)
+			p.addWfmImageJob(job)
+		}
+		if job != nil {
+			img := job.Get()
+			for _, cb := range p.onWaveformImgUpdate {
+				cb(img)
+			}
+			if !job.done && job != nil {
+				updateUnfinishedJob(job)
+			}
+		}
+	}
 }
 
 func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, fastScan bool) {
