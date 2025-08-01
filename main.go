@@ -87,7 +87,7 @@ func main() {
 		defaultServer := myApp.ServerManager.GetDefaultServer()
 		if defaultServer == nil {
 			mainWindow.Controller.PromptForFirstServer()
-		} else {
+		} else if !*backend.FlagStartMinimized { // If the minimized start flag was passed, the connection is already established.
 			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
 
@@ -103,7 +103,15 @@ func main() {
 	})
 	fyneApp.Lifecycle().SetOnEnteredForeground(windowStartupTasks)
 
-	mainWindow.ShowAndRun()
+	if *backend.FlagStartMinimized {
+		if err = myApp.LoginToDefaultServer(); err != nil {
+			log.Fatalf("failed to connect to server: %v", err.Error())
+			return
+		}
+		fyneApp.Run()
+	} else {
+		mainWindow.ShowAndRun()
+	}
 
 	log.Println("Running shutdown tasks...")
 	myApp.Shutdown()

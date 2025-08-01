@@ -429,7 +429,7 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 	})
 }
 
-func (a *App) LoginToDefaultServer(string) error {
+func (a *App) LoginToDefaultServer() error {
 	serverCfg := a.ServerManager.GetDefaultServer()
 	if serverCfg == nil {
 		return ErrNoServers
@@ -537,6 +537,8 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.SeekBackOrPrevious()
 	case *FlagNext:
 		return cli.SeekNext()
+	case *FlagShow:
+		return cli.Show()
 	case VolumeCLIArg >= 0:
 		return cli.SetVolume(VolumeCLIArg)
 	case VolumePctCLIArg != 0:
