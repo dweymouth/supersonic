@@ -269,7 +269,7 @@ func (p *playbackEngine) PlaybackStatus() PlaybackStatus {
 	return PlaybackStatus{
 		State:    stat.State,
 		TimePos:  stat.TimePos,
-		Duration: stat.Duration,
+		Duration: p.curTrackDuration,
 	}
 }
 

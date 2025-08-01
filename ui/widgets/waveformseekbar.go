@@ -41,16 +41,16 @@ func NewWaveformSeekbar() *WaveformSeekbar {
 }
 
 func (w *WaveformSeekbar) UpdateImage(img *backend.WaveformImage) {
-	w.img.Image = img
 	prm, fg := w.getThemeColors()
-	w.recolorImage(prm, fg, w.imgProgressPixel)
+	recolorWaveformImage(img, prm, fg, 0, w.imgProgressPixel, true)
+	w.img.Image = img
 	w.img.Refresh()
 }
 
 func (w *WaveformSeekbar) Refresh() {
 	w.cursor.Resize(fyne.NewSize(1, w.Size().Height-4))
 	prm, fg := w.getThemeColors()
-	w.recolorImage(prm, fg, w.imgProgressPixel)
+	w.updateImageProgress(prm, fg, w.imgProgressPixel)
 	w.recolorCursor(prm, fg, w.cursor.Position().X)
 	w.BaseWidget.Refresh()
 }
@@ -97,7 +97,7 @@ func (w *WaveformSeekbar) CreateRenderer() fyne.WidgetRenderer {
 func (w *WaveformSeekbar) SetProgress(v float64) {
 	prm, fg := w.getThemeColors()
 	thresholdPixel := int(math.Round(1024.0 /*pixel width of waveform*/ * v))
-	if w.recolorImage(prm, fg, thresholdPixel) {
+	if w.updateImageProgress(prm, fg, thresholdPixel) {
 		w.img.Refresh()
 	}
 }
@@ -119,7 +119,7 @@ func (w *WaveformSeekbar) recolorCursor(prm, fg color.Color, posX float32) {
 	}
 }
 
-func (w *WaveformSeekbar) recolorImage(cL, cR color.Color, progress int) (updated bool) {
+func (w *WaveformSeekbar) updateImageProgress(cL, cR color.Color, progress int) (updated bool) {
 	if w.img.Image == nil {
 		return false
 	}
@@ -127,29 +127,34 @@ func (w *WaveformSeekbar) recolorImage(cL, cR color.Color, progress int) (update
 		return false
 	}
 
+	img := w.img.Image.(*image.NRGBA)
+	recolorWaveformImage(img, cL, cR, w.imgProgressPixel, progress, false)
+	w.imgColorL, w.imgColorR = cL, cR
+	w.imgProgressPixel = progress
+	return true
+}
+
+func recolorWaveformImage(img *image.NRGBA, cL, cR color.Color, oldProgress, newProgress int, fullRecolor bool) {
 	_r, _g, _b, _ := cL.RGBA()
 	rL, gL, bL := byte(_r>>8), byte(_g>>8), byte(_b>>8)
 	_r, _g, _b, _ = cR.RGBA()
 	rR, gR, bR := byte(_r>>8), byte(_g>>8), byte(_b>>8)
 
-	// TODO- smartly figure out which pixels we need
-	// to update for different scenarios (e.g. progress update only)
-	// and not iterate the whole thing every time
-	img := w.img.Image.(*image.NRGBA)
 	bnds := img.Rect.Bounds()
-	for x := 0; x < bnds.Dx(); x++ {
+	xMin, xMax := 0, bnds.Dx()
+	if !fullRecolor {
+		xMin = min(oldProgress, newProgress)
+		xMax = max(oldProgress, newProgress)
+	}
+	for x := xMin; x < xMax; x++ {
 		for y := 0; y < bnds.Dy(); y++ {
-			if x < progress {
+			if x < newProgress {
 				setPixelRGB(img, x, y, rL, gL, bL)
 			} else {
 				setPixelRGB(img, x, y, rR, gR, bR)
 			}
 		}
 	}
-
-	w.imgColorL, w.imgColorR = cL, cR
-	w.imgProgressPixel = progress
-	return true
 }
 
 func setPixelRGB(img *image.NRGBA, x, y int, r, g, b byte) {
