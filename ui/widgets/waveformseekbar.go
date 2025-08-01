@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
-	myTheme "github.com/dweymouth/supersonic/ui/theme"
 )
 
 type WaveformSeekbar struct {
@@ -26,7 +25,7 @@ type WaveformSeekbar struct {
 	imgProgressPixel int
 
 	img    *canvas.Image
-	cursor *myTheme.ThemedRectangle
+	cursor *canvas.Rectangle
 }
 
 func NewWaveformSeekbar() *WaveformSeekbar {
@@ -34,10 +33,10 @@ func NewWaveformSeekbar() *WaveformSeekbar {
 		img: &canvas.Image{
 			ScaleMode: canvas.ImageScaleFastest,
 		},
-		cursor: myTheme.NewThemedRectangle(theme.ColorNameForeground),
+		cursor: canvas.NewRectangle(color.Transparent),
 	}
-	w.cursor.Hide()
 	w.ExtendBaseWidget(w)
+	w.cursor.Hidden = true
 	return w
 }
 
@@ -49,22 +48,26 @@ func (w *WaveformSeekbar) UpdateImage(img *backend.WaveformImage) {
 }
 
 func (w *WaveformSeekbar) Refresh() {
-	w.cursor.Resize(fyne.NewSize(1.5, w.Size().Height-4))
-	w.cursor.Refresh()
+	w.cursor.Resize(fyne.NewSize(1, w.Size().Height-4))
 	prm, fg := w.getThemeColors()
-	if w.recolorImage(prm, fg, w.imgProgressPixel) {
-		w.img.Refresh()
-	}
+	w.recolorImage(prm, fg, w.imgProgressPixel)
+	w.recolorCursor(prm, fg, w.cursor.Position().X)
+	w.BaseWidget.Refresh()
 }
 
 var _ desktop.Hoverable = (*WaveformSeekbar)(nil)
 
 func (w *WaveformSeekbar) MouseIn(e *desktop.MouseEvent) {
+	prm, fg := w.getThemeColors()
+	w.recolorCursor(prm, fg, e.Position.X)
+	w.cursor.Resize(fyne.NewSize(1, w.Size().Height-4))
 	w.cursor.Move(fyne.NewPos(e.Position.X, 2))
 	w.cursor.Show()
 }
 
 func (w *WaveformSeekbar) MouseMoved(e *desktop.MouseEvent) {
+	prm, fg := w.getThemeColors()
+	w.recolorCursor(prm, fg, e.Position.X)
 	w.cursor.Move(fyne.NewPos(e.Position.X, 2))
 }
 
@@ -105,6 +108,15 @@ func (w *WaveformSeekbar) getThemeColors() (primary, foreground color.Color) {
 	primary = th.Color(theme.ColorNamePrimary, vnt)
 	foreground = th.Color(theme.ColorNameForeground, vnt)
 	return primary, foreground
+}
+
+func (w *WaveformSeekbar) recolorCursor(prm, fg color.Color, posX float32) {
+	progress := float32(w.imgProgressPixel) / 1024 /*waveform image width*/
+	if posX/w.Size().Width < progress {
+		w.cursor.FillColor = fg
+	} else {
+		w.cursor.FillColor = prm
+	}
 }
 
 func (w *WaveformSeekbar) recolorImage(cL, cR color.Color, progress int) (updated bool) {
