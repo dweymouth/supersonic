@@ -429,7 +429,7 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 	})
 }
 
-func (a *App) LoginToDefaultServer(string) error {
+func (a *App) LoginToDefaultServer() error {
 	serverCfg := a.ServerManager.GetDefaultServer()
 	if serverCfg == nil {
 		return ErrNoServers
