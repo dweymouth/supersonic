@@ -190,6 +190,15 @@ func (p *PlaybackManager) handleWaveformImageSongChange(item mediaprovider.Media
 			}
 		}
 	}
+
+	if item == nil || item.Metadata().Type != mediaprovider.MediaItemTypeTrack {
+		// set a zero waveform image when we're not playing anything
+		// or playing a media type we can't derive a waveform from (e.g. radio)
+		img := NewWaveformImage()
+		for _, cb := range p.onWaveformImgUpdate {
+			cb(img)
+		}
+	}
 }
 
 func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, fastScan bool) {

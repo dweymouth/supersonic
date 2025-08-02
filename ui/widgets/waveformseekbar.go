@@ -32,6 +32,7 @@ func NewWaveformSeekbar() *WaveformSeekbar {
 	w := &WaveformSeekbar{
 		img: &canvas.Image{
 			ScaleMode: canvas.ImageScaleFastest,
+			Image:     backend.NewWaveformImage(),
 		},
 		cursor: canvas.NewRectangle(color.Transparent),
 	}

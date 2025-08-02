@@ -28,7 +28,16 @@ type WaveformImageGenerator struct {
 type WaveformImage = image.NRGBA
 
 func NewWaveformImage() *WaveformImage {
-	return image.NewNRGBA(image.Rect(0, 0, 1024, 48))
+	img := image.NewNRGBA(image.Rect(0, 0, 1024, 48))
+	centerTop := img.Rect.Dy() / 2 // 24
+	centerBottom := centerTop - 1  // 23
+
+	// color in center line
+	for x := 0; x < img.Bounds().Dx(); x++ {
+		setPixel(img, x, centerTop, color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+		setPixel(img, x, centerBottom, color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+	}
+	return img
 }
 
 type WaveformImageJob struct {
