@@ -16,7 +16,7 @@ import (
 )
 
 type WaveformSeekbar struct {
-	widget.BaseWidget
+	widget.DisableableWidget
 
 	OnSeeked func(float64)
 
@@ -59,6 +59,9 @@ func (w *WaveformSeekbar) Refresh() {
 var _ desktop.Hoverable = (*WaveformSeekbar)(nil)
 
 func (w *WaveformSeekbar) MouseIn(e *desktop.MouseEvent) {
+	if w.Disabled() {
+		return
+	}
 	prm, fg := w.getThemeColors()
 	w.recolorCursor(prm, fg, e.Position.X)
 	w.cursor.Resize(fyne.NewSize(1, w.Size().Height-4))
@@ -67,6 +70,9 @@ func (w *WaveformSeekbar) MouseIn(e *desktop.MouseEvent) {
 }
 
 func (w *WaveformSeekbar) MouseMoved(e *desktop.MouseEvent) {
+	if w.Disabled() {
+		return
+	}
 	prm, fg := w.getThemeColors()
 	w.recolorCursor(prm, fg, e.Position.X)
 	w.cursor.Move(fyne.NewPos(e.Position.X, 2))
@@ -79,7 +85,7 @@ func (w *WaveformSeekbar) MouseOut() {
 var _ fyne.Tappable = (*WaveformSeekbar)(nil)
 
 func (w *WaveformSeekbar) Tapped(e *fyne.PointEvent) {
-	if w.OnSeeked != nil {
+	if !w.Disabled() && w.OnSeeked != nil {
 		w.OnSeeked(float64(e.Position.X / w.Size().Width))
 	}
 }

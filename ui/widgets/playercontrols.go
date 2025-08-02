@@ -121,6 +121,7 @@ func NewPlayerControls(useWaveformSeekbar bool) *PlayerControls {
 	pc.slider = NewTrackPosSlider()
 	pc.slider.Disable()
 	pc.waveform = NewWaveformSeekbar()
+	pc.waveform.Disable()
 	if useWaveformSeekbar {
 		pc.slider.Hidden = true
 	} else {
@@ -206,8 +207,10 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 	}
 	if totalTime > 0 {
 		pc.slider.Enable()
+		pc.waveform.Enable()
 	} else {
 		pc.slider.Disable()
+		pc.waveform.Disable()
 	}
 	if !pc.slider.IsDragging() {
 		ct := util.SecondsToMMSS(curTime)
