@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
@@ -81,7 +82,10 @@ func (t *TrackPosSlider) IsDragging() bool {
 type PlayerControls struct {
 	widget.BaseWidget
 
+	UseWaveformSeekbar bool
+
 	slider         *TrackPosSlider
+	waveform       *WaveformSeekbar
 	curTimeLabel   *labelMinSize
 	totalTimeLabel *labelMinSize
 	prev           *IconButton
@@ -110,12 +114,19 @@ func NewLabelMinSize(text string, minWidth float32) *labelMinSize {
 }
 
 // NewPlayerControls sets up the seek bar, and transport buttons.
-func NewPlayerControls() *PlayerControls {
-	pc := &PlayerControls{}
+func NewPlayerControls(useWaveformSeekbar bool) *PlayerControls {
+	pc := &PlayerControls{UseWaveformSeekbar: useWaveformSeekbar}
 	pc.ExtendBaseWidget(pc)
 
 	pc.slider = NewTrackPosSlider()
 	pc.slider.Disable()
+	pc.waveform = NewWaveformSeekbar()
+	pc.waveform.Disable()
+	if useWaveformSeekbar {
+		pc.slider.Hidden = true
+	} else {
+		pc.waveform.Hidden = true
+	}
 	pc.curTimeLabel = NewLabelMinSize(util.SecondsToMMSS(0), 55)
 	pc.curTimeLabel.Alignment = fyne.TextAlignTrailing
 	pc.totalTimeLabel = NewLabelMinSize(util.SecondsToMMSS(0), 55)
@@ -138,7 +149,11 @@ func NewPlayerControls() *PlayerControls {
 
 	buttons := container.NewHBox(layout.NewSpacer(), pc.prev, pc.playpause, pc.next, layout.NewSpacer())
 
-	c := container.NewBorder(nil, nil, pc.curTimeLabel, pc.totalTimeLabel, pc.slider)
+	seekCtrl := container.NewStack(
+		pc.slider,
+		pc.waveform,
+	)
+	c := container.NewBorder(nil, nil, pc.curTimeLabel, pc.totalTimeLabel, seekCtrl)
 	pc.container = container.New(layout.NewCustomPaddedVBoxLayout(0), c, buttons)
 
 	return pc
@@ -152,6 +167,7 @@ func (pc *PlayerControls) OnSeek(f func(float64)) {
 			f(pos)
 		}
 	}
+	pc.waveform.OnSeeked = f
 }
 
 func (pc *PlayerControls) OnSeekPrevious(f func()) {
@@ -191,8 +207,10 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 	}
 	if totalTime > 0 {
 		pc.slider.Enable()
+		pc.waveform.Enable()
 	} else {
 		pc.slider.Disable()
+		pc.waveform.Disable()
 	}
 	if !pc.slider.IsDragging() {
 		ct := util.SecondsToMMSS(curTime)
@@ -200,11 +218,22 @@ func (pc *PlayerControls) UpdatePlayTime(curTime, totalTime float64) {
 			pc.curTimeLabel.SetText(ct)
 			updated = true
 		}
+		pc.waveform.SetProgress(v)
 		if updated {
 			// Only update slider once a second when time label changes
 			pc.slider.SetValue(v)
 		}
 	}
+}
+
+func (p *PlayerControls) UpdateWaveformImg(img *backend.WaveformImage) {
+	p.waveform.UpdateImage(img)
+}
+
+func (p *PlayerControls) Refresh() {
+	p.waveform.Hidden = !p.UseWaveformSeekbar
+	p.slider.Hidden = p.UseWaveformSeekbar
+	p.BaseWidget.Refresh()
 }
 
 func (p *PlayerControls) CreateRenderer() fyne.WidgetRenderer {

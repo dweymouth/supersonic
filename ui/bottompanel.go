@@ -28,11 +28,12 @@ type BottomPanel struct {
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller) *BottomPanel {
+func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller, useWaveformSeekbar bool) *BottomPanel {
 	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
 
 	pm.OnSongChange(bp.onSongChange)
+	pm.OnWaveformImgUpdate(bp.updateWaveformImg)
 	pm.OnPlayTimeUpdate(func(cur, total float64, _ bool) {
 		fyne.Do(func() {
 			if !pm.IsSeeking() {
@@ -85,7 +86,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 			contr.ShowShareDialog(tr.ID)
 		}
 	}
-	bp.Controls = widgets.NewPlayerControls()
+	bp.Controls = widgets.NewPlayerControls(useWaveformSeekbar)
 	bp.Controls.OnPlayPause(func() {
 		pm.PlayPause()
 	})
@@ -124,7 +125,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 
 	bp.imageLoader = util.NewThumbnailLoader(im, bp.NowPlaying.SetImage)
 
-	bp.container = container.New(layouts.NewLeftMiddleRightLayout(500),
+	bp.container = container.New(layouts.NewLeftMiddleRightLayout(300, 0.4),
 		bp.NowPlaying, bp.Controls, bp.AuxControls)
 	return bp
 }
@@ -138,6 +139,12 @@ func (bp *BottomPanel) onSongChange(song mediaprovider.MediaItem, _ *mediaprovid
 			bp.NowPlaying.Update(song)
 			bp.imageLoader.Load(song.Metadata().CoverArtID)
 		}
+	})
+}
+
+func (bp *BottomPanel) updateWaveformImg(img *backend.WaveformImage) {
+	fyne.Do(func() {
+		bp.Controls.UpdateWaveformImg(img)
 	})
 }
 

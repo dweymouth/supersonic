@@ -439,7 +439,7 @@ func (t *Tracklist) doSortTracks() {
 	case ColumnRating:
 		t.intSort(func(tr *util.TrackListModel) int64 { return int64(tr.Track().Rating) })
 	case ColumnTime:
-		t.intSort(func(tr *util.TrackListModel) int64 { return int64(tr.Track().Duration) })
+		t.intSort(func(tr *util.TrackListModel) int64 { return tr.Track().Duration.Milliseconds() })
 	case ColumnYear:
 		t.intSort(func(tr *util.TrackListModel) int64 { return int64(tr.Track().Year) })
 	case ColumnSize:

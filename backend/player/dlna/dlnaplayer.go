@@ -181,8 +181,8 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 		}()
 	}
 	d.state = playing
-	remainingDur := meta.Duration - int(startTime)
-	d.setTrackChangeTimer(time.Duration(remainingDur) * time.Second)
+	remainingDur := meta.Duration - time.Duration(startTime)*time.Second
+	d.setTrackChangeTimer(remainingDur)
 	d.stopwatch.Reset()
 	d.stopwatch.Start()
 	d.lastStartTime = int(startTime)
@@ -265,7 +265,7 @@ func (d *DLNAPlayer) Continue() error {
 		return err
 	}
 	d.metaLock.Lock()
-	nextTrackChange := time.Duration(d.curTrackMeta.Duration)*time.Second - d.curPlayPos()
+	nextTrackChange := d.curTrackMeta.Duration - d.curPlayPos()
 	d.metaLock.Unlock()
 	d.state = playing
 	d.setTrackChangeTimer(nextTrackChange)
@@ -349,7 +349,7 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 
 	if d.state == playing {
 		d.metaLock.Lock()
-		nextTrackChange := time.Duration(d.curTrackMeta.Duration)*time.Second - time.Duration(secs)*time.Second
+		nextTrackChange := d.curTrackMeta.Duration - time.Duration(secs)*time.Second
 		d.metaLock.Unlock()
 		d.setTrackChangeTimer(nextTrackChange)
 		d.stopwatch.Start()
@@ -397,7 +397,7 @@ func (d *DLNAPlayer) GetStatus() player.Status {
 	return player.Status{
 		State:    state,
 		TimePos:  timePos,
-		Duration: float64(d.curTrackMeta.Duration),
+		Duration: d.curTrackMeta.Duration.Seconds(),
 	}
 }
 
@@ -428,7 +428,7 @@ func (d *DLNAPlayer) syncPlaybackTime() {
 		if d.state == playing {
 			d.stopwatch.Start()
 		}
-		d.setTrackChangeTimer(time.Duration(d.curTrackMeta.Duration-d.lastStartTime) * time.Second)
+		d.setTrackChangeTimer(d.curTrackMeta.Duration - time.Duration(d.lastStartTime)*time.Second)
 		d.InvokeOnSeek()
 	}
 }
@@ -511,7 +511,7 @@ func (d *DLNAPlayer) handleOnTrackChange() {
 	}
 	d.curTrackMeta = d.nextTrackMeta
 	d.nextTrackMeta = mediaprovider.MediaItemMetadata{}
-	nextTrackChange := time.Duration(d.curTrackMeta.Duration) * time.Second
+	nextTrackChange := d.curTrackMeta.Duration
 	d.metaLock.Unlock()
 
 	if stopping {
@@ -559,7 +559,13 @@ func (d *DLNAPlayer) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a new request to the target server
+	// if the url is a filepath for a local cached file, serve it
+	if info, err := os.Stat(url); err == nil && info.Size() > 0 {
+		http.ServeFile(w, r, url)
+		return
+	}
+
+	// Otherwise, proxy request to the music server
 	proxyReq, err := http.NewRequest(r.Method, url, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

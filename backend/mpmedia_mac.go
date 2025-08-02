@@ -112,7 +112,7 @@ func (mp *MPMediaHandler) updateMetadata(meta *mediaprovider.MediaItemMetadata) 
 			}
 		}
 		artist = strings.Join(meta.Artists, ", ")
-		duration = meta.Duration
+		duration = int(meta.Duration.Seconds())
 	}
 
 	cTitle := C.CString(title)

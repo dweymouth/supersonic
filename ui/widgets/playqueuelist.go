@@ -453,7 +453,7 @@ func (p *PlayQueueListRow) Update(tm *util.TrackListModel, rowNum int) {
 		p.title.Text = meta.Name
 		p.title.SetToolTip(meta.Name)
 		p.artist.BuildSegments(meta.Artists, meta.ArtistIDs)
-		p.time.Text = util.SecondsToMMSS(float64(meta.Duration))
+		p.time.Text = util.SecondsToMMSS(meta.Duration.Seconds())
 	}
 
 	// Render whether track is playing or not

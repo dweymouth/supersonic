@@ -1,6 +1,12 @@
 package sharedutil
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
@@ -132,4 +138,51 @@ func ReorderItems[T any](items []T, idxToMove []int, insertIdx int) []T {
 	}
 
 	return newItems
+}
+
+// DownloadFileWithContext downloads a file from the specified URL and saves it to destPath.
+// It respects the provided context and will cancel the request and cleanup if context is done.
+// Returns an error if an error other than cancellation occurs, and returns true IFF the file was completely downloaded.
+func DownloadFileWithContext(ctx context.Context, url string, destPath string) (bool, error) {
+	// Create HTTP request with context
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return false, fmt.Errorf("creating request: %w", err)
+	}
+
+	// Perform the request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("performing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check for non-200 status codes
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	// Create the destination file
+	out, err := os.Create(destPath)
+	if err != nil {
+		return false, fmt.Errorf("creating file: %w", err)
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+
+	select {
+	case <-ctx.Done():
+		// Cancelled, delete partial file
+		out.Close()
+		os.Remove(destPath)
+		return false, nil
+	default:
+		if err != nil {
+			os.Remove(destPath)
+			return false, fmt.Errorf("error copying data: %w", err)
+		}
+	}
+
+	return true, nil
 }

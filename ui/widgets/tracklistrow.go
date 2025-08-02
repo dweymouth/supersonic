@@ -401,7 +401,7 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		t.album.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
 		t.composer.BuildSegments(tr.ComposerNames, tr.ComposerIDs)
-		t.dur.Text = util.SecondsToMMSS(float64(tr.Duration))
+		t.dur.Text = util.SecondsToMMSS(tr.Duration.Seconds())
 		t.year.Text = strconv.Itoa(tr.Year)
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
 		t.comment.Text = strings.ReplaceAll(tr.Comment, "\n", " ")

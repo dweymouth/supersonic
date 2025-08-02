@@ -90,7 +90,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		))
 	}
 
-	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller)
+	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller, m.Controller.App.Config.Playback.UseWaveformSeekbar)
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		fyne.Do(func() { m.UpdateOnTrackChange(item) })
 	})

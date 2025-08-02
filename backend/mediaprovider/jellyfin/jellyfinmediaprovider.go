@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	cacheValidDurationSeconds = 60
-	runTimeTicksPerSecond     = 10_000_000
+	cacheValidDurationSeconds  = 60
+	runTimeTicksPerMicrosecond = 10
 )
 
 type JellyfinServer struct {
@@ -383,7 +383,7 @@ func (j *jellyfinMediaProvider) TrackBeganPlayback(trackID string) error {
 }
 
 func (j *jellyfinMediaProvider) TrackEndedPlayback(trackID string, position int, submission bool) error {
-	return j.client.UpdatePlayStatus(trackID, jellyfin.Stop, int64(position)*runTimeTicksPerSecond)
+	return j.client.UpdatePlayStatus(trackID, jellyfin.Stop, int64(position)*runTimeTicksPerMicrosecond*1_000_000)
 }
 
 func (j *jellyfinMediaProvider) RescanLibrary() error {
@@ -408,7 +408,7 @@ func (j *jellyfinMediaProvider) GetLyrics(tr *mediaprovider.Track) (*mediaprovid
 func toLyricLine(ll jellyfin.LyricLine) mediaprovider.LyricLine {
 	return mediaprovider.LyricLine{
 		Text:  ll.Text,
-		Start: float64(ll.Start) / float64(runTimeTicksPerSecond),
+		Start: (time.Duration(ll.Start/runTimeTicksPerMicrosecond) * time.Microsecond).Seconds(),
 	}
 }
 
@@ -432,7 +432,7 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		CoverArtID:  coverArtID,
 		ParentID:    ch.AlbumID,
 		Title:       ch.Name,
-		Duration:    int(ch.RunTimeTicks / runTimeTicksPerSecond),
+		Duration:    time.Duration(ch.RunTimeTicks/runTimeTicksPerMicrosecond) * time.Microsecond,
 		TrackNumber: ch.IndexNumber,
 		DiscNumber:  ch.DiscNumber,
 		//Genre:       ch.Genres,
@@ -483,7 +483,7 @@ func fillAlbum(a *jellyfin.Album, album *mediaprovider.Album) {
 	album.ID = a.ID
 	album.CoverArtID = a.ID
 	album.Name = a.Name
-	album.Duration = int(a.RunTimeTicks / runTimeTicksPerSecond)
+	album.Duration = time.Duration(a.RunTimeTicks/runTimeTicksPerMicrosecond) * time.Microsecond
 	album.ArtistIDs = artistIDs
 	album.ArtistNames = artistNames
 	album.Date.Year = &a.Year
@@ -505,7 +505,7 @@ func (j *jellyfinMediaProvider) fillPlaylist(p *jellyfin.Playlist, pl *mediaprov
 	pl.CoverArtID = p.ID
 	pl.Description = p.Overview
 	pl.TrackCount = p.SongCount
-	pl.Duration = int(p.RunTimeTicks / runTimeTicksPerSecond)
+	pl.Duration = time.Duration(p.RunTimeTicks/runTimeTicksPerMicrosecond) * time.Microsecond
 	// Jellyfin does not have public playlists
 	pl.Owner = j.client.LoggedInUser()
 	pl.Public = false
