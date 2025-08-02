@@ -143,8 +143,8 @@ func recolorWaveformImage(img *image.NRGBA, cL, cR color.Color, oldProgress, new
 	bnds := img.Rect.Bounds()
 	xMin, xMax := 0, bnds.Dx()
 	if !fullRecolor {
-		xMin = min(oldProgress, newProgress)
-		xMax = max(oldProgress, newProgress)
+		xMin = max(0, min(oldProgress, newProgress))
+		xMax = min(bnds.Dx(), max(oldProgress, newProgress))
 	}
 	for x := xMin; x < xMax; x++ {
 		for y := 0; y < bnds.Dy(); y++ {
