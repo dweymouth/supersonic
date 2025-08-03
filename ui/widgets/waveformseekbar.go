@@ -24,8 +24,11 @@ type WaveformSeekbar struct {
 	imgColorR        color.Color
 	imgProgressPixel int
 
+	focused bool
+
 	img    *canvas.Image
 	cursor *canvas.Rectangle
+	focus  *canvas.Rectangle
 }
 
 func NewWaveformSeekbar() *WaveformSeekbar {
@@ -35,14 +38,16 @@ func NewWaveformSeekbar() *WaveformSeekbar {
 			Image:     backend.NewWaveformImage(),
 		},
 		cursor: canvas.NewRectangle(color.Transparent),
+		focus:  canvas.NewRectangle(color.Transparent),
 	}
 	w.ExtendBaseWidget(w)
 	w.cursor.Hidden = true
+	w.focus.Hidden = true
 	return w
 }
 
 func (w *WaveformSeekbar) UpdateImage(img *backend.WaveformImage) {
-	prm, fg := w.getThemeColors()
+	prm, fg, _ := w.getThemeColors()
 	recolorWaveformImage(img, prm, fg, 0, w.imgProgressPixel, true)
 	w.img.Image = img
 	w.img.Refresh()
@@ -50,9 +55,12 @@ func (w *WaveformSeekbar) UpdateImage(img *backend.WaveformImage) {
 
 func (w *WaveformSeekbar) Refresh() {
 	w.cursor.Resize(fyne.NewSize(1, w.Size().Height-4))
-	prm, fg := w.getThemeColors()
+	w.focus.Resize(fyne.NewSize(3, w.Size().Height-2))
+	prm, fg, focus := w.getThemeColors()
 	w.updateImageProgress(prm, fg, w.imgProgressPixel)
 	w.recolorCursor(prm, fg, w.cursor.Position().X)
+	w.focus.FillColor = focus
+
 	w.BaseWidget.Refresh()
 }
 
@@ -62,7 +70,7 @@ func (w *WaveformSeekbar) MouseIn(e *desktop.MouseEvent) {
 	if w.Disabled() {
 		return
 	}
-	prm, fg := w.getThemeColors()
+	prm, fg, _ := w.getThemeColors()
 	w.recolorCursor(prm, fg, e.Position.X)
 	w.cursor.Resize(fyne.NewSize(1, w.Size().Height-4))
 	w.cursor.Move(fyne.NewPos(e.Position.X, 2))
@@ -73,13 +81,49 @@ func (w *WaveformSeekbar) MouseMoved(e *desktop.MouseEvent) {
 	if w.Disabled() {
 		return
 	}
-	prm, fg := w.getThemeColors()
+	prm, fg, _ := w.getThemeColors()
 	w.recolorCursor(prm, fg, e.Position.X)
 	w.cursor.Move(fyne.NewPos(e.Position.X, 2))
 }
 
 func (w *WaveformSeekbar) MouseOut() {
+	if !w.focused {
+		w.cursor.Hide()
+	}
+}
+
+var _ fyne.Focusable = (*WaveformSeekbar)(nil)
+
+func (w *WaveformSeekbar) FocusGained() {
+	w.focused = true
+	prm, fg, _ := w.getThemeColors()
+	w.recolorCursor(prm, fg, w.cursor.Position().X)
+	w.cursor.Resize(fyne.NewSize(1, w.Size().Height-4))
+	w.moveCursorAndFocusToCurrentPosition()
+	w.cursor.Show()
+	w.focus.Show()
+}
+
+func (w *WaveformSeekbar) FocusLost() {
+	w.focused = false
 	w.cursor.Hide()
+	w.focus.Hide()
+}
+
+func (w *WaveformSeekbar) TypedKey(e *fyne.KeyEvent) {
+	progress := float32(w.imgProgressPixel) / 1024
+	switch e.Name {
+	case fyne.KeyLeft:
+		progress = max(progress-0.05, 0)
+	case fyne.KeyRight:
+		progress = min(progress+0.05, 1)
+	default:
+		return
+	}
+	w.Tapped(&fyne.PointEvent{Position: fyne.NewPos(w.Size().Width*progress, 0)})
+}
+
+func (w *WaveformSeekbar) TypedRune(r rune) {
 }
 
 var _ fyne.Tappable = (*WaveformSeekbar)(nil)
@@ -94,7 +138,7 @@ func (w *WaveformSeekbar) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(
 		container.NewStack(
 			container.New(layout.NewCustomPaddedLayout(4, 4, 0, 0), w.img),
-			container.NewWithoutLayout(w.cursor),
+			container.NewWithoutLayout(w.cursor, w.focus),
 		),
 	)
 }
@@ -102,19 +146,23 @@ func (w *WaveformSeekbar) CreateRenderer() fyne.WidgetRenderer {
 // SetProgress sets how much of the seekbar has been played
 // (ratio from 0 to 1)
 func (w *WaveformSeekbar) SetProgress(v float64) {
-	prm, fg := w.getThemeColors()
+	prm, fg, _ := w.getThemeColors()
 	thresholdPixel := int(math.Round(1024.0 /*pixel width of waveform*/ * v))
 	if w.updateImageProgress(prm, fg, thresholdPixel) {
 		w.img.Refresh()
+		if w.focused {
+			w.moveCursorAndFocusToCurrentPosition()
+		}
 	}
 }
 
-func (w *WaveformSeekbar) getThemeColors() (primary, foreground color.Color) {
+func (w *WaveformSeekbar) getThemeColors() (primary, foreground, focus color.Color) {
 	th := w.Theme()
 	vnt := fyne.CurrentApp().Settings().ThemeVariant()
 	primary = th.Color(theme.ColorNamePrimary, vnt)
 	foreground = th.Color(theme.ColorNameForeground, vnt)
-	return primary, foreground
+	focus = th.Color(theme.ColorNameFocus, vnt)
+	return primary, foreground, focus
 }
 
 func (w *WaveformSeekbar) recolorCursor(prm, fg color.Color, posX float32) {
@@ -124,6 +172,13 @@ func (w *WaveformSeekbar) recolorCursor(prm, fg color.Color, posX float32) {
 	} else {
 		w.cursor.FillColor = prm
 	}
+}
+
+func (w *WaveformSeekbar) moveCursorAndFocusToCurrentPosition() {
+	progress := float32(w.imgProgressPixel) / 1024
+	pos := w.Size().Width * progress
+	w.cursor.Move(fyne.NewPos(pos, 2))
+	w.focus.Move(fyne.NewPos(pos-1, 1))
 }
 
 func (w *WaveformSeekbar) updateImageProgress(cL, cR color.Color, progress int) (updated bool) {
