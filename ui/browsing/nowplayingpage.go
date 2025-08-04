@@ -375,7 +375,7 @@ func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 		}
 	}
 	if lyrics == nil && a.lrcFetch != nil {
-		lyrics, err = a.lrcFetch.FetchLrcLibLyrics(song.Title, song.ArtistNames[0], song.Album, song.Duration)
+		lyrics, err = a.lrcFetch.FetchLrcLibLyrics(song.Title, song.ArtistNames[0], song.Album, int(song.Duration.Seconds()))
 		if err != nil {
 			log.Println(err.Error())
 		}
@@ -445,7 +445,7 @@ func (a *NowPlayingPage) Reload() {
 	a.queueList.SetItems(a.queue)
 	a.totalTime = 0.0
 	for _, tr := range a.queue {
-		a.totalTime += float64(tr.Metadata().Duration)
+		a.totalTime += tr.Metadata().Duration.Seconds()
 	}
 	a.formatStatusLine()
 
@@ -546,7 +546,7 @@ func (a *NowPlayingPage) formatStatusLine() {
 
 	dur := 0.0
 	if np := a.pm.NowPlaying(); np != nil {
-		dur = float64(np.Metadata().Duration)
+		dur = np.Metadata().Duration.Seconds()
 	}
 	statusSuffix := ""
 	trackNum := 0

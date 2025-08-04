@@ -404,7 +404,7 @@ func formatMiscLabelStr(a *mediaprovider.AlbumWithTracks) string {
 	if y := a.ReissueDate.Year; y != nil && *y > a.YearOrZero() {
 		yearStr += fmt.Sprintf(" (%s %s)", lang.L("reissued"), util.FormatItemDate(a.ReissueDate))
 	}
-	return fmt.Sprintf("%s · %s · %s%s", yearStr, tracksMsg, discs, util.SecondsToTimeString(float64(a.Duration)))
+	return fmt.Sprintf("%s · %s · %s%s", yearStr, tracksMsg, discs, util.SecondsToTimeString(a.Duration.Seconds()))
 }
 
 func (s *albumPageState) Restore() Page {

@@ -67,7 +67,7 @@ type Album struct {
 	ID           string
 	CoverArtID   string
 	Name         string
-	Duration     int
+	Duration     time.Duration
 	ArtistIDs    []string
 	ArtistNames  []string
 	Date         ItemDate
@@ -127,7 +127,7 @@ type Track struct {
 	CoverArtID    string
 	ParentID      string
 	Title         string
-	Duration      int
+	Duration      time.Duration
 	TrackNumber   int
 	DiscNumber    int
 	Genres        []string
@@ -165,7 +165,7 @@ type Playlist struct {
 	Description string
 	Public      bool
 	Owner       string
-	Duration    int
+	Duration    time.Duration
 	TrackCount  int
 }
 
@@ -216,7 +216,7 @@ type MediaItemMetadata struct {
 	Album      string
 	AlbumID    string
 	CoverArtID string
-	Duration   int
+	Duration   time.Duration
 }
 
 type MediaItem interface {
