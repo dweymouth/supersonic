@@ -48,15 +48,20 @@ type WaveformImageJob struct {
 	progress int // first invalid pixel in X direction
 	done     bool
 	cancel   func()
-
-	step int
+	canceled bool
 }
 
 func (w *WaveformImageJob) Cancel() {
-	if w != nil && w.cancel != nil {
-		w.step = -1
-		w.cancel()
+	if w != nil {
+		w.canceled = true
+		if w.cancel != nil {
+			w.cancel()
+		}
 	}
+}
+
+func (w *WaveformImageJob) Canceled() bool {
+	return w.canceled
 }
 
 func (w *WaveformImageJob) Done() bool {
@@ -109,7 +114,7 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 	// 3. Begin analyzing the resulting WAV file
 	// 4. Begin generating the image from the analysis data
 	go func() {
-		path := w.audioCache.PathForCachedOrDownloadingFile(job.ItemID)
+		path := w.audioCache.ObtainReferenceToFile(job.ItemID)
 		// wait for file to begin downloading if not already
 		for path == "" {
 			time.Sleep(50 * time.Millisecond)
@@ -117,7 +122,7 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 				job.setError(e)
 				return
 			}
-			path = w.audioCache.PathForCachedOrDownloadingFile(job.ItemID)
+			path = w.audioCache.ObtainReferenceToFile(job.ItemID)
 		}
 		// and wait for content to begin being written
 		for {
@@ -130,13 +135,22 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 				return
 			}
 		}
-		job.step = 1
 
 		dir := filepath.Dir(path)
-		transcodeFile := filepath.Join(dir, filepath.Base(path)+"_waveform.wav")
+		var transcodeFile string
+		for i := 0; true; i++ {
+			if i > 0 {
+				transcodeFile = filepath.Join(dir, fmt.Sprintf("%s_waveform_%d.wav", filepath.Base(path), i))
+			} else {
+				transcodeFile = filepath.Join(dir, filepath.Base(path)+"_waveform.wav")
+			}
+			if _, err := os.Stat(transcodeFile); os.IsNotExist(err) {
+				break // found a suitable filename that doesn't exist
+			}
+		}
 
 		fileDone := func() bool {
-			return w.audioCache.PathForCachedFile(job.ItemID) != ""
+			return w.audioCache.IsFullyDownloaded(job.ItemID)
 		}
 
 		// If file isn't fully downloaded from server,
@@ -158,8 +172,7 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 		// Start converting the file to WAV for analysis
 		var wavConvertDone bool
 		go func() {
-			job.step = 2
-			err := convertToWav(ctx, path, transcodeFile)
+			err := w.convertToWav(ctx, job.ItemID, path, transcodeFile)
 			wavConvertDone = true
 			if err != nil {
 				job.setError(err)
@@ -177,7 +190,6 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 				return
 			}
 		}
-		job.step = 3
 
 		// Start analyzing the converted wav file
 		data := &waveformData{}
@@ -392,7 +404,7 @@ func float64ToByte(val float64) byte {
 	return byte(val * 255)
 }
 
-func convertToWav(ctx context.Context, inPath, outPath string) error {
+func (w *WaveformImageGenerator) convertToWav(ctx context.Context, id, inPath, outPath string) error {
 	m := mpv.Create()
 	m.SetOptionString("video", "no")
 	m.SetOptionString("audio-display", "no")
@@ -413,6 +425,7 @@ func convertToWav(ctx context.Context, inPath, outPath string) error {
 	defer m.TerminateDestroy()
 
 	m.Command([]string{"loadfile", inPath, "replace"})
+	defer w.audioCache.ReleaseReferenceToFile(id)
 
 	// Wait for MPV idle or ctx expiry
 	for {

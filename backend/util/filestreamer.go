@@ -77,14 +77,25 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, _ *http.Reque
 
 	flusher, canFlush := w.(http.Flusher)
 
+	bytesRead := int64(0)
 	buf := make([]byte, 4096)
 	for {
 		complete := fs.IsComplete()
+		if !complete {
+			if s, err := os.Stat(fs.Path); err == nil {
+				// make sure we don't read near EOF until file is complete
+				maxToRead := max(0, s.Size()-bytesRead-1024) /*safety buffer*/
+				buf = buf[:min(int64(cap(buf)), maxToRead)]
+			}
+		} else {
+			buf = buf[:cap(buf)]
+		}
 		n, err := file.Read(buf)
 		if err != nil && err != io.EOF {
 			log.Printf("read error: %v", err)
 			break
 		}
+		bytesRead += int64(n)
 
 		if n > 0 {
 			_, err := w.Write(buf[:n])

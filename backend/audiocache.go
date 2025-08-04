@@ -26,8 +26,10 @@ type AudioCache struct {
 }
 
 type cacheEntry struct {
-	done   bool
-	cancel context.CancelFunc
+	done            bool
+	refCount        int
+	pendingDeletion bool
+	cancel          context.CancelFunc
 }
 
 // AudioCacheRequest represents a request to prefetch and cache an audio file.
@@ -62,17 +64,50 @@ func (a *AudioCache) PathForCachedFile(id string) string {
 	return ""
 }
 
+// IsFullyDownloaded returns true if the file for the given id is fully downloaded.
+func (a *AudioCache) IsFullyDownloaded(id string) bool {
+	return a.PathForCachedFile(id) != ""
+}
+
 // PathForCachedFile returns the local filesystem path for a cached track,
 // including one that is in the process of downloading.
 // If it is not cached or downloading, it returns an empty string.
 func (a *AudioCache) PathForCachedOrDownloadingFile(id string) string {
+	return a.pathForCachedOrDownloadingFile(id, false)
+}
+
+// ObtainReferenceToFile returns the local filesystem path for a cached track,
+// including one that is in the process of downloading, and obtains a refernce
+// to it such that it will not be deleted until ReleaseReferenceToFile is called.
+
+// If it is not cached or downloading, it returns an empty string.
+func (a *AudioCache) ObtainReferenceToFile(id string) string {
+	return a.pathForCachedOrDownloadingFile(id, true)
+}
+
+func (a *AudioCache) pathForCachedOrDownloadingFile(id string, obtainReference bool) string {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
-	if _, ok := a.entries[id]; ok {
+	if entry, ok := a.entries[id]; ok {
+		if obtainReference {
+			entry.refCount++
+		}
 		return a.pathForID(id)
 	}
 	return ""
+}
+
+func (a *AudioCache) ReleaseReferenceToFile(id string) {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	if e, ok := a.entries[id]; ok {
+		e.refCount--
+		if e.refCount == 0 && e.pendingDeletion {
+			a.deleteEntry(id, e)
+		}
+	}
 }
 
 // CacheFile begins downloading a file (if not already downloading) and stores it
@@ -119,10 +154,11 @@ func (a *AudioCache) CacheOnly(keep string, fetch []AudioCacheRequest) {
 		if id != keep && !slices.ContainsFunc(fetch, func(a AudioCacheRequest) bool {
 			return a.ID == id
 		}) {
-			_ = e
-			e.cancel()
-			_ = os.Remove(a.pathForID(id))
-			delete(a.entries, id)
+			if e.refCount == 0 {
+				a.deleteEntry(id, e)
+			} else {
+				e.pendingDeletion = true
+			}
 		}
 	}
 
@@ -155,4 +191,10 @@ func (a *AudioCache) Shutdown() {
 
 func (a *AudioCache) pathForID(id string) string {
 	return filepath.Join(a.baseCacheDir, id)
+}
+
+func (a *AudioCache) deleteEntry(id string, e *cacheEntry) {
+	e.cancel()
+	_ = os.Remove(a.pathForID(id))
+	delete(a.entries, id)
 }

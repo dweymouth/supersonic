@@ -78,9 +78,9 @@ func NewPlaybackManager(
 	return pm
 }
 
-func (p *PlaybackManager) findWfmImageJob(id string) (*WaveformImageJob, bool) {
+func (p *PlaybackManager) findWfmImageJob(id string, uncanceledOnly bool) (*WaveformImageJob, bool) {
 	for _, j := range p.wfmImageJobs {
-		if j != nil && j.ItemID == id {
+		if j != nil && j.ItemID == id && (!uncanceledOnly || !j.Canceled()) {
 			return j, true
 		}
 	}
@@ -106,8 +106,10 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 	p.engine.onBeforeSongChange = append(p.engine.onBeforeSongChange, func(item mediaprovider.MediaItem) {
 		if p.engine.playbackCfg.UseWaveformSeekbar {
 			if p.wfmGen != nil && item != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
-				// start generating waveform image for next-up track
-				p.addWfmImageJob(p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track)))
+				if _, ok := p.findWfmImageJob(item.Metadata().ID, true); !ok {
+					// start generating waveform image for next-up track
+					p.addWfmImageJob(p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track)))
+				}
 			}
 		}
 	})
@@ -168,13 +170,15 @@ func (p *PlaybackManager) handleWaveformImageSongChange(item mediaprovider.Media
 
 	if item != nil {
 		// cancel possible waveform generation job for previous track
-		if old, ok := p.findWfmImageJob(p.lastPlayingID); ok {
-			old.Cancel()
+		if p.lastPlayingID != item.Metadata().ID {
+			if old, ok := p.findWfmImageJob(p.lastPlayingID, false); ok {
+				old.Cancel()
+			}
+			p.lastPlayingID = item.Metadata().ID
 		}
-		p.lastPlayingID = item.Metadata().ID
 
 		var job *WaveformImageJob
-		if j, ok := p.findWfmImageJob(item.Metadata().ID); ok {
+		if j, ok := p.findWfmImageJob(item.Metadata().ID, true); ok {
 			job = j
 		} else if tr, ok := item.(*mediaprovider.Track); ok {
 			job = p.wfmGen.StartWaveformGeneration(tr)
