@@ -144,11 +144,13 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 
 	a.ServerManager = NewServerManager(appName, appVersion, a.Config, !portableMode && a.Config.Application.EnablePasswordStorage)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, cacheDir)
-	ac, err := NewAudioCache(a.bgrndCtx, a.ServerManager, filepath.Join(cacheDir, "audio"))
-	if err != nil {
-		log.Printf("failed to create audio cache: %s", err.Error())
+	if a.Config.Playback.UseWaveformSeekbar {
+		ac, err := NewAudioCache(a.bgrndCtx, a.ServerManager, filepath.Join(cacheDir, "audio"))
+		if err != nil {
+			log.Printf("failed to create audio cache: %s", err.Error())
+		}
+		a.AudioCache = ac
 	}
-	a.AudioCache = ac
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.AudioCache, a.LocalPlayer, &a.Config.Playback, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
