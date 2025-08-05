@@ -44,6 +44,18 @@ func (c *Client) Pause() error {
 	return c.sendRequest(PausePath)
 }
 
+func (c *Client) PlayAlbum(id string, firstTrack int, shuffle bool) error {
+	return c.sendRequest(BuildPlayAlbumPath(id, firstTrack, shuffle))
+}
+
+func (c *Client) PlayPlaylist(id string, firstTrack int, shuffle bool) error {
+	return c.sendRequest(BuildPlayPlaylistPath(id, firstTrack, shuffle))
+}
+
+func (c *Client) PlayTrack(id string) error {
+	return c.sendRequest(BuildPlayTrackPath(id))
+}
+
 func (c *Client) PlayPause() error {
 	return c.sendRequest(PlayPausePath)
 }

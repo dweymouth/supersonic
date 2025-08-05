@@ -558,6 +558,12 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.SeekSeconds(SeekToCLIArg)
 	case SeekByCLIArg != 0:
 		return cli.SeekBySeconds(SeekByCLIArg)
+	case PlayAlbumCLIArg != "":
+		return cli.PlayAlbum(PlayAlbumCLIArg, FirstTrackCLIArg, *FlagShuffle)
+	case PlayPlaylistCLIArg != "":
+		return cli.PlayPlaylist(PlayPlaylistCLIArg, FirstTrackCLIArg, *FlagShuffle)
+	case PlayTrackCLIArg != "":
+		return cli.PlayTrack(PlayTrackCLIArg)
 	default:
 		return nil
 	}

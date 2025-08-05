@@ -7,10 +7,14 @@ import (
 )
 
 var (
-	VolumeCLIArg    int     = -1
-	SeekToCLIArg    float64 = -1
-	SeekByCLIArg    float64 = 0
-	VolumePctCLIArg float64 = 0
+	VolumeCLIArg       int     = -1
+	SeekToCLIArg       float64 = -1
+	SeekByCLIArg       float64 = 0
+	VolumePctCLIArg    float64 = 0
+	PlayAlbumCLIArg    string  = ""
+	PlayPlaylistCLIArg string  = ""
+	PlayTrackCLIArg    string  = ""
+	FirstTrackCLIArg   int     = 0
 
 	FlagPlay           = flag.Bool("play", false, "unpause or begin playback")
 	FlagPause          = flag.Bool("pause", false, "pause playback")
@@ -19,6 +23,7 @@ var (
 	FlagNext           = flag.Bool("next", false, "seek to next track")
 	FlagStartMinimized = flag.Bool("start-minimized", false, "start app minimized")
 	FlagShow           = flag.Bool("show", false, "show minimized app")
+	FlagShuffle        = flag.Bool("shuffle", false, "shuffle the tracklist (to be used with either -play-album or -play-playlist)")
 	FlagVersion        = flag.Bool("version", false, "print app version and exit")
 	FlagHelp           = flag.Bool("help", false, "print command line options and exit")
 )
@@ -46,6 +51,24 @@ func init() {
 		}
 		v, err := strconv.ParseFloat(s, 64)
 		VolumePctCLIArg = v
+		return err
+	})
+
+	flag.Func("play-album", "start playing the given album (ID)", func(s string) error {
+		PlayAlbumCLIArg = s
+		return nil
+	})
+	flag.Func("play-playlist", "start playing the given playlist (ID)", func(s string) error {
+		PlayPlaylistCLIArg = s
+		return nil
+	})
+	flag.Func("play-track", "start playing the given track (ID)", func(s string) error {
+		PlayTrackCLIArg = s
+		return nil
+	})
+	flag.Func("first-track", "start playing from given track (positive integer, to be used with either -play-album or -play-playlist)", func(s string) error {
+		v, err := strconv.Atoi(s)
+		FirstTrackCLIArg = v
 		return err
 	})
 }

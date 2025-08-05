@@ -5,6 +5,9 @@ import "fmt"
 const (
 	PingPath         = "/ping"
 	PlayPath         = "/transport/play"
+	PlayAlbumPath    = "/transport/play-album"    // ?id=<album ID>&t=<firstTrack>&s=<shuffle>
+	PlayPlaylistPath = "/transport/play-playlist" // ?id=<playlist ID>&t=<firstTrack>&s=<shuffle>
+	PlayTrackPath    = "/transport/play-track"    // ?id=<track ID>
 	PlayPausePath    = "/transport/playpause"
 	PausePath        = "/transport/pause"
 	StopPath         = "/transport/stop"
@@ -36,4 +39,16 @@ func SeekToSecondsPath(secs float64) string {
 
 func SeekBySecondsPath(secs float64) string {
 	return fmt.Sprintf("%s?s=%0.2f", SeekByPath, secs)
+}
+
+func BuildPlayAlbumPath(id string, firstTrack int, shuffle bool) string {
+	return fmt.Sprintf("%s?id=%s&t=%d&s=%t", PlayAlbumPath, id, firstTrack, shuffle)
+}
+
+func BuildPlayPlaylistPath(id string, firstTrack int, shuffle bool) string {
+	return fmt.Sprintf("%s?id=%s&t=%d&s=%t", PlayPlaylistPath, id, firstTrack, shuffle)
+}
+
+func BuildPlayTrackPath(id string) string {
+	return fmt.Sprintf("%s?id=%s", PlayTrackPath, id)
 }

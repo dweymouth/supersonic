@@ -19,6 +19,9 @@ type PlaybackHandler interface {
 	SeekBySeconds(float64)
 	Volume() int
 	SetVolume(int)
+	PlayAlbum(string, int, bool) error
+	PlayPlaylist(string, int, bool) error
+	PlayTrack(string) error
 }
 
 type IPCServer interface {
@@ -86,6 +89,13 @@ func (s *serverImpl) createHandler() http.Handler {
 		vol = vol + int(float64(vol)*(pct/100))
 		s.pbHandler.SetVolume(vol) // will clamp to range for us
 	}))
+	m.HandleFunc(PlayAlbumPath, s.makeTracklistEndpointHandler(s.pbHandler.PlayAlbum))
+	m.HandleFunc(PlayPlaylistPath, s.makeTracklistEndpointHandler(s.pbHandler.PlayPlaylist))
+	m.HandleFunc(PlayTrackPath, func(w http.ResponseWriter, r *http.Request) {
+		id := r.URL.Query().Get("id")
+		s.pbHandler.PlayTrack(id)
+		s.writeOK(w)
+	})
 	return m
 }
 
@@ -105,6 +115,25 @@ func (s *serverImpl) makeFloatEndpointHandler(queryParam string, f func(float64)
 		} else {
 			s.writeErr(w, err)
 		}
+	}
+}
+
+func (s *serverImpl) makeTracklistEndpointHandler(f func(string, int, bool) error) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		id := query.Get("id")
+		firstTrack, err := strconv.Atoi(query.Get("t"))
+		if err != nil {
+			s.writeErr(w, err)
+			return
+		}
+		shuffle, err := strconv.ParseBool(query.Get("s"))
+		if err != nil {
+			s.writeErr(w, err)
+			return
+		}
+		f(id, firstTrack, shuffle)
+		s.writeOK(w)
 	}
 }
 
