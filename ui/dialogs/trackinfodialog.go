@@ -82,7 +82,7 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 		c.Add(genres)
 	}
 
-	addFormRow(c, lang.L("Duration"), util.SecondsToTimeString(float64(t.track.Duration)))
+	addFormRow(c, lang.L("Duration"), util.SecondsToTimeString(t.track.Duration.Seconds()))
 	addFormRow(c, lang.L("Comment"), t.track.Comment)
 	addFormRow(c, lang.L("Year"), strconv.Itoa(t.track.Year))
 	addFormRow(c, lang.L("Track number"), strconv.Itoa(t.track.TrackNumber))

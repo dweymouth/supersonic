@@ -551,7 +551,7 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		CoverArtID:    ch.CoverArt,
 		ParentID:      ch.Parent,
 		Title:         ch.Title,
-		Duration:      ch.Duration,
+		Duration:      time.Duration(ch.Duration) * time.Second,
 		TrackNumber:   ch.Track,
 		DiscNumber:    ch.DiscNumber,
 		Genres:        genres,
@@ -628,7 +628,7 @@ func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
 	album.ID = subAlbum.ID
 	album.CoverArtID = subAlbum.CoverArt
 	album.Name = subAlbum.Name
-	album.Duration = subAlbum.Duration
+	album.Duration = time.Duration(subAlbum.Duration) * time.Second
 	album.ArtistIDs = artistIDs
 	album.ArtistNames = artistNames
 	album.TrackCount = subAlbum.SongCount
@@ -714,7 +714,7 @@ func fillPlaylist(pl *subsonic.Playlist, playlist *mediaprovider.Playlist) {
 	playlist.Owner = pl.Owner
 	playlist.Public = pl.Public
 	playlist.TrackCount = pl.SongCount
-	playlist.Duration = pl.Duration
+	playlist.Duration = time.Duration(pl.Duration) * time.Second
 }
 
 func (s *subsonicMediaProvider) GetSongRadio(trackID string, count int) ([]*mediaprovider.Track, error) {

@@ -11,6 +11,8 @@ require (
 	github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c
 	github.com/dweymouth/fyne-tooltip v0.3.0
 	github.com/dweymouth/go-jellyfin v0.0.0-20250716005557-0ea2becece1f
+	github.com/go-audio/audio v1.0.0
+	github.com/go-audio/wav v1.1.0
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
@@ -39,6 +41,7 @@ require (
 	github.com/fyne-io/glfw-js v0.2.0 // indirect
 	github.com/fyne-io/image v0.1.1 // indirect
 	github.com/fyne-io/oksvg v0.1.0 // indirect
+	github.com/go-audio/riff v1.0.0 // indirect
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a // indirect
 	github.com/go-text/render v0.2.0 // indirect
@@ -64,3 +67,5 @@ require (
 )
 
 replace fyne.io/fyne/v2 v2.6.1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250712002006-5064d705dac4
+
+replace github.com/go-audio/wav v1.1.0 => github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0

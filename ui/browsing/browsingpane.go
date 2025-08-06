@@ -109,7 +109,7 @@ func NewBrowsingPane(app *backend.App, contr *controller.Controller, onGoHome fu
 	b.navBtnsPageMap = map[controller.PageName]fyne.Resource{}
 	b.container = container.NewBorder(container.New(
 		&layout.CustomPaddedLayout{LeftPadding: -5, RightPadding: -5},
-		container.New(layouts.NewLeftMiddleRightLayout(0),
+		container.New(layouts.NewLeftMiddleRightLayout(0, 0),
 			container.NewHBox(b.home, b.back, b.forward, b.reload), b.navBtnsContainer,
 			container.NewHBox(layout.NewSpacer(), quickSearchBtn, b.settingsBtn))),
 		nil, nil, nil, b.pageContainer)

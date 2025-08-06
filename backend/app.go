@@ -44,6 +44,7 @@ type App struct {
 	Config          *Config
 	ServerManager   *ServerManager
 	ImageManager    *ImageManager
+	AudioCache      *AudioCache
 	PlaybackManager *PlaybackManager
 	LocalPlayer     *mpv.Player
 	UpdateChecker   UpdateChecker
@@ -142,8 +143,15 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	}
 
 	a.ServerManager = NewServerManager(appName, appVersion, a.Config, !portableMode && a.Config.Application.EnablePasswordStorage)
-	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.LocalPlayer, &a.Config.Playback, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, cacheDir)
+	if a.Config.Playback.UseWaveformSeekbar {
+		ac, err := NewAudioCache(a.bgrndCtx, a.ServerManager, filepath.Join(cacheDir, "audio"))
+		if err != nil {
+			log.Printf("failed to create audio cache: %s", err.Error())
+		}
+		a.AudioCache = ac
+	}
+	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.AudioCache, a.LocalPlayer, &a.Config.Playback, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
@@ -403,7 +411,7 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 		}
 		meta := nowPlaying.Metadata()
 		smtc.UpdateMetadata(meta.Name, strings.Join(meta.Artists, ", "))
-		smtc.UpdatePosition(0, meta.Duration*1000)
+		smtc.UpdatePosition(0, int(meta.Duration.Milliseconds()))
 		go func() {
 			a.ImageManager.GetCoverThumbnail(meta.CoverArtID) // ensure image is cached locally
 			if path, err := a.ImageManager.GetCoverArtPath(meta.CoverArtID); err == nil {
@@ -429,7 +437,7 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 	})
 }
 
-func (a *App) LoginToDefaultServer(string) error {
+func (a *App) LoginToDefaultServer() error {
 	serverCfg := a.ServerManager.GetDefaultServer()
 	if serverCfg == nil {
 		return ErrNoServers
@@ -475,6 +483,9 @@ func (a *App) Shutdown() {
 	}
 	a.PlaybackManager.DisableCallbacks()
 	a.PlaybackManager.Shutdown() // will trigger scrobble check
+	if a.AudioCache != nil {
+		a.AudioCache.Shutdown()
+	}
 	a.cancel()
 	a.LocalPlayer.Destroy()
 }
@@ -537,6 +548,8 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.SeekBackOrPrevious()
 	case *FlagNext:
 		return cli.SeekNext()
+	case *FlagShow:
+		return cli.Show()
 	case VolumeCLIArg >= 0:
 		return cli.SetVolume(VolumeCLIArg)
 	case VolumePctCLIArg != 0:
