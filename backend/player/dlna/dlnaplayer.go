@@ -229,6 +229,9 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 			Title:       meta.Name,
 			Seekable:    true,
 		}
+	} else {
+		// empty media item to signify erasing next track in device queue
+		media = &avtransport.MediaItem{}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

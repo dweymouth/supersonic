@@ -12,15 +12,17 @@ var (
 	SeekByCLIArg    float64 = 0
 	VolumePctCLIArg float64 = 0
 
-	FlagPlay           = flag.Bool("play", false, "unpause or begin playback")
-	FlagPause          = flag.Bool("pause", false, "pause playback")
-	FlagPlayPause      = flag.Bool("play-pause", false, "toggle play/pause state")
-	FlagPrevious       = flag.Bool("previous", false, "seek to previous track or beginning of current")
-	FlagNext           = flag.Bool("next", false, "seek to next track")
-	FlagStartMinimized = flag.Bool("start-minimized", false, "start app minimized")
-	FlagShow           = flag.Bool("show", false, "show minimized app")
-	FlagVersion        = flag.Bool("version", false, "print app version and exit")
-	FlagHelp           = flag.Bool("help", false, "print command line options and exit")
+	FlagPlay             = flag.Bool("play", false, "unpause or begin playback")
+	FlagPause            = flag.Bool("pause", false, "pause playback")
+	FlagPlayPause        = flag.Bool("play-pause", false, "toggle play/pause state")
+	FlagPrevious         = flag.Bool("previous", false, "seek to previous track or beginning of current")
+	FlagNext             = flag.Bool("next", false, "seek to next track")
+	FlagStop             = flag.Bool("stop", false, "stop playback")
+	FlagStopAfterCurrent = flag.Bool("stop-after-current", false, "stop playback after current track")
+	FlagStartMinimized   = flag.Bool("start-minimized", false, "start app minimized")
+	FlagShow             = flag.Bool("show", false, "show minimized app")
+	FlagVersion          = flag.Bool("version", false, "print app version and exit")
+	FlagHelp             = flag.Bool("help", false, "print command line options and exit")
 )
 
 func init() {

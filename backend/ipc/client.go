@@ -48,6 +48,14 @@ func (c *Client) PlayPause() error {
 	return c.sendRequest(PlayPausePath)
 }
 
+func (c *Client) Stop() error {
+	return c.sendRequest(StopPath)
+}
+
+func (c *Client) StopAfterCurrent() error {
+	return c.sendRequest(StopAfterCurrentPath)
+}
+
 func (c *Client) SeekNext() error {
 	return c.sendRequest(NextPath)
 }
