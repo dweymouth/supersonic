@@ -149,6 +149,9 @@ type Track struct {
 	Comment       string
 	BPM           int
 	ReplayGain    ReplayGainInfo
+	SampleRate    int
+	BitDepth      int
+	Channels      int
 }
 
 type ReplayGainInfo struct {

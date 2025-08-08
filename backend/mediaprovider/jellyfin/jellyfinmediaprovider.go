@@ -449,6 +449,16 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		t.FilePath = ch.MediaSources[0].Path
 		t.Size = int64(ch.MediaSources[0].Size)
 		t.BitRate = ch.MediaSources[0].Bitrate / 1000
+		if strs := ch.MediaSources[0].MediaStreams; len(strs) > 0 {
+			t.SampleRate = strs[0].SampleRate
+			t.BitDepth = strs[0].BitDepth
+			t.Channels = strs[0].Channels
+		}
+	}
+	if len(ch.MediaStreams) > 0 {
+		t.SampleRate = max(t.SampleRate, ch.MediaStreams[0].SampleRate)
+		t.BitDepth = max(t.BitDepth, ch.MediaStreams[0].BitDepth)
+		t.Channels = max(t.Channels, ch.MediaStreams[0].Channels)
 	}
 	return t
 }

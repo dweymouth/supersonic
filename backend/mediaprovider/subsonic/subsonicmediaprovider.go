@@ -573,6 +573,9 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		Comment:       ch.Comment,
 		BPM:           ch.BPM,
 		ReplayGain:    rGain,
+		SampleRate:    ch.SamplingRate,
+		BitDepth:      ch.BitDepth,
+		Channels:      ch.ChannelCount,
 	}
 }
 
