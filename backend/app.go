@@ -548,6 +548,10 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.SeekBackOrPrevious()
 	case *FlagNext:
 		return cli.SeekNext()
+	case *FlagStop:
+		return cli.Stop()
+	case *FlagStopAfterCurrent:
+		return cli.StopAfterCurrent()
 	case *FlagShow:
 		return cli.Show()
 	case VolumeCLIArg >= 0:

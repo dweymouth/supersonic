@@ -15,6 +15,7 @@ type PlaybackHandler interface {
 	Continue()
 	SeekBackOrPrevious()
 	SeekNext()
+	SetStopAfterCurrent(bool)
 	SeekSeconds(float64)
 	SeekBySeconds(float64)
 	Volume() int
@@ -68,6 +69,9 @@ func (s *serverImpl) createHandler() http.Handler {
 	m.HandleFunc(PausePath, s.makeSimpleEndpointHandler(s.pbHandler.Pause))
 	m.HandleFunc(PlayPausePath, s.makeSimpleEndpointHandler(s.pbHandler.PlayPause))
 	m.HandleFunc(StopPath, s.makeSimpleEndpointHandler(s.pbHandler.Stop))
+	m.HandleFunc(StopAfterCurrentPath, s.makeSimpleEndpointHandler(func() {
+		s.pbHandler.SetStopAfterCurrent(true)
+	}))
 	m.HandleFunc(PreviousPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekBackOrPrevious))
 	m.HandleFunc(NextPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekNext))
 	m.HandleFunc(TimePosPath, s.makeFloatEndpointHandler("s", s.pbHandler.SeekSeconds))

@@ -3,19 +3,20 @@ package ipc
 import "fmt"
 
 const (
-	PingPath         = "/ping"
-	PlayPath         = "/transport/play"
-	PlayPausePath    = "/transport/playpause"
-	PausePath        = "/transport/pause"
-	StopPath         = "/transport/stop"
-	PreviousPath     = "/transport/previous"
-	NextPath         = "/transport/next"
-	TimePosPath      = "/transport/timepos" // ?s=<seconds>
-	SeekByPath       = "/transport/seek-by" // ?s=<+/- seconds>
-	VolumePath       = "/volume"            // ?v=<vol>
-	VolumeAdjustPath = "/volume/adjust"     // ?pct=<+/- percentage>
-	ShowPath         = "/window/show"
-	QuitPath         = "/window/quit"
+	PingPath             = "/ping"
+	PlayPath             = "/transport/play"
+	PlayPausePath        = "/transport/playpause"
+	PausePath            = "/transport/pause"
+	StopPath             = "/transport/stop"
+	StopAfterCurrentPath = "/transport/stop-after-current"
+	PreviousPath         = "/transport/previous"
+	NextPath             = "/transport/next"
+	TimePosPath          = "/transport/timepos" // ?s=<seconds>
+	SeekByPath           = "/transport/seek-by" // ?s=<+/- seconds>
+	VolumePath           = "/volume"            // ?v=<vol>
+	VolumeAdjustPath     = "/volume/adjust"     // ?pct=<+/- percentage>
+	ShowPath             = "/window/show"
+	QuitPath             = "/window/quit"
 )
 
 type Response struct {
