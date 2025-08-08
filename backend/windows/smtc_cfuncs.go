@@ -1,6 +1,6 @@
 //go:build windows
 
-package backend
+package windows
 
 /*
 void btn_callback_cgo(int in) {

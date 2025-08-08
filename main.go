@@ -97,6 +97,7 @@ func main() {
 				if runtime.GOOS == "windows" {
 					hwnd := ctx.(driver.WindowsWindowContext).HWND
 					myApp.SetupWindowsSMTC(hwnd)
+					myApp.SetupWindowsTaskbarButtons(hwnd)
 				}
 			})
 		}
