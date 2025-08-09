@@ -449,6 +449,12 @@ func (a *App) SetupWindowsTaskbarButtons(hwnd uintptr) {
 			a.PlaybackManager.SeekNext()
 		}
 	})
+	a.PlaybackManager.OnPlaying(func() {
+		windows.SetTaskbarButtonIsPlaying(true)
+	})
+	f := func() { windows.SetTaskbarButtonIsPlaying(false) }
+	a.PlaybackManager.OnPaused(f)
+	a.PlaybackManager.OnStopped(f)
 }
 
 func (a *App) LoginToDefaultServer() error {
