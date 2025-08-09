@@ -669,6 +669,14 @@ func (p *PlaybackManager) PlayPause() {
 	}
 }
 
+func (p *PlaybackManager) SetStopAfterCurrent(stopAfterCurrent bool) {
+	p.engine.SetStopAfterCurrent(stopAfterCurrent)
+}
+
+func (p *PlaybackManager) IsStopAfterCurrent() bool {
+	return p.engine.stopAfterCurrent
+}
+
 func (p *PlaybackManager) enqueueAutoplayTracks() {
 	nowPlaying := p.NowPlaying()
 	if nowPlaying == nil {

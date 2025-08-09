@@ -20,6 +20,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
+	"github.com/dweymouth/supersonic/backend/windows"
 	"github.com/google/uuid"
 
 	"github.com/20after4/configdir"
@@ -49,7 +50,7 @@ type App struct {
 	LocalPlayer     *mpv.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
-	WinSMTC         *SMTC
+	WinSMTC         *windows.SMTC
 	ipcServer       ipc.IPCServer
 	LrcLibFetcher   *LrcLibFetcher
 
@@ -381,7 +382,7 @@ func (a *App) setupMPRIS(mprisAppName string) {
 }
 
 func (a *App) SetupWindowsSMTC(hwnd uintptr) {
-	smtc, err := InitSMTCForWindow(hwnd)
+	smtc, err := windows.InitSMTCForWindow(hwnd)
 	if err != nil {
 		log.Printf("error initializing SMTC: %d", err)
 		return
@@ -389,17 +390,17 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 	a.WinSMTC = smtc
 	smtc.UpdateMetadata(a.displayAppName, "")
 
-	smtc.OnButtonPressed(func(btn SMTCButton) {
+	smtc.OnButtonPressed(func(btn windows.SMTCButton) {
 		switch btn {
-		case SMTCButtonPlay:
+		case windows.SMTCButtonPlay:
 			a.PlaybackManager.Continue()
-		case SMTCButtonPause:
+		case windows.SMTCButtonPause:
 			a.PlaybackManager.Pause()
-		case SMTCButtonNext:
+		case windows.SMTCButtonNext:
 			a.PlaybackManager.SeekNext()
-		case SMTCButtonPrevious:
+		case windows.SMTCButtonPrevious:
 			a.PlaybackManager.SeekBackOrPrevious()
-		case SMTCButtonStop:
+		case windows.SMTCButtonStop:
 			a.PlaybackManager.Stop()
 		}
 	})
@@ -428,16 +429,35 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 	})
 	a.PlaybackManager.OnPlaying(func() {
 		smtc.SetEnabled(true)
-		smtc.UpdatePlaybackState(SMTCPlaybackStatePlaying)
+		smtc.UpdatePlaybackState(windows.SMTCPlaybackStatePlaying)
 	})
 	a.PlaybackManager.OnPaused(func() {
 		smtc.SetEnabled(true)
-		smtc.UpdatePlaybackState(SMTCPlaybackStatePaused)
+		smtc.UpdatePlaybackState(windows.SMTCPlaybackStatePaused)
 	})
 	a.PlaybackManager.OnStopped(func() {
 		smtc.SetEnabled(false)
-		smtc.UpdatePlaybackState(SMTCPlaybackStateStopped)
+		smtc.UpdatePlaybackState(windows.SMTCPlaybackStateStopped)
 	})
+}
+
+func (a *App) SetupWindowsTaskbarButtons(hwnd uintptr) {
+	windows.InitializeTaskbarButtons(hwnd, func(btn windows.TaskbarButton) {
+		switch btn {
+		case windows.TaskbarButtonPrevious:
+			a.PlaybackManager.SeekBackOrPrevious()
+		case windows.TaskbarButtonPlayPause:
+			a.PlaybackManager.PlayPause()
+		case windows.TaskbarButtonNext:
+			a.PlaybackManager.SeekNext()
+		}
+	})
+	a.PlaybackManager.OnPlaying(func() {
+		windows.SetTaskbarButtonIsPlaying(true)
+	})
+	f := func() { windows.SetTaskbarButtonIsPlaying(false) }
+	a.PlaybackManager.OnPaused(f)
+	a.PlaybackManager.OnStopped(f)
 }
 
 func (a *App) LoginToDefaultServer() error {
@@ -551,6 +571,10 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.SeekBackOrPrevious()
 	case *FlagNext:
 		return cli.SeekNext()
+	case *FlagStop:
+		return cli.Stop()
+	case *FlagStopAfterCurrent:
+		return cli.StopAfterCurrent()
 	case *FlagShow:
 		return cli.Show()
 	case VolumeCLIArg >= 0:

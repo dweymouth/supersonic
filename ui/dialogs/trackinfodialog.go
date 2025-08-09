@@ -105,6 +105,15 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 
 	addFormRow(c, lang.L("Content type"), t.track.ContentType)
 	addFormRow(c, lang.L("Bit rate"), fmt.Sprintf("%d kbps", t.track.BitRate))
+	if t.track.SampleRate > 0 {
+		addFormRow(c, lang.L("Sample rate"), fmt.Sprintf("%d Hz", t.track.SampleRate))
+	}
+	if t.track.BitDepth > 0 {
+		addFormRow(c, lang.L("Bit depth"), strconv.Itoa(t.track.BitDepth))
+	}
+	if t.track.Channels > 0 {
+		addFormRow(c, lang.L("Channels"), strconv.Itoa(t.track.Channels))
+	}
 	addFormRow(c, lang.L("File size"), util.BytesToSizeString(t.track.Size))
 	addFormRow(c, lang.L("Play count"), strconv.Itoa(t.track.PlayCount))
 

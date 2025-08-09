@@ -7,25 +7,26 @@ import (
 )
 
 const (
-	PingPath           = "/ping"
-	PlayPath           = "/transport/play"
-	PlayAlbumPath      = "/transport/play-album"      // ?id=<album ID>&t=<firstTrack>&s=<shuffle>
-	PlayPlaylistPath   = "/transport/play-playlist"   // ?id=<playlist ID>&t=<firstTrack>&s=<shuffle>
-	PlayTrackPath      = "/transport/play-track"      // ?id=<track ID>
-	SearchAlbumPath    = "/transport/search-album"    // ?s=<searchQuery>
-	SearchPlaylistPath = "/transport/search-playlist" // ?s=<searchQuery>
-	SearchTrackPath    = "/transport/search-track"    // ?s=<searchQuery>
-	PlayPausePath      = "/transport/playpause"
-	PausePath          = "/transport/pause"
-	StopPath           = "/transport/stop"
-	PreviousPath       = "/transport/previous"
-	NextPath           = "/transport/next"
-	TimePosPath        = "/transport/timepos" // ?s=<seconds>
-	SeekByPath         = "/transport/seek-by" // ?s=<+/- seconds>
-	VolumePath         = "/volume"            // ?v=<vol>
-	VolumeAdjustPath   = "/volume/adjust"     // ?pct=<+/- percentage>
-	ShowPath           = "/window/show"
-	QuitPath           = "/window/quit"
+	PingPath             = "/ping"
+	PlayPath             = "/transport/play"
+	PlayAlbumPath        = "/transport/play-album"      // ?id=<album ID>&t=<firstTrack>&s=<shuffle>
+	PlayPlaylistPath     = "/transport/play-playlist"   // ?id=<playlist ID>&t=<firstTrack>&s=<shuffle>
+	PlayTrackPath        = "/transport/play-track"      // ?id=<track ID>
+	SearchAlbumPath      = "/transport/search-album"    // ?s=<searchQuery>
+	SearchPlaylistPath   = "/transport/search-playlist" // ?s=<searchQuery>
+	SearchTrackPath      = "/transport/search-track"    // ?s=<searchQuery>
+	PlayPausePath        = "/transport/playpause"
+	PausePath            = "/transport/pause"
+	StopPath             = "/transport/stop"
+	StopAfterCurrentPath = "/transport/stop-after-current"
+	PreviousPath         = "/transport/previous"
+	NextPath             = "/transport/next"
+	TimePosPath          = "/transport/timepos" // ?s=<seconds>
+	SeekByPath           = "/transport/seek-by" // ?s=<+/- seconds>
+	VolumePath           = "/volume"            // ?v=<vol>
+	VolumeAdjustPath     = "/volume/adjust"     // ?pct=<+/- percentage>
+	ShowPath             = "/window/show"
+	QuitPath             = "/window/quit"
 )
 
 type Response struct {

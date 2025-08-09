@@ -76,6 +76,16 @@ func (c *Client) PlayPause() error {
 	return err
 }
 
+func (c *Client) Stop() error {
+	_, err := c.sendRequest(StopPath)
+	return err
+}
+
+func (c *Client) StopAfterCurrent() error {
+	_, err := c.sendRequest(StopAfterCurrentPath)
+	return err
+}
+
 func (c *Client) SeekNext() error {
 	_, err := c.sendRequest(NextPath)
 	return err

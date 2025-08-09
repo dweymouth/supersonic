@@ -27,6 +27,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/lang"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -57,6 +58,7 @@ type Controller struct {
 
 	popUpQueue         *widget.PopUp
 	popUpQueueList     *widgets.PlayQueueList
+	stopAfterCurrent   *widget.Check
 	popUpQueueLastUsed int64
 	escapablePopUp     fyne.CanvasObject
 	haveModal          bool
@@ -195,7 +197,11 @@ func (m *Controller) ShowPopUpPlayQueue() {
 		title := widget.NewRichTextWithText(lang.L("Play Queue"))
 		title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 		title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
-		ctr := container.NewBorder(title, nil, nil, nil,
+		m.stopAfterCurrent = widget.NewCheck(lang.L("Stop after current track"), func(b bool) {
+			m.App.PlaybackManager.SetStopAfterCurrent(b)
+		})
+		bottomRow := container.NewHBox(layout.NewSpacer(), m.stopAfterCurrent)
+		ctr := container.NewBorder(title, bottomRow, nil, nil,
 			container.NewPadded(m.popUpQueueList),
 		)
 		m.popUpQueue = widget.NewPopUp(ctr, m.MainWindow.Canvas())
@@ -224,6 +230,7 @@ func (m *Controller) ShowPopUpPlayQueue() {
 						fynetooltip.DestroyPopUpToolTipLayer(m.popUpQueue)
 						m.popUpQueue = nil
 						m.popUpQueueList = nil
+						m.stopAfterCurrent = nil
 						m.popUpQueueLastUsed = 0
 						t.Stop()
 						return
@@ -252,6 +259,7 @@ func (m *Controller) ShowPopUpPlayQueue() {
 	))
 	pop.Resize(size)
 	popUpQueueList.ScrollToNowPlaying() // must come after resize
+	m.stopAfterCurrent.SetChecked(m.App.PlaybackManager.IsStopAfterCurrent())
 	pop.ShowAtPosition(fyne.NewPos(
 		canvasSize.Width-size.Width-10,
 		canvasSize.Height-size.Height-100,
