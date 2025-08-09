@@ -30,8 +30,10 @@ func Connect() (*Client, error) {
 }
 
 func (c *Client) Ping() error {
-	_, err := c.sendRequest(PingPath)
-	return err
+	if _, err := c.sendRequest(PingPath); err != nil {
+		return ErrPingFail
+	}
+	return nil
 }
 
 func (c *Client) Play() error {
