@@ -7,14 +7,17 @@ import (
 )
 
 var (
-	VolumeCLIArg       int     = -1
-	SeekToCLIArg       float64 = -1
-	SeekByCLIArg       float64 = 0
-	VolumePctCLIArg    float64 = 0
-	PlayAlbumCLIArg    string  = ""
-	PlayPlaylistCLIArg string  = ""
-	PlayTrackCLIArg    string  = ""
-	FirstTrackCLIArg   int     = 0
+	VolumeCLIArg         int     = -1
+	SeekToCLIArg         float64 = -1
+	SeekByCLIArg         float64 = 0
+	VolumePctCLIArg      float64 = 0
+	PlayAlbumCLIArg      string  = ""
+	PlayPlaylistCLIArg   string  = ""
+	PlayTrackCLIArg      string  = ""
+	FirstTrackCLIArg     int     = 0
+	SearchAlbumCLIArg    string  = ""
+	SearchPlaylistCLIArg string  = ""
+	SearchTrackCLIArg    string  = ""
 
 	FlagPlay           = flag.Bool("play", false, "unpause or begin playback")
 	FlagPause          = flag.Bool("pause", false, "pause playback")
@@ -70,6 +73,19 @@ func init() {
 		v, err := strconv.Atoi(s)
 		FirstTrackCLIArg = v
 		return err
+	})
+
+	flag.Func("search-album", "search album", func(s string) error {
+		SearchAlbumCLIArg = s
+		return nil
+	})
+	flag.Func("search-playlist", "search playlist", func(s string) error {
+		SearchPlaylistCLIArg = s
+		return nil
+	})
+	flag.Func("search-track", "search track", func(s string) error {
+		SearchTrackCLIArg = s
+		return nil
 	})
 }
 

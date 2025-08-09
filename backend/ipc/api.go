@@ -1,28 +1,36 @@
 package ipc
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"net/url"
+)
 
 const (
-	PingPath         = "/ping"
-	PlayPath         = "/transport/play"
-	PlayAlbumPath    = "/transport/play-album"    // ?id=<album ID>&t=<firstTrack>&s=<shuffle>
-	PlayPlaylistPath = "/transport/play-playlist" // ?id=<playlist ID>&t=<firstTrack>&s=<shuffle>
-	PlayTrackPath    = "/transport/play-track"    // ?id=<track ID>
-	PlayPausePath    = "/transport/playpause"
-	PausePath        = "/transport/pause"
-	StopPath         = "/transport/stop"
-	PreviousPath     = "/transport/previous"
-	NextPath         = "/transport/next"
-	TimePosPath      = "/transport/timepos" // ?s=<seconds>
-	SeekByPath       = "/transport/seek-by" // ?s=<+/- seconds>
-	VolumePath       = "/volume"            // ?v=<vol>
-	VolumeAdjustPath = "/volume/adjust"     // ?pct=<+/- percentage>
-	ShowPath         = "/window/show"
-	QuitPath         = "/window/quit"
+	PingPath           = "/ping"
+	PlayPath           = "/transport/play"
+	PlayAlbumPath      = "/transport/play-album"      // ?id=<album ID>&t=<firstTrack>&s=<shuffle>
+	PlayPlaylistPath   = "/transport/play-playlist"   // ?id=<playlist ID>&t=<firstTrack>&s=<shuffle>
+	PlayTrackPath      = "/transport/play-track"      // ?id=<track ID>
+	SearchAlbumPath    = "/transport/search-album"    // ?s=<searchQuery>
+	SearchPlaylistPath = "/transport/search-playlist" // ?s=<searchQuery>
+	SearchTrackPath    = "/transport/search-track"    // ?s=<searchQuery>
+	PlayPausePath      = "/transport/playpause"
+	PausePath          = "/transport/pause"
+	StopPath           = "/transport/stop"
+	PreviousPath       = "/transport/previous"
+	NextPath           = "/transport/next"
+	TimePosPath        = "/transport/timepos" // ?s=<seconds>
+	SeekByPath         = "/transport/seek-by" // ?s=<+/- seconds>
+	VolumePath         = "/volume"            // ?v=<vol>
+	VolumeAdjustPath   = "/volume/adjust"     // ?pct=<+/- percentage>
+	ShowPath           = "/window/show"
+	QuitPath           = "/window/quit"
 )
 
 type Response struct {
-	Error string `json:"error"`
+	Data  json.RawMessage `json:"data"`
+	Error string          `json:"error"`
 }
 
 func SetVolumePath(vol int) string {
@@ -51,4 +59,19 @@ func BuildPlayPlaylistPath(id string, firstTrack int, shuffle bool) string {
 
 func BuildPlayTrackPath(id string) string {
 	return fmt.Sprintf("%s?id=%s", PlayTrackPath, id)
+}
+
+func BuildSearchAlbumPath(search string) string {
+	s := url.QueryEscape(search)
+	return fmt.Sprintf("%s?s=%s", SearchAlbumPath, s)
+}
+
+func BuildSearchPlaylistPath(search string) string {
+	s := url.QueryEscape(search)
+	return fmt.Sprintf("%s?s=%s", SearchPlaylistPath, s)
+}
+
+func BuildSearchTrackPath(search string) string {
+	s := url.QueryEscape(search)
+	return fmt.Sprintf("%s?s=%s", SearchTrackPath, s)
 }

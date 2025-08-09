@@ -6,6 +6,9 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
 
 type PlaybackHandler interface {
@@ -32,12 +35,13 @@ type IPCServer interface {
 type serverImpl struct {
 	server    *http.Server
 	pbHandler PlaybackHandler
+	mp        *mediaprovider.MediaProvider
 	showFn    func()
 	quitFn    func()
 }
 
-func NewServer(pbHandler PlaybackHandler, showFn, quitFn func()) IPCServer {
-	s := &serverImpl{pbHandler: pbHandler, showFn: showFn, quitFn: quitFn}
+func NewServer(pbHandler PlaybackHandler, mp *mediaprovider.MediaProvider, showFn, quitFn func()) IPCServer {
+	s := &serverImpl{pbHandler: pbHandler, mp: mp, showFn: showFn, quitFn: quitFn}
 	s.server = &http.Server{
 		Handler: s.createHandler(),
 	}
@@ -96,6 +100,52 @@ func (s *serverImpl) createHandler() http.Handler {
 		s.pbHandler.PlayTrack(id)
 		s.writeOK(w)
 	})
+	m.HandleFunc(SearchAlbumPath, s.makeSearchEndpointHandler(func(search string) (any, error) {
+		filter := mediaprovider.NewAlbumFilter(mediaprovider.AlbumFilterOptions{})
+		i := (*s.mp).SearchAlbums(search, filter)
+
+		album := i.Next()
+		albums := make([]mediaprovider.Album, 0)
+		for album != nil {
+			albums = append(albums, *album)
+			album = i.Next()
+		}
+
+		return albums, nil
+	}))
+	m.HandleFunc(SearchPlaylistPath, s.makeSearchEndpointHandler(func(search string) (any, error) {
+		all, err := (*s.mp).GetPlaylists()
+		if err != nil {
+			return nil, err
+		}
+
+		search = strings.ReplaceAll(search, " ", "")
+		search = strings.ToLower(search)
+
+		filtered := make([]mediaprovider.Playlist, 0)
+		for i := 0; i < len(all); i++ {
+			playlist := all[i]
+			name := strings.ReplaceAll(playlist.Name, " ", "")
+			name = strings.ToLower(name)
+			if strings.Contains(name, search) {
+				filtered = append(filtered, *playlist)
+			}
+		}
+
+		return filtered, nil
+	}))
+	m.HandleFunc(SearchTrackPath, s.makeSearchEndpointHandler(func(search string) (any, error) {
+		i := (*s.mp).IterateTracks(search)
+
+		track := i.Next()
+		tracks := make([]mediaprovider.Track, 0)
+		for track != nil {
+			tracks = append(tracks, *track)
+			track = i.Next()
+		}
+
+		return tracks, nil
+	}))
 	return m
 }
 
@@ -137,12 +187,38 @@ func (s *serverImpl) makeTracklistEndpointHandler(f func(string, int, bool) erro
 	}
 }
 
+func (s *serverImpl) makeSearchEndpointHandler(f func(string) (any, error)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		search := r.URL.Query().Get("s")
+		data, err := f(search)
+		if err != nil {
+			s.writeErr(w, err)
+			return
+		}
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			s.writeErr(w, err)
+		}
+		s.writeData(w, bytes)
+	}
+}
+
 func (s *serverImpl) writeOK(w http.ResponseWriter) (int, error) {
 	var r Response
 	b, err := json.Marshal(&r)
 	if err != nil {
 		return 0, err
 	}
+	return w.Write(b)
+}
+
+func (s *serverImpl) writeData(w http.ResponseWriter, data []byte) (int, error) {
+	r := Response{Data: data}
+	b, err := json.Marshal(&r)
+	if err != nil {
+		return 0, err
+	}
+	w.Header().Set("Content-Type", "application/json")
 	return w.Write(b)
 }
 

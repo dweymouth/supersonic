@@ -192,7 +192,10 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		ipc.DestroyConn() // cleanup socket possibly orphaned by crashed process
 		listener, err := ipc.Listen()
 		if err == nil {
-			a.ipcServer = ipc.NewServer(a.PlaybackManager, a.callOnReactivate,
+			a.ipcServer = ipc.NewServer(
+				a.PlaybackManager,
+				&a.ServerManager.Server,
+				a.callOnReactivate,
 				func() { _ = a.callOnExit() })
 			go a.ipcServer.Serve(listener)
 		} else {
@@ -564,6 +567,24 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.PlayPlaylist(PlayPlaylistCLIArg, FirstTrackCLIArg, *FlagShuffle)
 	case PlayTrackCLIArg != "":
 		return cli.PlayTrack(PlayTrackCLIArg)
+	case SearchAlbumCLIArg != "":
+		data, err := cli.SearchAlbum(SearchAlbumCLIArg)
+		if err == nil {
+			fmt.Println(data)
+		}
+		return err
+	case SearchPlaylistCLIArg != "":
+		data, err := cli.SearchPlaylist(SearchPlaylistCLIArg)
+		if err == nil {
+			fmt.Println(data)
+		}
+		return err
+	case SearchTrackCLIArg != "":
+		data, err := cli.SearchTrack(SearchTrackCLIArg)
+		if err == nil {
+			fmt.Println(data)
+		}
+		return err
 	default:
 		return nil
 	}
