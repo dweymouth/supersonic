@@ -13,6 +13,7 @@ import (
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui"
 	"github.com/dweymouth/supersonic/ui/util"
+	"golang.org/x/term"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -30,6 +31,15 @@ func main() {
 	if *backend.FlagHelp {
 		flag.Usage()
 		return
+	}
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		if *backend.FlagPlayAlbum {
+			fmt.Scanln(&backend.PlayAlbumCLIArg)
+		} else if *backend.FlagPlayPlaylist {
+			fmt.Scanln(&backend.PlayPlaylistCLIArg)
+		} else if *backend.FlagPlayTrack {
+			fmt.Scanln(&backend.PlayTrackCLIArg)
+		}
 	}
 	// rest of flag actions are handled in backend.StartupApp
 

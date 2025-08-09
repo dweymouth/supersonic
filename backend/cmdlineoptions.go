@@ -2,8 +2,11 @@ package backend
 
 import (
 	"flag"
+	"os"
 	"strconv"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 var (
@@ -29,6 +32,10 @@ var (
 	FlagShuffle        = flag.Bool("shuffle", false, "shuffle the tracklist (to be used with either -play-album or -play-playlist)")
 	FlagVersion        = flag.Bool("version", false, "print app version and exit")
 	FlagHelp           = flag.Bool("help", false, "print command line options and exit")
+
+	FlagPlayAlbum    *bool
+	FlagPlayPlaylist *bool
+	FlagPlayTrack    *bool
 )
 
 func init() {
@@ -57,18 +64,24 @@ func init() {
 		return err
 	})
 
-	flag.Func("play-album-by-id", "start playing the given album (ID)", func(s string) error {
-		PlayAlbumCLIArg = s
-		return nil
-	})
-	flag.Func("play-playlist-by-id", "start playing the given playlist (ID)", func(s string) error {
-		PlayPlaylistCLIArg = s
-		return nil
-	})
-	flag.Func("play-track-by-id", "start playing the given track (ID)", func(s string) error {
-		PlayTrackCLIArg = s
-		return nil
-	})
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		flag.Func("play-album-by-id", "start playing the album with the given ID (can also be passed from standard input)", func(s string) error {
+			PlayAlbumCLIArg = s
+			return nil
+		})
+		flag.Func("play-playlist-by-id", "start playing the playlist with the given ID (can also be passed from standard input)", func(s string) error {
+			PlayPlaylistCLIArg = s
+			return nil
+		})
+		flag.Func("play-track-by-id", "start playing the track with the given ID (can also be passed from standard input)", func(s string) error {
+			PlayTrackCLIArg = s
+			return nil
+		})
+	} else {
+		FlagPlayAlbum = flag.Bool("play-album-by-id", false, "")
+		FlagPlayPlaylist = flag.Bool("play-playlist-by-id", false, "")
+		FlagPlayTrack = flag.Bool("play-track-by-id", false, "")
+	}
 	flag.Func("first-track", "start playing from given track (positive integer, to be used with either -play-album or -play-playlist)", func(s string) error {
 		v, err := strconv.Atoi(s)
 		FirstTrackCLIArg = v
