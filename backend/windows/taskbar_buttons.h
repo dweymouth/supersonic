@@ -6,6 +6,10 @@ extern "C" {
 
 typedef void (*ThumbnailCallback)(int buttonId);
 
+// sets the tool tip strings for prev, next, play, and pause
+// should be called before initialize_taskbar_buttons or they will not have tool tips
+void set_tooltips_utf8(const char* prev, const char* next, const char* play, const char* pause);
+
 // sets the icons that will be used for the buttons.
 // the arguments are pointers to BGRA pixel data, and the dimensions (w, h) of all 4 images.
 int initialize_taskbar_icons(const void *bgraPrev, const void *bgraNext, const void *bgraPlay, const void *bgraPause, int width, int height);

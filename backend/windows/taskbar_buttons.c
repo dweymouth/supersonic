@@ -23,6 +23,22 @@ static HICON g_nextIcon;
 static HICON g_playIcon;
 static HICON g_pauseIcon;
 
+static wchar_t g_tooltipPlay[64] = {0};
+static wchar_t g_tooltipPause[64] = {0};
+static wchar_t g_tooltipPrev[64] = {0};
+static wchar_t g_tooltipNext[64] = {0};
+
+static void utf8_to_utf16(const char* utf8, wchar_t* utf16buf, size_t maxChars) {
+    MultiByteToWideChar(CP_UTF8, 0, utf8, -1, utf16buf, (int)maxChars);
+}
+
+void set_tooltips_utf8(const char* prev, const char* next, const char* play, const char* pause) {
+    utf8_to_utf16(play,   g_tooltipPlay,  _countof(g_tooltipPlay));
+    utf8_to_utf16(pause,  g_tooltipPause, _countof(g_tooltipPause));
+    utf8_to_utf16(prev,   g_tooltipPrev,  _countof(g_tooltipPrev));
+    utf8_to_utf16(next,   g_tooltipNext,  _countof(g_tooltipNext));
+}
+
 static HICON create_icon_from_bgra(const void *bgra, int width, int height) {
     HICON hIcon = NULL;
 
@@ -86,7 +102,7 @@ LRESULT CALLBACK OverrideWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         if (g_taskbar && g_mainHWnd && g_playIcon && g_pauseIcon) {
             int playing = LOWORD(wParam) ? 1 : 0;
             g_thumbButtons[1].hIcon = playing ? g_pauseIcon : g_playIcon;
-            wcscpy_s(g_thumbButtons[1].szTip, ARRAYSIZE(g_thumbButtons[0].szTip), playing ? L"Pause" : L"Play");
+            wcscpy_s(g_thumbButtons[1].szTip, ARRAYSIZE(g_thumbButtons[1].szTip), playing ? g_tooltipPause : g_tooltipPlay);
             g_taskbar->lpVtbl->ThumbBarUpdateButtons(
                 g_taskbar,
                 g_mainHWnd,
@@ -129,7 +145,7 @@ int initialize_taskbar_buttons(void *hwndPtr, ThumbnailCallback cb) {
     g_thumbButtons[0].dwMask = THB_FLAGS | THB_TOOLTIP;
     g_thumbButtons[0].iId = 1;
     g_thumbButtons[0].dwFlags = THBF_ENABLED;
-    wcscpy_s(g_thumbButtons[0].szTip, ARRAYSIZE(g_thumbButtons[0].szTip), L"Previous");
+    wcscpy_s(g_thumbButtons[0].szTip, ARRAYSIZE(g_thumbButtons[0].szTip), g_tooltipPrev);
     if (g_prevIcon) {
         g_thumbButtons[0].dwMask |= THB_ICON;
         g_thumbButtons[0].hIcon = g_prevIcon;
@@ -138,7 +154,7 @@ int initialize_taskbar_buttons(void *hwndPtr, ThumbnailCallback cb) {
     g_thumbButtons[1].dwMask = THB_FLAGS | THB_TOOLTIP;
     g_thumbButtons[1].iId = 2;
     g_thumbButtons[1].dwFlags = THBF_ENABLED;
-    wcscpy_s(g_thumbButtons[1].szTip, ARRAYSIZE(g_thumbButtons[1].szTip), L"Play");
+    wcscpy_s(g_thumbButtons[1].szTip, ARRAYSIZE(g_thumbButtons[1].szTip), g_tooltipPlay);
     if (g_playIcon) {
         g_thumbButtons[1].dwMask |= THB_ICON;
         g_thumbButtons[1].hIcon = g_playIcon;
@@ -147,7 +163,7 @@ int initialize_taskbar_buttons(void *hwndPtr, ThumbnailCallback cb) {
     g_thumbButtons[2].dwMask = THB_FLAGS | THB_TOOLTIP;
     g_thumbButtons[2].iId = 3;
     g_thumbButtons[2].dwFlags = THBF_ENABLED;
-    wcscpy_s(g_thumbButtons[2].szTip, ARRAYSIZE(g_thumbButtons[2].szTip), L"Next");
+    wcscpy_s(g_thumbButtons[2].szTip, ARRAYSIZE(g_thumbButtons[2].szTip), g_tooltipNext);
     if (g_nextIcon) {
         g_thumbButtons[2].dwMask |= THB_ICON;
         g_thumbButtons[2].hIcon = g_nextIcon;

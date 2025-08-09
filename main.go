@@ -83,6 +83,14 @@ func main() {
 		if err := initWindowsTaskbarIcons(); err != nil {
 			log.Printf("Error initializing taskbar thumbnail icons: %s", err.Error())
 		}
+		if err := windows.SetTaskbarButtonToolTips(
+			lang.L("Previous"),
+			lang.L("Next"),
+			lang.L("Play"),
+			lang.L("Pause"),
+		); err != nil {
+			log.Printf("error initializing taskbar button tool tips: %s", err.Error())
+		}
 	}
 
 	fyneApp := app.New()

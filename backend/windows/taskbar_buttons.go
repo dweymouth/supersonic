@@ -4,6 +4,7 @@ package windows
 
 /*
 #cgo LDFLAGS: -lole32
+#include <stdlib.h>
 #include "taskbar_buttons.h"
 
 extern void goButtonClicked(int);
@@ -28,6 +29,22 @@ func InitializeTaskbarIcons(prev, next, play, pause image.Image) error {
 	bnds := prev.Bounds()
 
 	C.initialize_taskbar_icons(unsafe.Pointer(&pB[0]), unsafe.Pointer(&nB[0]), unsafe.Pointer(&plB[0]), unsafe.Pointer(&paB[0]), C.int(bnds.Dx()), C.int(bnds.Dy()))
+	return nil
+}
+
+// SetTaskbarButtonToolTips should be called before InitializeTaskbarButtons to
+// set the tool tips that will be used for the buttons
+func SetTaskbarButtonToolTips(prev, next, play, pause string) error {
+	cPlay := C.CString(play)
+	defer C.free(unsafe.Pointer(cPlay))
+	cPause := C.CString(pause)
+	defer C.free(unsafe.Pointer(cPause))
+	cPrev := C.CString(prev)
+	defer C.free(unsafe.Pointer(cPrev))
+	cNext := C.CString(next)
+	defer C.free(unsafe.Pointer(cNext))
+	C.set_tooltips_utf8(cPrev, cNext, cPlay, cPause)
+
 	return nil
 }
 
