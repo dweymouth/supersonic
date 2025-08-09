@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"image/png"
 	"log"
 	"os"
 	"runtime"
@@ -10,7 +12,9 @@ import (
 	"sync"
 
 	"github.com/dweymouth/supersonic/backend"
+	"github.com/dweymouth/supersonic/backend/windows"
 	"github.com/dweymouth/supersonic/res"
+	"github.com/dweymouth/supersonic/res/wintaskbarthumbs"
 	"github.com/dweymouth/supersonic/ui"
 	"github.com/dweymouth/supersonic/ui/util"
 
@@ -75,6 +79,20 @@ func main() {
 		}
 	}
 
+	if runtime.GOOS == "windows" {
+		if err := initWindowsTaskbarIcons(); err != nil {
+			log.Printf("Error initializing taskbar thumbnail icons: %s", err.Error())
+		}
+		if err := windows.SetTaskbarButtonToolTips(
+			lang.L("Previous"),
+			lang.L("Next"),
+			lang.L("Play"),
+			lang.L("Pause"),
+		); err != nil {
+			log.Printf("error initializing taskbar button tool tips: %s", err.Error())
+		}
+	}
+
 	fyneApp := app.New()
 	fyneApp.SetIcon(res.ResAppicon256Png)
 
@@ -91,13 +109,13 @@ func main() {
 			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
 		}
 
-		if myApp.Config.Application.EnableOSMediaPlayerAPIs {
+		if runtime.GOOS == "windows" {
 			mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
-				// intialize Windows SMTC
-				if runtime.GOOS == "windows" {
-					hwnd := ctx.(driver.WindowsWindowContext).HWND
+				hwnd := ctx.(driver.WindowsWindowContext).HWND
+				if myApp.Config.Application.EnableOSMediaPlayerAPIs {
 					myApp.SetupWindowsSMTC(hwnd)
 				}
+				myApp.SetupWindowsTaskbarButtons(hwnd)
 			})
 		}
 	})
@@ -115,4 +133,27 @@ func main() {
 
 	log.Println("Running shutdown tasks...")
 	myApp.Shutdown()
+}
+
+func initWindowsTaskbarIcons() error {
+	play, err := png.Decode(bytes.NewReader(wintaskbarthumbs.MediaPlayPNG))
+	if err != nil {
+		return err
+	}
+	pause, err := png.Decode(bytes.NewReader(wintaskbarthumbs.MediaPausePNG))
+	if err != nil {
+		return err
+	}
+	prev, err := png.Decode(bytes.NewReader(wintaskbarthumbs.MediaSeekPreviousPNG))
+	if err != nil {
+		return err
+	}
+	next, err := png.Decode(bytes.NewReader(wintaskbarthumbs.MediaSeekNextPNG))
+	if err != nil {
+		return err
+	}
+
+	windows.InitializeTaskbarIcons(prev, next, play, pause)
+
+	return nil
 }
