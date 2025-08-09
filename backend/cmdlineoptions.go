@@ -54,15 +54,15 @@ func init() {
 		return err
 	})
 
-	flag.Func("play-album", "start playing the given album (ID)", func(s string) error {
+	flag.Func("play-album-by-id", "start playing the given album (ID)", func(s string) error {
 		PlayAlbumCLIArg = s
 		return nil
 	})
-	flag.Func("play-playlist", "start playing the given playlist (ID)", func(s string) error {
+	flag.Func("play-playlist-by-id", "start playing the given playlist (ID)", func(s string) error {
 		PlayPlaylistCLIArg = s
 		return nil
 	})
-	flag.Func("play-track", "start playing the given track (ID)", func(s string) error {
+	flag.Func("play-track-by-id", "start playing the given track (ID)", func(s string) error {
 		PlayTrackCLIArg = s
 		return nil
 	})
