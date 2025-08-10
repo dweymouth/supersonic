@@ -76,6 +76,13 @@ type GridViewPageAdapter[M, F any] interface {
 	RefreshGrid(*widgets.GridView)
 }
 
+type GridViewPageAdapterGetItems interface {
+	// Optionally allows the GridViewPage to inject a function that
+	// can be used to retrieve the GridViewItemModels for the
+	// items currently loaded into the GridView.
+	SetItemsFunc(func() []widgets.GridViewItemModel)
+}
+
 type SortableGridViewPageAdapter interface {
 	// Returns the list of sort orders
 	// and the index of the initially selected sort order
@@ -113,6 +120,12 @@ func NewGridViewPage[M, F any](
 	}
 	gp.grid.DisableSharing = !canShare
 	adapter.InitGrid(gp.grid)
+
+	// If adapter supports SetItemsFunc, call it to inject the items dependency
+	if plfSetter, ok := adapter.(GridViewPageAdapterGetItems); ok {
+		plfSetter.SetItemsFunc(gp.grid.Items)
+	}
+
 	gp.createSearchAndFilter()
 	gp.createContainer()
 	return gp

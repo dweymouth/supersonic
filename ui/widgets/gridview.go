@@ -198,6 +198,16 @@ func NewGridView(iter GridViewIterator, fetch util.ImageFetcher, placeholder fyn
 	return g
 }
 
+// Items returns the items that are currently loaded into the GridView state.
+func (g *GridView) Items() []GridViewItemModel {
+	g.stateMutex.Lock()
+	defer g.stateMutex.Unlock()
+
+	items := make([]GridViewItemModel, len(g.items))
+	copy(items, g.items)
+	return items
+}
+
 func (g *GridView) SaveToState() *GridViewState {
 	g.stateMutex.RLock()
 	s := g.GridViewState

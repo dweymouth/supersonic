@@ -6,7 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/lang"
-	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/theme"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -22,11 +22,20 @@ type albumsPageAdapter struct {
 	pm        *backend.PlaybackManager
 	filter    mediaprovider.AlbumFilter
 	filterBtn *widgets.AlbumFilterButton
+
+	// dependency injected from the GridViewPage
+	itemsFn func() []widgets.GridViewItemModel
 }
 
 func NewAlbumsPage(cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) Page {
 	adapter := &albumsPageAdapter{cfg: cfg, contr: contr, mp: mp, pm: pm}
 	return NewGridViewPage(adapter, pool, mp, im)
+}
+
+var _ GridViewPageAdapterGetItems = (*albumsPageAdapter)(nil)
+
+func (a *albumsPageAdapter) SetItemsFunc(f func() []widgets.GridViewItemModel) {
+	a.itemsFn = f
 }
 
 func (a *albumsPageAdapter) Title() string { return lang.L("Albums") }
@@ -66,7 +75,7 @@ func (a *albumsPageAdapter) SaveSortOrder(orderIdx int) {
 }
 
 func (a *albumsPageAdapter) ActionButton() fyne.CanvasObject {
-	fn := func() {
+	shuffleAlbumsFn := func() {
 		go func() {
 			if err := a.pm.PlayRandomAlbums(""); err != nil {
 				log.Printf("error playing random albums: %v", err)
@@ -77,7 +86,66 @@ func (a *albumsPageAdapter) ActionButton() fyne.CanvasObject {
 		}()
 	}
 
-	return widget.NewButtonWithIcon(lang.L("Play random"), myTheme.ShuffleIcon, fn)
+	playAlbumsFn := func() {
+		if a.itemsFn == nil {
+			a.contr.ToastProvider.ShowErrorToast(lang.L("Unable to play albums"))
+		}
+
+		go func() {
+			for i, item := range a.itemsFn() {
+				if i >= 20 {
+					break // don't load more than first 20 albums
+				}
+				if i == 0 {
+					a.pm.LoadAlbum(item.ID, backend.Replace, false)
+					a.pm.PlayFromBeginning()
+				} else {
+					a.pm.LoadAlbum(item.ID, backend.Append, false)
+				}
+			}
+		}()
+	}
+
+	var btn *widgets.OptionButton
+	var inOrder, shuffled *fyne.MenuItem
+	inOrder = fyne.NewMenuItem(lang.L("In order"), func() {
+		shuffled.Checked = false
+		inOrder.Checked = true
+		a.cfg.PlayInOrder = true
+		btn.Text = lang.L("Play albums")
+		btn.Icon = theme.MediaPlayIcon()
+		btn.Refresh()
+	})
+	inOrder.Icon = myTheme.AlbumIcon
+	shuffled = fyne.NewMenuItem(lang.L("Shuffled"), func() {
+		inOrder.Checked = false
+		shuffled.Checked = true
+		a.cfg.PlayInOrder = false
+		btn.Text = lang.L("Shuffle albums")
+		btn.Icon = myTheme.ShuffleIcon
+		btn.Refresh()
+	})
+	shuffled.Icon = myTheme.ShuffleIcon
+	shuffled.Checked = !a.cfg.PlayInOrder
+	inOrder.Checked = a.cfg.PlayInOrder
+
+	menu := fyne.NewMenu("", inOrder, shuffled)
+	icon := myTheme.ShuffleIcon
+	textKey := "Shuffle albums"
+	if a.cfg.PlayInOrder {
+		textKey = "Play albums"
+		icon = theme.MediaPlayIcon()
+	}
+	btn = widgets.NewOptionButton(lang.L(textKey), menu, func() {
+		if a.cfg.PlayInOrder {
+			playAlbumsFn()
+		} else {
+			shuffleAlbumsFn()
+		}
+	})
+	btn.Icon = icon
+
+	return btn
 }
 
 func (a *albumsPageAdapter) Iter(sortOrderIdx int, filter mediaprovider.AlbumFilter) widgets.GridViewIterator {
