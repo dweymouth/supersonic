@@ -3,6 +3,7 @@ package ipc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"strconv"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 )
+
+var ErrNoServerConnection = errors.New("not connected to a server")
 
 type PlaybackHandler interface {
 	PlayPause()
@@ -33,16 +36,20 @@ type IPCServer interface {
 	Shutdown(context.Context) error
 }
 
+type ServerManager interface {
+	GetServer() mediaprovider.MediaProvider
+}
+
 type serverImpl struct {
 	server    *http.Server
 	pbHandler PlaybackHandler
-	mp        *mediaprovider.MediaProvider
+	sm        ServerManager
 	showFn    func()
 	quitFn    func()
 }
 
-func NewServer(pbHandler PlaybackHandler, mp *mediaprovider.MediaProvider, showFn, quitFn func()) IPCServer {
-	s := &serverImpl{pbHandler: pbHandler, mp: mp, showFn: showFn, quitFn: quitFn}
+func NewServer(pbHandler PlaybackHandler, sm ServerManager, showFn, quitFn func()) IPCServer {
+	s := &serverImpl{pbHandler: pbHandler, sm: sm, showFn: showFn, quitFn: quitFn}
 	s.server = &http.Server{
 		Handler: s.createHandler(),
 	}
@@ -105,8 +112,13 @@ func (s *serverImpl) createHandler() http.Handler {
 		s.writeOK(w)
 	})
 	m.HandleFunc(SearchAlbumPath, s.makeSearchEndpointHandler(func(search string) (any, error) {
+		mp := s.sm.GetServer()
+		if mp == nil {
+			return nil, ErrNoServerConnection
+		}
+
 		filter := mediaprovider.NewAlbumFilter(mediaprovider.AlbumFilterOptions{})
-		i := (*s.mp).SearchAlbums(search, filter)
+		i := mp.SearchAlbums(search, filter)
 
 		album := i.Next()
 		albums := make([]mediaprovider.Album, 0)
@@ -118,7 +130,12 @@ func (s *serverImpl) createHandler() http.Handler {
 		return albums, nil
 	}))
 	m.HandleFunc(SearchPlaylistPath, s.makeSearchEndpointHandler(func(search string) (any, error) {
-		all, err := (*s.mp).GetPlaylists()
+		mp := s.sm.GetServer()
+		if mp == nil {
+			return nil, ErrNoServerConnection
+		}
+
+		all, err := mp.GetPlaylists()
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +156,12 @@ func (s *serverImpl) createHandler() http.Handler {
 		return filtered, nil
 	}))
 	m.HandleFunc(SearchTrackPath, s.makeSearchEndpointHandler(func(search string) (any, error) {
-		i := (*s.mp).IterateTracks(search)
+		mp := s.sm.GetServer()
+		if mp == nil {
+			return nil, ErrNoServerConnection
+		}
+
+		i := mp.IterateTracks(search)
 
 		track := i.Next()
 		tracks := make([]mediaprovider.Track, 0)

@@ -195,7 +195,7 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		if err == nil {
 			a.ipcServer = ipc.NewServer(
 				a.PlaybackManager,
-				&a.ServerManager.Server,
+				a.ServerManager,
 				a.callOnReactivate,
 				func() { _ = a.callOnExit() })
 			go a.ipcServer.Serve(listener)
