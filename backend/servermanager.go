@@ -262,3 +262,7 @@ func (s *ServerManager) checkSetInsecureSkipVerify(cli *http.Client) {
 		}
 	}
 }
+
+func (a *ServerManager) GetServer() mediaprovider.MediaProvider {
+	return a.Server
+}
