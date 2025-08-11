@@ -31,7 +31,7 @@ var (
 	FlagStopAfterCurrent = flag.Bool("stop-after-current", false, "stop playback after current track")
 	FlagStartMinimized   = flag.Bool("start-minimized", false, "start app minimized")
 	FlagShow             = flag.Bool("show", false, "show minimized app")
-	FlagShuffle          = flag.Bool("shuffle", false, "shuffle the tracklist (to be used with either -play-album or -play-playlist)")
+	FlagShuffle          = flag.Bool("shuffle", false, "shuffle the tracklist (to be used with either -play-album-by-id or -play-playlist-by-id)")
 	FlagVersion          = flag.Bool("version", false, "print app version and exit")
 	FlagHelp             = flag.Bool("help", false, "print command line options and exit")
 
@@ -90,15 +90,15 @@ func init() {
 		return err
 	})
 
-	flag.Func("search-album", "search album", func(s string) error {
+	flag.Func("search-album", "search album by name, return results as JSON", func(s string) error {
 		SearchAlbumCLIArg = s
 		return nil
 	})
-	flag.Func("search-playlist", "search playlist", func(s string) error {
+	flag.Func("search-playlist", "search playlist by name, return results as JSON", func(s string) error {
 		SearchPlaylistCLIArg = s
 		return nil
 	})
-	flag.Func("search-track", "search track", func(s string) error {
+	flag.Func("search-track", "search track by name, return results as JSON", func(s string) error {
 		SearchTrackCLIArg = s
 		return nil
 	})
