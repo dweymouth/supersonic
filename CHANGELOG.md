@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.18.0]
+
+### Added
+- [#665](https://github.com/dweymouth/supersonic/issues/665) Make play button on Albums page configurable to shuffle or play in order
+- [#668](https://github.com/dweymouth/supersonic/issues/668) Add sample rate, bit depth, and channel count to track info dialog
+- [#669](https://github.com/dweymouth/supersonic/pull/669) Add waveform seekbar
+- [#671](https://github.com/dweymouth/supersonic/pull/671) Add CLI commands to start minimized, and to show/raise the app window
+- [#674](https://github.com/dweymouth/supersonic/pull/674) Add CLI commands to search and play albums, tracks, and playlists
+- [#679](https://github.com/dweymouth/supersonic/pull/679) Add player control buttons to Windows taskbar thumbnail
+- [#681](https://github.com/dweymouth/supersonic/pull/681) Add ability to stop playback after current track finishes
+
 ## [0.17.0]
 
 ### Added
