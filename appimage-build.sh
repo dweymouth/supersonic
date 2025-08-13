@@ -3,6 +3,7 @@ if (ls supersonic);
 then
 mkdir -p Supersonic.AppDir/usr/lib
 mkdir Supersonic.AppDir/usr/bin
+###Copy libraries
 cp /usr/lib/x86_64-linux-gnu/libpostproc.so.57 Supersonic.AppDir/usr/lib
 cp /usr/lib/x86_64-linux-gnu/libsrt-gnutls.so.1.5 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libx264.so.164 Supersonic.AppDir/usr/lib/
@@ -102,13 +103,15 @@ cp /usr/lib/x86_64-linux-gnu/libtinfo.so.6 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libnuma.so.1 Supersonic.AppDir/usr/lib/
 cp /usr/lib/x86_64-linux-gnu/libavc1394.so.0 Supersonic.AppDir/usr/lib/
 cp /usr/lib64/ld-linux-x86-64.so.2 Supersonic.AppDir/usr/lib
+###Get folder ready for appimage
 printf '%s\n' '#!/bin/bash' 'SELF=$(readlink -f "$0")' 'HERE=${SELF%/*}' 'EXEC="${HERE}/usr/bin/supersonic"' 'export LD_LIBRARY_PATH="/usr/lib:${HERE}/usr/lib"' 'exec "${EXEC}";' > Supersonic.AppDir/AppRun
-printf '%s\n' '[Desktop Entry]' 'Name=Supersonic' 'Exec=supersonic' 'Icon=ico' 'Type=Application' 'Comment=A lightweight cross-platform desktop client for self-hosted music servers' 'Categories=AudioVideo;' > Supersonic.AppDir/"supersonic.desktop"
+printf '%s\n' '[Desktop Entry]' 'Name=Supersonic' 'Exec=supersonic' 'Icon=supersonic' 'Type=Application' 'Comment=A lightweight cross-platform desktop client for self-hosted music servers' 'Categories=AudioVideo;' > Supersonic.AppDir/"supersonic.desktop"
 chmod +x Supersonic.AppDir/AppRun
 chmod +x Supersonic.AppDir/supersonic.desktop
-wget https://github.com/dweymouth/supersonic/blob/main/res/appicon.png?raw=true -O Supersonic.AppDir/ico.png
+wget https://github.com/dweymouth/supersonic/blob/main/res/appicon-256.png?raw=true -O Supersonic.AppDir/supersonic.png
 cp supersonic Supersonic.AppDir/usr/bin/
 chmod +x Supersonic.AppDir/usr/bin/supersonic
+###Get appimagetool and make appimage
 wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
 chmod +x appimagetool-x86_64.AppImage
 ./appimagetool-x86_64.AppImage Supersonic.AppDir/
