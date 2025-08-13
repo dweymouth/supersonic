@@ -57,7 +57,8 @@ func (w *WaveformSeekbar) Refresh() {
 	w.cursor.Resize(fyne.NewSize(1, w.Size().Height-4))
 	w.focus.Resize(fyne.NewSize(3, w.Size().Height-2))
 	prm, fg, focus := w.getThemeColors()
-	w.updateImageProgress(prm, fg, w.imgProgressPixel)
+	img := w.img.Image.(*image.NRGBA)
+	recolorWaveformImage(img, prm, fg, w.imgProgressPixel, w.imgProgressPixel, true)
 	w.recolorCursor(prm, fg, w.cursor.Position().X)
 	w.focus.FillColor = focus
 

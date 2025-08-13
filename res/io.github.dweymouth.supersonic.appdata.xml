@@ -63,34 +63,23 @@
   </screenshots>
 
  <releases>
-  <release date="2025-07-16" version="0.17.0">
+  <release date="2025-08-12" version="0.18.0">
    <description>
      <p>
-       Version 0.17.0 of Supersonic
+       Version 0.18.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Group releases by Release Type on artist pages</li>
-       <li>Allow customization of grid card size</li>
-       <li>New translations: Korean and Russian</li>
-       <li>Some updates to other translations</li>
-     </ul>
-
-     <p>
-       Fixed
-     </p>
-     <ul>
-       <li>Light button colors in a light theme turn dark when hovering</li>
-       <li>Use full date instead of year to sort artist discography</li>
-       <li>Improved rendering of text entry borders when using fractional pixel scaling</li>
-       <li>Windows: occasional crashes at startup</li>
-       <li>Windows: sporadic crashes when changing tracks due to bugs in SMTC DLL</li>
-       <li>Windows: TLS versions above 1.2 not supported by shipped libmpv-2</li>
-       <li>Windows: 32-bit (fixed-point) FLAC files cannot be played (libmpv built before ffmpeg support existed)</li>
-       <li>Windows: some radio stream URLs wouldn't play</li>
+       <li>Make play button on Albums page configurable to shuffle or play in order</li>
+       <li>Add sample rate, bit depth, and channel count to track info dialog</li>
+       <li>Add waveform seekbar</li>
+       <li>Add CLI commands to start minimized, and to show/raise the app window</li>
+       <li>Add CLI commands to search and play albums, tracks, and playlists</li>
+       <li>Add player control buttons to Windows taskbar thumbnail</li>
+       <li>Add ability to stop playback after current track finishes</li>
      </ul>
 
    </description>

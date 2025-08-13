@@ -30,67 +30,115 @@ func Connect() (*Client, error) {
 }
 
 func (c *Client) Ping() error {
-	if c.sendRequest(PingPath) != nil {
+	if _, err := c.sendRequest(PingPath); err != nil {
 		return ErrPingFail
 	}
 	return nil
 }
 
 func (c *Client) Play() error {
-	return c.sendRequest(PlayPath)
+	_, err := c.sendRequest(PlayPath)
+	return err
 }
 
 func (c *Client) Pause() error {
-	return c.sendRequest(PausePath)
+	_, err := c.sendRequest(PausePath)
+	return err
+}
+
+func (c *Client) PlayAlbum(id string, firstTrack int, shuffle bool) error {
+	_, err := c.sendRequest(BuildPlayAlbumPath(id, firstTrack, shuffle))
+	return err
+}
+
+func (c *Client) PlayPlaylist(id string, firstTrack int, shuffle bool) error {
+	_, err := c.sendRequest(BuildPlayPlaylistPath(id, firstTrack, shuffle))
+	return err
+}
+
+func (c *Client) SearchAlbum(search string) (string, error) {
+	return c.sendRequest(BuildSearchAlbumPath(search))
+}
+
+func (c *Client) SearchPlaylist(search string) (string, error) {
+	return c.sendRequest(BuildSearchPlaylistPath(search))
+}
+
+func (c *Client) SearchTrack(search string) (string, error) {
+	return c.sendRequest(BuildSearchTrackPath(search))
+}
+
+func (c *Client) PlayTrack(id string) error {
+	_, err := c.sendRequest(BuildPlayTrackPath(id))
+	return err
 }
 
 func (c *Client) PlayPause() error {
-	return c.sendRequest(PlayPausePath)
+	_, err := c.sendRequest(PlayPausePath)
+	return err
+}
+
+func (c *Client) Stop() error {
+	_, err := c.sendRequest(StopPath)
+	return err
+}
+
+func (c *Client) StopAfterCurrent() error {
+	_, err := c.sendRequest(StopAfterCurrentPath)
+	return err
 }
 
 func (c *Client) SeekNext() error {
-	return c.sendRequest(NextPath)
+	_, err := c.sendRequest(NextPath)
+	return err
 }
 
 func (c *Client) SeekBackOrPrevious() error {
-	return c.sendRequest(PreviousPath)
+	_, err := c.sendRequest(PreviousPath)
+	return err
 }
 
 func (c *Client) SeekSeconds(secs float64) error {
-	return c.sendRequest(SeekToSecondsPath(secs))
+	_, err := c.sendRequest(SeekToSecondsPath(secs))
+	return err
 }
 
 func (c *Client) SeekBySeconds(secs float64) error {
-	return c.sendRequest(SeekBySecondsPath(secs))
+	_, err := c.sendRequest(SeekBySecondsPath(secs))
+	return err
 }
 
 func (c *Client) SetVolume(vol int) error {
-	return c.sendRequest(SetVolumePath(vol))
+	_, err := c.sendRequest(SetVolumePath(vol))
+	return err
 }
 
 func (c *Client) AdjustVolumePct(pct float64) error {
-	return c.sendRequest(AdjustVolumePctPath(pct))
+	_, err := c.sendRequest(AdjustVolumePctPath(pct))
+	return err
 }
 
 func (c *Client) Show() error {
-	return c.sendRequest(ShowPath)
+	_, err := c.sendRequest(ShowPath)
+	return err
 }
 
 func (c *Client) Quit() error {
-	return c.sendRequest(QuitPath)
+	_, err := c.sendRequest(QuitPath)
+	return err
 }
 
-func (c *Client) sendRequest(path string) error {
+func (c *Client) sendRequest(path string) (string, error) {
 	resp, err := c.httpC.Get("http://supersonic/" + path)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
+	var r Response
+	json.NewDecoder(resp.Body).Decode(&r)
 	if resp.StatusCode != http.StatusOK {
-		var r Response
-		json.NewDecoder(resp.Body).Decode(&r)
-		return errors.New(r.Error)
+		return "", errors.New(r.Error)
 	}
-	return nil
+	return string(r.Data), nil
 }

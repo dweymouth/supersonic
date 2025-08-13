@@ -70,7 +70,8 @@ type AlbumPageConfig struct {
 type AlbumsPageConfig struct {
 	SortOrder   string // only relevant for Albums page
 	ShowYears   bool
-	ShuffleMode string // only relevant for genre page
+	ShuffleMode string // only relevant for Genre page
+	PlayInOrder bool   // only relevant for Albums page
 }
 
 type ArtistPageConfig struct {

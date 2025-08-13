@@ -25,6 +25,8 @@ github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250712002006-5064d705dac4 h1:Q3r94Ac
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250712002006-5064d705dac4/go.mod h1:YZt7SksjvrSNJCwbWFV32WON3mE1Sr7L41D29qMZ/lU=
 github.com/dweymouth/go-jellyfin v0.0.0-20250716005557-0ea2becece1f h1:QsKPwFpTHuYHEEuhvp4VBClkHh00bNNgQ/2Ij1bkk8M=
 github.com/dweymouth/go-jellyfin v0.0.0-20250716005557-0ea2becece1f/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
+github.com/dweymouth/go-jellyfin v0.0.0-20250808023725-196437af15a6 h1:IFewD1zMs7eWkqmzdGeQP9lavYboJHwGqm1oOa7wZC8=
+github.com/dweymouth/go-jellyfin v0.0.0-20250808023725-196437af15a6/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0 h1:mYcctuWgVArHhSLJxndlUM43C3hoE18BLDBkXKM2tl0=
 github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0/go.mod h1:bp2870jtp/ixAJLIOdShBfl1WpyLGDZ57jnVWMgkgIc=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
@@ -168,6 +170,8 @@ golang.org/x/sys v0.30.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/term v0.0.0-20210927222741-03fcf44c2211/go.mod h1:jbD1KX2456YbFQfuXm/mYQcufACuNUgVhRMnK/tPxf8=
 golang.org/x/term v0.5.0/go.mod h1:jMB1sMXY+tzblOD4FWmEbocvup2/aLOaQEp7JmGp78k=
+golang.org/x/term v0.29.0 h1:L6pJp37ocefwRRtYPKSWOWzOtWSxVajvz2ldH/xi3iU=
+golang.org/x/term v0.29.0/go.mod h1:6bl4lRlvVuDgSf3179VpIxBF0o10JUpXWOnI7nErv7s=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.3/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
 golang.org/x/text v0.3.7/go.mod h1:u+2+/6zg+i71rQMx5EYifcz6MCKuco9NR6JIITiCfzQ=
