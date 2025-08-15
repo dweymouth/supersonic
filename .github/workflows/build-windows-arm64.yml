@@ -36,7 +36,7 @@ jobs:
     - name: Install Dependencies
       run: >
         pacman -Syu &&
-        pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-mpv
+        pacman --noconfirm -S mingw-w64-clang-aarch64-toolchain mingw-w64-clang-aarch64-mpv
 
     - name: Install Fyne tool
       run: go install fyne.io/fyne/v2/cmd/fyne@latest
