@@ -42,7 +42,7 @@ jobs:
       run: go install fyne.io/fyne/v2/cmd/fyne@latest
 
     - name: Package
-      run: make package_windows
+      run: make package_windows_arm64
 
     - name: Download mpv dll
       run: >
