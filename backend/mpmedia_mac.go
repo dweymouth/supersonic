@@ -7,8 +7,8 @@ package backend
 **/
 
 /*
-#cgo CFLAGS: -x objective-c
-#cgo LDFLAGS: -framework Cocoa -framework MediaPlayer
+#cgo CFLAGS: -x objective-c -I/opt/homebrew/include -I/opt/local/include
+#cgo LDFLAGS: -framework Cocoa -framework MediaPlayer -L/opt/homebrew/lib -L/opt/local/lib
 #include "mpmediabridge.h"
 */
 import (
