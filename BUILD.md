@@ -55,16 +55,6 @@ Supersonic is available in the AUR and can be built either manually with `makepk
 
 ### Build
 
-#### Homebrew setup
-* Make sure header and library include paths include the dir in which homebrew installs headers/dylibs (may differ dep. on OS/Homebrew version)
-  - ``export C_INCLUDE_PATH=/opt/homebrew/include:$C_INCLUDE_PATH``
-  - ``export LIBRARY_PATH=/opt/homebrew/lib:$LIBRARY_PATH``
- 
-#### Macports setup
-* Make sure header and library include paths include the dir in which macports installs headers/dylibs
-  - ``export C_INCLUDE_PATH=/opt/local/include:$C_INCLUDE_PATH``
-  - ``export LIBRARY_PATH=/opt/local/lib:$LIBRARY_PATH``
-
 #### Building the application
 * clone the repo, CD into the repo root, and run ``make build``
 * (note that the first build will take some time as it will download and build the UI library)

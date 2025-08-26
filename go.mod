@@ -19,7 +19,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.8
 	github.com/quarckster/go-mpris-server v1.0.3
 	github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410
-	github.com/supersonic-app/go-mpv v0.1.0
+	github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449
 	github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d
 	github.com/supersonic-app/go-upnpcast v0.0.0-20250330154256-b957204209a5
 	github.com/zalando/go-keyring v0.2.6
