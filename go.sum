@@ -23,8 +23,6 @@ github.com/dweymouth/fyne-tooltip v0.3.0 h1:NKCyTkh9NtvnTsiHtTOtaJzRDOFYP8AckQ2t
 github.com/dweymouth/fyne-tooltip v0.3.0/go.mod h1:m04ShLW/Tp6LXrNieTumApvNgo7YSB+wi+jZTN+kDBU=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250712002006-5064d705dac4 h1:Q3r94AcVL8yaF4Nrd3EQFKyLL3UN/zHPkj+My9B2vCQ=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250712002006-5064d705dac4/go.mod h1:YZt7SksjvrSNJCwbWFV32WON3mE1Sr7L41D29qMZ/lU=
-github.com/dweymouth/go-jellyfin v0.0.0-20250716005557-0ea2becece1f h1:QsKPwFpTHuYHEEuhvp4VBClkHh00bNNgQ/2Ij1bkk8M=
-github.com/dweymouth/go-jellyfin v0.0.0-20250716005557-0ea2becece1f/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/dweymouth/go-jellyfin v0.0.0-20250808023725-196437af15a6 h1:IFewD1zMs7eWkqmzdGeQP9lavYboJHwGqm1oOa7wZC8=
 github.com/dweymouth/go-jellyfin v0.0.0-20250808023725-196437af15a6/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0 h1:mYcctuWgVArHhSLJxndlUM43C3hoE18BLDBkXKM2tl0=
@@ -132,8 +130,8 @@ github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOf
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410 h1:wuDHCo6SU6r0KMm0EuI5FGVJCuLK4hcuPcMKmln8oCA=
 github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410/go.mod h1:XvGBPgXWkKrK+5OsoVkTcTZmwZac1Sj6miEn8q6uA20=
-github.com/supersonic-app/go-mpv v0.1.0 h1:U+cCnLQxmpqx5mY6nMlC0J4uIdCCXUbAjpjS04XkFu8=
-github.com/supersonic-app/go-mpv v0.1.0/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
+github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449 h1:UHIPI43VzyWuIF8z8WVMdjMsC/orZTZQJraD/Iv+ghw=
+github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
 github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d h1:70+Nn7yh+cfeKqqXVTdpneFqXuvrBLyP7U6GVUsjTU4=
 github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d/go.mod h1:D+OWPXeD9owcdcoXATv5YPBGWxxVvn5k98rt5B4wMc4=
 github.com/supersonic-app/go-upnpcast v0.0.0-20250330154256-b957204209a5 h1:aoUJKPFD/ZrNZjK6fl2Xhazwsttx42esKxhSSzEE3Bo=
