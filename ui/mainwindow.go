@@ -214,6 +214,8 @@ func (m *MainWindow) setInitialSize() {
 
 func (m *MainWindow) StartupPage() controller.Route {
 	switch m.App.Config.Application.StartupPage {
+	case "Artists":
+		return controller.ArtistsRoute()
 	case "Favorites":
 		return controller.FavoritesRoute()
 	case "Playlists":
