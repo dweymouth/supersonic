@@ -94,8 +94,8 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		fyne.Do(func() { m.UpdateOnTrackChange(item) })
 	})
-	app.ServerManager.OnServerConnected(func() {
-		go m.RunOnServerConnectedTasks(app, displayAppName)
+	app.ServerManager.OnServerConnected(func(conf *backend.ServerConfig) {
+		go m.RunOnServerConnectedTasks(conf, app, displayAppName)
 	})
 	app.ServerManager.OnLogout(func() {
 		m.BrowsingPane.DisableNavigationButtons()
@@ -225,7 +225,7 @@ func (m *MainWindow) StartupPage() controller.Route {
 	}
 }
 
-func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName string) {
+func (m *MainWindow) RunOnServerConnectedTasks(serverConf *backend.ServerConfig, app *backend.App, displayAppName string) {
 	time.Sleep(1 * time.Millisecond) // ensure this runs after sync tasks
 
 	if app.Config.Application.SavePlayQueue {
@@ -237,6 +237,7 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 	}
 
 	doSetLibrary := func(libraryID string, menuIdx int) {
+		serverConf.SelectedLibrary = libraryID
 		fyne.Do(func() {
 			m.App.ServerManager.Server.SetLibrary(libraryID)
 			// Pages in the history could contain content
@@ -267,6 +268,9 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 			}))
 		libraryMenuItemOffset = 1
 	}
+
+	initialLibraryMenuIdx := 0
+	initialLibraryID := ""
 	for i, l := range libraries {
 		_l := l
 		_i := i + libraryMenuItemOffset
@@ -274,10 +278,18 @@ func (m *MainWindow) RunOnServerConnectedTasks(app *backend.App, displayAppName 
 			fyne.NewMenuItem(_l.Name, func() {
 				doSetLibrary(_l.ID, _i)
 			}))
+		if _l.ID == serverConf.SelectedLibrary {
+			initialLibraryMenuIdx = _i
+			initialLibraryID = _l.ID
+		}
 	}
 	m.librarySubmenu = libraryMenu
-	m.librarySubmenu.Items[0].Checked = true
+	m.librarySubmenu.Items[initialLibraryMenuIdx].Checked = true
 	m.BrowsingPane.SetSubmenuForMenuItem(lang.L("Select Library"), libraryMenu)
+
+	if initialLibraryID != "" {
+		m.App.ServerManager.Server.SetLibrary(initialLibraryID)
+	}
 
 	fyne.Do(func() {
 		m.BrowsingPane.EnableNavigationButtons()

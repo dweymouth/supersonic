@@ -25,9 +25,10 @@ type ServerConnection struct {
 
 type ServerConfig struct {
 	ServerConnection
-	ID       uuid.UUID
-	Nickname string
-	Default  bool
+	ID              uuid.UUID
+	Nickname        string
+	Default         bool
+	SelectedLibrary string
 }
 
 type AppConfig struct {

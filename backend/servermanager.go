@@ -29,7 +29,7 @@ type ServerManager struct {
 	appName           string
 	appVersion        string
 	config            *Config
-	onServerConnected []func()
+	onServerConnected []func(*ServerConfig)
 	onLogout          []func()
 }
 
@@ -62,7 +62,7 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 	s.ServerID = conf.ID
 	s.SetDefaultServer(s.ServerID)
 	for _, cb := range s.onServerConnected {
-		cb()
+		cb(conf)
 	}
 	return nil
 }
@@ -152,7 +152,7 @@ func (s *ServerManager) deleteServerPassword(serverID uuid.UUID) {
 }
 
 // Sets a callback that is invoked when a server is connected to.
-func (s *ServerManager) OnServerConnected(cb func()) {
+func (s *ServerManager) OnServerConnected(cb func(*ServerConfig)) {
 	s.onServerConnected = append(s.onServerConnected, cb)
 }
 
