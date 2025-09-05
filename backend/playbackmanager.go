@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -480,11 +481,15 @@ func (p *PlaybackManager) PlaySimilarSongs(id string) error {
 }
 
 func (p *PlaybackManager) PlayRandomAlbums(genreName string) error {
+	mp := p.engine.sm.GetServer()
+	if mp == nil {
+		return errors.New("logged out")
+	}
+
 	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainAlbum)
 	}
 
-	mp := p.engine.sm.Server
 	var options mediaprovider.AlbumFilterOptions
 	if genreName != "" {
 		options = mediaprovider.AlbumFilterOptions{
@@ -495,6 +500,9 @@ func (p *PlaybackManager) PlayRandomAlbums(genreName string) error {
 	insertMode := Replace
 	for i := 0; i < 20; i++ {
 		al := iter.Next()
+		if al == nil {
+			break
+		}
 		if al, err := mp.GetAlbum(al.ID); err == nil {
 			p.LoadTracks(al.Tracks, insertMode, false)
 			if i == 0 {
