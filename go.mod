@@ -1,6 +1,6 @@
 module github.com/dweymouth/supersonic
 
-go 1.21.9
+go 1.23.0
 
 require (
 	fyne.io/fyne/v2 v2.6.1
@@ -23,10 +23,10 @@ require (
 	github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d
 	github.com/supersonic-app/go-upnpcast v0.0.0-20250330154256-b957204209a5
 	github.com/zalando/go-keyring v0.2.6
-	golang.org/x/net v0.35.0
-	golang.org/x/sys v0.30.0
-	golang.org/x/term v0.29.0
-	golang.org/x/text v0.22.0
+	golang.org/x/net v0.38.0
+	golang.org/x/sys v0.31.0
+	golang.org/x/term v0.30.0
+	golang.org/x/text v0.23.0
 )
 
 require (
