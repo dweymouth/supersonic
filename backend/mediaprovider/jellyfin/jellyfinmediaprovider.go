@@ -357,6 +357,9 @@ func (j *jellyfinMediaProvider) GetStreamURL(trackID string, transcode *mediapro
 	var jfTranscode *jellyfin.TranscodeOptions
 	if transcode != nil {
 		jfTranscode = &jellyfin.TranscodeOptions{
+			// we only support opus and mp3 transcoding codecs right now,
+			// both are accepted as a container format too
+			Container:    transcode.Codec,
 			AudioCodec:   transcode.Codec,
 			AudioBitRate: uint32(transcode.BitRateKBPS * 1000),
 		}
