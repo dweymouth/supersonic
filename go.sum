@@ -55,8 +55,6 @@ github.com/go-audio/riff v1.0.0/go.mod h1:l3cQwc85y79NQFCRB7TiPoNiaijp6q8Z0Uv38r
 github.com/go-audio/wav v0.0.0-20181013172942-de841e69b884/go.mod h1:UiqzUyfX0zs3pJ/DPyvS5v8sN6s5bXPUDDIVA5v8dks=
 github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 h1:5BVwOaUSBTlVZowGO6VZGw2H/zl9nrd3eCZfYV+NfQA=
 github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71/go.mod h1:9YTyiznxEY1fVinfM7RvRcjRHbw2xLBJ3AAGIT0I4Nw=
-github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a h1:vxnBhFDDT+xzxf1jTJKMKZw3H0swfWk9RpWbBbDK5+0=
-github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-text/render v0.2.0 h1:LBYoTmp5jYiJ4NPqDc2pz17MLmA3wHw1dZSVGcOdeAc=
 github.com/go-text/render v0.2.0/go.mod h1:CkiqfukRGKJA5vZZISkjSYrcdtgKQWRa2HIzvwNN5SU=
 github.com/go-text/typesetting v0.2.1 h1:x0jMOGyO3d1qFAPI0j4GSsh7M0Q3Ypjzr4+CEVg82V8=
@@ -130,6 +128,8 @@ github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOf
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410 h1:wuDHCo6SU6r0KMm0EuI5FGVJCuLK4hcuPcMKmln8oCA=
 github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410/go.mod h1:XvGBPgXWkKrK+5OsoVkTcTZmwZac1Sj6miEn8q6uA20=
+github.com/supersonic-app/go-glfw/v3.3/glfw v0.0.0-20250906235349-c09e5a2f6b75 h1:aZnnCd5QHk/5/K5L4HpPoDwzlXXRC/hJdecdKSOOJFE=
+github.com/supersonic-app/go-glfw/v3.3/glfw v0.0.0-20250906235349-c09e5a2f6b75/go.mod h1:SyRD8YfuKk+ZXlDqYiqe1qMSqjNgtHzBTG810KUagMc=
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449 h1:UHIPI43VzyWuIF8z8WVMdjMsC/orZTZQJraD/Iv+ghw=
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
 github.com/supersonic-app/go-subsonic v0.0.0-20241224013245-9b2841f3711d h1:70+Nn7yh+cfeKqqXVTdpneFqXuvrBLyP7U6GVUsjTU4=

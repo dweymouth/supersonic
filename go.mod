@@ -70,3 +70,6 @@ require (
 replace fyne.io/fyne/v2 v2.6.1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20250712002006-5064d705dac4
 
 replace github.com/go-audio/wav v1.1.0 => github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0
+
+// fixes https://github.com/dweymouth/supersonic/issues/412 until the fix lands upstream
+replace github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a => github.com/supersonic-app/go-glfw/v3.3/glfw v0.0.0-20250906235349-c09e5a2f6b75
