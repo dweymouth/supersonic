@@ -34,5 +34,5 @@ jobs:
     - name: upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Supersonic-compat.AppImage
+        name: Supersonic.AppImage
         path: Supersonic-x86_64.AppImage
