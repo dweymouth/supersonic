@@ -68,7 +68,11 @@ Platform-specific installation instructions are listed below. In addition to the
 
 ### Linux
 
-* **AppImage:** On the [latest release](https://github.com/dweymouth/supersonic/releases) page, you can download an AppImage package which supports any OS that can run AppImages. The MPV library is bundled in the AppImage.
+* **AppImage:** On the [latest release](https://github.com/dweymouth/supersonic/releases) page, you can download an AppImage package with the MPV library bundled.<br/>
+Supported OS:<br/> 
+ubuntu 22.04+ <br/> 
+debian 12+ <br/> 
+fedora 42+ <br/> 
 
 * **(Debian) .tar.xz:** The.tar.xz builds from the Releases page support Debian-based distros. You **must** have libmpv installed on your system, and choose the correct release build (libmpv2 or libmpv1) based on which is available in your distro's package manager. On apt-based systems, run `sudo apt install libmpv1` (or libmpv2) if it is not already installed. To install the Linux release build, after ensuring the required libmpv is installed, extract the .tar.xz bundle and run `make user-install` or `sudo make install`.
 

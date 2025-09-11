@@ -1,7 +1,7 @@
 # This workflow will build a golang project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
-name: Build AppImage
+name: Build AppImage-compat
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
 jobs:
 
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
 
@@ -21,7 +21,7 @@ jobs:
         go-version: '1.24'
 
     - name: Install dependencies
-      run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev desktop-file-utils libmfx1 libdvdnav4
+      run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev desktop-file-utils
 
     - name: Build
       run: make build
