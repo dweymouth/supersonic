@@ -81,7 +81,7 @@ cp /usr/lib/x86_64-linux-gnu/libdb-5.3.so Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libsodium.so.23 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libcaca.so.0 Supersonic.AppDir/usr/lib/ #
 #cp /usr/lib/x86_64-linux-gnu/libOpenCL.so.1 Supersonic.AppDir/usr/lib/ # not required
-#cp /usr/lib/x86_64-linux-gnu/libXss.so.1 Supersonic.AppDir/usr/lib/ # not required
+cp /usr/lib/x86_64-linux-gnu/libXss.so.1 Supersonic.AppDir/usr/lib/ # Fedora required
 cp /usr/lib/x86_64-linux-gnu/libncursesw.so.6 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libtinfo.so.6 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libnuma.so.1 Supersonic.AppDir/usr/lib/ #
