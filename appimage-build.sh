@@ -80,13 +80,18 @@ cp /usr/lib/x86_64-linux-gnu/libdb-5.3.so Supersonic.AppDir/usr/lib/ #
 #cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 Supersonic.AppDir/usr/lib/ # not required (Maybe?)
 cp /usr/lib/x86_64-linux-gnu/libsodium.so.23 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libcaca.so.0 Supersonic.AppDir/usr/lib/ #
-#cp /usr/lib/x86_64-linux-gnu/libOpenCL.so.1 Supersonic.AppDir/usr/lib/ # not required
-#cp /usr/lib/x86_64-linux-gnu/libXss.so.1 Supersonic.AppDir/usr/lib/ # not required
+cp /usr/lib/x86_64-linux-gnu/libXss.so.1 Supersonic.AppDir/usr/lib/ # Fedora required
 cp /usr/lib/x86_64-linux-gnu/libncursesw.so.6 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libtinfo.so.6 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libnuma.so.1 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libavc1394.so.0 Supersonic.AppDir/usr/lib/ #
 cp /usr/lib/x86_64-linux-gnu/libquadmath.so.0 Supersonic.AppDir/usr/lib #
+cp /usr/lib/x86_64-linux-gnu/libOpenCL.so.1 Supersonic.AppDir/usr/lib/ # Opensuse tumbleweed fix
+cp /usr/lib/x86_64-linux-gnu/libtheoraenc.so.1 Supersonic.AppDir/usr/lib/ # Opensuse tumbleweed fix
+cp /usr/lib/x86_64-linux-gnu/libtheoradec.so.1 Supersonic.AppDir/usr/lib/ # Opensuse tumbleweed fix
+cp /usr/lib/x86_64-linux-gnu/libxml2.so.2 Supersonic.AppDir/usr/lib/ # CachyOS fix
+cp /usr/lib/x86_64-linux-gnu/libicuuc.so.70 Supersonic.AppDir/usr/lib/ # CachyOS fix
+cp /usr/lib/x86_64-linux-gnu/libicudata.so.70 Supersonic.AppDir/usr/lib/ # CachyOS fix
 printf '%s\n' '#!/bin/bash' 'SELF=$(readlink -f "$0")' 'HERE=${SELF%/*}' 'EXEC="${HERE}/usr/bin/supersonic"' 'export LD_LIBRARY_PATH="/usr/lib64:/lib64:/usr/lib/x86_64-linux-gnu:/usr/lib:${HERE}/usr/lib/"' 'exec "${EXEC}";' > Supersonic.AppDir/AppRun
 printf '%s\n' '[Desktop Entry]' 'Name=Supersonic' 'Exec=supersonic' 'Icon=ico' 'Type=Application' 'Comment=A lightweight cross-platform desktop client for self-hosted music servers' 'Categories=AudioVideo;' > Supersonic.AppDir/"supersonic.desktop"
 chmod +x Supersonic.AppDir/AppRun
