@@ -1,5 +1,22 @@
 # Change Log
 
+## [0.18.1]
+
+### Added
+- [#696](https://github.com/dweymouth/supersonic/issues/696) Save and use the most recently selected music library when re-launching app
+- [#697](https://github.com/dweymouth/supersonic/issues/697) Add Artists to the supported list of startup pages
+
+### Fixed
+- [#412](https://github.com/dweymouth/supersonic/issues/412) Occasionally crashing on Linux when monitors go idle
+- [#419](https://github.com/dweymouth/supersonic/issues/419) AppImage: failing to start due to "No GLXFBConfigs returned"
+- [#658](https://github.com/dweymouth/supersonic/issues/658) Rework format for now playing status line
+- [#664](https://github.com/dweymouth/supersonic/issues/664) AppImage: failing to start on openSUSE-Tumbleweed and CachyOS
+- [#423](https://github.com/dweymouth/supersonic/issues/423) Silenty failing to add large number of tracks to playlist (OpenSubsonic servers)
+- [#666](https://github.com/dweymouth/supersonic/issues/666) Fail to start on Windows ARM64 or older x64 CPUs
+- [#690](https://github.com/dweymouth/supersonic/issues/690) Search results limited to 20 items
+- [#691](https://github.com/dweymouth/supersonic/issues/691) Transcoding not working with Jellyfin
+- [#703](https://github.com/dweymouth/supersonic/issues/703) Crashing on "Shuffle albums" if fewer than 20 albums available
+
 ## [0.18.0]
 
 ### Added

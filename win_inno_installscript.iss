@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Supersonic"
-#define MyAppVersion "0.18.0"
+#define MyAppVersion "0.18.1"
 #define MyAppPublisher "Drew Weymouth"
 #define MyAppURL "https://github.com/dweymouth/supersonic"
 #define MyAppExeName "Supersonic.exe"

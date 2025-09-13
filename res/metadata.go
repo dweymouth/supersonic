@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.18.0"
+	AppVersion       = "0.18.1"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,13 +15,18 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* Make play button on Albums page configurable to shuffle or play in order
-* Add sample rate, bit depth, and channel count to track info dialog
-* Add waveform seekbar
-* Add CLI commands to start minimized, and to show/raise the app window
-* Add CLI commands to search and play albums, tracks, and playlists
-* Add player control buttons to Windows taskbar thumbnail
-* Add ability to stop playback after current track finishes`
+* Save and use the most recently selected music library when re-launching app
+* Add Artists to the supported list of startup pages`
 
-	WhatsFixed = ``
+	WhatsFixed = `
+## Fixed
+* Occasionally crashing on Linux when monitors go idle
+* AppImage: failing to start due to "No GLXFBConfigs returned
+* AppImage: failing to start on openSUSE-Tumbleweed and CachyOS
+* Rework format for now playing status line
+* Silenty failing to add large number of tracks to playlist (OpenSubsonic servers)
+* Fail to start on Windows ARM64 or older x64 CPUs
+* Search results limited to 20 items
+* Transcoding not working with Jellyfin
+* Crashing on "Shuffle albums" if fewer than 20 albums available`
 )

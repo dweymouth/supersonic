@@ -63,23 +63,33 @@
   </screenshots>
 
  <releases>
-  <release date="2025-08-12" version="0.18.0">
+  <release date="2025-09-13" version="0.18.1">
    <description>
      <p>
-       Version 0.18.0 of Supersonic
+       Version 0.18.1 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Make play button on Albums page configurable to shuffle or play in order</li>
-       <li>Add sample rate, bit depth, and channel count to track info dialog</li>
-       <li>Add waveform seekbar</li>
-       <li>Add CLI commands to start minimized, and to show/raise the app window</li>
-       <li>Add CLI commands to search and play albums, tracks, and playlists</li>
-       <li>Add player control buttons to Windows taskbar thumbnail</li>
-       <li>Add ability to stop playback after current track finishes</li>
+       <li>Save and use the most recently selected music library when re-launching app</li>
+       <li>Add Artists to the supported list of startup pages</li>
+     </ul>
+
+     <p>
+       Fixed
+     </p>
+     <ul>
+       <li>Occasionally crashing on Linux when monitors go idle</li>
+       <li>AppImage: failing to start due to "No GLXFBConfigs returned</li>
+       <li>AppImage: failing to start on openSUSE-Tumbleweed and CachyOS</li>
+       <li>Rework format for now playing status line</li>
+       <li>Silenty failing to add large number of tracks to playlist (OpenSubsonic servers)</li>
+       <li>Fail to start on Windows ARM64 or older x64 CPUs</li>
+       <li>Search results limited to 20 items</li>
+       <li>Transcoding not working with Jellyfin</li>
+       <li>Crashing on "Shuffle albums" if fewer than 20 albums available</li>
      </ul>
 
    </description>
