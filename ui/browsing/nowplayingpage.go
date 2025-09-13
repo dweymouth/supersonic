@@ -556,18 +556,18 @@ func (a *NowPlayingPage) formatStatusLine() {
 			util.SecondsToMMSS(playerStats.TimePos),
 			util.SecondsToMMSS(dur))
 	}
-	status := fmt.Sprintf("%s (%d/%d)%s", state, trackNum,
-		len(a.queue), statusSuffix)
+	status := fmt.Sprintf("%s (%d/%d)%s · %s: %s", state, trackNum,
+		len(a.queue), statusSuffix, lang.L("Total time"), util.SecondsToTimeString(a.totalTime))
 
 	mediaInfo := ""
 	if state != stopped {
 		mediaInfo = a.formatMediaInfoStr(curPlayer)
 	}
 	if mediaInfo != "" {
-		mediaInfo = " · " + mediaInfo
+		mediaInfo = " | " + mediaInfo
 	}
 
-	a.statusLabel.Text = fmt.Sprintf("%s%s | %s: %s", status, mediaInfo, lang.L("Total time"), util.SecondsToTimeString(a.totalTime))
+	a.statusLabel.Text = fmt.Sprintf("%s%s", status, mediaInfo)
 	if lastStatus != a.statusLabel.Text {
 		a.statusLabel.Refresh()
 	}
