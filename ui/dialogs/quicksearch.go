@@ -37,7 +37,7 @@ func NewQuickSearch(mp mediaprovider.MediaProvider, im util.ImageFetcher) *Quick
 
 func (q *QuickSearch) onSearched(query string) []*mediaprovider.SearchResult {
 	if query != "" {
-		if res, err := q.mp.SearchAll(query, 20); err != nil {
+		if res, err := q.mp.SearchAll(query, 50); err != nil {
 			q.results = nil
 			log.Printf("Error searching: %s", err.Error())
 		} else {
