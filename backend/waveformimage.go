@@ -308,7 +308,7 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 			currentSize := stat.Size()
 
 			// how many bytes can we read without nearing EOF
-			readableBytes := currentSize - int64(samplesPerChunk)*int64(curChunk)*bytesPerSample - 8192 //buffer for safety
+			readableBytes := currentSize - int64(samplesPerChunk)*int64(curChunk)*bytesPerSample - 8192 // buffer for safety
 
 			// Estimate how many samples we can read
 			maxSamples := int(readableBytes / bytesPerSample)
@@ -391,7 +391,7 @@ func computePeakAndRMS(chunk []float64) (peak float64, rms float64) {
 		sumSquares += float64(v * v)
 	}
 	rms = math.Sqrt(sumSquares / float64(len(chunk)))
-	return
+	return peak, rms
 }
 
 func float64ToByte(val float64) byte {

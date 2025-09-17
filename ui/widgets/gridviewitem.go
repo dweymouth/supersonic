@@ -21,8 +21,10 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
-var _ fyne.Widget = (*GridViewItem)(nil)
-var _ fyne.Focusable = (*GridViewItem)(nil)
+var (
+	_ fyne.Widget    = (*GridViewItem)(nil)
+	_ fyne.Focusable = (*GridViewItem)(nil)
+)
 
 var _ fyne.Widget = (*coverImage)(nil)
 

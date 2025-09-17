@@ -389,7 +389,8 @@ func (p *PlaylistList) buildHeaderAndLayout() {
 		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
 		{Text: lang.L("_Description"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
 		{Text: lang.L("Owner"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: trackCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}}, p.columnsLayout)
+		{Text: trackCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
+	}, p.columnsLayout)
 	p.header.SetSorting(p.sorting)
 	p.header.OnColumnSortChanged = p.onSorted
 }
@@ -422,7 +423,7 @@ func (p *PlaylistList) doSortPlaylists() {
 		return
 	}
 	switch p.sorting.ColNumber {
-	case 0: //Name
+	case 0: // Name
 		p.stringSort(func(p *mediaprovider.Playlist) string { return p.Name })
 	case 1: // Description
 		p.stringSort(func(p *mediaprovider.Playlist) string { return p.Description })

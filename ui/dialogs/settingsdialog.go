@@ -488,7 +488,8 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	themeModeSelect := widget.NewSelect([]string{
 		string(myTheme.AppearanceDark),
 		string(myTheme.AppearanceLight),
-		string(myTheme.AppearanceAuto)}, nil)
+		string(myTheme.AppearanceAuto),
+	}, nil)
 	themeModeSelect.OnChanged = func(_ string) {
 		s.config.Theme.Appearance = themeModeSelect.Options[themeModeSelect.SelectedIndex()]
 		if s.OnThemeSettingChanged != nil {

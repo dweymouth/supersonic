@@ -309,7 +309,6 @@ func (c *Controller) ShowAboutDialog() {
 }
 
 func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map[string]string) {
-
 	devs, err := c.App.LocalPlayer.ListAudioDevices()
 	if err != nil {
 		log.Printf("error listing audio devices: %v", err)
@@ -358,7 +357,6 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	c.ClosePopUpOnEscape(pop)
 	c.haveModal = true
 	pop.Show()
-
 }
 
 func (c *Controller) doModalClosed() {
@@ -467,7 +465,6 @@ func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track, downloadN
 			} else {
 				go c.downloadTracks(tracks, file.URI().Path(), downloadName)
 			}
-
 		},
 		c.MainWindow)
 	dg.SetFileName(fileName)

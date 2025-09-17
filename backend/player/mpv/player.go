@@ -492,7 +492,7 @@ func (p *Player) eventHandler(ctx context.Context) {
 		default:
 			e := p.mpv.WaitEvent(1 /*timeout seconds*/)
 			if e.Event_Id != mpv.EVENT_NONE {
-				//log.Printf("mpv event: %+v\n", e)
+				// log.Printf("mpv event: %+v\n", e)
 			}
 			switch e.Event_Id {
 			case mpv.EVENT_PLAYBACK_RESTART:

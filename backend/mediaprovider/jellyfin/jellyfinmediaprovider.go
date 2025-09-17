@@ -438,7 +438,7 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		Duration:    time.Duration(ch.RunTimeTicks/runTimeTicksPerMicrosecond) * time.Microsecond,
 		TrackNumber: ch.IndexNumber,
 		DiscNumber:  ch.DiscNumber,
-		//Genre:       ch.Genres,
+		// Genre:       ch.Genres,
 		ArtistIDs:   artistIDs,
 		ArtistNames: artistNames,
 		Album:       ch.Album,

@@ -109,7 +109,6 @@ func (j *JukeboxPlayer) SetNextTrack(track *mediaprovider.Track) error {
 	}
 	j.queueLength += 1
 	return nil
-
 }
 
 func (j *JukeboxPlayer) SeekSeconds(secs float64) error {

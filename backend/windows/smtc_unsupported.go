@@ -4,8 +4,10 @@ package windows
 
 import "errors"
 
-type SMTCPlaybackState int
-type SMTCButton int
+type (
+	SMTCPlaybackState int
+	SMTCButton        int
+)
 
 const (
 	// constants from smtc.h in github.com/supersonic-app/smtc-dll

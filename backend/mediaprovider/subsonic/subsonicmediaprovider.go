@@ -298,7 +298,8 @@ func (s *subsonicMediaProvider) ClientDecidesScrobble() bool { return true }
 func (s *subsonicMediaProvider) TrackBeganPlayback(trackID string) error {
 	return s.client.Scrobble(trackID, map[string]string{
 		"time":       strconv.FormatInt(time.Now().UnixMilli(), 10),
-		"submission": "false"})
+		"submission": "false",
+	})
 }
 
 func (s *subsonicMediaProvider) TrackEndedPlayback(trackID string, _ int, submission bool) error {
@@ -307,7 +308,8 @@ func (s *subsonicMediaProvider) TrackEndedPlayback(trackID string, _ int, submis
 	}
 	return s.client.Scrobble(trackID, map[string]string{
 		"time":       strconv.FormatInt(time.Now().UnixMilli(), 10),
-		"submission": "true"})
+		"submission": "true",
+	})
 }
 
 func (s *subsonicMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteParameters, favorite bool) error {

@@ -103,7 +103,7 @@ var _ fyne.Tappable = (*StarRating)(nil)
 
 func (s *StarRating) Tapped(*fyne.PointEvent) {
 	if s.mouseHoverRating <= 0 {
-		return //shouldn't happen
+		return // shouldn't happen
 	}
 	if s.Rating == s.mouseHoverRating {
 		s.Rating = 0
