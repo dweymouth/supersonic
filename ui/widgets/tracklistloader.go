@@ -58,7 +58,7 @@ func (t *TracklistLoader) loadMoreTracks(num int) {
 			t.trackBuffer = make([]*mediaprovider.Track, 0, num)
 		}
 		t.trackBuffer = t.trackBuffer[:0]
-		for i := 0; i < num; i++ {
+		for range num {
 			tr := t.iter.Next()
 			if tr == nil {
 				t.done = true

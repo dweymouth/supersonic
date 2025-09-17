@@ -86,7 +86,7 @@ func (w *WaveformImageJob) Get() *WaveformImage {
 	result := NewWaveformImage()
 
 	// Copy each scanline from w.img to result
-	for y := 0; y < height; y++ {
+	for y := range height {
 		srcOffset := w.img.PixOffset(0, y)
 		dstOffset := result.PixOffset(0, y)
 		copy(result.Pix[dstOffset:dstOffset+w.progress*4], w.img.Pix[srcOffset:srcOffset+w.progress*4])
@@ -226,7 +226,7 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 	opaqueColor := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	translucentColor := color.NRGBA{R: 255, G: 255, B: 255, A: 128}
 
-	for x := 0; x < 1024; x++ {
+	for x := range 1024 {
 		for data.progress <= x {
 			if data.done {
 				return
@@ -341,7 +341,7 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 		}
 
 		// Process samples
-		for i := 0; i < n; i++ {
+		for i := range n {
 			sample := float64(buf.Data[i]) / float64(1<<15) // Normalize to [-1, 1]
 			chunkSamples = append(chunkSamples, sample)
 

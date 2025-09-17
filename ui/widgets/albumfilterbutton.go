@@ -236,7 +236,7 @@ type GenreFilterSubsection struct {
 	genreList []string
 	onChanged func([]string)
 
-	selectedGenres      map[string]interface{}
+	selectedGenres      map[string]any
 	selectedGenresMutex sync.RWMutex
 
 	filterText         *widget.Entry
@@ -253,7 +253,7 @@ type GenreFilterSubsection struct {
 func NewGenreFilterSubsection(onChanged func([]string), initialSelectedGenres []string) *GenreFilterSubsection {
 	g := &GenreFilterSubsection{
 		onChanged:      onChanged,
-		selectedGenres: make(map[string]interface{}),
+		selectedGenres: make(map[string]any),
 	}
 	g.ExtendBaseWidget(g)
 

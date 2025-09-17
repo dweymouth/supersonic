@@ -344,7 +344,7 @@ func (j *jellyfinMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteP
 	}
 
 	numBatches := int(math.Ceil(float64(len(allIDs)) / float64(batchSize)))
-	for i := 0; i < numBatches; i++ {
+	for i := range numBatches {
 		var wg sync.WaitGroup
 		batchSetFavorite(i*batchSize, &wg)
 		wg.Wait()

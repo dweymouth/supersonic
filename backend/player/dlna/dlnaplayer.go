@@ -618,7 +618,7 @@ func (d *DLNAPlayer) lookupProxyURL(key string) (string, bool) {
 	d.proxyURLLock.Lock()
 	defer d.proxyURLLock.Unlock()
 
-	for i := 0; i < len(d.proxyURLs); i++ {
+	for i := range len(d.proxyURLs) {
 		if d.proxyURLs[i].key == key {
 			url := d.proxyURLs[i].url
 			// Move accessed entry to the most recent position
@@ -632,7 +632,7 @@ func (d *DLNAPlayer) lookupProxyURL(key string) (string, bool) {
 
 func (d *DLNAPlayer) _updateProxyURL(key, url string) {
 	// Check if the key already exists, and if so, move it to the most recently used position
-	for i := 0; i < len(d.proxyURLs); i++ {
+	for i := range len(d.proxyURLs) {
 		if d.proxyURLs[i].key == key {
 			if i < len(d.proxyURLs)-1 {
 				// Shift elements to the left from found position to the end
@@ -652,19 +652,19 @@ func (d *DLNAPlayer) _updateProxyURL(key, url string) {
 
 type retryLogger struct{}
 
-func (retryLogger) Error(msg string, keysAndValues ...interface{}) {
+func (retryLogger) Error(msg string, keysAndValues ...any) {
 	log.Println(msg, keysAndValues)
 }
 
-func (retryLogger) Info(msg string, keysAndValues ...interface{}) {
+func (retryLogger) Info(msg string, keysAndValues ...any) {
 	log.Println(msg, keysAndValues)
 }
 
-func (retryLogger) Warn(msg string, keysAndValues ...interface{}) {
+func (retryLogger) Warn(msg string, keysAndValues ...any) {
 	log.Println(msg, keysAndValues)
 }
 
-func (retryLogger) Debug(msg string, keysAndValues ...interface{}) {
+func (retryLogger) Debug(msg string, keysAndValues ...any) {
 	// log only retries, not every request
 	if strings.Contains(msg, "retrying request") {
 		log.Println(msg, keysAndValues)

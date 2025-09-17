@@ -342,7 +342,7 @@ func (s *subsonicMediaProvider) SetRating(params mediaprovider.RatingFavoritePar
 	}
 
 	numBatches := int(math.Ceil(float64(len(params.TrackIDs)) / float64(batchSize)))
-	for i := 0; i < numBatches; i++ {
+	for i := range numBatches {
 		var wg sync.WaitGroup
 		batchSetRating(i*batchSize, &wg)
 		wg.Wait()

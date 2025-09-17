@@ -23,7 +23,7 @@ func NewColumnsLayout(widths []float32) *ColumnsLayout {
 func (c *ColumnsLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	var width float32
 	var height float32
-	for i := 0; i < len(objects); i++ {
+	for i := range objects {
 		if !objects[i].Visible() {
 			continue
 		}
@@ -56,7 +56,7 @@ func (c *ColumnsLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	expandObjW := extraW / float32(expandObjCount)
 
 	var x float32
-	for i := 0; i < len(objects); i++ {
+	for i := range objects {
 		if !objects[i].Visible() {
 			continue
 		}

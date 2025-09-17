@@ -45,7 +45,7 @@ func NewStarRating() *StarRating {
 func (s *StarRating) createContainer() {
 	s.container = container.New(layout.NewCustomPaddedHBoxLayout(0))
 	var im *canvas.Image
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		if s.IsDisabled {
 			im = canvas.NewImageFromResource(themedDisabledStarOutline)
 		} else if s.Rating > i {
@@ -126,7 +126,7 @@ func (s *StarRating) Refresh() {
 	if !s.holdRating && s.mouseHoverRating > 0 {
 		rating = s.mouseHoverRating
 	}
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		im := s.container.Objects[i].(*canvas.Image)
 		im.SetMinSize(fyne.NewSize(s.StarSize, s.StarSize))
 		if s.IsDisabled {
