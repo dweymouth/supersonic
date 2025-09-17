@@ -43,7 +43,7 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 		m.App.Config.Application.AddToPlaylistSkipDuplicates = sp.SkipDuplicates
 		if id == "" /* creating new playlist */ {
 			go func() {
-				err := m.App.ServerManager.Server.CreatePlaylist(sp.SearchDialog.SearchQuery(), trackIDs)
+				err := m.App.ServerManager.Server.CreatePlaylistWithTracks(sp.SearchDialog.SearchQuery(), trackIDs)
 				if err == nil {
 					notifySuccess(len(trackIDs))
 				} else {
@@ -132,12 +132,47 @@ func (m *Controller) DoEditPlaylistWorkflow(playlist *mediaprovider.Playlist) {
 		pop.Hide()
 		m.doModalClosed()
 		go func() {
-			err := m.App.ServerManager.Server.EditPlaylist(playlist.ID, dlg.Name, dlg.Description, dlg.IsPublic)
+			s := m.App.ServerManager.GetServer()
+			if s == nil {
+				return // logged out
+			}
+			err := s.EditPlaylist(playlist.ID, dlg.Name, dlg.Description, dlg.IsPublic)
 			if err != nil {
+				fyne.Do(func() { m.ToastProvider.ShowErrorToast(lang.L("Error updating playlist")) })
 				log.Printf("error updating playlist: %s", err.Error())
 			} else if rte := m.CurPageFunc(); rte.Page == Playlist && rte.Arg == playlist.ID {
 				// if user is on playlist page, reload to get the updates
 				fyne.Do(m.ReloadFunc)
+			}
+		}()
+	}
+	m.haveModal = true
+	pop.Show()
+}
+
+func (m *Controller) DoCreatePlaylistWorkflow() {
+	canMakePublic := m.App.ServerManager.Server.CanMakePublicPlaylist()
+	dlg := dialogs.NewCreatePlaylistDialog(canMakePublic)
+	pop := widget.NewModalPopUp(dlg, m.MainWindow.Canvas())
+	m.ClosePopUpOnEscape(pop)
+	dlg.OnCanceled = func() {
+		pop.Hide()
+		m.doModalClosed()
+	}
+	dlg.OnUpdateMetadata = func() {
+		pop.Hide()
+		m.doModalClosed()
+		go func() {
+			s := m.App.ServerManager.GetServer()
+			if s == nil {
+				return // logged out
+			}
+			err := s.CreatePlaylist(dlg.Name, dlg.Description, dlg.IsPublic)
+			if err != nil {
+				fyne.Do(func() { m.ToastProvider.ShowErrorToast(lang.L("Error creating playlist")) })
+				log.Printf("error creating playlist: %s", err.Error())
+			} else {
+				fyne.Do(func() { m.ToastProvider.ShowSuccessToast(lang.L("Successfully created playlist")) })
 			}
 		}()
 	}

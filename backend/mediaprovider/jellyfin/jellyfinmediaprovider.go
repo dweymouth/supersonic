@@ -1,6 +1,7 @@
 package jellyfin
 
 import (
+	"errors"
 	"image"
 	"io"
 	"math"
@@ -77,7 +78,7 @@ func (j *jellyfinMediaProvider) SetLibrary(id string) error {
 	return nil
 }
 
-func (j *jellyfinMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
+func (j *jellyfinMediaProvider) CreatePlaylistWithTracks(name string, trackIDs []string) error {
 	return j.client.CreatePlaylist(name, trackIDs)
 }
 
@@ -91,6 +92,10 @@ func (j *jellyfinMediaProvider) CanMakePublicPlaylist() bool {
 
 func (j *jellyfinMediaProvider) EditPlaylist(id, name, description string, public bool) error {
 	return j.client.UpdatePlaylistMetadata(id, name, description)
+}
+
+func (j *jellyfinMediaProvider) CreatePlaylist(name, description string, public bool) error {
+	return errors.New("unimplemented")
 }
 
 func (j *jellyfinMediaProvider) AddPlaylistTracks(id string, trackIDsToAdd []string) error {

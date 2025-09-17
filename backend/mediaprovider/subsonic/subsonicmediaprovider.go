@@ -62,9 +62,30 @@ func (s *subsonicMediaProvider) SetLibrary(id string) error {
 	return nil
 }
 
-func (s *subsonicMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
+func (s *subsonicMediaProvider) CreatePlaylistWithTracks(name string, trackIDs []string) error {
 	s.playlistsCached = nil
 	return s.client.CreatePlaylistWithTracks(trackIDs, map[string]string{"name": name})
+}
+
+func (s *subsonicMediaProvider) CreatePlaylist(name, description string, public bool) error {
+	pl, err := s.client.CreatePlaylist(map[string]string{"name": name})
+	if err != nil {
+		return err
+	}
+	if pl == nil || (description == "" && !public) {
+		// Subsonic <= 1.14.0 doesn't return a playlist
+		// Not having the ID, we can't set the description or public property
+		return nil
+	}
+
+	params := make(map[string]string)
+	if description != "" {
+		params["description"] = description
+	}
+	if public {
+		params["public"] = "true"
+	}
+	return s.client.UpdatePlaylist(pl.ID, params)
 }
 
 func (s *subsonicMediaProvider) DeletePlaylist(id string) error {

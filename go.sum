@@ -132,8 +132,8 @@ github.com/supersonic-app/go-glfw/v3.3/glfw v0.0.0-20250906235349-c09e5a2f6b75 h
 github.com/supersonic-app/go-glfw/v3.3/glfw v0.0.0-20250906235349-c09e5a2f6b75/go.mod h1:SyRD8YfuKk+ZXlDqYiqe1qMSqjNgtHzBTG810KUagMc=
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449 h1:UHIPI43VzyWuIF8z8WVMdjMsC/orZTZQJraD/Iv+ghw=
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
-github.com/supersonic-app/go-subsonic v0.0.0-20250913173646-cf4fceb19b43 h1:Ds3zznwB8v2EowUg+GPk2y+IDzUAujv522EN8H6XNdk=
-github.com/supersonic-app/go-subsonic v0.0.0-20250913173646-cf4fceb19b43/go.mod h1:ClhAgC2qobwH19D6kdwULLYSHlOmldDGkdu2G2Z0Ijo=
+github.com/supersonic-app/go-subsonic v0.0.0-20250917154259-2bbe535cf8f3 h1:RuCWkkDc0THP9Y5wbPG8q0Or5zT5cxfLdVzznX+hXbA=
+github.com/supersonic-app/go-subsonic v0.0.0-20250917154259-2bbe535cf8f3/go.mod h1:ClhAgC2qobwH19D6kdwULLYSHlOmldDGkdu2G2Z0Ijo=
 github.com/supersonic-app/go-upnpcast v0.0.0-20250330154256-b957204209a5 h1:aoUJKPFD/ZrNZjK6fl2Xhazwsttx42esKxhSSzEE3Bo=
 github.com/supersonic-app/go-upnpcast v0.0.0-20250330154256-b957204209a5/go.mod h1:ibt19zDV5/vvF14jHJpTv3AOorq1EbmrMAubxnuvR5Y=
 github.com/yuin/goldmark v1.7.8 h1:iERMLn0/QJeHFhxSt3p6PeN9mGnvIKSpG9YYorDMnic=

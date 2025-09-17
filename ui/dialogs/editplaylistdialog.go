@@ -26,10 +26,19 @@ type EditPlaylistDialog struct {
 }
 
 func NewEditPlaylistDialog(playlist *mediaprovider.Playlist, showPublicCheck bool) *EditPlaylistDialog {
-	e := &EditPlaylistDialog{
-		IsPublic:    playlist.Public,
-		Name:        playlist.Name,
-		Description: playlist.Description,
+	return newEditPlaylistDialog(playlist, showPublicCheck)
+}
+
+func NewCreatePlaylistDialog(showPublicCheck bool) *EditPlaylistDialog {
+	return newEditPlaylistDialog(nil, showPublicCheck)
+}
+
+func newEditPlaylistDialog(playlist *mediaprovider.Playlist, showPublicCheck bool) *EditPlaylistDialog {
+	e := &EditPlaylistDialog{}
+	if playlist != nil {
+		e.IsPublic = playlist.Public
+		e.Name = playlist.Name
+		e.Description = playlist.Description
 	}
 	e.ExtendBaseWidget(e)
 
@@ -42,6 +51,7 @@ func NewEditPlaylistDialog(playlist *mediaprovider.Playlist, showPublicCheck boo
 			e.OnDeletePlaylist()
 		}
 	})
+	deleteBtn.Hidden = playlist == nil
 	submitBtn := widget.NewButtonWithIcon(lang.L("OK"), theme.ConfirmIcon(), func() {
 		if e.OnUpdateMetadata != nil {
 			e.OnUpdateMetadata()
