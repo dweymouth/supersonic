@@ -24,18 +24,18 @@ const (
 
 type SMTC struct{}
 
-var smtcUnsupportedErr = errors.New("SMTC is not supported on this platformo")
+var errSMTCUnsupported = errors.New("no support for SMTC on this platform")
 
 func InitSMTCForWindow(hwnd uintptr) (*SMTC, error) {
-	return nil, smtcUnsupportedErr
+	return nil, errSMTCUnsupported
 }
 
 func (s *SMTC) SetEnabled(enabled bool) error {
-	return smtcUnsupportedErr
+	return errSMTCUnsupported
 }
 
 func (s *SMTC) SetThumbnail(filepath string) error {
-	return smtcUnsupportedErr
+	return errSMTCUnsupported
 }
 
 func (s *SMTC) OnButtonPressed(func(SMTCButton)) {}
@@ -45,13 +45,13 @@ func (s *SMTC) OnSeek(f func(millis int)) {}
 func (s *SMTC) Shutdown() {}
 
 func (s *SMTC) UpdatePlaybackState(state SMTCPlaybackState) error {
-	return smtcUnsupportedErr
+	return errSMTCUnsupported
 }
 
 func (s *SMTC) UpdateMetadata(title, artist string) error {
-	return smtcUnsupportedErr
+	return errSMTCUnsupported
 }
 
 func (s *SMTC) UpdatePosition(positionMillis, durationMillis int) error {
-	return smtcUnsupportedErr
+	return errSMTCUnsupported
 }

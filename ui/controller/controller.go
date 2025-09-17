@@ -2,6 +2,7 @@ package controller
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -546,7 +547,7 @@ func (c *Controller) sendNotification(title, content string) {
 
 func (c *Controller) showError(content string) {
 	// TODO: display an in-app toast message instead of a dialog.
-	dialog.ShowError(fmt.Errorf(content), c.MainWindow)
+	dialog.ShowError(errors.New(content), c.MainWindow)
 }
 
 func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover image.Image) {
