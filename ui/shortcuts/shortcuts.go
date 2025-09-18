@@ -20,6 +20,8 @@ var (
 	ShortcutNavSeven = desktop.CustomShortcut{KeyName: fyne.Key7, Modifier: fyne.KeyModifierShortcutDefault}
 	ShortcutNavEight = desktop.CustomShortcut{KeyName: fyne.Key8, Modifier: fyne.KeyModifierShortcutDefault}
 
-	NavShortcuts = []desktop.CustomShortcut{ShortcutNavOne, ShortcutNavTwo, ShortcutNavThree,
-		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix, ShortcutNavSeven, ShortcutNavEight}
+	NavShortcuts = []desktop.CustomShortcut{
+		ShortcutNavOne, ShortcutNavTwo, ShortcutNavThree,
+		ShortcutNavFour, ShortcutNavFive, ShortcutNavSix, ShortcutNavSeven, ShortcutNavEight,
+	}
 )

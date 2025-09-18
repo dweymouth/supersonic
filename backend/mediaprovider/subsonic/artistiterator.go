@@ -22,11 +22,8 @@ func (s *subsonicMediaProvider) ArtistSortOrders() []string {
 	}
 }
 
-func filterArtistMatches(f mediaprovider.ArtistFilter, artist *subsonic.ArtistID3) bool {
-	if artist == nil {
-		return false
-	}
-	return true
+func filterArtistMatches(_ mediaprovider.ArtistFilter, artist *subsonic.ArtistID3) bool {
+	return artist != nil
 }
 
 func (s *subsonicMediaProvider) IterateArtists(sortOrder string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
@@ -176,9 +173,7 @@ func (s *subsonicMediaProvider) artistFetchFnFromStandardSort(sortFn func([]*sub
 		}
 		var artists []*subsonic.ArtistID3
 		for _, idx := range idxs.Index {
-			for _, ar := range idx.Artist {
-				artists = append(artists, ar)
-			}
+			artists = append(artists, idx.Artist...)
 		}
 		artists = sortFn(artists)
 		return artists, nil

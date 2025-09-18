@@ -88,7 +88,6 @@ func (m *Controller) DoAddTracksToPlaylistWorkflow(trackIDs []string) {
 				}()
 			}
 		}
-
 	})
 	m.ClosePopUpOnEscape(pop)
 	m.haveModal = true

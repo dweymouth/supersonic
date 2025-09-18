@@ -204,7 +204,8 @@ func NewGenreList(sorting widgets.ListHeaderSort) *GenreList {
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
 		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
 		{Text: albumCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
-		{Text: trackCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
+		{Text: trackCount, Alignment: fyne.TextAlignTrailing, CanToggleVisible: false},
+	},
 		a.columnsLayout)
 	a.hdr.SetSorting(sorting)
 	a.hdr.OnColumnSortChanged = a.onSorted
@@ -261,7 +262,7 @@ func (g *GenreList) doSortGenres() {
 		return
 	}
 	switch g.sorting.ColNumber {
-	case 0: //Name
+	case 0: // Name
 		g.stringSort(func(g *mediaprovider.Genre) string { return g.Name })
 	case 1: // Album Count
 		g.intSort(func(g *mediaprovider.Genre) int { return g.AlbumCount })

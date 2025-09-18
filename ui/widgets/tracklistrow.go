@@ -352,6 +352,7 @@ func (t *tracklistRowBase) create(tracklist *Tracklist) {
 func (t *tracklistRowBase) SetOnTappedSecondary(f func(*fyne.PointEvent, int)) {
 	t.OnTappedSecondary = f
 }
+
 func (t *tracklistRowBase) TrackID() string {
 	return t.trackID
 }

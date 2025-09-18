@@ -51,7 +51,7 @@ func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, server
 		TimePos:    stats.TimePos,
 	}
 	b, _ := json.Marshal(saved)
-	err := os.WriteFile(filepath, b, 0644)
+	err := os.WriteFile(filepath, b, 0o644)
 
 	if server != nil {
 		// save to server

@@ -264,7 +264,6 @@ func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		p.ensureRadiosMenu()
 		p.radiosMenu.ShowAtPosition(e.AbsolutePosition)
 	}
-
 }
 
 func (p *PlayQueueList) ensureTracksMenu() {

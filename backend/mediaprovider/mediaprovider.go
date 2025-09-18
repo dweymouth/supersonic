@@ -32,9 +32,11 @@ type MediaIterator[M any] interface {
 	Next() *M
 }
 
-type ArtistIterator = MediaIterator[Artist]
-type AlbumIterator = MediaIterator[Album]
-type TrackIterator = MediaIterator[Track]
+type (
+	ArtistIterator = MediaIterator[Artist]
+	AlbumIterator  = MediaIterator[Album]
+	TrackIterator  = MediaIterator[Track]
+)
 
 type MediaFilter[M, F any] interface {
 	Options() F

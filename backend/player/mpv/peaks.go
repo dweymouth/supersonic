@@ -3,6 +3,7 @@ package mpv
 // #include <mpv/client.h>
 // int mpv_get_peaks(mpv_handle* handle, double* lPeak, double* rPeak, double* lRMS, double* rRMS);
 import "C"
+
 import (
 	"github.com/supersonic-app/go-mpv"
 )

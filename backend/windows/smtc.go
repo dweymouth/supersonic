@@ -17,8 +17,10 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-type SMTCPlaybackState int
-type SMTCButton int
+type (
+	SMTCPlaybackState int
+	SMTCButton        int
+)
 
 const (
 	// constants from smtc.h in github.com/supersonic-app/smtc-dll

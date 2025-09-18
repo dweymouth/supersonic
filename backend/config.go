@@ -317,7 +317,7 @@ func (c *Config) WriteConfigFile(filepath string) error {
 	if err != nil {
 		return err
 	}
-	os.WriteFile(filepath, b, 0644)
+	os.WriteFile(filepath, b, 0o644)
 
 	return nil
 }

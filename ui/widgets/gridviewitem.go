@@ -21,8 +21,10 @@ import (
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
-var _ fyne.Widget = (*GridViewItem)(nil)
-var _ fyne.Focusable = (*GridViewItem)(nil)
+var (
+	_ fyne.Widget    = (*GridViewItem)(nil)
+	_ fyne.Focusable = (*GridViewItem)(nil)
+)
 
 var _ fyne.Widget = (*coverImage)(nil)
 
@@ -376,11 +378,10 @@ func setPlayBtnTranslucency(f float32) {
 
 	// get theme Primary color as color.NRGBA
 	var primary color.NRGBA
-	switch pr := theme.Color(theme.ColorNamePrimary); pr.(type) {
+	switch pr := theme.Color(theme.ColorNamePrimary).(type) {
 	case color.NRGBA:
-		primary = pr.(color.NRGBA)
+		primary = pr
 	case color.RGBA:
-		pr := pr.(color.RGBA)
 		primary = color.NRGBA{R: pr.R, G: pr.G, B: pr.B, A: pr.A}
 	}
 
