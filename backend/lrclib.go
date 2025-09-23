@@ -80,10 +80,26 @@ func (l *LrcLibFetcher) fetchFromServer(name, artist, album string, durationSecs
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("User-Agent", "Supersonic")
 
+	// Navidrome and Gonic substitute "[Unknown Album]" and "Unknown Album", respectively,
+	// for an empty album name. This will break LrcLib matching.
+	// TODO: if OpenSubsonic later clarifies that servers should not do this, remove this workaround.
+	// N.B.: This workaround will break if servers decide to internationalize the default album name
+	if strings.Contains(album, "Unknown Album") {
+		album = ""
+	}
+	if strings.Contains(artist, "Unknown Artist") {
+		artist = ""
+	}
+
 	q := req.URL.Query()
+	addIf := func(key, value string) {
+		if value != "" {
+			q.Add(key, value)
+		}
+	}
 	q.Add("track_name", name)
-	q.Add("artist_name", artist)
-	q.Add("album_name", album)
+	addIf("artist_name", artist)
+	addIf("album_name", album)
 	q.Add("duration", strconv.Itoa(durationSecs))
 	req.URL.RawQuery = q.Encode()
 
