@@ -24,9 +24,7 @@ var (
 	_ types.OrgMprisMediaPlayer2PlayerAdapterLoopStatus = (*MPRISHandler)(nil)
 )
 
-var (
-	errNotSupported = errors.New("not supported")
-)
+var errNotSupported = errors.New("not supported")
 
 type MPRISHandler struct {
 	// Function called if the player is requested to quit through MPRIS.

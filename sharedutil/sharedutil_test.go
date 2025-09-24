@@ -8,7 +8,6 @@ import (
 )
 
 func Test_ReorderItems(t *testing.T) {
-
 	tracks := []*mediaprovider.Track{
 		{ID: "a"}, // 0
 		{ID: "b"}, // 1

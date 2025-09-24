@@ -508,7 +508,7 @@ func (p *PlaybackManager) PlayRandomAlbums(genreName string) error {
 	}
 	iter := mp.IterateAlbums(mediaprovider.AlbumSortRandom, mediaprovider.NewAlbumFilter(options))
 	insertMode := Replace
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		al := iter.Next()
 		if al == nil {
 			break

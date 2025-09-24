@@ -200,7 +200,6 @@ func (m *Controller) PromptForLoginAndConnect() {
 					pop.Show()
 				}
 			}, m.MainWindow)
-
 	}
 	m.haveModal = true
 	pop.Show()

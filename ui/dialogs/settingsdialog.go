@@ -106,10 +106,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	startupPage = widget.NewSelect(pages, func(_ string) {
 		s.config.Application.StartupPage = backend.SupportedStartupPages[startupPage.SelectedIndex()]
 	})
-	initialIdx := slices.Index(backend.SupportedStartupPages, s.config.Application.StartupPage)
-	if initialIdx < 0 {
-		initialIdx = 0
-	}
+	initialIdx := max(slices.Index(backend.SupportedStartupPages, s.config.Application.StartupPage), 0)
 	startupPage.SetSelectedIndex(initialIdx)
 	if startupPage.Selected == "" {
 		startupPage.SetSelectedIndex(0)
@@ -498,7 +495,8 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	themeModeSelect := widget.NewSelect([]string{
 		string(myTheme.AppearanceDark),
 		string(myTheme.AppearanceLight),
-		string(myTheme.AppearanceAuto)}, nil)
+		string(myTheme.AppearanceAuto),
+	}, nil)
 	themeModeSelect.OnChanged = func(_ string) {
 		s.config.Theme.Appearance = themeModeSelect.Options[themeModeSelect.SelectedIndex()]
 		if s.OnThemeSettingChanged != nil {

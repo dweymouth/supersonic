@@ -253,7 +253,8 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 	a.ExtendBaseWidget(a)
 	a.hdr = widgets.NewListHeader([]widgets.ListColumn{
 		{Text: lang.L("Name"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
-		{Text: lang.L("Home Page"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
+		{Text: lang.L("Home Page"), Alignment: fyne.TextAlignLeading, CanToggleVisible: false},
+	},
 		a.columnsLayout)
 	a.hdr.DisableSorting = true
 	a.list = widgets.NewFocusList(
@@ -299,9 +300,8 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 				row.IsPlaying = isPlaying
 				row.nameLabel.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
 				if isPlaying {
-					row.Content.(*fyne.Container).Objects[0] =
-						container.NewBorder(nil, nil, a.playingIcon, nil,
-							container.New(layout.NewCustomPaddedLayout(0, 0, -5, 0), row.nameLabel))
+					row.Content.(*fyne.Container).Objects[0] = container.NewBorder(nil, nil, a.playingIcon, nil,
+						container.New(layout.NewCustomPaddedLayout(0, 0, -5, 0), row.nameLabel))
 				} else {
 					row.Content.(*fyne.Container).Objects[0] = row.nameLabel
 				}

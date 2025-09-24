@@ -31,7 +31,7 @@ type MultiHyperlink struct {
 
 	// TODO: Once https://github.com/fyne-io/fyne/issues/4336 is resolved,
 	//   we can switch to the much cleaner RichText implementation
-	//provider *widget.RichText
+	// provider *widget.RichText
 
 	objects     []fyne.CanvasObject
 	suffixLabel *ttwidget.RichText
@@ -45,11 +45,11 @@ type MultiHyperlinkSegment struct {
 
 func NewMultiHyperlink() *MultiHyperlink {
 	c := &MultiHyperlink{
-		//provider: widget.NewRichText(),
+		// provider: widget.NewRichText(),
 		content: container.NewWithoutLayout(),
 	}
 	c.ExtendBaseWidget(c)
-	//c.provider.Truncation = fyne.TextTruncateEllipsis
+	// c.provider.Truncation = fyne.TextTruncateEllipsis
 	return c
 }
 
@@ -302,12 +302,12 @@ func (c *MultiHyperlink) Resize(size fyne.Size) {
 }
 
 func (c *MultiHyperlink) Refresh() {
-	//c.syncSegments()
+	// c.syncSegments()
 	c.layoutObjects()
 	c.BaseWidget.Refresh()
 }
 
 func (c *MultiHyperlink) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c.content)
-	//return widget.NewSimpleRenderer(c.provider)
+	// return widget.NewSimpleRenderer(c.provider)
 }

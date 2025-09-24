@@ -89,7 +89,6 @@ func (t *ToastOverlay) makeToastAnimFunc(endPos fyne.Position, dismissal bool) f
 				t.cancelPreviousToast()
 			}
 		}
-
 	}
 }
 

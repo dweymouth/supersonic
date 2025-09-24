@@ -39,9 +39,7 @@ type ImageCache struct {
 	cache map[string]CacheItem
 }
 
-var (
-	ErrNotFound = errors.New("item not found")
-)
+var ErrNotFound = errors.New("item not found")
 
 func (i *ImageCache) Init(ctx context.Context, evictionInterval time.Duration) {
 	i.cache = make(map[string]CacheItem)
@@ -238,5 +236,4 @@ func (i *ImageCache) EvictExpired() {
 			delete(i.cache, key)
 		}
 	}
-
 }

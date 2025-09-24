@@ -71,10 +71,12 @@ func (g *FocusList) FocusNeighbor(curItem widget.ListItemID, up bool) {
 	}
 }
 
-var _ fyne.Tappable = (*FocusListRowBase)(nil)
-var _ fyne.Widget = (*FocusListRowBase)(nil)
-var _ fyne.Focusable = (*FocusListRowBase)(nil)
-var _ desktop.Hoverable = (*FocusListRowBase)(nil)
+var (
+	_ fyne.Tappable     = (*FocusListRowBase)(nil)
+	_ fyne.Widget       = (*FocusListRowBase)(nil)
+	_ fyne.Focusable    = (*FocusListRowBase)(nil)
+	_ desktop.Hoverable = (*FocusListRowBase)(nil)
+)
 
 // Base type used for all list rows in widgets such as Tracklist, etc.
 type FocusListRowBase struct {
@@ -88,7 +90,7 @@ type FocusListRowBase struct {
 
 	OnTapped        func()
 	OnDoubleTapped  func()
-	OnFocusNeighbor func(up bool) //TODO: func(up, selecting bool)
+	OnFocusNeighbor func(up bool) // TODO: func(up, selecting bool)
 
 	tappedAt      int64 // unixMillis
 	focusedRect   canvas.Rectangle

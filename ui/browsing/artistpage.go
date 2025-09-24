@@ -486,7 +486,7 @@ type ArtistPageHeader struct {
 	menuBtn               *widget.Button
 	container             *fyne.Container
 	fullSizeCoverFetching bool
-	//shareMenuItem  *fyne.MenuItem
+	// shareMenuItem  *fyne.MenuItem
 }
 
 func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
