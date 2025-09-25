@@ -112,9 +112,11 @@ type NowPlayingPageConfig struct {
 }
 
 type PlaybackConfig struct {
-	Autoplay           bool
-	RepeatMode         string
-	UseWaveformSeekbar bool
+	Autoplay                 bool
+	RepeatMode               string
+	SkipOneStarWhenShuffling bool
+	SkipKeywordWhenShuffling string
+	UseWaveformSeekbar       bool
 }
 
 type LocalPlaybackConfig struct {
