@@ -430,6 +430,8 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		coverArtID = ch.Id
 	}
 
+	lastPlayed, _ := time.Parse(time.RFC3339Nano, ch.UserData.LastPlayedDate)
+
 	t := &mediaprovider.Track{
 		ID:          ch.Id,
 		CoverArtID:  coverArtID,
@@ -447,6 +449,7 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		Rating:      ch.UserData.Rating,
 		Favorite:    ch.UserData.IsFavorite,
 		PlayCount:   ch.UserData.PlayCount,
+		LastPlayed:  lastPlayed,
 	}
 	if len(ch.MediaSources) > 0 {
 		t.FilePath = ch.MediaSources[0].Path

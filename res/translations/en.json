@@ -131,6 +131,7 @@
     "My Server": "My Server",
     "Name": "Name",
     "Name (A-Z)": "Name (A-Z)",
+    "never": "never",
     "Next": "Next",
     "Nickname": "Nickname",
     "Normal": "Normal",
@@ -289,5 +290,26 @@
     "playlist.addedtracks": {
         "one": "Added one track to playlist",
         "other": "Added {{.trackCount}} tracks to playlist"
+    },
+
+    "x_minutes_ago": {
+        "one": "a minute ago",
+        "other": "{{.minutes}} minutes ago"
+    },
+    "x_hours_ago": {
+        "one": "an hour ago",
+        "other": "{{.hours}} hours ago"
+    },
+    "x_days_ago": {
+        "one": "a day ago",
+        "other": "{{.days}} days ago"
+    },
+    "x_months_ago": {
+        "one": "a month ago",
+        "other": "{{.months}} months ago"
+    },
+    "x_years_ago": {
+        "one": "a year ago",
+        "other": "{{.years}} years ago"
     }
 }

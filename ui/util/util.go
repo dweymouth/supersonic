@@ -100,6 +100,39 @@ func FormatItemDate(date mediaprovider.ItemDate) string {
 	return sb.String()
 }
 
+func LastPlayedDisplayString(t time.Time) string {
+	if t.IsZero() {
+		return lang.L("never")
+	}
+	switch d := time.Since(t); {
+	case d.Hours() < 1:
+		mins := int(d.Minutes())
+		return lang.LocalizePluralKey("x_minutes_ago",
+			fmt.Sprintf("%d minutes ago", mins), mins,
+			map[string]string{"minutes": strconv.Itoa(mins)})
+	case d.Hours() < 24:
+		hrs := int(d.Hours())
+		return lang.LocalizePluralKey("x_hours_ago",
+			fmt.Sprintf("%d hours ago", hrs), hrs,
+			map[string]string{"hours": strconv.Itoa(hrs)})
+	case d.Hours() < 24*31:
+		days := int(d.Hours() / 24)
+		return lang.LocalizePluralKey("x_days_ago",
+			fmt.Sprintf("%d days ago", days), days,
+			map[string]string{"days": strconv.Itoa(days)})
+	case d.Hours() < 24*365:
+		months := int(d.Hours() / (24 * 31))
+		return lang.LocalizePluralKey("x_months_ago",
+			fmt.Sprintf("%d months ago", months), months,
+			map[string]string{"months": strconv.Itoa(months)})
+	default:
+		years := int(d.Hours() / (24 * 365))
+		return lang.LocalizePluralKey("x_years_ago",
+			fmt.Sprintf("%d years ago", years), years,
+			map[string]string{"years": strconv.Itoa(years)})
+	}
+}
+
 var BoldRichTextStyle = widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}, Inline: true}
 
 func MakeOpaque(c color.Color) color.Color {
