@@ -348,7 +348,7 @@ func (j *jellyfinMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteP
 	}
 
 	numBatches := int(math.Ceil(float64(len(allIDs)) / float64(batchSize)))
-	for i := 0; i < numBatches; i++ {
+	for i := range numBatches {
 		var wg sync.WaitGroup
 		batchSetFavorite(i*batchSize, &wg)
 		wg.Wait()
@@ -434,6 +434,8 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		coverArtID = ch.Id
 	}
 
+	lastPlayed, _ := time.Parse(time.RFC3339Nano, ch.UserData.LastPlayedDate)
+
 	t := &mediaprovider.Track{
 		ID:          ch.Id,
 		CoverArtID:  coverArtID,
@@ -442,7 +444,7 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		Duration:    time.Duration(ch.RunTimeTicks/runTimeTicksPerMicrosecond) * time.Microsecond,
 		TrackNumber: ch.IndexNumber,
 		DiscNumber:  ch.DiscNumber,
-		//Genre:       ch.Genres,
+		// Genre:       ch.Genres,
 		ArtistIDs:   artistIDs,
 		ArtistNames: artistNames,
 		Album:       ch.Album,
@@ -451,6 +453,7 @@ func toTrack(ch *jellyfin.Song) *mediaprovider.Track {
 		Rating:      ch.UserData.Rating,
 		Favorite:    ch.UserData.IsFavorite,
 		PlayCount:   ch.UserData.PlayCount,
+		LastPlayed:  lastPlayed,
 	}
 	if len(ch.MediaSources) > 0 {
 		t.FilePath = ch.MediaSources[0].Path

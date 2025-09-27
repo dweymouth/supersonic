@@ -144,7 +144,7 @@ func (s *serverImpl) createHandler() http.Handler {
 		search = strings.ToLower(search)
 
 		filtered := make([]mediaprovider.Playlist, 0)
-		for i := 0; i < len(all); i++ {
+		for i := range all {
 			playlist := all[i]
 			name := strings.ReplaceAll(playlist.Name, " ", "")
 			name = strings.ToLower(name)

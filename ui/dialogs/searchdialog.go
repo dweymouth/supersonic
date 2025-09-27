@@ -374,5 +374,4 @@ func (q *searchEntry) TypedKey(e *fyne.KeyEvent) {
 	default:
 		q.SearchEntry.TypedKey(e)
 	}
-
 }

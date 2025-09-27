@@ -81,6 +81,7 @@ func GenresRoute() Route {
 func PlaylistRoute(id string) Route {
 	return Route{Page: Playlist, Arg: id}
 }
+
 func PlaylistsRoute() Route {
 	return Route{Page: Playlists}
 }

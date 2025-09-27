@@ -106,10 +106,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	startupPage = widget.NewSelect(pages, func(_ string) {
 		s.config.Application.StartupPage = backend.SupportedStartupPages[startupPage.SelectedIndex()]
 	})
-	initialIdx := slices.Index(backend.SupportedStartupPages, s.config.Application.StartupPage)
-	if initialIdx < 0 {
-		initialIdx = 0
-	}
+	initialIdx := max(slices.Index(backend.SupportedStartupPages, s.config.Application.StartupPage), 0)
 	startupPage.SetSelectedIndex(initialIdx)
 	if startupPage.Selected == "" {
 		startupPage.SetSelectedIndex(0)
@@ -430,11 +427,18 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 		disableTranscode,
 		container.NewHBox(transcode, transcodeCodec, transcodeBitRate),
 		s.newSectionSeparator(),
-		widget.NewRichText(&widget.TextSegment{Text: "ReplayGain", Style: util.BoldRichTextStyle}),
+		widget.NewLabelWithStyle("ReplayGain", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel(lang.L("ReplayGain mode")), container.NewGridWithColumns(2, replayGainSelect),
 			widget.NewLabel(lang.L("ReplayGain preamp")), container.NewHBox(preampGain, widget.NewLabel("dB")),
 			widget.NewLabel(lang.L("Prevent clipping")), preventClipping,
+		),
+		s.newSectionSeparator(),
+		widget.NewLabelWithStyle(lang.L("When enqueuing random"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewCheckWithData(lang.L("Skip one-star tracks"), binding.BindBool(&s.config.Playback.SkipOneStarWhenShuffling)),
+		container.NewBorder(nil, nil,
+			widget.NewLabel(lang.L("Skip tracks with keyword")), nil,
+			widget.NewEntryWithData(binding.BindString(&s.config.Playback.SkipKeywordWhenShuffling)),
 		),
 	))
 }
@@ -491,7 +495,8 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	themeModeSelect := widget.NewSelect([]string{
 		string(myTheme.AppearanceDark),
 		string(myTheme.AppearanceLight),
-		string(myTheme.AppearanceAuto)}, nil)
+		string(myTheme.AppearanceAuto),
+	}, nil)
 	themeModeSelect.OnChanged = func(_ string) {
 		s.config.Theme.Appearance = themeModeSelect.Options[themeModeSelect.SelectedIndex()]
 		if s.OnThemeSettingChanged != nil {

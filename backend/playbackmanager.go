@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/charlievieth/strcase"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/dlna"
@@ -27,7 +28,8 @@ type PlaybackManager struct {
 	wfmGen   *WaveformImageGenerator
 	cache    *AudioCache
 	cmdQueue *playbackCommandQueue
-	cfg      *AppConfig
+	appCfg   *AppConfig
+	cfg      *PlaybackConfig
 
 	localPlayer         player.BasePlayer
 	remotePlayersLock   sync.Mutex
@@ -35,8 +37,6 @@ type PlaybackManager struct {
 	currentRemotePlayer *RemotePlaybackDevice
 
 	onWaveformImgUpdate []func(*WaveformImage)
-
-	autoplay bool
 
 	lastPlayTime         float64
 	lastPlayingID        string
@@ -66,8 +66,8 @@ func NewPlaybackManager(
 	pm := &PlaybackManager{
 		engine:      e,
 		cmdQueue:    q,
-		cfg:         appCfg,
-		autoplay:    playbackCfg.Autoplay,
+		appCfg:      appCfg,
+		cfg:         playbackCfg,
 		localPlayer: p,
 		cache:       c,
 	}
@@ -117,7 +117,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 
 	p.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		// Autoplay if enabled and we are on the last track
-		if p.autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+		if p.cfg.Autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
 			p.enqueueAutoplayTracks()
 		}
 		p.handleWaveformImageSongChange(item)
@@ -470,13 +470,23 @@ func (p *PlaybackManager) PlayTrackAt(idx int) {
 
 func (p *PlaybackManager) PlayRandomSongs(genreName string) error {
 	return p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
-		return p.engine.sm.Server.GetRandomTracks(genreName, p.cfg.EnqueueBatchSize)
+		tr, err := p.engine.sm.Server.GetRandomTracks(genreName, p.appCfg.EnqueueBatchSize)
+		if err != nil {
+			return nil, err
+		}
+		return sharedutil.FilterSlice(tr, func(t *mediaprovider.Track) bool {
+			skipKwd := p.cfg.SkipKeywordWhenShuffling
+			include :=
+				(skipKwd == "" || !strcase.Contains(t.Title, skipKwd)) &&
+					(!p.cfg.SkipOneStarWhenShuffling || t.Rating != 1)
+			return include
+		}), nil
 	})
 }
 
 func (p *PlaybackManager) PlaySimilarSongs(id string) error {
 	return p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
-		return p.engine.sm.Server.GetSimilarTracks(id, p.cfg.EnqueueBatchSize)
+		return p.engine.sm.Server.GetSimilarTracks(id, p.appCfg.EnqueueBatchSize)
 	})
 }
 
@@ -498,7 +508,7 @@ func (p *PlaybackManager) PlayRandomAlbums(genreName string) error {
 	}
 	iter := mp.IterateAlbums(mediaprovider.AlbumSortRandom, mediaprovider.NewAlbumFilter(options))
 	insertMode := Replace
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		al := iter.Next()
 		if al == nil {
 			break
@@ -592,7 +602,7 @@ func (p *PlaybackManager) GetLoopMode() LoopMode {
 }
 
 func (p *PlaybackManager) IsAutoplay() bool {
-	return p.autoplay
+	return p.cfg.Autoplay
 }
 
 func (p *PlaybackManager) PlaybackStatus() PlaybackStatus {
@@ -604,7 +614,7 @@ func (p *PlaybackManager) SetVolume(vol int) {
 }
 
 func (p *PlaybackManager) SetAutoplay(autoplay bool) {
-	p.autoplay = autoplay
+	p.cfg.Autoplay = autoplay
 	if autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
 		p.enqueueAutoplayTracks()
 	}
@@ -705,11 +715,15 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 	// tracks we will enqueue
 	var tracks []*mediaprovider.Track
 
-	filterRecentlyPlayed := func(tracks []*mediaprovider.Track) []*mediaprovider.Track {
+	filterAutoplayTracks := func(tracks []*mediaprovider.Track) []*mediaprovider.Track {
 		return sharedutil.FilterSlice(tracks, func(t *mediaprovider.Track) bool {
-			return !slices.ContainsFunc(queue, func(i mediaprovider.MediaItem) bool {
+			shouldSkip :=
+				(p.cfg.SkipOneStarWhenShuffling && t.Rating == 1) ||
+					(p.cfg.SkipKeywordWhenShuffling != "" && strcase.Contains(t.Title, p.cfg.SkipKeywordWhenShuffling))
+			recentlyPlayed := slices.ContainsFunc(queue, func(i mediaprovider.MediaItem) bool {
 				return i.Metadata().Type == mediaprovider.MediaItemTypeTrack && i.Metadata().ID == t.ID
 			})
+			return !shouldSkip && !recentlyPlayed
 		})
 	}
 
@@ -722,11 +736,11 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 
 			// similar tracks by artist
 			if len(tr.ArtistIDs) > 0 {
-				similar, err := s.GetSimilarTracks(tr.ArtistIDs[0], p.cfg.EnqueueBatchSize)
+				similar, err := s.GetSimilarTracks(tr.ArtistIDs[0], p.appCfg.EnqueueBatchSize)
 				if err != nil {
 					log.Printf("autoplay error: failed to get similar tracks: %v", err)
 				}
-				tracks = filterRecentlyPlayed(similar)
+				tracks = filterAutoplayTracks(similar)
 			}
 
 			// fallback to random tracks from genre
@@ -735,11 +749,11 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 					if g == "" {
 						continue
 					}
-					byGenre, err := s.GetRandomTracks(g, p.cfg.EnqueueBatchSize)
+					byGenre, err := s.GetRandomTracks(g, p.appCfg.EnqueueBatchSize)
 					if err != nil {
 						log.Printf("autoplay error: failed to get tracks by genre: %v", err)
 					}
-					tracks = filterRecentlyPlayed(byGenre)
+					tracks = filterAutoplayTracks(byGenre)
 					if len(tracks) > 0 {
 						break
 					}
@@ -750,11 +764,11 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 		// random tracks works regardless of the type of the last playing media
 		if len(tracks) == 0 {
 			// fallback to random tracks
-			random, err := s.GetRandomTracks("", p.cfg.EnqueueBatchSize)
+			random, err := s.GetRandomTracks("", p.appCfg.EnqueueBatchSize)
 			if err != nil {
 				log.Printf("autoplay error: failed to get random tracks: %v", err)
 			}
-			tracks = filterRecentlyPlayed(random)
+			tracks = filterAutoplayTracks(random)
 		}
 
 		if len(tracks) > 0 {

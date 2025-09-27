@@ -132,6 +132,7 @@
     "My Server": "My Server",
     "Name": "Name",
     "Name (A-Z)": "Name (A-Z)",
+    "never": "never",
     "New Playlist": "New Playlist",
     "Next": "Next",
     "Nickname": "Nickname",
@@ -213,8 +214,10 @@
     "Singles": "Singles",
     "Size": "Size",
     "Skip duplicate tracks": "Skip duplicate tracks",
+    "Skip one-star tracks": "Skip one-star tracks",
     "Skip SSL certificate verification": "Skip SSL certificate verification",
     "Skip this version": "Skip this version",
+    "Skip tracks with keyword": "Skip tracks with keyword",
     "Smaller": "Smaller",
     "Sort": "Sort",
     "Soundtrack": "Soundtrack",
@@ -254,6 +257,7 @@
     "version": "version",
     "Visualizations": "Visualizations",
     "Volume": "Volume",
+    "When enqueuing random": "When enqueuing random",
     "wrong URL": "wrong URL",
     "wrong username/password": "wrong username/password",
     "Year": "Year",
@@ -289,5 +293,26 @@
     "playlist.addedtracks": {
         "one": "Added one track to playlist",
         "other": "Added {{.trackCount}} tracks to playlist"
+    },
+
+    "x_minutes_ago": {
+        "one": "a minute ago",
+        "other": "{{.minutes}} minutes ago"
+    },
+    "x_hours_ago": {
+        "one": "an hour ago",
+        "other": "{{.hours}} hours ago"
+    },
+    "x_days_ago": {
+        "one": "a day ago",
+        "other": "{{.days}} days ago"
+    },
+    "x_months_ago": {
+        "one": "a month ago",
+        "other": "{{.months}} months ago"
+    },
+    "x_years_ago": {
+        "one": "a year ago",
+        "other": "{{.years}} years ago"
     }
 }

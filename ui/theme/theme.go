@@ -341,10 +341,7 @@ func darkenColor(c color.Color, fraction float64) color.Color {
 }
 
 func brightenComponent(component uint32, fraction float64) uint32 {
-	brightened := component + uint32(float64(component)*fraction)
-	if brightened > 0xffff {
-		brightened = 0xffff
-	}
+	brightened := min(component+uint32(float64(component)*fraction), 0xffff)
 	return brightened
 }
 

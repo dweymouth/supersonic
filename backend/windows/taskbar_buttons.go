@@ -10,6 +10,7 @@ package windows
 extern void goButtonClicked(int);
 */
 import "C"
+
 import (
 	"errors"
 	"image"

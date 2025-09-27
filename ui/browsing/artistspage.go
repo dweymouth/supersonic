@@ -47,10 +47,7 @@ func (a *artistsPageAdapter) Route() controller.Route { return controller.Artist
 
 func (a *artistsPageAdapter) SortOrders() ([]string, int) {
 	orders := a.mp.ArtistSortOrders()
-	sortOrder := slices.Index(orders, a.cfg.SortOrder)
-	if sortOrder < 0 {
-		sortOrder = 0
-	}
+	sortOrder := max(slices.Index(orders, a.cfg.SortOrder), 0)
 
 	return util.LocalizeSlice(orders), sortOrder
 }

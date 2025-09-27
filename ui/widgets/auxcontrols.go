@@ -49,7 +49,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 	a.cast.SetToolTip(lang.L("Cast to device"))
 
 	a.autoplay.Highlighted = initialAutoplay
-	//a.autoplay.IconSize = IconButtonSizeSmaller
+	// a.autoplay.IconSize = IconButtonSizeSmaller
 	a.autoplay.SetToolTip(lang.L("Autoplay"))
 	a.autoplay.OnTapped = func() {
 		a.SetAutoplay(!a.autoplay.Highlighted)

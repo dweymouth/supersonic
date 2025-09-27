@@ -112,9 +112,11 @@ type NowPlayingPageConfig struct {
 }
 
 type PlaybackConfig struct {
-	Autoplay           bool
-	RepeatMode         string
-	UseWaveformSeekbar bool
+	Autoplay                 bool
+	RepeatMode               string
+	SkipOneStarWhenShuffling bool
+	SkipKeywordWhenShuffling string
+	UseWaveformSeekbar       bool
 }
 
 type LocalPlaybackConfig struct {
@@ -317,7 +319,7 @@ func (c *Config) WriteConfigFile(filepath string) error {
 	if err != nil {
 		return err
 	}
-	os.WriteFile(filepath, b, 0644)
+	os.WriteFile(filepath, b, 0o644)
 
 	return nil
 }

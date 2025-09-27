@@ -114,6 +114,7 @@
     "My Server": "Mi servidor",
     "Name": "Nombre",
     "Name (A-Z)": "Nombre (A-Z)",
+    "never": "nunca",
     "New Playlist": "Crear Nueva",
     "Next": "Siguiente",
     "Nickname": "Apodo",
@@ -255,5 +256,26 @@
     "playlist.addedtracks": {
         "one": "Se ha añadido una pista a la lista de reproducción",
         "other": "Se han añadido {{.trackCount}} pistas a la lista de reproducción"
+    },
+
+    "x_minutes_ago": {
+        "one": "hace un minuto",
+        "other": "hace {{.minutes}} minutos"
+    },
+    "x_hours_ago": {
+        "one": "hace una hora",
+        "other": "hace {{.hours}} horas"
+    },
+    "x_days_ago": {
+        "one": "hace un día",
+        "other": "hace {{.days}} días"
+    },
+    "x_months_ago": {
+        "one": "hace un mes",
+        "other": "hace {{.months}} meses"
+    },
+    "x_years_ago": {
+        "one": "hace un año",
+        "other": "hace {{.years}} años"
     }
 }

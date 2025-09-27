@@ -360,8 +360,10 @@ func (a *NowPlayingPage) updateLyrics() {
 	// set the widget to an empty (not nil) lyric during fetch
 	// to keep it from showing "Lyrics not available"
 	a.lyricsViewer.DisableTapToSeek()
-	a.lyricsViewer.SetLyrics(&mediaprovider.Lyrics{Synced: true,
-		Lines: []mediaprovider.LyricLine{{Text: ""}}})
+	a.lyricsViewer.SetLyrics(&mediaprovider.Lyrics{
+		Synced: true,
+		Lines:  []mediaprovider.LyricLine{{Text: ""}},
+	})
 	tr, _ := a.nowPlaying.(*mediaprovider.Track)
 	go a.fetchLyrics(ctx, tr)
 }
@@ -482,7 +484,6 @@ func (a *NowPlayingPage) OnPlayTimeUpdate(curTime, _ float64, seeked bool) {
 
 func (a *NowPlayingPage) currentTracklistOrNil() *widgets.PlayQueueList {
 	if a.tabs != nil {
-
 		switch a.tabs.SelectedIndex() {
 		case 0: /*queue*/
 			return a.queueList

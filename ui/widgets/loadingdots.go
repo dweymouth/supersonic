@@ -28,8 +28,10 @@ type LoadingDots struct {
 func NewLoadingDots() *LoadingDots {
 	l := &LoadingDots{}
 	for i := range l.dots {
-		l.dots[i] = minSizeCircle{Circle: canvas.Circle{
-			FillColor: theme.DisabledColor()},
+		l.dots[i] = minSizeCircle{
+			Circle: canvas.Circle{
+				FillColor: theme.DisabledColor(),
+			},
 		}
 	}
 	l.ExtendBaseWidget(l)

@@ -46,7 +46,7 @@ type ImageManager struct {
 	maxOnDiskCacheSizeBytes    int64
 	filesWrittenSinceLastPrune bool
 
-	serverFetchSema chan interface{}
+	serverFetchSema chan any
 }
 
 // NewImageManager returns a new ImageManager.
@@ -64,7 +64,7 @@ func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string)
 			DefaultTTL: 1 * time.Minute,
 		},
 		maxOnDiskCacheSizeBytes: defaultDiskCacheSizeBytes,
-		serverFetchSema:         make(chan interface{}, maxConcurrentServerFetches),
+		serverFetchSema:         make(chan any, maxConcurrentServerFetches),
 	}
 	s.OnLogout(func() {
 		i.thumbnailCache.Clear()

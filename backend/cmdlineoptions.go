@@ -58,9 +58,7 @@ func init() {
 		return err
 	})
 	flag.Func("volume-adjust-pct", "adjusts volume up or down by the given percentage (positive or negative)", func(s string) error {
-		if strings.HasSuffix(s, "%") {
-			s = s[:len(s)-1]
-		}
+		s = strings.TrimSuffix(s, "%")
 		v, err := strconv.ParseFloat(s, 64)
 		VolumePctCLIArg = v
 		return err
