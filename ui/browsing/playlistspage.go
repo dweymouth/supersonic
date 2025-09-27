@@ -36,6 +36,7 @@ type PlaylistsPage struct {
 	searchedPlaylists []*mediaprovider.Playlist
 
 	viewToggle *widgets.ToggleButtonGroup
+	newBtn     *widget.Button
 	searcher   *widgets.SearchEntry
 	titleDisp  *widget.RichText
 	container  *fyne.Container
@@ -86,6 +87,9 @@ func newPlaylistsPage(
 		widget.NewButtonWithIcon("", theme.NewThemedResource(res.ResListSvg), a.showListView),
 		widget.NewButtonWithIcon("", theme.NewThemedResource(res.ResGridSvg), a.showGridView))
 	a.viewToggle.SetActivatedButton(activeView)
+	a.newBtn = widget.NewButtonWithIcon(lang.L("New Playlist"), theme.ContentAddIcon(), func() {
+		a.contr.DoCreatePlaylistWorkflow()
+	})
 	if activeView == 0 {
 		a.createListView()
 		a.buildContainer(a.listView)
@@ -96,6 +100,21 @@ func newPlaylistsPage(
 
 	go a.load(searchText != "")
 	return a
+}
+
+func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {
+	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
+	a.container = container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
+		container.NewBorder(
+			container.NewHBox(
+				a.titleDisp,
+				container.NewCenter(a.viewToggle),
+				util.NewHSpace(2),
+				container.NewCenter(a.newBtn),
+				layout.NewSpacer(),
+				searchVbox,
+			),
+			nil, nil, nil, initialView))
 }
 
 var _ Scrollable = (*PlaylistsPage)(nil)
@@ -315,14 +334,6 @@ type savedPlaylistsPage struct {
 
 func (s *savedPlaylistsPage) Restore() Page {
 	return newPlaylistsPage(s.contr, s.pool, s.cfg, s.mp, s.searchText, s.activeView, s.listSort, s.listScrollPos, s.gridScrollPos)
-}
-
-func (a *PlaylistsPage) buildContainer(initialView fyne.CanvasObject) {
-	searchVbox := container.NewVBox(layout.NewSpacer(), a.searcher, layout.NewSpacer())
-	a.container = container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 5, BottomPadding: 15},
-		container.NewBorder(
-			container.NewHBox(a.titleDisp, container.NewCenter(a.viewToggle), layout.NewSpacer(), searchVbox),
-			nil, nil, nil, initialView))
 }
 
 func (a *PlaylistsPage) CreateRenderer() fyne.WidgetRenderer {
