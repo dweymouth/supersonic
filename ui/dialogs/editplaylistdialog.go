@@ -64,7 +64,14 @@ func newEditPlaylistDialog(playlist *mediaprovider.Playlist, showPublicCheck boo
 		}
 	})
 
-	title := widget.NewLabel(lang.L("Edit Playlist"))
+	var titleStr string
+	if playlist == nil {
+		titleStr = lang.L("New Playlist")
+	} else {
+		titleStr = lang.L("Edit Playlist")
+	}
+
+	title := widget.NewLabel(titleStr)
 	title.Alignment = fyne.TextAlignCenter
 	title.TextStyle.Bold = true
 	e.container = container.NewVBox(

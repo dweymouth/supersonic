@@ -171,7 +171,12 @@ func (m *Controller) DoCreatePlaylistWorkflow() {
 				fyne.Do(func() { m.ToastProvider.ShowErrorToast(lang.L("Error creating playlist")) })
 				log.Printf("error creating playlist: %s", err.Error())
 			} else {
-				fyne.Do(func() { m.ToastProvider.ShowSuccessToast(lang.L("Successfully created playlist")) })
+				fyne.Do(func() {
+					// Right now, this workflow is only initiated by the "New Playlist" button
+					// on the playlists page. Reload it so the new playlist shows up.
+					m.ReloadFunc()
+					m.ToastProvider.ShowSuccessToast(lang.L("Successfully created playlist"))
+				})
 			}
 		}()
 	}
