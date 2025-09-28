@@ -7,10 +7,11 @@ require (
 	github.com/20after4/configdir v0.1.1
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/cenkalti/dominantcolor v1.0.3
+	github.com/charlievieth/strcase v0.0.5
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
 	github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c
 	github.com/dweymouth/fyne-tooltip v0.3.0
-	github.com/dweymouth/go-jellyfin v0.0.0-20250914000657-c172d6f678bb
+	github.com/dweymouth/go-jellyfin v0.0.0-20250928223159-bd2fb9681ef5
 	github.com/go-audio/audio v1.0.0
 	github.com/go-audio/wav v1.1.0
 	github.com/godbus/dbus/v5 v5.1.0
@@ -20,7 +21,7 @@ require (
 	github.com/quarckster/go-mpris-server v1.0.3
 	github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410
 	github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449
-	github.com/supersonic-app/go-subsonic v0.0.0-20250913173646-cf4fceb19b43
+	github.com/supersonic-app/go-subsonic v0.0.0-20250917154259-2bbe535cf8f3
 	github.com/supersonic-app/go-upnpcast v0.0.0-20250330154256-b957204209a5
 	github.com/zalando/go-keyring v0.2.6
 	golang.org/x/net v0.38.0
@@ -33,7 +34,6 @@ require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect
 	fyne.io/systray v1.11.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/charlievieth/strcase v0.0.5 // indirect
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect

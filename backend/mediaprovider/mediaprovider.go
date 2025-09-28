@@ -258,9 +258,11 @@ type MediaProvider interface {
 
 	GetPlaylists() ([]*Playlist, error)
 
-	CreatePlaylist(name string, trackIDs []string) error
+	CreatePlaylistWithTracks(name string, trackIDs []string) error
 
 	CanMakePublicPlaylist() bool
+
+	CreatePlaylist(name, description string, public bool) error
 
 	EditPlaylist(id, name, description string, public bool) error
 
