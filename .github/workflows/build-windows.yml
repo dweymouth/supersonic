@@ -56,7 +56,7 @@ jobs:
       run: zip Supersonic-windows.zip Supersonic.exe libmpv-2.dll SMTC.dll
 
     - name: Generate installer
-      uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+      uses: Minionguyjpro/Inno-Setup-Action@v1.2.7
       with:
         path: win_inno_installscript.iss
 
