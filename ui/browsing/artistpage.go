@@ -622,7 +622,9 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 
 	if info.ImageURL != "" {
 		if a.artistImage.HaveImage() {
-			_ = a.artistPage.im.RefreshCachedArtistImageIfExpired(a.artistID, info.ImageURL)
+			go func() {
+				_ = a.artistPage.im.RefreshCachedArtistImageIfExpired(a.artistID, info.ImageURL)
+			}()
 		} else {
 			go func() {
 				im, err := a.artistPage.im.FetchAndCacheArtistImage(a.artistID, info.ImageURL)
