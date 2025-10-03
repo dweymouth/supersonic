@@ -95,7 +95,8 @@ func (l *LyricsViewer) UpdatePlayPos(timeSecs float64) {
 	}
 	l.lastPlayPos = timeSecs
 	// advance if needed
-	if l.lyrics.Lines[l.nextLyricLine].Start <= timeSecs {
+	if l.nextLyricLine >= 0 && l.nextLyricLine < len(l.lyrics.Lines) &&
+		l.lyrics.Lines[l.nextLyricLine].Start <= timeSecs {
 		l.viewer.NextLine()
 		if l.nextLyricLine < len(l.lyrics.Lines)-1 {
 			l.nextLyricLine++
@@ -125,7 +126,9 @@ func (l *LyricsViewer) OnSeeked(timeSecs float64) {
 	} else {
 		l.nextLyricLine = nextLine
 	}
-	l.viewer.SetCurrentLine(nextLine /*one-indexed*/)
+	if nextLine >= 0 && nextLine <= len(l.lyrics.Lines) {
+		l.viewer.SetCurrentLine(nextLine /*one-indexed*/)
+	}
 }
 
 func (l *LyricsViewer) CreateRenderer() fyne.WidgetRenderer {
