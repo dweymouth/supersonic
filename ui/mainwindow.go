@@ -24,6 +24,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/lang"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -35,6 +36,7 @@ type MainWindow struct {
 	Router       browsing.Router
 	Controller   *controller.Controller
 	BrowsingPane *browsing.BrowsingPane
+	Toolbar      *Toolbar
 	BottomPanel  *BottomPanel
 	ToastOverlay *ToastOverlay
 
@@ -42,9 +44,6 @@ type MainWindow struct {
 	haveSystemTray   bool
 	alreadyConnected bool // tracks if we have already connected to a server before
 	content          *mainWindowContent
-
-	// needs to be shown/hidden when switching between servers based on whether they support radio
-	radioBtn fyne.CanvasObject
 
 	// updated when changing servers or libraries
 	librarySubmenu *fyne.Menu
@@ -66,9 +65,12 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		m.SetupSystemTrayMenu(displayAppName, fyneApp)
 	}
 	m.Controller = controller.New(app, appVersion, m.Window)
-	m.BrowsingPane = browsing.NewBrowsingPane(app, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
+	m.BrowsingPane = browsing.NewBrowsingPane(app.PlaybackManager, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
 	m.ToastOverlay = NewToastOverlay()
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
+	goHomeFn := func() { m.Router.NavigateTo(m.StartupPage()) }
+	m.Toolbar = NewToolbar(m.BrowsingPane, m.Router.NavigateTo, goHomeFn, m.Controller.ShowQuickSearch)
+
 	// inject controller dependencies
 	m.Controller.NavHandler = m.Router.NavigateTo
 	m.Controller.ReloadFunc = m.BrowsingPane.Reload
@@ -98,23 +100,23 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		go m.RunOnServerConnectedTasks(conf, app, displayAppName)
 	})
 	app.ServerManager.OnLogout(func() {
-		m.BrowsingPane.DisableNavigationButtons()
+		m.Toolbar.DisableNavigationButtons()
 		m.BrowsingPane.SetPage(nil)
 		m.BrowsingPane.ClearHistory()
 		m.Controller.PromptForLoginAndConnect()
 	})
-	m.BrowsingPane.AddSettingsMenuItem(lang.L("Log Out"), theme.LogoutIcon(), func() { app.ServerManager.Logout(true) })
-	m.BrowsingPane.AddSettingsMenuItem(lang.L("Switch Servers"), theme.LoginIcon(), func() { app.ServerManager.Logout(false) })
-	m.BrowsingPane.AddSettingsSubmenu(lang.L("Select Library"), myTheme.LibraryIcon, fyne.NewMenu("",
+	m.Toolbar.AddSettingsMenuItem(lang.L("Log Out"), theme.LogoutIcon(), func() { app.ServerManager.Logout(true) })
+	m.Toolbar.AddSettingsMenuItem(lang.L("Switch Servers"), theme.LoginIcon(), func() { app.ServerManager.Logout(false) })
+	m.Toolbar.AddSettingsSubmenu(lang.L("Select Library"), myTheme.LibraryIcon, fyne.NewMenu("",
 		fyne.NewMenuItem(lang.L("All Libraries"), func() { /* dummy - will get replaced on server login */ })))
-	m.BrowsingPane.AddSettingsMenuItem(lang.L("Rescan Library"), theme.ViewRefreshIcon(), func() { app.ServerManager.Server.RescanLibrary() })
-	m.BrowsingPane.AddSettingsMenuSeparator()
-	m.BrowsingPane.AddSettingsSubmenu(lang.L("Visualizations"), myTheme.VisualizationIcon,
+	m.Toolbar.AddSettingsMenuItem(lang.L("Rescan Library"), theme.ViewRefreshIcon(), func() { app.ServerManager.Server.RescanLibrary() })
+	m.Toolbar.AddSettingsMenuSeparator()
+	m.Toolbar.AddSettingsSubmenu(lang.L("Visualizations"), myTheme.VisualizationIcon,
 		fyne.NewMenu("", []*fyne.MenuItem{
 			fyne.NewMenuItem(lang.L("Peak Meter"), m.Controller.ShowPeakMeter),
 		}...))
-	m.BrowsingPane.AddSettingsMenuSeparator()
-	m.BrowsingPane.AddSettingsMenuItem(lang.L("Check for Updates"), theme.DownloadIcon(), func() {
+	m.Toolbar.AddSettingsMenuSeparator()
+	m.Toolbar.AddSettingsMenuItem(lang.L("Check for Updates"), theme.DownloadIcon(), func() {
 		go func() {
 			if t := app.UpdateChecker.CheckLatestVersionTag(); t != "" && t != app.VersionTag() {
 				fyne.Do(func() { m.ShowNewVersionDialog(displayAppName, t) })
@@ -127,14 +129,15 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 			}
 		}()
 	})
-	m.BrowsingPane.AddSettingsMenuItem(lang.L("Settings")+"...", theme.SettingsIcon(), m.showSettingsDialog)
-	m.BrowsingPane.AddSettingsMenuItem(lang.L("About")+"...", theme.InfoIcon(), m.Controller.ShowAboutDialog)
-	m.addNavigationButtons()
-	m.BrowsingPane.DisableNavigationButtons()
+	m.Toolbar.AddSettingsMenuItem(lang.L("Settings")+"...", theme.SettingsIcon(), m.showSettingsDialog)
+	m.Toolbar.AddSettingsMenuItem(lang.L("About")+"...", theme.InfoIcon(), m.Controller.ShowAboutDialog)
+	m.Toolbar.DisableNavigationButtons()
 	m.addShortcuts()
 
 	center := container.NewStack(m.BrowsingPane, m.ToastOverlay)
-	m.content = newMainWindowContent(container.NewBorder(nil, m.BottomPanel, nil, nil, center),
+	toolbarWrapper := container.New(
+		&layout.CustomPaddedLayout{LeftPadding: -theme.Padding(), RightPadding: -theme.Padding()}, m.Toolbar)
+	m.content = newMainWindowContent(container.NewBorder(toolbarWrapper, m.BottomPanel, nil, nil, center),
 		m.Controller.UnselectAll)
 	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.content, m.Window.Canvas()))
 	m.setInitialSize()
@@ -285,24 +288,20 @@ func (m *MainWindow) RunOnServerConnectedTasks(serverConf *backend.ServerConfig,
 	}
 	m.librarySubmenu = libraryMenu
 	m.librarySubmenu.Items[initialLibraryMenuIdx].Checked = true
-	m.BrowsingPane.SetSubmenuForMenuItem(lang.L("Select Library"), libraryMenu)
+	m.Toolbar.SetSubmenuForMenuItem(lang.L("Select Library"), libraryMenu)
 
 	if initialLibraryID != "" {
 		m.App.ServerManager.Server.SetLibrary(initialLibraryID)
 	}
 
 	fyne.Do(func() {
-		m.BrowsingPane.EnableNavigationButtons()
+		m.Toolbar.EnableNavigationButtons()
 		m.Router.NavigateTo(m.StartupPage())
 		_, canRate := m.App.ServerManager.Server.(mediaprovider.SupportsRating)
 		m.BottomPanel.NowPlaying.DisableRating = !canRate
 
 		_, supportsRadio := m.App.ServerManager.Server.(mediaprovider.RadioProvider)
-		if supportsRadio {
-			m.radioBtn.Show()
-		} else {
-			m.radioBtn.Hide()
-		}
+		m.Toolbar.SetRadioButtonVisible(supportsRadio)
 	})
 
 	m.App.SaveConfigFile()
@@ -395,33 +394,6 @@ func (m *MainWindow) ShowWhatsNewDialog() {
 	dialog.ShowCustom("What's new in "+res.AppVersion, lang.L("Close"), dialogs.NewWhatsNewDialog(), m.Window)
 }
 
-func (m *MainWindow) addNavigationButtons() {
-	m.BrowsingPane.AddNavigationButton(myTheme.NowPlayingIcon, controller.NowPlaying, func() {
-		m.Router.NavigateTo(controller.NowPlayingRoute())
-	})
-	m.BrowsingPane.AddNavigationButton(myTheme.FavoriteIcon, controller.Favorites, func() {
-		m.Router.NavigateTo(controller.FavoritesRoute())
-	})
-	m.BrowsingPane.AddNavigationButton(myTheme.AlbumIcon, controller.Albums, func() {
-		m.Router.NavigateTo(controller.AlbumsRoute())
-	})
-	m.BrowsingPane.AddNavigationButton(myTheme.ArtistIcon, controller.Artists, func() {
-		m.Router.NavigateTo(controller.ArtistsRoute())
-	})
-	m.BrowsingPane.AddNavigationButton(myTheme.GenreIcon, controller.Genres, func() {
-		m.Router.NavigateTo(controller.GenresRoute())
-	})
-	m.BrowsingPane.AddNavigationButton(myTheme.PlaylistIcon, controller.Playlists, func() {
-		m.Router.NavigateTo(controller.PlaylistsRoute())
-	})
-	m.BrowsingPane.AddNavigationButton(myTheme.TracksIcon, controller.Tracks, func() {
-		m.Router.NavigateTo(controller.TracksRoute())
-	})
-	m.radioBtn = m.BrowsingPane.AddNavigationButton(myTheme.RadioIcon, controller.Radios, func() {
-		m.Router.NavigateTo(controller.RadiosRoute())
-	})
-}
-
 func (m *MainWindow) addShortcuts() {
 	for _, sh := range shortcuts.BackShortcuts {
 		m.Canvas().AddShortcut(&sh, func(_ fyne.Shortcut) {
@@ -473,7 +445,7 @@ func (m *MainWindow) addShortcuts() {
 	for i, ns := range shortcuts.NavShortcuts {
 		m.Canvas().AddShortcut(&ns, func(i int) func(fyne.Shortcut) {
 			return func(fyne.Shortcut) {
-				m.BrowsingPane.ActivateNavigationButton(i)
+				m.Toolbar.ActivateNavigationButton(i)
 			}
 		}(i))
 	}
