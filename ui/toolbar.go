@@ -30,11 +30,12 @@ type Toolbar struct {
 	radioBtn         fyne.CanvasObject
 
 	quickSearchBtn *ttwidget.Button
+	sidebarBtn     *ttwidget.Button
 	settingsBtn    *ttwidget.Button
 	settingsMenu   *fyne.Menu
 }
 
-func NewToolbar(browsingPane *browsing.BrowsingPane, navigateFn func(controller.Route), homeFunc, showSearchFn func()) *Toolbar {
+func NewToolbar(browsingPane *browsing.BrowsingPane, navigateFn func(controller.Route), homeFunc, showSearchFn, toggleSidebarFn func()) *Toolbar {
 	t := &Toolbar{
 		browsingPane:     browsingPane,
 		navBtnsContainer: container.NewHBox(),
@@ -58,6 +59,8 @@ func NewToolbar(browsingPane *browsing.BrowsingPane, navigateFn func(controller.
 
 	t.quickSearchBtn = ttwidget.NewButtonWithIcon("", theme.SearchIcon(), showSearchFn)
 	t.quickSearchBtn.SetToolTip(lang.L("Search Everywhere"))
+	t.sidebarBtn = ttwidget.NewButtonWithIcon("", myTheme.SidebarIcon, toggleSidebarFn)
+	t.sidebarBtn.SetToolTip(lang.L("Toggle sidebar"))
 	t.settingsBtn = ttwidget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 		p := widget.NewPopUpMenu(t.settingsMenu,
 			fyne.CurrentApp().Driver().CanvasForObject(t.settingsBtn))
@@ -138,7 +141,7 @@ func (t *Toolbar) CreateRenderer() fyne.WidgetRenderer {
 	content := container.New(layouts.NewLeftMiddleRightLayout(0, 0),
 		container.NewHBox(t.home, t.back, t.forward, t.reload),
 		t.navBtnsContainer,
-		container.NewHBox(layout.NewSpacer(), t.quickSearchBtn, t.settingsBtn))
+		container.NewHBox(layout.NewSpacer(), t.quickSearchBtn, t.sidebarBtn, t.settingsBtn))
 	return widget.NewSimpleRenderer(content)
 }
 

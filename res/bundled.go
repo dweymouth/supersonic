@@ -80,6 +80,11 @@ var ResPlayqueueSvg = &fyne.StaticResource{
 	StaticContent: []byte(
 		"<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<!-- Uploaded to: SVG Repo, www.svgrepo.com, Transformed by: SVG Repo Mixer Tools -->\n<svg fill=\"#000000\" width=\"800px\" height=\"800px\" viewBox=\"0 0 32 32\" style=\"fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;\" version=\"1.1\" xml:space=\"preserve\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:serif=\"http://www.serif.com/\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" stroke=\"#000000\" stroke-width=\"0.48\">\n\r<g id=\"SVGRepo_bgCarrier\" stroke-width=\"0\"/>\n\r<g id=\"SVGRepo_tracerCarrier\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n\r<g id=\"SVGRepo_iconCarrier\">\n\r<path d=\"M5.011,19l21.989,-0c0.552,0 1,-0.448 1,-1c0,-0.552 -0.448,-1 -1,-1l-21.989,0c-0.552,0 -1,0.448 -1,1c-0,0.552 0.448,1 1,1Z\"/>\n\r<path d=\"M5.019,28l21.981,-0c0.552,0 1,-0.448 1,-1c0,-0.552 -0.448,-1 -1,-1l-21.981,0c-0.552,0 -1,0.448 -1,1c0,0.552 0.448,1 1,1Z\"/>\n\r<path d=\"M15.994,10l11.006,0c0.552,-0 1,-0.448 1,-1c-0,-0.552 -0.448,-1 -1,-1l-11.006,0c-0.552,-0 -1,0.448 -1,1c-0,0.552 0.448,1 1,1Z\"/>\n\r<path d=\"M12.496,9.868c0.312,-0.178 0.504,-0.509 0.504,-0.868c-0,-0.359 -0.192,-0.69 -0.504,-0.868l-7,-4c-0.309,-0.177 -0.69,-0.176 -0.998,0.003c-0.308,0.179 -0.498,0.509 -0.498,0.865l-0,8c-0,0.356 0.19,0.686 0.498,0.865c0.308,0.179 0.689,0.18 0.998,0.003l7,-4Z\"/>\n\r</g>\n\r</svg>"),
 }
+var ResSidebarSvg = &fyne.StaticResource{
+	StaticName: "sidebar.svg",
+	StaticContent: []byte(
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?><!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->\r\n<svg width=\"800px\" height=\"800px\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n<path d=\"M0 2H10V14H0V2Z\" fill=\"#000000\"/>\r\n<path d=\"M12 2H16V14H12V2Z\" fill=\"#000000\"/>\r\n</svg>"),
+}
 var ResStarOutlineSvg = &fyne.StaticResource{
 	StaticName: "star-outline.svg",
 	StaticContent: []byte(

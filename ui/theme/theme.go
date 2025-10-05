@@ -60,6 +60,7 @@ var (
 	FilterIcon        fyne.Resource = theme.NewThemedResource(res.ResFilterSvg)
 	RepeatIcon        fyne.Resource = theme.NewThemedResource(res.ResRepeatSvg)
 	RepeatOneIcon     fyne.Resource = theme.NewThemedResource(res.ResRepeatoneSvg)
+	SidebarIcon       fyne.Resource = theme.NewThemedResource(res.ResSidebarSvg)
 	SortIcon          fyne.Resource = theme.NewThemedResource(res.ResUpdownarrowSvg)
 	VisualizationIcon fyne.Resource = theme.NewThemedResource(res.ResOscilloscopeSvg)
 	LibraryIcon       fyne.Resource = theme.NewThemedResource(res.ResLibrarySvg)

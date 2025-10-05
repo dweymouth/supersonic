@@ -13,6 +13,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui/browsing"
+	uicontainer "github.com/dweymouth/supersonic/ui/container"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/dialogs"
 	"github.com/dweymouth/supersonic/ui/shortcuts"
@@ -36,10 +37,12 @@ type MainWindow struct {
 	Router       browsing.Router
 	Controller   *controller.Controller
 	BrowsingPane *browsing.BrowsingPane
+	Sidebar      *Sidebar
 	Toolbar      *Toolbar
 	BottomPanel  *BottomPanel
 	ToastOverlay *ToastOverlay
 
+	splitContainer   *uicontainer.Split
 	theme            *myTheme.MyTheme
 	haveSystemTray   bool
 	alreadyConnected bool // tracks if we have already connected to a server before
@@ -66,10 +69,11 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	}
 	m.Controller = controller.New(app, appVersion, m.Window)
 	m.BrowsingPane = browsing.NewBrowsingPane(app.PlaybackManager, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
+	m.Sidebar = NewSidebar(m.Controller, m.App.ImageManager)
 	m.ToastOverlay = NewToastOverlay()
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	goHomeFn := func() { m.Router.NavigateTo(m.StartupPage()) }
-	m.Toolbar = NewToolbar(m.BrowsingPane, m.Router.NavigateTo, goHomeFn, m.Controller.ShowQuickSearch)
+	m.Toolbar = NewToolbar(m.BrowsingPane, m.Router.NavigateTo, goHomeFn, m.Controller.ShowQuickSearch, m.toggleSidebar)
 
 	// inject controller dependencies
 	m.Controller.NavHandler = m.Router.NavigateTo
@@ -95,6 +99,9 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller, m.Controller.App.Config.Playback.UseWaveformSeekbar)
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		fyne.Do(func() { m.UpdateOnTrackChange(item) })
+	})
+	app.PlaybackManager.OnQueueChange(func() {
+		fyne.Do(func() { m.Sidebar.SetQueueTracks(app.PlaybackManager.GetPlayQueue()) })
 	})
 	app.ServerManager.OnServerConnected(func(conf *backend.ServerConfig) {
 		go m.RunOnServerConnectedTasks(conf, app, displayAppName)
@@ -134,7 +141,10 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Toolbar.DisableNavigationButtons()
 	m.addShortcuts()
 
-	center := container.NewStack(m.BrowsingPane, m.ToastOverlay)
+	m.splitContainer = uicontainer.NewHSplit(m.BrowsingPane, m.Sidebar)
+	m.splitContainer.Offset = min(1.0, max(0.0, m.App.Config.Application.SidebarWidthFraction))
+	m.Sidebar.Hidden = !m.App.Config.Application.ShowSidebar
+	center := container.NewStack(m.splitContainer, m.ToastOverlay)
 	toolbarWrapper := container.New(
 		&layout.CustomPaddedLayout{LeftPadding: -theme.Padding(), RightPadding: -theme.Padding()}, m.Toolbar)
 	m.content = newMainWindowContent(container.NewBorder(toolbarWrapper, m.BottomPanel, nil, nil, center),
@@ -143,7 +153,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.setInitialSize()
 
 	m.Window.SetCloseIntercept(func() {
-		m.SaveWindowSize()
+		m.SaveWindowSettings()
 		if app.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
 			m.Window.Hide()
 		} else {
@@ -157,9 +167,12 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 func (m *MainWindow) UpdateOnTrackChange(item mediaprovider.MediaItem) {
 	if item == nil {
 		m.Window.SetTitle(res.DisplayName)
+		m.Sidebar.SetNowPlaying("")
 		return
 	}
+
 	meta := item.Metadata()
+	m.Sidebar.SetNowPlaying(meta.ID)
 	artistDisp := ""
 	if tr, ok := item.(*mediaprovider.Track); ok {
 		artistDisp = " – " + strings.Join(tr.ArtistNames, ", ")
@@ -394,6 +407,15 @@ func (m *MainWindow) ShowWhatsNewDialog() {
 	dialog.ShowCustom("What's new in "+res.AppVersion, lang.L("Close"), dialogs.NewWhatsNewDialog(), m.Window)
 }
 
+func (m *MainWindow) toggleSidebar() {
+	if m.Sidebar.Visible() {
+		m.Sidebar.Hide()
+	} else {
+		m.Sidebar.Show()
+	}
+	m.splitContainer.Refresh()
+}
+
 func (m *MainWindow) addShortcuts() {
 	for _, sh := range shortcuts.BackShortcuts {
 		m.Canvas().AddShortcut(&sh, func(_ fyne.Shortcut) {
@@ -497,14 +519,16 @@ func (m *MainWindow) SetContent(c fyne.CanvasObject) {
 }
 
 func (m *MainWindow) Quit() {
-	m.SaveWindowSize()
+	m.SaveWindowSettings()
 	fyne.CurrentApp().Quit()
 }
 
-func (m *MainWindow) SaveWindowSize() {
+func (m *MainWindow) SaveWindowSettings() {
 	util.SaveWindowSize(m.Window,
 		&m.App.Config.Application.WindowWidth,
 		&m.App.Config.Application.WindowHeight)
+	m.App.Config.Application.ShowSidebar = !m.Sidebar.Hidden
+	m.App.Config.Application.SidebarWidthFraction = m.splitContainer.Offset
 }
 
 // widget just so we can catch a tap event that doesn't land anywhere else
