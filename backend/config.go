@@ -57,6 +57,8 @@ type AppConfig struct {
 	EnableAutoUpdateChecker     bool
 	RequestTimeoutSeconds       int
 	EnableOSMediaPlayerAPIs     bool
+	ShowSidebar                 bool
+	SidebarWidthFraction        float64
 
 	FontNormalTTF string
 	FontBoldTTF   string
@@ -207,6 +209,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			EnableAutoUpdateChecker:     true,
 			RequestTimeoutSeconds:       15,
 			EnableOSMediaPlayerAPIs:     true,
+			SidebarWidthFraction:        0.8,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},

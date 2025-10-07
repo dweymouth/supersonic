@@ -3,17 +3,12 @@ package browsing
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
-	"github.com/dweymouth/supersonic/ui/layouts"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
-
-	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 )
 
 type Page interface {
@@ -60,60 +55,25 @@ type CanShowPlayQueue interface {
 type BrowsingPane struct {
 	widget.BaseWidget
 
-	app *backend.App
+	OnHistoryChanged func()
 
-	curPage Page
+	playbackManager *backend.PlaybackManager
 
-	home       *ttwidget.Button
-	forward    *ttwidget.Button
-	back       *ttwidget.Button
-	reload     *ttwidget.Button
+	curPage    Page
 	history    []SavedPage
 	historyIdx int
 
-	settingsBtn      *ttwidget.Button
-	settingsMenu     *fyne.Menu
-	navBtnsContainer *fyne.Container
-	pageContainer    *fyne.Container
-	container        *fyne.Container
-	navBtnsPageMap   map[controller.PageName]fyne.Resource
+	pageContainer *fyne.Container
 }
 
-func NewBrowsingPane(app *backend.App, contr *controller.Controller, onGoHome func()) *BrowsingPane {
-	b := &BrowsingPane{app: app}
+func NewBrowsingPane(app *backend.PlaybackManager, contr *controller.Controller, onGoHome func()) *BrowsingPane {
+	b := &BrowsingPane{playbackManager: app}
 	b.ExtendBaseWidget(b)
-	b.home = ttwidget.NewButtonWithIcon("", theme.HomeIcon(), onGoHome)
-	b.home.SetToolTip(lang.L("Home"))
-	b.back = ttwidget.NewButtonWithIcon("", theme.NavigateBackIcon(), b.GoBack)
-	b.back.SetToolTip(lang.L("Back"))
-	b.forward = ttwidget.NewButtonWithIcon("", theme.NavigateNextIcon(), b.GoForward)
-	b.forward.SetToolTip(lang.L("Forward"))
-	b.reload = ttwidget.NewButtonWithIcon("", theme.ViewRefreshIcon(), b.Reload)
-	b.reload.SetToolTip(lang.L("Reload"))
-	b.app.PlaybackManager.OnSongChange(b.onSongChange)
-	b.app.PlaybackManager.OnPlayTimeUpdate(b.onPlayTimeUpdate)
-	b.app.PlaybackManager.OnQueueChange(b.onQueueChange)
+	b.playbackManager.OnSongChange(b.onSongChange)
+	b.playbackManager.OnPlayTimeUpdate(b.onPlayTimeUpdate)
+	b.playbackManager.OnQueueChange(b.onQueueChange)
 	bkgrnd := myTheme.NewThemedRectangle(myTheme.ColorNamePageBackground)
 	b.pageContainer = container.NewStack(bkgrnd, layout.NewSpacer())
-	b.settingsBtn = ttwidget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
-		p := widget.NewPopUpMenu(b.settingsMenu,
-			fyne.CurrentApp().Driver().CanvasForObject(b.settingsBtn))
-		p.ShowAtPosition(fyne.NewPos(b.Size().Width-p.MinSize().Width+4,
-			b.navBtnsContainer.MinSize().Height+theme.Padding()))
-	})
-	b.settingsBtn.SetToolTip(lang.L("Menu"))
-	quickSearchBtn := ttwidget.NewButtonWithIcon("", theme.SearchIcon(), contr.ShowQuickSearch)
-	quickSearchBtn.SetToolTip(lang.L("Search Everywhere"))
-	b.settingsMenu = fyne.NewMenu("")
-	b.navBtnsContainer = container.NewHBox()
-	b.navBtnsPageMap = map[controller.PageName]fyne.Resource{}
-	b.container = container.NewBorder(container.New(
-		&layout.CustomPaddedLayout{LeftPadding: -5, RightPadding: -5},
-		container.New(layouts.NewLeftMiddleRightLayout(0, 0),
-			container.NewHBox(b.home, b.back, b.forward, b.reload), b.navBtnsContainer,
-			container.NewHBox(layout.NewSpacer(), quickSearchBtn, b.settingsBtn))),
-		nil, nil, nil, b.pageContainer)
-	b.updateHistoryButtons()
 	return b
 }
 
@@ -124,77 +84,19 @@ func (b *BrowsingPane) SetPage(p Page) {
 		b.pageContainer.Objects[1] = layout.NewSpacer()
 		b.curPage = nil
 		b.pageContainer.Refresh()
-		b.updateNavBtnsColor(p)
 	} else {
 		oldPage := b.curPage
 		if b.doSetPage(p) && oldPage != nil {
 			b.addPageToHistory(oldPage, true)
-			b.updateHistoryButtons()
 		}
 	}
+	b.onHistoryChanged()
 }
 
 func (b *BrowsingPane) ClearHistory() {
 	b.history = nil
 	b.historyIdx = 0
-	b.updateHistoryButtons()
-}
-
-func (b *BrowsingPane) AddSettingsMenuItem(label string, icon fyne.Resource, action func()) {
-	item := fyne.NewMenuItem(label, action)
-	item.Icon = icon
-	b.settingsMenu.Items = append(b.settingsMenu.Items, item)
-}
-
-func (b *BrowsingPane) AddSettingsSubmenu(label string, icon fyne.Resource, menu *fyne.Menu) {
-	item := fyne.NewMenuItem(label, nil)
-	item.ChildMenu = menu
-	item.Icon = icon
-	b.settingsMenu.Items = append(b.settingsMenu.Items, item)
-}
-
-func (b *BrowsingPane) SetSubmenuForMenuItem(label string, submenu *fyne.Menu) {
-	for _, item := range b.settingsMenu.Items {
-		if item.Label == label {
-			item.ChildMenu = submenu
-		}
-	}
-}
-
-func (b *BrowsingPane) AddSettingsMenuSeparator() {
-	b.settingsMenu.Items = append(b.settingsMenu.Items,
-		fyne.NewMenuItemSeparator())
-}
-
-func (b *BrowsingPane) AddNavigationButton(icon fyne.Resource, pageName controller.PageName, action func()) *ttwidget.Button {
-	// make a copy of the icon, because it can change the color
-	browsingPaneIcon := theme.NewThemedResource(icon)
-	btn := ttwidget.NewButtonWithIcon("", browsingPaneIcon, action)
-	btn.SetToolTip(lang.L(pageName.String()))
-	b.navBtnsContainer.Add(btn)
-	b.navBtnsPageMap[pageName] = browsingPaneIcon
-	return btn
-}
-
-func (b *BrowsingPane) DisableNavigationButtons() {
-	for _, obj := range b.navBtnsContainer.Objects {
-		obj.(fyne.Disableable).Disable()
-	}
-}
-
-func (b *BrowsingPane) EnableNavigationButtons() {
-	for _, obj := range b.navBtnsContainer.Objects {
-		obj.(fyne.Disableable).Enable()
-	}
-}
-
-func (b *BrowsingPane) ActivateNavigationButton(num int) {
-	if num < len(b.navBtnsContainer.Objects) {
-		btn := b.navBtnsContainer.Objects[num].(*widget.Button)
-		if !btn.Disabled() && !btn.Hidden {
-			btn.OnTapped()
-		}
-	}
+	b.onHistoryChanged()
 }
 
 func (b *BrowsingPane) GetSearchBarIfAny() fyne.Focusable {
@@ -255,13 +157,18 @@ func (b *BrowsingPane) doSetPage(p Page) bool {
 	b.curPage = p
 	if np, ok := p.(CanShowNowPlaying); ok {
 		// inform page of currently playing track
-		np.OnSongChange(b.app.PlaybackManager.NowPlaying(), nil)
+		np.OnSongChange(b.playbackManager.NowPlaying(), nil)
 	}
 	b.pageContainer.Remove(b.curPage)
 	b.pageContainer.Objects[1] = p
-	b.updateNavBtnsColor(p)
 	b.Refresh()
 	return true
+}
+
+func (b *BrowsingPane) onHistoryChanged() {
+	if b.OnHistoryChanged != nil {
+		b.OnHistoryChanged()
+	}
 }
 
 func (b *BrowsingPane) onSongChange(song mediaprovider.MediaItem, lastScrobbledIfAny *mediaprovider.Track) {
@@ -313,17 +220,12 @@ func (b *BrowsingPane) addPageToHistory(p Page, truncate bool) {
 	b.historyIdx++
 }
 
-func (b *BrowsingPane) updateHistoryButtons() {
-	if b.historyIdx > 0 {
-		b.back.Enable()
-	} else {
-		b.back.Disable()
-	}
-	if b.historyIdx < len(b.history)-1 {
-		b.forward.Enable()
-	} else {
-		b.forward.Disable()
-	}
+func (b *BrowsingPane) CanGoBack() bool {
+	return b.historyIdx > 0
+}
+
+func (b *BrowsingPane) CanGoForward() bool {
+	return b.historyIdx < len(b.history)-1
 }
 
 func (b *BrowsingPane) GoBack() {
@@ -334,7 +236,7 @@ func (b *BrowsingPane) GoBack() {
 		b.addPageToHistory(b.curPage, false)
 		b.historyIdx -= 2
 		b.doSetPage(p)
-		b.updateHistoryButtons()
+		b.onHistoryChanged()
 	}
 }
 
@@ -343,7 +245,7 @@ func (b *BrowsingPane) GoForward() {
 		p := b.history[b.historyIdx+1].Restore()
 		b.addPageToHistory(b.curPage, false)
 		b.doSetPage(p)
-		b.updateHistoryButtons()
+		b.onHistoryChanged()
 	}
 }
 
@@ -361,15 +263,5 @@ func (b *BrowsingPane) CurrentPage() controller.Route {
 }
 
 func (b *BrowsingPane) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(b.container)
-}
-
-func (b *BrowsingPane) updateNavBtnsColor(p Page) {
-	for pageName, icon := range b.navBtnsPageMap {
-		if p != nil && pageName == p.Route().Page {
-			icon.(*theme.ThemedResource).ColorName = theme.ColorNamePrimary
-		} else {
-			icon.(*theme.ThemedResource).ColorName = theme.ColorNameForeground
-		}
-	}
+	return widget.NewSimpleRenderer(b.pageContainer)
 }
