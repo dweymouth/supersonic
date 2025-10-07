@@ -486,6 +486,10 @@ func (m *MainWindow) addShortcuts() {
 			m.Controller.CloseEscapablePopUp()
 		case fyne.KeySpace:
 			m.App.PlaybackManager.PlayPause()
+		case fyne.KeyLeft:
+			m.App.PlaybackManager.SeekBySeconds(-10)
+		case fyne.KeyRight:
+			m.App.PlaybackManager.SeekBySeconds(10)
 		}
 	})
 	m.Canvas().SetOnMouseBack(m.BrowsingPane.GoBack)
