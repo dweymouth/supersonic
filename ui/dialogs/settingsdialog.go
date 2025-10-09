@@ -167,7 +167,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	if s.config.Application.SaveQueueToServer {
 		saveToServer.Selected = toServer
 	}
-	saveQueue := widget.NewCheck(lang.L("Save play queue on exit"), func(save bool) {
+	saveQueue := widget.NewCheck(lang.L("Save play queue"), func(save bool) {
 		s.config.Application.SavePlayQueue = save
 		if save && canSaveQueueToServer {
 			saveToServer.Enable()

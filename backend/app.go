@@ -188,6 +188,13 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		SetSystemSleepDisabled(false)
 	})
 
+	a.PlaybackManager.OnQueueChange(func() {
+		go a.SavePlayQueueIfEnabled()
+	})
+	a.PlaybackManager.OnSongChange(func(_ mediaprovider.MediaItem, _ *mediaprovider.Track) {
+		go a.SavePlayQueueIfEnabled()
+	})
+
 	// Start IPC server if another not already running in a different instance
 	if cli == nil {
 		ipc.DestroyConn() // cleanup socket possibly orphaned by crashed process
