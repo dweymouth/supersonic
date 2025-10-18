@@ -171,7 +171,7 @@ func (l *peakMeterRenderer) Refresh() {
 	foreground := theme.ForegroundColor()
 	background := theme.BackgroundColor()
 	errC := theme.ErrorColor()
-	c := theme.PrimaryColor().(color.NRGBA)
+	c := color.NRGBAModel.Convert(theme.PrimaryColor()).(color.NRGBA)
 	c.A = 128
 	l.lLabel.Color = foreground
 	l.rLabel.Color = foreground
