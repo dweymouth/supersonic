@@ -212,7 +212,7 @@ type AlbumPageHeader struct {
 	titleLabel       *widget.RichText
 	releaseTypeLabel *widget.RichText
 	artistLabel      *widgets.MultiHyperlink
-	artistLabelSpace *util.HSpace // TODO: remove when no longer needed
+	artistLabelSpace *util.Space // TODO: remove when no longer needed
 	genreLabel       *widgets.MultiHyperlink
 	miscLabel        *widget.Label
 	shareMenuItem    *fyne.MenuItem

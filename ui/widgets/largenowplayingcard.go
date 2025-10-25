@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
+	"github.com/dweymouth/supersonic/ui/util"
 )
 
 // Shows the current album art, track name, artist name, and album name
@@ -59,10 +60,11 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 		n.rating,
 		layout.NewSpacer(),
 	)
-	n.Caption = container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-13),
+	n.Caption = container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-15),
 		n.trackName,
 		n.artistName,
 		n.albumName,
+		util.NewVSpace(20),
 		n.ratingFavoriteContainer,
 	)
 

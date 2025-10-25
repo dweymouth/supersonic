@@ -401,22 +401,29 @@ type ToolTipRichText struct {
 	OnTapped   func(e *fyne.PointEvent)
 }
 
-type HSpace struct {
+type Space struct {
 	widget.BaseWidget
 
-	Width float32
+	Width  float32
+	Height float32
 }
 
-func NewHSpace(w float32) *HSpace {
-	h := &HSpace{Width: w}
-	h.ExtendBaseWidget(h)
-	return h
+func NewHSpace(w float32) *Space {
+	s := &Space{Width: w}
+	s.ExtendBaseWidget(s)
+	return s
 }
 
-func (h *HSpace) MinSize() fyne.Size {
-	return fyne.NewSize(h.Width, 0)
+func NewVSpace(h float32) *Space {
+	s := &Space{Height: h}
+	s.ExtendBaseWidget(s)
+	return s
 }
 
-func (h *HSpace) CreateRenderer() fyne.WidgetRenderer {
+func (h *Space) MinSize() fyne.Size {
+	return fyne.NewSize(h.Width, h.Height)
+}
+
+func (h *Space) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(layout.NewSpacer())
 }
