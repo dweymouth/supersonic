@@ -63,33 +63,34 @@
   </screenshots>
 
  <releases>
-  <release date="2025-09-13" version="0.18.1">
+  <release date="2025-10-26" version="0.19.0">
    <description>
      <p>
-       Version 0.18.1 of Supersonic
+       Version 0.19.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Save and use the most recently selected music library when re-launching app</li>
-       <li>Add Artists to the supported list of startup pages</li>
+       <li>Toggleable side bar play queue</li>
+       <li>New setting to skip one-star tracks or tracks with specific keyword when shuffling</li>
+       <li>New Last Played column for tracklists</li>
+       <li>Create Playlist button added to the playlists page</li>
+       <li>Save play queue on all queue changes rather than on shutdown</li>
+       <li>Left and Right keybindings for seeking back/forward 10 sec</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Occasionally crashing on Linux when monitors go idle</li>
-       <li>AppImage: failing to start due to "No GLXFBConfigs returned</li>
-       <li>AppImage: failing to start on openSUSE-Tumbleweed and CachyOS</li>
-       <li>Rework format for now playing status line</li>
-       <li>Silenty failing to add large number of tracks to playlist (OpenSubsonic servers)</li>
-       <li>Fail to start on Windows ARM64 or older x64 CPUs</li>
-       <li>Search results limited to 20 items</li>
-       <li>Transcoding not working with Jellyfin</li>
-       <li>Crashing on "Shuffle albums" if fewer than 20 albums available</li>
+       <li>Peak Meter visualization crashing with custom themes</li>
+       <li>Adjust spacing for rating/favorite widget on Now Playing page</li>
+       <li>Occasional crashing on lyrics viewer</li>
+       <li>Jellyfin M3U playlists not showing up</li>
+       <li>Occasional hangs when loading artist pages</li>
+       <li>Improved LrcLib lyrics fetching with unknown album or artist name</li>
      </ul>
 
    </description>

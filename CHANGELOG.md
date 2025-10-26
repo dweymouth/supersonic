@@ -1,5 +1,23 @@
 # Change Log
 
+## [0.19.0]
+
+### Added
+- [#732](https://github.com/dweymouth/supersonic/pull/732) Add toggleable side bar play queue
+- [#724](https://github.com/dweymouth/supersonic/pull/724) Add a setting to skip one-star tracks or tracks with specific keyword when shuffling
+- [#716](https://github.com/dweymouth/supersonic/issues/716) Add a Last Played column to tracklists
+- [#714](https://github.com/dweymouth/supersonic/issues/714) Add a Create Playlist button to the playlists page
+- [#579](https://github.com/dweymouth/supersonic/issues/579) Save play queue on all queue changes rather than on shutdown
+- Left and Right keybindings for seeking back/forward 10 sec
+
+### Fixed
+- [#737](https://github.com/dweymouth/supersonic/issues/737) Peak Meter visualization crashing with custom themes
+- [#735](https://github.com/dweymouth/supersonic/issues/735) Adjust spacing for rating/favorite widget on Now Playing page
+- [#729](https://github.com/dweymouth/supersonic/issues/729) Occasional crashing on lyrics viewer
+- [#414](https://github.com/dweymouth/supersonic/issues/414) Jellyfin M3U playlists not showing up
+- Occasional hangs when loading artist pages
+- Improved LrcLib lyrics fetching with unknown album or artist name
+
 ## [0.18.1]
 
 ### Added

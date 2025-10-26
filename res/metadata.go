@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.18.1"
+	AppVersion       = "0.19.0"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,18 +15,19 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* Save and use the most recently selected music library when re-launching app
-* Add Artists to the supported list of startup pages`
+* Toggleable side bar play queue
+* New setting to skip one-star tracks or tracks with specific keyword when shuffling
+* New Last Played column for tracklists
+* Create Playlist button added to the playlists page
+* Save play queue on all queue changes rather than on shutdown
+* Left and Right keybindings for seeking back/forward 10 sec`
 
 	WhatsFixed = `
 ## Fixed
-* Occasionally crashing on Linux when monitors go idle
-* AppImage: failing to start due to "No GLXFBConfigs returned
-* AppImage: failing to start on openSUSE-Tumbleweed and CachyOS
-* Rework format for now playing status line
-* Silenty failing to add large number of tracks to playlist (OpenSubsonic servers)
-* Fail to start on Windows ARM64 or older x64 CPUs
-* Search results limited to 20 items
-* Transcoding not working with Jellyfin
-* Crashing on "Shuffle albums" if fewer than 20 albums available`
+* Peak Meter visualization crashing with custom themes
+* Adjust spacing for rating/favorite widget on Now Playing page
+* Occasional crashing on lyrics viewer
+* Jellyfin M3U playlists not showing up
+* Occasional hangs when loading artist pages
+* Improved LrcLib lyrics fetching with unknown album or artist name`
 )
