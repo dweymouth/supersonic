@@ -61,7 +61,6 @@ type NowPlayingPage struct {
 	container      *fyne.Container
 
 	// cancel funcs for background fetch tasks
-	lyricFetchCancel   context.CancelFunc
 	imageLoadCancel    context.CancelFunc
 	relatedFetchCancel context.CancelFunc
 }
@@ -72,11 +71,11 @@ type nowPlayingPageState struct {
 	pool     *util.WidgetPool
 	sm       *backend.ServerManager
 	pm       *backend.PlaybackManager
+	lm       *backend.LyricsManager
 	im       *backend.ImageManager
 	mp       mediaprovider.MediaProvider
 	canRate  bool
 	canShare bool
-	lrcFetch *backend.LrcLibFetcher
 }
 
 func NewNowPlayingPage(
@@ -84,15 +83,15 @@ func NewNowPlayingPage(
 	contr *controller.Controller,
 	pool *util.WidgetPool,
 	sm *backend.ServerManager,
+	lm *backend.LyricsManager,
 	im *backend.ImageManager,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	canRate bool,
 	canShare bool,
-	lrcLibFetcher *backend.LrcLibFetcher,
 ) *NowPlayingPage {
 	state := nowPlayingPageState{
-		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, lrcFetch: lrcLibFetcher,
+		conf: conf, contr: contr, pool: pool, sm: sm, lm: lm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare,
 	}
 	if page, ok := pool.Obtain(util.WidgetTypeNowPlayingPage).(*NowPlayingPage); ok && page != nil {
 		page.nowPlayingPageState = state
@@ -336,10 +335,6 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 }
 
 func (a *NowPlayingPage) updateLyrics() {
-	if a.lyricFetchCancel != nil {
-		a.lyricFetchCancel()
-	}
-
 	if a.nowPlayingID == a.curLyricsID {
 		if a.nowPlayingID != "" {
 			// just need to sync the current time
@@ -354,8 +349,6 @@ func (a *NowPlayingPage) updateLyrics() {
 		return
 	}
 	a.curLyricsID = a.nowPlayingID
-	ctx, cancel := context.WithCancel(context.Background())
-	a.lyricFetchCancel = cancel
 	a.lyricsLoading.Start()
 	// set the widget to an empty (not nil) lyric during fetch
 	// to keep it from showing "Lyrics not available"
@@ -365,27 +358,11 @@ func (a *NowPlayingPage) updateLyrics() {
 		Lines:  []mediaprovider.LyricLine{{Text: ""}},
 	})
 	tr, _ := a.nowPlaying.(*mediaprovider.Track)
-	go a.fetchLyrics(ctx, tr)
-}
 
-func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Track) {
-	var lyrics *mediaprovider.Lyrics
-	var err error
-	if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
-		if lyrics, err = lp.GetLyrics(song); err != nil {
-			log.Printf("Error fetching lyrics: %v", err)
+	a.lm.FetchLyricsAsync(tr, func(id string, lyrics *mediaprovider.Lyrics) {
+		if id != a.nowPlayingID {
+			return
 		}
-	}
-	if lyrics == nil && a.lrcFetch != nil {
-		lyrics, err = a.lrcFetch.FetchLrcLibLyrics(song.Title, song.ArtistNames[0], song.Album, int(song.Duration.Seconds()))
-		if err != nil {
-			log.Println(err.Error())
-		}
-	}
-	select {
-	case <-ctx.Done():
-		return
-	default:
 		fyne.Do(func() {
 			a.lyricsLoading.Stop()
 			a.lyricsViewer.EnableTapToSeek()
@@ -395,7 +372,7 @@ func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 				a.lyricsViewer.OnSeeked(a.lastPlayPos)
 			}
 		})
-	}
+	})
 }
 
 func (a *NowPlayingPage) updateRelatedList() {
@@ -464,7 +441,7 @@ func (a *NowPlayingPage) Reload() {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.mp, s.canRate, s.canShare, s.lrcFetch)
+	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.lm, s.im, s.pm, s.mp, s.canRate, s.canShare)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)

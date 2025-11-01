@@ -44,6 +44,7 @@ var (
 type App struct {
 	Config          *Config
 	ServerManager   *ServerManager
+	LyricsManager   *LyricsManager
 	ImageManager    *ImageManager
 	AudioCache      *AudioCache
 	PlaybackManager *PlaybackManager
@@ -52,7 +53,6 @@ type App struct {
 	MPRISHandler    *MPRISHandler
 	WinSMTC         *windows.SMTC
 	ipcServer       ipc.IPCServer
-	LrcLibFetcher   *LrcLibFetcher
 
 	// UI callbacks to be set in main
 	OnReactivate func()
@@ -158,10 +158,12 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
+	var fetch *LrcLibFetcher
 	if a.Config.Application.EnableLrcLib {
 		timeout := time.Duration(a.Config.Application.RequestTimeoutSeconds) * time.Second
-		a.LrcLibFetcher = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl, timeout)
+		fetch = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl, timeout)
 	}
+	a.LyricsManager = NewLyricsManager(a.ServerManager, fetch)
 
 	// Periodically scan for remote players
 	go a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, true /*fastScan*/)

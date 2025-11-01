@@ -59,6 +59,7 @@ type AppConfig struct {
 	EnableOSMediaPlayerAPIs     bool
 	ShowSidebar                 bool
 	SidebarWidthFraction        float64
+	SidebarTab                  string
 
 	FontNormalTTF string
 	FontBoldTTF   string
