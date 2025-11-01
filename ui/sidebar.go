@@ -15,15 +15,58 @@ import (
 type Sidebar struct {
 	widget.BaseWidget
 
-	queueList *widgets.PlayQueueList
+	lm *backend.LyricsManager
+
+	queueList     *widgets.PlayQueueList
+	lyricsViewer  *widgets.LyricsViewer
+	lyricsLoading *widgets.LoadingDots
+	tabs          *container.AppTabs
+
+	nowPlaying   mediaprovider.MediaItem
+	nowPlayingID string
+	curLyrics    *mediaprovider.Lyrics
+	curLyricsID  string
+	lastPlayPos  float64
 }
 
-func NewSidebar(contr *controller.Controller, im *backend.ImageManager) *Sidebar {
+func NewSidebar(contr *controller.Controller, pm *backend.PlaybackManager, im *backend.ImageManager, lm *backend.LyricsManager) *Sidebar {
 	s := &Sidebar{
+		lm:        lm,
 		queueList: widgets.NewPlayQueueList(im, false),
 	}
 	s.queueList.Reorderable = true
 	contr.ConnectPlayQueuelistActions(s.queueList)
+
+	s.lyricsViewer = widgets.NewLyricsViewer(func(i int) {
+		if s.curLyrics != nil && len(s.curLyrics.Lines) > i-1 {
+			time := s.curLyrics.Lines[i-1].Start
+			pm.SeekSeconds(time)
+		}
+	})
+	s.lyricsLoading = widgets.NewLoadingDots()
+
+	s.tabs = container.NewAppTabs(
+		container.NewTabItem(lang.L("Play Queue"), container.NewPadded(s.queueList)),
+		container.NewTabItem(lang.L("Lyrics"), container.NewStack(
+			s.lyricsViewer,
+			container.NewCenter(s.lyricsLoading))),
+	)
+	s.tabs.OnSelected = func(*container.TabItem) {
+		idx := s.tabs.SelectedIndex()
+		if idx == 1 /*lyrics*/ {
+			s.updateLyrics()
+		}
+	}
+
+	pm.OnPlayTimeUpdate(func(curTime, _ float64, seeked bool) {
+		s.lastPlayPos = curTime
+		if seeked {
+			fyne.Do(func() { s.lyricsViewer.OnSeeked(curTime) })
+		} else {
+			fyne.Do(func() { s.lyricsViewer.UpdatePlayPos(curTime) })
+		}
+	})
+
 	s.ExtendBaseWidget(s)
 	return s
 }
@@ -32,15 +75,65 @@ func (s *Sidebar) SetQueueTracks(items []mediaprovider.MediaItem) {
 	s.queueList.SetItems(items)
 }
 
-func (s *Sidebar) SetNowPlaying(itemID string) {
-	s.queueList.SetNowPlaying(itemID)
+func (s *Sidebar) SetNowPlaying(item mediaprovider.MediaItem) {
+	s.nowPlaying = item
+	id := ""
+	if item != nil {
+		id = item.Metadata().ID
+	}
+	s.queueList.SetNowPlaying(id)
+	s.nowPlayingID = id
+	if s.tabs.SelectedIndex() == 1 /*lyrics*/ {
+		s.updateLyrics()
+	}
+}
+
+// TODO: this is more or less copy-paste from the Now Playing page
+// refactor this shared logic somewhere else?
+func (s *Sidebar) updateLyrics() {
+	if s.nowPlayingID == s.curLyricsID {
+		if s.nowPlayingID != "" {
+			// just need to sync the current time
+			s.lyricsViewer.OnSeeked(s.lastPlayPos)
+			return
+		}
+	}
+	if s.nowPlaying == nil || s.nowPlaying.Metadata().Type == mediaprovider.MediaItemTypeRadioStation {
+		s.lyricsViewer.SetLyrics(nil)
+		s.curLyrics = nil
+		s.curLyricsID = ""
+		return
+	}
+	s.curLyricsID = s.nowPlayingID
+	s.lyricsLoading.Start()
+	// set the widget to an empty (not nil) lyric during fetch
+	// to keep it from showing "Lyrics not available"
+	s.lyricsViewer.DisableTapToSeek()
+	s.lyricsViewer.SetLyrics(&mediaprovider.Lyrics{
+		Synced: true,
+		Lines:  []mediaprovider.LyricLine{{Text: ""}},
+	})
+	tr, _ := s.nowPlaying.(*mediaprovider.Track)
+
+	s.lm.FetchLyricsAsync(tr, func(id string, lyrics *mediaprovider.Lyrics) {
+		if id != s.nowPlayingID {
+			return
+		}
+		fyne.Do(func() {
+			s.lyricsLoading.Stop()
+			s.lyricsViewer.EnableTapToSeek()
+			s.lyricsViewer.SetLyrics(lyrics)
+			s.curLyrics = lyrics
+			if lyrics != nil {
+				s.lyricsViewer.OnSeeked(s.lastPlayPos)
+			}
+		})
+	})
 }
 
 func (s *Sidebar) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewStack(
 		theme.NewThemedRectangle(theme.ColorNamePageBackground),
-		container.NewAppTabs(
-			container.NewTabItem(lang.L("Play Queue"), container.NewPadded(s.queueList)),
-		),
+		container.NewPadded(s.tabs),
 	))
 }
