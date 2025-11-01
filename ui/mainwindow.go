@@ -70,6 +70,9 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller = controller.New(app, appVersion, m.Window)
 	m.BrowsingPane = browsing.NewBrowsingPane(app.PlaybackManager, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
 	m.Sidebar = NewSidebar(m.Controller, m.App.PlaybackManager, m.App.ImageManager, m.App.LyricsManager)
+	if m.App.Config.Application.SidebarTab == "Lyrics" {
+		m.Sidebar.SetSelectedIndex(1)
+	}
 	m.ToastOverlay = NewToastOverlay()
 	m.Router = browsing.NewRouter(app, m.Controller, m.BrowsingPane)
 	goHomeFn := func() { m.Router.NavigateTo(m.StartupPage()) }
@@ -533,6 +536,12 @@ func (m *MainWindow) SaveWindowSettings() {
 		&m.App.Config.Application.WindowHeight)
 	m.App.Config.Application.ShowSidebar = !m.Sidebar.Hidden
 	m.App.Config.Application.SidebarWidthFraction = m.splitContainer.Offset
+	switch m.Sidebar.SelectedIndex() {
+	case 1:
+		m.App.Config.Application.SidebarTab = "Lyrics"
+	default:
+		m.App.Config.Application.SidebarTab = "Play Queue"
+	}
 }
 
 // widget just so we can catch a tap event that doesn't land anywhere else

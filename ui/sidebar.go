@@ -71,6 +71,14 @@ func NewSidebar(contr *controller.Controller, pm *backend.PlaybackManager, im *b
 	return s
 }
 
+func (s *Sidebar) SelectedIndex() int {
+	return s.tabs.SelectedIndex()
+}
+
+func (s *Sidebar) SetSelectedIndex(idx int) {
+	s.tabs.SelectIndex(idx)
+}
+
 func (s *Sidebar) SetQueueTracks(items []mediaprovider.MediaItem) {
 	s.queueList.SetItems(items)
 }
