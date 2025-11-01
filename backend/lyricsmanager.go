@@ -46,6 +46,8 @@ func (lm *LyricsManager) FetchLyricsAsync(song *mediaprovider.Track, cb func(str
 	go lm.fetchLyrics(ctx, song, func(id string, lyrics *mediaprovider.Lyrics) {
 		lm.lock.Lock()
 		defer lm.lock.Unlock()
+		lm.fetchInProgressID = ""
+		lm.fetchInProgressCancel()
 		for _, cb := range lm.cbs {
 			cb(id, lyrics)
 		}
