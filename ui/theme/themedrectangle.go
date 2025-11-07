@@ -15,11 +15,11 @@ type ThemedRectangle struct {
 
 	rect *canvas.Rectangle
 
-	ColorName        fyne.ThemeColorName
-	Translucent      bool
-	BorderWidth      float32
-	BorderColorName  fyne.ThemeColorName
-	CornerRadiusName fyne.ThemeSizeName
+	ColorName       fyne.ThemeColorName
+	Translucent     bool
+	BorderWidth     float32
+	BorderColorName fyne.ThemeColorName
+	CornerRadius    float32
 }
 
 func NewThemedRectangle(colorName fyne.ThemeColorName) *ThemedRectangle {
@@ -43,9 +43,7 @@ func (t *ThemedRectangle) Refresh() {
 	t.rect.FillColor = fc
 	t.rect.StrokeWidth = t.BorderWidth
 	t.rect.StrokeColor = theme.Color(t.BorderColorName, settings.ThemeVariant())
-	if t.CornerRadiusName != "" {
-		t.rect.CornerRadius = theme.Size(t.CornerRadiusName)
-	}
+	t.rect.CornerRadius = t.CornerRadius
 	t.BaseWidget.Refresh()
 }
 

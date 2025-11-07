@@ -11,6 +11,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -47,6 +48,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	pm.OnStopped(util.FyneDoFunc(func() { bp.Controls.SetPlaying(false) }))
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
+	bp.NowPlaying.ImageCornerRadius = theme.InputRadiusSize()
 	bp.NowPlaying.OnCoverTapped = func() {
 		contr.NavigateTo(controller.NowPlayingRoute())
 	}

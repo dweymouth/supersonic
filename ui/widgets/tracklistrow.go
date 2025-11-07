@@ -274,6 +274,7 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 	t.playingIcon = playingIcon
 	t.img = NewImagePlaceholder(myTheme.TracksIcon, tracklistThumbnailSize)
 	t.img.ScaleMode = canvas.ImageScaleFastest
+	t.img.CornerRadius = theme.InputRadiusSize()
 
 	t.imageLoader = util.NewThumbnailLoader(im, func(i image.Image) {
 		t.img.SetImage(i, false)

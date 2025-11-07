@@ -365,7 +365,7 @@ func AddHeaderBackground(obj fyne.CanvasObject) *fyne.Container {
 
 func AddHeaderBackgroundWithColorName(obj fyne.CanvasObject, colorName fyne.ThemeColorName) *fyne.Container {
 	bgrnd := myTheme.NewThemedRectangle(colorName)
-	bgrnd.CornerRadiusName = theme.SizeNameInputRadius
+	bgrnd.CornerRadius = theme.InputRadiusSize()
 	return container.NewStack(bgrnd,
 		container.New(&layout.CustomPaddedLayout{LeftPadding: 10, RightPadding: 10, TopPadding: 10, BottomPadding: 10},
 			obj))

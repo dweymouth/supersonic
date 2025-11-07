@@ -389,6 +389,7 @@ func NewPlayQueueListRow(playQueueList *PlayQueueList, im *backend.ImageManager,
 	p.ExtendBaseWidget(p)
 
 	p.cover.ScaleMode = canvas.ImageScaleFastest
+	p.cover.CornerRadius = theme.InputRadiusSize()
 	p.title.OnMouseIn = p.MouseIn
 	p.title.OnMouseOut = p.MouseOut
 	p.artist.OnTapped = playQueueList.onArtistTapped

@@ -503,6 +503,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	}
 	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, 225)
 	a.artistImage.OnTapped = func(*fyne.PointEvent) { a.showPopUpCover() }
+	a.artistImage.CornerRadius = theme.InputRadiusSize()
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.playBtn = widget.NewButtonWithIcon(lang.L("Play Discography"), theme.MediaPlayIcon(), func() {
 		go a.artistPage.pm.PlayArtistDiscography(a.artistID, false /*shuffle*/)

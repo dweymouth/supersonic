@@ -19,7 +19,8 @@ import (
 type LargeNowPlayingCard struct {
 	CaptionedImage
 
-	DisableRating bool
+	DisableRating     bool
+	ImageCornerRadius float32
 
 	isRadio                 bool
 	trackName               *widget.RichText
@@ -163,5 +164,6 @@ func (n *LargeNowPlayingCard) Refresh() {
 	} else {
 		n.rating.Enable()
 	}
+	n.cover.CornerRadius = n.ImageCornerRadius
 	n.BaseWidget.Refresh()
 }

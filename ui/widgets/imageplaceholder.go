@@ -17,6 +17,7 @@ import (
 type ImagePlaceholder struct {
 	ScaleMode       canvas.ImageScale
 	PlaceholderIcon fyne.Resource
+	CornerRadius    float32
 
 	widget.BaseWidget
 	content   *fyne.Container
@@ -109,6 +110,8 @@ func (i *ImagePlaceholder) Refresh() {
 	i.imageDisp.Hidden = !i.HaveImage()
 	i.imageDisp.ScaleMode = i.ScaleMode
 	i.iconImage.ScaleMode = i.ScaleMode
+	i.imageDisp.CornerRadius = i.CornerRadius
+	i.border.CornerRadius = i.CornerRadius
 	i.BaseWidget.Refresh()
 }
 
