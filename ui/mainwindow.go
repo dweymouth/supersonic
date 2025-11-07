@@ -413,6 +413,11 @@ func (m *MainWindow) SetupSystemTrayMenu(appName string, fyneApp fyne.App) {
 		)
 		desk.SetSystemTrayMenu(menu)
 		desk.SetSystemTrayIcon(res.ResAppicon256Png)
+		if runtime.GOOS != "darwin" {
+			// Left-click opening systray menu instead of raising window
+			// is standard behavior on Mac.
+			desk.SetSystemTrayWindow(m.Window)
+		}
 		m.haveSystemTray = true
 	}
 }
