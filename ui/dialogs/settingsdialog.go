@@ -38,6 +38,7 @@ type SettingsDialog struct {
 	OnDismiss                      func()
 	OnEqualizerSettingsChanged     func()
 	OnPageNeedsRefresh             func()
+	OnClearCaches                  func()
 
 	config       *backend.Config
 	audioDevices []mpv.AudioDevice
@@ -610,10 +611,18 @@ func (s *SettingsDialog) createAdvancedTab() *container.TabItem {
 	}
 	percentEntry.Text = strconv.Itoa(s.config.Application.MaxImageCacheSizeMB)
 
+	clearCaches := widget.NewButton(lang.L("Clear caches"), func() {
+		if s.OnClearCaches != nil {
+			s.OnClearCaches()
+		}
+	})
+
 	imgCacheCfg := container.NewHBox(
 		widget.NewLabel(lang.L("Maximum image cache size")),
 		percentEntry,
 		widget.NewLabel("MB"),
+		layout.NewSpacer(),
+		clearCaches,
 	)
 
 	osMediaAPIs := widget.NewCheck(lang.L("Enable OS media player integration"), func(b bool) {

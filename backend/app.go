@@ -28,10 +28,11 @@ import (
 )
 
 const (
-	configFile     = "config.toml"
-	portableDir    = "supersonic_portable"
-	savedQueueFile = "saved_queue.json"
-	themesDir      = "themes"
+	configFile       = "config.toml"
+	portableDir      = "supersonic_portable"
+	savedQueueFile   = "saved_queue.json"
+	themesDir        = "themes"
+	audioCacheSubdir = "audio"
 )
 
 var (
@@ -146,7 +147,7 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	a.ServerManager = NewServerManager(appName, appVersion, a.Config, !portableMode && a.Config.Application.EnablePasswordStorage)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, cacheDir)
 	if a.Config.Playback.UseWaveformSeekbar {
-		ac, err := NewAudioCache(a.bgrndCtx, a.ServerManager, filepath.Join(cacheDir, "audio"))
+		ac, err := NewAudioCache(a.bgrndCtx, a.ServerManager, filepath.Join(cacheDir, audioCacheSubdir))
 		if err != nil {
 			log.Printf("failed to create audio cache: %s", err.Error())
 		}
@@ -245,6 +246,21 @@ func (a *App) IsPortableMode() bool {
 
 func (a *App) ThemesDir() string {
 	return filepath.Join(a.configDir, themesDir)
+}
+
+func (a *App) ClearCaches() {
+	if a.cacheDir != "" {
+		entries, _ := os.ReadDir(a.cacheDir)
+		for _, e := range entries {
+			// The audio cache directory is necessary for
+			// proper playback of enqueued tracks, and also
+			// doesn't accumulate more than a few entries.
+			// Leave it alone.
+			if e.Name() != audioCacheSubdir {
+				_ = os.RemoveAll(filepath.Join(a.cacheDir, e.Name()))
+			}
+		}
+	}
 }
 
 func checkPortablePath() string {
