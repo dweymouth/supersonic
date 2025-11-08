@@ -1,11 +1,12 @@
 module github.com/dweymouth/supersonic
 
-go 1.23.0
+go 1.24.0
 
 require (
 	fyne.io/fyne/v2 v2.6.1
 	github.com/20after4/configdir v0.1.1
 	github.com/Microsoft/go-winio v0.6.2
+	github.com/boxes-ltd/imaging v1.7.1
 	github.com/cenkalti/dominantcolor v1.0.3
 	github.com/charlievieth/strcase v0.0.5
 	github.com/deluan/sanitize v0.0.0-20230310221930-6e18967d9fc1
@@ -27,7 +28,7 @@ require (
 	golang.org/x/net v0.38.0
 	golang.org/x/sys v0.31.0
 	golang.org/x/term v0.30.0
-	golang.org/x/text v0.23.0
+	golang.org/x/text v0.30.0
 )
 
 require (
@@ -64,7 +65,7 @@ require (
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
-	golang.org/x/image v0.24.0 // indirect
+	golang.org/x/image v0.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

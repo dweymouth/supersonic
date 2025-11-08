@@ -111,7 +111,8 @@ type TracksPageConfig struct {
 }
 
 type NowPlayingPageConfig struct {
-	InitialView string
+	InitialView        string
+	UseBackgroundImage bool
 }
 
 type PlaybackConfig struct {
@@ -242,7 +243,8 @@ func DefaultConfig(appVersionTag string) *Config {
 			InitialView: "List",
 		},
 		NowPlayingConfig: NowPlayingPageConfig{
-			InitialView: "Play Queue",
+			InitialView:        "Play Queue",
+			UseBackgroundImage: true,
 		},
 		TracksPage: TracksPageConfig{
 			TracklistColumns: []string{"Album", "Time", "Plays"},

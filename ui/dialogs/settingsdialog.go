@@ -571,6 +571,8 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	})
 	useWaveformSeekbar.Checked = s.config.Playback.UseWaveformSeekbar
 
+	nowPlayingBackground := widget.NewCheckWithData(lang.L("Use blurred album cover for Now Playing page background"), binding.BindBool(&s.config.NowPlayingConfig.UseBackgroundImage))
+
 	return container.NewTabItem(lang.L("Appearance"), container.NewVBox(
 		util.NewHSpace(0), // insert a theme.Padding amount of space at top
 		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
@@ -583,6 +585,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		disableDPI,
 		s.newSectionSeparator(),
 		useWaveformSeekbar,
+		nowPlayingBackground,
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("Application font"), Style: util.BoldRichTextStyle}),
 		container.New(layout.NewFormLayout(),

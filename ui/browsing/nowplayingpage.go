@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/boxes-ltd/imaging"
 	"github.com/cenkalti/dominantcolor"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -49,16 +50,18 @@ type NowPlayingPage struct {
 	alreadyLoaded bool
 
 	// widgets for render
-	background     *canvas.LinearGradient
-	queueList      *widgets.PlayQueueList
-	relatedList    *widgets.PlayQueueList
-	lyricsViewer   *widgets.LyricsViewer
-	card           *widgets.LargeNowPlayingCard
-	statusLabel    *widget.Label
-	tabs           *container.AppTabs
-	lyricsLoading  *widgets.LoadingDots
-	relatedLoading *widgets.LoadingDots
-	container      *fyne.Container
+	backgroundImgA     *canvas.Image
+	backgroundImgB     *canvas.Image
+	backgroundGradient *canvas.LinearGradient
+	queueList          *widgets.PlayQueueList
+	relatedList        *widgets.PlayQueueList
+	lyricsViewer       *widgets.LyricsViewer
+	card               *widgets.LargeNowPlayingCard
+	statusLabel        *widget.Label
+	tabs               *container.AppTabs
+	lyricsLoading      *widgets.LoadingDots
+	relatedLoading     *widgets.LoadingDots
+	container          *fyne.Container
 
 	// cancel funcs for background fetch tasks
 	imageLoadCancel    context.CancelFunc
@@ -232,7 +235,9 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 			a.updateRelatedList()
 		}
 		c := theme.Color(myTheme.ColorNamePageBackground)
-		a.background = canvas.NewLinearGradient(c, c, 0)
+		a.backgroundGradient = canvas.NewLinearGradient(c, c, 0)
+		a.backgroundImgA = canvas.NewImageFromImage(nil)
+		a.backgroundImgB = canvas.NewImageFromImage(nil)
 
 		mainContent := container.NewGridWithColumns(2,
 			container.New(paddedLayout, a.card),
@@ -240,7 +245,9 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 				util.AddHeaderBackgroundWithColorName(
 					a.tabs, myTheme.ColorNameNowPlayingPanel)))
 		a.container = container.NewStack(
-			a.background,
+			a.backgroundImgA,
+			a.backgroundImgB,
+			a.backgroundGradient,
 			mainContent,
 			container.NewVBox(
 				layout.NewSpacer(),
@@ -318,20 +325,46 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 		return
 	}
 
-	c := dominantcolor.Find(img)
-	if c == a.background.StartColor {
-		return
-	}
-
-	// Fyne animation starting is currently thread-safe,
-	// despite not being marked as such
-	// TODO: if this changes, use fyne.Do
-	anim := canvas.NewColorRGBAAnimation(
-		a.background.StartColor, c, myTheme.AnimationDurationMedium, func(c color.Color) {
-			a.background.StartColor = c
-			a.background.Refresh()
+	if a.conf.UseBackgroundImage {
+		resized := imaging.Resize(img, 300, 0, imaging.NearestNeighbor)
+		blurred := imaging.Blur(resized, 10.0)
+		fyne.Do(func() {
+			if a.backgroundGradient.StartColor != color.Transparent {
+				a.backgroundGradient.StartColor = color.Transparent
+				a.backgroundGradient.Refresh()
+			}
+			a.backgroundImgA.Hidden = false
+			a.backgroundImgB.Hidden = false
+			a.backgroundImgA.Image = a.backgroundImgB.Image
+			a.backgroundImgB.Image = blurred
+			fyne.NewAnimation(myTheme.AnimationDurationMedium, func(f float32) {
+				a.backgroundImgA.Translucency = float64(f)
+				a.backgroundImgB.Translucency = float64(1 - f)
+				a.backgroundImgA.Refresh()
+				a.backgroundImgB.Refresh()
+			}).Start()
 		})
-	anim.Start()
+	} else {
+		c := dominantcolor.Find(img)
+		if c == a.backgroundGradient.StartColor {
+			return
+		}
+		if !a.backgroundImgA.Hidden {
+			a.backgroundImgA.Hide()
+		}
+		if !a.backgroundImgB.Hidden {
+			a.backgroundImgB.Hide()
+		}
+		// Fyne animation starting is currently thread-safe,
+		// despite not being marked as such
+		// TODO: if this changes, use fyne.Do
+		anim := canvas.NewColorRGBAAnimation(
+			a.backgroundGradient.StartColor, c, myTheme.AnimationDurationMedium, func(c color.Color) {
+				a.backgroundGradient.StartColor = c
+				a.backgroundGradient.Refresh()
+			})
+		anim.Start()
+	}
 }
 
 func (a *NowPlayingPage) updateLyrics() {
@@ -486,11 +519,11 @@ func (a *NowPlayingPage) UnselectAll() {
 }
 
 func (a *NowPlayingPage) Refresh() {
-	if a.background != nil {
+	if a.backgroundGradient != nil {
 		c := theme.Color(myTheme.ColorNamePageBackground)
-		if c != a.background.EndColor {
-			a.background.EndColor = c
-			a.background.Refresh()
+		if c != a.backgroundGradient.EndColor {
+			a.backgroundGradient.EndColor = c
+			a.backgroundGradient.Refresh()
 		}
 	}
 	a.BaseWidget.Refresh()
