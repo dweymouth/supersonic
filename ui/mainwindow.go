@@ -11,6 +11,7 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/windows"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui/browsing"
 	uicontainer "github.com/dweymouth/supersonic/ui/container"
@@ -182,7 +183,8 @@ func (m *MainWindow) UpdateOnTrackChange(item mediaprovider.MediaItem) {
 	}
 	m.Window.SetTitle(fmt.Sprintf("%s%s · %s", meta.Name, artistDisp, res.DisplayName))
 	if m.App.Config.Application.ShowTrackChangeNotification {
-		if runtime.GOOS == "linux" {
+		switch runtime.GOOS {
+		case "linux":
 			if notifySend, err := exec.LookPath("notify-send"); err == nil {
 				go func() {
 					args := []string{
@@ -205,9 +207,23 @@ func (m *MainWindow) UpdateOnTrackChange(item mediaprovider.MediaItem) {
 				}()
 				return
 			}
+		case "windows":
+			go func() {
+				// ensure cover thumbnail is cached locally
+				m.App.ImageManager.GetCoverThumbnail(meta.CoverArtID)
+				path, _ := m.App.ImageManager.GetCoverArtPath(meta.CoverArtID)
+				fyne.Do(func() {
+					windows.SendNotification(&fyne.Notification{
+						Title:   meta.Name,
+						Content: artistDisp,
+					}, path)
+				})
+			}()
+			return
 		}
 
-		// TODO: Once Fyne issue #2935 is resolved, show album cover
+		// fallback for not handled above
+		// TODO: Once Fyne issue #2935 is resolved, show album cover on other platforms
 		fyne.CurrentApp().SendNotification(&fyne.Notification{
 			Title:   meta.Name,
 			Content: artistDisp,
