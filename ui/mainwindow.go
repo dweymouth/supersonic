@@ -51,6 +51,8 @@ type MainWindow struct {
 
 	// updated when changing servers or libraries
 	librarySubmenu *fyne.Menu
+
+	isScreensaverDisabled bool
 }
 
 func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string, app *backend.App) MainWindow {
@@ -155,6 +157,18 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		m.Controller.UnselectAll)
 	m.Window.SetContent(fynetooltip.AddWindowToolTipLayer(m.content, m.Window.Canvas()))
 	m.setInitialSize()
+
+	m.Router.OnNavigateTo = func(r controller.Route) {
+		if r.Page == controller.NowPlayingRoute().Page {
+			if m.App.Config.Application.PreventScreensaverOnNowPlayingPage && !m.isScreensaverDisabled {
+				fyne.CurrentApp().Driver().SetDisableScreenBlanking(true)
+				m.isScreensaverDisabled = true
+			}
+		} else if m.isScreensaverDisabled {
+			fyne.CurrentApp().Driver().SetDisableScreenBlanking(false)
+			m.isScreensaverDisabled = false
+		}
+	}
 
 	m.Window.SetCloseIntercept(func() {
 		m.SaveWindowSettings()

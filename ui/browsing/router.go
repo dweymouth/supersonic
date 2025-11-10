@@ -17,6 +17,8 @@ type Router struct {
 	Controller *controller.Controller
 	Nav        NavigationHandler
 	widgetPool *util.WidgetPool
+
+	OnNavigateTo func(controller.Route)
 }
 
 func NewRouter(app *backend.App, controller *controller.Controller, nav NavigationHandler) Router {
@@ -63,8 +65,11 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	return nil
 }
 
-func (r Router) NavigateTo(rte controller.Route) {
+func (r *Router) NavigateTo(rte controller.Route) {
 	if rte != r.Nav.CurrentPage() {
 		r.Nav.SetPage(r.CreatePage(rte))
+	}
+	if r.OnNavigateTo != nil {
+		r.OnNavigateTo(rte)
 	}
 }

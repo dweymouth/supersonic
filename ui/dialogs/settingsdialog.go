@@ -634,12 +634,16 @@ func (s *SettingsDialog) createAdvancedTab() *container.TabItem {
 	})
 	osMediaAPIs.Checked = s.config.Application.EnableOSMediaPlayerAPIs
 
+	preventScreensaver := widget.NewCheckWithData(lang.L("Prevent screensaver on Now Playing page"),
+		binding.BindBool(&s.config.Application.PreventScreensaverOnNowPlayingPage))
+
 	return container.NewTabItem(lang.L("Advanced"), container.NewVBox(
 		multi,
 		sslSkip,
 		update,
 		lrclib,
 		osMediaAPIs,
+		preventScreensaver,
 		imgCacheCfg,
 	))
 }

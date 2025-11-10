@@ -61,6 +61,8 @@ type AppConfig struct {
 	SidebarWidthFraction        float64
 	SidebarTab                  string
 
+	PreventScreensaverOnNowPlayingPage bool
+
 	FontNormalTTF string
 	FontBoldTTF   string
 	UIScaleSize   string
@@ -189,29 +191,30 @@ var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists", "Artist
 func DefaultConfig(appVersionTag string) *Config {
 	return &Config{
 		Application: AppConfig{
-			WindowWidth:                 1000,
-			WindowHeight:                800,
-			LastCheckedVersion:          appVersionTag,
-			LastLaunchedVersion:         "",
-			EnableSystemTray:            true,
-			CloseToSystemTray:           false,
-			StartupPage:                 "Albums",
-			SettingsTab:                 "General",
-			AllowMultiInstance:          false,
-			MaxImageCacheSizeMB:         50,
-			UIScaleSize:                 "Normal",
-			SavePlayQueue:               true,
-			SaveQueueToServer:           false,
-			ShowTrackChangeNotification: false,
-			EnableLrcLib:                true,
-			EnablePasswordStorage:       true,
-			SkipSSLVerify:               false,
-			EnqueueBatchSize:            100,
-			Language:                    "auto",
-			EnableAutoUpdateChecker:     true,
-			RequestTimeoutSeconds:       15,
-			EnableOSMediaPlayerAPIs:     true,
-			SidebarWidthFraction:        0.8,
+			WindowWidth:                        1000,
+			WindowHeight:                       800,
+			LastCheckedVersion:                 appVersionTag,
+			LastLaunchedVersion:                "",
+			EnableSystemTray:                   true,
+			CloseToSystemTray:                  false,
+			StartupPage:                        "Albums",
+			SettingsTab:                        "General",
+			AllowMultiInstance:                 false,
+			MaxImageCacheSizeMB:                50,
+			UIScaleSize:                        "Normal",
+			SavePlayQueue:                      true,
+			SaveQueueToServer:                  false,
+			ShowTrackChangeNotification:        false,
+			EnableLrcLib:                       true,
+			EnablePasswordStorage:              true,
+			SkipSSLVerify:                      false,
+			EnqueueBatchSize:                   100,
+			Language:                           "auto",
+			EnableAutoUpdateChecker:            true,
+			RequestTimeoutSeconds:              15,
+			EnableOSMediaPlayerAPIs:            true,
+			SidebarWidthFraction:               0.8,
+			PreventScreensaverOnNowPlayingPage: false,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},
