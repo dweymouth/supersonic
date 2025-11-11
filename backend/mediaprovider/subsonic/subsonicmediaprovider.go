@@ -544,6 +544,15 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		artistIDs = append(artistIDs, ch.ArtistID)
 	}
 
+	var albumArtistNames, albumArtistIDs []string
+	if len(ch.AlbumArtists) > 0 {
+		// OpenSubsonic extension
+		for _, a := range ch.AlbumArtists {
+			albumArtistIDs = append(albumArtistIDs, a.ID)
+			albumArtistNames = append(albumArtistNames, a.Name)
+		}
+	}
+
 	var rGain mediaprovider.ReplayGainInfo
 	if rg := ch.ReplayGain; rg != nil {
 		rGain.AlbumGain = rg.AlbumGain
@@ -570,36 +579,39 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 	}
 
 	return &mediaprovider.Track{
-		ID:            ch.ID,
-		CoverArtID:    ch.CoverArt,
-		ParentID:      ch.Parent,
-		Title:         ch.Title,
-		Duration:      time.Duration(ch.Duration) * time.Second,
-		TrackNumber:   ch.Track,
-		DiscNumber:    ch.DiscNumber,
-		Genres:        genres,
-		ArtistIDs:     artistIDs,
-		ArtistNames:   artistNames,
-		ComposerIDs:   composerIDs,
-		ComposerNames: composers,
-		Album:         ch.Album,
-		AlbumID:       ch.AlbumID,
-		Year:          ch.Year,
-		Rating:        ch.UserRating,
-		Favorite:      !ch.Starred.IsZero(),
-		PlayCount:     int(ch.PlayCount),
-		LastPlayed:    ch.Played,
-		DateAdded:     ch.Created,
-		FilePath:      ch.Path,
-		Size:          ch.Size,
-		BitRate:       ch.BitRate,
-		ContentType:   ch.ContentType,
-		Comment:       ch.Comment,
-		BPM:           ch.BPM,
-		ReplayGain:    rGain,
-		SampleRate:    ch.SamplingRate,
-		BitDepth:      ch.BitDepth,
-		Channels:      ch.ChannelCount,
+		ID:               ch.ID,
+		CoverArtID:       ch.CoverArt,
+		ParentID:         ch.Parent,
+		Title:            ch.Title,
+		Duration:         time.Duration(ch.Duration) * time.Second,
+		TrackNumber:      ch.Track,
+		DiscNumber:       ch.DiscNumber,
+		Genres:           genres,
+		ArtistIDs:        artistIDs,
+		ArtistNames:      artistNames,
+		AlbumArtistIDs:   albumArtistIDs,
+		AlbumArtistNames: albumArtistNames,
+		ComposerIDs:      composerIDs,
+		ComposerNames:    composers,
+		Album:            ch.Album,
+		AlbumID:          ch.AlbumID,
+		Year:             ch.Year,
+		Rating:           ch.UserRating,
+		Favorite:         !ch.Starred.IsZero(),
+		PlayCount:        int(ch.PlayCount),
+		LastPlayed:       ch.Played,
+		DateAdded:        ch.Created,
+		FilePath:         ch.Path,
+		Size:             ch.Size,
+		BitRate:          ch.BitRate,
+		ContentType:      ch.ContentType,
+		Extension:        ch.Suffix,
+		Comment:          ch.Comment,
+		BPM:              ch.BPM,
+		ReplayGain:       rGain,
+		SampleRate:       ch.SamplingRate,
+		BitDepth:         ch.BitDepth,
+		Channels:         ch.ChannelCount,
 	}
 }
 

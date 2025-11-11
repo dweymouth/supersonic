@@ -58,6 +58,18 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c.Add(artists)
 
+	if len(t.track.AlbumArtistNames) > 0 {
+		c.Add(newFormText(lang.L("Album artists"), true))
+		albumArtists := widgets.NewMultiHyperlink()
+		albumArtists.BuildSegments(t.track.AlbumArtistNames, t.track.AlbumArtistIDs)
+		albumArtists.OnTapped = func(id string) {
+			if t.OnNavigateToArtist != nil {
+				t.OnNavigateToArtist(id)
+			}
+		}
+		c.Add(albumArtists)
+	}
+
 	if len(t.track.ComposerNames) > 0 {
 		c.Add(newFormText(lang.L("Composers"), true))
 		composers := widgets.NewMultiHyperlink()
@@ -104,6 +116,7 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 	c.Add(newFormText(t.track.FilePath, false))
 
 	addFormRow(c, lang.L("Content type"), t.track.ContentType)
+	addFormRow(c, lang.L("File type"), t.track.Extension)
 	addFormRow(c, lang.L("Bit rate"), fmt.Sprintf("%d kbps", t.track.BitRate))
 	if t.track.SampleRate > 0 {
 		addFormRow(c, lang.L("Sample rate"), fmt.Sprintf("%d Hz", t.track.SampleRate))

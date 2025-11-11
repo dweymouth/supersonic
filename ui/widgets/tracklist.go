@@ -79,6 +79,7 @@ type Tracklist struct {
 
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
+	OnShowGenrePage  func(genre string)
 
 	OnColumnVisibilityMenuShown func(*widget.PopUp)
 	OnVisibleColumnsChanged     func([]string)
@@ -432,8 +433,12 @@ func (t *Tracklist) doSortTracks() {
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Title })
 	case ColumnArtist:
 		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().ArtistNames, ", ") })
+	case ColumnAlbumArtist:
+		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().ArtistNames, ", ") })
 	case ColumnAlbum:
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Album })
+	case ColumnGenre:
+		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().Genres, ", ") })
 	case ColumnPath:
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().FilePath })
 	case ColumnRating:
@@ -450,6 +455,8 @@ func (t *Tracklist) doSortTracks() {
 		t.intSort(func(tr *util.TrackListModel) int64 { return tr.Track().LastPlayed.Unix() })
 	case ColumnComment:
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Comment })
+	case ColumnFileType:
+		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Extension })
 	case ColumnBPM:
 		t.intSort(func(tr *util.TrackListModel) int64 { return int64(tr.Track().BPM) })
 	case ColumnBitrate:
@@ -596,6 +603,12 @@ func (t *Tracklist) onArtistTapped(artistID string) {
 func (t *Tracklist) onAlbumTapped(albumID string) {
 	if t.OnShowAlbumPage != nil {
 		t.OnShowAlbumPage(albumID)
+	}
+}
+
+func (t *Tracklist) onGenreTapped(genre string) {
+	if t.OnShowGenrePage != nil {
+		t.OnShowGenrePage(genre)
 	}
 }
 

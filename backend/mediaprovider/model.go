@@ -123,36 +123,39 @@ type Genre struct {
 }
 
 type Track struct {
-	ID            string
-	CoverArtID    string
-	ParentID      string
-	Title         string
-	Duration      time.Duration
-	TrackNumber   int
-	DiscNumber    int
-	Genres        []string
-	ArtistIDs     []string
-	ArtistNames   []string
-	ComposerIDs   []string
-	ComposerNames []string
-	Album         string
-	AlbumID       string
-	Year          int
-	Rating        int
-	Favorite      bool
-	Size          int64
-	PlayCount     int
-	LastPlayed    time.Time
-	FilePath      string
-	BitRate       int
-	ContentType   string
-	Comment       string
-	BPM           int
-	ReplayGain    ReplayGainInfo
-	SampleRate    int
-	BitDepth      int
-	Channels      int
-	DateAdded     time.Time
+	ID               string
+	CoverArtID       string
+	ParentID         string
+	Title            string
+	Duration         time.Duration
+	TrackNumber      int
+	DiscNumber       int
+	Genres           []string
+	ArtistIDs        []string
+	ArtistNames      []string
+	AlbumArtistIDs   []string
+	AlbumArtistNames []string
+	ComposerIDs      []string
+	ComposerNames    []string
+	Album            string
+	AlbumID          string
+	Year             int
+	Rating           int
+	Favorite         bool
+	Size             int64
+	PlayCount        int
+	LastPlayed       time.Time
+	FilePath         string
+	BitRate          int
+	ContentType      string
+	Comment          string
+	BPM              int
+	ReplayGain       ReplayGainInfo
+	SampleRate       int
+	BitDepth         int
+	Extension        string
+	Channels         int
+	DateAdded        time.Time
 }
 
 type ReplayGainInfo struct {
