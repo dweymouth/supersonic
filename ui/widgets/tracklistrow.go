@@ -66,6 +66,7 @@ const (
 	ColumnBPM         = "BPM"
 	ColumnBitrate     = "Bitrate"
 	ColumnSize        = "Size"
+	ColumnDateAdded   = "DateAdded"
 	ColumnPath        = "Path"
 )
 
@@ -93,6 +94,7 @@ var (
 		bpm := lang.L("BPM")
 		bitrate := lang.L("Bit rate")
 		size := lang.L("Size")
+		dateAdded := lang.L("Date added")
 		filepath := lang.L("File path")
 
 		CompactTracklistRowColumns = []TracklistColumn{
@@ -111,6 +113,7 @@ var (
 			{Name: ColumnBPM, Col: ListColumn{Text: bpm, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnBitrate, Col: ListColumn{Text: bitrate, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnSize, Col: ListColumn{Text: size, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnDateAdded, Col: ListColumn{Text: dateAdded, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnPath, Col: ListColumn{Text: filepath, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 		}
 
@@ -129,6 +132,7 @@ var (
 			{Name: ColumnBPM, Col: ListColumn{Text: bpm, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnBitrate, Col: ListColumn{Text: bitrate, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnSize, Col: ListColumn{Text: size, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnDateAdded, Col: ListColumn{Text: dateAdded, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnPath, Col: ListColumn{Text: filepath, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 		}
 
@@ -152,6 +156,10 @@ var (
 			widget.NewLabel(lang.LocalizePluralKey("x_minutes_ago", "59 minutes ago", 59, map[string]string{"minutes": "59"})).MinSize().Width,
 			widget.NewLabel(lastPlayed).MinSize().Width+sortIconWidth,
 		)
+		dateAddedColWidth := fyne.Max(
+			widget.NewLabel("2006 Jan 30").MinSize().Width,
+			widget.NewLabel(dateAdded).MinSize().Width+sortIconWidth,
+		)
 		bpmColWidth := fyne.Max(
 			widget.NewLabel(bpm+"   ").MinSize().Width,
 			widget.NewLabel("9999").MinSize().Width)
@@ -162,10 +170,10 @@ var (
 			widget.NewLabel("99.9 MB").MinSize().Width,
 			widget.NewLabel(size).MinSize().Width+sortIconWidth)
 
-		// #, Title, Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, LastPlayed, Comment, BPM, Bitrate, Size, Path
-		CompactTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, lastPlayedColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, -1}
-		// #, Title/Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, LastPlayed, Comment, BPM, Bitrate, Size, Path
-		ExpandedTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, lastPlayedColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, -1}
+		// #, Title, Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, LastPlayed, Comment, BPM, Bitrate, Size, DateAdded, Path
+		CompactTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, lastPlayedColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, dateAddedColWidth, -1}
+		// #, Title/Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, LastPlayed, Comment, BPM, Bitrate, Size, DateAdded, Path
+		ExpandedTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, lastPlayedColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, dateAddedColWidth, -1}
 	})
 )
 
@@ -208,6 +216,7 @@ type tracklistRowBase struct {
 	comment    *ttwidget.Label
 	bpm        *widget.Label
 	size       *widget.Label
+	dateAdded  *widget.Label
 	path       *ttwidget.Label
 
 	// must be injected by extending widget
@@ -262,7 +271,7 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 
 	v := makeVerticallyCentered // func alias
 	container := container.New(tracklist.colLayout,
-		v(t.num), titleArtistImg, v(t.album), v(t.composer), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.lastPlayed), v(t.comment), v(t.bpm), v(t.bitrate), v(t.size), v(t.path))
+		v(t.num), titleArtistImg, v(t.album), v(t.composer), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.lastPlayed), v(t.comment), v(t.bpm), v(t.bitrate), v(t.size), v(t.dateAdded), v(t.path))
 	t.Content = container
 	t.setColVisibility = func(colNum int, vis bool) bool {
 		c := container.Objects[colNum].(*fyne.Container)
@@ -290,7 +299,7 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 	t.playingIcon = playingIcon
 
 	t.Content = container.New(tracklist.colLayout,
-		t.num, t.name, t.artist, t.album, t.composer, t.dur, t.year, t.favorite, t.rating, t.plays, t.lastPlayed, t.comment, t.bpm, t.bitrate, t.size, t.path)
+		t.num, t.name, t.artist, t.album, t.composer, t.dur, t.year, t.favorite, t.rating, t.plays, t.lastPlayed, t.comment, t.bpm, t.bitrate, t.size, t.dateAdded, t.path)
 
 	colHiddenPtrMap := map[int]*bool{
 		2:  &t.artist.Hidden,
@@ -306,7 +315,8 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 		12: &t.bpm.Hidden,
 		13: &t.bitrate.Hidden,
 		14: &t.size.Hidden,
-		15: &t.path.Hidden,
+		15: &t.dateAdded.Hidden,
+		16: &t.path.Hidden,
 	}
 	t.setColVisibility = func(colNum int, vis bool) bool {
 		ptr, ok := colHiddenPtrMap[colNum]
@@ -355,6 +365,7 @@ func (t *tracklistRowBase) create(tracklist *Tracklist) {
 	t.bpm = util.NewTrailingAlignLabel()
 	t.bitrate = util.NewTrailingAlignLabel()
 	t.size = util.NewTrailingAlignLabel()
+	t.dateAdded = util.NewTruncatingLabel()
 	t.path = util.NewTruncatingTooltipLabel()
 	t.path.OnMouseIn = t.MouseIn
 	t.path.OnMouseOut = t.MouseOut
@@ -422,6 +433,7 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.bpm.Text = strconv.Itoa(tr.BPM)
 		t.bitrate.Text = strconv.Itoa(tr.BitRate)
 		t.size.Text = util.BytesToSizeString(tr.Size)
+		t.dateAdded.Text = util.FormatDate(tr.DateAdded)
 		t.path.Text = tr.FilePath
 		t.path.SetToolTip(tr.FilePath)
 		changed = true

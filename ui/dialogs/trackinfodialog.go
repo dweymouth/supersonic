@@ -115,6 +115,11 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 		addFormRow(c, lang.L("Channels"), strconv.Itoa(t.track.Channels))
 	}
 	addFormRow(c, lang.L("File size"), util.BytesToSizeString(t.track.Size))
+
+	if !t.track.DateAdded.IsZero() {
+		addFormRow(c, lang.L("Date added"), t.track.DateAdded.Format(time.RFC1123))
+	}
+
 	addFormRow(c, lang.L("Play count"), strconv.Itoa(t.track.PlayCount))
 
 	if !t.track.LastPlayed.IsZero() {

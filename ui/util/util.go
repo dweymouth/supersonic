@@ -100,6 +100,23 @@ func FormatItemDate(date mediaprovider.ItemDate) string {
 	return sb.String()
 }
 
+func FormatDate(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+
+	df := dateFormatForLocale(fyne.CurrentDevice().Locale().String())
+	switch df {
+	case DateFormatDMY:
+		return t.Format("2 Jan 2006")
+	case DateFormatMDY:
+		return t.Format("Jan 2 2006")
+	case DateFormatYMD:
+		return t.Format("2006 Jan 2")
+	}
+	return ""
+}
+
 func LastPlayedDisplayString(t time.Time) string {
 	if t.IsZero() {
 		return lang.L("never")

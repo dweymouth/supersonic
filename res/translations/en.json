@@ -62,6 +62,7 @@
     "Content type": "Content type",
     "Could not reach server": "Could not reach server",
     "Create new playlist": "Create new playlist",
+    "Date added": "Date added",
     "day": "day",
     "days": "days",
     "Delete Playlist": "Delete Playlist",
@@ -290,12 +291,10 @@
     "Oct": "Oct",
     "Nov": "Nov",
     "Dec": "Dec",
-
     "playlist.addedtracks": {
         "one": "Added one track to playlist",
         "other": "Added {{.trackCount}} tracks to playlist"
     },
-
     "x_minutes_ago": {
         "one": "a minute ago",
         "other": "{{.minutes}} minutes ago"

@@ -152,6 +152,7 @@ type Track struct {
 	SampleRate    int
 	BitDepth      int
 	Channels      int
+	DateAdded     time.Time
 }
 
 type ReplayGainInfo struct {

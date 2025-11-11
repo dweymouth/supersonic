@@ -461,6 +461,8 @@ func (t *Tracklist) doSortTracks() {
 			}
 			return 0
 		})
+	case ColumnDateAdded:
+		t.intSort(func(tr *util.TrackListModel) int64 { return tr.Track().DateAdded.Unix() })
 	}
 }
 

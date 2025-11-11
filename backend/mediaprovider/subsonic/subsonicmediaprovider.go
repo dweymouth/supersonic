@@ -589,6 +589,7 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		Favorite:      !ch.Starred.IsZero(),
 		PlayCount:     int(ch.PlayCount),
 		LastPlayed:    ch.Played,
+		DateAdded:     ch.Created,
 		FilePath:      ch.Path,
 		Size:          ch.Size,
 		BitRate:       ch.BitRate,
