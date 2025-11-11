@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -223,8 +224,8 @@ func (p *playbackEngine) PlayTrackAt(idx int) error {
 }
 
 func (p *playbackEngine) playTrackAt(idx int, startTime float64) error {
-	if idx < 0 || idx >= len(p.playQueue) {
-		return errors.New("track index out of range")
+	if l := len(p.playQueue); idx < 0 || idx >= l {
+		return fmt.Errorf("track index (%d) out of range (0-%d)", idx, l)
 	}
 	// scrobble current track if needed
 	p.checkScrobble()
