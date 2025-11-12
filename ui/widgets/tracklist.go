@@ -434,7 +434,7 @@ func (t *Tracklist) doSortTracks() {
 	case ColumnArtist:
 		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().ArtistNames, ", ") })
 	case ColumnAlbumArtist:
-		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().ArtistNames, ", ") })
+		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().AlbumArtistNames, ", ") })
 	case ColumnAlbum:
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Album })
 	case ColumnGenre:
