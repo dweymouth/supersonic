@@ -105,16 +105,18 @@ func FormatDate(t time.Time) string {
 		return ""
 	}
 
-	df := dateFormatForLocale(fyne.CurrentDevice().Locale().String())
-	switch df {
-	case DateFormatDMY:
-		return t.Format("2 Jan 2006")
-	case DateFormatMDY:
-		return t.Format("Jan 2 2006")
-	case DateFormatYMD:
-		return t.Format("2006 Jan 2")
+	v := []int{
+		t.Local().Year(),
+		int(t.Local().Month()),
+		t.Local().Day(),
 	}
-	return ""
+	id := mediaprovider.ItemDate{
+		Year:  &v[0],
+		Month: &v[1],
+		Day:   &v[2],
+	}
+
+	return FormatItemDate(id)
 }
 
 func LastPlayedDisplayString(t time.Time) string {
