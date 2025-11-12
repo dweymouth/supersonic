@@ -183,7 +183,7 @@ var (
 			widget.NewLabel(size).MinSize().Width+sortIconWidth)
 		fileTypeColWidth := fyne.Max(
 			widget.NewLabel("FLAC").MinSize().Width,
-			widget.NewLabel(size).MinSize().Width+sortIconWidth)
+			widget.NewLabel(fileType).MinSize().Width+sortIconWidth)
 
 		// #, Title, Artist, Album, AlbumArtist, Composer, Genre, Time, Year, Favorite, Rating, Plays, LastPlayed, Comment, BPM, Bitrate, Size, FileType, DateAdded, Path
 		CompactTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, lastPlayedColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, fileTypeColWidth, dateAddedColWidth, -1}
