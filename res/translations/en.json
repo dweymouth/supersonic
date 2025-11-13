@@ -6,6 +6,8 @@
     "Add to queue": "Add to queue",
     "Album": "Album",
     "album": "album",
+    "Album artist": "Album artist",
+    "Album artists": "Album artists",
     "Album count": "Album count",
     "Album Count": "Album Count",
     "Album filters": "Album filters",
@@ -63,6 +65,7 @@
     "Content type": "Content type",
     "Could not reach server": "Could not reach server",
     "Create new playlist": "Create new playlist",
+    "Date added": "Date added",
     "day": "day",
     "days": "days",
     "Delete Playlist": "Delete Playlist",
@@ -95,6 +98,7 @@
     "Field Recording": "Field Recording",
     "File path": "File path",
     "File size": "File size",
+    "File type": "File type",
     "Filter albums": "Filter albums",
     "Filter genres": "Filter genres",
     "Forward": "Forward",
@@ -294,12 +298,10 @@
     "Oct": "Oct",
     "Nov": "Nov",
     "Dec": "Dec",
-
     "playlist.addedtracks": {
         "one": "Added one track to playlist",
         "other": "Added {{.trackCount}} tracks to playlist"
     },
-
     "x_minutes_ago": {
         "one": "a minute ago",
         "other": "{{.minutes}} minutes ago"

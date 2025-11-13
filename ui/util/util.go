@@ -100,6 +100,25 @@ func FormatItemDate(date mediaprovider.ItemDate) string {
 	return sb.String()
 }
 
+func FormatDate(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+
+	v := []int{
+		t.Local().Year(),
+		int(t.Local().Month()),
+		t.Local().Day(),
+	}
+	id := mediaprovider.ItemDate{
+		Year:  &v[0],
+		Month: &v[1],
+		Day:   &v[2],
+	}
+
+	return FormatItemDate(id)
+}
+
 func LastPlayedDisplayString(t time.Time) string {
 	if t.IsZero() {
 		return lang.L("never")

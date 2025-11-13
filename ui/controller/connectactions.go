@@ -52,6 +52,9 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 	tracklist.OnShowArtistPage = func(artistID string) {
 		m.NavigateTo(ArtistRoute(artistID))
 	}
+	tracklist.OnShowGenrePage = func(genre string) {
+		m.NavigateTo(GenreRoute(genre))
+	}
 	tracklist.OnColumnVisibilityMenuShown = func(pop *widget.PopUp) {
 		m.ClosePopUpOnEscape(pop)
 	}

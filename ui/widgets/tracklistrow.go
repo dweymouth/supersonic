@@ -53,9 +53,11 @@ const (
 	ColumnNum         = "Num"
 	ColumnTitle       = "Title"
 	ColumnArtist      = "Artist"
+	ColumnAlbumArtist = "AlbumArtist"
 	ColumnTitleArtist = "Title/Artist"
 	ColumnAlbum       = "Album"
 	ColumnComposer    = "Composer"
+	ColumnGenre       = "Genre"
 	ColumnTime        = "Time"
 	ColumnYear        = "Year"
 	ColumnFavorite    = "Favorite"
@@ -66,6 +68,8 @@ const (
 	ColumnBPM         = "BPM"
 	ColumnBitrate     = "Bitrate"
 	ColumnSize        = "Size"
+	ColumnFileType    = "FileType"
+	ColumnDateAdded   = "DateAdded"
 	ColumnPath        = "Path"
 )
 
@@ -82,7 +86,9 @@ var (
 		title := lang.L("Title")
 		artist := lang.L("Artist")
 		album := lang.L("Album")
+		albumArtist := lang.L("Album artist")
 		composer := lang.L("Composer")
+		genre := lang.L("Genre")
 		time := lang.L("Time")
 		year := lang.L("Year")
 		fav := lang.L("Fav.")
@@ -93,6 +99,8 @@ var (
 		bpm := lang.L("BPM")
 		bitrate := lang.L("Bit rate")
 		size := lang.L("Size")
+		fileType := lang.L("File type")
+		dateAdded := lang.L("Date added")
 		filepath := lang.L("File path")
 
 		CompactTracklistRowColumns = []TracklistColumn{
@@ -100,7 +108,9 @@ var (
 			{Name: ColumnTitle, Col: ListColumn{Text: title, Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
 			{Name: ColumnArtist, Col: ListColumn{Text: artist, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnAlbum, Col: ListColumn{Text: album, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnAlbumArtist, Col: ListColumn{Text: albumArtist, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnComposer, Col: ListColumn{Text: composer, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnGenre, Col: ListColumn{Text: genre, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnTime, Col: ListColumn{Text: time, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnYear, Col: ListColumn{Text: year, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnFavorite, Col: ListColumn{Text: " " + fav, Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
@@ -111,6 +121,8 @@ var (
 			{Name: ColumnBPM, Col: ListColumn{Text: bpm, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnBitrate, Col: ListColumn{Text: bitrate, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnSize, Col: ListColumn{Text: size, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnFileType, Col: ListColumn{Text: fileType, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnDateAdded, Col: ListColumn{Text: dateAdded, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnPath, Col: ListColumn{Text: filepath, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 		}
 
@@ -118,7 +130,9 @@ var (
 			{Name: ColumnNum, Col: ListColumn{Text: "#", Alignment: fyne.TextAlignTrailing, CanToggleVisible: false}},
 			{Name: ColumnTitleArtist, Col: ListColumn{Text: title + " / " + artist, Alignment: fyne.TextAlignLeading, CanToggleVisible: false}},
 			{Name: ColumnAlbum, Col: ListColumn{Text: album, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnAlbumArtist, Col: ListColumn{Text: albumArtist, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnComposer, Col: ListColumn{Text: composer, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
+			{Name: ColumnGenre, Col: ListColumn{Text: genre, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnTime, Col: ListColumn{Text: time, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnYear, Col: ListColumn{Text: year, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnFavorite, Col: ListColumn{Text: fav, Alignment: fyne.TextAlignCenter, CanToggleVisible: true}},
@@ -129,6 +143,8 @@ var (
 			{Name: ColumnBPM, Col: ListColumn{Text: bpm, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnBitrate, Col: ListColumn{Text: bitrate, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
 			{Name: ColumnSize, Col: ListColumn{Text: size, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnFileType, Col: ListColumn{Text: fileType, Alignment: fyne.TextAlignTrailing, CanToggleVisible: true}},
+			{Name: ColumnDateAdded, Col: ListColumn{Text: dateAdded, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 			{Name: ColumnPath, Col: ListColumn{Text: filepath, Alignment: fyne.TextAlignLeading, CanToggleVisible: true}},
 		}
 
@@ -152,6 +168,10 @@ var (
 			widget.NewLabel(lang.LocalizePluralKey("x_minutes_ago", "59 minutes ago", 59, map[string]string{"minutes": "59"})).MinSize().Width,
 			widget.NewLabel(lastPlayed).MinSize().Width+sortIconWidth,
 		)
+		dateAddedColWidth := fyne.Max(
+			widget.NewLabel("2006 Jan 30").MinSize().Width,
+			widget.NewLabel(dateAdded).MinSize().Width+sortIconWidth,
+		)
 		bpmColWidth := fyne.Max(
 			widget.NewLabel(bpm+"   ").MinSize().Width,
 			widget.NewLabel("9999").MinSize().Width)
@@ -161,11 +181,14 @@ var (
 		sizeColWidth := fyne.Max(
 			widget.NewLabel("99.9 MB").MinSize().Width,
 			widget.NewLabel(size).MinSize().Width+sortIconWidth)
+		fileTypeColWidth := fyne.Max(
+			widget.NewLabel("FLAC").MinSize().Width,
+			widget.NewLabel(fileType).MinSize().Width+sortIconWidth)
 
-		// #, Title, Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, LastPlayed, Comment, BPM, Bitrate, Size, Path
-		CompactTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, lastPlayedColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, -1}
-		// #, Title/Artist, Album, Composer, Time, Year, Favorite, Rating, Plays, LastPlayed, Comment, BPM, Bitrate, Size, Path
-		ExpandedTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, lastPlayedColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, -1}
+		// #, Title, Artist, Album, AlbumArtist, Composer, Genre, Time, Year, Favorite, Rating, Plays, LastPlayed, Comment, BPM, Bitrate, Size, FileType, DateAdded, Path
+		CompactTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, lastPlayedColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, fileTypeColWidth, dateAddedColWidth, -1}
+		// #, Title/Artist, Album, AlbumArtist, Composer, Genre, Time, Year, Favorite, Rating, Plays, LastPlayed, Comment, BPM, Bitrate, Size, FileType, DateAdded, Path
+		ExpandedTracklistRowColumnWidths = []float32{numColWidth, -1, -1, -1, -1, -1, timeColWidth, yearColWidth, favColWidth, ratingColWidth, playsColWidth, lastPlayedColWidth, -1, bpmColWidth, bitrateColWidth, sizeColWidth, fileTypeColWidth, dateAddedColWidth, -1}
 	})
 )
 
@@ -193,22 +216,26 @@ type tracklistRowBase struct {
 	nextUpdateModel  *util.TrackListModel
 	nextUpdateRowNum int
 
-	num        *widget.Label
-	name       *ttwidget.RichText
-	artist     *MultiHyperlink
-	album      *MultiHyperlink // for disabled support, if albumID is ""
-	composer   *MultiHyperlink
-	dur        *widget.Label
-	year       *widget.Label
-	favorite   *fyne.Container
-	rating     *StarRating
-	bitrate    *widget.Label
-	plays      *widget.Label
-	lastPlayed *widget.Label
-	comment    *ttwidget.Label
-	bpm        *widget.Label
-	size       *widget.Label
-	path       *ttwidget.Label
+	num         *widget.Label
+	name        *ttwidget.RichText
+	artist      *MultiHyperlink
+	album       *MultiHyperlink // for disabled support, if albumID is ""
+	albumArtist *MultiHyperlink
+	composer    *MultiHyperlink
+	genre       *MultiHyperlink
+	dur         *widget.Label
+	year        *widget.Label
+	favorite    *fyne.Container
+	rating      *StarRating
+	bitrate     *widget.Label
+	plays       *widget.Label
+	lastPlayed  *widget.Label
+	comment     *ttwidget.Label
+	bpm         *widget.Label
+	size        *widget.Label
+	fileType    *widget.Label
+	dateAdded   *widget.Label
+	path        *ttwidget.Label
 
 	// must be injected by extending widget
 	setColVisibility func(int, bool) bool
@@ -262,7 +289,7 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 
 	v := makeVerticallyCentered // func alias
 	container := container.New(tracklist.colLayout,
-		v(t.num), titleArtistImg, v(t.album), v(t.composer), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.lastPlayed), v(t.comment), v(t.bpm), v(t.bitrate), v(t.size), v(t.path))
+		v(t.num), titleArtistImg, v(t.album), v(t.albumArtist), v(t.composer), v(t.genre), v(t.dur), v(t.year), v(t.favorite), v(t.rating), v(t.plays), v(t.lastPlayed), v(t.comment), v(t.bpm), v(t.bitrate), v(t.size), v(t.fileType), v(t.dateAdded), v(t.path))
 	t.Content = container
 	t.setColVisibility = func(colNum int, vis bool) bool {
 		c := container.Objects[colNum].(*fyne.Container)
@@ -290,23 +317,27 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 	t.playingIcon = playingIcon
 
 	t.Content = container.New(tracklist.colLayout,
-		t.num, t.name, t.artist, t.album, t.composer, t.dur, t.year, t.favorite, t.rating, t.plays, t.lastPlayed, t.comment, t.bpm, t.bitrate, t.size, t.path)
+		t.num, t.name, t.artist, t.album, t.albumArtist, t.composer, t.genre, t.dur, t.year, t.favorite, t.rating, t.plays, t.lastPlayed, t.comment, t.bpm, t.bitrate, t.size, t.fileType, t.dateAdded, t.path)
 
 	colHiddenPtrMap := map[int]*bool{
 		2:  &t.artist.Hidden,
 		3:  &t.album.Hidden,
-		4:  &t.composer.Hidden,
-		5:  &t.dur.Hidden,
-		6:  &t.year.Hidden,
-		7:  &t.favorite.Hidden,
-		8:  &t.rating.Hidden,
-		9:  &t.plays.Hidden,
-		10: &t.lastPlayed.Hidden,
-		11: &t.comment.Hidden,
-		12: &t.bpm.Hidden,
-		13: &t.bitrate.Hidden,
-		14: &t.size.Hidden,
-		15: &t.path.Hidden,
+		4:  &t.albumArtist.Hidden,
+		5:  &t.composer.Hidden,
+		6:  &t.genre.Hidden,
+		7:  &t.dur.Hidden,
+		8:  &t.year.Hidden,
+		9:  &t.favorite.Hidden,
+		10: &t.rating.Hidden,
+		11: &t.plays.Hidden,
+		12: &t.lastPlayed.Hidden,
+		13: &t.comment.Hidden,
+		14: &t.bpm.Hidden,
+		15: &t.bitrate.Hidden,
+		16: &t.size.Hidden,
+		17: &t.fileType.Hidden,
+		18: &t.dateAdded.Hidden,
+		19: &t.path.Hidden,
 	}
 	t.setColVisibility = func(colNum int, vis bool) bool {
 		ptr, ok := colHiddenPtrMap[colNum]
@@ -334,10 +365,18 @@ func (t *tracklistRowBase) create(tracklist *Tracklist) {
 	t.album.OnTapped = func(id string) { tracklist.onAlbumTapped(id) }
 	t.album.OnMouseIn = t.MouseIn
 	t.album.OnMouseOut = t.MouseOut
+	t.albumArtist = NewMultiHyperlink()
+	t.albumArtist.OnTapped = tracklist.onArtistTapped
+	t.albumArtist.OnMouseIn = t.MouseIn
+	t.albumArtist.OnMouseOut = t.MouseOut
 	t.composer = NewMultiHyperlink()
 	t.composer.OnTapped = func(id string) { tracklist.onArtistTapped(id) }
 	t.composer.OnMouseIn = t.MouseIn
 	t.composer.OnMouseOut = t.MouseOut
+	t.genre = NewMultiHyperlink()
+	t.genre.OnTapped = func(id string) { tracklist.onGenreTapped(id) }
+	t.genre.OnMouseIn = t.MouseIn
+	t.genre.OnMouseOut = t.MouseOut
 	t.dur = util.NewTrailingAlignLabel()
 	t.year = util.NewTrailingAlignLabel()
 	favorite := NewFavoriteIcon()
@@ -355,6 +394,8 @@ func (t *tracklistRowBase) create(tracklist *Tracklist) {
 	t.bpm = util.NewTrailingAlignLabel()
 	t.bitrate = util.NewTrailingAlignLabel()
 	t.size = util.NewTrailingAlignLabel()
+	t.fileType = util.NewTrailingAlignLabel()
+	t.dateAdded = util.NewTruncatingLabel()
 	t.path = util.NewTruncatingTooltipLabel()
 	t.path.OnMouseIn = t.MouseIn
 	t.path.OnMouseOut = t.MouseOut
@@ -412,7 +453,9 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.name.SetToolTip(tr.Title)
 		t.artist.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 		t.album.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
+		t.albumArtist.BuildSegments(tr.AlbumArtistNames, tr.AlbumArtistIDs)
 		t.composer.BuildSegments(tr.ComposerNames, tr.ComposerIDs)
+		t.genre.BuildSegments(tr.Genres, tr.Genres)
 		t.dur.Text = util.SecondsToMMSS(tr.Duration.Seconds())
 		t.year.Text = strconv.Itoa(tr.Year)
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
@@ -422,6 +465,8 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.bpm.Text = strconv.Itoa(tr.BPM)
 		t.bitrate.Text = strconv.Itoa(tr.BitRate)
 		t.size.Text = util.BytesToSizeString(tr.Size)
+		t.fileType.Text = tr.Extension
+		t.dateAdded.Text = util.FormatDate(tr.DateAdded)
 		t.path.Text = tr.FilePath
 		t.path.SetToolTip(tr.FilePath)
 		changed = true
