@@ -58,7 +58,7 @@ jobs:
     - name: Generate installer
       uses: Minionguyjpro/Inno-Setup-Action@v1.2.7
       with:
-        path: win_inno_installscript.iss
+        path: scripts/win_inno_installscript.iss
 
     - name: Upload zip
       uses: actions/upload-artifact@v4

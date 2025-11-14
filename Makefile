@@ -9,7 +9,7 @@ package_macos:
 
 bundledeps_macos_homebrew:
 	dylibbundler -od -b -x ./Supersonic.app/Contents/MacOS/supersonic -d ./Supersonic.app/Contents/Frameworks/ -p @executable_path/../Frameworks/
-	./copy_python_dep_osx.sh
+	./scripts/copy_python_dep_osx.sh
 	codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "./Supersonic.app/Contents/MacOS/supersonic"
 
 bundledeps_macos_macports:
