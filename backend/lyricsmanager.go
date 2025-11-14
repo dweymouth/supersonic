@@ -63,7 +63,11 @@ func (lm *LyricsManager) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 		}
 	}
 	if lyrics == nil && lm.lrclib != nil {
-		lyrics, err = lm.lrclib.FetchLrcLibLyrics(song.Title, song.ArtistNames[0], song.Album, int(song.Duration.Seconds()))
+		artist := ""
+		if len(song.ArtistNames) > 0 {
+			artist = song.ArtistNames[0]
+		}
+		lyrics, err = lm.lrclib.FetchLrcLibLyrics(song.Title, artist, song.Album, int(song.Duration.Seconds()))
 		if err != nil {
 			log.Println(err.Error())
 		}
