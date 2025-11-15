@@ -163,10 +163,6 @@ func (n *NowPlayingCard) Update(track mediaprovider.MediaItem) {
 	n.Refresh()
 }
 
-func (n *NowPlayingCard) Refresh() {
-	n.BaseWidget.Refresh()
-}
-
 func (n *NowPlayingCard) SetImage(cover image.Image) {
 	n.cover.SetImage(cover, true)
 }
