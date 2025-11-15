@@ -231,7 +231,6 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.ExtendBaseWidget(a)
 	a.cover = widgets.NewImagePlaceholder(myTheme.AlbumIcon, 225)
 	a.cover.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
-	a.cover.CornerRadius = theme.InputRadiusSize()
 
 	a.titleLabel = widget.NewRichTextWithText("")
 	a.titleLabel.Truncation = fyne.TextTruncateEllipsis

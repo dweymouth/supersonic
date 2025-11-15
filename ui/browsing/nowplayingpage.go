@@ -110,7 +110,6 @@ func NewNowPlayingPage(
 	pm.OnStopped(doFmtStatus)
 
 	a.card = widgets.NewLargeNowPlayingCard()
-	a.card.ImageCornerRadius = theme.InputRadiusSize()
 	a.card.OnAlbumNameTapped = func() {
 		contr.NavigateTo(controller.AlbumRoute(a.nowPlaying.Metadata().AlbumID))
 	}

@@ -14,10 +14,10 @@ import (
 // A widget that can display an image or else
 // a placeholder with a rectangular border frame
 // and an icon positioned in the center of the frame.
+// The corner radius is taken from the app theme.
 type ImagePlaceholder struct {
 	ScaleMode       canvas.ImageScale
 	PlaceholderIcon fyne.Resource
-	CornerRadius    float32
 
 	widget.BaseWidget
 	content   *fyne.Container
@@ -110,8 +110,8 @@ func (i *ImagePlaceholder) Refresh() {
 	i.imageDisp.Hidden = !i.HaveImage()
 	i.imageDisp.ScaleMode = i.ScaleMode
 	i.iconImage.ScaleMode = i.ScaleMode
-	i.imageDisp.CornerRadius = i.CornerRadius
-	i.border.CornerRadius = i.CornerRadius
+	i.imageDisp.CornerRadius = i.Theme().Size(myTheme.SizeNameImageCornerRadius)
+	i.border.CornerRadius = i.imageDisp.CornerRadius
 	i.BaseWidget.Refresh()
 }
 

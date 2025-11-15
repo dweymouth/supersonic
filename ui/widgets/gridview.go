@@ -304,7 +304,6 @@ func (g *GridView) createGridWrap() {
 
 func (g *GridView) createNewItemCard() fyne.CanvasObject {
 	card := NewGridViewItem(g.Placeholder)
-	card.Cover.Im.CornerRadius = theme.InputRadiusSize()
 	card.SetSize(backend.AppInstance().Config.GridView.CardSize)
 	card.ItemIndex = -1
 	card.ImgLoader = util.NewThumbnailLoader(g.imageFetcher, card.Cover.SetImage)

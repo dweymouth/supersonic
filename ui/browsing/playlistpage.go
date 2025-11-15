@@ -328,7 +328,6 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 
 	a.image = widgets.NewImagePlaceholder(myTheme.PlaylistIcon, 225)
 	a.image.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
-	a.image.CornerRadius = theme.InputRadiusSize()
 	a.titleLabel = util.NewTruncatingRichText()
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,

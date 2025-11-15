@@ -23,8 +23,7 @@ import (
 type NowPlayingCard struct {
 	widget.BaseWidget
 
-	DisableRating     bool
-	ImageCornerRadius float32
+	DisableRating bool
 
 	trackName  *OptionHyperlink
 	artistName *MultiHyperlink
@@ -165,7 +164,6 @@ func (n *NowPlayingCard) Update(track mediaprovider.MediaItem) {
 }
 
 func (n *NowPlayingCard) Refresh() {
-	n.cover.CornerRadius = n.ImageCornerRadius
 	n.BaseWidget.Refresh()
 }
 

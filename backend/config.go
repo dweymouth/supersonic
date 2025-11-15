@@ -148,8 +148,9 @@ type ReplayGainConfig struct {
 }
 
 type ThemeConfig struct {
-	ThemeFile  string
-	Appearance string
+	ThemeFile              string
+	Appearance             string
+	UseRoundedImageCorners bool
 }
 
 type TranscodingConfig struct {
@@ -284,7 +285,8 @@ func DefaultConfig(appVersionTag string) *Config {
 			MaxBitRateKBPS:   160,
 		},
 		Theme: ThemeConfig{
-			Appearance: "Dark",
+			Appearance:             "Dark",
+			UseRoundedImageCorners: true,
 		},
 		PeakMeter: PeakMeterConfig{
 			WindowWidth:  375,

@@ -33,6 +33,8 @@ const (
 	SizeNameSubText           fyne.ThemeSizeName = "subText"           // in between Text and Caption
 	SizeNameSuffixText        fyne.ThemeSizeName = "suffixText"        // a tiny bit smaller than subText
 
+	SizeNameImageCornerRadius fyne.ThemeSizeName = "imageCornerRadius"
+
 	AnimationDurationShort  = canvas.DurationShort
 	AnimationDurationMedium = 225 * time.Millisecond
 	AnimationDurationLong   = canvas.DurationStandard
@@ -286,6 +288,11 @@ func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
 		return 12
 	case theme.SizeNameScrollBar:
 		return 14
+	case SizeNameImageCornerRadius:
+		if m.config.UseRoundedImageCorners {
+			return theme.InputRadiusSize()
+		}
+		return 0
 	default:
 		return theme.DefaultTheme().Size(name)
 	}
