@@ -3,7 +3,7 @@ module github.com/dweymouth/supersonic
 go 1.24.0
 
 require (
-	fyne.io/fyne/v2 v2.6.1
+	fyne.io/fyne/v2 v2.7.1
 	github.com/20after4/configdir v0.1.1
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/boxes-ltd/imaging v1.7.1
@@ -67,7 +67,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.6.1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20251011154419-850ce8c28ec4
+replace fyne.io/fyne/v2 v2.7.1 => github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20251115180245-c1288f7754ab
 
 replace github.com/go-audio/wav v1.1.0 => github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0
 
