@@ -573,6 +573,14 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 
 	nowPlayingBackground := widget.NewCheckWithData(lang.L("Use blurred album cover for Now Playing page background"), binding.BindBool(&s.config.NowPlayingConfig.UseBackgroundImage))
 
+	useRoundedImageCorners := widget.NewCheck(lang.L("Use rounded image corners"), func(b bool) {
+		s.config.Theme.UseRoundedImageCorners = b
+		if s.OnPageNeedsRefresh != nil {
+			s.OnPageNeedsRefresh()
+		}
+	})
+	useRoundedImageCorners.Checked = s.config.Theme.UseRoundedImageCorners
+
 	return container.NewTabItem(lang.L("Appearance"), container.NewVBox(
 		util.NewHSpace(0), // insert a theme.Padding amount of space at top
 		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
@@ -586,6 +594,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		s.newSectionSeparator(),
 		useWaveformSeekbar,
 		nowPlayingBackground,
+		useRoundedImageCorners,
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("Application font"), Style: util.BoldRichTextStyle}),
 		container.New(layout.NewFormLayout(),
