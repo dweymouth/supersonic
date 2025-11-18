@@ -1,0 +1,24 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/go .
+{
+	"name": "Supersonic",
+	"image": "mcr.microsoft.com/devcontainers/go:2-1.24-bookworm",
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	"features": {
+		"desktop-lite": {
+			"password": "your_password",
+			"webPort": "6080",
+			"vncPort": "5901"
+		}
+	},
+	"containerEnv": {
+		"VNC_RESOLUTION": "1920x1080x24",
+	},
+	"onCreateCommand": {
+		"log": "echo 'Starting post-create script...'",
+		"apt": "sudo .devcontainer/init-apt.sh",
+		"go": ".devcontainer/init-go.sh",
+		"config": "bash -c 'mkdir -p ~/.config/supersonic && (cp .devcontainer/custom-config.toml ~/.config/supersonic/config.toml 2> /dev/null || cp .devcontainer/default-config.toml ~/.config/supersonic/config.toml)'",
+		"keyring": "bash -c 'echo \"source $(pwd)/.devcontainer/init-keychain.sh\" >> /home/vscode/.bashrc'",
+	},
+}
