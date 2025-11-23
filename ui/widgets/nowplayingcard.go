@@ -2,9 +2,11 @@ package widgets
 
 import (
 	"image"
+	"strconv"
 
 	"fyne.io/fyne/v2/lang"
 
+	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -15,7 +17,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 )
 
 // Shows the current album art, track name, artist name, and album name
@@ -27,14 +28,15 @@ type NowPlayingCard struct {
 
 	trackName  *OptionHyperlink
 	artistName *MultiHyperlink
-	albumName  *ttwidget.Hyperlink
+	albumName  *MultiHyperlink
 	cover      *ImagePlaceholder
 	menu       *widget.PopUpMenu
 	ratingMenu *fyne.MenuItem
+	cfg        *backend.Config
 
 	OnTrackNameTapped  func()
 	OnArtistNameTapped func(artistID string)
-	OnAlbumNameTapped  func()
+	OnAlbumNameTapped  func(albumID string)
 	OnCoverTapped      func()
 	OnSetRating        func(rating int)
 	OnSetFavorite      func(favorite bool)
@@ -43,11 +45,12 @@ type NowPlayingCard struct {
 	OnShare            func()
 }
 
-func NewNowPlayingCard() *NowPlayingCard {
+func NewNowPlayingCard(cfg *backend.Config) *NowPlayingCard {
 	n := &NowPlayingCard{
 		trackName:  NewOptionHyperlink(),
 		artistName: NewMultiHyperlink(),
-		albumName:  ttwidget.NewHyperlink("", nil),
+		albumName:  NewMultiHyperlink(),
+		cfg:        cfg,
 	}
 	n.ExtendBaseWidget(n)
 	n.cover = NewImagePlaceholder(myTheme.TracksIcon, 85)
@@ -56,7 +59,6 @@ func NewNowPlayingCard() *NowPlayingCard {
 	n.cover.Hidden = true
 	n.trackName.Hidden = true
 	n.albumName.Hidden = true
-	n.albumName.Truncation = fyne.TextTruncateEllipsis
 	n.trackName.SetTextStyle(fyne.TextStyle{Bold: true})
 	n.trackName.OnShowMenu = n.showMenu
 	n.albumName.OnTapped = n.onAlbumNameTapped
@@ -71,9 +73,9 @@ func (n *NowPlayingCard) MinSize() fyne.Size {
 	return fyne.NewSize(n.BaseWidget.MinSize().Width, 85)
 }
 
-func (n *NowPlayingCard) onAlbumNameTapped() {
+func (n *NowPlayingCard) onAlbumNameTapped(albumID string) {
 	if n.OnAlbumNameTapped != nil {
-		n.OnAlbumNameTapped()
+		n.OnAlbumNameTapped(albumID)
 	}
 }
 
@@ -138,28 +140,32 @@ func (n *NowPlayingCard) Update(track mediaprovider.MediaItem) {
 	if track == nil {
 		n.trackName.SetTextAndToolTip("")
 		n.artistName.BuildSegments([]string{}, []string{})
-		n.albumName.SetText("")
-		n.albumName.SetToolTip("")
+		n.albumName.BuildSegments([]string{}, []string{})
+		n.albumName.Suffix = ""
 		n.cover.Hidden = true
 	} else {
 		n.cover.Hidden = false
 		n.trackName.SetTextAndToolTip(track.Metadata().Name)
 		if tr, ok := track.(*mediaprovider.Track); ok {
 			n.artistName.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
-			n.albumName.SetText(tr.Album)
-			n.albumName.SetToolTip(tr.Album)
+			n.albumName.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
+			if y := tr.Year; y != 0 && n.cfg.AlbumsPage.ShowYears {
+				n.albumName.Suffix = strconv.Itoa(tr.Year)
+			} else {
+				n.albumName.Suffix = ""
+			}
 			n.cover.PlaceholderIcon = myTheme.TracksIcon
 		} else {
 			n.artistName.BuildSegments([]string{}, []string{})
-			n.albumName.SetText("")
-			n.albumName.SetToolTip("")
+			n.albumName.BuildSegments([]string{}, []string{})
+			n.albumName.Suffix = ""
 			n.cover.PlaceholderIcon = myTheme.RadioIcon
 		}
 	}
 	n.trackName.Hidden = n.trackName.Text() == ""
 	n.trackName.SetMenuBtnEnabled(n.cover.PlaceholderIcon != myTheme.RadioIcon)
 	n.artistName.Hidden = len(n.artistName.Segments) == 0
-	n.albumName.Hidden = n.albumName.Text == ""
+	n.albumName.Hidden = len(n.albumName.Segments) == 0
 	n.Refresh()
 }
 

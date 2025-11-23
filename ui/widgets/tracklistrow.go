@@ -457,7 +457,11 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.composer.BuildSegments(tr.ComposerNames, tr.ComposerIDs)
 		t.genre.BuildSegments(tr.Genres, tr.Genres)
 		t.dur.Text = util.SecondsToMMSS(tr.Duration.Seconds())
-		t.year.Text = strconv.Itoa(tr.Year)
+		if tr.Year != 0 {
+			t.year.Text = strconv.Itoa(tr.Year)
+		} else {
+			t.year.Text = ""
+		}
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
 		t.lastPlayed.Text = util.LastPlayedDisplayString(tr.LastPlayed)
 		t.comment.Text = strings.ReplaceAll(tr.Comment, "\n", " ")

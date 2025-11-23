@@ -28,7 +28,7 @@ type BottomPanel struct {
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller, useWaveformSeekbar bool) *BottomPanel {
+func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller, cfg *backend.Config) *BottomPanel {
 	bp := &BottomPanel{}
 	bp.ExtendBaseWidget(bp)
 
@@ -46,7 +46,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	pm.OnPlaying(util.FyneDoFunc(func() { bp.Controls.SetPlaying(true) }))
 	pm.OnStopped(util.FyneDoFunc(func() { bp.Controls.SetPlaying(false) }))
 
-	bp.NowPlaying = widgets.NewNowPlayingCard()
+	bp.NowPlaying = widgets.NewNowPlayingCard(cfg)
 	bp.NowPlaying.OnCoverTapped = func() {
 		contr.NavigateTo(controller.NowPlayingRoute())
 	}
@@ -65,10 +65,8 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 			contr.DoAddTracksToPlaylistWorkflow([]string{tr.ID})
 		}
 	}
-	bp.NowPlaying.OnAlbumNameTapped = func() {
-		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {
-			contr.NavigateTo(controller.AlbumRoute(tr.AlbumID))
-		}
+	bp.NowPlaying.OnAlbumNameTapped = func(albumID string) {
+		contr.NavigateTo(controller.AlbumRoute(albumID))
 	}
 	bp.NowPlaying.OnArtistNameTapped = func(artistID string) {
 		contr.NavigateTo(controller.ArtistRoute(artistID))
@@ -86,7 +84,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 			contr.ShowShareDialog(tr.ID)
 		}
 	}
-	bp.Controls = widgets.NewPlayerControls(useWaveformSeekbar)
+	bp.Controls = widgets.NewPlayerControls(cfg.Playback.UseWaveformSeekbar)
 	bp.Controls.OnPlayPause(func() {
 		pm.PlayPause()
 	})
