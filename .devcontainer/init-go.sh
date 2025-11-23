@@ -1,4 +1,6 @@
 #!/bin/sh
 
-go install fyne.io/fyne/v2/cmd/fyne@latest
+# handled by Dockerfile
+# go install fyne.io/fyne/v2/cmd/fyne@latest
+
 go get

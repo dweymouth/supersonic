@@ -1,4 +1,3 @@
-#!/bin/bash
-
-eval "$(dbus-launch --sh-syntax)"
-eval "$(printf '\n' | gnome-keyring-daemon --unlock)"
+#!/bin/sh
+mkdir -p /home/vscode/.local/share/keyrings
+cp .devcontainer/login.keyring /home/vscode/.local/share/keyrings
