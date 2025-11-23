@@ -14,6 +14,14 @@
 	"containerEnv": {
 		"VNC_RESOLUTION": "1920x1080x24",
 	},
+	"runArgs": [
+		"--device=/dev/snd:/dev/snd",
+		"--group-add=audio",
+	],
+	"postStartCommand": "sudo setfacl -m u:vscode:rw /dev/snd/*",
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+	// Use 'postCreateCommand' to run commands after the container is created.
 	"onCreateCommand": {
 		"log": "echo 'Starting post-create script...'",
 		"go": ".devcontainer/init-go.sh",
