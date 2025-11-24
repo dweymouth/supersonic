@@ -141,6 +141,17 @@ func (d *DLNAPlayer) GetVolume() int {
 	return vol
 }
 
+// SetSpeed is not supported for DLNA players, returns nil (no-op).
+func (d *DLNAPlayer) SetSpeed(speed float64) error {
+	// DLNA/UPnP does not typically support playback speed control
+	return nil
+}
+
+// GetSpeed always returns 1.0 for DLNA players as speed control is not supported.
+func (d *DLNAPlayer) GetSpeed() float64 {
+	return 1.0
+}
+
 func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadata, startTime float64) error {
 	if d.destroyed {
 		return nil
