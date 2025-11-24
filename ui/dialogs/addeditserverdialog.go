@@ -24,6 +24,7 @@ type AddEditServerDialog struct {
 	Username   string
 	Password   string
 	LegacyAuth bool
+	BasicAuth  bool
 	OnSubmit   func()
 	OnCancel   func()
 
@@ -45,17 +46,22 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 		a.AltHost = prefillServer.AltHostname
 		a.Username = prefillServer.Username
 		a.LegacyAuth = prefillServer.LegacyAuth
+		a.BasicAuth = prefillServer.BasicAuth
 	}
 
 	titleLabel := widget.NewLabel(title)
 	titleLabel.TextStyle.Bold = true
 	legacyAuthCheck := widget.NewCheckWithData(lang.L("Use legacy authentication"), binding.BindBool(&a.LegacyAuth))
+	basicAuthCheck := widget.NewCheckWithData(lang.L("Send HTTP BasicAuth with every request"), binding.BindBool(&a.BasicAuth))
+
 	serverTypeChoice := widget.NewRadioGroup([]string{"Subsonic", "Jellyfin"}, func(s string) {
 		a.ServerType = backend.ServerType(s)
 		if s == string(backend.ServerTypeSubsonic) {
 			legacyAuthCheck.Show()
+			basicAuthCheck.Show()
 		} else {
 			legacyAuthCheck.Hide()
+			basicAuthCheck.Hide()
 		}
 	})
 	serverTypeChoice.Required = true
@@ -114,6 +120,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 			a.passField,
 		),
 		container.NewHBox(layout.NewSpacer(), legacyAuthCheck),
+		container.NewHBox(layout.NewSpacer(), basicAuthCheck),
 		widget.NewSeparator(),
 		bottomRow,
 	)

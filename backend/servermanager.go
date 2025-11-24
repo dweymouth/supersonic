@@ -210,6 +210,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				BaseUrl:      connection.Hostname,
 				User:         connection.Username,
 				PasswordAuth: connection.LegacyAuth,
+				BasicAuth:    connection.BasicAuth,
 				ClientName:   res.AppName,
 			},
 		}
@@ -221,6 +222,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				BaseUrl:      connection.AltHostname,
 				User:         connection.Username,
 				PasswordAuth: connection.LegacyAuth,
+				BasicAuth:    connection.BasicAuth,
 				ClientName:   res.AppName,
 			},
 		}
