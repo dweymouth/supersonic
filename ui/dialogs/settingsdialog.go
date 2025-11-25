@@ -184,7 +184,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 
 	trackNotif := widget.NewCheckWithData(lang.L("Show notification on track change"),
 		binding.BindBool(&s.config.Application.ShowTrackChangeNotification))
-	albumGridYears := widget.NewCheck(lang.L("Show year in with album name"), func(b bool) {
+	albumGridYears := widget.NewCheck(lang.L("Show year in album grid and now playing"), func(b bool) {
 		s.config.AlbumsPage.ShowYears = b
 		s.config.FavoritesPage.ShowAlbumYears = b
 		if s.OnPageNeedsRefresh != nil {
