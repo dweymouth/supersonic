@@ -85,7 +85,10 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.NavHandler = m.Router.NavigateTo
 	m.Controller.ReloadFunc = m.BrowsingPane.Reload
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
-	m.Controller.RefreshPageFunc = m.BrowsingPane.RefreshPage
+	m.Controller.RefreshPageFunc = func() {
+		m.BrowsingPane.RefreshPage()
+		m.BottomPanel.Refresh()
+	}
 	m.Controller.SelectAllPageFunc = m.BrowsingPane.SelectAll
 	m.Controller.UnselectAllPageFunc = m.BrowsingPane.UnselectAll
 	m.Controller.ToastProvider = m.ToastOverlay
@@ -102,7 +105,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		))
 	}
 
-	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller, m.Controller.App.Config.Playback.UseWaveformSeekbar)
+	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller, app.Config)
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		fyne.Do(func() { m.UpdateOnTrackChange(item) })
 	})

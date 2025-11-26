@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"image"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -20,6 +21,7 @@ type LargeNowPlayingCard struct {
 	CaptionedImage
 
 	DisableRating bool
+	ShowAlbumYear bool
 
 	isRadio                 bool
 	trackName               *widget.RichText
@@ -29,6 +31,8 @@ type LargeNowPlayingCard struct {
 	favorite                *FavoriteIcon
 	ratingFavoriteContainer *fyne.Container
 	cover                   *ImagePlaceholder
+
+	albumYear string
 
 	OnArtistNameTapped func(artistID string)
 	OnAlbumNameTapped  func()
@@ -72,6 +76,7 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	n.trackName.Truncation = fyne.TextTruncateEllipsis
 	n.albumName.SizeName = myTheme.SizeNameSubSubHeadingText
 	n.albumName.OnTapped = n.onAlbumNameTapped
+	n.albumName.SuffixParenthesized = true
 	n.artistName.OnTapped = n.onArtistNameTapped
 	n.artistName.SizeName = myTheme.SizeNameSubSubHeadingText
 
@@ -125,6 +130,7 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 		n.trackName.Segments[0].(*widget.TextSegment).Text = ""
 		n.artistName.BuildSegments([]string{}, []string{})
 		n.albumName.BuildSegments([]string{}, []string{})
+		n.albumName.Suffix = ""
 		n.rating.Rating = 0
 		n.favorite.Favorite = false
 		n.ratingFavoriteContainer.Hidden = true
@@ -143,11 +149,13 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 		n.cover.PlaceholderIcon = myTheme.TracksIcon
 		n.ratingFavoriteContainer.Hidden = false
 		n.isRadio = false
+		n.albumYear = strconv.Itoa(tr.Year)
 	} else if rd, ok := item.(*mediaprovider.RadioStation); ok {
 		n.artistName.BuildSegments([]string{rd.HomePageURL}, []string{rd.HomePageURL})
 		n.ratingFavoriteContainer.Hidden = true
 		n.cover.PlaceholderIcon = myTheme.RadioIcon
 		n.isRadio = true
+		n.albumYear = ""
 	}
 
 	n.Refresh()
@@ -162,6 +170,11 @@ func (n *LargeNowPlayingCard) Refresh() {
 		n.rating.Disable()
 	} else {
 		n.rating.Enable()
+	}
+	if n.ShowAlbumYear {
+		n.albumName.Suffix = n.albumYear
+	} else {
+		n.albumName.Suffix = ""
 	}
 	n.BaseWidget.Refresh()
 }

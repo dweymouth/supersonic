@@ -14,9 +14,11 @@ type MultiHyperlink struct {
 
 	Segments []MultiHyperlinkSegment
 
-	// Suffix string that is appended (with · separator)
-	// only if there is enough room
+	// Suffix string that is appended (with · separator, or parenthesized
+	// if SuffixParenthesized is true) only if there is enough room
 	Suffix string
+
+	SuffixParenthesized bool
 
 	OnMouseIn  func(*desktop.MouseEvent)
 	OnMouseOut func()
@@ -139,12 +141,18 @@ func (c *MultiHyperlink) layoutObjects() {
 	i += 1
 	c.content.Objects = c.objects[:2*i-1]
 	if i == len(c.Segments) && c.Suffix != "" {
+		var suffixText string
+		if c.SuffixParenthesized {
+			suffixText = "\u2009(" + c.Suffix + ")"
+		} else {
+			suffixText = "· " + c.Suffix
+		}
 		if c.suffixLabel == nil {
-			c.suffixLabel = ttwidget.NewRichTextWithText("· " + c.Suffix)
+			c.suffixLabel = ttwidget.NewRichTextWithText(suffixText)
 			c.suffixLabel.OnMouseIn = c.callOnMouseIn
 			c.suffixLabel.OnMouseOut = c.callOnMouseOut
 		} else {
-			c.suffixLabel.Segments[0].(*widget.TextSegment).Text = "· " + c.Suffix
+			c.suffixLabel.Segments[0].(*widget.TextSegment).Text = suffixText
 		}
 		sizeName := c.sizeName()
 		if c.SuffixSizeName != "" {

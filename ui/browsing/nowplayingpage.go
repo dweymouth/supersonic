@@ -79,6 +79,7 @@ type nowPlayingPageState struct {
 	mp       mediaprovider.MediaProvider
 	canRate  bool
 	canShare bool
+	cfg      *backend.Config
 }
 
 func NewNowPlayingPage(
@@ -92,9 +93,10 @@ func NewNowPlayingPage(
 	mp mediaprovider.MediaProvider,
 	canRate bool,
 	canShare bool,
+	cfg *backend.Config,
 ) *NowPlayingPage {
 	state := nowPlayingPageState{
-		conf: conf, contr: contr, pool: pool, sm: sm, lm: lm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare,
+		conf: conf, contr: contr, pool: pool, sm: sm, lm: lm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, cfg: cfg,
 	}
 	if page, ok := pool.Obtain(util.WidgetTypeNowPlayingPage).(*NowPlayingPage); ok && page != nil {
 		page.nowPlayingPageState = state
@@ -127,6 +129,7 @@ func NewNowPlayingPage(
 	a.card.OnSetRating = func(rating int) {
 		a.contr.SetTrackRatings([]string{a.nowPlayingID}, rating)
 	}
+	a.card.ShowAlbumYear = cfg.AlbumsPage.ShowYears
 
 	a.queueList = widgets.NewPlayQueueList(a.im, false)
 	a.relatedList = widgets.NewPlayQueueList(a.im, true)
@@ -474,7 +477,7 @@ func (a *NowPlayingPage) Reload() {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.lm, s.im, s.pm, s.mp, s.canRate, s.canShare)
+	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.lm, s.im, s.pm, s.mp, s.canRate, s.canShare, s.cfg)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)
@@ -527,6 +530,9 @@ func (a *NowPlayingPage) Refresh() {
 		}
 	}
 	a.BaseWidget.Refresh()
+
+	a.card.ShowAlbumYear = a.cfg.AlbumsPage.ShowYears
+	a.card.Update(a.nowPlaying)
 }
 
 func (a *NowPlayingPage) saveSelectedTab(tabNum int) {
