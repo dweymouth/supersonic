@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -22,6 +21,7 @@ type LargeNowPlayingCard struct {
 	CaptionedImage
 
 	DisableRating bool
+	ShowAlbumYear bool
 
 	isRadio                 bool
 	trackName               *widget.RichText
@@ -31,7 +31,8 @@ type LargeNowPlayingCard struct {
 	favorite                *FavoriteIcon
 	ratingFavoriteContainer *fyne.Container
 	cover                   *ImagePlaceholder
-	cfg                     *backend.Config
+
+	albumYear string
 
 	OnArtistNameTapped func(artistID string)
 	OnAlbumNameTapped  func()
@@ -40,7 +41,7 @@ type LargeNowPlayingCard struct {
 	OnSetFavorite      func(favorite bool)
 }
 
-func NewLargeNowPlayingCard(cfg *backend.Config) *LargeNowPlayingCard {
+func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 	n := &LargeNowPlayingCard{
 		trackName:  widget.NewRichTextWithText(""),
 		artistName: NewMultiHyperlink(),
@@ -48,7 +49,6 @@ func NewLargeNowPlayingCard(cfg *backend.Config) *LargeNowPlayingCard {
 		rating:     NewStarRating(),
 		favorite:   NewFavoriteIcon(),
 		cover:      NewImagePlaceholder(myTheme.TracksIcon, 300),
-		cfg:        cfg,
 	}
 	n.ExtendBaseWidget(n)
 	n.rating.StarSize = theme.IconInlineSize() + theme.InnerPadding()/2
@@ -149,17 +149,13 @@ func (n *LargeNowPlayingCard) Update(item mediaprovider.MediaItem) {
 		n.cover.PlaceholderIcon = myTheme.TracksIcon
 		n.ratingFavoriteContainer.Hidden = false
 		n.isRadio = false
-		if y := tr.Year; y != 0 && n.cfg.AlbumsPage.ShowYears {
-			n.albumName.Suffix = strconv.Itoa(tr.Year)
-		} else {
-			n.albumName.Suffix = ""
-		}
+		n.albumYear = strconv.Itoa(tr.Year)
 	} else if rd, ok := item.(*mediaprovider.RadioStation); ok {
 		n.artistName.BuildSegments([]string{rd.HomePageURL}, []string{rd.HomePageURL})
 		n.ratingFavoriteContainer.Hidden = true
 		n.cover.PlaceholderIcon = myTheme.RadioIcon
 		n.isRadio = true
-		n.albumName.Suffix = ""
+		n.albumYear = ""
 	}
 
 	n.Refresh()
@@ -174,6 +170,11 @@ func (n *LargeNowPlayingCard) Refresh() {
 		n.rating.Disable()
 	} else {
 		n.rating.Enable()
+	}
+	if n.ShowAlbumYear {
+		n.albumName.Suffix = n.albumYear
+	} else {
+		n.albumName.Suffix = ""
 	}
 	n.BaseWidget.Refresh()
 }

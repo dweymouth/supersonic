@@ -24,12 +24,14 @@ type BottomPanel struct {
 	AuxControls *widgets.AuxControls
 
 	container *fyne.Container
+
+	cfg *backend.Config
 }
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
 func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller, cfg *backend.Config) *BottomPanel {
-	bp := &BottomPanel{}
+	bp := &BottomPanel{cfg: cfg}
 	bp.ExtendBaseWidget(bp)
 
 	pm.OnSongChange(bp.onSongChange)
@@ -46,7 +48,8 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	pm.OnPlaying(util.FyneDoFunc(func() { bp.Controls.SetPlaying(true) }))
 	pm.OnStopped(util.FyneDoFunc(func() { bp.Controls.SetPlaying(false) }))
 
-	bp.NowPlaying = widgets.NewNowPlayingCard(cfg)
+	bp.NowPlaying = widgets.NewNowPlayingCard()
+	bp.NowPlaying.ShowAlbumYear = cfg.AlbumsPage.ShowYears
 	bp.NowPlaying.OnCoverTapped = func() {
 		contr.NavigateTo(controller.NowPlayingRoute())
 	}
@@ -144,6 +147,11 @@ func (bp *BottomPanel) updateWaveformImg(img *backend.WaveformImage) {
 	fyne.Do(func() {
 		bp.Controls.UpdateWaveformImg(img)
 	})
+}
+
+func (bp *BottomPanel) Refresh() {
+	bp.NowPlaying.ShowAlbumYear = bp.cfg.AlbumsPage.ShowYears
+	bp.BaseWidget.Refresh()
 }
 
 func (bp *BottomPanel) CreateRenderer() fyne.WidgetRenderer {

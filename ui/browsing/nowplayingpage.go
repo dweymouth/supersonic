@@ -111,7 +111,7 @@ func NewNowPlayingPage(
 	pm.OnPlaying(doFmtStatus)
 	pm.OnStopped(doFmtStatus)
 
-	a.card = widgets.NewLargeNowPlayingCard(cfg)
+	a.card = widgets.NewLargeNowPlayingCard()
 	a.card.OnAlbumNameTapped = func() {
 		contr.NavigateTo(controller.AlbumRoute(a.nowPlaying.Metadata().AlbumID))
 	}
@@ -129,6 +129,7 @@ func NewNowPlayingPage(
 	a.card.OnSetRating = func(rating int) {
 		a.contr.SetTrackRatings([]string{a.nowPlayingID}, rating)
 	}
+	a.card.ShowAlbumYear = cfg.AlbumsPage.ShowYears
 
 	a.queueList = widgets.NewPlayQueueList(a.im, false)
 	a.relatedList = widgets.NewPlayQueueList(a.im, true)
@@ -530,6 +531,7 @@ func (a *NowPlayingPage) Refresh() {
 	}
 	a.BaseWidget.Refresh()
 
+	a.card.ShowAlbumYear = a.cfg.AlbumsPage.ShowYears
 	a.card.Update(a.nowPlaying)
 }
 

@@ -87,8 +87,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
 	m.Controller.RefreshPageFunc = func() {
 		m.BrowsingPane.RefreshPage()
-
-		m.BottomPanel.onSongChange(app.PlaybackManager.NowPlaying(), nil)
+		m.BottomPanel.Refresh()
 	}
 	m.Controller.SelectAllPageFunc = m.BrowsingPane.SelectAll
 	m.Controller.UnselectAllPageFunc = m.BrowsingPane.UnselectAll

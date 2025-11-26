@@ -6,7 +6,6 @@ import (
 
 	"fyne.io/fyne/v2/lang"
 
-	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -25,6 +24,7 @@ type NowPlayingCard struct {
 	widget.BaseWidget
 
 	DisableRating bool
+	ShowAlbumYear bool
 
 	trackName  *OptionHyperlink
 	artistName *MultiHyperlink
@@ -32,7 +32,8 @@ type NowPlayingCard struct {
 	cover      *ImagePlaceholder
 	menu       *widget.PopUpMenu
 	ratingMenu *fyne.MenuItem
-	cfg        *backend.Config
+
+	albumYear string
 
 	OnTrackNameTapped  func()
 	OnArtistNameTapped func(artistID string)
@@ -45,12 +46,11 @@ type NowPlayingCard struct {
 	OnShare            func()
 }
 
-func NewNowPlayingCard(cfg *backend.Config) *NowPlayingCard {
+func NewNowPlayingCard() *NowPlayingCard {
 	n := &NowPlayingCard{
 		trackName:  NewOptionHyperlink(),
 		artistName: NewMultiHyperlink(),
 		albumName:  NewMultiHyperlink(),
-		cfg:        cfg,
 	}
 	n.ExtendBaseWidget(n)
 	n.cover = NewImagePlaceholder(myTheme.TracksIcon, 85)
@@ -143,7 +143,7 @@ func (n *NowPlayingCard) Update(track mediaprovider.MediaItem) {
 		n.trackName.SetTextAndToolTip("")
 		n.artistName.BuildSegments([]string{}, []string{})
 		n.albumName.BuildSegments([]string{}, []string{})
-		n.albumName.Suffix = ""
+		n.albumYear = ""
 		n.cover.Hidden = true
 	} else {
 		n.cover.Hidden = false
@@ -151,11 +151,7 @@ func (n *NowPlayingCard) Update(track mediaprovider.MediaItem) {
 		if tr, ok := track.(*mediaprovider.Track); ok {
 			n.artistName.BuildSegments(tr.ArtistNames, tr.ArtistIDs)
 			n.albumName.BuildSegments([]string{tr.Album}, []string{tr.AlbumID})
-			if y := tr.Year; y != 0 && n.cfg.AlbumsPage.ShowYears {
-				n.albumName.Suffix = strconv.Itoa(tr.Year)
-			} else {
-				n.albumName.Suffix = ""
-			}
+			n.albumYear = strconv.Itoa(tr.Year)
 			n.cover.PlaceholderIcon = myTheme.TracksIcon
 		} else {
 			n.artistName.BuildSegments([]string{}, []string{})
@@ -173,6 +169,15 @@ func (n *NowPlayingCard) Update(track mediaprovider.MediaItem) {
 
 func (n *NowPlayingCard) SetImage(cover image.Image) {
 	n.cover.SetImage(cover, true)
+}
+
+func (n *NowPlayingCard) Refresh() {
+	if n.ShowAlbumYear {
+		n.albumName.Suffix = n.albumYear
+	} else {
+		n.albumName.Suffix = ""
+	}
+	n.BaseWidget.Refresh()
 }
 
 func (n *NowPlayingCard) showMenu(btnPos fyne.Position) {
