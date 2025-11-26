@@ -59,6 +59,8 @@ func NewNowPlayingCard(cfg *backend.Config) *NowPlayingCard {
 	n.cover.Hidden = true
 	n.trackName.Hidden = true
 	n.albumName.Hidden = true
+	n.albumName.SuffixParenthesized = true
+	n.albumName.SuffixSizeName = myTheme.SizeNameSubText
 	n.trackName.SetTextStyle(fyne.TextStyle{Bold: true})
 	n.trackName.OnShowMenu = n.showMenu
 	n.albumName.OnTapped = n.onAlbumNameTapped

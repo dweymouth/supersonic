@@ -76,6 +76,7 @@ func NewLargeNowPlayingCard(cfg *backend.Config) *LargeNowPlayingCard {
 	n.trackName.Truncation = fyne.TextTruncateEllipsis
 	n.albumName.SizeName = myTheme.SizeNameSubSubHeadingText
 	n.albumName.OnTapped = n.onAlbumNameTapped
+	n.albumName.SuffixParenthesized = true
 	n.artistName.OnTapped = n.onArtistNameTapped
 	n.artistName.SizeName = myTheme.SizeNameSubSubHeadingText
 
