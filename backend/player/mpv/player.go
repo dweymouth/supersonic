@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -137,6 +138,20 @@ func (p *Player) Init(maxCacheMB int) error {
 	p.bgCancel = cancel
 	p.initialized = true
 	return nil
+}
+
+func (p *Player) SetHeaders(headers map[string]string) error {
+	if p.mpv == nil {
+		return fmt.Errorf("Can't call SetHeaders before initializing")
+	}
+
+	parts := make([]string, 0, len(headers))
+	for k, v := range headers {
+		parts = append(parts, k+": "+v)
+	}
+	headersStr := strings.Join(parts, ",")
+
+	return p.mpv.SetPropertyString("http-header-fields", headersStr)
 }
 
 // Plays the specified file, clearing the previous play queue, if any.
