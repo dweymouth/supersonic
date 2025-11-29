@@ -78,3 +78,7 @@ Supersonic is available in the AUR and can be built either manually with `makepk
 * **Note**: The .exe dynamically links to MSYS2 libmpv dependency dlls and must be started from the MSYS2 terminal, or all dependency DLLS must be copied to the same folder as the .exe
 * -> If you obtain a statically built mpv-2.dll (containing all its dependencies), and rename it to libmpv-2.dll, you can place just that DLL in the same directory as the EXE, and it should run
 * Improvements to Windows build process will be forthcoming
+
+## Build instructions (dev container)
+
+See `.devcontainer/DEVCONTAINER.md` for more info
