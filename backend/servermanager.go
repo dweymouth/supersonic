@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -24,13 +25,14 @@ type ServerManager struct {
 	ServerID     uuid.UUID
 	Server       mediaprovider.MediaProvider
 
-	useKeyring        bool
-	prefetchCoverCB   func(string)
-	appName           string
-	appVersion        string
-	config            *Config
-	onServerConnected []func(*ServerConfig)
-	onLogout          []func()
+	useKeyring          bool
+	prefetchCoverCB     func(string)
+	appName             string
+	appVersion          string
+	config              *Config
+	onServerConnected   []func(*ServerConfig)
+	onServerAuthChanged []func(map[string]string)
+	onLogout            []func()
 }
 
 var ErrUnreachable = errors.New("server is unreachable")
@@ -63,6 +65,14 @@ func (s *ServerManager) ConnectToServer(conf *ServerConfig, password string) err
 	s.SetDefaultServer(s.ServerID)
 	for _, cb := range s.onServerConnected {
 		cb(conf)
+	}
+
+	var headers map[string]string = nil
+	if conf.BasicAuth {
+		headers = s.buildAuthHeaders(password)
+	}
+	for _, cb := range s.onServerAuthChanged {
+		cb(headers)
 	}
 	return nil
 }
@@ -151,9 +161,23 @@ func (s *ServerManager) deleteServerPassword(serverID uuid.UUID) {
 	}
 }
 
+func (s *ServerManager) buildAuthHeaders(password string) map[string]string {
+	credential_s := s.LoggedInUser + ":" + password
+	credential := base64.StdEncoding.EncodeToString([]byte(credential_s))
+	return map[string]string{
+		"Authorization": "Basic " + credential,
+	}
+}
+
 // Sets a callback that is invoked when a server is connected to.
 func (s *ServerManager) OnServerConnected(cb func(*ServerConfig)) {
 	s.onServerConnected = append(s.onServerConnected, cb)
+}
+
+// Sets a callback that is invoked whenever the authentication credentials change.
+// Called with the authentication header(s) to be used.
+func (s *ServerManager) OnServerAuthChanged(cb func(map[string]string)) {
+	s.onServerAuthChanged = append(s.onServerAuthChanged, cb)
 }
 
 // Sets a callback that is invoked when the user logs out of a server.
