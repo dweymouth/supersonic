@@ -16,6 +16,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -97,6 +98,7 @@ func newArtistPage(state artistPageState) *ArtistPage {
 		a.header = NewArtistPageHeader(a)
 	}
 	a.header.artistPage = a
+	a.header.Compact = a.cfg.CompactHeader
 	if img, ok := state.im.GetCachedArtistImage(state.artistID); ok {
 		a.header.artistImage.SetImage(img, true /*tappable*/)
 	}
@@ -473,6 +475,8 @@ const artistBioNotAvailableKey = "Artist biography not available."
 type ArtistPageHeader struct {
 	widget.BaseWidget
 
+	Compact bool
+
 	artistID              string
 	artistPage            *ArtistPage
 	artistImage           *widgets.ImagePlaceholder
@@ -485,6 +489,7 @@ type ArtistPageHeader struct {
 	playRadioBtn          *widget.Button
 	menuBtn               *widget.Button
 	container             *fyne.Container
+	collapseBtn           *widgets.HeaderCollapseButton
 	fullSizeCoverFetching bool
 	// shareMenuItem  *fyne.MenuItem
 }
@@ -501,7 +506,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, 225)
+	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, myTheme.HeaderImageSize)
 	a.artistImage.OnTapped = func(*fyne.PointEvent) { a.showPopUpCover() }
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.playBtn = widget.NewButtonWithIcon(lang.L("Play Discography"), theme.MediaPlayIcon(), func() {
@@ -546,6 +551,12 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.biographyDisp.Truncation = fyne.TextTruncateEllipsis
+	a.collapseBtn = widgets.NewHeaderCollapseButton(func() {
+		a.Compact = !a.Compact
+		a.artistPage.cfg.CompactHeader = a.Compact
+		a.artistPage.Refresh()
+	})
+	a.collapseBtn.Hidden = true
 	a.ExtendBaseWidget(a)
 	a.createContainer()
 	return a
@@ -636,6 +647,32 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 	}
 }
 
+var _ desktop.Hoverable = (*ArtistPageHeader)(nil)
+
+func (a *ArtistPageHeader) MouseIn(*desktop.MouseEvent) {
+	a.collapseBtn.Show()
+	a.Refresh()
+}
+
+func (a *ArtistPageHeader) MouseOut() {
+	a.collapseBtn.HideIfNotMousedIn()
+}
+
+func (a *ArtistPageHeader) MouseMoved(*desktop.MouseEvent) {
+}
+
+func (a *ArtistPageHeader) Refresh() {
+	a.biographyDisp.Hidden = a.Compact
+	a.similarArtists.Hidden = a.Compact
+	a.collapseBtn.Collapsed = a.Compact
+	if a.Compact {
+		a.artistImage.SetMinSize(fyne.NewSquareSize(myTheme.CompactHeaderImageSize))
+	} else {
+		a.artistImage.SetMinSize(fyne.NewSquareSize(myTheme.HeaderImageSize))
+	}
+	a.BaseWidget.Refresh()
+}
+
 // should NOT be called asynchronously
 func (a *ArtistPageHeader) showPopUpCover() {
 	if a.artistImageID == "" {
@@ -670,12 +707,16 @@ func (a *ArtistPageHeader) createContainer() {
 	btnContainer := container.NewHBox(util.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn, a.menuBtn)
 
 	a.container = util.AddHeaderBackground(
-		container.NewBorder(nil, nil, a.artistImage, nil,
-			container.NewVBox(
-				container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
-					a.titleDisp, a.biographyDisp, a.similarArtists),
-				btnContainer),
-		))
+		container.NewStack(
+			container.NewBorder(nil, nil, a.artistImage, nil,
+				container.NewVBox(
+					container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
+						a.titleDisp, a.biographyDisp, a.similarArtists),
+					btnContainer),
+			),
+			container.NewVBox(container.NewHBox(layout.NewSpacer(), a.collapseBtn)),
+		),
+	)
 }
 
 func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {

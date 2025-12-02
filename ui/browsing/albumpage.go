@@ -16,6 +16,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -85,12 +86,12 @@ func newAlbumPage(
 	a.ExtendBaseWidget(a)
 	if h := pool.Obtain(util.WidgetTypeAlbumPageHeader); h != nil {
 		a.header = h.(*AlbumPageHeader)
-		a.header.page = a
 		a.header.Clear()
 	} else {
 		a.header = NewAlbumPageHeader(a)
 	}
 	a.header.page = a
+	a.header.Compact = a.cfg.CompactHeader
 	if t := a.pool.Obtain(util.WidgetTypeCompactTracklist); t != nil {
 		a.tracklist = t.(*widgets.Tracklist)
 		a.tracklist.Reset()
@@ -203,19 +204,23 @@ func (a *AlbumPage) load() {
 type AlbumPageHeader struct {
 	widget.BaseWidget
 
+	Compact bool
+
 	albumID string
 	coverID string
 
 	page *AlbumPage
 
-	cover            *widgets.ImagePlaceholder
-	titleLabel       *widget.RichText
-	releaseTypeLabel *widget.RichText
-	artistLabel      *widgets.MultiHyperlink
-	artistLabelSpace *util.Space // TODO: remove when no longer needed
-	genreLabel       *widgets.MultiHyperlink
-	miscLabel        *widget.Label
-	shareMenuItem    *fyne.MenuItem
+	cover                 *widgets.ImagePlaceholder
+	titleLabel            *widget.RichText
+	releaseTypeLabel      *widget.RichText
+	artistLabel           *widgets.MultiHyperlink
+	artistLabelSpace      *util.Space // TODO: remove when no longer needed
+	genreLabel            *widgets.MultiHyperlink
+	miscLabel             *widget.Label
+	shareMenuItem         *fyne.MenuItem
+	collapseBtn           *widgets.HeaderCollapseButton
+	artistReleaseTypeLine *fyne.Container
 
 	toggleFavButton *widgets.FavoriteButton
 
@@ -229,7 +234,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	// be directly captured in a closure throughout this function!
 	a := &AlbumPageHeader{page: page}
 	a.ExtendBaseWidget(a)
-	a.cover = widgets.NewImagePlaceholder(myTheme.AlbumIcon, 225)
+	a.cover = widgets.NewImagePlaceholder(myTheme.AlbumIcon, myTheme.HeaderImageSize)
 	a.cover.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
 
 	a.titleLabel = widget.NewRichTextWithText("")
@@ -297,28 +302,39 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	}
 	a.toggleFavButton = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 
+	a.collapseBtn = widgets.NewHeaderCollapseButton(func() {
+		a.Compact = !a.Compact
+		a.page.cfg.CompactHeader = a.Compact
+		a.page.Refresh()
+	})
+	a.collapseBtn.Hidden = true
+
 	// TODO: Create a nicer custom layout to set this up properly
 	//   OR once TODO in MultiHyperlink to use RichText as a provider is solved,
 	//   extend MultiHyperlink to support prepending rich text segments and
 	//   don't use two separate widgets here at all.
 	// n.b. cannot place MultiHyperlink in a HBox or it collapses in width
-	artistReleaseTypeLine := container.NewStack(
+	a.artistReleaseTypeLine = container.NewStack(
 		a.releaseTypeLabel,
 		container.NewBorder(nil, nil, a.artistLabelSpace, nil, a.artistLabel))
 	// TODO: there's got to be a way to make this less convoluted. Custom layout?
 	a.container = util.AddHeaderBackground(
-		container.NewBorder(nil, nil, a.cover, nil,
-			container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
-				a.titleLabel,
-				container.NewVBox(
-					container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-12), artistReleaseTypeLine, a.genreLabel, a.miscLabel),
+		container.NewStack(
+			container.NewBorder(nil, nil, a.cover, nil,
+				container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
+					a.titleLabel,
 					container.NewVBox(
-						container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn, menuBtn),
-						container.NewHBox(util.NewHSpace(2), a.toggleFavButton),
+						container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-12), a.artistReleaseTypeLine, a.genreLabel, a.miscLabel),
+						container.NewVBox(
+							container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn, menuBtn),
+							container.NewHBox(util.NewHSpace(2), a.toggleFavButton),
+						),
 					),
 				),
 			),
-		))
+			container.NewVBox(container.NewHBox(layout.NewSpacer(), a.collapseBtn)),
+		),
+	)
 	return a
 }
 
@@ -367,6 +383,34 @@ func (a *AlbumPageHeader) Clear() {
 func (a *AlbumPageHeader) toggleFavorited() {
 	params := mediaprovider.RatingFavoriteParameters{AlbumIDs: []string{a.albumID}}
 	a.page.mp.SetFavorite(params, a.toggleFavButton.IsFavorited)
+}
+
+var _ desktop.Hoverable = (*AlbumPageHeader)(nil)
+
+func (a *AlbumPageHeader) MouseIn(e *desktop.MouseEvent) {
+	a.collapseBtn.Show()
+	a.Refresh()
+}
+
+func (a *AlbumPageHeader) MouseOut() {
+	a.collapseBtn.HideIfNotMousedIn()
+}
+
+func (a *AlbumPageHeader) MouseMoved(*desktop.MouseEvent) {
+}
+
+func (a *AlbumPageHeader) Refresh() {
+	a.artistReleaseTypeLine.Hidden = a.Compact
+	a.genreLabel.Hidden = a.Compact
+	a.miscLabel.Hidden = a.Compact
+	a.toggleFavButton.Hidden = a.Compact
+	a.collapseBtn.Collapsed = a.Compact
+	if a.Compact {
+		a.cover.SetMinSize(fyne.NewSquareSize(myTheme.CompactHeaderImageSize))
+	} else {
+		a.cover.SetMinSize(fyne.NewSquareSize(myTheme.HeaderImageSize))
+	}
+	a.BaseWidget.Refresh()
 }
 
 // should be called asynchronously

@@ -70,6 +70,7 @@ type AppConfig struct {
 
 type AlbumPageConfig struct {
 	TracklistColumns []string
+	CompactHeader    bool
 }
 
 // shared between Albums and Genre pages
@@ -84,6 +85,7 @@ type ArtistPageConfig struct {
 	InitialView      string
 	DiscographySort  string
 	TracklistColumns []string
+	CompactHeader    bool
 }
 
 type ArtistsPageConfig struct {
@@ -102,6 +104,7 @@ type GridViewConfig struct {
 
 type PlaylistPageConfig struct {
 	TracklistColumns []string
+	CompactHeader    bool
 }
 
 type PlaylistsPageConfig struct {

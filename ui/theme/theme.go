@@ -38,6 +38,9 @@ const (
 	AnimationDurationShort  = canvas.DurationShort
 	AnimationDurationMedium = 225 * time.Millisecond
 	AnimationDurationLong   = canvas.DurationStandard
+
+	HeaderImageSize        = 225
+	CompactHeaderImageSize = 95
 )
 
 var (
