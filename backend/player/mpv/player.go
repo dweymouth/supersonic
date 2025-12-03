@@ -7,6 +7,7 @@ import (
 	"math"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
@@ -72,7 +73,8 @@ type Player struct {
 	fileLoadedLock sync.Mutex
 	fileLoadedSig  *sync.Cond
 
-	bgCancel context.CancelFunc
+	fadePauseCancel context.CancelFunc
+	bgCancel        context.CancelFunc
 }
 
 // Returns a new player.
@@ -306,17 +308,37 @@ func (p *Player) Pause() error {
 	if p.status.State != player.Playing {
 		return nil
 	}
-	err := p.setPaused(true)
-	if err == nil {
-		p.prePausedState = p.status.State
-		p.setState(player.Paused)
-	}
-	return err
+	p.prePausedState = p.status.State
+	p.setState(player.Paused)
+
+	v := p.vol
+	ctx, cancel := context.WithCancel(context.Background())
+	p.fadePauseCancel = cancel
+	go func() {
+		t := time.NewTicker(2 * time.Millisecond)
+		for c := 0; c < 100; c++ {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				p.mpv.SetProperty("volume", mpv.FORMAT_INT64, int64(v*(100-c)/100))
+			}
+		}
+		t.Stop()
+		p.SetVolume(p.vol)
+		p.setPaused(true)
+	}()
+	return nil
 }
 
 // Continue playback and update the player state
 func (p *Player) Continue() error {
 	if p.status.State == player.Paused {
+		if p.fadePauseCancel != nil {
+			p.fadePauseCancel()
+			p.fadePauseCancel = nil
+			p.SetVolume(p.vol)
+		}
 		err := p.setPaused(false)
 		if err == nil {
 			p.setState(p.prePausedState)
