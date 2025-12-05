@@ -8,6 +8,7 @@ type URLPlayer interface {
 	BasePlayer
 	PlayFile(url string, metadata mediaprovider.MediaItemMetadata, startTime float64) error
 	SetNextFile(url string, metadata mediaprovider.MediaItemMetadata) error
+	SetHeaders(headers map[string]string) error
 }
 
 type TrackPlayer interface {
