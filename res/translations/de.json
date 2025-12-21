@@ -243,9 +243,14 @@
     "Oct": "Okt",
     "Nov": "Nov",
     "Dec": "Dec",
-
     "playlist.addedtracks": {
-        "one": "Added {{.trackCount}} track to playlist",
-        "other": "Added {{.trackCount}} tracks to playlist"
+        "other": "{{.trackCount}} Titel zur Playlist hinzugefügt"
+    },
+    "{{.trackCount}} tracks": {
+        "other": "{{.trackCount}} Titel"
+    },
+    "{{.albumsCount}} albums": {
+        "one": "{{.albumsCount}} Album",
+        "other": "{{.albumsCount}} Alben"
     }
 }

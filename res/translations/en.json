@@ -322,5 +322,13 @@
     "x_years_ago": {
         "one": "a year ago",
         "other": "{{.years}} years ago"
+    },
+    "{{.trackCount}} tracks": {
+        "one": "{{.trackCount}} track",
+        "other": "{{.trackCount}} tracks"
+    },
+    "{{.albumsCount}} albums": {
+        "one": "{{.albumsCount}} album",
+        "other": "{{.albumsCount}} albums"
     }
 }
