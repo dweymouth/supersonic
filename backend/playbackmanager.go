@@ -134,6 +134,11 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 					log.Println("Play stall detected!")
 					p.cmdQueue.addCommand(playbackCommand{Type: cmdForceRestartPlayback})
 				}
+
+				if p.engine.stopAfterCurrent {
+					p.Pause()
+					p.engine.SetStopAfterCurrent(false)
+				}
 			}()
 		}
 	})

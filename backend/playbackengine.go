@@ -339,11 +339,6 @@ func (p *playbackEngine) Stop() error {
 
 func (p *playbackEngine) SetStopAfterCurrent(stopAfterCurrent bool) {
 	p.stopAfterCurrent = stopAfterCurrent
-	if p.stopAfterCurrent {
-		p.setNextTrack(-1) // clear next playing track from internal player, if any
-	} else if p.loopMode != LoopNone || p.nowPlayingIdx < len(p.playQueue)-1 {
-		p.needToSetNextTrack = true // need to restore next track to internal player queue
-	}
 }
 
 func (p *playbackEngine) Pause() error {
@@ -868,7 +863,7 @@ func (p *playbackEngine) handleTimePosUpdate(seeked bool) {
 		meta = np.Metadata()
 	}
 	isNearEnd := meta.Type != mediaprovider.MediaItemTypeRadioStation && s.TimePos > meta.Duration.Seconds()-10
-	if p.needToSetNextTrack && !p.stopAfterCurrent && isNearEnd {
+	if p.needToSetNextTrack && isNearEnd {
 		p.needToSetNextTrack = false
 		p.setNextTrack(p.nextPlayingIndex())
 	}
