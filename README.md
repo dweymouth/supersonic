@@ -90,15 +90,12 @@ Supersonic is available on Homebrew via a custom brew tap, or via downloading th
 
 ```sh
 brew tap supersonic-app/supersonic
-brew install --no-quarantine supersonic
+brew install supersonic
+xattr -r -d com.apple.quarantine /Applications/Supersonic.app
 ```
 
-The `--no-quarantine` flag is important because Supersonic is distributed without having been [notarized](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution), and therefore will not run without this.
-You should also include it when upgrading in future:
-
-```
-brew upgrade --no-quarantine supersonic
-```
+The `xattr -r -d com.apple.quarantine` command is important because Supersonic is distributed without having been [notarized](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution), and therefore will not run without this.
+You should also re-run that xattr command when upgrading in future.
 
 **To install the downloaded .app bundle** from the [Releases page](https://github.com/dweymouth/supersonic/releases), unzip and then drag Supersonic.app to the Applications folder.
 
