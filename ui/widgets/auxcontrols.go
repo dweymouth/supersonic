@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -22,9 +23,11 @@ type AuxControls struct {
 	widget.BaseWidget
 
 	OnChangeAutoplay func(autoplay bool)
+	OnChangeSpeed    func(float64)
 
 	VolumeControl *VolumeControl
 	autoplay      *IconButton
+	speed         *IconButton
 	loop          *IconButton
 	cast          *IconButton
 	showQueue     *IconButton
@@ -36,6 +39,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
 		autoplay:      NewIconButton(myTheme.AutoplayIcon, nil),
+		speed:         NewIconButton(theme.MediaFastForwardIcon(), nil),
 		loop:          NewIconButton(myTheme.RepeatIcon, nil),
 		cast:          NewIconButton(myTheme.CastIcon, nil),
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
@@ -58,6 +62,12 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 		}
 	}
 
+	a.speed.IconSize = IconButtonSizeSmaller
+	a.speed.SetToolTip("Playback speed")
+	a.speed.OnTapped = func() {
+		a.showSpeedMenu()
+	}
+
 	a.showQueue.IconSize = IconButtonSizeSmaller
 	a.showQueue.SetToolTip(lang.L("Show play queue"))
 
@@ -68,7 +78,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 			a.VolumeControl,
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(theme.Padding()*1.5),
-				layout.NewSpacer(), a.autoplay, a.loop, a.cast, a.showQueue, util.NewHSpace(5)),
+				layout.NewSpacer(), a.autoplay, a.speed, a.loop, a.cast, a.showQueue, util.NewHSpace(5)),
 			layout.NewSpacer(),
 		),
 	)
@@ -123,6 +133,41 @@ func (a *AuxControls) OnShowPlayQueue(f func()) {
 func (a *AuxControls) OnShowCastMenu(f func(func())) {
 	a.cast.OnTapped = func() {
 		f(a.DisableCastButton)
+	}
+}
+
+func (a *AuxControls) showSpeedMenu() {
+	speeds := []float64{0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0}
+	menuItems := make([]*fyne.MenuItem, len(speeds))
+
+	for i, speed := range speeds {
+		s := speed // capture for closure
+		label := fmt.Sprintf("%.2fx", s)
+		if s == 1.0 {
+			label = "1x (Normal)"
+		}
+		menuItems[i] = fyne.NewMenuItem(label, func() {
+			if a.OnChangeSpeed != nil {
+				a.OnChangeSpeed(s)
+			}
+			a.SetSpeed(s)
+		})
+	}
+
+	menu := fyne.NewMenu("", menuItems...)
+	btnPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(a.speed)
+	pop := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a.speed))
+	menuHeight := pop.MinSize().Height
+	// Show menu above the button
+	pop.ShowAtPosition(fyne.NewPos(btnPos.X, btnPos.Y-menuHeight))
+}
+
+func (a *AuxControls) SetSpeed(speed float64) {
+	// Highlight button if speed is not 1.0
+	highlighted := speed != 1.0
+	if a.speed.Highlighted != highlighted {
+		a.speed.Highlighted = highlighted
+		a.speed.Refresh()
 	}
 }
 

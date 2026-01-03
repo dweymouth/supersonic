@@ -17,6 +17,7 @@ const (
 	cmdSeekSeconds  // arg: float64
 	cmdSeekFwdBackN // arg: int
 	cmdVolume       // arg: int
+	cmdSpeed        // arg: float64
 	cmdLoopMode     // arg: LoopMode
 	cmdStopAndClearPlayQueue
 	cmdUpdatePlayQueue       // arg: []mediaprovider.MediaItem
@@ -102,6 +103,11 @@ func (c *playbackCommandQueue) StopAndClearPlayQueue() {
 func (c *playbackCommandQueue) SetVolume(vol int) {
 	c.filterCommandsAndAdd([]playbackCommandType{cmdVolume},
 		playbackCommand{Type: cmdVolume, Arg: vol})
+}
+
+func (c *playbackCommandQueue) SetSpeed(speed float64) {
+	c.filterCommandsAndAdd([]playbackCommandType{cmdSpeed},
+		playbackCommand{Type: cmdSpeed, Arg: speed})
 }
 
 func (c *playbackCommandQueue) SetLoopMode(mode LoopMode) {
