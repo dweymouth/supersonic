@@ -219,7 +219,7 @@
     "Soundtrack": "Bande originale",
     "Spoken Word": "Spoken Word",
     "Startup page": "Page de démarrage",
-    "Stop after current track": "Arrêter après la piste en cours",
+    "Pause after current track": "Arrêter après la piste en cours",
     "Stopped": "Arrêté",
     "Success": "Succès",
     "Support the project": "Soutenir le projet",
@@ -283,7 +283,6 @@
     "Oct": "Oct",
     "Nov": "Nov",
     "Dec": "Déc",
-
     "playlist.addedtracks": {
         "one": "Une piste ajoutée à la liste de lecture",
         "other": "{{.trackCount}} pistes ajoutées à la liste de lecture"

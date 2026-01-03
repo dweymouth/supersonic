@@ -22,18 +22,18 @@ var (
 	SearchPlaylistCLIArg string  = ""
 	SearchTrackCLIArg    string  = ""
 
-	FlagPlay             = flag.Bool("play", false, "unpause or begin playback")
-	FlagPause            = flag.Bool("pause", false, "pause playback")
-	FlagPlayPause        = flag.Bool("play-pause", false, "toggle play/pause state")
-	FlagPrevious         = flag.Bool("previous", false, "seek to previous track or beginning of current")
-	FlagNext             = flag.Bool("next", false, "seek to next track")
-	FlagStop             = flag.Bool("stop", false, "stop playback")
-	FlagStopAfterCurrent = flag.Bool("stop-after-current", false, "stop playback after current track")
-	FlagStartMinimized   = flag.Bool("start-minimized", false, "start app minimized")
-	FlagShow             = flag.Bool("show", false, "show minimized app")
-	FlagShuffle          = flag.Bool("shuffle", false, "shuffle the tracklist (to be used with either -play-album-by-id or -play-playlist-by-id)")
-	FlagVersion          = flag.Bool("version", false, "print app version and exit")
-	FlagHelp             = flag.Bool("help", false, "print command line options and exit")
+	FlagPlay              = flag.Bool("play", false, "unpause or begin playback")
+	FlagPause             = flag.Bool("pause", false, "pause playback")
+	FlagPlayPause         = flag.Bool("play-pause", false, "toggle play/pause state")
+	FlagPrevious          = flag.Bool("previous", false, "seek to previous track or beginning of current")
+	FlagNext              = flag.Bool("next", false, "seek to next track")
+	FlagStop              = flag.Bool("stop", false, "stop playback")
+	FlagPauseAfterCurrent = flag.Bool("pause-after-current", false, "pause playback after current track")
+	FlagStartMinimized    = flag.Bool("start-minimized", false, "start app minimized")
+	FlagShow              = flag.Bool("show", false, "show minimized app")
+	FlagShuffle           = flag.Bool("shuffle", false, "shuffle the tracklist (to be used with either -play-album-by-id or -play-playlist-by-id)")
+	FlagVersion           = flag.Bool("version", false, "print app version and exit")
+	FlagHelp              = flag.Bool("help", false, "print command line options and exit")
 
 	FlagPlayAlbum    *bool
 	FlagPlayPlaylist *bool

@@ -59,7 +59,7 @@ type Controller struct {
 
 	popUpQueue         *widget.PopUp
 	popUpQueueList     *widgets.PlayQueueList
-	stopAfterCurrent   *widget.Check
+	pauseAfterCurrent  *widget.Check
 	popUpQueueLastUsed int64
 	escapablePopUp     fyne.CanvasObject
 	haveModal          bool
@@ -198,10 +198,10 @@ func (m *Controller) ShowPopUpPlayQueue() {
 		title := widget.NewRichTextWithText(lang.L("Play Queue"))
 		title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 		title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
-		m.stopAfterCurrent = widget.NewCheck(lang.L("Stop after current track"), func(b bool) {
-			m.App.PlaybackManager.SetStopAfterCurrent(b)
+		m.pauseAfterCurrent = widget.NewCheck(lang.L("Pause after current track"), func(b bool) {
+			m.App.PlaybackManager.SetPauseAfterCurrent(b)
 		})
-		bottomRow := container.NewHBox(layout.NewSpacer(), m.stopAfterCurrent)
+		bottomRow := container.NewHBox(layout.NewSpacer(), m.pauseAfterCurrent)
 		ctr := container.NewBorder(title, bottomRow, nil, nil,
 			container.NewPadded(m.popUpQueueList),
 		)
@@ -231,7 +231,7 @@ func (m *Controller) ShowPopUpPlayQueue() {
 						fynetooltip.DestroyPopUpToolTipLayer(m.popUpQueue)
 						m.popUpQueue = nil
 						m.popUpQueueList = nil
-						m.stopAfterCurrent = nil
+						m.pauseAfterCurrent = nil
 						m.popUpQueueLastUsed = 0
 						t.Stop()
 						return
@@ -260,7 +260,7 @@ func (m *Controller) ShowPopUpPlayQueue() {
 	))
 	pop.Resize(size)
 	popUpQueueList.ScrollToNowPlaying() // must come after resize
-	m.stopAfterCurrent.SetChecked(m.App.PlaybackManager.IsStopAfterCurrent())
+	m.pauseAfterCurrent.SetChecked(m.App.PlaybackManager.IsPauseAfterCurrent())
 	pop.ShowAtPosition(fyne.NewPos(
 		canvasSize.Width-size.Width-10,
 		canvasSize.Height-size.Height-100,

@@ -134,6 +134,11 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 					log.Println("Play stall detected!")
 					p.cmdQueue.addCommand(playbackCommand{Type: cmdForceRestartPlayback})
 				}
+
+				if p.engine.pauseAfterCurrent {
+					p.Pause()
+					p.engine.SetPauseAfterCurrent(false)
+				}
 			}()
 		}
 	})
@@ -687,12 +692,12 @@ func (p *PlaybackManager) PlayPause() {
 	}
 }
 
-func (p *PlaybackManager) SetStopAfterCurrent(stopAfterCurrent bool) {
-	p.engine.SetStopAfterCurrent(stopAfterCurrent)
+func (p *PlaybackManager) SetPauseAfterCurrent(pauseAfterCurrent bool) {
+	p.engine.SetPauseAfterCurrent(pauseAfterCurrent)
 }
 
-func (p *PlaybackManager) IsStopAfterCurrent() bool {
-	return p.engine.stopAfterCurrent
+func (p *PlaybackManager) IsPauseAfterCurrent() bool {
+	return p.engine.pauseAfterCurrent
 }
 
 func (p *PlaybackManager) enqueueAutoplayTracks() {
