@@ -134,11 +134,6 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 					log.Println("Play stall detected!")
 					p.cmdQueue.addCommand(playbackCommand{Type: cmdForceRestartPlayback})
 				}
-
-				if p.engine.pauseAfterCurrent {
-					p.Pause()
-					p.engine.SetPauseAfterCurrent(false)
-				}
 			}()
 		}
 	})
@@ -832,7 +827,14 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 			case cmdForceRestartPlayback:
 				if mpv, ok := p.engine.CurrentPlayer().(*mpv.Player); ok {
 					log.Println("Force-restarting MPV playback")
-					mpv.ForceRestartPlayback()
+
+					// restart player, but perserve the state
+					isPaused := false
+					stat := p.engine.CurrentPlayer().GetStatus()
+					if stat.State == player.Paused {
+						isPaused = true
+					}
+					mpv.ForceRestartPlayback(isPaused)
 				}
 			}
 			if c.OnDone != nil {

@@ -627,6 +627,12 @@ func (p *playbackEngine) handleOnTrackChange() {
 	p.invokeOnSongChangeCallbacks()
 	p.handleTimePosUpdate(false)
 	p.handleNextTrackUpdated()
+
+	if p.pauseAfterCurrent {
+		p.Pause()
+		p.SetPauseAfterCurrent(false)
+	}
+
 }
 
 func (p *playbackEngine) handleOnStopped() {
