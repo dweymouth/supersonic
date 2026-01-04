@@ -350,6 +350,8 @@ func (p *Player) Continue() error {
 }
 
 func (p *Player) ForceRestartPlayback(isPaused bool) error {
+	p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, true)
+	p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, false)
 	return p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, isPaused)
 }
 
