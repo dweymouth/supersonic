@@ -66,7 +66,7 @@ type playbackEngine struct {
 	isRadio       bool
 	loopMode      LoopMode
 
-	stopAfterCurrent bool // flag to stop playback after current track ends
+	pauseAfterCurrent bool // flag to pause playback after current track ends
 
 	// flags for handleOnTrackChange / handleOnStopped callbacks - reset to false in the callbacks
 	wasStopped       bool // true iff player was stopped before handleOnTrackChange invocation
@@ -337,13 +337,8 @@ func (p *playbackEngine) Stop() error {
 	return p.player.Stop(false)
 }
 
-func (p *playbackEngine) SetStopAfterCurrent(stopAfterCurrent bool) {
-	p.stopAfterCurrent = stopAfterCurrent
-	if p.stopAfterCurrent {
-		p.setNextTrack(-1) // clear next playing track from internal player, if any
-	} else if p.loopMode != LoopNone || p.nowPlayingIdx < len(p.playQueue)-1 {
-		p.needToSetNextTrack = true // need to restore next track to internal player queue
-	}
+func (p *playbackEngine) SetPauseAfterCurrent(pauseAfterCurrent bool) {
+	p.pauseAfterCurrent = pauseAfterCurrent
 }
 
 func (p *playbackEngine) Pause() error {
@@ -632,6 +627,12 @@ func (p *playbackEngine) handleOnTrackChange() {
 	p.invokeOnSongChangeCallbacks()
 	p.handleTimePosUpdate(false)
 	p.handleNextTrackUpdated()
+
+	if p.pauseAfterCurrent {
+		p.Pause()
+		p.SetPauseAfterCurrent(false)
+	}
+
 }
 
 func (p *playbackEngine) handleOnStopped() {
@@ -646,7 +647,7 @@ func (p *playbackEngine) handleOnStopped() {
 	p.alreadyScrobbled = false
 	p.wasStopped = true
 	p.nowPlayingIdx = -1
-	p.stopAfterCurrent = false
+	p.pauseAfterCurrent = false
 }
 
 // to be invoked as soon as the next item in the queue that should play changes
@@ -868,7 +869,7 @@ func (p *playbackEngine) handleTimePosUpdate(seeked bool) {
 		meta = np.Metadata()
 	}
 	isNearEnd := meta.Type != mediaprovider.MediaItemTypeRadioStation && s.TimePos > meta.Duration.Seconds()-10
-	if p.needToSetNextTrack && !p.stopAfterCurrent && isNearEnd {
+	if p.needToSetNextTrack && isNearEnd {
 		p.needToSetNextTrack = false
 		p.setNextTrack(p.nextPlayingIndex())
 	}

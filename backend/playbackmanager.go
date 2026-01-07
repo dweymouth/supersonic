@@ -687,12 +687,12 @@ func (p *PlaybackManager) PlayPause() {
 	}
 }
 
-func (p *PlaybackManager) SetStopAfterCurrent(stopAfterCurrent bool) {
-	p.engine.SetStopAfterCurrent(stopAfterCurrent)
+func (p *PlaybackManager) SetPauseAfterCurrent(pauseAfterCurrent bool) {
+	p.engine.SetPauseAfterCurrent(pauseAfterCurrent)
 }
 
-func (p *PlaybackManager) IsStopAfterCurrent() bool {
-	return p.engine.stopAfterCurrent
+func (p *PlaybackManager) IsPauseAfterCurrent() bool {
+	return p.engine.pauseAfterCurrent
 }
 
 func (p *PlaybackManager) enqueueAutoplayTracks() {
@@ -827,7 +827,14 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 			case cmdForceRestartPlayback:
 				if mpv, ok := p.engine.CurrentPlayer().(*mpv.Player); ok {
 					log.Println("Force-restarting MPV playback")
-					mpv.ForceRestartPlayback()
+
+					// restart player, but perserve the state
+					isPaused := false
+					stat := p.engine.CurrentPlayer().GetStatus()
+					if stat.State == player.Paused {
+						isPaused = true
+					}
+					mpv.ForceRestartPlayback(isPaused)
 				}
 			}
 			if c.OnDone != nil {

@@ -83,8 +83,8 @@ func (c *Client) Stop() error {
 	return err
 }
 
-func (c *Client) StopAfterCurrent() error {
-	_, err := c.sendRequest(StopAfterCurrentPath)
+func (c *Client) PauseAfterCurrent() error {
+	_, err := c.sendRequest(PauseAfterCurrentPath)
 	return err
 }
 
