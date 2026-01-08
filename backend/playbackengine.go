@@ -313,11 +313,17 @@ func (p *playbackEngine) SeekFwdBackN(n int) error {
 	if n == 0 || (idx == 0 && n < 0) {
 		return p.player.SeekSeconds(0) // seek back in current song
 	}
+
 	lastIdx := len(p.playQueue) - 1
-	if idx == lastIdx && n > 0 {
-		return nil // already on last track, nothing to seek next to
-	}
 	newIdx := min(lastIdx, max(0, idx+n))
+
+	if idx == lastIdx && n > 0 {
+		if p.loopMode == LoopAll {
+			newIdx = 0
+		} else {
+			return nil // already on last track, nothing to seek next to
+		}
+	}
 	return p.PlayTrackAt(newIdx)
 }
 
