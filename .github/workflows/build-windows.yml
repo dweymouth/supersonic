@@ -12,6 +12,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 30
     defaults:
       run:
         shell: msys2 {0}
