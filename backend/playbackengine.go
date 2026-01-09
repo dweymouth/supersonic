@@ -318,11 +318,7 @@ func (p *playbackEngine) SeekFwdBackN(n int) error {
 	newIdx := min(lastIdx, max(0, idx+n))
 
 	if idx == lastIdx && n > 0 {
-		if p.loopMode == LoopAll {
-			newIdx = 0
-		} else {
-			return nil // already on last track, nothing to seek next to
-		}
+		newIdx = 0
 	}
 	return p.PlayTrackAt(newIdx)
 }
