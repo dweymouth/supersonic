@@ -1,5 +1,28 @@
 # Change Log
 
+## [0.20.0]
+
+### Added
+- [#775](https://github.com/dweymouth/supersonic/issues/775) Quickly fade out audio when pausing
+- [#774](https://github.com/dweymouth/supersonic/issues/774) Add collapsed/compact view for page headers
+- [#745](https://github.com/dweymouth/supersonic/issues/745) Add option to prevent screensaver or screen sleep on Now Playing page
+- [#744](https://github.com/dweymouth/supersonic/pull/744) Add lyrics tab to sidebar
+- [#742](https://github.com/dweymouth/supersonic/issues/742) Add additional tracklist columns for Genre, Album Artist, File Type, Date Added
+- [#741](https://github.com/dweymouth/supersonic/issues/741) Show year on Now Playing page
+- Option to round image corners throughout app
+- Option to used blurred album cover for background of Now Playing page
+- [#566](https://github.com/dweymouth/supersonic/issues/566) Left click on system tray icon raises app window
+- Button in Advanced tab of settings window to clear caches
+
+### Changed
+- [#790](https://github.com/dweymouth/supersonic/issues/790) Seeking Next while playing the last track in queue now cycles around back to the beginning
+- [#787](https://github.com/dweymouth/supersonic/issues/787) Behavior and naming of "Stop after current track" changed to "Pause after current track"
+- [#759](https://github.com/dweymouth/supersonic/pull/759) Migrate to Fyne 2.7
+
+### Fixed
+- [#748](https://github.com/dweymouth/supersonic/issues/748) LrcLib fetcher no longer crashes on tracks with no artist name
+- [#660](https://github.com/dweymouth/supersonic/issues/660) Windows now playing notifications are now silent, and include album cover
+
 ## [0.19.0]
 
 ### Added

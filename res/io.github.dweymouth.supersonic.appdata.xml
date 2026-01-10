@@ -63,34 +63,36 @@
   </screenshots>
 
  <releases>
-  <release date="2025-10-26" version="0.19.0">
+  <release date="2026-01-10" version="0.20.0">
    <description>
      <p>
-       Version 0.19.0 of Supersonic
+       Version 0.20.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Toggleable side bar play queue</li>
-       <li>New setting to skip one-star tracks or tracks with specific keyword when shuffling</li>
-       <li>New Last Played column for tracklists</li>
-       <li>Create Playlist button added to the playlists page</li>
-       <li>Save play queue on all queue changes rather than on shutdown</li>
-       <li>Left and Right keybindings for seeking back/forward 10 sec</li>
+       <li>Quickly fade out audio when pausing</li>
+       <li>Add collapsed/compact view for page headers</li>
+       <li>Add option to prevent screensaver or screen sleep on Now Playing page</li>
+       <li>Add lyrics tab to sidebar</li>
+       <li>Add additional tracklist columns for Genre, Album Artist, File Type, Date Added</li>
+       <li>Show year on Now Playing page</li>
+       <li>Option to round image corners throughout app</li>
+       <li>Option to used blurred album cover for background of Now Playing page</li>
+       <li>Left click on system tray icon raises app window</li>
+       <li>Button in Advanced tab of settings window to clear caches</li>
+       <li>Seeking Next while playing the last track in queue now cycles around back to the beginning</li>
+       <li>Behavior and naming of "Stop after current track" changed to "Pause after current track"</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Peak Meter visualization crashing with custom themes</li>
-       <li>Adjust spacing for rating/favorite widget on Now Playing page</li>
-       <li>Occasional crashing on lyrics viewer</li>
-       <li>Jellyfin M3U playlists not showing up</li>
-       <li>Occasional hangs when loading artist pages</li>
-       <li>Improved LrcLib lyrics fetching with unknown album or artist name</li>
+       <li>LrcLib fetcher no longer crashes on tracks with no artist name</li>
+       <li>Windows now playing notifications are now silent, and include album cover</li>
      </ul>
 
    </description>
