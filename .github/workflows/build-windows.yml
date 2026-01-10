@@ -46,8 +46,8 @@ jobs:
 
     - name: Download mpv dll
       run: >
-        wget https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20251026/mpv-dev-x86_64-20251026-git-aa2dad0.7z &&
-        7z x mpv-dev-x86_64-20251026-git-aa2dad0.7z
+        wget https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20260110/mpv-dev-x86_64-20260110-git-3d980d8.7z &&
+        7z x mpv-dev-x86_64-20260110-git-3d980d8.7z
 
     - name: Download smtc dll
       run: >
