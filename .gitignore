@@ -12,7 +12,12 @@ supersonic
 *.dll
 *.so
 *.dylib
+*.AppImage
 Supersonic.app
+Supersonic.AppDir/
+appimagetool-x86_64.AppImage
+tmp/
+
 
 # Test binary, built with `go test -c`
 *.test

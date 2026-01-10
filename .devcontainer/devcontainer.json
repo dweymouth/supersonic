@@ -13,6 +13,7 @@
 	},
 	"containerEnv": {
 		"VNC_RESOLUTION": "1920x1080x24",
+		"APPIMAGE_EXTRACT_AND_RUN": "1",
 	},
 	"runArgs": [
 		"--device=/dev/snd:/dev/snd",
