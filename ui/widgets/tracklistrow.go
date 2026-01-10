@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	tracklistUpdateCounter = util.NewEventCounter(30)
+	tracklistUpdateCounter = util.NewEventCounter(20)
 
 	emptyTrack = util.TrackListModel{
 		Item: &mediaprovider.Track{
@@ -410,7 +410,7 @@ func (t *tracklistRowBase) TrackID() string {
 }
 
 func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int, onUpdate func()) {
-	if tracklistUpdateCounter.NumEventsSince(time.Now().Add(-150*time.Millisecond)) > 20 {
+	if tracklistUpdateCounter.NumEventsSince(time.Now().Add(-300*time.Millisecond)) > 10 {
 		t.doUpdate(&emptyTrack, 1)
 		if t.nextUpdateModel == nil {
 			// queue to run later
