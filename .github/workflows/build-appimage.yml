@@ -29,7 +29,7 @@ jobs:
     - name: make appimage
       run: |
          chmod +x ./scripts/appimage-build.sh
-         ./scripts/appimage-build.sh
+         ./scripts/appimage-build.sh --manual-libs
 
     - name: upload artifact
       uses: actions/upload-artifact@v4

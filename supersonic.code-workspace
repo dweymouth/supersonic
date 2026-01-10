@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "tmp"
+		},
+		{
+			"path": "../../home/vscode/.ssh"
+		},
+		{
+			"path": "../fake"
+		}
+	]
+}
