@@ -22,7 +22,7 @@ jobs:
         go-version: '1.24'
 
     - name: Install dependencies
-      run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev desktop-file-utils
+      run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
 
     - name: Build
       run: make build
@@ -30,7 +30,7 @@ jobs:
     - name: make appimage
       run: |
          chmod +x ./scripts/appimage-build.sh
-         ./scripts/appimage-build.sh
+         ./scripts/appimage-build.sh --manual-libs
 
     - name: upload artifact
       uses: actions/upload-artifact@v4
