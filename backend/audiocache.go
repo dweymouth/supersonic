@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -23,6 +24,7 @@ type AudioCache struct {
 	baseCacheDir string
 
 	entries map[string]*cacheEntry
+	headers map[string]string
 }
 
 type cacheEntry struct {
@@ -44,12 +46,17 @@ func NewAudioCache(ctx context.Context, s *ServerManager, baseCacheDir string) (
 	if err := configdir.MakePath(baseCacheDir); err != nil {
 		return nil, errors.New("failed to create audio cache dir")
 	}
-	return &AudioCache{
+	ac := &AudioCache{
 		s:            s,
 		rootCtx:      ctx,
 		baseCacheDir: baseCacheDir,
 		entries:      make(map[string]*cacheEntry),
-	}, nil
+		headers:      make(map[string]string),
+	}
+
+	s.OnServerAuthChanged(ac.handleServerAuthChanged)
+
+	return ac, nil
 }
 
 // PathForCachedFile returns the local filesystem path for a cached track,
@@ -128,7 +135,7 @@ func (a *AudioCache) cacheFile(id, dlURL string) {
 		ctx, cancel := context.WithCancel(a.rootCtx)
 		a.entries[id] = &cacheEntry{cancel: cancel}
 		go func() {
-			ok, err := sharedutil.DownloadFileWithContext(ctx, dlURL, a.pathForID(id))
+			ok, err := sharedutil.DownloadFileWithContext(ctx, dlURL, a.pathForID(id), a.headers)
 			if ok {
 				a.mutex.Lock()
 				if e, ok := a.entries[id]; ok {
@@ -197,4 +204,10 @@ func (a *AudioCache) deleteEntry(id string, e *cacheEntry) {
 	e.cancel()
 	_ = os.Remove(a.pathForID(id))
 	delete(a.entries, id)
+}
+
+func (a *AudioCache) handleServerAuthChanged(headers map[string]string) {
+	a.mutex.Lock()
+	a.headers = maps.Clone(headers)
+	a.mutex.Unlock()
 }

@@ -136,9 +136,7 @@ func NewPlaybackEngine(
 	}
 
 	pm.registerPlayerCallbacks(p)
-	s.OnLogout(func() {
-		pm.StopAndClearPlayQueue()
-	})
+	pm.registerServerManagerCallbacks(s)
 
 	return pm
 }
@@ -168,6 +166,13 @@ func (p *playbackEngine) unregisterPlayerCallbacks(pl player.BasePlayer) {
 	pl.OnStopped(nil)
 	pl.OnSeek(nil)
 	pl.OnTrackChange(nil)
+}
+
+func (p *playbackEngine) registerServerManagerCallbacks(sm *ServerManager) {
+	sm.OnLogout(func() {
+		p.StopAndClearPlayQueue()
+	})
+	sm.OnServerAuthChanged(p.handleServerAuthChanged)
 }
 
 func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
@@ -662,6 +667,12 @@ func (p *playbackEngine) handleNextTrackUpdated() {
 			item = p.playQueue[idx]
 		}
 		cb(item)
+	}
+}
+
+func (p *playbackEngine) handleServerAuthChanged(headers map[string]string) {
+	if up, ok := p.player.(player.URLPlayer); ok {
+		up.SetHeaders(headers)
 	}
 }
 
