@@ -41,6 +41,17 @@ func (j *JukeboxPlayer) GetVolume() int {
 	return j.volume
 }
 
+// SetSpeed is not supported for Jukebox players, returns nil (no-op).
+func (j *JukeboxPlayer) SetSpeed(speed float64) error {
+	// Jukebox mode does not support playback speed control
+	return nil
+}
+
+// GetSpeed always returns 1.0 for Jukebox players as speed control is not supported.
+func (j *JukeboxPlayer) GetSpeed() float64 {
+	return 1.0
+}
+
 func (j *JukeboxPlayer) Continue() error {
 	if j.state == playing {
 		return nil

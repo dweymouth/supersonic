@@ -287,6 +287,15 @@ func (p *playbackEngine) SetVolume(vol int) error {
 	return nil
 }
 
+func (p *playbackEngine) SetSpeed(speed float64) error {
+	if speed < 0.25 {
+		speed = 0.25
+	} else if speed > 4.0 {
+		speed = 4.0
+	}
+	return p.player.SetSpeed(speed)
+}
+
 func (p *playbackEngine) CurrentPlayer() player.BasePlayer {
 	return p.player
 }
