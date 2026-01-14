@@ -65,6 +65,7 @@ type playbackEngine struct {
 	nowPlayingIdx int
 	isRadio       bool
 	loopMode      LoopMode
+	shuffle       bool
 
 	pauseAfterCurrent bool // flag to pause playback after current track ends
 
@@ -97,6 +98,7 @@ type playbackEngine struct {
 	onSongChange       []func(nowPlaying mediaprovider.MediaItem, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate   []func(float64, float64, bool)
 	onLoopModeChange   []func(LoopMode)
+	onShuffleChange    []func()
 	onVolumeChange     []func(int)
 	onSeek             []func()
 	onPaused           []func()
