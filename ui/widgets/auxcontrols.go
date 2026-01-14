@@ -22,8 +22,10 @@ type AuxControls struct {
 	widget.BaseWidget
 
 	OnChangeAutoplay func(autoplay bool)
+	OnChangeShuffle  func(shuffle bool)
 
 	VolumeControl *VolumeControl
+	shuffle       *IconButton
 	autoplay      *IconButton
 	loop          *IconButton
 	cast          *IconButton
@@ -35,10 +37,20 @@ type AuxControls struct {
 func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initialAutoplay bool) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
+		shuffle:       NewIconButton(myTheme.ShuffleIcon, nil),
 		autoplay:      NewIconButton(myTheme.AutoplayIcon, nil),
 		loop:          NewIconButton(myTheme.RepeatIcon, nil),
 		cast:          NewIconButton(myTheme.CastIcon, nil),
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
+	}
+
+	a.shuffle.IconSize = IconButtonSizeSmaller
+	a.shuffle.SetToolTip(lang.L("Shuffle"))
+	a.shuffle.OnTapped = func() {
+		a.SetShuffle(!a.shuffle.Highlighted)
+		if a.OnChangeShuffle != nil {
+			a.OnChangeShuffle(a.shuffle.Highlighted)
+		}
 	}
 
 	a.loop.IconSize = IconButtonSizeSmaller
@@ -68,7 +80,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 			a.VolumeControl,
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(theme.Padding()*1.5),
-				layout.NewSpacer(), a.autoplay, a.loop, a.cast, a.showQueue, util.NewHSpace(5)),
+				layout.NewSpacer(), a.autoplay, a.shuffle, a.loop, a.cast, a.showQueue, util.NewHSpace(5)),
 			layout.NewSpacer(),
 		),
 	)
@@ -95,6 +107,14 @@ func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 	case backend.LoopNone:
 		a.loop.Highlighted = false
 		a.loop.SetIcon(myTheme.RepeatIcon)
+	}
+}
+
+func (a *AuxControls) SetShuffle(isShuffle bool) {
+	if isShuffle {
+		a.shuffle.Highlighted = true
+	} else {
+		a.shuffle.Highlighted = false
 	}
 }
 
