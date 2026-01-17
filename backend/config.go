@@ -136,6 +136,7 @@ type LocalPlaybackConfig struct {
 	EqualizerEnabled      bool
 	EqualizerPreamp       float64
 	GraphicEqualizerBands []float64
+	PauseFade             bool
 }
 
 type ScrobbleConfig struct {
@@ -270,6 +271,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			EqualizerEnabled:      false,
 			EqualizerPreamp:       0,
 			GraphicEqualizerBands: make([]float64, 15),
+			PauseFade:             true,
 		},
 		Scrobbling: ScrobbleConfig{
 			Enabled:              true,

@@ -33,6 +33,7 @@ type SettingsDialog struct {
 
 	OnReplayGainSettingsChanged    func()
 	OnAudioExclusiveSettingChanged func()
+	OnPauseFadeSettingsChanged     func()
 	OnAudioDeviceSettingChanged    func()
 	OnThemeSettingChanged          func()
 	OnDismiss                      func()
@@ -407,9 +408,18 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 	})
 	audioExclusive.Checked = s.config.LocalPlayback.AudioExclusive
 
+	pauseFade := widget.NewCheck(lang.L("Fade out on pause"), func(checked bool) {
+		s.config.LocalPlayback.PauseFade = checked
+		if s.OnPauseFadeSettingsChanged != nil {
+			s.OnPauseFadeSettingsChanged()
+		}
+	})
+	pauseFade.Checked = s.config.LocalPlayback.PauseFade
+
 	if !isLocalPlayer {
 		deviceSelect.Disable()
 		audioExclusive.Disable()
+		pauseFade.Disable()
 	}
 	if !isReplayGainPlayer {
 		replayGainSelect.Disable()
@@ -424,6 +434,7 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 				widget.NewLabel(lang.L("Audio device")), container.NewBorder(nil, nil, nil, util.NewHSpace(70), deviceSelect),
 				layout.NewSpacer(), audioExclusive,
 			)),
+		pauseFade,
 		s.newSectionSeparator(),
 		disableTranscode,
 		container.NewHBox(transcode, transcodeCodec, transcodeBitRate),
