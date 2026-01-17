@@ -263,6 +263,15 @@ func (p *playbackEngine) GetLoopMode() LoopMode {
 	return p.loopMode
 }
 
+func (p *playbackEngine) SetShuffle(shuffle bool) {
+	p.shuffle = shuffle
+	//TODO: Implement functionality
+}
+
+func (p *playbackEngine) GetShuffle() bool {
+	return p.shuffle
+}
+
 func (p *playbackEngine) PlaybackStatus() PlaybackStatus {
 	stat := p.pendingPlayerChangeStatus
 	if !p.pendingPlayerChange {

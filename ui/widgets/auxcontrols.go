@@ -111,11 +111,11 @@ func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
 }
 
 func (a *AuxControls) SetShuffle(isShuffle bool) {
-	if isShuffle {
-		a.shuffle.Highlighted = true
-	} else {
-		a.shuffle.Highlighted = false
+	if isShuffle == a.shuffle.Highlighted {
+		return
 	}
+	a.shuffle.Highlighted = isShuffle
+	a.shuffle.Refresh()
 }
 
 func (a *AuxControls) DisableCastButton() {
