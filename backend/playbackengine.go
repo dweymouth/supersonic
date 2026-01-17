@@ -98,7 +98,6 @@ type playbackEngine struct {
 	onSongChange       []func(nowPlaying mediaprovider.MediaItem, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate   []func(float64, float64, bool)
 	onLoopModeChange   []func(LoopMode)
-	onShuffleChange    []func()
 	onVolumeChange     []func(int)
 	onSeek             []func()
 	onPaused           []func()
