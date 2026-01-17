@@ -69,6 +69,7 @@ type Player struct {
 	clientName     string
 	equalizer      Equalizer
 	peaksEnabled   bool
+	pauseFade      bool
 
 	fileLoadedLock sync.Mutex
 	fileLoadedSig  *sync.Cond
@@ -283,6 +284,10 @@ func (p *Player) SetAudioExclusive(tf bool) {
 	}
 }
 
+func (p *Player) SetPauseFade(pauseFade bool) {
+	p.pauseFade = pauseFade
+}
+
 // Gets the current volume of the player.
 func (p *Player) GetVolume() int {
 	return p.vol
@@ -308,27 +313,37 @@ func (p *Player) Pause() error {
 	if p.status.State != player.Playing {
 		return nil
 	}
-	p.prePausedState = p.status.State
-	p.setState(player.Paused)
 
-	v := p.vol
-	ctx, cancel := context.WithCancel(context.Background())
-	p.fadePauseCancel = cancel
-	go func() {
-		t := time.NewTicker(2 * time.Millisecond)
-		for c := 0; c < 100; c++ {
-			select {
-			case <-ctx.Done():
-				return
-			case <-t.C:
-				p.mpv.SetProperty("volume", mpv.FORMAT_INT64, int64(v*(100-c)/100))
+	if p.pauseFade {
+		p.prePausedState = p.status.State
+		p.setState(player.Paused)
+
+		v := p.vol
+		ctx, cancel := context.WithCancel(context.Background())
+		p.fadePauseCancel = cancel
+		go func() {
+			t := time.NewTicker(2 * time.Millisecond)
+			for c := 0; c < 100; c++ {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					p.mpv.SetProperty("volume", mpv.FORMAT_INT64, int64(v*(100-c)/100))
+				}
 			}
+			t.Stop()
+			p.SetVolume(p.vol)
+			p.setPaused(true)
+		}()
+		return nil
+	} else {
+		err := p.setPaused(true)
+		if err == nil {
+			p.prePausedState = p.status.State
+			p.setState(player.Paused)
 		}
-		t.Stop()
-		p.SetVolume(p.vol)
-		p.setPaused(true)
-	}()
-	return nil
+		return err
+	}
 }
 
 // Continue playback and update the player state

@@ -334,6 +334,9 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	dlg.OnAudioExclusiveSettingChanged = func() {
 		c.App.LocalPlayer.SetAudioExclusive(c.App.Config.LocalPlayback.AudioExclusive)
 	}
+	dlg.OnPauseFadeSettingsChanged = func() {
+		c.App.LocalPlayer.SetPauseFade(c.App.Config.LocalPlayback.PauseFade)
+	}
 	dlg.OnAudioDeviceSettingChanged = func() {
 		c.App.LocalPlayer.SetAudioDevice(c.App.Config.LocalPlayback.AudioDeviceName)
 	}

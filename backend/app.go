@@ -384,6 +384,7 @@ func (a *App) setupMPV() error {
 		PreampGain:      a.Config.ReplayGain.PreampGainDB,
 	})
 	a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
+	a.LocalPlayer.SetPauseFade(a.Config.LocalPlayback.PauseFade)
 
 	eq := &mpv.ISO15BandEqualizer{
 		EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
