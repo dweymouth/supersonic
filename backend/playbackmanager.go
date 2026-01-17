@@ -354,6 +354,10 @@ func (p *PlaybackManager) LoadAlbum(albumID string, insertQueueMode InsertQueueM
 	return nil
 }
 
+func (p *PlaybackManager) GetShuffle() bool {
+	return p.engine.GetShuffle()
+}
+
 // Loads the specified playlist into the play queue.
 func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode InsertQueueMode, shuffle bool) error {
 	playlist, err := p.engine.sm.Server.GetPlaylist(playlistID)
@@ -618,6 +622,10 @@ func (p *PlaybackManager) SetAutoplay(autoplay bool) {
 	if autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
 		p.enqueueAutoplayTracks()
 	}
+}
+
+func (p *PlaybackManager) SetShuffle(shuffle bool) {
+	p.engine.SetShuffle(shuffle)
 }
 
 func (p *PlaybackManager) Volume() int {

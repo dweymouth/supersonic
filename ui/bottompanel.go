@@ -121,6 +121,9 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.AuxControls.OnChangeAutoplay = func(autoplay bool) {
 		pm.SetAutoplay(autoplay)
 	}
+	bp.AuxControls.OnChangeShuffle = func(shuffle bool) {
+		pm.SetShuffle(shuffle)
+	}
 	bp.AuxControls.OnShowPlayQueue(contr.ShowPopUpPlayQueue)
 	bp.AuxControls.OnShowCastMenu(contr.ShowCastMenu)
 
