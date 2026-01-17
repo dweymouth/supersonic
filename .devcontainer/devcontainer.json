@@ -21,7 +21,7 @@
 	],
 	"postStartCommand": "sudo setfacl -m u:vscode:rw /dev/snd/*",
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [5901, 6080],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"onCreateCommand": {
 		"log": "echo 'Starting post-create script...'",
