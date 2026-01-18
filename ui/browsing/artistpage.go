@@ -439,7 +439,7 @@ func (a *ArtistPage) showTopTracks() {
 
 		ts, err := a.mp.GetTopTracks(a.artistInfo.Artist, 20)
 		if err != nil {
-			log.Printf("error getting all songs: %s", err.Error())
+			log.Printf("error getting top songs: %s", err.Error())
 			return
 		}
 		if a.disposed {
@@ -508,7 +508,7 @@ func (a *ArtistPage) showAllTracks() {
 
 		tracks, err := a.mp.GetArtistTracks(a.artistInfo.ID)
 		if err != nil {
-			log.Printf("error getting all songs: %s", err.Error())
+			log.Printf("error getting all songs for artist: %s", err.Error())
 			return
 		}
 		if a.disposed {
