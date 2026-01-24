@@ -410,6 +410,17 @@ func (t *tracklistRowBase) TrackID() string {
 }
 
 func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int, onUpdate func()) {
+	// Show only columns configured to be visible
+	for i := 2; i < len(t.tracklist.columns); i++ {
+		t.setColVisibility(i, !t.tracklist.visibleColumns[i])
+	}
+
+	// Ealy return if nothing else needs updating
+	if !t.needsUpdate(tm, rowNum) {
+		return
+	}
+
+	// Throttle updates when many are happening in a short time
 	if tracklistUpdateCounter.NumEventsSince(time.Now().Add(-300*time.Millisecond)) > 10 {
 		t.doUpdate(&emptyTrack, 1)
 		if t.nextUpdateModel == nil {
@@ -432,6 +443,26 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int, onUpdate 
 		t.doUpdate(tm, rowNum)
 		onUpdate()
 	}
+}
+
+func (t *tracklistRowBase) needsUpdate(tm *util.TrackListModel, rowNum int) bool {
+	tr := tm.Track()
+	if tm.Selected != t.Selected {
+		return true
+	}
+	if t.trackID != tr.ID || t.trackNum != rowNum {
+		return true
+	}
+	if t.playCount != tr.PlayCount || t.isFavorite != tr.Favorite || t.rating.Rating != tr.Rating {
+		return true
+	}
+	if t.rating.IsDisabled != t.tracklist.Options.DisableRating {
+		return true
+	}
+	if isPlaying := t.tracklist.nowPlayingID == tr.ID; isPlaying != t.isPlaying {
+		return true
+	}
+	return false
 }
 
 func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
@@ -533,13 +564,6 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 	if t.rating.IsDisabled != t.tracklist.Options.DisableRating {
 		t.rating.IsDisabled = t.tracklist.Options.DisableRating
 		t.rating.Refresh()
-	}
-
-	// Show only columns configured to be visible
-	for i := 2; i < len(t.tracklist.columns); i++ {
-		if ch := t.setColVisibility(i, !t.tracklist.visibleColumns[i]); ch {
-			changed = true
-		}
 	}
 
 	if changed {
