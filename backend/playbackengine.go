@@ -62,11 +62,12 @@ type playbackEngine struct {
 	latestTrackPosition float64 // cleared by checkScrobble
 	callbacksDisabled   bool
 
-	playQueue     []mediaprovider.MediaItem
-	nowPlayingIdx int
-	isRadio       bool
-	loopMode      LoopMode
-	shuffle       bool
+	playQueue        []mediaprovider.MediaItem
+	playQueueShuffle []mediaprovider.MediaItem
+	nowPlayingIdx    int
+	isRadio          bool
+	loopMode         LoopMode
+	shuffle          bool
 
 	pauseAfterCurrent bool // flag to pause playback after current track ends
 
@@ -217,6 +218,8 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	return nil
 }
 
+// Interface functions for interacting with the play queue
+
 func (p *playbackEngine) PlayTrackAt(idx int) error {
 	return p.playTrackAt(idx, 0)
 }
@@ -264,7 +267,7 @@ func (p *playbackEngine) GetLoopMode() LoopMode {
 
 func (p *playbackEngine) SetShuffle(shuffle bool) {
 	p.shuffle = shuffle
-	//TODO: Implement functionality
+	//TODO_SHUFFLE: Implement functionality
 }
 
 func (p *playbackEngine) GetShuffle() bool {
