@@ -1,11 +1,13 @@
 al.essio.dev/pkg/shellescape v1.5.1 h1:86HrALUujYS/h+GtqoB26SBEdkWfmMI6FubjXlsXyho=
 al.essio.dev/pkg/shellescape v1.5.1/go.mod h1:6sIqp7X2P6mThCQ7twERpZTuigpr6KbZWtls1U8I890=
-fyne.io/systray v1.11.1-0.20250603113521-ca66a66d8b58 h1:eA5/u2XRd8OUkoMqEv3IBlFYSruNlXD8bRHDiqm0VNI=
-fyne.io/systray v1.11.1-0.20250603113521-ca66a66d8b58/go.mod h1:RVwqP9nYMo7h5zViCBHri2FgjXF7H2cub7MAq4NSoLs=
+fyne.io/systray v1.12.0 h1:CA1Kk0e2zwFlxtc02L3QFSiIbxJ/P0n582YrZHT7aTM=
+fyne.io/systray v1.12.0/go.mod h1:RVwqP9nYMo7h5zViCBHri2FgjXF7H2cub7MAq4NSoLs=
 github.com/20after4/configdir v0.1.1 h1:ylL5dO+aGxBV4jDtG9Ej9hZfeE8Fw9jULQVq0N+ErJ8=
 github.com/20after4/configdir v0.1.1/go.mod h1:kZ7yOiD6MFUABqBI2/N62QA1wyEB8sGeI+mygme1pl4=
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
+github.com/FyshOS/fancyfs v0.0.0-20251025194026-1f03098ff624 h1:ryzrudl71BPWW9jalH/6qSXOmj/B96lunzJEi6zuuR4=
+github.com/FyshOS/fancyfs v0.0.0-20251025194026-1f03098ff624/go.mod h1:oLKntpN0BPY75aajV735V/14CnSF/GEHCa6mKNDhOjw=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/boxes-ltd/imaging v1.7.1 h1:JlfPQkr9sowLuPY24OLNw1Wa0UjriPVo2BN0YyxdCf0=
@@ -25,8 +27,8 @@ github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c h1:UX
 github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c/go.mod h1:Idgzr4LYzve8IPHF1stLO1bdGQZnDKt/bT9WfJflCGw=
 github.com/dweymouth/fyne-tooltip v0.3.0 h1:NKCyTkh9NtvnTsiHtTOtaJzRDOFYP8AckQ2tyhOh6JY=
 github.com/dweymouth/fyne-tooltip v0.3.0/go.mod h1:m04ShLW/Tp6LXrNieTumApvNgo7YSB+wi+jZTN+kDBU=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20251115180245-c1288f7754ab h1:3a3Dop0y5uGYSgjoyReYlwZqpo7xFQu+tULfZueCjEQ=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20251115180245-c1288f7754ab/go.mod h1:xClVlrhxl7D+LT+BWYmcrW4Nf+dJTvkhnPgji7spAwE=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20260121163844-a0f2c1dd0601 h1:Z75H0KinbkuXn0y/+vFB4R6jvwgwHkgCivvPT5fIYcc=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20260121163844-a0f2c1dd0601/go.mod h1:M3Fkb8eUU6se8E+coikK8x7f3vCIakxAW7bPyw3d9fA=
 github.com/dweymouth/go-jellyfin v0.0.0-20250928223159-bd2fb9681ef5 h1:Or5VJodg7cGmdnBIcS+FrEH0twBi7mZsFCz6V0vCOQI=
 github.com/dweymouth/go-jellyfin v0.0.0-20250928223159-bd2fb9681ef5/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0 h1:mYcctuWgVArHhSLJxndlUM43C3hoE18BLDBkXKM2tl0=

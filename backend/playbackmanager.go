@@ -42,6 +42,9 @@ type PlaybackManager struct {
 	lastPlayingID        string
 	wfmUpdateImageCancel context.CancelFunc
 	wfmImageJobs         [3]*WaveformImageJob
+
+	// whether autoplay tracks are currently being fetched/enqueued
+	pendingAutoplay bool
 }
 
 type RemotePlaybackDevice struct {
@@ -100,8 +103,14 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 	// On Windows, MPV sometimes fails to start playback when switching to a track
 	// with a different sample rate than the previous. If this is detected,
 	// send a command to the MPV player to force restart playback.
-	p.OnPlayTimeUpdate(func(curTime, _ float64, _ bool) {
+	p.OnPlayTimeUpdate(func(curTime, totalTime float64, _ bool) {
 		p.lastPlayTime = curTime
+
+		// enqueue autoplay tracks if enabled and nearing end of queue
+		if p.cfg.Autoplay && !p.pendingAutoplay && totalTime-curTime < 10.0 &&
+			p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+			p.enqueueAutoplayTracks()
+		}
 	})
 
 	p.engine.onBeforeSongChange = append(p.engine.onBeforeSongChange, func(item mediaprovider.MediaItem) {
@@ -116,10 +125,6 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 	})
 
 	p.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
-		// Autoplay if enabled and we are on the last track
-		if p.cfg.Autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
-			p.enqueueAutoplayTracks()
-		}
 		p.handleWaveformImageSongChange(item)
 
 		if runtime.GOOS != "windows" {
@@ -737,7 +742,10 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 
 	// since this func is invoked in a callback from the playback engine,
 	// need to do the rest async as it may take time and block other callbacks
+	p.pendingAutoplay = true
 	go func() {
+		defer func() { p.pendingAutoplay = false }()
+
 		// first 2 strategies - similar by artist, and similar by genres - only work for tracks
 		if nowPlaying.Metadata().Type == mediaprovider.MediaItemTypeTrack {
 			tr := nowPlaying.(*mediaprovider.Track)
