@@ -236,6 +236,14 @@ func (p *playbackEngine) clearPlayQueue() {
 	p.playQueueShuffle = nil
 }
 
+func (p *playbackEngine) setPlayQueue(items []mediaprovider.MediaItem) {
+	if p.shuffle {
+		p.playQueueShuffle = items
+	} else {
+		p.playQueue = items
+	}
+}
+
 func (p *playbackEngine) PlayTrackAt(idx int) error {
 	return p.playTrackAt(idx, 0)
 }
@@ -417,7 +425,7 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 	if insertQueueMode == InsertNext {
 		insertIdx = p.nowPlayingIdx + 1
 	}
-	p.playQueue = append(p.playQueue[:insertIdx], append(items, p.playQueue[insertIdx:]...)...)
+	p.setPlayQueue(append(p.playQueue[:insertIdx], append(items, p.playQueue[insertIdx:]...)...))
 
 	p.invokeNoArgCallbacks(p.onQueueChange)
 	return nil
@@ -441,7 +449,7 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 	copy(new, firstHalf)
 	new[len(firstHalf)] = radio
 	copy(new[len(firstHalf)+1:], p.playQueue[insertIdx:])
-	p.playQueue = new
+	p.setPlayQueue(new)
 
 	p.invokeNoArgCallbacks(p.onQueueChange)
 }
@@ -497,7 +505,7 @@ func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error 
 		}
 	}
 
-	p.playQueue = newQueue
+	p.setPlayQueue(newQueue)
 	if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
 		return p.Stop()
 	}
@@ -536,7 +544,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 			newQueue = append(newQueue, tr)
 		}
 	}
-	p.playQueue = newQueue
+	p.setPlayQueue(newQueue)
 	p.nowPlayingIdx = newNowPlaying
 	if isPlayingTrackRemoved {
 		if newNowPlaying == len(newQueue) {
