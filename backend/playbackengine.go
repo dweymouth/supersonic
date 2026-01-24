@@ -244,6 +244,11 @@ func (p *playbackEngine) setPlayQueue(items []mediaprovider.MediaItem) {
 	}
 }
 
+// rename to GetPlayQueueExternal
+func (p *playbackEngine) GetPlayQueue() []mediaprovider.MediaItem {
+	return deepCopyMediaItemSlice(p.playQueue)
+}
+
 func (p *playbackEngine) PlayTrackAt(idx int) error {
 	return p.playTrackAt(idx, 0)
 }
@@ -463,10 +468,6 @@ func (p *playbackEngine) StopAndClearPlayQueue() {
 	if changed {
 		p.invokeNoArgCallbacks(p.onQueueChange)
 	}
-}
-
-func (p *playbackEngine) GetPlayQueue() []mediaprovider.MediaItem {
-	return deepCopyMediaItemSlice(p.playQueue)
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
