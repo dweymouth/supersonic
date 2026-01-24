@@ -11,7 +11,7 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-func (j *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([]*mediaprovider.SearchResult, error) {
+func (j *JellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([]*mediaprovider.SearchResult, error) {
 	limit := maxResults / 3
 	var wg sync.WaitGroup
 	var albums []*jellyfin.Album
@@ -75,7 +75,7 @@ func (j *jellyfinMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 	return results, nil
 }
 
-func (j *jellyfinMediaProvider) mergeResults(
+func (j *JellyfinMediaProvider) mergeResults(
 	albums []*jellyfin.Album,
 	artists []*jellyfin.Artist,
 	songs []*jellyfin.Song,
