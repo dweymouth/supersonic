@@ -241,6 +241,10 @@ func (p *playbackEngine) setPlayQueue(items []mediaprovider.MediaItem) {
 	}
 }
 
+func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
+	return p.playQueue[idx]
+}
+
 // rename to GetPlayQueueExternal
 func (p *playbackEngine) GetPlayQueue() []mediaprovider.MediaItem {
 	return deepCopyMediaItemSlice(p.playQueue)
@@ -267,7 +271,7 @@ func (p *playbackEngine) NowPlaying() mediaprovider.MediaItem {
 	if p.nowPlayingIdx < 0 || p.getPlayQueueLength() == 0 || p.player.GetStatus().State == player.Stopped {
 		return nil
 	}
-	return p.playQueue[p.nowPlayingIdx]
+	return p.getPlayQueueItemAt(p.nowPlayingIdx)
 }
 
 func (p *playbackEngine) NowPlayingIndex() int {
@@ -494,7 +498,7 @@ func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error 
 	newQueue := deepCopyMediaItemSlice(items)
 	newNowPlayingIdx := -1
 	if p.nowPlayingIdx >= 0 {
-		nowPlayingID := p.playQueue[p.nowPlayingIdx].Metadata().ID
+		nowPlayingID := p.getPlayQueueItemAt(p.nowPlayingIdx).Metadata().ID
 		for i, tr := range newQueue {
 			if tr.Metadata().ID == nowPlayingID {
 				newNowPlayingIdx = i
@@ -613,10 +617,10 @@ func (p *playbackEngine) cacheNextTracks() {
 		npI := max(p.nowPlayingIdx, 0)
 		for _, idx := range [3]int{npI, npI + 1, npI + 2} {
 			if idx > 0 && idx < p.getPlayQueueLength() {
-				item := p.playQueue[idx]
+				item := p.getPlayQueueItemAt(idx)
 				if item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
 					fetch = append(fetch, AudioCacheRequest{
-						ID:          p.playQueue[idx].Metadata().ID,
+						ID:          p.getPlayQueueItemAt(idx).Metadata().ID,
 						DownloadURL: p.getMediaURLForIdx(idx),
 					})
 				}
@@ -648,7 +652,7 @@ func (p *playbackEngine) handleOnTrackChange() {
 		p.nowPlayingIdx = p.pendingTrackChangeNum
 		p.pendingTrackChangeNum = -1
 	}
-	nowPlaying := p.playQueue[p.nowPlayingIdx]
+	nowPlaying := p.getPlayQueueItemAt(p.nowPlayingIdx)
 	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
 	p.isRadio = isRadio
 
@@ -691,7 +695,7 @@ func (p *playbackEngine) handleNextTrackUpdated() {
 	for _, cb := range p.onBeforeSongChange {
 		var item mediaprovider.MediaItem
 		if idx := p.nextPlayingIndex(); idx >= 0 {
-			item = p.playQueue[idx]
+			item = p.getPlayQueueItemAt(idx)
 		}
 		cb(item)
 	}
@@ -719,7 +723,7 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 	var item mediaprovider.MediaItem
 	var url string
 	if idx >= 0 {
-		item = p.playQueue[idx]
+		item = p.getPlayQueueItemAt(idx)
 		url = p.getMediaURLForIdx(idx)
 	}
 	track, isTrack := item.(*mediaprovider.Track)
@@ -763,7 +767,7 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 	} else if trP, ok := p.player.(player.TrackPlayer); ok {
 		var track *mediaprovider.Track
 		if idx >= 0 {
-			track, ok = p.playQueue[idx].(*mediaprovider.Track)
+			track, ok = p.getPlayQueueItemAt(idx).(*mediaprovider.Track)
 			if !ok {
 				return errors.New("cannot play non-Track media item with TrackPlayer")
 			}
@@ -778,7 +782,7 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 
 func (p *playbackEngine) getMediaURLForIdx(idx int) string {
 	var url string
-	item := p.playQueue[idx]
+	item := p.getPlayQueueItemAt(idx)
 	if tr, ok := item.(*mediaprovider.Track); ok {
 		var ts *mediaprovider.TranscodeSettings
 		if p.transcodeCfg.RequestTranscode {
@@ -803,7 +807,7 @@ func (p *playbackEngine) checkScrobble() {
 	if !p.scrobbleCfg.Enabled || p.getPlayQueueLength() == 0 || p.nowPlayingIdx < 0 {
 		return
 	}
-	track, ok := p.playQueue[p.nowPlayingIdx].(*mediaprovider.Track)
+	track, ok := p.getPlayQueueItemAt(p.nowPlayingIdx).(*mediaprovider.Track)
 	if !ok {
 		return // radio stations are not scrobbled
 	}
@@ -832,7 +836,7 @@ func (p *playbackEngine) sendNowPlayingScrobble() {
 	if !p.scrobbleCfg.Enabled || p.getPlayQueueLength() == 0 || p.nowPlayingIdx < 0 {
 		return
 	}
-	track, ok := p.playQueue[p.nowPlayingIdx].(*mediaprovider.Track)
+	track, ok := p.getPlayQueueItemAt(p.nowPlayingIdx).(*mediaprovider.Track)
 	if !ok {
 		return // radio stations are not scrobbled
 	}
