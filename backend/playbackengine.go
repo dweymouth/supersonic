@@ -245,8 +245,11 @@ func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
 	return p.playQueue[idx]
 }
 
-// rename to GetPlayQueueExternal
-func (p *playbackEngine) GetPlayQueue() []mediaprovider.MediaItem {
+func (p *playbackEngine) getPlayQueue() []mediaprovider.MediaItem {
+	return p.playQueue
+}
+
+func (p *playbackEngine) GetPlayQueueDeepCopy() []mediaprovider.MediaItem {
 	return deepCopyMediaItemSlice(p.playQueue)
 }
 
@@ -474,7 +477,7 @@ func (p *playbackEngine) StopAndClearPlayQueue() {
 // Any time the user changes the favorite status of a track elsewhere in the app,
 // this should be called to ensure the in-memory track model is updated.
 func (p *playbackEngine) OnTrackFavoriteStatusChanged(id string, fav bool) {
-	if item := sharedutil.FindMediaItemByID(id, p.playQueue); item != nil {
+	if item := sharedutil.FindMediaItemByID(id, p.getPlayQueue()); item != nil {
 		if tr, ok := item.(*mediaprovider.Track); ok {
 			tr.Favorite = fav
 		}
@@ -484,7 +487,7 @@ func (p *playbackEngine) OnTrackFavoriteStatusChanged(id string, fav bool) {
 // Any time the user changes the rating of a track elsewhere in the app,
 // this should be called to ensure the in-memory track model is updated.
 func (p *playbackEngine) OnTrackRatingChanged(id string, rating int) {
-	if item := sharedutil.FindMediaItemByID(id, p.playQueue); item != nil {
+	if item := sharedutil.FindMediaItemByID(id, p.getPlayQueue()); item != nil {
 		if tr, ok := item.(*mediaprovider.Track); ok {
 			tr.Rating = rating
 		}
@@ -527,7 +530,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 	isNextPlayingTrackremoved := false
 	nowPlaying := p.NowPlayingIndex()
 	newNowPlaying := nowPlaying
-	for i, tr := range p.playQueue {
+	for i, tr := range p.getPlayQueue() {
 		if _, ok := idxSet[i]; ok {
 			if i < nowPlaying {
 				// if removing a track earlier than the currently playing one (if any),

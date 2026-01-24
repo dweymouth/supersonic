@@ -571,7 +571,7 @@ func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Tr
 }
 
 func (p *PlaybackManager) GetPlayQueue() []mediaprovider.MediaItem {
-	return p.engine.GetPlayQueue()
+	return p.engine.GetPlayQueueDeepCopy()
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
