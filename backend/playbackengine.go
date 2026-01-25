@@ -258,7 +258,7 @@ func (p *playbackEngine) insertItemsIntoPlayQueueAt(items []mediaprovider.MediaI
 }
 
 func (p *playbackEngine) GetPlayQueueDeepCopy() []mediaprovider.MediaItem {
-	return deepCopyMediaItemSlice(p.playQueue) // TODO_SHUFFLE: does this also need the shuffled play queue?
+	return deepCopyMediaItemSlice(p.getPlayQueue())
 }
 
 // ======================== END PLAY QUEUE FUNCS =============================
@@ -309,20 +309,20 @@ func (p *playbackEngine) GetLoopMode() LoopMode {
 }
 
 func (p *playbackEngine) SetShuffle(shuffle bool) {
+	//TODO_SHUFFLE: fix very bad code
 	if p.shuffle == shuffle {
 		return
 	}
 	if shuffle {
 		fmt.Println("shuffling")
-		newQueue := deepCopyMediaItemSlice(p.playQueue)
-		rand.Shuffle(len(newQueue), func(i, j int) {
-			newQueue[i], newQueue[j] = newQueue[j], newQueue[i]
+		shuffledQueue := deepCopyMediaItemSlice(p.playQueue)
+		rand.Shuffle(len(shuffledQueue), func(i, j int) {
+			shuffledQueue[i], shuffledQueue[j] = shuffledQueue[j], shuffledQueue[i]
 		})
-		fmt.Println(p.playQueue[0].Metadata().ID)
 		newNowPlayingIdx := -1
 		if p.nowPlayingIdx >= 0 {
 			nowPlayingID := p.getPlayQueueItemAt(p.nowPlayingIdx).Metadata().ID
-			for i, tr := range newQueue {
+			for i, tr := range shuffledQueue {
 				if tr.Metadata().ID == nowPlayingID {
 					newNowPlayingIdx = i
 					break
@@ -330,7 +330,7 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 			}
 		}
 		p.shuffle = shuffle
-		p.setPlayQueue(newQueue)
+		p.shuffledPlayQueue = shuffledQueue
 		if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
 			return
 		}
@@ -342,7 +342,6 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 		p.invokeNoArgCallbacks(p.onQueueChange)
 	} else {
 		fmt.Println("deshuffling")
-		fmt.Println(p.playQueue[0].Metadata().ID)
 		newQueue := deepCopyMediaItemSlice(p.playQueue)
 		newNowPlayingIdx := -1
 		if p.nowPlayingIdx >= 0 {
@@ -355,7 +354,7 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 			}
 		}
 		p.shuffle = shuffle
-		p.setPlayQueue(newQueue)
+		p.playQueue = newQueue
 		if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
 			return
 		}
@@ -366,7 +365,6 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 
 		p.invokeNoArgCallbacks(p.onQueueChange)
 	}
-
 }
 
 func (p *playbackEngine) GetShuffle() bool {
