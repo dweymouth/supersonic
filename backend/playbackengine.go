@@ -61,8 +61,8 @@ type playbackEngine struct {
 	latestTrackPosition float64 // cleared by checkScrobble
 	callbacksDisabled   bool
 
-	playQueue        []mediaprovider.MediaItem
-	playQueueShuffle []mediaprovider.MediaItem
+	playQueue         []mediaprovider.MediaItem
+	shuffledPlayQueue []mediaprovider.MediaItem
 
 	nowPlayingIdx int
 	isRadio       bool
@@ -222,23 +222,23 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	return nil
 }
 
-// Interface functions for interacting with the play queue
+// ======================= START PLAY QUEUE FUNCS ===========================
 
 func (p *playbackEngine) getPlayQueueLength() int {
 	if p.shuffle {
-		return len(p.playQueueShuffle)
+		return len(p.shuffledPlayQueue)
 	}
 	return len(p.playQueue)
 }
 
 func (p *playbackEngine) clearPlayQueue() {
 	p.playQueue = nil
-	p.playQueueShuffle = nil
+	p.shuffledPlayQueue = nil
 }
 
 func (p *playbackEngine) setPlayQueue(items []mediaprovider.MediaItem) {
 	if p.shuffle {
-		p.playQueueShuffle = items
+		p.shuffledPlayQueue = items
 	} else {
 		p.playQueue = items
 	}
@@ -248,6 +248,10 @@ func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
 	return p.playQueue[idx]
 }
 
+func (p *playbackEngine) insertItemsIntoPlayQueueAt(items []mediaprovider.MediaItem, idx int) {
+	p.setPlayQueue(append(p.playQueue[:idx], append(items, p.playQueue[idx:]...)...))
+}
+
 func (p *playbackEngine) getPlayQueue() []mediaprovider.MediaItem {
 	return p.playQueue
 }
@@ -255,6 +259,8 @@ func (p *playbackEngine) getPlayQueue() []mediaprovider.MediaItem {
 func (p *playbackEngine) GetPlayQueueDeepCopy() []mediaprovider.MediaItem {
 	return deepCopyMediaItemSlice(p.playQueue)
 }
+
+// ======================== END PLAY QUEUE FUNCS =============================
 
 func (p *playbackEngine) PlayTrackAt(idx int) error {
 	return p.playTrackAt(idx, 0)
@@ -437,8 +443,8 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 	if insertQueueMode == InsertNext {
 		insertIdx = p.nowPlayingIdx + 1
 	}
-	p.setPlayQueue(append(p.playQueue[:insertIdx], append(items, p.playQueue[insertIdx:]...)...))
 
+	p.insertItemsIntoPlayQueueAt(items, insertIdx)
 	p.invokeNoArgCallbacks(p.onQueueChange)
 	return nil
 }
@@ -460,7 +466,7 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 	firstHalf := p.playQueue[:insertIdx]
 	copy(new, firstHalf)
 	new[len(firstHalf)] = radio
-	copy(new[len(firstHalf)+1:], p.playQueue[insertIdx:])
+	copy(new[len(firstHalf)+1:], p.playQueue[insertIdx:]) //TODO_SHUFFLE: Test shuffle with radio stations
 	p.setPlayQueue(new)
 
 	p.invokeNoArgCallbacks(p.onQueueChange)
