@@ -241,7 +241,11 @@ func (p *playbackEngine) clearPlayQueue() {
 }
 
 func (p *playbackEngine) setPlayQueue(items []mediaprovider.MediaItem) {
-	p.playQueue = items
+	if p.shuffle {
+		p.shuffledPlayQueue = items
+	} else {
+		p.playQueue = items
+	}
 }
 
 func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
@@ -310,16 +314,59 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 	}
 	if shuffle {
 		fmt.Println("shuffling")
-		items := deepCopyMediaItemSlice(p.playQueue)
-		rand.Shuffle(len(items), func(i, j int) {
-			items[i], items[j] = items[j], items[i]
+		newQueue := deepCopyMediaItemSlice(p.playQueue)
+		rand.Shuffle(len(newQueue), func(i, j int) {
+			newQueue[i], newQueue[j] = newQueue[j], newQueue[i]
 		})
-		p.UpdatePlayQueue(items)
+		fmt.Println(p.playQueue[0].Metadata().ID)
+		newNowPlayingIdx := -1
+		if p.nowPlayingIdx >= 0 {
+			nowPlayingID := p.getPlayQueueItemAt(p.nowPlayingIdx).Metadata().ID
+			for i, tr := range newQueue {
+				if tr.Metadata().ID == nowPlayingID {
+					newNowPlayingIdx = i
+					break
+				}
+			}
+		}
+		p.shuffle = shuffle
+		p.setPlayQueue(newQueue)
+		if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
+			return
+		}
+		if p.nowPlayingIdx >= 0 {
+			p.handleNextTrackUpdated()
+		}
+		p.nowPlayingIdx = newNowPlayingIdx
+
+		p.invokeNoArgCallbacks(p.onQueueChange)
 	} else {
 		fmt.Println("deshuffling")
-		p.UpdatePlayQueue(p.playQueue)
+		fmt.Println(p.playQueue[0].Metadata().ID)
+		newQueue := deepCopyMediaItemSlice(p.playQueue)
+		newNowPlayingIdx := -1
+		if p.nowPlayingIdx >= 0 {
+			nowPlayingID := p.getPlayQueueItemAt(p.nowPlayingIdx).Metadata().ID
+			for i, tr := range newQueue {
+				if tr.Metadata().ID == nowPlayingID {
+					newNowPlayingIdx = i
+					break
+				}
+			}
+		}
+		p.shuffle = shuffle
+		p.setPlayQueue(newQueue)
+		if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
+			return
+		}
+		if p.nowPlayingIdx >= 0 {
+			p.handleNextTrackUpdated()
+		}
+		p.nowPlayingIdx = newNowPlayingIdx
+
+		p.invokeNoArgCallbacks(p.onQueueChange)
 	}
-	p.shuffle = shuffle
+
 }
 
 func (p *playbackEngine) GetShuffle() bool {
