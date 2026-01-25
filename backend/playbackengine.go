@@ -221,40 +221,37 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 
 // ======================= START PLAY QUEUE FUNCS ===========================
 
-func (p *playbackEngine) getPlayQueueLength() int {
+func (p *playbackEngine) getPlayQueue() []mediaprovider.MediaItem {
 	if p.shuffle {
-		return len(p.shuffledPlayQueue)
+		return p.shuffledPlayQueue
 	}
-	return len(p.playQueue)
+	return p.playQueue
+}
+
+func (p *playbackEngine) getPlayQueueLength() int {
+	return len(p.getPlayQueue())
 }
 
 func (p *playbackEngine) clearPlayQueue() {
 	p.playQueue = nil
-	p.shuffledPlayQueue = nil
+	p.SetShuffle(false)
 }
 
 func (p *playbackEngine) setPlayQueue(items []mediaprovider.MediaItem) {
-	if p.shuffle {
-		p.shuffledPlayQueue = items
-	} else {
-		p.playQueue = items
-	}
+	p.playQueue = items
 }
 
 func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
-	return p.playQueue[idx]
+	return p.getPlayQueue()[idx]
 }
 
 func (p *playbackEngine) insertItemsIntoPlayQueueAt(items []mediaprovider.MediaItem, idx int) {
-	p.setPlayQueue(append(p.playQueue[:idx], append(items, p.playQueue[idx:]...)...))
-}
-
-func (p *playbackEngine) getPlayQueue() []mediaprovider.MediaItem {
-	return p.playQueue
+	p.playQueue = append(p.playQueue[:idx], append(items, p.playQueue[idx:]...)...)
+	p.shuffledPlayQueue = append(p.shuffledPlayQueue[:idx], append(items, p.shuffledPlayQueue[idx:]...)...)
 }
 
 func (p *playbackEngine) GetPlayQueueDeepCopy() []mediaprovider.MediaItem {
-	return deepCopyMediaItemSlice(p.playQueue)
+	return deepCopyMediaItemSlice(p.playQueue) // TODO_SHUFFLE: does this also need the shuffled play queue?
 }
 
 // ======================== END PLAY QUEUE FUNCS =============================
@@ -305,8 +302,21 @@ func (p *playbackEngine) GetLoopMode() LoopMode {
 }
 
 func (p *playbackEngine) SetShuffle(shuffle bool) {
+	if p.shuffle == shuffle {
+		return
+	}
+	if shuffle {
+		fmt.Println("shuffling")
+		items := deepCopyMediaItemSlice(p.playQueue)
+		rand.Shuffle(len(items), func(i, j int) {
+			items[i], items[j] = items[j], items[i]
+		})
+		p.UpdatePlayQueue(items)
+	} else {
+		fmt.Println("deshuffling")
+		p.UpdatePlayQueue(p.playQueue)
+	}
 	p.shuffle = shuffle
-	//TODO_SHUFFLE: Implement functionality
 }
 
 func (p *playbackEngine) GetShuffle() bool {
