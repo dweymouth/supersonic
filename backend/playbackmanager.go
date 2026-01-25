@@ -108,7 +108,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 
 		// enqueue autoplay tracks if enabled and nearing end of queue
 		if p.cfg.Autoplay && !p.pendingAutoplay && totalTime-curTime < 10.0 &&
-			p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+			p.NowPlayingIndex() == p.engine.getPlayQueueLength()-1 {
 			p.enqueueAutoplayTracks()
 		}
 	})
@@ -131,7 +131,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			return
 		}
 		// workaround for https://github.com/dweymouth/supersonic/issues/483 (see above comment)
-		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlaybackStatus().State == player.Playing {
+		if p.NowPlayingIndex() != p.engine.getPlayQueueLength() && p.PlaybackStatus().State == player.Playing {
 			p.lastPlayTime = 0
 			go func() {
 				time.Sleep(300 * time.Millisecond)
@@ -624,7 +624,7 @@ func (p *PlaybackManager) SetVolume(vol int) {
 
 func (p *PlaybackManager) SetAutoplay(autoplay bool) {
 	p.cfg.Autoplay = autoplay
-	if autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+	if autoplay && p.NowPlayingIndex() == p.engine.getPlayQueueLength()-1 {
 		p.enqueueAutoplayTracks()
 	}
 }
