@@ -67,6 +67,7 @@ type Album struct {
 	ID           string
 	CoverArtID   string
 	Name         string
+	SortName     string
 	Duration     time.Duration
 	ArtistIDs    []string
 	ArtistNames  []string

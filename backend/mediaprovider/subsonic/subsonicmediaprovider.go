@@ -667,6 +667,7 @@ func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
 	album.ID = subAlbum.ID
 	album.CoverArtID = subAlbum.CoverArt
 	album.Name = subAlbum.Name
+	album.SortName = subAlbum.SortName
 	album.Duration = time.Duration(subAlbum.Duration) * time.Second
 	album.ArtistIDs = artistIDs
 	album.ArtistNames = artistNames

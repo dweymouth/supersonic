@@ -276,7 +276,13 @@ func (a *ArtistPage) sortAlbumsSlices(slices ...[]*mediaprovider.Album) {
 		}
 	case discographySorts[2]: /*name*/
 		sortFunc = func(x, y int) bool {
-			return curSlice[x].Name < curSlice[y].Name
+			sortStr := func(a *mediaprovider.Album) string {
+				if a.SortName != "" {
+					return a.SortName
+				}
+				return a.Name
+			}
+			return sortStr(curSlice[x]) < sortStr(curSlice[y])
 		}
 	}
 
