@@ -1,11 +1,10 @@
+version: "2"
 run:
-  go: "1.21"
+  go: "1.24"
   issues-exit-code: 1
   tests: true
-  timeout: 10m
+  timeout: 15m
 linters:
-  enable:
-    - unused
   disable:
     - asasalint
     - asciicheck
@@ -38,11 +37,24 @@ linters:
     - testifylint
     - unparam
     - zerologlint
-  presets:
-    - bugs
-    - unused
-  fast: false
-
-linters-settings:
-  gofmt:
-    simplify: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
