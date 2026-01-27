@@ -31,7 +31,7 @@ jobs:
       run: make package_linux
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Supersonic_ubuntu_x64.tar.xz
         path: Supersonic.tar.xz
