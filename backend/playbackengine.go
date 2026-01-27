@@ -610,6 +610,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 			newQueue = append(newQueue, tr)
 		}
 	}
+	//TODO_SHUFFLE: Removing a track should remove from both shuffled and unshuffled queue
 	p.setPlayQueue(newQueue)
 	p.nowPlayingIdx = newNowPlaying
 	if isPlayingTrackRemoved {
