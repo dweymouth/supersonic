@@ -23,6 +23,6 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v1.64
+          version: v2.8
