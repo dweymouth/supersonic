@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set up Go
       uses: actions/setup-go@v5
@@ -33,7 +33,7 @@ jobs:
          ./scripts/appimage-build.sh --manual-libs
 
     - name: upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Supersonic.AppImage
         path: Supersonic-x86_64.AppImage

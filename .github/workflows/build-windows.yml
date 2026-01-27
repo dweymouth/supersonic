@@ -26,7 +26,7 @@ jobs:
           wget
           zip
           p7zip
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set up Go
       uses: actions/setup-go@v5
@@ -62,13 +62,13 @@ jobs:
         path: win_inno_installscript.iss
 
     - name: Upload zip
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Supersonic_windows_x64.zip
         path: Supersonic-windows.zip
 
     - name: Upload installer
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Supersonic_windows_x64_installer.exe
         path: Output/supersonic-installer.exe

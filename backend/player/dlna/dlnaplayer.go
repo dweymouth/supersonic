@@ -99,12 +99,12 @@ func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
 	if err != nil {
 		return nil, err
 	}
-	avt.HTTPClient = cli
+	avt.RequestHandler = httpClientHandler{cli}
 	rc, err := device.RenderingControlClient()
 	if err != nil {
 		return nil, err
 	}
-	rc.HTTPClient = cli
+	rc.Requesthandler = cli
 
 	// ping to test connectivity
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -648,6 +648,15 @@ func (d *DLNAPlayer) _updateProxyURL(key, url string) {
 	copy(d.proxyURLs[:], d.proxyURLs[1:])
 	// Insert new element at the most recent position
 	d.proxyURLs[len(d.proxyURLs)-1] = proxyMapEntry{key: key, url: url}
+}
+
+// httpClientHandler wraps an http.Client to implement services.RequestHandler
+type httpClientHandler struct {
+	client *http.Client
+}
+
+func (h httpClientHandler) Do(req *http.Request) (*http.Response, error) {
+	return h.client.Do(req)
 }
 
 type retryLogger struct{}
