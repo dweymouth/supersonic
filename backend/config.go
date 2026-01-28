@@ -21,6 +21,7 @@ type ServerConnection struct {
 	AltHostname string
 	Username    string
 	LegacyAuth  bool
+	BasicAuth   bool
 }
 
 type ServerConfig struct {

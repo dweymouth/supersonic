@@ -32,6 +32,7 @@ func (m *Controller) PromptForFirstServer() {
 					AltHostname: d.AltHost,
 					Username:    d.Username,
 					LegacyAuth:  d.LegacyAuth,
+					BasicAuth:   d.BasicAuth,
 				}
 				server := m.App.ServerManager.AddServer(d.Nickname, conn)
 				if err := m.trySetPasswordAndConnectToServer(server, d.Password); err != nil {
@@ -138,6 +139,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 						server.Nickname = editD.Nickname
 						server.Username = editD.Username
 						server.LegacyAuth = editD.LegacyAuth
+						server.BasicAuth = editD.BasicAuth
 						m.trySetPasswordAndConnectToServer(server, editD.Password)
 						m.doModalClosed()
 					}
@@ -169,6 +171,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 							AltHostname: newD.AltHost,
 							Username:    newD.Username,
 							LegacyAuth:  newD.LegacyAuth,
+							BasicAuth:   newD.BasicAuth,
 						}
 						server := m.App.ServerManager.AddServer(newD.Nickname, conn)
 						m.trySetPasswordAndConnectToServer(server, newD.Password)
@@ -238,6 +241,7 @@ func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServe
 		AltHostname: dlg.AltHost,
 		Username:    dlg.Username,
 		LegacyAuth:  dlg.LegacyAuth,
+		BasicAuth:   dlg.BasicAuth,
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
