@@ -185,7 +185,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 			log.Printf("error creating Jellyfin client: %s", err.Error())
 			return nil, err
 		}
-		s.checkSetInsecureSkipVerify(client.HTTPClient)
+		s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, client.HTTPClient)
 		cli = &jellyfinMP.JellyfinServer{
 			Client: *client,
 		}
@@ -196,7 +196,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				log.Printf("error creating Jellyfin alternative client: %s", err.Error())
 				return nil, err
 			}
-			s.checkSetInsecureSkipVerify(altClient.HTTPClient)
+			s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, altClient.HTTPClient)
 			altCli = &jellyfinMP.JellyfinServer{
 				Client: *altClient,
 			}
@@ -213,7 +213,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				ClientName:   res.AppName,
 			},
 		}
-		s.checkSetInsecureSkipVerify(cli.(*subsonicMP.SubsonicServer).Client.Client)
+		s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, cli.(*subsonicMP.SubsonicServer).Client.Client)
 		altCli = &subsonicMP.SubsonicServer{
 			Client: subsonic.Client{
 				UserAgent:    ua,
@@ -224,7 +224,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				ClientName:   res.AppName,
 			},
 		}
-		s.checkSetInsecureSkipVerify(altCli.(*subsonicMP.SubsonicServer).Client.Client)
+		s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, altCli.(*subsonicMP.SubsonicServer).Client.Client)
 	}
 	var authError error
 	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
@@ -255,8 +255,8 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 	}
 }
 
-func (s *ServerManager) checkSetInsecureSkipVerify(cli *http.Client) {
-	if s.config.Application.SkipSSLVerify {
+func (s *ServerManager) checkSetInsecureSkipVerify(skip bool, cli *http.Client) {
+	if skip {
 		cli.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
