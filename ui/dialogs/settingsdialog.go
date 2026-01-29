@@ -617,7 +617,6 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 
 func (s *SettingsDialog) createAdvancedTab() *container.TabItem {
 	multi := widget.NewCheckWithData(lang.L("Allow multiple app instances"), binding.BindBool(&s.config.Application.AllowMultiInstance))
-	sslSkip := widget.NewCheckWithData(lang.L("Skip SSL certificate verification"), binding.BindBool(&s.config.Application.SkipSSLVerify))
 	update := widget.NewCheckWithData(lang.L("Automatically check for updates"), binding.BindBool(&s.config.Application.EnableAutoUpdateChecker))
 	lrclib := widget.NewCheckWithData(lang.L("Enable LrcLib lyrics fetcher"), binding.BindBool(&s.config.Application.EnableLrcLib))
 
@@ -659,7 +658,6 @@ func (s *SettingsDialog) createAdvancedTab() *container.TabItem {
 
 	return container.NewTabItem(lang.L("Advanced"), container.NewVBox(
 		multi,
-		sslSkip,
 		update,
 		lrclib,
 		osMediaAPIs,
