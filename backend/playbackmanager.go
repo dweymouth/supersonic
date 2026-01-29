@@ -37,6 +37,7 @@ type PlaybackManager struct {
 	currentRemotePlayer *RemotePlaybackDevice
 
 	onWaveformImgUpdate []func(*WaveformImage)
+	onPlayerChange      []func()
 
 	lastPlayTime         float64
 	lastPlayingID        string
@@ -252,6 +253,14 @@ func (p *PlaybackManager) CurrentRemotePlayer() *RemotePlaybackDevice {
 }
 
 func (p *PlaybackManager) SetRemotePlayer(rp *RemotePlaybackDevice) error {
+	// Even in case of failure, call onPlayerChange callbacks to update UI
+	// (such as enabling/disabling cast button)
+	defer func() {
+		for _, cb := range p.onPlayerChange {
+			cb()
+		}
+	}()
+
 	p.cmdQueue.Clear()
 	if rp == nil {
 		if err := p.engine.SetPlayer(p.localPlayer); err != nil {
@@ -278,7 +287,7 @@ func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
 }
 
 func (p *PlaybackManager) OnPlayerChange(cb func()) {
-	p.engine.onPlayerChange = append(p.engine.onPlayerChange, cb)
+	p.onPlayerChange = append(p.onPlayerChange, cb)
 }
 
 func (p *PlaybackManager) OnWaveformImgUpdate(cb func(*WaveformImage)) {

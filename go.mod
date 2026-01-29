@@ -23,7 +23,7 @@ require (
 	github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410
 	github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449
 	github.com/supersonic-app/go-subsonic v0.0.0-20260125165421-1efaa048a150
-	github.com/supersonic-app/go-upnpcast v0.0.0-20251031171049-45a308877fe8
+	github.com/supersonic-app/go-upnpcast v0.1.0
 	github.com/zalando/go-keyring v0.2.6
 	golang.org/x/net v0.49.0
 	golang.org/x/sys v0.40.0
