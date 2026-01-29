@@ -105,7 +105,6 @@ type playbackEngine struct {
 	onPaused           []func()
 	onStopped          []func()
 	onPlaying          []func()
-	onPlayerChange     []func()
 	onQueueChange      []func()
 }
 
@@ -174,10 +173,6 @@ func (p *playbackEngine) unregisterPlayerCallbacks(pl player.BasePlayer) {
 }
 
 func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
-	// even if we don't successfully change players,
-	// make sure UI updates if needed (eg enabling cast button)
-	defer p.invokeNoArgCallbacks(p.onPlayerChange)
-
 	needToUnpause := false
 
 	stat := p.CurrentPlayer().GetStatus()
@@ -212,7 +207,6 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 		p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeStatus.TimePos)
 		p.pendingPlayerChange = false
 	}
-	p.invokeNoArgCallbacks(p.onPlayerChange)
 	vol := pl.GetVolume()
 	if oldVol != vol {
 		for _, cb := range p.onVolumeChange {

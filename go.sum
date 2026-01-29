@@ -129,8 +129,8 @@ github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449 h1:UHIPI43
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
 github.com/supersonic-app/go-subsonic v0.0.0-20260125165421-1efaa048a150 h1:Wh3EUdJI8bSr2nYtnkmG+bGNzEtGGSW3Rcg4eDM1a0M=
 github.com/supersonic-app/go-subsonic v0.0.0-20260125165421-1efaa048a150/go.mod h1:ClhAgC2qobwH19D6kdwULLYSHlOmldDGkdu2G2Z0Ijo=
-github.com/supersonic-app/go-upnpcast v0.0.0-20251031171049-45a308877fe8 h1:OcFDKpjAwnMHAThS25h1D7sRzKfTVwBhMb+7F9Bsh3E=
-github.com/supersonic-app/go-upnpcast v0.0.0-20251031171049-45a308877fe8/go.mod h1:2yVB6GhgemDgqOaF80MT15eZaS+l4sscZRn/ArGQ5Bo=
+github.com/supersonic-app/go-upnpcast v0.1.0 h1:SL0WVgnqvAVaLT9MSRhSeVwF9pcUw1cgBITKVoWXN3g=
+github.com/supersonic-app/go-upnpcast v0.1.0/go.mod h1:o/QGDTK3qdaS3h9Bt8aH5ywgbWbrPVzPCHlZYFs0IHY=
 github.com/yuin/goldmark v1.7.16 h1:n+CJdUxaFMiDUNnWC3dMWCIQJSkxH4uz3ZwQBkAlVNE=
 github.com/yuin/goldmark v1.7.16/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
 github.com/zalando/go-keyring v0.2.6 h1:r7Yc3+H+Ux0+M72zacZoItR3UDxeWfKTcabvkI8ua9s=

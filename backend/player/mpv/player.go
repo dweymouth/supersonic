@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -503,23 +504,19 @@ func (p *Player) setState(s player.State) {
 }
 
 func (p *Player) setAF() error {
-	af := ""
+	var filters []string
 	if p.peaksEnabled {
-		af = "@astats:astats=metadata=1:reset=1:measure_overall=none"
+		filters = append(filters, "@astats:astats=metadata=1:reset=1:measure_overall=none")
 	}
-	eq := p.equalizer
-	if eq == nil || !eq.IsEnabled() {
-		return p.mpv.SetPropertyString("af", af)
-	} else if p.peaksEnabled {
-		af = af + ","
+	if eq := p.equalizer; eq != nil && eq.IsEnabled() {
+		if math.Abs(eq.Preamp()) > 0.01 {
+			filters = append(filters, fmt.Sprintf("volume=volume=%0.1fdB", eq.Preamp()))
+		}
+		if eqAF := eq.Curve().String(); eqAF != "" {
+			filters = append(filters, eqAF)
+		}
 	}
-	if math.Abs(eq.Preamp()) > 0.01 {
-		af = fmt.Sprintf("%svolume=volume=%0.1fdB", af, eq.Preamp())
-	}
-	if eqAF := eq.Curve().String(); eqAF != "" {
-		af = fmt.Sprintf("%s,%s", af, eqAF)
-	}
-	return p.mpv.SetPropertyString("af", af)
+	return p.mpv.SetPropertyString("af", strings.Join(filters, ","))
 }
 
 func (p *Player) eventHandler(ctx context.Context) {
