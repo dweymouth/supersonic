@@ -507,8 +507,7 @@ func (p *Player) setAF() error {
 	if p.peaksEnabled {
 		filters = append(filters, "@astats:astats=metadata=1:reset=1:measure_overall=none")
 	}
-	eq := p.equalizer
-	if eq != nil && eq.IsEnabled() {
+	if eq := p.equalizer; eq != nil && eq.IsEnabled() {
 		if math.Abs(eq.Preamp()) > 0.01 {
 			filters = append(filters, fmt.Sprintf("volume=volume=%0.1fdB", eq.Preamp()))
 		}
@@ -516,14 +515,7 @@ func (p *Player) setAF() error {
 			filters = append(filters, eqAF)
 		}
 	}
-	af := ""
-	for i, f := range filters {
-		if i > 0 {
-			af += ","
-		}
-		af += f
-	}
-	return p.mpv.SetPropertyString("af", af)
+	return p.mpv.SetPropertyString("af", strings.Join(filters, ","))
 }
 
 func (p *Player) eventHandler(ctx context.Context) {
