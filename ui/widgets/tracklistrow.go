@@ -239,6 +239,7 @@ type tracklistRowBase struct {
 
 	// must be injected by extending widget
 	setColVisibility func(int, bool) bool
+	layout           func(fyne.Size)
 }
 
 type TracklistRow interface {
@@ -297,6 +298,9 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 		c.Hidden = vis
 		return c.Hidden != wasHidden
 	}
+	t.layout = func(s fyne.Size) {
+		container.Layout.Layout(container.Objects, s)
+	}
 	return t
 }
 
@@ -316,8 +320,9 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 	t.tracklistRowBase.create(tracklist)
 	t.playingIcon = playingIcon
 
-	t.Content = container.New(tracklist.colLayout,
+	container := container.New(tracklist.colLayout,
 		t.num, t.name, t.artist, t.album, t.albumArtist, t.composer, t.genre, t.dur, t.year, t.favorite, t.rating, t.plays, t.lastPlayed, t.comment, t.bpm, t.bitrate, t.size, t.fileType, t.dateAdded, t.path)
+	t.Content = container
 
 	colHiddenPtrMap := map[int]*bool{
 		2:  &t.artist.Hidden,
@@ -347,6 +352,9 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 		wasHidden := *ptr
 		*ptr = vis
 		return vis != wasHidden
+	}
+	t.layout = func(s fyne.Size) {
+		container.Layout.Layout(container.Objects, s)
 	}
 	return t
 }
@@ -409,11 +417,20 @@ func (t *tracklistRowBase) TrackID() string {
 	return t.trackID
 }
 
+func (t *tracklistRowBase) MinSize() fyne.Size {
+	// because tracklist rows have variable column visibility,
+	// we return a zero width here so that the tracklist
+	// can size based on the header instead.
+	s := t.BaseWidget.MinSize()
+	return fyne.NewSize(0, s.Height)
+}
+
 func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int, onUpdate func()) {
 	// Show only columns configured to be visible
 	for i := 2; i < len(t.tracklist.columns); i++ {
 		t.setColVisibility(i, !t.tracklist.visibleColumns[i])
 	}
+	t.layout(t.Size())
 
 	// Ealy return if nothing else needs updating
 	if !t.needsUpdate(tm, rowNum) {
