@@ -43,6 +43,7 @@ type NowPlayingPage struct {
 	curLyrics     *mediaprovider.Lyrics
 	curLyricsID   string // id of track currently shown in lyrics
 	curRelatedID  string // id of track currrently used to populate related list
+	curCoverArt   string // id of cover art currently shown in background / card
 	totalTime     float64
 	lastPlayPos   float64
 	queue         []mediaprovider.MediaItem
@@ -307,8 +308,12 @@ func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobble
 	a.card.Update(song)
 	if song == nil {
 		a.card.SetCoverImage(nil)
-	} else {
-		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.Metadata().CoverArtID, a.onImageLoaded)
+		a.curCoverArt = ""
+	} else if artID := song.Metadata().CoverArtID; artID != a.curCoverArt {
+		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.Metadata().CoverArtID, func(img image.Image, err error) {
+			a.curCoverArt = artID
+			a.onImageLoaded(img, err)
+		})
 	}
 
 	if a.tabs != nil && a.tabs.SelectedIndex() == 1 /*lyrics*/ {
