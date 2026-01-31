@@ -117,17 +117,37 @@ func (t *TrackInfoDialog) CreateRenderer() fyne.WidgetRenderer {
 
 	addFormRow(c, lang.L("Content type"), t.track.ContentType)
 	addFormRow(c, lang.L("File type"), t.track.Extension)
-	addFormRow(c, lang.L("Bit rate"), fmt.Sprintf("%d kbps", t.track.BitRate))
-	if t.track.SampleRate > 0 {
-		addFormRow(c, lang.L("Sample rate"), fmt.Sprintf("%d Hz", t.track.SampleRate))
+
+	// Check if audio details are available
+	hasAudioDetails := t.track.BitRate > 0 || t.track.SampleRate > 0 || t.track.BitDepth > 0 || t.track.Channels > 0 || t.track.Size > 0
+	if hasAudioDetails {
+		if t.track.BitRate > 0 {
+			addFormRow(c, lang.L("Bit rate"), fmt.Sprintf("%d kbps", t.track.BitRate))
+		}
+		if t.track.SampleRate > 0 {
+			addFormRow(c, lang.L("Sample rate"), fmt.Sprintf("%d Hz", t.track.SampleRate))
+		}
+		if t.track.BitDepth > 0 {
+			addFormRow(c, lang.L("Bit depth"), strconv.Itoa(t.track.BitDepth))
+		}
+		if t.track.Channels > 0 {
+			addFormRow(c, lang.L("Channels"), strconv.Itoa(t.track.Channels))
+		}
+		if t.track.Size > 0 {
+			addFormRow(c, lang.L("File size"), util.BytesToSizeString(t.track.Size))
+		}
+	} else {
+		// Show message explaining MPD limitation
+		c.Add(newFormText(lang.L("Audio details"), true))
+		infoText := widget.NewRichText(&widget.TextSegment{
+			Text: lang.L("MPD servers only provide audio details (bit rate, sample rate, etc.) for the currently playing track."),
+			Style: widget.RichTextStyle{
+				TextStyle: fyne.TextStyle{Italic: true},
+			},
+		})
+		infoText.Wrapping = fyne.TextWrapWord
+		c.Add(infoText)
 	}
-	if t.track.BitDepth > 0 {
-		addFormRow(c, lang.L("Bit depth"), strconv.Itoa(t.track.BitDepth))
-	}
-	if t.track.Channels > 0 {
-		addFormRow(c, lang.L("Channels"), strconv.Itoa(t.track.Channels))
-	}
-	addFormRow(c, lang.L("File size"), util.BytesToSizeString(t.track.Size))
 
 	if !t.track.DateAdded.IsZero() {
 		addFormRow(c, lang.L("Date added"), t.track.DateAdded.Format(time.RFC1123))

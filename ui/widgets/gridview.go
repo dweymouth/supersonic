@@ -3,6 +3,7 @@ package widgets
 import (
 	"context"
 	"fmt"
+	"image"
 	"strconv"
 	"sync"
 	"time"
@@ -105,6 +106,7 @@ func (g gridViewArtistIterator) NextN(n int) []GridViewItemModel {
 			Name:        ar.Name,
 			ID:          ar.ID,
 			CoverArtID:  ar.CoverArtID,
+			ArtistID:    ar.ID, // Set for external artist image loading
 			Secondary:   []string{albumsMsg},
 			CanFavorite: true,
 			IsFavorite:  ar.Favorite,
@@ -133,6 +135,7 @@ type GridView struct {
 	itemWidth          float32
 	numColsCached      int
 	shareMenuItem      *fyne.MenuItem
+	downloadMenuItem   *fyne.MenuItem
 }
 
 type GridViewState struct {
@@ -143,7 +146,8 @@ type GridViewState struct {
 	highestShown int
 	done         bool
 
-	DisableSharing bool
+	DisableSharing  bool
+	DisableDownload bool
 
 	OnPlay              func(id string, shuffle bool)
 	OnPlayNext          func(id string)
@@ -154,6 +158,11 @@ type GridViewState struct {
 	OnShare             func(id string)
 	OnShowItemPage      func(id string)
 	OnShowSecondaryPage func(id string)
+
+	// OnLoadArtistImage is called to load artist images for items with ArtistID set.
+	// If set, this callback is used instead of the standard cover thumbnail loading.
+	// The callback receives the artistID and a function to call with the loaded image.
+	OnLoadArtistImage func(artistID string, onLoaded func(image.Image))
 
 	scrollPos float32
 }
@@ -390,7 +399,7 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 					if card.NextUpdateModel != nil {
 						gridViewUpdateCounter.Add()
 						card.Update(card.NextUpdateModel)
-						card.ImgLoader.Load(card.NextUpdateModel.CoverArtID)
+						g.loadItemImage(card, card.NextUpdateModel)
 					}
 					card.NextUpdateModel = nil
 				})
@@ -401,13 +410,35 @@ func (g *GridView) doUpdateItemCard(itemIdx int, card *GridViewItem) {
 		card.NextUpdateModel = nil
 		gridViewUpdateCounter.Add()
 		card.Update(&item)
-		card.ImgLoader.Load(item.CoverArtID)
+		g.loadItemImage(card, &item)
 	}
 
 	// if user has scrolled near the bottom, fetch more
 	if itemIdx > g.lenItems()-10 {
 		g.checkFetchMoreItems(20)
 	}
+}
+
+// loadItemImage loads the image for a grid view item.
+// For artists (when ArtistID is set and OnLoadArtistImage callback is available),
+// it uses the artist image loading callback. Otherwise, it uses the standard cover thumbnail.
+func (g *GridView) loadItemImage(card *GridViewItem, item *GridViewItemModel) {
+	// If this is an artist and we have an artist image loader, use it
+	if item.ArtistID != "" && g.OnLoadArtistImage != nil {
+		go g.OnLoadArtistImage(item.ArtistID, func(img image.Image) {
+			fyne.Do(func() {
+				if img != nil {
+					card.Cover.SetImage(img)
+				} else {
+					// Fallback to cover art if no artist image
+					card.ImgLoader.Load(item.CoverArtID)
+				}
+			})
+		})
+		return
+	}
+	// Standard cover thumbnail loading
+	card.ImgLoader.Load(item.CoverArtID)
 }
 
 func (g *GridView) lenItems() int {
@@ -498,20 +529,21 @@ func (g *GridView) showContextMenu(card *GridViewItem, pos fyne.Position) {
 			}
 		})
 		playlist.Icon = myTheme.PlaylistIcon
-		download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
+		g.downloadMenuItem = fyne.NewMenuItem(lang.L("Download")+"...", func() {
 			if g.OnDownload != nil {
 				g.OnDownload(g.menuGridViewItemId)
 			}
 		})
-		download.Icon = theme.DownloadIcon()
+		g.downloadMenuItem.Icon = theme.DownloadIcon()
 		g.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
 			g.OnShare(g.menuGridViewItemId)
 		})
 		g.shareMenuItem.Icon = myTheme.ShareIcon
-		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", play, shuffle, queueNext, queue, playlist, download, g.shareMenuItem),
+		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", play, shuffle, queueNext, queue, playlist, g.downloadMenuItem, g.shareMenuItem),
 			fyne.CurrentApp().Driver().CanvasForObject(g))
 	}
 	g.shareMenuItem.Disabled = g.DisableSharing
+	g.downloadMenuItem.Disabled = g.DisableDownload
 	g.menu.ShowAtPosition(pos)
 }
 

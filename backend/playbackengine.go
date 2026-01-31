@@ -98,6 +98,7 @@ type playbackEngine struct {
 	onPlayTimeUpdate   []func(float64, float64, bool)
 	onLoopModeChange   []func(LoopMode)
 	onVolumeChange     []func(int)
+	onAudioInfoChange  []func()
 	onSeek             []func()
 	onPaused           []func()
 	onStopped          []func()
@@ -159,6 +160,16 @@ func (p *playbackEngine) registerPlayerCallbacks(pl player.BasePlayer) {
 		p.startPollTimePos()
 		p.invokeNoArgCallbacks(p.onPlaying)
 	})
+	pl.OnVolumeChange(func(vol int) {
+		for _, cb := range p.onVolumeChange {
+			cb(vol)
+		}
+	})
+	pl.OnAudioInfoChange(func() {
+		for _, cb := range p.onAudioInfoChange {
+			cb()
+		}
+	})
 }
 
 func (p *playbackEngine) unregisterPlayerCallbacks(pl player.BasePlayer) {
@@ -167,27 +178,30 @@ func (p *playbackEngine) unregisterPlayerCallbacks(pl player.BasePlayer) {
 	pl.OnStopped(nil)
 	pl.OnSeek(nil)
 	pl.OnTrackChange(nil)
+	pl.OnVolumeChange(nil)
+	pl.OnAudioInfoChange(nil)
 }
 
 func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	needToUnpause := false
 
+	// Get fresh status from current player (ignore any cached pending state)
 	stat := p.CurrentPlayer().GetStatus()
-	if p.pendingPlayerChange {
-		stat.State = player.Paused
-	}
 
-	switch stat.State {
-	case player.Stopped:
-		// nothing
-	case player.Playing:
+	// Always stop polling when switching players to prevent stale goroutines
+	p.stopPollTimePos()
+
+	// Clear any stale pending state before evaluating current state
+	p.pendingPlayerChange = false
+
+	// Only cache playback state if actively playing - we'll resume on the new player
+	if stat.State == player.Playing {
 		needToUnpause = true
-		p.stopPollTimePos()
-		fallthrough
-	case player.Paused:
 		p.pendingPlayerChangeStatus = stat
 		p.pendingPlayerChange = true
 	}
+	// For Stopped or Paused states, don't cache - the old player's position
+	// isn't meaningful for the new player
 	p.unregisterPlayerCallbacks(p.player)
 	if err := p.player.Stop(true); err != nil {
 		log.Printf("failed to stop player: %v", err)
@@ -201,8 +215,12 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	p.registerPlayerCallbacks(pl)
 
 	if needToUnpause {
-		p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeStatus.TimePos)
+		// Clear pendingPlayerChange BEFORE playTrackAt, because playTrackAt
+		// triggers OnPlaying which starts time polling. If we clear it after,
+		// the polling goroutine may see stale cached status.
+		startTime := p.pendingPlayerChangeStatus.TimePos
 		p.pendingPlayerChange = false
+		p.playTrackAt(p.nowPlayingIdx, startTime)
 	}
 	vol := pl.GetVolume()
 	if oldVol != vol {
@@ -231,14 +249,59 @@ func (p *playbackEngine) playTrackAt(idx int, startTime float64) error {
 
 // Gets the curently playing media item, if any.
 func (p *playbackEngine) NowPlaying() mediaprovider.MediaItem {
-	if p.nowPlayingIdx < 0 || len(p.playQueue) == 0 || p.player.GetStatus().State == player.Stopped {
+	idx := p.nowPlayingIdx
+	queue := p.playQueue
+	if idx < 0 || len(queue) == 0 || idx >= len(queue) || p.player.GetStatus().State == player.Stopped {
 		return nil
 	}
-	return p.playQueue[p.nowPlayingIdx]
+	return queue[idx]
 }
 
 func (p *playbackEngine) NowPlayingIndex() int {
 	return int(p.nowPlayingIdx)
+}
+
+// SetNowPlayingIndex sets the now playing index without triggering playback.
+// This is used to sync with external jukebox players (like MPD) that are already playing.
+func (p *playbackEngine) SetNowPlayingIndex(idx int) {
+	if idx >= 0 && idx < len(p.playQueue) {
+		p.nowPlayingIdx = idx
+		// Trigger song change callback so UI updates
+		nowPlaying := p.playQueue[p.nowPlayingIdx]
+		for _, cb := range p.onSongChange {
+			cb(nowPlaying, nil)
+		}
+	}
+}
+
+// SyncQueueFromExternal syncs the local queue with an external jukebox player's queue
+// without affecting the remote player's state. This is used when connecting to MPD
+// to show what's currently playing without interrupting playback.
+func (p *playbackEngine) SyncQueueFromExternal(tracks []*mediaprovider.Track, currentIdx int) {
+	// Clear loaded queue state if player supports it
+	if qp, ok := p.player.(player.QueuePlayer); ok {
+		qp.ClearLoadedQueue()
+	}
+
+	// Set the play queue without sending commands to the remote player
+	p.playQueue = make([]mediaprovider.MediaItem, len(tracks))
+	for i, tr := range tracks {
+		p.playQueue[i] = tr
+	}
+
+	// Set the now playing index
+	if currentIdx >= 0 && currentIdx < len(tracks) {
+		p.nowPlayingIdx = currentIdx
+		// Trigger song change callback so UI updates
+		nowPlaying := p.playQueue[p.nowPlayingIdx]
+		for _, cb := range p.onSongChange {
+			cb(nowPlaying, nil)
+		}
+	} else {
+		p.nowPlayingIdx = -1
+	}
+
+	p.invokeNoArgCallbacks(p.onQueueChange)
 }
 
 func (p *playbackEngine) SetLoopMode(loopMode LoopMode) {
@@ -368,6 +431,11 @@ func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMo
 }
 
 func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
+	// Clear loaded queue state if player supports it and we're modifying the queue
+	if qp, ok := p.player.(player.QueuePlayer); ok {
+		qp.ClearLoadedQueue()
+	}
+
 	if insertQueueMode == Replace {
 		p.player.Stop(false)
 		p.nowPlayingIdx = -1
@@ -387,11 +455,36 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 	}
 	p.playQueue = append(p.playQueue[:insertIdx], append(items, p.playQueue[insertIdx:]...)...)
 
+	// If replacing the queue and player supports bulk queue loading, load all tracks at once
+	if insertQueueMode == Replace {
+		if qp, ok := p.player.(player.QueuePlayer); ok {
+			// Extract tracks from items (skip non-track items like radio stations)
+			tracks := make([]*mediaprovider.Track, 0, len(items))
+			for _, item := range items {
+				if tr, ok := item.(*mediaprovider.Track); ok {
+					tracks = append(tracks, tr)
+				}
+			}
+			if len(tracks) > 0 && len(tracks) == len(items) {
+				// All items are tracks, load them to the player's queue
+				if err := qp.LoadQueue(tracks); err != nil {
+					log.Printf("Failed to load queue to player: %v", err)
+					// Fall back to track-by-track playback
+				}
+			}
+		}
+	}
+
 	p.invokeNoArgCallbacks(p.onQueueChange)
 	return nil
 }
 
 func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, insertMode InsertQueueMode) {
+	// Radio stations can't be in a bulk-loaded queue
+	if qp, ok := p.player.(player.QueuePlayer); ok {
+		qp.ClearLoadedQueue()
+	}
+
 	if insertMode == Replace {
 		p.player.Stop(false)
 		p.nowPlayingIdx = -1
@@ -415,9 +508,10 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 }
 
 // Stop playback and clear the play queue.
+// Uses force=true to avoid clearing remote server queues (e.g., MPD).
 func (p *playbackEngine) StopAndClearPlayQueue() {
 	changed := len(p.playQueue) > 0
-	p.player.Stop(false)
+	p.player.Stop(true)
 	p.playQueue = nil
 	p.nowPlayingIdx = -1
 	if changed {
@@ -453,6 +547,11 @@ func (p *playbackEngine) OnTrackRatingChanged(id string, rating int) {
 // Does not stop playback if the currently playing track is in the new queue,
 // but updates the now playing index to point to the first instance of the track in the new queue.
 func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error {
+	// Clear loaded queue state since we're modifying the queue
+	if qp, ok := p.player.(player.QueuePlayer); ok {
+		qp.ClearLoadedQueue()
+	}
+
 	newQueue := deepCopyMediaItemSlice(items)
 	newNowPlayingIdx := -1
 	if p.nowPlayingIdx >= 0 {
@@ -479,6 +578,11 @@ func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error 
 }
 
 func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
+	// Clear loaded queue state since we're modifying the queue
+	if qp, ok := p.player.(player.QueuePlayer); ok {
+		qp.ClearLoadedQueue()
+	}
+
 	newQueue := make([]mediaprovider.MediaItem, 0, len(p.playQueue)-len(idxs))
 	idxSet := sharedutil.ToSet(idxs)
 	isPlayingTrackRemoved := false
@@ -610,6 +714,10 @@ func (p *playbackEngine) handleOnTrackChange() {
 		p.nowPlayingIdx = p.pendingTrackChangeNum
 		p.pendingTrackChangeNum = -1
 	}
+	// Bounds check for safety against race conditions
+	if p.nowPlayingIdx < 0 || p.nowPlayingIdx >= len(p.playQueue) {
+		return
+	}
 	nowPlaying := p.playQueue[p.nowPlayingIdx]
 	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
 	p.isRadio = isRadio
@@ -680,7 +788,7 @@ func (p *playbackEngine) nextPlayingIndex() int {
 func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 	var item mediaprovider.MediaItem
 	var url string
-	if idx >= 0 {
+	if idx >= 0 && idx < len(p.playQueue) {
 		item = p.playQueue[idx]
 		url = p.getMediaURLForIdx(idx)
 	}
@@ -691,7 +799,7 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 
 	if urlP, ok := p.player.(player.URLPlayer); ok {
 		var meta mediaprovider.MediaItemMetadata
-		if idx >= 0 {
+		if item != nil {
 			meta = item.Metadata()
 			if isTrack && p.audiocache != nil {
 				if filepath := p.audiocache.PathForCachedFile(track.ID); filepath != "" {
@@ -708,14 +816,18 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 		return urlP.PlayFile(url, meta, startTime)
 	} else if trP, ok := p.player.(player.TrackPlayer); ok {
 		var track *mediaprovider.Track
-		if idx >= 0 {
-			track, ok = p.playQueue[idx].(*mediaprovider.Track)
+		if item != nil {
+			track, ok = item.(*mediaprovider.Track)
 			if !ok {
 				return errors.New("cannot play non-Track media item with TrackPlayer")
 			}
 		}
 		if next {
 			return trP.SetNextTrack(track)
+		}
+		// If player supports queue loading and has a loaded queue, use PlayQueueIndex
+		if qp, ok := p.player.(player.QueuePlayer); ok && qp.IsQueueLoaded() && idx >= 0 && idx < len(p.playQueue) {
+			return qp.PlayQueueIndex(idx)
 		}
 		return trP.PlayTrack(track, startTime)
 	}
@@ -830,6 +942,9 @@ func (pm *playbackEngine) invokeNoArgCallbacks(cbs []func()) {
 }
 
 func (p *playbackEngine) startPollTimePos() {
+	// Stop any existing polling goroutine first to prevent leaks
+	p.stopPollTimePos()
+
 	ctx, cancel := context.WithCancel(p.ctx)
 	p.cancelPollPos = cancel
 	pollFrequency := 250 * time.Millisecond

@@ -11,6 +11,7 @@ import (
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/windows"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/ui/browsing"
@@ -111,6 +112,9 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	})
 	app.PlaybackManager.OnQueueChange(func() {
 		fyne.Do(func() { m.Sidebar.SetQueueTracks(app.PlaybackManager.GetPlayQueue()) })
+	})
+	app.PlaybackManager.OnPlayerChange(func() {
+		fyne.Do(func() { m.updateVisualizationsMenu() })
 	})
 	app.ServerManager.OnServerConnected(func(conf *backend.ServerConfig) {
 		go m.RunOnServerConnectedTasks(conf, app, displayAppName)
@@ -541,6 +545,15 @@ func (m *MainWindow) showSettingsDialog() {
 	m.Controller.ShowSettingsDialog(func() {
 		fyne.CurrentApp().Settings().SetTheme(m.theme)
 	}, m.theme.ListThemeFiles())
+}
+
+// updateVisualizationsMenu disables visualizations when not using local MPV player
+func (m *MainWindow) updateVisualizationsMenu() {
+	_, isLocalPlayer := m.App.PlaybackManager.CurrentPlayer().(*mpv.Player)
+	m.Toolbar.SetMenuItemDisabled(lang.L("Visualizations"), !isLocalPlayer)
+	if !isLocalPlayer {
+		m.Controller.ClosePeakMeter()
+	}
 }
 
 func (m *MainWindow) Show() {

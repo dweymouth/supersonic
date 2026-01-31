@@ -1,6 +1,8 @@
 package browsing
 
 import (
+	"image"
+
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -110,6 +112,7 @@ func NewGridViewPage[M, F any](
 	gp.createTitleAndSort()
 
 	_, canShare := mp.(mediaprovider.SupportsSharing)
+	_, isJukeboxOnly := mp.(mediaprovider.JukeboxOnlyServer)
 	iter := adapter.Iter(gp.getSortOrderIdx(), gp.getFilter())
 	if g := pool.Obtain(util.WidgetTypeGridView); g != nil {
 		gp.grid = g.(*widgets.GridView)
@@ -119,7 +122,12 @@ func NewGridViewPage[M, F any](
 		gp.grid = widgets.NewGridView(iter, im, adapter.PlaceholderResource())
 	}
 	gp.grid.DisableSharing = !canShare
+	gp.grid.DisableDownload = isJukeboxOnly
 	adapter.InitGrid(gp.grid)
+
+	// Set up artist image loading callback for servers that support external artist images
+	// (like MPD which uses TheAudioDB)
+	gp.grid.OnLoadArtistImage = gp.loadArtistImage
 
 	// If adapter supports SetItemsFunc, call it to inject the items dependency
 	if plfSetter, ok := adapter.(GridViewPageAdapterGetItems); ok {
@@ -240,6 +248,32 @@ func (g *GridViewPage[M, F]) getSortOrderIdx() int {
 
 func (g *GridViewPage[M, F]) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(g.container)
+}
+
+// loadArtistImage loads an artist image for display in the grid.
+// It first checks for a cached artist image, then tries to fetch from external source.
+func (g *GridViewPage[M, F]) loadArtistImage(artistID string, onLoaded func(image.Image)) {
+	// First check if we have a cached artist image
+	if img, ok := g.im.GetCachedArtistImage(artistID); ok {
+		onLoaded(img)
+		return
+	}
+
+	// Try to get artist info to fetch image from external source
+	info, err := g.mp.GetArtistInfo(artistID)
+	if err != nil || info == nil || info.ImageURL == "" {
+		// No artist image available - signal to use fallback
+		onLoaded(nil)
+		return
+	}
+
+	// Fetch and cache the artist image
+	img, err := g.im.FetchAndCacheArtistImage(artistID, info.ImageURL)
+	if err != nil {
+		onLoaded(nil)
+		return
+	}
+	onLoaded(img)
 }
 
 type savedGridViewPage[M, F any] struct {

@@ -90,9 +90,12 @@ func (m *Controller) ConnectAlbumGridActions(grid *widgets.GridView) {
 		go m.App.PlaybackManager.PlayAlbum(albumID, 0, shuffle)
 	}
 	grid.OnFavorite = func(albumID string, favorite bool) {
-		m.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
-			AlbumIDs: []string{albumID},
-		}, favorite)
+		go func() {
+			m.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
+				AlbumIDs: []string{albumID},
+			}, favorite)
+			fyne.Do(m.reloadFavoritesPageIfCurrent)
+		}()
 	}
 	grid.OnShowItemPage = func(albumID string) {
 		m.NavigateTo(AlbumRoute(albumID))
@@ -118,9 +121,12 @@ func (m *Controller) ConnectGroupedReleasesActions(grid *widgets.GroupedReleases
 		go m.App.PlaybackManager.PlayAlbum(albumID, 0, shuffle)
 	}
 	grid.OnFavorite = func(albumID string, favorite bool) {
-		m.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
-			AlbumIDs: []string{albumID},
-		}, favorite)
+		go func() {
+			m.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
+				AlbumIDs: []string{albumID},
+			}, favorite)
+			fyne.Do(m.reloadFavoritesPageIfCurrent)
+		}()
 	}
 	grid.OnShowItemPage = func(albumID string) {
 		m.NavigateTo(AlbumRoute(albumID))
@@ -175,9 +181,12 @@ func (m *Controller) ConnectArtistGridActions(grid *widgets.GridView) {
 			sharedutil.TracksToIDs(m.GetArtistTracks(artistID)))
 	}
 	grid.OnFavorite = func(artistID string, favorite bool) {
-		m.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
-			ArtistIDs: []string{artistID},
-		}, favorite)
+		go func() {
+			m.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
+				ArtistIDs: []string{artistID},
+			}, favorite)
+			fyne.Do(m.reloadFavoritesPageIfCurrent)
+		}()
 	}
 	grid.OnDownload = func(artistID string) {
 		go func() {

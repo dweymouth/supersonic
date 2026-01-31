@@ -324,15 +324,24 @@ func (p *Player) Pause() error {
 		p.fadePauseCancel = cancel
 		go func() {
 			t := time.NewTicker(2 * time.Millisecond)
-			for c := 0; c < 100; c++ {
+			for c := range 100 {
 				select {
 				case <-ctx.Done():
+					t.Stop()
 					return
 				case <-t.C:
 					p.mpv.SetProperty("volume", mpv.FORMAT_INT64, int64(v*(100-c)/100))
 				}
 			}
 			t.Stop()
+			// Check if cancelled before actually pausing MPV
+			// This fixes a race where Continue() could be called after the loop
+			// exits but before setPaused(true) executes
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
 			p.SetVolume(p.vol)
 			p.setPaused(true)
 		}()
@@ -361,7 +370,6 @@ func (p *Player) Continue() error {
 		}
 		return err
 	}
-
 	return nil
 }
 
@@ -379,11 +387,22 @@ func (p *Player) GetStatus() player.Status {
 
 	pos, _ := p.mpv.GetProperty("playback-time", mpv.FORMAT_DOUBLE)
 	dur, _ := p.mpv.GetProperty("duration", mpv.FORMAT_DOUBLE)
+	paused, _ := p.mpv.GetProperty("pause", mpv.FORMAT_FLAG)
+
 	if pos != nil {
 		p.status.TimePos = pos.(float64)
 	}
 	if dur != nil {
 		p.status.Duration = dur.(float64)
+	}
+	// Sync our state with MPV's actual pause state
+	if paused != nil {
+		mpvPaused := paused.(bool)
+		if mpvPaused && p.status.State == player.Playing {
+			p.status.State = player.Paused
+		} else if !mpvPaused && p.status.State == player.Paused {
+			p.status.State = player.Playing
+		}
 	}
 	return p.status
 }

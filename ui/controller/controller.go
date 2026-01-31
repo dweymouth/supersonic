@@ -373,12 +373,23 @@ func (c *Controller) doModalClosed() {
 }
 
 func (c *Controller) SetTrackFavorites(trackIDs []string, favorite bool) {
-	go c.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
-		TrackIDs: trackIDs,
-	}, favorite)
+	go func() {
+		c.App.ServerManager.Server.SetFavorite(mediaprovider.RatingFavoriteParameters{
+			TrackIDs: trackIDs,
+		}, favorite)
+		fyne.Do(c.reloadFavoritesPageIfCurrent)
+	}()
 
 	for _, id := range trackIDs {
 		c.App.PlaybackManager.OnTrackFavoriteStatusChanged(id, favorite)
+	}
+}
+
+// reloadFavoritesPageIfCurrent reloads the page if currently viewing the Favorites page.
+// This ensures the favorites list is updated when items are added/removed.
+func (c *Controller) reloadFavoritesPageIfCurrent() {
+	if c.CurPageFunc != nil && c.CurPageFunc().Page == Favorites && c.ReloadFunc != nil {
+		c.ReloadFunc()
 	}
 }
 
@@ -579,6 +590,11 @@ func (c *Controller) ShowAlbumInfoDialog(albumID, albumName string, albumCover i
 }
 
 func (c *Controller) ShowTrackInfoDialog(track *mediaprovider.Track) {
+	// Try to refresh track info from server to get latest details (including audio info if playing)
+	if refreshed, err := c.App.ServerManager.Server.GetTrack(track.ID); err == nil {
+		track = refreshed
+	}
+
 	info := dialogs.NewTrackInfoDialog(track)
 	pop := widget.NewModalPopUp(info, c.MainWindow.Canvas())
 	info.OnDismiss = func() {

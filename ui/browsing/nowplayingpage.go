@@ -15,6 +15,7 @@ import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/jukebox"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
@@ -38,12 +39,12 @@ type NowPlayingPage struct {
 	nowPlayingPageState
 
 	// volatile state
-	nowPlaying    mediaprovider.MediaItem
-	nowPlayingID  string
-	curLyrics     *mediaprovider.Lyrics
-	curLyricsID   string // id of track currently shown in lyrics
-	curRelatedID  string // id of track currrently used to populate related list
-	curCoverArt   string // id of cover art currently shown in background / card
+	nowPlaying      mediaprovider.MediaItem
+	nowPlayingID    string
+	curCoverArtID   string // coverArtID of the image we're loading/loaded
+	curLyrics       *mediaprovider.Lyrics
+	curLyricsID     string // id of track currently shown in lyrics
+	curRelatedID    string // id of track currrently used to populate related list
 	totalTime     float64
 	lastPlayPos   float64
 	queue         []mediaprovider.MediaItem
@@ -111,6 +112,7 @@ func NewNowPlayingPage(
 	pm.OnPaused(doFmtStatus)
 	pm.OnPlaying(doFmtStatus)
 	pm.OnStopped(doFmtStatus)
+	pm.OnAudioInfoChange(doFmtStatus)
 
 	a.card = widgets.NewLargeNowPlayingCard()
 	a.card.OnAlbumNameTapped = func() {
@@ -296,6 +298,7 @@ func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobble
 	a.nowPlaying = song
 	if a.imageLoadCancel != nil {
 		a.imageLoadCancel()
+		a.imageLoadCancel = nil
 	}
 	a.nowPlayingID = sharedutil.MediaItemIDOrEmptyStr(song)
 	a.queueList.SetNowPlaying(a.nowPlayingID)
@@ -306,14 +309,37 @@ func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobble
 	a.relatedList.SetNowPlaying(a.nowPlayingID)
 
 	a.card.Update(song)
+
+	// Reset cover art state
+	a.curCoverArtID = ""
+
 	if song == nil {
 		a.card.SetCoverImage(nil)
-		a.curCoverArt = ""
-	} else if artID := song.Metadata().CoverArtID; artID != a.curCoverArt {
-		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.Metadata().CoverArtID, func(img image.Image, err error) {
-			a.curCoverArt = artID
-			a.onImageLoaded(img, err)
-		})
+	} else {
+		coverArtID := song.Metadata().CoverArtID
+		if coverArtID == "" {
+			a.card.SetCoverImage(nil)
+		} else {
+			a.curCoverArtID = coverArtID
+			// Check full-size cache first
+			if cachedImg, ok := a.im.GetFullSizeCoverArtFromCache(coverArtID); ok {
+				a.card.SetCoverImage(cachedImg)
+				a.onImageLoaded(coverArtID, cachedImg, nil)
+			} else {
+				// Full-size not cached - check thumbnail cache for immediate display
+				if thumbImg, ok := a.im.GetCoverThumbnailFromCache(coverArtID); ok {
+					// Show thumbnail immediately while loading full-size
+					a.card.SetCoverImage(thumbImg)
+				} else {
+					// Nothing cached - show placeholder
+					a.card.SetCoverImage(nil)
+				}
+				// Fetch full-size async
+				a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(coverArtID, func(img image.Image, err error) {
+					a.onImageLoaded(coverArtID, img, err)
+				})
+			}
+		}
 	}
 
 	if a.tabs != nil && a.tabs.SelectedIndex() == 1 /*lyrics*/ {
@@ -323,12 +349,23 @@ func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobble
 	}
 }
 
-func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
+func (a *NowPlayingPage) onImageLoaded(coverArtID string, img image.Image, err error) {
 	if err != nil {
 		log.Printf("error loading cover art: %v\n", err)
 	}
 
-	fyne.Do(func() { a.card.SetCoverImage(img) })
+	// Validate that this image is still for the current song
+	// (user may have changed songs while the image was loading)
+	if coverArtID != a.curCoverArtID {
+		return
+	}
+
+	fyne.Do(func() {
+		// Double-check inside fyne.Do as the song could have changed
+		if coverArtID == a.curCoverArtID {
+			a.card.SetCoverImage(img)
+		}
+	})
 	if img == nil {
 		return
 	}
@@ -455,11 +492,14 @@ func (a *NowPlayingPage) OnPlayQueueChange() {
 }
 
 func (a *NowPlayingPage) Reload() {
+	_, isJukeboxOnly := a.mp.(mediaprovider.JukeboxOnlyServer)
 	a.card.DisableRating = !a.canRate
 	a.queueList.DisableRating = !a.canRate
 	a.queueList.DisableSharing = !a.canShare
+	a.queueList.DisableDownload = isJukeboxOnly
 	a.relatedList.DisableRating = !a.canRate
 	a.relatedList.DisableSharing = !a.canShare
+	a.relatedList.DisableDownload = isJukeboxOnly
 
 	a.queue = a.pm.GetPlayQueue()
 	a.queueList.SetItems(a.queue)
@@ -595,22 +635,42 @@ func (a *NowPlayingPage) formatStatusLine() {
 	}
 }
 
-func (a *NowPlayingPage) formatMediaInfoStr(player player.BasePlayer) string {
-	mpv, ok := player.(*mpv.Player)
-	if !ok {
+func (a *NowPlayingPage) formatMediaInfoStr(curPlayer player.BasePlayer) string {
+	var codec string
+	var samplerate, bitrate int
+
+	// Try MPV player first
+	if mpvPlayer, ok := curPlayer.(*mpv.Player); ok {
+		audioInfo, err := mpvPlayer.GetMediaInfo()
+		if err != nil {
+			log.Printf("error getting playback status: %s", err.Error())
+			return ""
+		}
+		codec = audioInfo.Codec
+		samplerate = audioInfo.Samplerate
+		bitrate = audioInfo.Bitrate
+	} else if jukeboxPlayer, ok := curPlayer.(*jukebox.JukeboxPlayer); ok {
+		// Try jukebox player
+		audioInfo, err := jukeboxPlayer.GetMediaInfo()
+		if err != nil {
+			log.Printf("error getting jukebox media info: %s", err.Error())
+			return ""
+		}
+		if audioInfo.Bitrate == 0 && audioInfo.Samplerate == 0 {
+			return "" // No audio info available
+		}
+		codec = audioInfo.Codec
+		samplerate = audioInfo.Samplerate
+		bitrate = audioInfo.Bitrate
+	} else {
 		return ""
 	}
-	audioInfo, err := mpv.GetMediaInfo()
-	if err != nil {
-		log.Printf("error getting playback status: %s", err.Error())
-		return ""
-	}
-	codec := audioInfo.Codec
+
 	if len(codec) <= 4 && !strings.EqualFold(codec, "opus") {
 		codec = strings.ToUpper(codec) // FLAC, MP3, AAC, etc
 	}
 
 	// Note: bit depth intentionally omitted since MPV reports the decoded bit depth
 	// i.e. 24 bit files get reported as 32 bit. Also b/c bit depth isn't meaningful for lossy.
-	return fmt.Sprintf("%s %g kHz, %d kbps", codec, float64(audioInfo.Samplerate)/1000, audioInfo.Bitrate/1000)
+	return fmt.Sprintf("%s %g kHz, %d kbps", codec, float64(samplerate)/1000, bitrate/1000)
 }

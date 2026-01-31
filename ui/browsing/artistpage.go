@@ -101,6 +101,7 @@ func newArtistPage(state artistPageState) *ArtistPage {
 	a.header.Compact = a.cfg.CompactHeader
 	if img, ok := state.im.GetCachedArtistImage(state.artistID); ok {
 		a.header.artistImage.SetImage(img, true /*tappable*/)
+		a.header.hasExternalArtistImage = true
 	}
 	viewToggle := widgets.NewToggleText(0, []string{lang.L("Discography"), lang.L("Top Tracks")})
 	viewToggle.SetActivatedLabel(a.activeView)
@@ -348,6 +349,8 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 			} else {
 				a.groupedReleases = widgets.NewGroupedReleases(model, a.im)
 			}
+			_, isJukeboxOnly := a.mp.(mediaprovider.JukeboxOnlyServer)
+			a.groupedReleases.DisableDownload = isJukeboxOnly
 			a.contr.ConnectGroupedReleasesActions(a.groupedReleases)
 			if a.sectionVisNeedApply {
 				a.groupedReleases.SetSectionVisibility(a.sectionVis, true)
@@ -426,8 +429,10 @@ func (a *ArtistPage) showTopTracks() {
 			tl.Options = widgets.TracklistOptions{AutoNumber: true}
 			_, canRate := a.mp.(mediaprovider.SupportsRating)
 			_, canShare := a.mp.(mediaprovider.SupportsSharing)
+			_, isJukeboxOnly := a.mp.(mediaprovider.JukeboxOnlyServer)
 			tl.Options.DisableRating = !canRate
 			tl.Options.DisableSharing = !canShare
+			tl.Options.DisableDownload = isJukeboxOnly
 			tl.SetVisibleColumns(a.cfg.TracklistColumns)
 			tl.SetSorting(a.trackSort)
 			tl.OnVisibleColumnsChanged = func(cols []string) {
@@ -483,20 +488,21 @@ type ArtistPageHeader struct {
 
 	Compact bool
 
-	artistID              string
-	artistPage            *ArtistPage
-	artistImage           *widgets.ImagePlaceholder
-	artistImageID         string
-	titleDisp             *widget.RichText
-	biographyDisp         *widgets.MaxRowsLabel
-	similarArtists        *fyne.Container
-	favoriteBtn           *widgets.FavoriteButton
-	playBtn               *widget.Button
-	playRadioBtn          *widget.Button
-	menuBtn               *widget.Button
-	container             *fyne.Container
-	collapseBtn           *widgets.HeaderCollapseButton
-	fullSizeCoverFetching bool
+	artistID               string
+	artistPage             *ArtistPage
+	artistImage            *widgets.ImagePlaceholder
+	artistImageID          string
+	hasExternalArtistImage bool // true if we have an image from external source (not album cover)
+	titleDisp              *widget.RichText
+	biographyDisp          *widgets.MaxRowsLabel
+	similarArtists         *fyne.Container
+	favoriteBtn            *widgets.FavoriteButton
+	playBtn                *widget.Button
+	playRadioBtn           *widget.Button
+	menuBtn                *widget.Button
+	container              *fyne.Container
+	collapseBtn            *widgets.HeaderCollapseButton
+	fullSizeCoverFetching  bool
 	// shareMenuItem  *fyne.MenuItem
 }
 
@@ -571,6 +577,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 func (a *ArtistPageHeader) Clear() {
 	a.artistID = ""
 	a.artistImageID = ""
+	a.hasExternalArtistImage = false
 	a.favoriteBtn.IsFavorited = false
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = ""
 	a.biographyDisp.Text = lang.L(artistBioNotAvailableKey)
@@ -590,13 +597,31 @@ func (a *ArtistPageHeader) Update(artist *mediaprovider.ArtistWithAlbums, im *ba
 	a.artistID = artist.ID
 	a.titleDisp.Segments[0].(*widget.TextSegment).Text = artist.Name
 	a.titleDisp.Refresh()
+
+	// Check for cached artist image first to avoid flash
+	if cachedImg, ok := im.GetCachedArtistImage(artist.ID); ok {
+		a.hasExternalArtistImage = true
+		a.artistImage.SetImage(cachedImg, true /*tappable*/)
+	}
+
 	if artist.CoverArtID == "" {
 		return
 	}
 	a.artistImageID = artist.CoverArtID
+
+	// Only fetch album art if we don't already have an artist image
+	if a.hasExternalArtistImage {
+		return
+	}
+
 	go func() {
 		if cover, err := im.GetCoverThumbnail(artist.CoverArtID); err == nil {
-			fyne.Do(func() { a.artistImage.SetImage(cover, true) })
+			fyne.Do(func() {
+				// Only set album cover if we don't have an external artist image
+				if !a.hasExternalArtistImage {
+					a.artistImage.SetImage(cover, true)
+				}
+			})
 		} else {
 			log.Printf("error fetching cover: %v", err)
 		}
@@ -638,15 +663,23 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 	a.similarArtists.Refresh()
 
 	if info.ImageURL != "" {
-		if a.artistImage.HaveImage() {
-			go func() {
-				_ = a.artistPage.im.RefreshCachedArtistImageIfExpired(a.artistID, info.ImageURL)
-			}()
-		} else {
+		// Check cache synchronously first to avoid any flash
+		if cachedImg, ok := a.artistPage.im.GetCachedArtistImage(a.artistID); ok {
+			if !a.hasExternalArtistImage {
+				a.hasExternalArtistImage = true
+				a.artistImage.SetImage(cachedImg, true /*tappable*/)
+			}
+			// Refresh in background if expired
+			go a.artistPage.im.RefreshCachedArtistImageIfExpired(a.artistID, info.ImageURL)
+		} else if !a.hasExternalArtistImage {
+			// No cached artist image - fetch and display async
 			go func() {
 				im, err := a.artistPage.im.FetchAndCacheArtistImage(a.artistID, info.ImageURL)
 				if err == nil {
-					fyne.Do(func() { a.artistImage.SetImage(im, true /*tappable*/) })
+					fyne.Do(func() {
+						a.hasExternalArtistImage = true
+						a.artistImage.SetImage(im, true /*tappable*/)
+					})
 				}
 			}()
 		}
@@ -681,7 +714,8 @@ func (a *ArtistPageHeader) Refresh() {
 
 // should NOT be called asynchronously
 func (a *ArtistPageHeader) showPopUpCover() {
-	if a.artistImageID == "" {
+	// If we have an external artist image or no album cover ID, show current image
+	if a.hasExternalArtistImage || a.artistImageID == "" {
 		if im := a.artistImage.Image(); im != nil {
 			a.artistPage.contr.ShowPopUpImage(im)
 		}

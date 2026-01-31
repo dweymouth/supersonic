@@ -64,7 +64,12 @@ func NewSettingsDialog(
 	canSavePlayQueue bool,
 	window fyne.Window,
 ) *SettingsDialog {
-	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList, clientDecidesScrobble: clientDecidesScrobble}
+	s := &SettingsDialog{
+		config:                config,
+		audioDevices:          audioDeviceList,
+		themeFiles:            themeFileList,
+		clientDecidesScrobble: clientDecidesScrobble,
+	}
 	s.ExtendBaseWidget(s)
 
 	// TODO: It may be a nicer UX to always create the equalizer tab,
