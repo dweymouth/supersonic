@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.20.0"
+	AppVersion       = "0.20.1"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,21 +15,20 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* Quickly fade out audio when pausing
-* Add collapsed/compact view for page headers
-* Add option to prevent screensaver or screen sleep on Now Playing page
-* Add lyrics tab to sidebar
-* Add additional tracklist columns for Genre, Album Artist, File Type, Date Added
-* Show year on Now Playing page
-* Option to round image corners throughout app
-* Option to used blurred album cover for background of Now Playing page
-* Left click on system tray icon raises app window
-* Button in Advanced tab of settings window to clear caches
-* Seeking Next while playing the last track in queue now cycles around back to the beginning
-* Behavior and naming of "Stop after current track" changed to "Pause after current track"`
+* Improved translations for Chinese, Japanese, Italian
+* Setting to disable fade out on pause
+* Ignore SSL validation setting migrated to per-server option`
 
 	WhatsFixed = `
 ## Fixed
-* LrcLib fetcher no longer crashes on tracks with no artist name
-* Windows now playing notifications are now silent, and include album cover`
+* Some uPnP devices not recognized
+* Jellyfin synced lyrics not shown as synced if first line starts at 00:00.00
+* Regression in peak meter animation smoothness
+* Some optimizations of tracklist rendering
+* Autoplay tracks enqueuing too early
+* Fix equalizer filter string for ffmpeg
+* Unnecessarily large minimum window width for pages with tracklist
+* Use sort tags for sorting artist discography by album name (OpenSubsonic only)
+* For Jellyfin - Add to Playlist dialog not showing playlists when logged in with username in different case
+* Fix Now Playing background dissolve animation when next track has same cover art as previous`
 )
