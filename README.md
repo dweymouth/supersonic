@@ -8,7 +8,7 @@
 [![Last Release](https://img.shields.io/github/v/release/dweymouth/supersonic?logo=github&label=latest&style=flat)](https://github.com/dweymouth/supersonic/releases)
 [![Downloads](https://img.shields.io/github/downloads/dweymouth/supersonic/total?logo=github&style=flat)](https://github.com/dweymouth/supersonic/releases/latest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dweymouth/supersonic)](https://goreportcard.com/report/github.com/dweymouth/supersonic)
-<a href="https://discord.gg/VqmW48aZMh"><img src="https://dcbadge.vercel.app/api/server/VqmW48aZMh" width="20%"/></a>
+[![Discord](https://dcbadge.limes.pink/api/server/H6FC9bAMpF?style=flat)](https://discord.gg/H6FC9bAMpF)
 
 A lightweight cross-platform desktop client for Subsonic and Jellyfin music servers.
 

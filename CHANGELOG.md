@@ -1,5 +1,26 @@
 # Change Log
 
+## [0.20.1]
+
+### Added
+- Improved translations for Chinese, Japanese, Italian
+- [#814](https://github.com/dweymouth/supersonic/pull/814) Setting to disable fade out on pause
+
+### Changed
+- [#798](https://github.com/dweymouth/supersonic/issues/798) Ignore SSL validation setting migrated to per-server option
+
+### Fixed
+- [#614](https://github.com/dweymouth/supersonic/issues/614) Some uPnP devices not recognized
+- [#809](https://github.com/dweymouth/supersonic/issues/809) Jellyfin synced lyrics not shown as synced if first line starts at 00:00.00
+- [#804](https://github.com/dweymouth/supersonic/issues/804) Regression in peak meter animation smoothness
+- Some optimizations of tracklist rendering
+- [#810](https://github.com/dweymouth/supersonic/issues/810) Autoplay tracks enqueuing too early
+- [#834](https://github.com/dweymouth/supersonic/pull/834) Fix equalizer filter string for ffmpeg
+- [#813](https://github.com/dweymouth/supersonic/issues/813) Unnecessarily large minimum window width for pages with tracklist
+- [#485](https://github.com/dweymouth/supersonic/discussions/485) Use sort tags for sorting artist discography by album name (OpenSubsonic only)
+- [#384](https://github.com/dweymouth/supersonic/issues/384) for Jellyfin - Add to Playlist dialog not showing playlists when logged in with username in different case
+- Fix Now Playing background dissolve animation when next track has same cover art as previous
+
 ## [0.20.0]
 
 ### Added

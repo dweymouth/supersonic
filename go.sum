@@ -26,8 +26,8 @@ github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c h1:UX
 github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c/go.mod h1:Idgzr4LYzve8IPHF1stLO1bdGQZnDKt/bT9WfJflCGw=
 github.com/dweymouth/fyne-tooltip v0.4.0 h1:ZkMhy4f8lHklyjNnKJlSEJ2pLPnYWVD7tu2+YEgmp+w=
 github.com/dweymouth/fyne-tooltip v0.4.0/go.mod h1:jXYbY561DTIXXqkauzltI3o/hsVaQd2KY8Ry2FXy7Xk=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20260121163844-a0f2c1dd0601 h1:Z75H0KinbkuXn0y/+vFB4R6jvwgwHkgCivvPT5fIYcc=
-github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20260121163844-a0f2c1dd0601/go.mod h1:M3Fkb8eUU6se8E+coikK8x7f3vCIakxAW7bPyw3d9fA=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20260131034631-53eb7128ebc8 h1:lwx4mANwRNH25jj2n/IAFUQ5XuYhBaj18OEPvDP19Ns=
+github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20260131034631-53eb7128ebc8/go.mod h1:kjf8HBnGLLykRyRX1mAHLYAfuBaY0oSx6XKCr/dzkOg=
 github.com/dweymouth/go-jellyfin v0.0.0-20250928223159-bd2fb9681ef5 h1:Or5VJodg7cGmdnBIcS+FrEH0twBi7mZsFCz6V0vCOQI=
 github.com/dweymouth/go-jellyfin v0.0.0-20250928223159-bd2fb9681ef5/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0 h1:mYcctuWgVArHhSLJxndlUM43C3hoE18BLDBkXKM2tl0=
@@ -62,8 +62,8 @@ github.com/go-gl/glfw/v3.3/glfw v0.0.0-20250301202403-da16c1255728 h1:RkGhqHxEVA
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20250301202403-da16c1255728/go.mod h1:SyRD8YfuKk+ZXlDqYiqe1qMSqjNgtHzBTG810KUagMc=
 github.com/go-text/render v0.2.0 h1:LBYoTmp5jYiJ4NPqDc2pz17MLmA3wHw1dZSVGcOdeAc=
 github.com/go-text/render v0.2.0/go.mod h1:CkiqfukRGKJA5vZZISkjSYrcdtgKQWRa2HIzvwNN5SU=
-github.com/go-text/typesetting v0.3.2 h1:OUOFxp9Rx5PiO0/rh2IY+5gmyXjXsVG8+LfEyk9NMcE=
-github.com/go-text/typesetting v0.3.2/go.mod h1:vIRUT25mLQaSh4C8H/lIsKppQz/Gdb8Pu/tNwpi52ts=
+github.com/go-text/typesetting v0.3.3-0.20260117213729-06c64e10eb0b h1:8jK9akFlw57u1DyVu6Vr+SUjvnYQkns9roj653VJ4iM=
+github.com/go-text/typesetting v0.3.3-0.20260117213729-06c64e10eb0b/go.mod h1:vIRUT25mLQaSh4C8H/lIsKppQz/Gdb8Pu/tNwpi52ts=
 github.com/go-text/typesetting-utils v0.0.0-20250618110550-c820a94c77b8 h1:4KCscI9qYWMGTuz6BpJtbUSRzcBrUSSE0ENMJbNSrFs=
 github.com/go-text/typesetting-utils v0.0.0-20250618110550-c820a94c77b8/go.mod h1:3/62I4La/HBRX9TcTpBj4eipLiwzf+vhI+7whTc9V7o=
 github.com/godbus/dbus/v5 v5.2.2 h1:TUR3TgtSVDmjiXOgAAyaZbYmIeP3DPkld3jgKGV8mXQ=
