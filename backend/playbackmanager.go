@@ -109,7 +109,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 
 		// enqueue autoplay tracks if enabled and nearing end of queue
 		if p.cfg.Autoplay && !p.pendingAutoplay && totalTime-curTime < 10.0 &&
-			p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+			p.NowPlayingIndex() == p.engine.getPlayQueueLength()-1 {
 			p.enqueueAutoplayTracks()
 		}
 	})
@@ -132,7 +132,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			return
 		}
 		// workaround for https://github.com/dweymouth/supersonic/issues/483 (see above comment)
-		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlaybackStatus().State == player.Playing {
+		if p.NowPlayingIndex() != p.engine.getPlayQueueLength() && p.PlaybackStatus().State == player.Playing {
 			p.lastPlayTime = 0
 			go func() {
 				time.Sleep(300 * time.Millisecond)
@@ -368,6 +368,10 @@ func (p *PlaybackManager) LoadAlbum(albumID string, insertQueueMode InsertQueueM
 	return nil
 }
 
+func (p *PlaybackManager) GetShuffle() bool {
+	return p.engine.GetShuffle()
+}
+
 // Loads the specified playlist into the play queue.
 func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode InsertQueueMode, shuffle bool) error {
 	playlist, err := p.engine.sm.Server.GetPlaylist(playlistID)
@@ -562,7 +566,7 @@ func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Tr
 }
 
 func (p *PlaybackManager) GetPlayQueue() []mediaprovider.MediaItem {
-	return p.engine.GetPlayQueue()
+	return p.engine.GetPlayQueueDeepCopy()
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
@@ -629,9 +633,13 @@ func (p *PlaybackManager) SetVolume(vol int) {
 
 func (p *PlaybackManager) SetAutoplay(autoplay bool) {
 	p.cfg.Autoplay = autoplay
-	if autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+	if autoplay && p.NowPlayingIndex() == p.engine.getPlayQueueLength()-1 {
 		p.enqueueAutoplayTracks()
 	}
+}
+
+func (p *PlaybackManager) SetShuffle(shuffle bool) {
+	p.engine.SetShuffle(shuffle)
 }
 
 func (p *PlaybackManager) Volume() int {
