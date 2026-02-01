@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"slices"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -235,11 +236,11 @@ func (p *playbackEngine) clearPlayQueue() {
 }
 
 func (p *playbackEngine) setPlayQueue(items []mediaprovider.MediaItem) {
-	if p.shuffle {
-		p.shuffledPlayQueue = items
-	} else {
-		p.playQueue = items
-	}
+	p.playQueue = items
+}
+
+func (p *playbackEngine) setShuffledPlayQueue(items []mediaprovider.MediaItem) {
+	p.shuffledPlayQueue = items
 }
 
 func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
@@ -302,63 +303,45 @@ func (p *playbackEngine) GetLoopMode() LoopMode {
 	return p.loopMode
 }
 
+// TODO_SHUFFLE: rename?
+func (p *playbackEngine) GetNewNowPlayingIdx(items []mediaprovider.MediaItem) int {
+	newNowPlayingIdx := -1
+	if p.nowPlayingIdx >= 0 {
+		nowPlayingID := p.getPlayQueueItemAt(p.nowPlayingIdx).Metadata().ID
+		for i, tr := range items {
+			if tr.Metadata().ID == nowPlayingID {
+				newNowPlayingIdx = i
+				break
+			}
+		}
+	}
+	return newNowPlayingIdx
+}
+
 func (p *playbackEngine) SetShuffle(shuffle bool) {
-	//TODO_SHUFFLE: fix very bad code
 	if p.shuffle == shuffle {
 		return
 	}
+
+	newNowPlayingIdx := -1
 	if shuffle {
-		fmt.Println("shuffling")
 		shuffledQueue := deepCopyMediaItemSlice(p.playQueue)
 		rand.Shuffle(len(shuffledQueue), func(i, j int) {
 			shuffledQueue[i], shuffledQueue[j] = shuffledQueue[j], shuffledQueue[i]
 		})
-		newNowPlayingIdx := -1
-		if p.nowPlayingIdx >= 0 {
-			nowPlayingID := p.getPlayQueueItemAt(p.nowPlayingIdx).Metadata().ID
-			for i, tr := range shuffledQueue {
-				if tr.Metadata().ID == nowPlayingID {
-					newNowPlayingIdx = i
-					break
-				}
-			}
-		}
-		p.shuffle = shuffle
+		newNowPlayingIdx = p.GetNewNowPlayingIdx(shuffledQueue)
 		p.shuffledPlayQueue = shuffledQueue
-		if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
-			return
-		}
-		if p.nowPlayingIdx >= 0 {
-			p.handleNextTrackUpdated()
-		}
-		p.nowPlayingIdx = newNowPlayingIdx
-
-		p.invokeNoArgCallbacks(p.onQueueChange)
 	} else {
-		fmt.Println("deshuffling")
-		newQueue := deepCopyMediaItemSlice(p.playQueue)
-		newNowPlayingIdx := -1
-		if p.nowPlayingIdx >= 0 {
-			nowPlayingID := p.getPlayQueueItemAt(p.nowPlayingIdx).Metadata().ID
-			for i, tr := range newQueue {
-				if tr.Metadata().ID == nowPlayingID {
-					newNowPlayingIdx = i
-					break
-				}
-			}
-		}
-		p.shuffle = shuffle
-		p.playQueue = newQueue
-		if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
-			return
-		}
-		if p.nowPlayingIdx >= 0 {
-			p.handleNextTrackUpdated()
-		}
-		p.nowPlayingIdx = newNowPlayingIdx
-
-		p.invokeNoArgCallbacks(p.onQueueChange)
+		newNowPlayingIdx = p.GetNewNowPlayingIdx(p.playQueue)
 	}
+
+	p.shuffle = shuffle
+	if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
+		return
+	}
+	p.handleNextTrackUpdated()
+	p.nowPlayingIdx = newNowPlayingIdx
+	p.invokeNoArgCallbacks(p.onQueueChange)
 }
 
 func (p *playbackEngine) GetShuffle() bool {
@@ -582,36 +565,29 @@ func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error 
 }
 
 func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
-	newQueue := make([]mediaprovider.MediaItem, 0, p.getPlayQueueLength()-len(idxs))
-	idxSet := sharedutil.ToSet(idxs)
 	isPlayingTrackRemoved := false
 	isNextPlayingTrackremoved := false
 	nowPlaying := p.NowPlayingIndex()
 	newNowPlaying := nowPlaying
-	for i, tr := range p.getPlayQueue() {
-		if _, ok := idxSet[i]; ok {
-			if i < nowPlaying {
-				// if removing a track earlier than the currently playing one (if any),
-				// decrement new now playing index by one to account for new position in queue
-				newNowPlaying--
-			} else if i == nowPlaying {
-				isPlayingTrackRemoved = true
-				// If we are removing the currently playing track, we need to scrobble it
-				p.checkScrobble()
-				p.alreadyScrobbled = true
-			} else if nowPlaying >= 0 && i == nowPlaying+1 {
-				isNextPlayingTrackremoved = true
-			}
-		} else {
-			// not removing this track
-			newQueue = append(newQueue, tr)
-		}
+
+	if p.shuffle {
+		ids := p.GetTrackIdsFromIdx(idxs)
+		newPlayQueue := make([]mediaprovider.MediaItem, 0, p.getPlayQueueLength()-len(idxs))
+		p.RemoveTracksFromQueueById(ids, &newPlayQueue)
+		p.setPlayQueue(newPlayQueue)
+
+		newShuffledQueue := make([]mediaprovider.MediaItem, 0, p.getPlayQueueLength()-len(idxs))
+		p.RemoveTracksFromQueueByIdx(idxs, &newShuffledQueue, &newNowPlaying, &isPlayingTrackRemoved, &isNextPlayingTrackremoved)
+		p.setShuffledPlayQueue(newShuffledQueue)
+	} else {
+		newPlayQueue := make([]mediaprovider.MediaItem, 0, p.getPlayQueueLength()-len(idxs))
+		p.RemoveTracksFromQueueByIdx(idxs, &newPlayQueue, &newNowPlaying, &isPlayingTrackRemoved, &isNextPlayingTrackremoved)
+		p.setPlayQueue(newPlayQueue)
 	}
-	//TODO_SHUFFLE: Removing a track should remove from both shuffled and unshuffled queue
-	p.setPlayQueue(newQueue)
+
 	p.nowPlayingIdx = newNowPlaying
 	if isPlayingTrackRemoved {
-		if newNowPlaying == len(newQueue) {
+		if newNowPlaying == p.getPlayQueueLength() {
 			// we had been playing the last track, and removed it
 			p.Stop()
 		} else {
@@ -621,7 +597,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 		// setNextTrack and onSongChange callbacks will be handled
 		// when we receive new track event from player
 	} else if isNextPlayingTrackremoved {
-		if newNowPlaying < len(newQueue)-1 {
+		if newNowPlaying < p.getPlayQueueLength()-1 {
 			p.handleNextTrackUpdated()
 		} else {
 			// no next track to play
@@ -630,6 +606,52 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 	}
 
 	p.invokeNoArgCallbacks(p.onQueueChange)
+}
+
+func (p *playbackEngine) RemoveTracksFromQueueByIdx(idxs []int, newQueue *[]mediaprovider.MediaItem, newNowPlaying *int, isPlayingTrackRemoved *bool, isNextPlayingTrackRemoved *bool) {
+	idxSet := sharedutil.ToSet(idxs)
+	nowPlaying := p.NowPlayingIndex()
+
+	for i, tr := range p.getPlayQueue() {
+		if _, ok := idxSet[i]; ok {
+			if i < nowPlaying {
+				// if removing a track earlier than the currently playing one (if any),
+				// decrement new now playing index by one to account for new position in queue
+				*newNowPlaying--
+			} else if i == nowPlaying {
+				*isPlayingTrackRemoved = true
+				// If we are removing the currently playing track, we need to scrobble it
+				p.checkScrobble()
+				p.alreadyScrobbled = true
+			} else if nowPlaying >= 0 && i == nowPlaying+1 {
+				*isNextPlayingTrackRemoved = true
+			}
+		} else {
+			// not removing this track
+			*newQueue = append(*newQueue, tr)
+		}
+	}
+}
+
+func (p *playbackEngine) RemoveTracksFromQueueById(ids []string, newQueue *[]mediaprovider.MediaItem) {
+	for _, tr := range p.playQueue { //TODO_SHUFFLE: Rework this to use a func for getPlayQueue
+		if slices.Contains(ids, tr.Metadata().ID) {
+			//remove id from id list, handles having the same track present multiple times in playQueue
+			idx := slices.Index(ids, tr.Metadata().ID)
+			ids = slices.Delete(ids, idx, idx+1)
+		} else {
+			// not removing this track
+			*newQueue = append(*newQueue, tr)
+		}
+	}
+}
+
+func (p *playbackEngine) GetTrackIdsFromIdx(idx []int) []string {
+	ids := make([]string, 0, len(idx))
+	for _, v := range idx {
+		ids = append(ids, p.getPlayQueueItemAt(v).Metadata().ID)
+	}
+	return ids
 }
 
 func (p *playbackEngine) SetReplayGainOptions(config ReplayGainConfig) {
