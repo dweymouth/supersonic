@@ -34,7 +34,7 @@ type AuxControls struct {
 	container *fyne.Container
 }
 
-func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initialAutoplay bool) *AuxControls {
+func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initialAutoplay bool, initialShuffle bool) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
 		shuffle:       NewIconButton(myTheme.ShuffleIcon, nil),
@@ -44,6 +44,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
 	}
 
+	a.shuffle.Highlighted = initialShuffle
 	a.shuffle.IconSize = IconButtonSizeSmaller
 	a.shuffle.SetToolTip(lang.L("Shuffle"))
 	a.shuffle.OnTapped = func() {
