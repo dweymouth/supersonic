@@ -250,14 +250,6 @@ func (p *playbackEngine) setShuffledPlayQueue(items []mediaprovider.MediaItem) {
 	p.shuffledPlayQueue = items
 }
 
-func (p *playbackEngine) setActivePlayQueue(items []mediaprovider.MediaItem) {
-	if p.shuffle {
-		p.setShuffledPlayQueue(items)
-	} else {
-		p.setPlayQueue(items)
-	}
-}
-
 func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
 	return p.getPlayQueue()[idx]
 }
