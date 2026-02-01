@@ -326,7 +326,7 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 		return
 	}
 
-	newNowPlayingIdx := -1
+	var newNowPlayingIdx int
 	if shuffle {
 		shuffledQueue := deepCopyMediaItemSlice(p.playQueue)
 		rand.Shuffle(len(shuffledQueue), func(i, j int) {
