@@ -332,6 +332,7 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 		rand.Shuffle(len(shuffledQueue), func(i, j int) {
 			shuffledQueue[i], shuffledQueue[j] = shuffledQueue[j], shuffledQueue[i]
 		})
+		// TODO_SHUFFLE: move now playing track to beginning of queue
 		newNowPlayingIdx = p.GetNewNowPlayingIdx(shuffledQueue)
 		p.shuffledPlayQueue = shuffledQueue
 	} else {
@@ -574,9 +575,19 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 	newNowPlaying := nowPlaying
 
 	if p.shuffle {
+		// remove tracks by ID from playQueue
 		ids := p.GetTrackIdsFromIdx(idxs)
 		newPlayQueue := make([]mediaprovider.MediaItem, 0, p.getPlayQueueLength()-len(idxs))
-		p.RemoveTracksFromQueueById(ids, &newPlayQueue)
+		for _, tr := range p.playQueue { //TODO_SHUFFLE: Rework this to use a func for getPlayQueue
+			if slices.Contains(ids, tr.Metadata().ID) {
+				//remove id from id list, handles having the same track present multiple times in playQueue
+				idx := slices.Index(ids, tr.Metadata().ID)
+				ids = slices.Delete(ids, idx, idx+1)
+			} else {
+				// not removing this track
+				newPlayQueue = append(newPlayQueue, tr)
+			}
+		}
 		p.setPlayQueue(newPlayQueue)
 
 		newShuffledQueue := make([]mediaprovider.MediaItem, 0, p.getPlayQueueLength()-len(idxs))
@@ -629,19 +640,6 @@ func (p *playbackEngine) RemoveTracksFromQueueByIdx(idxs []int, newQueue *[]medi
 			} else if nowPlaying >= 0 && i == nowPlaying+1 {
 				*isNextPlayingTrackRemoved = true
 			}
-		} else {
-			// not removing this track
-			*newQueue = append(*newQueue, tr)
-		}
-	}
-}
-
-func (p *playbackEngine) RemoveTracksFromQueueById(ids []string, newQueue *[]mediaprovider.MediaItem) {
-	for _, tr := range p.playQueue { //TODO_SHUFFLE: Rework this to use a func for getPlayQueue
-		if slices.Contains(ids, tr.Metadata().ID) {
-			//remove id from id list, handles having the same track present multiple times in playQueue
-			idx := slices.Index(ids, tr.Metadata().ID)
-			ids = slices.Delete(ids, idx, idx+1)
 		} else {
 			// not removing this track
 			*newQueue = append(*newQueue, tr)
