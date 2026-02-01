@@ -355,10 +355,6 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 	p.invokeNoArgCallbacks(p.onQueueChange)
 }
 
-func (p *playbackEngine) GetShuffle() bool {
-	return p.shuffle
-}
-
 func (p *playbackEngine) PlaybackStatus() PlaybackStatus {
 	stat := p.pendingPlayerChangeStatus
 	if !p.pendingPlayerChange {

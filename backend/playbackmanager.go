@@ -368,8 +368,8 @@ func (p *PlaybackManager) LoadAlbum(albumID string, insertQueueMode InsertQueueM
 	return nil
 }
 
-func (p *PlaybackManager) GetShuffle() bool {
-	return p.engine.GetShuffle()
+func (p *PlaybackManager) IsShuffle() bool {
+	return p.cfg.Shuffle
 }
 
 // Loads the specified playlist into the play queue.
@@ -639,6 +639,8 @@ func (p *PlaybackManager) SetAutoplay(autoplay bool) {
 }
 
 func (p *PlaybackManager) SetShuffle(shuffle bool) {
+	p.cfg.Shuffle = shuffle
+	fmt.Println("Setting shuffle in config")
 	p.engine.SetShuffle(shuffle)
 }
 

@@ -101,7 +101,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 		pm.SeekFraction(f)
 	})
 
-	bp.AuxControls = widgets.NewAuxControls(pm.Volume(), pm.GetLoopMode(), pm.IsAutoplay())
+	bp.AuxControls = widgets.NewAuxControls(pm.Volume(), pm.GetLoopMode(), pm.IsAutoplay(), pm.IsShuffle())
 	pm.OnLoopModeChange(func(lm backend.LoopMode) {
 		fyne.Do(func() { bp.AuxControls.SetLoopMode(lm) })
 	})
