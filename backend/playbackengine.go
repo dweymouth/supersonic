@@ -226,6 +226,13 @@ func (p *playbackEngine) getPlayQueue() []mediaprovider.MediaItem {
 	return p.playQueue
 }
 
+func (p *playbackEngine) getActivePlayQueue() []mediaprovider.MediaItem {
+	if p.shuffle {
+		return p.shuffledPlayQueue
+	}
+	return p.playQueue
+}
+
 func (p *playbackEngine) getPlayQueueLength() int {
 	return len(p.getPlayQueue())
 }
@@ -254,6 +261,10 @@ func (p *playbackEngine) insertItemsIntoPlayQueueAt(items []mediaprovider.MediaI
 
 func (p *playbackEngine) GetPlayQueueDeepCopy() []mediaprovider.MediaItem {
 	return deepCopyMediaItemSlice(p.getPlayQueue())
+}
+
+func (p *playbackEngine) GetActivePlayQueueDeepCopy() []mediaprovider.MediaItem {
+	return deepCopyMediaItemSlice(p.getActivePlayQueue())
 }
 
 // ======================== END PLAY QUEUE FUNCS =============================
@@ -329,9 +340,8 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 		rand.Shuffle(len(shuffledQueue), func(i, j int) {
 			shuffledQueue[i], shuffledQueue[j] = shuffledQueue[j], shuffledQueue[i]
 		})
-		// TODO_SHUFFLE: move now playing track to beginning of queue
-		newNowPlayingIdx = p.GetNewNowPlayingIdx(shuffledQueue)
-		p.shuffledPlayQueue = shuffledQueue
+		p.shuffledPlayQueue = sharedutil.ReorderItems(shuffledQueue, []int{p.GetNewNowPlayingIdx(shuffledQueue)}, 0)
+		newNowPlayingIdx = 0
 	} else {
 		newNowPlayingIdx = p.GetNewNowPlayingIdx(p.playQueue)
 	}
@@ -551,8 +561,11 @@ func (p *playbackEngine) UpdatePlayQueue(items []mediaprovider.MediaItem) error 
 			}
 		}
 	}
-
-	p.setPlayQueue(newQueue)
+	if p.shuffle {
+		p.setShuffledPlayQueue(newQueue)
+	} else {
+		p.setPlayQueue(newQueue)
+	}
 	if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
 		return p.Stop()
 	}
