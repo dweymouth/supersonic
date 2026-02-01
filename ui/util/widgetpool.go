@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -31,8 +32,9 @@ const (
 // A pool to share commonly-used widgets across pages to reduce
 // creation of new widgets and memory allocations.
 type WidgetPool struct {
-	mut   sync.Mutex
-	pools [][]pooledWidget
+	mut    sync.Mutex
+	pools  [][]pooledWidget
+	cancel context.CancelFunc
 }
 
 type pooledWidget struct {
@@ -40,14 +42,22 @@ type pooledWidget struct {
 	releasedAt int64 // unixMillis
 }
 
-func NewWidgetPool() *WidgetPool {
+func NewWidgetPool(ctx context.Context) *WidgetPool {
+	ctx, cancel := context.WithCancel(ctx)
 	p := &WidgetPool{
-		pools: make([][]pooledWidget, numWidgetTypes),
+		pools:  make([][]pooledWidget, numWidgetTypes),
+		cancel: cancel,
 	}
 	go func() {
 		t := time.NewTicker(2 * time.Minute)
-		for range t.C {
-			p.cleanUpExpiredItems()
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				p.cleanUpExpiredItems()
+			}
 		}
 	}()
 	return p

@@ -504,6 +504,12 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 	return os.RemoveAll(path)
 }
 
+// BackgroundContext returns the application's background context
+// which is canceled when the application shuts down.
+func (a *App) BackgroundContext() context.Context {
+	return a.bgrndCtx
+}
+
 func (a *App) Shutdown() {
 	if a.logFile != nil {
 		a.logFile.Close()
