@@ -28,11 +28,12 @@ import (
 )
 
 const (
-	configFile       = "config.toml"
-	portableDir      = "supersonic_portable"
-	savedQueueFile   = "saved_queue.json"
-	themesDir        = "themes"
-	audioCacheSubdir = "audio"
+	configFile               = "config.toml"
+	portableDir              = "supersonic_portable"
+	savedQueueFile           = "saved_queue.json"
+	savedUnshuffledQueueFile = "saved_unshuffled_queue.json"
+	themesDir                = "themes"
+	audioCacheSubdir         = "audio"
 )
 
 var (
@@ -604,30 +605,61 @@ func (a *App) SavePlayQueueIfEnabled() {
 			queueServer = qs
 		}
 	}
-	SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
+	SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetActivePlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
+	if a.Config.Playback.Shuffle {
+		// if shuffle, also save the unshuffeled queue to enable unshuffling on restarting supersonic
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetPlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedUnshuffledQueueFile), queueServer)
+	}
 }
 
 func (a *App) LoadSavedPlayQueue() error {
 	queueFilePath := path.Join(a.configDir, savedQueueFile)
-	queue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
+	playQueue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
+	var unshuffledPlayQueue *SavedPlayQueue
+
+	if a.Config.Playback.Shuffle {
+		unshuffledQueueFilePath := path.Join(a.configDir, savedUnshuffledQueueFile)
+		unshuffledPlayQueue, err = LoadPlayQueue(unshuffledQueueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer) //unshuffledPlayQueue is only stored locally
+
+		if err != nil {
+			return err
+		}
+	}
 	if err != nil {
 		return err
 	}
-	if len(queue.Tracks) == 0 {
+	if len(playQueue.Tracks) == 0 {
 		return nil
 	}
-	if len(a.PlaybackManager.GetPlayQueue()) > 0 {
+	if len(a.PlaybackManager.GetActivePlayQueue()) > 0 {
 		// don't restore play queue if the user has already queued new tracks
 		return nil
 	}
 
-	a.PlaybackManager.LoadTracks(queue.Tracks, Replace, false)
-	if queue.TrackIndex >= 0 && queue.TrackIndex < len(queue.Tracks) {
+	a.PlaybackManager.LoadTracks(playQueue.Tracks, Replace, false)
+	if playQueue.TrackIndex >= 0 && playQueue.TrackIndex < len(playQueue.Tracks) {
 		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
-		a.PlaybackManager.PlayTrackAt(queue.TrackIndex)
+		a.PlaybackManager.PlayTrackAt(playQueue.TrackIndex)
 		a.PlaybackManager.Pause()
 		time.Sleep(100 * time.Millisecond) // MPV seek fails if run quickly after
-		a.PlaybackManager.SeekSeconds(queue.TimePos)
+		a.PlaybackManager.SeekSeconds(playQueue.TimePos)
+	}
+
+	if a.Config.Playback.Shuffle {
+		// check if queue was changed server side
+		// if playQueue.items same as unshuffledPlayQueue.items
+		// set shuffle to false, only load normal playqueue
+		if len(playQueue.Tracks) != len(unshuffledPlayQueue.Tracks) {
+			// queue was changed server side, no need to compare elements
+			a.PlaybackManager.SetShuffle(false)
+		} else {
+			//TODO_SHUFFLE: implement
+
+			//shuffled := sharedutil.CopyTrackSliceToMediaItemSlice(playQueue.Tracks)
+			//unshuffled := sharedutil.CopyTrackSliceToMediaItemSlice(unshuffledPlayQueue.Tracks)
+
+			//a.PlaybackManager.engine.setPlayQueue(unshuffled)
+		}
 	}
 	return nil
 }

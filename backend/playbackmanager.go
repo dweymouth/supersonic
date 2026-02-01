@@ -390,7 +390,7 @@ func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode Insert
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) {
-	items := copyTrackSliceToMediaItemSlice(tracks)
+	items := sharedutil.CopyTrackSliceToMediaItemSlice(tracks)
 	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
 }
 
@@ -570,8 +570,16 @@ func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Tr
 	}
 }
 
+func (p *PlaybackManager) GetActivePlayQueue() []mediaprovider.MediaItem {
+	return p.engine.GetActivePlayQueueDeepCopy()
+}
+
 func (p *PlaybackManager) GetPlayQueue() []mediaprovider.MediaItem {
 	return p.engine.GetPlayQueueDeepCopy()
+}
+
+func (p *PlaybackManager) GetShuffledPlayQueue() []mediaprovider.MediaItem {
+	return p.engine.GetShuffledPlayQueueDeepCopy()
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
@@ -645,7 +653,6 @@ func (p *PlaybackManager) SetAutoplay(autoplay bool) {
 
 func (p *PlaybackManager) SetShuffle(shuffle bool) {
 	p.cfg.Shuffle = shuffle
-	fmt.Println("Setting shuffle in config")
 	p.engine.SetShuffle(shuffle)
 }
 

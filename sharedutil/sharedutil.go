@@ -186,3 +186,11 @@ func DownloadFileWithContext(ctx context.Context, url string, destPath string) (
 
 	return true, nil
 }
+
+func CopyTrackSliceToMediaItemSlice(tracks []*mediaprovider.Track) []mediaprovider.MediaItem {
+	newTracks := make([]mediaprovider.MediaItem, len(tracks))
+	for i, tr := range tracks {
+		newTracks[i] = tr.Copy()
+	}
+	return newTracks
+}

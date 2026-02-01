@@ -253,6 +253,14 @@ func (p *playbackEngine) setShuffledPlayQueue(items []mediaprovider.MediaItem) {
 	p.shuffledPlayQueue = items
 }
 
+func (p *playbackEngine) setActivePlayQueue(items []mediaprovider.MediaItem) {
+	if p.shuffle {
+		p.setShuffledPlayQueue(items)
+	} else {
+		p.setPlayQueue(items)
+	}
+}
+
 func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
 	return p.getPlayQueue()[idx]
 }
@@ -263,6 +271,10 @@ func (p *playbackEngine) insertItemsIntoPlayQueueAt(items []mediaprovider.MediaI
 }
 
 func (p *playbackEngine) GetPlayQueueDeepCopy() []mediaprovider.MediaItem {
+	return deepCopyMediaItemSlice(p.getPlayQueue())
+}
+
+func (p *playbackEngine) GetShuffledPlayQueueDeepCopy() []mediaprovider.MediaItem {
 	return deepCopyMediaItemSlice(p.getPlayQueue())
 }
 
@@ -317,8 +329,7 @@ func (p *playbackEngine) GetLoopMode() LoopMode {
 	return p.loopMode
 }
 
-// TODO_SHUFFLE: rename?
-func (p *playbackEngine) GetNewNowPlayingIdx(items []mediaprovider.MediaItem) int {
+func (p *playbackEngine) GetNowPlayingIdxFrom(items []mediaprovider.MediaItem) int {
 	newNowPlayingIdx := -1
 	if p.nowPlayingIdx >= 0 {
 		nowPlayingID := p.getPlayQueueItemAt(p.nowPlayingIdx).Metadata().ID
@@ -343,10 +354,10 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 		rand.Shuffle(len(shuffledQueue), func(i, j int) {
 			shuffledQueue[i], shuffledQueue[j] = shuffledQueue[j], shuffledQueue[i]
 		})
-		p.shuffledPlayQueue = sharedutil.ReorderItems(shuffledQueue, []int{p.GetNewNowPlayingIdx(shuffledQueue)}, 0)
+		p.shuffledPlayQueue = sharedutil.ReorderItems(shuffledQueue, []int{p.GetNowPlayingIdxFrom(shuffledQueue)}, 0)
 		newNowPlayingIdx = 0
 	} else {
-		newNowPlayingIdx = p.GetNewNowPlayingIdx(p.playQueue)
+		newNowPlayingIdx = p.GetNowPlayingIdxFrom(p.playQueue)
 	}
 
 	p.shuffle = shuffle
@@ -463,7 +474,7 @@ func (p *playbackEngine) LoadItems(items []mediaprovider.MediaItem, insertQueueM
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *playbackEngine) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) error {
-	newTracks := copyTrackSliceToMediaItemSlice(tracks)
+	newTracks := sharedutil.CopyTrackSliceToMediaItemSlice(tracks)
 	return p.doLoaditems(newTracks, insertQueueMode, shuffle)
 }
 
@@ -504,13 +515,7 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 	if insertMode == InsertNext {
 		insertIdx = p.nowPlayingIdx + 1
 	}
-	new := make([]mediaprovider.MediaItem, p.getPlayQueueLength()+1)
-	firstHalf := p.playQueue[:insertIdx]
-	copy(new, firstHalf)
-	new[len(firstHalf)] = radio
-	copy(new[len(firstHalf)+1:], p.playQueue[insertIdx:]) //TODO_SHUFFLE: Test shuffle with radio stations
-	p.setPlayQueue(new)
-
+	p.insertItemsIntoPlayQueueAt([]mediaprovider.MediaItem{radio}, insertIdx)
 	p.invokeNoArgCallbacks(p.onQueueChange)
 }
 
@@ -587,7 +592,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 		// remove tracks by ID from playQueue
 		ids := p.GetTrackIdsFromIdx(idxs)
 		newPlayQueue := make([]mediaprovider.MediaItem, 0, p.getPlayQueueLength()-len(idxs))
-		for _, tr := range p.playQueue { //TODO_SHUFFLE: Rework this to use a func for getPlayQueue
+		for _, tr := range p.getPlayQueue() {
 			if slices.Contains(ids, tr.Metadata().ID) {
 				//remove id from id list, handles having the same track present multiple times in playQueue
 				idx := slices.Index(ids, tr.Metadata().ID)
@@ -947,14 +952,6 @@ func (p *playbackEngine) sendNowPlayingScrobble() {
 // creates a deep copy of the track info so that we can maintain our own state
 // (play count increases, favorite, and rating) without messing up other views' track models
 func deepCopyMediaItemSlice(tracks []mediaprovider.MediaItem) []mediaprovider.MediaItem {
-	newTracks := make([]mediaprovider.MediaItem, len(tracks))
-	for i, tr := range tracks {
-		newTracks[i] = tr.Copy()
-	}
-	return newTracks
-}
-
-func copyTrackSliceToMediaItemSlice(tracks []*mediaprovider.Track) []mediaprovider.MediaItem {
 	newTracks := make([]mediaprovider.MediaItem, len(tracks))
 	for i, tr := range tracks {
 		newTracks[i] = tr.Copy()
