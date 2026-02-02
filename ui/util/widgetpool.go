@@ -34,7 +34,6 @@ const (
 type WidgetPool struct {
 	mut    sync.Mutex
 	pools  [][]pooledWidget
-	cancel context.CancelFunc
 }
 
 type pooledWidget struct {
@@ -43,10 +42,8 @@ type pooledWidget struct {
 }
 
 func NewWidgetPool(ctx context.Context) *WidgetPool {
-	ctx, cancel := context.WithCancel(ctx)
 	p := &WidgetPool{
 		pools:  make([][]pooledWidget, numWidgetTypes),
-		cancel: cancel,
 	}
 	go func() {
 		t := time.NewTicker(2 * time.Minute)
