@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -40,14 +41,20 @@ type pooledWidget struct {
 	releasedAt int64 // unixMillis
 }
 
-func NewWidgetPool() *WidgetPool {
+func NewWidgetPool(ctx context.Context) *WidgetPool {
 	p := &WidgetPool{
 		pools: make([][]pooledWidget, numWidgetTypes),
 	}
 	go func() {
 		t := time.NewTicker(2 * time.Minute)
-		for range t.C {
-			p.cleanUpExpiredItems()
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				p.cleanUpExpiredItems()
+			}
 		}
 	}()
 	return p

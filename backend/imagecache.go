@@ -51,11 +51,13 @@ func (i *ImageCache) SetWithTTL(key string, val image.Image, ttl time.Duration) 
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
+	now := time.Now().Unix()
 	if v, ok := i.cache[key]; ok {
 		v.val = val
 		v.ttl = ttl
 		v.expiresAt = time.Now().Add(v.ttl).Unix()
-		v.lastAccessed = time.Now().Unix()
+		v.lastAccessed = now
+		i.cache[key] = v // Update the map with modified struct
 		return
 	}
 	if len(i.cache) == i.MaxSize {
@@ -65,7 +67,7 @@ func (i *ImageCache) SetWithTTL(key string, val image.Image, ttl time.Duration) 
 		val:          val,
 		ttl:          ttl,
 		expiresAt:    time.Now().Add(ttl).Unix(),
-		lastAccessed: time.Now().Unix(),
+		lastAccessed: now,
 	}
 }
 
@@ -86,14 +88,15 @@ func (i *ImageCache) Get(key string) (image.Image, error) {
 }
 
 func (i *ImageCache) GetResetTTL(key string, resetTTL bool) (image.Image, error) {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
+	i.mu.Lock()
+	defer i.mu.Unlock()
 
 	if v, ok := i.cache[key]; ok {
 		v.lastAccessed = time.Now().Unix()
 		if resetTTL {
 			v.expiresAt = time.Now().Add(v.ttl).Unix()
 		}
+		i.cache[key] = v // Update the map with modified struct
 		return v.val, nil
 	}
 	return nil, ErrNotFound
@@ -101,26 +104,29 @@ func (i *ImageCache) GetResetTTL(key string, resetTTL bool) (image.Image, error)
 
 // Gets the image if it exists and extends TTL to time.Now + ttl iff the image would expire before then
 func (i *ImageCache) GetExtendTTL(key string, ttl time.Duration) (image.Image, error) {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
+	i.mu.Lock()
+	defer i.mu.Unlock()
 	if v, ok := i.cache[key]; ok {
 		v.lastAccessed = time.Now().Unix()
-		if v.expiresAt < time.Now().Add(ttl).Unix() {
-			v.expiresAt = time.Now().Add(ttl).Unix()
+		newExpiry := time.Now().Add(ttl).Unix()
+		if v.expiresAt < newExpiry {
+			v.expiresAt = newExpiry
 		}
+		i.cache[key] = v // Update the map with modified struct
 		return v.val, nil
 	}
 	return nil, ErrNotFound
 }
 
 func (i *ImageCache) GetWithNewTTL(key string, newTtl time.Duration) (image.Image, error) {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
+	i.mu.Lock()
+	defer i.mu.Unlock()
 
 	if v, ok := i.cache[key]; ok {
 		v.lastAccessed = time.Now().Unix()
 		v.expiresAt = time.Now().Add(newTtl).Unix()
 		v.ttl = newTtl
+		i.cache[key] = v // Update the map with modified struct
 		return v.val, nil
 	}
 	return nil, ErrNotFound
@@ -137,24 +143,33 @@ func (i *ImageCache) Clear() {
 func (i *ImageCache) evictOne() {
 	now := time.Now().Unix()
 	var lruKey string
-	lruTime := now
+	lruTime := now + 1 // Initialize to future time so any item will be less
 	var lruExpiredKey string
-	lruExpiredTime := now
+	lruExpiredTime := now + 1 // Initialize to future time
+	hasExpired := false
+
+	// Single pass through the cache to find both LRU expired and LRU items
 	for k, v := range i.cache {
-		if v.expiresAt < now && v.lastAccessed < lruExpiredTime {
-			lruExpiredTime = v.lastAccessed
-			lruExpiredKey = k
+		if v.expiresAt < now {
+			// This item is expired
+			if v.lastAccessed < lruExpiredTime {
+				lruExpiredTime = v.lastAccessed
+				lruExpiredKey = k
+				hasExpired = true
+			}
 		}
+		// Track LRU regardless of expiration
 		if v.lastAccessed < lruTime {
 			lruTime = v.lastAccessed
 			lruKey = k
 		}
 	}
-	if lruExpiredTime < now {
-		// deleting LRU expired item
+
+	if hasExpired {
+		// Prefer deleting LRU expired item
 		delete(i.cache, lruExpiredKey)
 	} else {
-		// no expired items, delete LRU non-expired item
+		// No expired items, delete LRU non-expired item
 		delete(i.cache, lruKey)
 	}
 }

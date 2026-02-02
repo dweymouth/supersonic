@@ -260,7 +260,7 @@ func DefaultConfig(appVersionTag string) *Config {
 		Playback: PlaybackConfig{
 			Autoplay:           false,
 			RepeatMode:         "None",
-			UseWaveformSeekbar: true,
+			UseWaveformSeekbar: false,
 		},
 		LocalPlayback: LocalPlaybackConfig{
 			// "auto" is the name to pass to MPV for autoselecting the output device
