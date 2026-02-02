@@ -95,6 +95,8 @@
     "Error updating playlist": "Error updating playlist",
     "Exclusive mode": "Exclusive mode",
     "Fade out on pause": "Fade out on pause",
+    "Failed to connect to remote player": "Failed to connect to remote player",
+    "Failed to disconnect from remote player": "Failed to disconnect from remote player",
     "Fav.": "Fav.",
     "Favorites": "Favorites",
     "Feb": "Feb",

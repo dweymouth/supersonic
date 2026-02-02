@@ -95,6 +95,8 @@
     "Error updating playlist": "Errore durante l'aggiornamento della playlist",
     "Exclusive mode": "Modalità esclusiva",
     "Fade out on pause": "Dissolvenza in pausa",
+    "Failed to connect to remote player": "Impossibile connettersi al dispositivo remoto",
+    "Failed to disconnect from remote player": "Impossibile disconnettersi dal dispositivo remoto",
     "Fav.": "Pref.",
     "Favorites": "Preferiti",
     "Feb": "Feb",
