@@ -32,8 +32,8 @@ const (
 // A pool to share commonly-used widgets across pages to reduce
 // creation of new widgets and memory allocations.
 type WidgetPool struct {
-	mut    sync.Mutex
-	pools  [][]pooledWidget
+	mut   sync.Mutex
+	pools [][]pooledWidget
 }
 
 type pooledWidget struct {
@@ -43,7 +43,7 @@ type pooledWidget struct {
 
 func NewWidgetPool(ctx context.Context) *WidgetPool {
 	p := &WidgetPool{
-		pools:  make([][]pooledWidget, numWidgetTypes),
+		pools: make([][]pooledWidget, numWidgetTypes),
 	}
 	go func() {
 		t := time.NewTicker(2 * time.Minute)
