@@ -59,6 +59,9 @@ type ArtistPage struct {
 
 	artistInfo *mediaprovider.ArtistWithAlbums
 
+	topTracks []*mediaprovider.Track
+	allTracks []*mediaprovider.Track
+
 	albumGrid       *widgets.GridView
 	groupedReleases *widgets.GroupedReleases
 	tracklistCtr    *fyne.Container
@@ -157,6 +160,8 @@ func (a *ArtistPage) Route() controller.Route {
 }
 
 func (a *ArtistPage) Reload() {
+	a.topTracks = nil
+	a.allTracks = nil
 	go a.load()
 }
 
@@ -316,13 +321,13 @@ func (a *ArtistPage) load() {
 		}
 		a.artistInfo = artist
 		a.header.Update(artist, a.im)
+		a.onViewChange(a.activeView)
 	})
 
 	info, err := a.mp.GetArtistInfo(a.artistID)
 	if err != nil {
 		log.Printf("Failed to get artist info: %s", err.Error())
 	}
-	a.onViewChange(a.activeView)
 	fyne.Do(func() {
 		if !a.disposed {
 			a.header.UpdateInfo(info)
@@ -331,6 +336,11 @@ func (a *ArtistPage) load() {
 }
 
 func (a *ArtistPage) showAlbumGrid(reSort bool) {
+	if a.activeView == 0 && a.albumGrid != nil {
+		return // already showing album grid
+	}
+	a.activeView = 0
+
 	allAlbums := func() bool {
 		return slices.IndexFunc(a.artistInfo.Albums, func(al *mediaprovider.Album) bool {
 			return al.ReleaseTypes&mediaprovider.ReleaseTypeCompilation > 0 ||
@@ -341,7 +351,6 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 	useGroupedReleases := a.artistInfo != nil && len(a.artistInfo.Albums) <= 50 && !allAlbums()
 
 	if a.albumGrid == nil && a.groupedReleases == nil {
-		a.activeView = 0
 		if a.artistInfo == nil {
 			// page not loaded yet or invalid artist
 			return
@@ -396,141 +405,129 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 	a.container.Objects[0].Refresh()
 }
 
-// should be called asynchronously
 func (a *ArtistPage) showTopTracks() {
-	updated := false
-	updatePage := func() {
-		a.sortButton.Hide()
-		a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
-		a.container.Objects[0].Refresh()
+	if a.activeView == 1 && a.tracklistCtr != nil {
+		return // already showing top tracks
 	}
 
-	if a.tracklistCtr == nil || a.activeView != 1 {
-		a.activeView = 1
-		if a.artistInfo == nil {
-			// page not loaded yet or invalid artist
-			return
+	var tl *widgets.Tracklist
+	if a.tracklistCtr == nil {
+		tl = a.obtainNewTracklist()
+		a.tracklistCtr = container.New(
+			&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
+			tl)
+		a.contr.ConnectTracklistActions(tl)
+	} else {
+		tl = a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		tl.Clear()
+	}
+	a.activeView = 1
+	tl.SetSorting(a.topTrackSort)
+	a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
+	a.container.Objects[0].Refresh()
+
+	updateTracklist := func(ts []*mediaprovider.Track) {
+		tl.SetTracks(ts)
+		tl.SetNowPlaying(a.nowPlayingID)
+		if a.topListScrollPos != 0 {
+			tl.ScrollToOffset(a.topListScrollPos)
 		}
-		var tl *widgets.Tracklist
-		fyne.Do(func() {
-			if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
-				tl = t.(*widgets.Tracklist)
-				tl.Reset()
-				tl.SetTracks([]*mediaprovider.Track{})
-			} else {
-				tl = widgets.NewTracklist([]*mediaprovider.Track{}, a.im, false)
-			}
-			tl.Options = widgets.TracklistOptions{AutoNumber: true}
-			_, canRate := a.mp.(mediaprovider.SupportsRating)
-			_, canShare := a.mp.(mediaprovider.SupportsSharing)
-			tl.Options.DisableRating = !canRate
-			tl.Options.DisableSharing = !canShare
-			tl.SetVisibleColumns(a.cfg.TracklistColumns)
-			tl.SetSorting(a.topTrackSort)
-			tl.OnVisibleColumnsChanged = func(cols []string) {
-				a.cfg.TracklistColumns = cols
-			}
+	}
+	if a.topTracks != nil {
+		updateTracklist(a.topTracks)
+		return
+	}
 
-			a.tracklistCtr = container.New(
-				&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
-				tl)
-			updatePage()
-		})
-
+	tl.SetLoading(true)
+	go func() {
 		ts, err := a.mp.GetTopTracks(a.artistInfo.Artist, 20)
 		if err != nil {
 			log.Printf("error getting top songs: %s", err.Error())
 			return
 		}
-		if a.disposed {
+		if a.disposed || a.activeView != 1 {
 			return
 		}
 
-		updated = true // mark that updatePage() will be called here
 		fyne.Do(func() {
-			tl.SetTracks(ts)
-
-			tl.SetNowPlaying(a.nowPlayingID)
-			a.contr.ConnectTracklistActions(tl)
-			if a.topListScrollPos != 0 {
-				tl.ScrollToOffset(a.topListScrollPos)
-				a.topListScrollPos = 0
-			}
+			a.topTracks = ts
+			tl.SetLoading(false)
+			updateTracklist(ts)
 		})
-
-	}
-
-	if !updated {
-		fyne.Do(updatePage)
-	}
+	}()
 }
 
-// should be called asynchronously
 func (a *ArtistPage) showAllTracks() {
-	updated := false
-	updatePage := func() {
-		a.sortButton.Hide()
-		a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
-		a.container.Objects[0].Refresh()
+	if a.activeView == 2 && a.tracklistCtr != nil {
+		return // already showing all tracks
 	}
 
-	if a.tracklistCtr == nil || a.activeView != 2 {
-		a.activeView = 2
-		if a.artistInfo == nil {
-			// page not loaded yet or invalid artist
-			return
+	var tl *widgets.Tracklist
+	if a.tracklistCtr == nil {
+		tl = a.obtainNewTracklist()
+		a.tracklistCtr = container.New(
+			&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
+			tl)
+		a.contr.ConnectTracklistActions(tl)
+	} else {
+		tl = a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		tl.Clear()
+	}
+	a.activeView = 2
+	tl.SetSorting(a.allTrackSort)
+	a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
+	a.container.Objects[0].Refresh()
+
+	updateTracklist := func(ts []*mediaprovider.Track) {
+		tl.SetTracks(ts)
+		tl.SetNowPlaying(a.nowPlayingID)
+		if a.allListScrollPos != 0 {
+			tl.ScrollToOffset(a.allListScrollPos)
 		}
-		var tl *widgets.Tracklist
-		fyne.Do(func() {
-			if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
-				tl = t.(*widgets.Tracklist)
-				tl.Reset()
-				tl.SetTracks([]*mediaprovider.Track{})
-			} else {
-				tl = widgets.NewTracklist([]*mediaprovider.Track{}, a.im, false)
-			}
-			tl.Options = widgets.TracklistOptions{AutoNumber: true}
-			_, canRate := a.mp.(mediaprovider.SupportsRating)
-			_, canShare := a.mp.(mediaprovider.SupportsSharing)
-			tl.Options.DisableRating = !canRate
-			tl.Options.DisableSharing = !canShare
-			tl.SetVisibleColumns(a.cfg.TracklistColumns)
-			tl.SetSorting(a.allTrackSort)
-			tl.OnVisibleColumnsChanged = func(cols []string) {
-				a.cfg.TracklistColumns = cols
-			}
+	}
+	if a.allTracks != nil {
+		updateTracklist(a.allTracks)
+		return
+	}
 
-			a.tracklistCtr = container.New(
-				&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
-				tl)
-			updatePage()
-		})
-
-		tracks, err := a.mp.GetArtistTracks(a.artistInfo.ID)
+	tl.SetLoading(true)
+	go func() {
+		ts, err := a.mp.GetArtistTracks(a.artistID)
 		if err != nil {
-			log.Printf("error getting all songs for artist: %s", err.Error())
+			log.Printf("error getting all songs: %s", err.Error())
 			return
 		}
-		if a.disposed {
+		if a.disposed || a.activeView != 2 {
 			return
 		}
 
-		updated = true // mark that updatePage() will be called here
 		fyne.Do(func() {
-			tl.SetTracks(tracks)
-
-			tl.SetNowPlaying(a.nowPlayingID)
-			a.contr.ConnectTracklistActions(tl)
-			if a.allListScrollPos != 0 {
-				tl.ScrollToOffset(a.allListScrollPos)
-				a.allListScrollPos = 0
-			}
+			a.allTracks = ts
+			tl.SetLoading(false)
+			updateTracklist(ts)
 		})
-	}
+	}()
+}
 
-	if !updated {
-		fyne.Do(updatePage)
+func (a *ArtistPage) obtainNewTracklist() *widgets.Tracklist {
+	var tl *widgets.Tracklist
+	if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
+		tl = t.(*widgets.Tracklist)
+		tl.Reset()
+		tl.SetTracks([]*mediaprovider.Track{})
+	} else {
+		tl = widgets.NewTracklist([]*mediaprovider.Track{}, a.im, false)
 	}
+	tl.Options = widgets.TracklistOptions{AutoNumber: true}
+	_, canRate := a.mp.(mediaprovider.SupportsRating)
+	_, canShare := a.mp.(mediaprovider.SupportsSharing)
+	tl.Options.DisableRating = !canRate
+	tl.Options.DisableSharing = !canShare
+	tl.SetVisibleColumns(a.cfg.TracklistColumns)
+	tl.OnVisibleColumnsChanged = func(cols []string) {
+		a.cfg.TracklistColumns = cols
+	}
+	return tl
 }
 
 func (a *ArtistPage) onViewChange(num int) {
@@ -550,12 +547,15 @@ func (a *ArtistPage) onViewChange(num int) {
 	switch num {
 	case 0:
 		a.showAlbumGrid(false /*reSort*/)
+		a.sortButton.Show()
 		a.cfg.InitialView = viewDiscography
 	case 1:
-		go a.showTopTracks()
+		a.showTopTracks()
+		a.sortButton.Hide()
 		a.cfg.InitialView = viewTopTracks
 	case 2:
-		go a.showAllTracks()
+		a.showAllTracks()
+		a.sortButton.Hide()
 		a.cfg.InitialView = viewAllTracks
 	}
 }
