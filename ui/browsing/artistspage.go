@@ -72,7 +72,9 @@ func (a *artistsPageAdapter) InitGrid(gv *widgets.GridView) {
 	if r, canShare := a.mp.(mediaprovider.SupportsSharing); canShare {
 		canShareArtists = r.CanShareArtists()
 	}
+	_, isJukeboxOnly := a.mp.(mediaprovider.JukeboxOnlyServer)
 	gv.DisableSharing = !canShareArtists
+	gv.DisableDownload = isJukeboxOnly
 	a.contr.ConnectArtistGridActions(gv)
 }
 

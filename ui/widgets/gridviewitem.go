@@ -404,6 +404,7 @@ type GridViewItemModel struct {
 	Name         string
 	ID           string
 	CoverArtID   string
+	ArtistID     string // Set for artist items to enable external artist image loading
 	Secondary    []string
 	SecondaryIDs []string
 	Suffix       string

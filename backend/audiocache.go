@@ -124,6 +124,9 @@ func (a *AudioCache) CacheFile(id, dlURL string) {
 }
 
 func (a *AudioCache) cacheFile(id, dlURL string) {
+	if dlURL == "" {
+		return // No URL to download (e.g., MPD doesn't provide stream URLs)
+	}
 	if _, ok := a.entries[id]; !ok {
 		ctx, cancel := context.WithCancel(a.rootCtx)
 		a.entries[id] = &cacheEntry{cancel: cancel}

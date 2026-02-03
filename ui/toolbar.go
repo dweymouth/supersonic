@@ -113,6 +113,16 @@ func (t *Toolbar) SetSubmenuForMenuItem(label string, submenu *fyne.Menu) {
 	}
 }
 
+// SetMenuItemDisabled enables or disables a menu item by label
+func (t *Toolbar) SetMenuItemDisabled(label string, disabled bool) {
+	for _, item := range t.settingsMenu.Items {
+		if item.Label == label {
+			item.Disabled = disabled
+			return
+		}
+	}
+}
+
 // DisableNavigationButtons disables all navigation buttons
 func (t *Toolbar) DisableNavigationButtons() {
 	for _, obj := range t.navBtnsContainer.Objects {

@@ -97,12 +97,14 @@ func newPlaylistPage(
 	a.tracklist.OnReorderTracks = a.doSetNewTrackOrder
 	_, canRate := a.sm.Server.(mediaprovider.SupportsRating)
 	_, canShare := a.sm.Server.(mediaprovider.SupportsSharing)
+	_, isJukeboxOnly := a.sm.Server.(mediaprovider.JukeboxOnlyServer)
 	remove := fyne.NewMenuItem(lang.L("Remove from playlist"), a.onRemoveSelectedFromPlaylist)
 	remove.Icon = theme.ContentClearIcon()
 	a.tracklist.Options = widgets.TracklistOptions{
 		Reorderable:        true,
 		DisableRating:      !canRate,
 		DisableSharing:     !canShare,
+		DisableDownload:    isJukeboxOnly,
 		AuxiliaryMenuItems: []*fyne.MenuItem{remove},
 	}
 	// connect tracklist actions
@@ -318,6 +320,7 @@ type PlaylistPageHeader struct {
 	ownerLabel       *widget.Label
 	trackTimeLabel   *widget.Label
 	collapseBtn      *widgets.HeaderCollapseButton
+	downloadMenuItem *fyne.MenuItem
 
 	fullSizeCoverFetching bool
 
@@ -424,13 +427,15 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 					sharedutil.TracksToIDs(a.page.tracks))
 			})
 			playlist.Icon = myTheme.PlaylistIcon
-			download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
+			a.downloadMenuItem = fyne.NewMenuItem(lang.L("Download")+"...", func() {
 				a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
 			})
-			download.Icon = theme.DownloadIcon()
-			menu := fyne.NewMenu("", playNext, queue, playlist, download)
+			a.downloadMenuItem.Icon = theme.DownloadIcon()
+			menu := fyne.NewMenu("", playNext, queue, playlist, a.downloadMenuItem)
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
+		_, isJukeboxOnly := a.page.sm.Server.(mediaprovider.JukeboxOnlyServer)
+		a.downloadMenuItem.Disabled = isJukeboxOnly
 		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)
 		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+menuBtn.Size().Height))
 	}
