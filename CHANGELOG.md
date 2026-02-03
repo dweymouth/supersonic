@@ -1,5 +1,15 @@
 # Change Log
 
+## [Unreleased]
+
+### Added
+- MPD (Music Player Daemon) server support with jukebox playback control
+  - Full library browsing (albums, artists, tracks, playlists, genres)
+  - Favorites and ratings via MPD stickers
+  - Artist images from Deezer and biographies from Wikipedia
+  - Play count tracking
+  - Seamless integration with other MPD clients
+
 ## [0.20.1]
 
 ### Added
@@ -20,7 +30,6 @@
 - [#485](https://github.com/dweymouth/supersonic/discussions/485) Use sort tags for sorting artist discography by album name (OpenSubsonic only)
 - [#384](https://github.com/dweymouth/supersonic/issues/384) for Jellyfin - Add to Playlist dialog not showing playlists when logged in with username in different case
 - Fix Now Playing background dissolve animation when next track has same cover art as previous
-
 ## [0.20.0]
 
 ### Added
