@@ -12,6 +12,7 @@ import (
 	"github.com/dweymouth/go-jellyfin"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	jellyfinMP "github.com/dweymouth/supersonic/backend/mediaprovider/jellyfin"
+	mpdMP "github.com/dweymouth/supersonic/backend/mediaprovider/mpd"
 	subsonicMP "github.com/dweymouth/supersonic/backend/mediaprovider/subsonic"
 	"github.com/dweymouth/supersonic/res"
 	"github.com/google/uuid"
@@ -179,7 +180,15 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 	var cli, altCli mediaprovider.Server
 	timeout := time.Second * time.Duration(s.config.Application.RequestTimeoutSeconds)
 
-	if connection.ServerType == ServerTypeJellyfin {
+	if connection.ServerType == ServerTypeMPD {
+		cli = &mpdMP.MPDServer{
+			Hostname: connection.Hostname,
+			Language: s.config.Application.Language,
+		}
+		// MPD doesn't use username and doesn't have alt hostname
+		resp := cli.Login("", password)
+		return cli, resp.Error
+	} else if connection.ServerType == ServerTypeJellyfin {
 		client, err := jellyfin.NewClient(connection.Hostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(timeout))
 		if err != nil {
 			log.Printf("error creating Jellyfin client: %s", err.Error())

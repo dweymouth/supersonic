@@ -13,6 +13,7 @@ type ServerType string
 const (
 	ServerTypeSubsonic ServerType = "Subsonic"
 	ServerTypeJellyfin ServerType = "Jellyfin"
+	ServerTypeMPD      ServerType = "MPD"
 )
 
 type ServerConnection struct {
@@ -26,10 +27,11 @@ type ServerConnection struct {
 
 type ServerConfig struct {
 	ServerConnection
-	ID              uuid.UUID
-	Nickname        string
-	Default         bool
-	SelectedLibrary string
+	ID               uuid.UUID
+	Nickname         string
+	Default          bool
+	SelectedLibrary  string
+	StopOnDisconnect bool // For MPD: stop playback when switching to another server
 }
 
 type AppConfig struct {

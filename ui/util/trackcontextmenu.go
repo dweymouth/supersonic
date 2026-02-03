@@ -13,6 +13,7 @@ type TrackContextMenu struct {
 	shareMenuItem     *fyne.MenuItem
 	songRadioMenuItem *fyne.MenuItem
 	infoMenuItem      *fyne.MenuItem
+	downloadMenuItem  *fyne.MenuItem
 
 	OnPlay          func(shuffle bool)
 	OnAddToQueue    func(next bool)
@@ -71,12 +72,12 @@ func NewTrackContextMenu(disablePlaybackMenu bool, auxItems []*fyne.MenuItem) *T
 		}
 	})
 	playlist.Icon = myTheme.PlaylistIcon
-	download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
+	tcm.downloadMenuItem = fyne.NewMenuItem(lang.L("Download")+"...", func() {
 		if tcm.OnDownload != nil {
 			tcm.OnDownload()
 		}
 	})
-	download.Icon = theme.DownloadIcon()
+	tcm.downloadMenuItem.Icon = theme.DownloadIcon()
 	tcm.infoMenuItem = fyne.NewMenuItem(lang.L("Show info")+"...", func() {
 		if tcm.OnShowInfo != nil {
 			tcm.OnShowInfo()
@@ -96,7 +97,7 @@ func NewTrackContextMenu(disablePlaybackMenu bool, auxItems []*fyne.MenuItem) *T
 	})
 	unfavorite.Icon = myTheme.NotFavoriteIcon
 	tcm.menu.Items = append(tcm.menu.Items, fyne.NewMenuItemSeparator(),
-		playlist, download, tcm.infoMenuItem)
+		playlist, tcm.downloadMenuItem, tcm.infoMenuItem)
 	tcm.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
 		if tcm.OnShare != nil {
 			tcm.OnShare()
@@ -130,6 +131,10 @@ func (tcm *TrackContextMenu) SetShareDisabled(disabled bool) {
 
 func (tcm *TrackContextMenu) SetInfoDisabled(disabled bool) {
 	tcm.infoMenuItem.Disabled = disabled
+}
+
+func (tcm *TrackContextMenu) SetDownloadDisabled(disabled bool) {
+	tcm.downloadMenuItem.Disabled = disabled
 }
 
 func (tcm *TrackContextMenu) ShowAtPosition(pos fyne.Position, canvas fyne.Canvas) {

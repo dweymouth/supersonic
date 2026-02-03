@@ -53,6 +53,9 @@ type TracklistOptions struct {
 
 	// Disables the sharing option.
 	DisableSharing bool
+
+	// Disables the download option.
+	DisableDownload bool
 }
 
 type Tracklist struct {
@@ -553,6 +556,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 	}
 	t.ctxMenu.SetRatingDisabled(t.Options.DisableRating)
 	t.ctxMenu.SetShareDisabled(t.Options.DisableSharing || len(t.SelectedTracks()) != 1)
+	t.ctxMenu.SetDownloadDisabled(t.Options.DisableDownload)
 	t.ctxMenu.SetInfoDisabled(len(t.SelectedTracks()) != 1)
 	t.ctxMenu.ShowAtPosition(e.AbsolutePosition, fyne.CurrentApp().Driver().CanvasForObject(t))
 }

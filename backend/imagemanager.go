@@ -94,6 +94,16 @@ func (i *ImageManager) GetCoverThumbnailFromCache(coverID string) (image.Image, 
 	return nil, false
 }
 
+// GetFullSizeCoverArtFromCache returns the full-size cover art for the given ID if it exists
+// in the in-memory cache. Returns quickly, safe to call in UI threads.
+func (i *ImageManager) GetFullSizeCoverArtFromCache(coverID string) (image.Image, bool) {
+	if coverID != "" && i.cachedFullSizeCoverID == coverID {
+		i.cachedFullSizeCoverAccessedAt = time.Now().UnixMilli()
+		return i.cachedFullSizeCover, true
+	}
+	return nil, false
+}
+
 // GetCoverThumbnailAsync asynchronously fetches the cover image for the given ID,
 // and invokes the callback on completion. It returns a context.CancelFunc which can be used to
 // cancel the fetch. The callback will not be invoked if the fetch is cancelled before completion.
