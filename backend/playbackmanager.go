@@ -17,8 +17,6 @@ import (
 	"github.com/dweymouth/supersonic/backend/player/dlna"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
-	"github.com/supersonic-app/go-upnpcast/device"
-	"github.com/supersonic-app/go-upnpcast/services"
 )
 
 // A high-level MediaProvider-aware playback engine, serves as an
@@ -221,16 +219,24 @@ func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, fastScan bool) 
 }
 
 func (p *PlaybackManager) scanRemotePlayers(ctx context.Context, waitSec int) {
-	devices, _ := device.SearchMediaRenderers(ctx, waitSec, services.AVTransport, services.RenderingControl)
+	log.Printf("[DLNA] Starting device scan with %d second wait...", waitSec)
+	devices, err := dlna.DiscoverMediaRenderers(ctx, waitSec)
+	if err != nil {
+		log.Printf("[DLNA] Error during device scan: %v", err)
+	}
+	log.Printf("[DLNA] Scan complete. Found %d device(s)", len(devices))
 
 	var discovered []RemotePlaybackDevice
 	for _, d := range devices {
+		log.Printf("[DLNA] Discovered device: %s (URL: %s)", d.FriendlyName, d.URL)
+		// Capture device in closure
+		device := d
 		p := RemotePlaybackDevice{
-			Name:     d.FriendlyName,
-			URL:      d.URL,
+			Name:     device.FriendlyName,
+			URL:      device.URL,
 			Protocol: "DLNA",
 			new: func() (player.BasePlayer, error) {
-				return dlna.NewDLNAPlayer(d)
+				return dlna.NewDLNAPlayer(device)
 			},
 		}
 		discovered = append(discovered, p)
@@ -239,6 +245,7 @@ func (p *PlaybackManager) scanRemotePlayers(ctx context.Context, waitSec int) {
 	p.remotePlayersLock.Lock()
 	p.remotePlayers = discovered
 	p.remotePlayersLock.Unlock()
+	log.Printf("[DLNA] Remote players updated. Total available: %d", len(discovered))
 }
 
 func (p *PlaybackManager) RemotePlayers() []RemotePlaybackDevice {

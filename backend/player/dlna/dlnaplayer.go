@@ -19,17 +19,29 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/util"
-	"github.com/hashicorp/go-retryablehttp"
-	"github.com/supersonic-app/go-upnpcast/device"
-	"github.com/supersonic-app/go-upnpcast/services/avtransport"
-	"github.com/supersonic-app/go-upnpcast/services/renderingcontrol"
+	"github.com/huin/goupnp/dcps/av1"
 )
 
 const (
 	stopped = 0
 	playing = 1
 	paused  = 2
+
+	// DLNA device initialization timing constants
+	maxSeekRetries        = 5
+	seekRetryInitialDelay = 400 * time.Millisecond
+	seekRetryMaxDelay     = 2 * time.Second
+	playbackSyncDelay     = 500 * time.Millisecond
+	playbackSyncRetries   = 3
 )
+
+// MediaItem represents a media item to be played via DLNA
+type MediaItem struct {
+	URL         string
+	Title       string
+	ContentType string
+	Seekable    bool
+}
 
 type proxyMapEntry struct {
 	key string
@@ -42,8 +54,8 @@ type DLNAPlayer struct {
 	destroyed     bool
 	cancelRequest context.CancelFunc
 
-	avTransport   *avtransport.Client
-	renderControl *renderingcontrol.Client
+	avTransport   *av1.AVTransport1
+	renderControl *av1.RenderingControl1
 
 	state   int // stopped, playing, paused
 	seeking bool
@@ -81,35 +93,27 @@ type DLNAPlayer struct {
 	// should clear it to false and use SetAVTransport
 	// to begin playing the item in nextTrackMeta.
 	failedToSetNext    bool
-	unsetNextMediaItem *avtransport.MediaItem
+	unsetNextMediaItem *MediaItem
 
 	timerActive atomic.Bool
 	timer       *time.Timer
 	resetChan   chan (time.Duration)
 }
 
-func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
-	retry := retryablehttp.NewClient()
-	retry.RetryMax = 3
-	retry.RetryWaitMin = 100 * time.Millisecond
-	retry.Logger = retryLogger{}
-	cli := retry.StandardClient()
-
-	avt, err := device.AVTransportClient()
+func NewDLNAPlayer(device *MediaRendererDevice) (*DLNAPlayer, error) {
+	avt, err := device.NewAVTransportClient()
 	if err != nil {
 		return nil, err
 	}
-	avt.RequestHandler = httpClientHandler{cli}
-	rc, err := device.RenderingControlClient()
+	rc, err := device.NewRenderingControlClient()
 	if err != nil {
 		return nil, err
 	}
-	rc.Requesthandler = cli
 
 	// ping to test connectivity
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if _, err := avt.GetTransportInfo(ctx); err != nil {
+	if _, _, _, err := avt.GetTransportInfoCtx(ctx, 0); err != nil {
 		return nil, fmt.Errorf("failed to connect to %s", device.FriendlyName)
 	}
 
@@ -127,7 +131,7 @@ func (d *DLNAPlayer) SetVolume(vol int) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	d.cancelRequest = cancel
 	defer cancel()
-	return d.renderControl.SetVolume(ctx, vol)
+	return d.renderControl.SetVolumeCtx(ctx, 0, "Master", uint16(vol))
 }
 
 func (d *DLNAPlayer) GetVolume() int {
@@ -137,8 +141,8 @@ func (d *DLNAPlayer) GetVolume() int {
 	ctx, cancel := context.WithCancel(context.Background())
 	d.cancelRequest = cancel
 	defer cancel()
-	vol, _ := d.renderControl.GetVolume(ctx)
-	return vol
+	vol, _ := d.renderControl.GetVolumeCtx(ctx, 0, "Master")
+	return int(vol)
 }
 
 func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadata, startTime float64) error {
@@ -153,27 +157,35 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 	d.metaLock.Unlock()
 	key := d.addURLToProxy(urlstr)
 
-	media := avtransport.MediaItem{
+	media := &MediaItem{
 		URL:         d.urlForItem(key),
 		Title:       meta.Name,
 		ContentType: meta.MIMEType,
 		Seekable:    true,
 	}
 
-	if err := d.playAVTransportMedia(&media); err != nil {
+	if err := d.playAVTransportMedia(media); err != nil {
 		return err
 	}
 	d.pendingPlayStart = true
+
+	// Handle initial seek or playback time synchronization asynchronously
+	// to avoid blocking the main player thread
 	if startTime > 0 {
-		// TODO: do something better than this!!
-		time.Sleep(2 * time.Second)
-		if !d.destroyed {
-			d.sendSeekCmd(startTime)
-		}
-		d.pendingPlayStart = false
+		go func() {
+			// The DLNA device needs time to process the play command before accepting seek
+			// Use retry logic in sendSeekCmd to handle devices with varying readiness times
+			if err := d.sendSeekCmd(startTime); err != nil {
+				log.Printf("Failed to seek to start position %v: %v", startTime, err)
+				// Fall back to syncing from current position
+				d.syncPlaybackTime()
+			}
+			d.pendingPlayStart = false
+		}()
 	} else {
 		go func() {
-			time.Sleep(2 * time.Second)
+			// Give the device a moment to start playback before syncing time
+			time.Sleep(playbackSyncDelay)
 			if !d.destroyed {
 				d.syncPlaybackTime()
 			}
@@ -195,16 +207,17 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 	return nil
 }
 
-func (d *DLNAPlayer) playAVTransportMedia(media *avtransport.MediaItem) error {
+func (d *DLNAPlayer) playAVTransportMedia(media *MediaItem) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	d.cancelRequest = cancel
 	defer cancel()
 
-	err := d.avTransport.SetAVTransportMedia(ctx, media)
+	metadata := buildDIDLMetadata(media)
+	err := d.avTransport.SetAVTransportURICtx(ctx, 0, media.URL, metadata)
 	if err != nil {
 		return err
 	}
-	if err := d.avTransport.Play(ctx); err != nil {
+	if err := d.avTransport.PlayCtx(ctx, 0, "1"); err != nil {
 		return err
 	}
 	return nil
@@ -215,7 +228,7 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 		return nil
 	}
 
-	var media *avtransport.MediaItem
+	var media *MediaItem
 	d.metaLock.Lock()
 	d.nextTrackMeta = meta
 	d.metaLock.Unlock()
@@ -223,7 +236,7 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 		d.ensureSetupProxy()
 
 		key := d.addURLToProxy(url)
-		media = &avtransport.MediaItem{
+		media = &MediaItem{
 			URL:         d.urlForItem(key),
 			ContentType: meta.MIMEType,
 			Title:       meta.Name,
@@ -231,13 +244,15 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 		}
 	} else {
 		// empty media item to signify erasing next track in device queue
-		media = &avtransport.MediaItem{}
+		media = &MediaItem{}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	d.cancelRequest = cancel
 	defer cancel()
-	err := d.avTransport.SetNextAVTransportMedia(ctx, media)
+
+	metadata := buildDIDLMetadata(media)
+	err := d.avTransport.SetNextAVTransportURICtx(ctx, 0, media.URL, metadata)
 	if err != nil {
 		d.metaLock.Lock()
 		d.failedToSetNext = true
@@ -258,13 +273,14 @@ func (d *DLNAPlayer) Continue() error {
 
 	if d.pendingSeek {
 		d.pendingSeek = false
-		err := d.avTransport.Seek(ctx, int(d.pendingSeekSecs))
+		target := formatTime(int(d.pendingSeekSecs))
+		err := d.avTransport.SeekCtx(ctx, 0, "REL_TIME", target)
 		if err != nil {
 			return err
 		}
 	}
 
-	if err := d.avTransport.Play(ctx); err != nil {
+	if err := d.avTransport.PlayCtx(ctx, 0, "1"); err != nil {
 		return err
 	}
 	d.metaLock.Lock()
@@ -285,7 +301,7 @@ func (d *DLNAPlayer) Pause() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	d.cancelRequest = cancel
 	defer cancel()
-	if err := d.avTransport.Pause(ctx); err != nil {
+	if err := d.avTransport.PauseCtx(ctx, 0); err != nil {
 		return err
 	}
 	d.setTrackChangeTimer(0)
@@ -317,7 +333,7 @@ func (d *DLNAPlayer) Stop(force bool) error {
 		d.cancelRequest = cancel
 		defer cancel()
 
-		if err := d.avTransport.Pause(ctx); err != nil {
+		if err := d.avTransport.PauseCtx(ctx, 0); err != nil {
 			return err
 		}
 		fallthrough
@@ -371,14 +387,40 @@ func (d *DLNAPlayer) SeekSeconds(secs float64) error {
 
 func (d *DLNAPlayer) sendSeekCmd(secs float64) error {
 	d.seeking = true
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	if err := d.avTransport.Seek(ctx, int(secs)); err != nil {
-		d.seeking = false
-		return err
+	defer func() { d.seeking = false }()
+
+	// Retry seeking with exponential backoff to handle devices that aren't
+	// immediately ready after playback starts
+	delay := seekRetryInitialDelay
+	var lastErr error
+
+	for attempt := 0; attempt < maxSeekRetries; attempt++ {
+		if d.destroyed {
+			return errors.New("player destroyed during seek")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		target := formatTime(int(secs))
+		err := d.avTransport.SeekCtx(ctx, 0, "REL_TIME", target)
+		cancel()
+
+		if err == nil {
+			return nil
+		}
+
+		lastErr = err
+		log.Printf("DLNA seek attempt %d/%d failed: %v, retrying in %v",
+			attempt+1, maxSeekRetries, err, delay)
+
+		time.Sleep(delay)
+		// Exponential backoff, but cap at max delay
+		delay *= 2
+		if delay > seekRetryMaxDelay {
+			delay = seekRetryMaxDelay
+		}
 	}
-	d.seeking = false
-	return nil
+
+	return fmt.Errorf("failed to seek after %d attempts: %w", maxSeekRetries, lastErr)
 }
 
 func (d *DLNAPlayer) IsSeeking() bool {
@@ -424,16 +466,51 @@ func (d *DLNAPlayer) Destroy() {
 }
 
 func (d *DLNAPlayer) syncPlaybackTime() {
-	start := time.Now()
-	if pos, err := d.avTransport.GetPositionInfo(context.Background()); err == nil {
-		d.lastStartTime = int(pos.RelTime.Seconds() + (time.Since(start) / 2).Seconds())
-		d.stopwatch.Reset()
-		if d.state == playing {
-			d.stopwatch.Start()
+	// Retry playback time synchronization with the DLNA device
+	var lastErr error
+	for attempt := 0; attempt < playbackSyncRetries; attempt++ {
+		if d.destroyed {
+			return
 		}
-		d.setTrackChangeTimer(d.curTrackMeta.Duration - time.Duration(d.lastStartTime)*time.Second)
-		d.InvokeOnSeek()
+
+		start := time.Now()
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		_, relTime, _, _, _, _, _, _, err := d.avTransport.GetPositionInfoCtx(ctx, 0)
+		cancel()
+
+		if err == nil {
+			// Parse the RelTime string (format: HH:MM:SS or HH:MM:SS.mmm)
+			var hours, minutes, seconds int
+			_, parseErr := fmt.Sscanf(relTime, "%d:%d:%d", &hours, &minutes, &seconds)
+			if parseErr != nil {
+				log.Printf("Failed to parse position time '%s': %v", relTime, parseErr)
+				lastErr = parseErr
+				continue
+			}
+
+			// Account for network latency by adding half the round-trip time
+			networkLatency := time.Since(start) / 2
+			posSeconds := hours*3600 + minutes*60 + seconds
+			d.lastStartTime = int(float64(posSeconds) + networkLatency.Seconds())
+			d.stopwatch.Reset()
+			if d.state == playing {
+				d.stopwatch.Start()
+			}
+			d.setTrackChangeTimer(d.curTrackMeta.Duration - time.Duration(d.lastStartTime)*time.Second)
+			d.InvokeOnSeek()
+			return
+		}
+
+		lastErr = err
+		if attempt < playbackSyncRetries-1 {
+			log.Printf("DLNA playback sync attempt %d/%d failed: %v, retrying",
+				attempt+1, playbackSyncRetries, err)
+			time.Sleep(playbackSyncDelay)
+		}
 	}
+
+	// Log final failure but don't crash - player can still work without perfect sync
+	log.Printf("Failed to sync playback time after %d attempts: %v", playbackSyncRetries, lastErr)
 }
 
 func (d *DLNAPlayer) ensureSetupProxy() error {
@@ -650,32 +727,24 @@ func (d *DLNAPlayer) _updateProxyURL(key, url string) {
 	d.proxyURLs[len(d.proxyURLs)-1] = proxyMapEntry{key: key, url: url}
 }
 
-// httpClientHandler wraps an http.Client to implement services.RequestHandler
-type httpClientHandler struct {
-	client *http.Client
+// formatTime converts seconds to DLNA time format (HH:MM:SS)
+func formatTime(seconds int) string {
+	hours := seconds / 3600
+	minutes := (seconds % 3600) / 60
+	secs := seconds % 60
+	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, secs)
 }
 
-func (h httpClientHandler) Do(req *http.Request) (*http.Response, error) {
-	return h.client.Do(req)
-}
-
-type retryLogger struct{}
-
-func (retryLogger) Error(msg string, keysAndValues ...any) {
-	log.Println(msg, keysAndValues)
-}
-
-func (retryLogger) Info(msg string, keysAndValues ...any) {
-	log.Println(msg, keysAndValues)
-}
-
-func (retryLogger) Warn(msg string, keysAndValues ...any) {
-	log.Println(msg, keysAndValues)
-}
-
-func (retryLogger) Debug(msg string, keysAndValues ...any) {
-	// log only retries, not every request
-	if strings.Contains(msg, "retrying request") {
-		log.Println(msg, keysAndValues)
+// buildDIDLMetadata creates DIDL-Lite XML metadata for a media item
+func buildDIDLMetadata(media *MediaItem) string {
+	if media == nil || media.URL == "" {
+		return ""
 	}
+	return fmt.Sprintf(`<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/">
+<item id="0" parentID="-1" restricted="1">
+<dc:title>%s</dc:title>
+<res protocolInfo="http-get:*:%s:*">%s</res>
+<upnp:class>object.item.audioItem.musicTrack</upnp:class>
+</item>
+</DIDL-Lite>`, media.Title, media.ContentType, media.URL)
 }

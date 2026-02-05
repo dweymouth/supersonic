@@ -145,6 +145,9 @@ func (m *Controller) HaveModal() bool {
 }
 
 func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
+	// Trigger a fast scan for remote players when menu is opened
+	go m.App.PlaybackManager.ScanRemotePlayers(m.App.BackgroundContext(), true /*fastScan*/)
+
 	rp := m.App.PlaybackManager.CurrentRemotePlayer()
 	devices := m.App.PlaybackManager.RemotePlayers()
 	local := fyne.NewMenuItem(lang.L("This computer"), func() {
@@ -154,7 +157,7 @@ func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
 		onPendingPlayerChange()
 		go func() {
 			if err := m.App.PlaybackManager.SetRemotePlayer(nil); err != nil {
-				fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to disconnect from remote player") })
+				fyne.Do(func() { m.ToastProvider.ShowErrorToast(lang.L("Failed to disconnect from remote player")) })
 			}
 		}()
 	})
@@ -172,7 +175,7 @@ func (m *Controller) ShowCastMenu(onPendingPlayerChange func()) {
 			onPendingPlayerChange()
 			go func() {
 				if err := m.App.PlaybackManager.SetRemotePlayer(&_d); err != nil {
-					fyne.Do(func() { m.ToastProvider.ShowErrorToast("Failed to connect to " + _d.Name) })
+					fyne.Do(func() { m.ToastProvider.ShowErrorToast(lang.L("Failed to connect to remote player")) })
 				}
 			}()
 		})
