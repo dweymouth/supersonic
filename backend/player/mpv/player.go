@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -110,6 +111,13 @@ func (p *Player) Init(maxCacheMB int) error {
 		m.SetOptionString("force-seekable", "yes")
 		m.SetOptionString("terminal", "no")
 
+		// Linux-specific: Configure PulseAudio/PipeWire for proper audio stream identification
+		if runtime.GOOS == "linux" {
+			m.SetOptionString("ao", "pulse,pipewire,alsa")
+			// Set title to show "Artist - Track" in PipeWire metadata
+			m.SetOptionString("title", "${?metadata/by-key/Artist:${metadata/by-key/Artist} - }${media-title}")
+		}
+
 		// limit in-memory cache size
 		maxBackMB := maxCacheMB / 3
 		maxForwardMB := maxBackMB + maxBackMB
@@ -128,6 +136,11 @@ func (p *Player) Init(maxCacheMB int) error {
 
 		if p.clientName != "" {
 			m.SetOptionString("audio-client-name", p.clientName)
+		}
+
+		// Linux-specific: Set x11-name for proper window manager integration
+		if runtime.GOOS == "linux" {
+			m.SetOptionString("x11-name", "io.github.dweymouth.supersonic")
 		}
 
 		if err := m.Initialize(); err != nil {

@@ -328,7 +328,9 @@ func (a *App) callOnExit() error {
 }
 
 func (a *App) initMPV() error {
-	p := mpv.NewWithClientName(a.appName)
+	// Use standard desktop file base name for audio client identification
+	// This matches the desktop file name without .desktop extension
+	p := mpv.NewWithClientName("io.github.dweymouth.supersonic")
 	c := a.Config.LocalPlayback
 	c.InMemoryCacheSizeMB = clamp(c.InMemoryCacheSizeMB, 10, 500)
 	if err := p.Init(c.InMemoryCacheSizeMB); err != nil {

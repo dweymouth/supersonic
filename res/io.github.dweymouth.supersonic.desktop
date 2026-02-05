@@ -8,6 +8,6 @@ Keywords=music;audio;player;subsonic;navidrome;streaming;
 Path=/usr/bin
 Exec=supersonic-desktop
 Terminal=false
-Icon=supersonic-desktop
+Icon=io.github.dweymouth.supersonic
 StartupWMClass=Supersonic
 Categories=Audio;AudioVideo;Music;Player;
