@@ -69,14 +69,27 @@ func InitMPMediaHandler(playbackManager *PlaybackManager, artURLLookup func(trac
 	mpMediaEventRecipient = mp
 	C.register_os_remote_commands()
 
-	mp.playbackManager.OnSongChange(func(track mediaprovider.MediaItem, _ *mediaprovider.Track) {
+	mp.playbackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		// Asynchronously because artwork fetching can take time
 		var meta *mediaprovider.MediaItemMetadata
-		if track != nil {
-			m := track.Metadata()
+		if item != nil {
+			m := item.Metadata()
 			meta = &m
 		}
 		go mp.updateMetadata(meta)
+	})
+	mp.playbackManager.OnRadioMetadataChange(func(radioName, title, artist string) {
+		if title != "" {
+			go mp.updateMetadata(&mediaprovider.MediaItemMetadata{
+				Name:    title,
+				Artists: []string{artist},
+				Album:   radioName,
+			})
+		} else {
+			go mp.updateMetadata(&mediaprovider.MediaItemMetadata{
+				Name: radioName,
+			})
+		}
 	})
 
 	mp.playbackManager.OnStopped(func() {
@@ -103,16 +116,18 @@ func InitMPMediaHandler(playbackManager *PlaybackManager, artURLLookup func(trac
 func (mp *MPMediaHandler) updateMetadata(meta *mediaprovider.MediaItemMetadata) {
 	var title, artist, artURL string
 	var duration int
-	if meta != nil && meta.ID != "" {
+	if meta != nil {
 		title = meta.Name
+		artist = strings.Join(meta.Artists, ", ")
+		duration = int(meta.Duration.Seconds())
+	}
+	if meta != nil && meta.ID != "" {
 		var err error
 		if artURL, err = mp.artURLLookup(meta.CoverArtID); err != nil {
 			if meta.CoverArtID != "" {
 				log.Printf("error fetching art url: %s", err.Error())
 			}
 		}
-		artist = strings.Join(meta.Artists, ", ")
-		duration = int(meta.Duration.Seconds())
 	}
 
 	cTitle := C.CString(title)

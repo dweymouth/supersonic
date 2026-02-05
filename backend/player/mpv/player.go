@@ -72,6 +72,8 @@ type Player struct {
 	peaksEnabled   bool
 	pauseFade      bool
 
+	icyTitleCb func(string)
+
 	fileLoadedLock sync.Mutex
 	fileLoadedSig  *sync.Cond
 
@@ -129,6 +131,8 @@ func (p *Player) Init(maxCacheMB int) error {
 		if p.clientName != "" {
 			m.SetOptionString("audio-client-name", p.clientName)
 		}
+
+		m.ObserveProperty(0, "metadata", mpv.FORMAT_NODE)
 
 		if err := m.Initialize(); err != nil {
 			return fmt.Errorf("error initializing mpv: %s", err.Error())
@@ -442,6 +446,16 @@ func (p *Player) GetMediaInfo() (MediaInfo, error) {
 	return info, nil
 }
 
+func (p *Player) ObserveIcyRadioTitle(cb func(string)) {
+	p.icyTitleCb = cb
+	p.mpv.ObserveProperty(1, "metadata/icy-title", mpv.FORMAT_STRING)
+}
+
+func (p *Player) UnobserveIcyRadioTitle() {
+	p.icyTitleCb = nil
+	p.mpv.UnobserveProperty(1)
+}
+
 func (p *Player) getInt64Property(propName string) (int64, error) {
 	playpos, err := p.mpv.GetProperty(propName, mpv.FORMAT_INT64)
 	if err != nil {
@@ -548,6 +562,11 @@ func (p *Player) eventHandler(ctx context.Context) {
 				p.status.Duration = 0
 				p.status.TimePos = 0
 				p.setState(player.Stopped)
+			case mpv.EVENT_PROPERTY_CHANGE:
+				if e.Reply_Userdata == 1 && p.icyTitleCb != nil {
+					p.icyTitleCb(p.mpv.GetPropertyString("metadata/icy-title"))
+				}
+
 			}
 		}
 	}
