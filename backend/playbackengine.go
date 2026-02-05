@@ -714,7 +714,7 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 						cb(meta.Name, title, artist)
 					}
 				})
-			} else {
+			} else if ok {
 				mpvP.UnobserveIcyRadioTitle()
 			}
 			if url == "" {
