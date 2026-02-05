@@ -449,6 +449,15 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 			}
 		}()
 	})
+	a.PlaybackManager.OnRadioMetadataChange(func(radioName, title, artist string) {
+		if title != "" {
+			smtc.UpdateMetadata(title, artist)
+			smtc.UpdatePosition(0, 0)
+		} else {
+			smtc.UpdateMetadata(radioName, "")
+			smtc.UpdatePosition(0, 0)
+		}
+	})
 	a.PlaybackManager.OnSeek(func() {
 		playbackStatus := a.PlaybackManager.PlaybackStatus()
 		smtc.UpdatePosition(int(playbackStatus.TimePos*1000), int(playbackStatus.Duration*1000))

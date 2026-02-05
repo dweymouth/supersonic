@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -103,6 +104,8 @@ type playbackEngine struct {
 	onStopped          []func()
 	onPlaying          []func()
 	onQueueChange      []func()
+
+	onRadioMetadataChange []func(radioName, title, artist string)
 }
 
 func NewPlaybackEngine(
@@ -697,6 +700,22 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 				if filepath := p.audiocache.PathForCachedFile(track.ID); filepath != "" {
 					url = filepath
 				}
+			}
+			if mpvP, ok := p.player.(*mpv.Player); ok && !isTrack {
+				mpvP.ObserveIcyRadioTitle(func(icytitle string) {
+					var title, artist string
+					if s := strings.Split(icytitle, " - "); len(s) == 2 {
+						title, artist = s[1], s[0]
+					} else {
+						title = icytitle
+					}
+					log.Println("Radio metadata changed: ", icytitle)
+					for _, cb := range p.onRadioMetadataChange {
+						cb(meta.Name, title, artist)
+					}
+				})
+			} else if ok {
+				mpvP.UnobserveIcyRadioTitle()
 			}
 			if url == "" {
 				return errors.New("no stream URL")
