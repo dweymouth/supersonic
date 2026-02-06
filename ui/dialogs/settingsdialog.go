@@ -2,6 +2,7 @@ package dialogs
 
 import (
 	"errors"
+	"log"
 	"math"
 	"os"
 	"slices"
@@ -41,10 +42,14 @@ type SettingsDialog struct {
 	OnPageNeedsRefresh             func()
 	OnClearCaches                  func()
 
-	config       *backend.Config
-	audioDevices []mpv.AudioDevice
-	themeFiles   map[string]string // filename -> displayName
-	promptText   *widget.RichText
+	config            *backend.Config
+	audioDevices      []mpv.AudioDevice
+	themeFiles        map[string]string // filename -> displayName
+	promptText        *widget.RichText
+	eqPresetManager   *backend.EQPresetManager
+	autoEQManager     *backend.AutoEQManager
+	imageManager      util.ImageFetcher
+	window            fyne.Window
 
 	clientDecidesScrobble bool
 
@@ -62,9 +67,21 @@ func NewSettingsDialog(
 	isReplayGainPlayer bool,
 	isEqualizerPlayer bool,
 	canSavePlayQueue bool,
+	eqPresetMgr *backend.EQPresetManager,
 	window fyne.Window,
+	autoEQManager *backend.AutoEQManager,
+	imageManager util.ImageFetcher,
 ) *SettingsDialog {
-	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList, clientDecidesScrobble: clientDecidesScrobble}
+	s := &SettingsDialog{
+		config:                config,
+		audioDevices:          audioDeviceList,
+		themeFiles:            themeFileList,
+		clientDecidesScrobble: clientDecidesScrobble,
+		eqPresetManager:       eqPresetMgr,
+		autoEQManager:         autoEQManager,
+		imageManager:          imageManager,
+		window:                window,
+	}
 	s.ExtendBaseWidget(s)
 
 	// TODO: It may be a nicer UX to always create the equalizer tab,
@@ -465,7 +482,11 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 	enabled.Checked = s.config.LocalPlayback.EqualizerEnabled
 	geq := NewGraphicEqualizer(s.config.LocalPlayback.EqualizerPreamp,
 		eqBands,
-		s.config.LocalPlayback.GraphicEqualizerBands)
+		s.config.LocalPlayback.GraphicEqualizerBands,
+		s.config.LocalPlayback.EqualizerType,
+		s.eqPresetManager,
+		s.window,
+		s.config.LocalPlayback.ActiveEQPresetName)
 	debouncer := util.NewDebouncer(350*time.Millisecond, func() {
 		if s.OnEqualizerSettingsChanged != nil {
 			s.OnEqualizerSettingsChanged()
@@ -479,8 +500,148 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 		s.config.LocalPlayback.EqualizerPreamp = g
 		debouncer()
 	}
+	geq.OnManualAdjustment = func() {
+		// Clear AutoEQ profile and preset when user manually adjusts sliders
+		s.config.LocalPlayback.AutoEQProfilePath = ""
+		s.config.LocalPlayback.AutoEQProfileName = ""
+		s.config.LocalPlayback.ActiveEQPresetName = ""
+		geq.ClearProfileLabel()
+		geq.ClearPresetSelection()
+	}
+	geq.OnLoadAutoEQProfile = func() {
+		s.openAutoEQBrowser(geq, debouncer)
+	}
+	geq.OnPresetSelected = func(presetName string) {
+		// Save the active preset name in config
+		s.config.LocalPlayback.ActiveEQPresetName = presetName
+	}
+	geq.OnPresetDeleted = func(presetName string) {
+		// Clear active preset name if the deleted preset was active
+		if s.config.LocalPlayback.ActiveEQPresetName == presetName {
+			s.config.LocalPlayback.ActiveEQPresetName = ""
+		}
+	}
+	geq.OnEQTypeChanged = func(eqType string) {
+		// Update config with new EQ type
+		s.config.LocalPlayback.EqualizerType = eqType
+
+		// Convert bands using interpolation to preserve EQ curve shape
+		var newBands []float64
+		currentBands := s.config.LocalPlayback.GraphicEqualizerBands
+
+		if eqType == "ISO10Band" {
+			// Converting from 15-band to 10-band
+			if len(currentBands) == 15 {
+				// Use interpolation to downsample
+				var bands15 [15]float64
+				copy(bands15[:], currentBands)
+				bands10 := backend.Interpolate15BandTo10Band(bands15)
+				newBands = bands10[:]
+			} else {
+				// Already 10-band or invalid size, just copy what we can
+				newBands = make([]float64, 10)
+				numCopy := min(len(currentBands), 10)
+				copy(newBands, currentBands[:numCopy])
+			}
+		} else {
+			// Converting from 10-band to 15-band
+			if len(currentBands) == 10 {
+				// Use interpolation to upsample
+				var bands10 [10]float64
+				copy(bands10[:], currentBands)
+				bands15 := backend.InterpolateAutoEQTo15Band(bands10)
+				newBands = bands15[:]
+			} else {
+				// Already 15-band or invalid size, just copy what we can
+				newBands = make([]float64, 15)
+				numCopy := min(len(currentBands), 15)
+				copy(newBands, currentBands[:numCopy])
+			}
+		}
+		s.config.LocalPlayback.GraphicEqualizerBands = newBands
+
+		// Dynamically rebuild the UI with the correct number of sliders
+		geq.RebuildForEQType(eqType, newBands)
+
+		// Apply the change to the player
+		if s.OnEqualizerSettingsChanged != nil {
+			s.OnEqualizerSettingsChanged()
+		}
+	}
+
+	// Restore profile label if a profile is currently applied
+	if s.config.LocalPlayback.AutoEQProfileName != "" {
+		geq.SetProfileLabel(s.config.LocalPlayback.AutoEQProfileName)
+	}
+
 	cont := container.NewBorder(enabled, nil, nil, nil, geq)
 	return container.NewTabItem(lang.L("Equalizer"), cont)
+}
+
+func (s *SettingsDialog) openAutoEQBrowser(geq *GraphicEqualizer, debouncer func()) {
+	if s.autoEQManager == nil {
+		log.Printf("ERROR: AutoEQ manager not available (nil)")
+		return
+	}
+	if s.imageManager == nil {
+		log.Printf("ERROR: Image manager not available (nil)")
+		return
+	}
+
+	browser := NewAutoEQBrowser(s.autoEQManager, s.imageManager)
+
+	// Show in a modal popup dialog
+	var popup *widget.PopUp
+	popup = widget.NewModalPopUp(browser.SearchDialog, s.window.Canvas())
+
+	browser.SetOnProfileSelected(func(profile *backend.AutoEQProfile) {
+		s.applyAutoEQProfile(profile, geq, debouncer)
+		popup.Hide()
+	})
+	browser.SetOnDismiss(func() {
+		popup.Hide()
+	})
+
+	popup.Show()
+	s.window.Canvas().Focus(browser.GetSearchEntry())
+}
+
+func (s *SettingsDialog) applyAutoEQProfile(profile *backend.AutoEQProfile, geq *GraphicEqualizer, debouncer func()) {
+	// Use native 10-band AutoEQ profile
+	// Update config to use ISO10Band type
+	s.config.LocalPlayback.EqualizerType = "ISO10Band"
+	s.config.LocalPlayback.EqualizerPreamp = profile.Preamp
+	s.config.LocalPlayback.AutoEQProfilePath = profile.Path
+	s.config.LocalPlayback.AutoEQProfileName = profile.Name
+	s.config.LocalPlayback.ActiveEQPresetName = "" // Clear preset when applying AutoEQ
+
+	// Ensure GraphicEqualizerBands has the right size for 10 bands
+	if len(s.config.LocalPlayback.GraphicEqualizerBands) != 10 {
+		s.config.LocalPlayback.GraphicEqualizerBands = make([]float64, 10)
+	}
+
+	// Copy native 10-band values
+	for i := 0; i < 10; i++ {
+		s.config.LocalPlayback.GraphicEqualizerBands[i] = profile.Bands[i]
+	}
+
+	// Update UI using applyPreset to avoid triggering manual adjustment
+	preset := backend.EQPreset{
+		Name:   profile.Name,
+		Type:   "ISO10Band",
+		Preamp: profile.Preamp,
+		Bands:  profile.Bands[:],
+	}
+	geq.applyPreset(preset)
+
+	// Clear preset dropdown since AutoEQ is now active
+	geq.ClearPresetSelection()
+
+	// Show profile label
+	geq.SetProfileLabel(profile.Name)
+
+	// Trigger equalizer update
+	debouncer()
 }
 
 func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabItem {
