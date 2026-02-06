@@ -12,6 +12,7 @@ import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/sharedutil"
+	"github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
 
@@ -70,8 +71,9 @@ func (ab *AutoEQBrowser) profileToSearchResult(profile backend.AutoEQProfileMeta
 
 	return &mediaprovider.SearchResult{
 		Name:       profile.Name,
-		ID:         profile.Path, // Store path as ID for retrieval
-		Type:       mediaprovider.ContentTypeAlbum, // Use album icon (looks like headphones)
+		Icon:       theme.HeadphonesIcon,           // Use headphone icon for all profiles
+		ID:         profile.Path,                   // Store path as ID for retrieval
+		Type:       mediaprovider.ContentTypeOther, // Use "Other" content type for AutoEQ profiles
 		ArtistName: subtitle,
 		Size:       0, // Don't show track count
 	}
