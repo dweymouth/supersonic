@@ -43,17 +43,19 @@ var (
 )
 
 type App struct {
-	Config          *Config
-	ServerManager   *ServerManager
-	LyricsManager   *LyricsManager
-	ImageManager    *ImageManager
-	AudioCache      *AudioCache
-	PlaybackManager *PlaybackManager
-	LocalPlayer     *mpv.Player
-	UpdateChecker   UpdateChecker
-	MPRISHandler    *MPRISHandler
-	WinSMTC         *windows.SMTC
-	ipcServer       ipc.IPCServer
+	Config           *Config
+	ServerManager    *ServerManager
+	LyricsManager    *LyricsManager
+	ImageManager     *ImageManager
+	AudioCache       *AudioCache
+	AutoEQManager    *AutoEQManager
+	EQPresetManager  *EQPresetManager
+	PlaybackManager  *PlaybackManager
+	LocalPlayer      *mpv.Player
+	UpdateChecker    UpdateChecker
+	MPRISHandler     *MPRISHandler
+	WinSMTC          *windows.SMTC
+	ipcServer        ipc.IPCServer
 
 	// UI callbacks to be set in main
 	OnReactivate func()
@@ -165,6 +167,11 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		fetch = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl, timeout)
 	}
 	a.LyricsManager = NewLyricsManager(a.ServerManager, fetch)
+	a.EQPresetManager = NewEQPresetManager(confDir)
+
+	// Initialize AutoEQ manager
+	autoEQTimeout := time.Duration(a.Config.Application.RequestTimeoutSeconds) * time.Second
+	a.AutoEQManager = NewAutoEQManager(filepath.Join(cacheDir, "autoeq"), autoEQTimeout)
 
 	// Periodically scan for remote players
 	go a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, true /*fastScan*/)
@@ -386,11 +393,31 @@ func (a *App) setupMPV() error {
 	a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
 	a.LocalPlayer.SetPauseFade(a.Config.LocalPlayback.PauseFade)
 
-	eq := &mpv.ISO15BandEqualizer{
-		EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
-		Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+	// Initialize the appropriate equalizer type based on config
+	var eq mpv.Equalizer
+	if a.Config.LocalPlayback.EqualizerType == "ISO10Band" {
+		eq10 := &mpv.ISO10BandEqualizer{
+			EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
+			Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+		}
+		// Copy up to 10 bands
+		numBands := min(len(a.Config.LocalPlayback.GraphicEqualizerBands), 10)
+		for i := 0; i < numBands; i++ {
+			eq10.BandGains[i] = a.Config.LocalPlayback.GraphicEqualizerBands[i]
+		}
+		eq = eq10
+	} else {
+		eq15 := &mpv.ISO15BandEqualizer{
+			EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
+			Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+		}
+		// Copy up to 15 bands
+		numBands := min(len(a.Config.LocalPlayback.GraphicEqualizerBands), 15)
+		for i := 0; i < numBands; i++ {
+			eq15.BandGains[i] = a.Config.LocalPlayback.GraphicEqualizerBands[i]
+		}
+		eq = eq15
 	}
-	copy(eq.BandGains[:], a.Config.LocalPlayback.GraphicEqualizerBands)
 	a.LocalPlayer.SetEqualizer(eq)
 
 	return nil
