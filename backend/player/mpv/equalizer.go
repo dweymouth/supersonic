@@ -143,7 +143,7 @@ func (i *ISO10BandEqualizer) Preamp() float64 {
 }
 
 func (i *ISO10BandEqualizer) Curve() EqualizerCurve {
-	fC := float64(31)
+	fC := float64(31.25)
 	curve := make([]EqualizerBand, 0, len(i.BandGains))
 	for _, bandGain := range i.BandGains {
 		curve = append(curve, EqualizerBand{
