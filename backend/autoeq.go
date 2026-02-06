@@ -514,8 +514,3 @@ func (m *AutoEQManager) updateLRU(path string) {
 		}
 	}
 }
-
-// InterpolateTo15Band converts this profile's 10-band EQ to Supersonic's 15-band format
-func (p *AutoEQProfile) InterpolateTo15Band() [15]float64 {
-	return InterpolateAutoEQTo15Band(p.Bands)
-}
