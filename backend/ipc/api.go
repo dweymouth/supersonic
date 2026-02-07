@@ -27,6 +27,7 @@ const (
 	VolumeAdjustPath      = "/volume/adjust"     // ?pct=<+/- percentage>
 	ShowPath              = "/window/show"
 	QuitPath              = "/window/quit"
+	RateCurrentTrackPath  = "/current_track/rate" // ?r=<rating 0-5>
 )
 
 type Response struct {
@@ -75,4 +76,8 @@ func BuildSearchPlaylistPath(search string) string {
 func BuildSearchTrackPath(search string) string {
 	s := url.QueryEscape(search)
 	return fmt.Sprintf("%s?s=%s", SearchTrackPath, s)
+}
+
+func BuildRateCurrentTrackPath(rating int) string {
+	return fmt.Sprintf("%s?r=%d", RateCurrentTrackPath, rating)
 }

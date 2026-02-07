@@ -203,8 +203,21 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		ipc.DestroyConn() // cleanup socket possibly orphaned by crashed process
 		listener, err := ipc.Listen()
 		if err == nil {
+			ipcRatingHandler := func(rating int) {
+				if s := a.ServerManager.GetServer(); s != nil {
+					if tr := a.PlaybackManager.NowPlaying(); tr != nil && tr.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+						if supportsRating, ok := s.(mediaprovider.SupportsRating); ok {
+							supportsRating.SetRating(mediaprovider.RatingFavoriteParameters{
+								TrackIDs: []string{tr.Metadata().ID},
+							}, rating)
+						}
+					}
+				}
+			}
+
 			a.ipcServer = ipc.NewServer(
 				a.PlaybackManager,
+				ipcRatingHandler,
 				a.ServerManager,
 				a.callOnReactivate,
 				func() { _ = a.callOnExit() })
@@ -650,6 +663,8 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 			fmt.Println(data)
 		}
 		return err
+	case RateCurrentCLIArg >= 0:
+		return cli.RateCurrentTrack(RateCurrentCLIArg)
 	default:
 		return nil
 	}

@@ -12,6 +12,7 @@ import (
 var (
 	VolumeCLIArg         int     = -1
 	SeekToCLIArg         float64 = -1
+	RateCurrentCLIArg    int     = -1
 	SeekByCLIArg         float64 = 0
 	VolumePctCLIArg      float64 = 0
 	PlayAlbumCLIArg      string  = ""
@@ -84,7 +85,9 @@ func init() {
 	}
 	flag.Func("first-track", "start playing from given track (positive integer, to be used with either -play-album or -play-playlist)", func(s string) error {
 		v, err := strconv.Atoi(s)
-		FirstTrackCLIArg = v
+		if err == nil {
+			FirstTrackCLIArg = v
+		}
 		return err
 	})
 
@@ -99,6 +102,13 @@ func init() {
 	flag.Func("search-track", "search track by name, return results as JSON", func(s string) error {
 		SearchTrackCLIArg = s
 		return nil
+	})
+	flag.Func("rate-current", "rate the current track with the given rating (0-5)", func(s string) error {
+		v, err := strconv.Atoi(s)
+		if err == nil {
+			RateCurrentCLIArg = v
+		}
+		return err
 	})
 }
 
