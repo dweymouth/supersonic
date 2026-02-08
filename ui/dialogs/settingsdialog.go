@@ -501,12 +501,11 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 		debouncer()
 	}
 	geq.OnManualAdjustment = func() {
-		// Clear AutoEQ profile and preset when user manually adjusts sliders
+		// Clear AutoEQ profile when user manually adjusts sliders
+		// Preset name persists so Save button can overwrite the loaded preset
 		s.config.LocalPlayback.AutoEQProfilePath = ""
 		s.config.LocalPlayback.AutoEQProfileName = ""
-		s.config.LocalPlayback.ActiveEQPresetName = ""
 		geq.ClearProfileLabel()
-		geq.ClearPresetSelection()
 	}
 	geq.OnLoadAutoEQProfile = func() {
 		s.openAutoEQBrowser(geq, debouncer)
@@ -634,8 +633,9 @@ func (s *SettingsDialog) applyAutoEQProfile(profile *backend.AutoEQProfile, geq 
 	}
 	geq.applyPreset(preset)
 
-	// Clear preset dropdown since AutoEQ is now active
+	// Clear preset dropdown and loaded preset state since AutoEQ is now active
 	geq.ClearPresetSelection()
+	geq.ClearLoadedPresetState()
 
 	// Show profile label
 	geq.SetProfileLabel(profile.Name)

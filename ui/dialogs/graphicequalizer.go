@@ -2,6 +2,7 @@ package dialogs
 
 import (
 	"fmt"
+	"math"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -42,6 +43,9 @@ type GraphicEqualizer struct {
 	parentWindow     fyne.Window
 	isApplyingPreset bool   // Flag to prevent clearing profile during preset application
 	currentEQType    string // Current EQ type ("ISO10Band" or "ISO15Band")
+	isDirty          bool              // true when sliders modified since last preset load/save
+	loadedPreset     *backend.EQPreset // currently loaded preset (nil if none)
+	saveBtn          *widget.Button    // reference for enable/disable control
 }
 
 func NewGraphicEqualizer(preamp float64, bandFreqs []string, bandGains []float64, eqType string, presetMgr *backend.EQPresetManager, parentWindow fyne.Window, activePresetName string) *GraphicEqualizer {
@@ -57,7 +61,16 @@ func NewGraphicEqualizer(preamp float64, bandFreqs []string, bandGains []float64
 	// Set the dropdown to the active preset if one exists
 	if activePresetName != "" {
 		g.setActivePreset(activePresetName)
+		// Populate loadedPreset and detect dirty state on dialog reopen
+		for i, p := range g.eqPresets {
+			if p.Name == activePresetName {
+				g.loadedPreset = &g.eqPresets[i]
+				g.isDirty = !g.matchesPreset(p)
+				break
+			}
+		}
 	}
+	g.updateSaveButtonState()
 
 	return g
 }
@@ -115,9 +128,15 @@ func (g *GraphicEqualizer) buildSliders(preamp float64, bands []string, bandGain
 		}
 	})
 
-	// Save button
-	saveBtn := widget.NewButton(lang.L("Save"), func() {
-		g.showSavePresetDialog()
+	// Save button (overwrites current loaded preset)
+	g.saveBtn = widget.NewButton(lang.L("Save"), func() {
+		g.saveCurrentPreset()
+	})
+	g.saveBtn.Disable() // starts disabled
+
+	// Save As button (always enabled, opens name-entry dialog)
+	saveAsBtn := widget.NewButton(lang.L("Save As"), func() {
+		g.showSaveAsDialog()
 	})
 
 	// Delete button
@@ -149,7 +168,8 @@ func (g *GraphicEqualizer) buildSliders(preamp float64, bands []string, bandGain
 			g.presetSelect,
 			g.autoEQBtn,
 			layout.NewSpacer(),
-			saveBtn,
+			g.saveBtn,
+			saveAsBtn,
 			deleteBtn,
 			resetBtn,
 		),
@@ -187,8 +207,12 @@ func (g *GraphicEqualizer) buildSliderArea(preamp float64, bands []string, bandG
 			g.OnPreampChanged(f)
 		}
 		g.preampSlider.UpdateToolTip()
-		if !g.isApplyingPreset && g.OnManualAdjustment != nil {
-			g.OnManualAdjustment()
+		if !g.isApplyingPreset {
+			g.isDirty = true
+			g.updateSaveButtonState()
+			if g.OnManualAdjustment != nil {
+				g.OnManualAdjustment()
+			}
 		}
 	}
 	g.preampSlider.UpdateToolTip()
@@ -208,8 +232,12 @@ func (g *GraphicEqualizer) buildSliderArea(preamp float64, bands []string, bandG
 				g.OnChanged(_i, f)
 			}
 			g.bandSliders[_i].UpdateToolTip()
-			if !g.isApplyingPreset && g.OnManualAdjustment != nil {
-				g.OnManualAdjustment()
+			if !g.isApplyingPreset {
+				g.isDirty = true
+				g.updateSaveButtonState()
+				if g.OnManualAdjustment != nil {
+					g.OnManualAdjustment()
+				}
 			}
 		}
 		l := newCaptionTextSizeLabel(band, fyne.TextAlignCenter)
@@ -255,6 +283,11 @@ func (g *GraphicEqualizer) RebuildForEQType(eqType string, bandGains []float64) 
 	g.sliderArea = newSliderArea
 	g.container.Objects = []fyne.CanvasObject{g.topBar, g.sliderArea}
 	g.container.Refresh()
+
+	// Clear loaded preset when EQ type changes
+	g.loadedPreset = nil
+	g.isDirty = false
+	g.updateSaveButtonState()
 }
 
 func (g *GraphicEqualizer) updatePresetSelect() {
@@ -346,6 +379,12 @@ func (g *GraphicEqualizer) applyPreset(preset backend.EQPreset) {
 			}
 		}
 	}
+
+	// Track the loaded preset and clear dirty state
+	presetCopy := preset
+	g.loadedPreset = &presetCopy
+	g.isDirty = false
+	g.updateSaveButtonState()
 }
 
 func (g *GraphicEqualizer) getCurrentSettings() backend.EQPreset {
@@ -360,12 +399,61 @@ func (g *GraphicEqualizer) getCurrentSettings() backend.EQPreset {
 	}
 }
 
-func (g *GraphicEqualizer) showSavePresetDialog() {
+func (g *GraphicEqualizer) updateSaveButtonState() {
+	if g.saveBtn == nil {
+		return
+	}
+	if g.loadedPreset != nil && !g.loadedPreset.IsBuiltin && g.isDirty {
+		g.saveBtn.Enable()
+	} else {
+		g.saveBtn.Disable()
+	}
+}
+
+func (g *GraphicEqualizer) saveCurrentPreset() {
+	if g.loadedPreset == nil || g.loadedPreset.IsBuiltin {
+		return
+	}
+	g.savePresetWithName(g.loadedPreset.Name)
+}
+
+func (g *GraphicEqualizer) savePresetWithName(name string) {
+	preset := g.getCurrentSettings()
+	preset.Name = name
+	preset.IsBuiltin = false
+
+	if err := g.presetManager.SavePreset(preset); err != nil {
+		dialog.ShowError(err, g.parentWindow)
+		return
+	}
+
+	// Update loaded preset and clear dirty state
+	g.loadedPreset = &preset
+	g.isDirty = false
+	g.updateSaveButtonState()
+
+	// Reload presets and update UI
+	g.loadPresets()
+	g.updatePresetSelect()
+
+	// Select the newly saved preset
+	g.presetSelect.SetSelected(preset.Name + " *")
+	if g.OnPresetSelected != nil {
+		g.OnPresetSelected(preset.Name)
+	}
+}
+
+func (g *GraphicEqualizer) showSaveAsDialog() {
 	nameEntry := widget.NewEntry()
 	nameEntry.SetPlaceHolder(lang.L("Preset name"))
 
+	// Pre-fill with loaded preset name if it's a custom preset
+	if g.loadedPreset != nil && !g.loadedPreset.IsBuiltin {
+		nameEntry.SetText(g.loadedPreset.Name)
+	}
+
 	formDialog := dialog.NewForm(
-		lang.L("Save Preset"),
+		lang.L("Save Preset As"),
 		lang.L("Save"),
 		lang.L("Cancel"),
 		[]*widget.FormItem{
@@ -376,30 +464,70 @@ func (g *GraphicEqualizer) showSavePresetDialog() {
 				return
 			}
 
-			preset := g.getCurrentSettings()
-			preset.Name = nameEntry.Text
-			preset.IsBuiltin = false
+			name := nameEntry.Text
 
-			if err := g.presetManager.SavePreset(preset); err != nil {
-				dialog.ShowError(err, g.parentWindow)
-				return
+			// Check if name matches a builtin preset
+			for _, p := range g.eqPresets {
+				if p.Name == name && p.IsBuiltin {
+					dialog.ShowInformation(
+						lang.L("Invalid Name"),
+						lang.L("Cannot use the name of a builtin preset"),
+						g.parentWindow,
+					)
+					return
+				}
 			}
 
-			// Reload presets and update UI
-			g.loadPresets()
-			g.updatePresetSelect()
-
-			// Select the newly saved preset
-			g.presetSelect.SetSelected(preset.Name + " *")
-			if g.OnPresetSelected != nil {
-				g.OnPresetSelected(preset.Name)
+			// Check if name matches an existing custom preset
+			for _, p := range g.eqPresets {
+				if p.Name == name && !p.IsBuiltin {
+					dialog.ShowConfirm(
+						lang.L("Overwrite Preset"),
+						fmt.Sprintf(lang.L("Preset '%s' already exists. Overwrite?"), name),
+						func(overwrite bool) {
+							if overwrite {
+								g.savePresetWithName(name)
+							}
+						},
+						g.parentWindow,
+					)
+					return
+				}
 			}
+
+			g.savePresetWithName(name)
 		},
 		g.parentWindow,
 	)
 
 	formDialog.Resize(fyne.NewSize(400, 150))
 	formDialog.Show()
+}
+
+// matchesPreset compares current slider values against a preset
+func (g *GraphicEqualizer) matchesPreset(preset backend.EQPreset) bool {
+	if g.preampSlider == nil {
+		return false
+	}
+	if math.Abs(g.preampSlider.Value-preset.Preamp) > 0.05 {
+		return false
+	}
+	if len(g.bandSliders) != len(preset.Bands) {
+		return false
+	}
+	for i, slider := range g.bandSliders {
+		if math.Abs(slider.Value-preset.Bands[i]) > 0.05 {
+			return false
+		}
+	}
+	return true
+}
+
+// ClearLoadedPresetState clears the loaded preset and dirty state
+func (g *GraphicEqualizer) ClearLoadedPresetState() {
+	g.loadedPreset = nil
+	g.isDirty = false
+	g.updateSaveButtonState()
 }
 
 func (g *GraphicEqualizer) showDeletePresetDialog() {
