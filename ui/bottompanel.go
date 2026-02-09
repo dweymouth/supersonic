@@ -106,6 +106,9 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	pm.OnLoopModeChange(func(lm backend.LoopMode) {
 		fyne.Do(func() { bp.AuxControls.SetLoopMode(lm) })
 	})
+	pm.OnShuffleChange(func(lm bool) {
+		fyne.Do(func() { bp.AuxControls.SetShuffle(lm) })
+	})
 	pm.OnVolumeChange(func(vol int) {
 		fyne.Do(func() { bp.AuxControls.VolumeControl.SetVolume(vol) })
 	})

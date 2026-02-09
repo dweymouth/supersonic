@@ -110,6 +110,7 @@ type playbackEngine struct {
 	onSongChange       []func(nowPlaying mediaprovider.MediaItem, justScrobbledIfAny *mediaprovider.Track)
 	onPlayTimeUpdate   []func(float64, float64, bool)
 	onLoopModeChange   []func(LoopMode)
+	onShuffleChange    []func(bool)
 	onVolumeChange     []func(int)
 	onSeek             []func()
 	onPaused           []func()
@@ -148,6 +149,8 @@ func NewPlaybackEngine(
 	case "One":
 		pm.loopMode = LoopOne
 	}
+
+	pm.shuffle = playbackCfg.Shuffle
 
 	pm.registerPlayerCallbacks(p)
 	s.OnLogout(func() {
@@ -231,10 +234,11 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 // ======================= START PLAY QUEUE FUNCS ===========================
 
 func (p *playbackEngine) getPlayQueue() []mediaprovider.MediaItem {
-	if p.shuffle {
-		return p.shuffledPlayQueue
-	}
 	return p.playQueue
+}
+
+func (p *playbackEngine) getShuffledPlayQueue() []mediaprovider.MediaItem {
+	return p.shuffledPlayQueue
 }
 
 func (p *playbackEngine) getActivePlayQueue() []mediaprovider.MediaItem {
@@ -245,10 +249,12 @@ func (p *playbackEngine) getActivePlayQueue() []mediaprovider.MediaItem {
 }
 
 func (p *playbackEngine) getPlayQueueLength() int {
-	return len(p.getPlayQueue())
+	return len(p.getActivePlayQueue())
 }
 
 func (p *playbackEngine) clearPlayQueue() {
+	p.player.Stop(false)
+	p.nowPlayingIdx = -1
 	p.playQueue = nil
 	p.shuffledPlayQueue = nil
 }
@@ -262,7 +268,7 @@ func (p *playbackEngine) setShuffledPlayQueue(items []mediaprovider.MediaItem) {
 }
 
 func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
-	return p.getPlayQueue()[idx]
+	return p.getActivePlayQueue()[idx]
 }
 
 func (p *playbackEngine) insertItemsIntoPlayQueueAt(items []mediaprovider.MediaItem, idx int, queueType QueueType) {
@@ -282,7 +288,7 @@ func (p *playbackEngine) GetPlayQueueDeepCopy() []mediaprovider.MediaItem {
 }
 
 func (p *playbackEngine) GetShuffledPlayQueueDeepCopy() []mediaprovider.MediaItem {
-	return deepCopyMediaItemSlice(p.getPlayQueue())
+	return deepCopyMediaItemSlice(p.getShuffledPlayQueue())
 }
 
 func (p *playbackEngine) GetActivePlayQueueDeepCopy() []mediaprovider.MediaItem {
@@ -351,23 +357,26 @@ func (p *playbackEngine) GetNowPlayingIdxFrom(items []mediaprovider.MediaItem) i
 }
 
 func (p *playbackEngine) SetShuffle(shuffle bool) {
+	for _, cb := range p.onShuffleChange {
+		cb(shuffle)
+	}
+
 	if p.shuffle == shuffle {
 		return
 	}
-
-	var newNowPlayingIdx int
+	newNowPlayingIdx := 0
 	if shuffle {
 		shuffledQueue := deepCopyMediaItemSlice(p.playQueue)
 		rand.Shuffle(len(shuffledQueue), func(i, j int) {
 			shuffledQueue[i], shuffledQueue[j] = shuffledQueue[j], shuffledQueue[i]
 		})
-		p.shuffledPlayQueue = sharedutil.ReorderItems(shuffledQueue, []int{p.GetNowPlayingIdxFrom(shuffledQueue)}, 0)
-		newNowPlayingIdx = 0
+		p.setShuffledPlayQueue(sharedutil.ReorderItems(shuffledQueue, []int{p.GetNowPlayingIdxFrom(shuffledQueue)}, 0))
 	} else {
 		newNowPlayingIdx = p.GetNowPlayingIdxFrom(p.playQueue)
 	}
 
 	p.shuffle = shuffle
+
 	if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
 		return
 	}
@@ -471,6 +480,23 @@ func (p *playbackEngine) Continue() error {
 	return p.player.Continue()
 }
 
+// Load items into the specified queue(s). This overrides the queue. For standard inserts or replaces use p.LoadItems
+// This is used on program startup to populate both the playQueue and shuffledPlayQueue with the previously saved client state.
+func (p *playbackEngine) SetQueueState(tracks []*mediaprovider.Track, queueType QueueType) error {
+	newTracks := sharedutil.CopyTrackSliceToMediaItemSlice(tracks)
+	switch queueType {
+	case PlayQueue:
+		p.setPlayQueue(newTracks)
+	case ShuffledPlayQueue:
+		p.setShuffledPlayQueue(newTracks)
+	case Both:
+		p.setPlayQueue(newTracks)
+		p.setShuffledPlayQueue(newTracks)
+	}
+	p.invokeNoArgCallbacks(p.onQueueChange)
+	return nil
+}
+
 // Load items into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *playbackEngine) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
@@ -489,8 +515,6 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 	queueType := PlayQueue
 
 	if insertQueueMode == Replace {
-		p.player.Stop(false)
-		p.nowPlayingIdx = -1
 		p.clearPlayQueue()
 	}
 	if nextChanged := len(items) > 0 && (insertQueueMode != Append || (p.nowPlayingIdx == p.getPlayQueueLength()-1)); nextChanged {
@@ -528,8 +552,6 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 
 func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, insertMode InsertQueueMode) {
 	if insertMode == Replace {
-		p.player.Stop(false)
-		p.nowPlayingIdx = -1
 		p.clearPlayQueue()
 	}
 	if nextChanged := insertMode == InsertNext || (insertMode == Append && p.nowPlayingIdx == p.getPlayQueueLength()-1); nextChanged {
@@ -546,9 +568,7 @@ func (p *playbackEngine) LoadRadioStation(radio *mediaprovider.RadioStation, ins
 // Stop playback and clear the play queue.
 func (p *playbackEngine) StopAndClearPlayQueue() {
 	changed := p.getPlayQueueLength() > 0
-	p.player.Stop(false)
 	p.clearPlayQueue()
-	p.nowPlayingIdx = -1
 	if changed {
 		p.invokeNoArgCallbacks(p.onQueueChange)
 	}
@@ -557,7 +577,7 @@ func (p *playbackEngine) StopAndClearPlayQueue() {
 // Any time the user changes the favorite status of a track elsewhere in the app,
 // this should be called to ensure the in-memory track model is updated.
 func (p *playbackEngine) OnTrackFavoriteStatusChanged(id string, fav bool) {
-	if item := sharedutil.FindMediaItemByID(id, p.getPlayQueue()); item != nil {
+	if item := sharedutil.FindMediaItemByID(id, p.getActivePlayQueue()); item != nil {
 		if tr, ok := item.(*mediaprovider.Track); ok {
 			tr.Favorite = fav
 		}
@@ -567,7 +587,7 @@ func (p *playbackEngine) OnTrackFavoriteStatusChanged(id string, fav bool) {
 // Any time the user changes the rating of a track elsewhere in the app,
 // this should be called to ensure the in-memory track model is updated.
 func (p *playbackEngine) OnTrackRatingChanged(id string, rating int) {
-	if item := sharedutil.FindMediaItemByID(id, p.getPlayQueue()); item != nil {
+	if item := sharedutil.FindMediaItemByID(id, p.getActivePlayQueue()); item != nil {
 		if tr, ok := item.(*mediaprovider.Track); ok {
 			tr.Rating = rating
 		}
@@ -616,7 +636,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 		// remove tracks by ID from playQueue
 		ids := p.GetTrackIdsFromIdx(idxs)
 		newPlayQueue := make([]mediaprovider.MediaItem, 0, p.getPlayQueueLength()-len(idxs))
-		for _, tr := range p.getPlayQueue() {
+		for _, tr := range p.getActivePlayQueue() {
 			if slices.Contains(ids, tr.Metadata().ID) {
 				//remove id from id list, handles having the same track present multiple times in playQueue
 				idx := slices.Index(ids, tr.Metadata().ID)
@@ -664,7 +684,7 @@ func (p *playbackEngine) RemoveTracksFromQueueByIdx(idxs []int, newQueue *[]medi
 	idxSet := sharedutil.ToSet(idxs)
 	nowPlaying := p.NowPlayingIndex()
 
-	for i, tr := range p.getPlayQueue() {
+	for i, tr := range p.getActivePlayQueue() {
 		if _, ok := idxSet[i]; ok {
 			if i < nowPlaying {
 				// if removing a track earlier than the currently playing one (if any),
