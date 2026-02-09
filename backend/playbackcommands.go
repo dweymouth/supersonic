@@ -25,6 +25,7 @@ const (
 	// arg2: InsertMode
 	// arg3: bool (shuffle)
 	cmdLoadItems
+	cmdSetQueueState
 	cmdLoadRadioStation // arg: *mediaprovider.RadioStation, arg2: InsertQueueMode
 
 	cmdForceRestartPlayback
@@ -160,6 +161,17 @@ func (c *playbackCommandQueue) LoadItems(items []mediaprovider.MediaItem, insert
 	c.cmdAvailable.Signal()
 }
 
+func (c *playbackCommandQueue) SetQueueState(tracks []*mediaprovider.Track, queueType QueueType) {
+	c.mutex.Lock()
+	c.queue = append(c.queue, playbackCommand{
+		Type: cmdSetQueueState,
+		Arg:  tracks,
+		Arg2: queueType,
+	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
+}
+
 func (c *playbackCommandQueue) addCommand(command playbackCommand) {
 	c.mutex.Lock()
 	c.queue = append(c.queue, command)
@@ -194,7 +206,7 @@ func (c *playbackCommandQueue) seekBackOrFwd(direction int) {
 		switch cmd.Type {
 		case cmdSeekFwdBackN:
 			lastIdx = i
-		case cmdRemoveTracksFromQueue, cmdLoadItems, cmdPlayTrackAt,
+		case cmdRemoveTracksFromQueue, cmdLoadItems, cmdSetQueueState, cmdPlayTrackAt,
 			cmdLoadRadioStation, cmdUpdatePlayQueue, cmdStopAndClearPlayQueue:
 			// any queue-modifying command means we can't coalesce any
 			// more seekFwdBackN commands before here

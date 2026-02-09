@@ -622,11 +622,11 @@ func (a *App) SavePlayQueueIfEnabled() {
 func (a *App) LoadSavedPlayQueue() error {
 	queueFilePath := path.Join(a.configDir, savedQueueFile)
 	playQueue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
+
 	var unshuffledPlayQueue *SavedPlayQueue
 	var shuffledPlayQueue *SavedPlayQueue
 
 	isShuffe := a.Config.Playback.Shuffle
-
 	if isShuffe {
 		unshuffledQueueFilePath := path.Join(a.configDir, savedUnshuffledQueueFile)
 		unshuffledPlayQueue, err = LoadPlayQueue(unshuffledQueueFilePath, a.ServerManager, false)
@@ -635,7 +635,7 @@ func (a *App) LoadSavedPlayQueue() error {
 			return err
 		}
 
-		shuffledQueueFilePath := path.Join(a.configDir, savedUnshuffledQueueFile)
+		shuffledQueueFilePath := path.Join(a.configDir, savedShuffledQueueFile)
 		shuffledPlayQueue, err = LoadPlayQueue(shuffledQueueFilePath, a.ServerManager, false)
 
 		if err != nil {
@@ -653,7 +653,25 @@ func (a *App) LoadSavedPlayQueue() error {
 		return nil
 	}
 
-	a.PlaybackManager.LoadTracks(playQueue.Tracks, Replace, false)
+	if isShuffe {
+		serverStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(playQueue.Tracks)
+		clientStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(shuffledPlayQueue.Tracks)
+
+		// Compare items by ID. This fails if any 2 elements don't match up. Two queues with the same items but different order will thus not count as same
+		if slices.EqualFunc(serverStatePlayQueue, clientStatePlayQueue, func(a, b mediaprovider.MediaItem) bool {
+			return (a.Metadata().ID == b.Metadata().ID)
+		}) {
+			a.PlaybackManager.SetQueueState(playQueue.Tracks, ShuffledPlayQueue)
+			a.PlaybackManager.SetQueueState(unshuffledPlayQueue.Tracks, PlayQueue)
+		} else {
+			a.PlaybackManager.SetShuffle(false)
+			a.PlaybackManager.SetQueueState(playQueue.Tracks, PlayQueue)
+		}
+
+	} else {
+		a.PlaybackManager.SetQueueState(playQueue.Tracks, PlayQueue)
+	}
+
 	if playQueue.TrackIndex >= 0 && playQueue.TrackIndex < len(playQueue.Tracks) {
 		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
 		a.PlaybackManager.PlayTrackAt(playQueue.TrackIndex)
@@ -662,23 +680,6 @@ func (a *App) LoadSavedPlayQueue() error {
 		a.PlaybackManager.SeekSeconds(playQueue.TimePos)
 	}
 
-	if isShuffe {
-		// check if queue was changed server side
-		if len(playQueue.Tracks) != len(unshuffledPlayQueue.Tracks) {
-			// queue was changed server side, no need to compare elements
-			a.PlaybackManager.SetShuffle(false)
-		} else {
-			serverStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(playQueue.Tracks)
-			clientStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(shuffledPlayQueue.Tracks)
-
-			if slices.Equal(serverStatePlayQueue, clientStatePlayQueue) {
-				fmt.Println("Loading unshuffled items into playQueue")
-				a.PlaybackManager.LoadTracks(unshuffledPlayQueue.Tracks, Replace, false)
-			} else {
-				a.PlaybackManager.SetShuffle(false)
-			}
-		}
-	}
 	return nil
 }
 

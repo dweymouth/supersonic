@@ -333,6 +333,11 @@ func (p *PlaybackManager) OnLoopModeChange(cb func(LoopMode)) {
 	p.engine.onLoopModeChange = append(p.engine.onLoopModeChange, cb)
 }
 
+// Registers a callback that is notified whenever the shuffle state changes.
+func (p *PlaybackManager) OnShuffleChange(cb func(bool)) {
+	p.engine.onShuffleChange = append(p.engine.onShuffleChange, cb)
+}
+
 // Registers a callback that is notified whenever the volume changes.
 func (p *PlaybackManager) OnVolumeChange(cb func(int)) {
 	p.engine.onVolumeChange = append(p.engine.onVolumeChange, cb)
@@ -398,6 +403,12 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueM
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) {
 	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
+}
+
+// Load items into the currently active queue. (shuffledPlayQueue/playQueue)
+// If replacing the current queue (!appendToQueue), playback will be stopped.
+func (p *PlaybackManager) SetQueueState(tracks []*mediaprovider.Track, queueType QueueType) {
+	p.cmdQueue.SetQueueState(tracks, queueType)
 }
 
 // Replaces the play queue with the given set of tracks.
@@ -743,7 +754,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 	}
 
 	// last 500 played items
-	queue := p.GetPlayQueue()
+	queue := p.GetActivePlayQueue()
 	if l := len(queue); l > 500 {
 		queue = queue[l-500:]
 	}
@@ -858,6 +869,12 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					c.Arg3.(bool),
 				)
 				logIfErr("LoadItems", err)
+			case cmdSetQueueState:
+				err := p.engine.SetQueueState(
+					c.Arg.([]*mediaprovider.Track),
+					c.Arg2.(QueueType),
+				)
+				logIfErr("SetQueueState", err)
 			case cmdLoadRadioStation:
 				p.engine.LoadRadioStation(
 					c.Arg.(*mediaprovider.RadioStation),
