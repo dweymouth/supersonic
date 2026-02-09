@@ -348,11 +348,11 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	})
 	a.editButton.Hidden = true
 	playButton := widget.NewButtonWithIcon(lang.L("Play"), theme.MediaPlayIcon(), func() {
-		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, backend.Both, false)
+		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, false)
 		a.page.pm.PlayFromBeginning()
 	})
 	shuffleBtn := widget.NewButtonWithIcon(lang.L("Shuffle"), myTheme.ShuffleIcon, func() {
-		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, backend.Both, true)
+		a.page.pm.LoadTracks(a.page.tracks, backend.Replace, true)
 		a.page.pm.PlayFromBeginning()
 	})
 

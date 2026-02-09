@@ -35,7 +35,6 @@ type playbackCommand struct {
 	Arg    any
 	Arg2   any
 	Arg3   any
-	Arg4   any
 	OnDone func()
 }
 
@@ -149,14 +148,13 @@ func (c *playbackCommandQueue) LoadRadioStation(radio *mediaprovider.RadioStatio
 	c.cmdAvailable.Signal()
 }
 
-func (c *playbackCommandQueue) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, queueType QueueType, shuffle bool) {
+func (c *playbackCommandQueue) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) {
 	c.mutex.Lock()
 	c.queue = append(c.queue, playbackCommand{
 		Type: cmdLoadItems,
 		Arg:  items,
 		Arg2: insertQueueMode,
-		Arg3: queueType,
-		Arg4: shuffle,
+		Arg3: shuffle,
 	})
 	c.mutex.Unlock()
 	c.cmdAvailable.Signal()

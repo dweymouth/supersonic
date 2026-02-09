@@ -46,19 +46,19 @@ var (
 )
 
 type App struct {
-	Config           *Config
-	ServerManager    *ServerManager
-	LyricsManager    *LyricsManager
-	ImageManager     *ImageManager
-	AudioCache       *AudioCache
-	AutoEQManager    *AutoEQManager
-	EQPresetManager  *EQPresetManager
-	PlaybackManager  *PlaybackManager
-	LocalPlayer      *mpv.Player
-	UpdateChecker    UpdateChecker
-	MPRISHandler     *MPRISHandler
-	WinSMTC          *windows.SMTC
-	ipcServer        ipc.IPCServer
+	Config          *Config
+	ServerManager   *ServerManager
+	LyricsManager   *LyricsManager
+	ImageManager    *ImageManager
+	AudioCache      *AudioCache
+	AutoEQManager   *AutoEQManager
+	EQPresetManager *EQPresetManager
+	PlaybackManager *PlaybackManager
+	LocalPlayer     *mpv.Player
+	UpdateChecker   UpdateChecker
+	MPRISHandler    *MPRISHandler
+	WinSMTC         *windows.SMTC
+	ipcServer       ipc.IPCServer
 
 	// UI callbacks to be set in main
 	OnReactivate func()
@@ -653,7 +653,7 @@ func (a *App) LoadSavedPlayQueue() error {
 		return nil
 	}
 
-	a.PlaybackManager.LoadTracks(playQueue.Tracks, Replace, Both, false)
+	a.PlaybackManager.LoadTracks(playQueue.Tracks, Replace, false)
 	if playQueue.TrackIndex >= 0 && playQueue.TrackIndex < len(playQueue.Tracks) {
 		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
 		a.PlaybackManager.PlayTrackAt(playQueue.TrackIndex)
@@ -673,8 +673,7 @@ func (a *App) LoadSavedPlayQueue() error {
 
 			if slices.Equal(serverStatePlayQueue, clientStatePlayQueue) {
 				fmt.Println("Loading unshuffled items into playQueue")
-				a.PlaybackManager.SetShuffle(true)
-				a.PlaybackManager.LoadTracks(unshuffledPlayQueue.Tracks, Replace, PlayQueue, false)
+				a.PlaybackManager.LoadTracks(unshuffledPlayQueue.Tracks, Replace, false)
 			} else {
 				a.PlaybackManager.SetShuffle(false)
 			}
