@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:cc="http://creativecommons.org/ns#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:svg="http://www.w3.org/2000/svg"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="128" height="128" version="1.1">
+    <title>Clarity Icon</title>
+    <desc>This is shape (source) for Clarity vector icon theme for gtk</desc>
+    <metadata>
+        <rdf:RDF>
+            <cc:Work rdf:about="">
+                <dc:title>Clarity Icon</dc:title>
+                <dc:description>This is shape (source) for Clarity vector icon theme for gtk</dc:description>
+                <dc:creator>
+                    <cc:Agent>
+                        <dc:title>Jakub Jankiewicz</dc:title>
+                    </cc:Agent>
+                </dc:creator>
+                <dc:rights>
+                    <cc:Agent>
+                        <dc:title>Jakub Jankiewicz</dc:title>
+                    </cc:Agent>
+                </dc:rights>
+                <dc:date>2010</dc:date>
+                <dc:format>image/svg+xml</dc:format>
+                <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+                <cc:license rdf:resource="http://creativecommons.org/licenses/by-sa/3.0/" />
+             </cc:Work>
+        </rdf:RDF>
+    </metadata>
+    <path d="m 19.699937,14.248006 c -3.96276,0 -7.12317,3.160405 -7.12317,7.123169 l 0,73.871171 c 0,1.773366 0.58862,2.346919 1.61625,3.374548 l 13.90492,13.904916 c 1.05639,1.05639 1.87534,1.2957 3.23955,1.2957 l 76.968473,0 c 3.96276,0 7.15414,-3.19137 7.15414,-7.15414 l 0,-85.292195 c 0,-3.962764 -3.19138,-7.123169 -7.15414,-7.123169 z m 7.37093,10.870575 73.895133,0 0,34.438972 -73.895133,0 z m 13.28626,46.393508 42.92483,0 c 3.96276,0 7.15414,3.191375 7.15414,7.154139 l 0,20.378456 c 0,3.962756 -3.19138,7.154136 -7.15414,7.154136 l -42.92483,0 c -3.96276,0 -7.12317,-3.19138 -7.12317,-7.154136 l 0,-20.378456 c 0,-3.962764 3.16041,-7.154139 7.12317,-7.154139 z m 2.94217,2.849267 0,23.878101 15.08254,0 0,-23.878101 z"/>
+</svg>
