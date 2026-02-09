@@ -50,10 +50,16 @@ type SettingsDialog struct {
 	autoEQManager   *backend.AutoEQManager
 	imageManager    util.ImageFetcher
 	window          fyne.Window
+	toastProvider   ToastProvider
 
 	clientDecidesScrobble bool
 
 	content fyne.CanvasObject
+}
+
+type ToastProvider interface {
+	ShowSuccessToast(message string)
+	ShowErrorToast(message string)
 }
 
 // TODO: having this depend on the mpv package for the AudioDevice type is kinda gross. Refactor.
@@ -71,6 +77,7 @@ func NewSettingsDialog(
 	window fyne.Window,
 	autoEQManager *backend.AutoEQManager,
 	imageManager util.ImageFetcher,
+	toastProvider ToastProvider,
 ) *SettingsDialog {
 	s := &SettingsDialog{
 		config:                config,
@@ -81,6 +88,7 @@ func NewSettingsDialog(
 		autoEQManager:         autoEQManager,
 		imageManager:          imageManager,
 		window:                window,
+		toastProvider:         toastProvider,
 	}
 	s.ExtendBaseWidget(s)
 
@@ -587,7 +595,7 @@ func (s *SettingsDialog) openAutoEQBrowser(geq *GraphicEqualizer, debouncer func
 		return
 	}
 
-	browser := NewAutoEQBrowser(s.autoEQManager, s.imageManager)
+	browser := NewAutoEQBrowser(s.autoEQManager, s.imageManager, s.toastProvider)
 
 	// Show in a modal popup dialog
 	var popup *widget.PopUp

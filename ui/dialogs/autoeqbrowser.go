@@ -20,13 +20,15 @@ import (
 type AutoEQBrowser struct {
 	SearchDialog      *SearchDialog
 	manager           *backend.AutoEQManager
+	toastProvider     ToastProvider
 	allProfileResults []*mediaprovider.SearchResult
 	OnProfileSelected func(*backend.AutoEQProfile)
 }
 
-func NewAutoEQBrowser(manager *backend.AutoEQManager, im util.ImageFetcher) *AutoEQBrowser {
+func NewAutoEQBrowser(manager *backend.AutoEQManager, im util.ImageFetcher, toastProvider ToastProvider) *AutoEQBrowser {
 	ab := &AutoEQBrowser{
-		manager: manager,
+		manager:       manager,
+		toastProvider: toastProvider,
 	}
 	sd := NewSearchDialog(
 		im,
@@ -43,7 +45,6 @@ func (ab *AutoEQBrowser) fetchAllProfiles() error {
 	ctx := context.Background()
 	profiles, err := ab.manager.FetchIndex(ctx)
 	if err != nil {
-		log.Printf("Error fetching AutoEQ index: %v", err)
 		// Show empty results on error
 		ab.allProfileResults = []*mediaprovider.SearchResult{}
 		return fmt.Errorf("failed to fetch AutoEQ index: %w", err)
@@ -83,14 +84,10 @@ func (ab *AutoEQBrowser) onSearched(query string) []*mediaprovider.SearchResult 
 	if ab.allProfileResults == nil {
 		if err := ab.fetchAllProfiles(); err != nil {
 			log.Printf("Failed to load AutoEQ profiles: %v", err)
-			// Return a single error result
-			return []*mediaprovider.SearchResult{
-				{
-					Name:       lang.L("Error loading AutoEQ profiles"),
-					ArtistName: lang.L("Check network connection and try again"),
-					Type:       mediaprovider.ContentTypePlaylist,
-				},
-			}
+			fyne.Do(func() {
+				ab.toastProvider.ShowErrorToast(lang.L("Error loading AutoEQ profiles"))
+			})
+			return []*mediaprovider.SearchResult{}
 		}
 	}
 
@@ -114,18 +111,20 @@ func (ab *AutoEQBrowser) SetOnDismiss(onDismiss func()) {
 func (ab *AutoEQBrowser) SetOnProfileSelected(callback func(*backend.AutoEQProfile)) {
 	ab.OnProfileSelected = callback
 	ab.SearchDialog.OnNavigateTo = func(_ mediaprovider.ContentType, profilePath string) {
-		// Fetch the full profile data
-		ctx := context.Background()
-		profile, err := ab.manager.FetchProfile(ctx, profilePath)
-		if err != nil {
-			log.Printf("Error fetching AutoEQ profile: %v", err)
-			// TODO: Show error dialog to user
-			return
-		}
-
-		if ab.OnProfileSelected != nil {
-			ab.OnProfileSelected(profile)
-		}
+		go func() {
+			// Fetch the full profile data
+			profile, err := ab.manager.FetchProfile(context.Background(), profilePath)
+			fyne.Do(func() {
+				if err != nil {
+					log.Printf("Error loading AutoEQ profile: %v", err)
+					ab.toastProvider.ShowErrorToast(lang.L("Error loading AutoEQ profile"))
+				} else {
+					if ab.OnProfileSelected != nil {
+						ab.OnProfileSelected(profile)
+					}
+				}
+			})
+		}()
 	}
 }
 
@@ -147,22 +146,4 @@ func (ab *AutoEQBrowser) Hide() {
 
 func (ab *AutoEQBrowser) Refresh() {
 	ab.SearchDialog.Refresh()
-}
-
-// ShowErrorDialog displays an error message to the user
-func ShowAutoEQError(window fyne.Window, err error) {
-	title := lang.L("Error")
-	message := lang.L("Failed to load profile")
-
-	if err == backend.ErrProfileNotFound {
-		message = lang.L("Profile not found")
-	} else if strings.Contains(err.Error(), "context deadline exceeded") ||
-		strings.Contains(err.Error(), "connection") {
-		message = lang.L("Network error. Check connection.")
-	}
-
-	// Use a simple dialog (would need to import "fyne.io/fyne/v2/dialog")
-	// For now just log it
-	log.Printf("AutoEQ Error: %s - %v", message, err)
-	fmt.Printf("%s: %s\n", title, message)
 }

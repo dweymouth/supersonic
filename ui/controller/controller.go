@@ -330,7 +330,8 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 		c.App.EQPresetManager,
 		c.MainWindow,
 		c.App.AutoEQManager,
-		c.App.ImageManager)
+		c.App.ImageManager,
+		c.ToastProvider)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
 	}
