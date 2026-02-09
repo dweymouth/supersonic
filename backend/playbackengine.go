@@ -342,40 +342,54 @@ func (p *playbackEngine) GetLoopMode() LoopMode {
 	return p.loopMode
 }
 
-func (p *playbackEngine) GetNowPlayingIdxFrom(items []mediaprovider.MediaItem) int {
-	newNowPlayingIdx := -1
-	if p.nowPlayingIdx >= 0 && len(items) > p.nowPlayingIdx {
-		nowPlayingID := p.getPlayQueueItemAt(p.nowPlayingIdx).Metadata().ID
-		for i, tr := range items {
-			if tr.Metadata().ID == nowPlayingID {
-				newNowPlayingIdx = i
-				break
-			}
+func (p *playbackEngine) GetTrackIdxByIdFrom(items []mediaprovider.MediaItem, id string) int {
+	foundIdx := -1
+	for i, tr := range items {
+		if tr.Metadata().ID == id {
+			foundIdx = i
+			break
 		}
 	}
-	return newNowPlayingIdx
+	return foundIdx
 }
 
 func (p *playbackEngine) SetShuffle(shuffle bool) {
-	for _, cb := range p.onShuffleChange {
-		cb(shuffle)
-	}
 
 	if p.shuffle == shuffle {
 		return
 	}
+
+	for _, cb := range p.onShuffleChange {
+		cb(shuffle)
+	}
+	p.shuffle = shuffle
+
+	// guard against changing shuffle with an empty queue
+	if p.getPlayQueue() == nil || len(p.getPlayQueue()) == 0 {
+		return
+	}
+
 	newNowPlayingIdx := 0
 	if shuffle {
 		shuffledQueue := deepCopyMediaItemSlice(p.playQueue)
 		rand.Shuffle(len(shuffledQueue), func(i, j int) {
 			shuffledQueue[i], shuffledQueue[j] = shuffledQueue[j], shuffledQueue[i]
 		})
-		p.setShuffledPlayQueue(sharedutil.ReorderItems(shuffledQueue, []int{p.GetNowPlayingIdxFrom(shuffledQueue)}, 0))
+		if p.nowPlayingIdx >= 0 && len(p.getPlayQueue()) > p.nowPlayingIdx {
+			nowPlayingID := p.getPlayQueue()[p.nowPlayingIdx].Metadata().ID
+			p.setShuffledPlayQueue(sharedutil.ReorderItems(shuffledQueue, []int{p.GetTrackIdxByIdFrom(shuffledQueue, nowPlayingID)}, 0))
+		} else {
+			return
+		}
 	} else {
-		newNowPlayingIdx = p.GetNowPlayingIdxFrom(p.playQueue)
-	}
+		if p.nowPlayingIdx >= 0 && len(p.getShuffledPlayQueue()) > p.nowPlayingIdx {
+			nowPlayingID := p.getShuffledPlayQueue()[p.nowPlayingIdx].Metadata().ID
+			newNowPlayingIdx = p.GetTrackIdxByIdFrom(p.playQueue, nowPlayingID)
+		} else {
+			return
+		}
 
-	p.shuffle = shuffle
+	}
 
 	if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
 		return

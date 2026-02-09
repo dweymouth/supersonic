@@ -112,6 +112,9 @@ func TracksToIDs(tracks []*mediaprovider.Track) []string {
 // Reorder items and return a new track slice.
 // idxToMove must contain only valid indexes into tracks, and no repeats
 func ReorderItems[T any](items []T, idxToMove []int, insertIdx int) []T {
+	if len(items) < 2 {
+		return items
+	}
 	idxToMoveSet := ToSet(idxToMove)
 
 	newItems := make([]T, 0, len(items))
