@@ -46,7 +46,7 @@ func (c *Controller) ShowQuickSearch() {
 		case mediaprovider.ContentTypeTrack:
 			c.App.PlaybackManager.LoadTracks(
 				[]*mediaprovider.Track{item.(*mediaprovider.Track)},
-				backend.Replace, backend.Both, false /*shuffle*/)
+				backend.Replace, false /*shuffle*/)
 			c.App.PlaybackManager.PlayFromBeginning()
 		case mediaprovider.ContentTypeAlbum:
 			go c.App.PlaybackManager.PlayAlbum(id, 0, shuffle)
@@ -69,7 +69,7 @@ func (c *Controller) ShowQuickSearch() {
 		go func() {
 			tracks, err := c.GetSongRadioTracks(track)
 			if err != nil {
-				c.App.PlaybackManager.LoadTracks(tracks, backend.Replace, backend.Both, false)
+				c.App.PlaybackManager.LoadTracks(tracks, backend.Replace, false)
 				c.App.PlaybackManager.PlayFromBeginning()
 			}
 		}()
@@ -99,7 +99,6 @@ func (c *Controller) ShowQuickSearch() {
 
 func (c *Controller) handleSearchDialogOnAddToQueue(t mediaprovider.ContentType, id string, item any, next bool) {
 	insertMode := backend.Append
-	queueType := backend.Both
 	if next {
 		insertMode = backend.InsertNext
 	}
@@ -107,13 +106,13 @@ func (c *Controller) handleSearchDialogOnAddToQueue(t mediaprovider.ContentType,
 	case mediaprovider.ContentTypeTrack:
 		c.App.PlaybackManager.LoadTracks(
 			[]*mediaprovider.Track{item.(*mediaprovider.Track)},
-			insertMode, queueType, false /*shuffle*/)
+			insertMode, false /*shuffle*/)
 	case mediaprovider.ContentTypeAlbum:
 		go c.App.PlaybackManager.LoadAlbum(id, insertMode, false)
 	case mediaprovider.ContentTypeArtist:
 		go func() {
 			tracks := c.GetArtistTracks(id)
-			c.App.PlaybackManager.LoadTracks(tracks, insertMode, queueType, false)
+			c.App.PlaybackManager.LoadTracks(tracks, insertMode, false)
 		}()
 	case mediaprovider.ContentTypePlaylist:
 		go c.App.PlaybackManager.LoadPlaylist(id, insertMode, false)
@@ -121,7 +120,7 @@ func (c *Controller) handleSearchDialogOnAddToQueue(t mediaprovider.ContentType,
 		go func() {
 			tr, err := c.App.ServerManager.Server.GetRandomTracks(id /*genre name*/, c.App.Config.Application.EnqueueBatchSize)
 			if err != nil {
-				c.App.PlaybackManager.LoadTracks(tr, insertMode, queueType, false /*shuffle*/)
+				c.App.PlaybackManager.LoadTracks(tr, insertMode, false /*shuffle*/)
 			}
 		}()
 	case mediaprovider.ContentTypeRadioStation:
