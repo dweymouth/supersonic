@@ -8,15 +8,15 @@ var autoEQFreqs = []float64{31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 
 // Supersonic uses 15 bands at these frequencies (in Hz)
 var supersonicFreqs = []float64{25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000}
 
-// InterpolateAutoEQTo15Band converts a 10-band AutoEQ profile to Supersonic's 15-band ISO equalizer.
+// InterpolateEQ10To15Band converts a 10-band EQ profile to Supersonic's 15-band ISO equalizer.
 // Uses logarithmic frequency positioning with linear dB interpolation.
 //
 // Parameters:
-//   - autoEQGains: Array of 10 gain values (dB) from AutoEQ at 31, 62, 125, 250, 500, 1k, 2k, 4k, 8k, 16k Hz
+//   - eq10Gains: Array of 10 gain values (dB) from 10-band EQ at 31, 62, 125, 250, 500, 1k, 2k, 4k, 8k, 16k Hz
 //
 // Returns:
 //   - Array of 15 gain values (dB) for Supersonic at 25, 40, 63, 100, 160, 250, 400, 630, 1k, 1.6k, 2.5k, 4k, 6.3k, 10k, 16k Hz
-func InterpolateAutoEQTo15Band(autoEQGains [10]float64) [15]float64 {
+func InterpolateEQ10To15Band(eq10Gains [10]float64) [15]float64 {
 	var result [15]float64
 
 	for i, targetFreq := range supersonicFreqs {
@@ -25,21 +25,21 @@ func InterpolateAutoEQTo15Band(autoEQGains [10]float64) [15]float64 {
 
 		if lowerIdx == upperIdx {
 			// Exact match - use the AutoEQ gain directly
-			result[i] = autoEQGains[lowerIdx]
+			result[i] = eq10Gains[lowerIdx]
 		} else if lowerIdx == -1 {
 			// Target frequency is below the lowest AutoEQ band (25 Hz < 31.25 Hz)
 			// Extrapolate using the first two AutoEQ bands
-			result[i] = extrapolateBelow(targetFreq, autoEQGains)
+			result[i] = extrapolateBelow(targetFreq, eq10Gains)
 		} else if upperIdx == -1 {
 			// Target frequency is above the highest AutoEQ band (should not happen with our ranges)
 			// Use the highest AutoEQ gain
-			result[i] = autoEQGains[len(autoEQGains)-1]
+			result[i] = eq10Gains[len(eq10Gains)-1]
 		} else {
 			// Interpolate between two AutoEQ bands
 			fLow := autoEQFreqs[lowerIdx]
 			fHigh := autoEQFreqs[upperIdx]
-			gLow := autoEQGains[lowerIdx]
-			gHigh := autoEQGains[upperIdx]
+			gLow := eq10Gains[lowerIdx]
+			gHigh := eq10Gains[upperIdx]
 
 			// Calculate logarithmic position between the two bands
 			// t = log(targetFreq/fLow) / log(fHigh/fLow)
@@ -107,9 +107,9 @@ func extrapolateBelow(targetFreq float64, autoEQGains [10]float64) float64 {
 	return g1 + slope*math.Log(targetFreq/f1)
 }
 
-// Interpolate15BandTo10Band converts a 15-band ISO equalizer to 10-band format.
+// InterpolateEQ15BandTo10Band converts a 15-band ISO equalizer to 10-band format.
 // Uses logarithmic frequency positioning with linear dB interpolation.
-func Interpolate15BandTo10Band(gains15Band [15]float64) [10]float64 {
+func InterpolateEQ15BandTo10Band(gains15Band [15]float64) [10]float64 {
 	var result [10]float64
 
 	for i, targetFreq := range autoEQFreqs {

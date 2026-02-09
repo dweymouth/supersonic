@@ -42,14 +42,14 @@ type SettingsDialog struct {
 	OnPageNeedsRefresh             func()
 	OnClearCaches                  func()
 
-	config            *backend.Config
-	audioDevices      []mpv.AudioDevice
-	themeFiles        map[string]string // filename -> displayName
-	promptText        *widget.RichText
-	eqPresetManager   *backend.EQPresetManager
-	autoEQManager     *backend.AutoEQManager
-	imageManager      util.ImageFetcher
-	window            fyne.Window
+	config          *backend.Config
+	audioDevices    []mpv.AudioDevice
+	themeFiles      map[string]string // filename -> displayName
+	promptText      *widget.RichText
+	eqPresetManager *backend.EQPresetManager
+	autoEQManager   *backend.AutoEQManager
+	imageManager    util.ImageFetcher
+	window          fyne.Window
 
 	clientDecidesScrobble bool
 
@@ -534,7 +534,7 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 				// Use interpolation to downsample
 				var bands15 [15]float64
 				copy(bands15[:], currentBands)
-				bands10 := backend.Interpolate15BandTo10Band(bands15)
+				bands10 := backend.InterpolateEQ15BandTo10Band(bands15)
 				newBands = bands10[:]
 			} else {
 				// Already 10-band or invalid size, just copy what we can
@@ -548,7 +548,7 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 				// Use interpolation to upsample
 				var bands10 [10]float64
 				copy(bands10[:], currentBands)
-				bands15 := backend.InterpolateAutoEQTo15Band(bands10)
+				bands15 := backend.InterpolateEQ10To15Band(bands10)
 				newBands = bands15[:]
 			} else {
 				// Already 15-band or invalid size, just copy what we can

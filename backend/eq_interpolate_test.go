@@ -8,7 +8,7 @@ import (
 func TestInterpolateAutoEQTo15Band_FlatProfile(t *testing.T) {
 	// Test with a flat profile (all zeros)
 	flatProfile := [10]float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	result := InterpolateAutoEQTo15Band(flatProfile)
+	result := InterpolateEQ10To15Band(flatProfile)
 
 	for i, gain := range result {
 		if math.Abs(gain) > 0.001 {
@@ -24,7 +24,7 @@ func TestInterpolateAutoEQTo15Band_ExactMatches(t *testing.T) {
 	// Exact matches: 250 (idx 5→3), 1k (idx 5→8), 4k (idx 7→11), 16k (idx 9→14)
 
 	testProfile := [10]float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	result := InterpolateAutoEQTo15Band(testProfile)
+	result := InterpolateEQ10To15Band(testProfile)
 
 	tests := []struct {
 		supersonicIdx int
@@ -51,7 +51,7 @@ func TestInterpolateAutoEQTo15Band_Interpolation(t *testing.T) {
 	testProfile := [10]float64{0, 0, 0, 0, 0, 10, 0, 0, 0, 0}
 	// Only 1000 Hz (index 5) has gain of 10 dB
 
-	result := InterpolateAutoEQTo15Band(testProfile)
+	result := InterpolateEQ10To15Band(testProfile)
 
 	// Check that 1000 Hz (index 8) has the exact value
 	if math.Abs(result[8]-10) > 0.001 {
@@ -75,7 +75,7 @@ func TestInterpolateAutoEQTo15Band_Extrapolation(t *testing.T) {
 	testProfile := [10]float64{5, 10, 0, 0, 0, 0, 0, 0, 0, 0}
 	// 31.25 Hz = 5 dB, 62.5 Hz = 10 dB
 
-	result := InterpolateAutoEQTo15Band(testProfile)
+	result := InterpolateEQ10To15Band(testProfile)
 
 	// 25 Hz should be extrapolated below 31.25 Hz
 	// Since the slope is positive (5 to 10), 25 Hz should be < 5 dB
@@ -94,7 +94,7 @@ func TestInterpolateAutoEQTo15Band_RealProfile(t *testing.T) {
 	// Approximating a V-shaped response
 	testProfile := [10]float64{6, 5, 3, 1, 0, 0, 1, 3, 5, 6}
 
-	result := InterpolateAutoEQTo15Band(testProfile)
+	result := InterpolateEQ10To15Band(testProfile)
 
 	// Verify output is reasonable
 	if len(result) != 15 {
@@ -115,7 +115,7 @@ func TestInterpolateAutoEQTo15Band_MonotonicPreservation(t *testing.T) {
 	// If AutoEQ gains are monotonically increasing, interpolated values should also increase
 	monotonicProfile := [10]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
-	result := InterpolateAutoEQTo15Band(monotonicProfile)
+	result := InterpolateEQ10To15Band(monotonicProfile)
 
 	// Check general increasing trend (allowing for some extrapolation variance at edges)
 	for i := 2; i < len(result)-1; i++ {
