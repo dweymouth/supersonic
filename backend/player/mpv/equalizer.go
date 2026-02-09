@@ -120,3 +120,49 @@ func (w WidthType) String() string {
 	}
 	return "x" // not reached
 }
+
+type ISO10BandEqualizer struct {
+	Disabled  bool
+	EQPreamp  float64
+	BandGains [10]float64
+}
+
+var (
+	iso10Bands = []string{"31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"}
+	iso10FMult = 2.0 // Octave doubling
+)
+
+var _ Equalizer = (*ISO10BandEqualizer)(nil)
+
+func (i *ISO10BandEqualizer) IsEnabled() bool {
+	return !i.Disabled
+}
+
+func (i *ISO10BandEqualizer) Preamp() float64 {
+	return i.EQPreamp
+}
+
+func (i *ISO10BandEqualizer) Curve() EqualizerCurve {
+	fC := float64(31.25)
+	curve := make([]EqualizerBand, 0, len(i.BandGains))
+	for _, bandGain := range i.BandGains {
+		curve = append(curve, EqualizerBand{
+			Frequency: int(math.Round(fC)),
+			Width:     1.0,
+			WidthType: WidthTypeOctave,
+			Gain:      bandGain,
+		})
+		fC *= iso10FMult
+	}
+	return curve
+}
+
+func (*ISO10BandEqualizer) BandFrequencies() []string {
+	ret := make([]string, len(iso10Bands))
+	copy(ret, iso10Bands)
+	return ret
+}
+
+func (*ISO10BandEqualizer) Type() string {
+	return "ISO10Band"
+}

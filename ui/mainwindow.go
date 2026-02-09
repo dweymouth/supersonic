@@ -109,6 +109,15 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		fyne.Do(func() { m.UpdateOnTrackChange(item) })
 	})
+	app.PlaybackManager.OnRadioMetadataChange(func(radioName, title, artist string) {
+		fyne.Do(func() {
+			if title != "" {
+				m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", title, artist, res.DisplayName))
+			} else {
+				m.Window.SetTitle(fmt.Sprintf("%s · %s", radioName, res.DisplayName))
+			}
+		})
+	})
 	app.PlaybackManager.OnQueueChange(func() {
 		fyne.Do(func() { m.Sidebar.SetQueueTracks(app.PlaybackManager.GetPlayQueue()) })
 	})

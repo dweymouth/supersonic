@@ -327,7 +327,11 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 		devs, themeFiles, bands,
 		c.App.ServerManager.Server.ClientDecidesScrobble(),
 		isLocalPlayer, isReplayGainPlayer, isEqualizerPlayer, canSavePlayQueue,
-		c.MainWindow)
+		c.App.EQPresetManager,
+		c.MainWindow,
+		c.App.AutoEQManager,
+		c.App.ImageManager,
+		c.ToastProvider)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
 	}
@@ -342,11 +346,31 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 	}
 	dlg.OnThemeSettingChanged = themeUpdateCallbk
 	dlg.OnEqualizerSettingsChanged = func() {
-		// currently we only have one equalizer type
-		eq := c.App.LocalPlayer.Equalizer().(*mpv.ISO15BandEqualizer)
-		eq.Disabled = !c.App.Config.LocalPlayback.EqualizerEnabled
-		eq.EQPreamp = c.App.Config.LocalPlayback.EqualizerPreamp
-		copy(eq.BandGains[:], c.App.Config.LocalPlayback.GraphicEqualizerBands)
+		// Create the appropriate equalizer type based on config
+		var eq mpv.Equalizer
+		if c.App.Config.LocalPlayback.EqualizerType == "ISO10Band" {
+			eq10 := &mpv.ISO10BandEqualizer{
+				Disabled: !c.App.Config.LocalPlayback.EqualizerEnabled,
+				EQPreamp: c.App.Config.LocalPlayback.EqualizerPreamp,
+			}
+			// Copy up to 10 bands
+			numBands := min(len(c.App.Config.LocalPlayback.GraphicEqualizerBands), 10)
+			for i := 0; i < numBands; i++ {
+				eq10.BandGains[i] = c.App.Config.LocalPlayback.GraphicEqualizerBands[i]
+			}
+			eq = eq10
+		} else {
+			eq15 := &mpv.ISO15BandEqualizer{
+				Disabled: !c.App.Config.LocalPlayback.EqualizerEnabled,
+				EQPreamp: c.App.Config.LocalPlayback.EqualizerPreamp,
+			}
+			// Copy up to 15 bands
+			numBands := min(len(c.App.Config.LocalPlayback.GraphicEqualizerBands), 15)
+			for i := 0; i < numBands; i++ {
+				eq15.BandGains[i] = c.App.Config.LocalPlayback.GraphicEqualizerBands[i]
+			}
+			eq = eq15
+		}
 		c.App.LocalPlayer.SetEqualizer(eq)
 	}
 	dlg.OnPageNeedsRefresh = c.RefreshPageFunc

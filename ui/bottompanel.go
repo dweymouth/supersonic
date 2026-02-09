@@ -35,6 +35,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.ExtendBaseWidget(bp)
 
 	pm.OnSongChange(bp.onSongChange)
+	pm.OnRadioMetadataChange(bp.onRadioMetadataChange)
 	pm.OnWaveformImgUpdate(bp.updateWaveformImg)
 	pm.OnPlayTimeUpdate(func(cur, total float64, _ bool) {
 		fyne.Do(func() {
@@ -143,6 +144,16 @@ func (bp *BottomPanel) onSongChange(song mediaprovider.MediaItem, _ *mediaprovid
 			bp.NowPlaying.Update(song)
 			bp.imageLoader.Load(song.Metadata().CoverArtID)
 		}
+	})
+}
+
+func (bp *BottomPanel) onRadioMetadataChange(radioName, title, artist string) {
+	fyne.Do(func() {
+		bp.NowPlaying.Update(&mediaprovider.Track{
+			Title:       title,
+			ArtistNames: []string{artist},
+			Album:       radioName,
+		})
 	})
 }
 

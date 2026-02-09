@@ -26,7 +26,7 @@ func NewRouter(app *backend.App, controller *controller.Controller, nav Navigati
 		App:        app,
 		Controller: controller,
 		Nav:        nav,
-		widgetPool: util.NewWidgetPool(),
+		widgetPool: util.NewWidgetPool(app.BackgroundContext()),
 	}
 	return r
 }

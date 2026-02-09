@@ -146,7 +146,7 @@ func (t *Toolbar) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (t *Toolbar) setupNavigationButtons(navigateFn func(controller.Route)) {
-	t.addNavigationButton(myTheme.NowPlayingIcon, controller.NowPlaying, func() {
+	t.addNavigationButton(myTheme.HeadphonesIcon, controller.NowPlaying, func() {
 		navigateFn(controller.NowPlayingRoute())
 	})
 	t.addNavigationButton(myTheme.FavoriteIcon, controller.Favorites, func() {

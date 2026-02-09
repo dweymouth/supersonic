@@ -11,6 +11,12 @@ import (
 	"runtime"
 )
 
+// socketPath is automatically initialized based on platform conventions:
+//   - macOS: ~/Library/Caches/supersonic/supersonic.sock (or /tmp/supersonic-{uid}.sock as fallback)
+//   - Linux/Unix: $XDG_RUNTIME_DIR/supersonic.sock (or /tmp/supersonic-{uid}.sock as fallback)
+//
+// TODO: Add support for portable mode by allowing override via environment variable
+// or configuration file (e.g., SUPERSONIC_SOCKET_PATH).
 var socketPath = "/tmp/supersonic.sock"
 
 func init() {
@@ -29,15 +35,21 @@ func init() {
 	}
 }
 
+// Dial establishes a connection to the IPC socket.
+// Returns an error if the socket doesn't exist or connection fails.
 func Dial() (net.Conn, error) {
-	// TODO - use XDG runtime dir, also handle portable mode
 	return net.Dial("unix", socketPath)
 }
 
+// Listen creates a Unix domain socket listener at the configured path.
+// The socket file is created automatically and should be cleaned up
+// with DestroyConn() when done.
 func Listen() (net.Listener, error) {
 	return net.Listen("unix", socketPath)
 }
 
+// DestroyConn removes the Unix socket file from the filesystem.
+// Should be called during application shutdown.
 func DestroyConn() error {
 	return os.Remove(socketPath)
 }

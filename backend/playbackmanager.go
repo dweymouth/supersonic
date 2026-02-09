@@ -318,6 +318,11 @@ func (p *PlaybackManager) OnSongChange(cb func(nowPlaying mediaprovider.MediaIte
 	p.engine.onSongChange = append(p.engine.onSongChange, cb)
 }
 
+// Sets a callback that is notified whenever the Icy radio metadata changes.
+func (p *PlaybackManager) OnRadioMetadataChange(cb func(radioName, title, artist string)) {
+	p.engine.onRadioMetadataChange = append(p.engine.onRadioMetadataChange, cb)
+}
+
 // Registers a callback that is notified whenever the play time should be updated.
 func (p *PlaybackManager) OnPlayTimeUpdate(cb func(curTime float64, totalTime float64, seeked bool)) {
 	p.engine.onPlayTimeUpdate = append(p.engine.onPlayTimeUpdate, cb)

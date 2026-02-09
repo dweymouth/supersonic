@@ -136,8 +136,12 @@ type LocalPlaybackConfig struct {
 	InMemoryCacheSizeMB   int
 	Volume                int
 	EqualizerEnabled      bool
+	EqualizerType         string    // "ISO10Band" or "ISO15Band"
 	EqualizerPreamp       float64
 	GraphicEqualizerBands []float64
+	ActiveEQPresetName    string // Name of currently selected EQ preset
+	AutoEQProfilePath     string // Path to applied AutoEQ profile (e.g., "oratory1990/over-ear/Sennheiser HD 650")
+	AutoEQProfileName     string // Display name of applied profile (e.g., "Sennheiser HD 650")
 	PauseFade             bool
 }
 
@@ -262,7 +266,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			Autoplay:           false,
 			Shuffle:            false,
 			RepeatMode:         "None",
-			UseWaveformSeekbar: true,
+			UseWaveformSeekbar: false,
 		},
 		LocalPlayback: LocalPlaybackConfig{
 			// "auto" is the name to pass to MPV for autoselecting the output device
@@ -271,6 +275,7 @@ func DefaultConfig(appVersionTag string) *Config {
 			InMemoryCacheSizeMB:   30,
 			Volume:                100,
 			EqualizerEnabled:      false,
+			EqualizerType:         "ISO15Band",
 			EqualizerPreamp:       0,
 			GraphicEqualizerBands: make([]float64, 15),
 			PauseFade:             true,
