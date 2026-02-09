@@ -21,13 +21,13 @@ import (
 type GraphicEqualizer struct {
 	widget.BaseWidget
 
-	OnChanged            func(band int, gain float64)
-	OnPreampChanged      func(gain float64)
-	OnLoadAutoEQProfile  func()
-	OnManualAdjustment   func() // Called when user manually changes a slider
-	OnPresetSelected     func(presetName string) // Called when user selects a preset
-	OnPresetDeleted      func(presetName string) // Called when user deletes a preset
-	OnEQTypeChanged      func(eqType string)     // Called when EQ type is changed
+	OnChanged           func(band int, gain float64)
+	OnPreampChanged     func(gain float64)
+	OnLoadAutoEQProfile func()
+	OnManualAdjustment  func()                  // Called when user manually changes a slider
+	OnPresetSelected    func(presetName string) // Called when user selects a preset
+	OnPresetDeleted     func(presetName string) // Called when user deletes a preset
+	OnEQTypeChanged     func(eqType string)     // Called when EQ type is changed
 
 	bandSliders      []*eqSlider
 	preampSlider     *eqSlider
@@ -41,11 +41,11 @@ type GraphicEqualizer struct {
 	eqPresets        []backend.EQPreset
 	presetManager    *backend.EQPresetManager
 	parentWindow     fyne.Window
-	isApplyingPreset bool   // Flag to prevent clearing profile during preset application
-	currentEQType    string // Current EQ type ("ISO10Band" or "ISO15Band")
+	isApplyingPreset bool              // Flag to prevent clearing profile during preset application
+	currentEQType    string            // Current EQ type ("ISO10Band" or "ISO15Band")
 	isDirty          bool              // true when sliders modified since last preset load/save
 	loadedPreset     *backend.EQPreset // currently loaded preset (nil if none)
-	saveBtn          *widget.Button    // reference for enable/disable control
+	saveBtn          *ttwidget.Button  // reference for enable/disable control
 }
 
 func NewGraphicEqualizer(preamp float64, bandFreqs []string, bandGains []float64, eqType string, presetMgr *backend.EQPresetManager, parentWindow fyne.Window, activePresetName string) *GraphicEqualizer {
@@ -129,20 +129,23 @@ func (g *GraphicEqualizer) buildSliders(preamp float64, bands []string, bandGain
 	})
 
 	// Save button (overwrites current loaded preset)
-	g.saveBtn = widget.NewButton(lang.L("Save"), func() {
+	g.saveBtn = ttwidget.NewButtonWithIcon("", myTheme.SaveIcon, func() {
 		g.saveCurrentPreset()
 	})
 	g.saveBtn.Disable() // starts disabled
+	g.saveBtn.SetToolTip(lang.L("Save"))
 
 	// Save As button (always enabled, opens name-entry dialog)
-	saveAsBtn := widget.NewButton(lang.L("Save As"), func() {
+	saveAsBtn := ttwidget.NewButtonWithIcon("", myTheme.SaveAsIcon, func() {
 		g.showSaveAsDialog()
 	})
+	saveAsBtn.SetToolTip(lang.L("Save As"))
 
 	// Delete button
-	deleteBtn := widget.NewButton(lang.L("Delete"), func() {
+	deleteBtn := ttwidget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 		g.showDeletePresetDialog()
 	})
+	deleteBtn.SetToolTip(lang.L("Delete"))
 
 	// AutoEQ button
 	g.autoEQBtn = widget.NewButton(lang.L("AutoEQ"), func() {
@@ -166,12 +169,12 @@ func (g *GraphicEqualizer) buildSliders(preamp float64, bands []string, bandGain
 			g.eqTypeSelect,
 			widget.NewLabel(lang.L("EQ Preset:")),
 			g.presetSelect,
-			g.autoEQBtn,
 			layout.NewSpacer(),
 			g.saveBtn,
 			saveAsBtn,
 			deleteBtn,
 			resetBtn,
+			g.autoEQBtn,
 		),
 		// Second row: Profile label (shown only when AutoEQ profile is active)
 		g.profileLabel,

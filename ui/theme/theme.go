@@ -69,6 +69,8 @@ var (
 	SortIcon          fyne.Resource = theme.NewThemedResource(res.ResUpdownarrowSvg)
 	VisualizationIcon fyne.Resource = theme.NewThemedResource(res.ResOscilloscopeSvg)
 	LibraryIcon       fyne.Resource = theme.NewThemedResource(res.ResLibrarySvg)
+	SaveIcon          fyne.Resource = theme.NewThemedResource(res.ResSaveSvg)
+	SaveAsIcon        fyne.Resource = theme.NewThemedResource(res.ResSaveasSvg)
 )
 
 type AppearanceMode string
