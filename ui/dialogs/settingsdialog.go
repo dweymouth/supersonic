@@ -481,6 +481,13 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 }
 
 func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem {
+	// Ensure GraphicEqualizerBands matches the expected number of bands
+	if len(s.config.LocalPlayback.GraphicEqualizerBands) != len(eqBands) {
+		newBands := make([]float64, len(eqBands))
+		copy(newBands, s.config.LocalPlayback.GraphicEqualizerBands)
+		s.config.LocalPlayback.GraphicEqualizerBands = newBands
+	}
+
 	enabled := widget.NewCheck(lang.L("Enabled"), func(b bool) {
 		s.config.LocalPlayback.EqualizerEnabled = b
 		if s.OnEqualizerSettingsChanged != nil {
