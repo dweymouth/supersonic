@@ -98,7 +98,7 @@ func (a *FavoritesPage) createHeader(activeBtnIdx int) {
 		widget.NewButtonWithIcon("", myTheme.TracksIcon, a.onShowFavoriteSongs))
 	a.shuffleBtn = widget.NewButtonWithIcon(lang.L("Shuffle"), myTheme.ShuffleIcon, func() {
 		if tr := a.tracklistOrNil(); tr != nil {
-			a.pm.LoadTracks(tr.GetTracks(), backend.Replace, true /*shuffle*/)
+			a.pm.LoadTracks(tr.GetTracks(), backend.Replace, backend.Both, true /*shuffle*/)
 			a.pm.PlayFromBeginning()
 		}
 	})
