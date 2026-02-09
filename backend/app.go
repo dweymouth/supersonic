@@ -21,6 +21,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/backend/windows"
+	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/google/uuid"
 
 	"github.com/20after4/configdir"
@@ -32,6 +33,7 @@ const (
 	portableDir              = "supersonic_portable"
 	savedQueueFile           = "saved_queue.json"
 	savedUnshuffledQueueFile = "saved_unshuffled_queue.json"
+	savedShuffledQueueFile   = "saved_shuffled_queue.json"
 	themesDir                = "themes"
 	audioCacheSubdir         = "audio"
 )
@@ -607,8 +609,13 @@ func (a *App) SavePlayQueueIfEnabled() {
 	}
 	SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetActivePlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
 	if a.Config.Playback.Shuffle {
-		// if shuffle, also save the unshuffeled queue to enable unshuffling on restarting supersonic
-		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetPlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedUnshuffledQueueFile), queueServer)
+		// if shuffle
+		// save the unshuffeled queue to enable unshuffling on restarting supersonic
+		// save the shuffled queue again to enable checking if the playQueue was changed server side on start up
+
+		// both files are just saved locally
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetPlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedUnshuffledQueueFile), nil)
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetShuffledPlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedShuffledQueueFile), nil)
 	}
 }
 
@@ -616,10 +623,20 @@ func (a *App) LoadSavedPlayQueue() error {
 	queueFilePath := path.Join(a.configDir, savedQueueFile)
 	playQueue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
 	var unshuffledPlayQueue *SavedPlayQueue
+	var shuffledPlayQueue *SavedPlayQueue
 
-	if a.Config.Playback.Shuffle {
+	isShuffe := a.Config.Playback.Shuffle
+
+	if isShuffe {
 		unshuffledQueueFilePath := path.Join(a.configDir, savedUnshuffledQueueFile)
-		unshuffledPlayQueue, err = LoadPlayQueue(unshuffledQueueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer) //unshuffledPlayQueue is only stored locally
+		unshuffledPlayQueue, err = LoadPlayQueue(unshuffledQueueFilePath, a.ServerManager, false)
+
+		if err != nil {
+			return err
+		}
+
+		shuffledQueueFilePath := path.Join(a.configDir, savedUnshuffledQueueFile)
+		shuffledPlayQueue, err = LoadPlayQueue(shuffledQueueFilePath, a.ServerManager, false)
 
 		if err != nil {
 			return err
@@ -636,7 +653,7 @@ func (a *App) LoadSavedPlayQueue() error {
 		return nil
 	}
 
-	a.PlaybackManager.LoadTracks(playQueue.Tracks, Replace, false)
+	a.PlaybackManager.LoadTracks(playQueue.Tracks, Replace, Both, false)
 	if playQueue.TrackIndex >= 0 && playQueue.TrackIndex < len(playQueue.Tracks) {
 		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
 		a.PlaybackManager.PlayTrackAt(playQueue.TrackIndex)
@@ -645,20 +662,22 @@ func (a *App) LoadSavedPlayQueue() error {
 		a.PlaybackManager.SeekSeconds(playQueue.TimePos)
 	}
 
-	if a.Config.Playback.Shuffle {
+	if isShuffe {
 		// check if queue was changed server side
-		// if playQueue.items same as unshuffledPlayQueue.items
-		// set shuffle to false, only load normal playqueue
 		if len(playQueue.Tracks) != len(unshuffledPlayQueue.Tracks) {
 			// queue was changed server side, no need to compare elements
 			a.PlaybackManager.SetShuffle(false)
 		} else {
-			//TODO_SHUFFLE: implement
+			serverStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(playQueue.Tracks)
+			clientStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(shuffledPlayQueue.Tracks)
 
-			//shuffled := sharedutil.CopyTrackSliceToMediaItemSlice(playQueue.Tracks)
-			//unshuffled := sharedutil.CopyTrackSliceToMediaItemSlice(unshuffledPlayQueue.Tracks)
-
-			//a.PlaybackManager.engine.setPlayQueue(unshuffled)
+			if slices.Equal(serverStatePlayQueue, clientStatePlayQueue) {
+				fmt.Println("Loading unshuffled items into playQueue")
+				a.PlaybackManager.SetShuffle(true)
+				a.PlaybackManager.LoadTracks(unshuffledPlayQueue.Tracks, Replace, PlayQueue, false)
+			} else {
+				a.PlaybackManager.SetShuffle(false)
+			}
 		}
 	}
 	return nil

@@ -260,7 +260,7 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		go a.page.pm.PlayAlbum(a.page.albumID, 0, false)
 	})
 	shuffleBtn := widget.NewButtonWithIcon(lang.L("Shuffle"), myTheme.ShuffleIcon, func() {
-		a.page.pm.LoadTracks(a.page.tracklist.GetTracks(), backend.Replace, true)
+		a.page.pm.LoadTracks(a.page.tracklist.GetTracks(), backend.Replace, backend.Both, true)
 		a.page.pm.PlayFromBeginning()
 	})
 	var pop *widget.PopUpMenu

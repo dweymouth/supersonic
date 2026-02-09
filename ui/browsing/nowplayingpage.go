@@ -159,18 +159,18 @@ func NewNowPlayingPage(
 	a.relatedList.OnSetRating = a.queueList.OnSetRating
 	a.relatedList.OnSetFavorite = a.queueList.OnSetFavorite
 	a.relatedList.OnPlayItemAt = func(idx int) {
-		a.pm.LoadTracks(a.related, backend.Replace, false)
+		a.pm.LoadTracks(a.related, backend.Replace, backend.Both, false)
 		a.pm.PlayTrackAt(idx)
 	}
 	a.relatedList.OnAddToQueue = func(items []mediaprovider.MediaItem) {
-		a.pm.LoadItems(items, backend.Append, false)
+		a.pm.LoadItems(items, backend.Append, backend.Both, false)
 	}
 	a.relatedList.OnPlaySelection = func(items []mediaprovider.MediaItem, shuffle bool) {
-		a.pm.LoadItems(items, backend.Replace, shuffle)
+		a.pm.LoadItems(items, backend.Replace, backend.Both, shuffle)
 		a.pm.PlayFromBeginning()
 	}
 	a.relatedList.OnPlaySelectionNext = func(items []mediaprovider.MediaItem) {
-		a.pm.LoadItems(items, backend.InsertNext, false)
+		a.pm.LoadItems(items, backend.InsertNext, backend.Both, false)
 	}
 	a.relatedList.OnPlaySongRadio = func(track *mediaprovider.Track) {
 		go func() {

@@ -369,7 +369,7 @@ func (p *PlaybackManager) LoadAlbum(albumID string, insertQueueMode InsertQueueM
 	if err != nil {
 		return err
 	}
-	p.LoadTracks(album.Tracks, insertQueueMode, shuffle)
+	p.LoadTracks(album.Tracks, insertQueueMode, Both, shuffle)
 	return nil
 }
 
@@ -383,21 +383,21 @@ func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode Insert
 	if err != nil {
 		return err
 	}
-	p.LoadTracks(playlist.Tracks, insertQueueMode, shuffle)
+	p.LoadTracks(playlist.Tracks, insertQueueMode, Both, shuffle)
 	return nil
 }
 
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
-func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) {
+func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, queueType QueueType, shuffle bool) {
 	items := sharedutil.CopyTrackSliceToMediaItemSlice(tracks)
-	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
+	p.cmdQueue.LoadItems(items, insertQueueMode, queueType, shuffle)
 }
 
-// Load items into the play queue.
+// Load items into the currently active queue. (shuffledPlayQueue/playQueue)
 // If replacing the current queue (!appendToQueue), playback will be stopped.
-func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) {
-	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
+func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, queueType QueueType, shuffle bool) {
+	p.cmdQueue.LoadItems(items, insertQueueMode, queueType, shuffle)
 }
 
 // Replaces the play queue with the given set of tracks.
@@ -434,7 +434,7 @@ func (p *PlaybackManager) PlayTrack(trackID string) error {
 	if err != nil {
 		return err
 	}
-	p.LoadTracks([]*mediaprovider.Track{tr}, Replace, false)
+	p.LoadTracks([]*mediaprovider.Track{tr}, Replace, Both, false)
 	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 		p.SetReplayGainMode(player.ReplayGainTrack)
 	}
@@ -472,7 +472,7 @@ func (p *PlaybackManager) PlayArtistDiscography(artistID string, shuffleTracks b
 		log.Printf("failed to get artist tracks: %v\n", err)
 		return
 	}
-	p.LoadTracks(tr, Replace, shuffleTracks)
+	p.LoadTracks(tr, Replace, Both, shuffleTracks)
 	if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 		if shuffleTracks {
 			p.SetReplayGainMode(player.ReplayGainTrack)
@@ -537,7 +537,7 @@ func (p *PlaybackManager) PlayRandomAlbums(genreName string) error {
 			break
 		}
 		if al, err := mp.GetAlbum(al.ID); err == nil {
-			p.LoadTracks(al.Tracks, insertMode, false)
+			p.LoadTracks(al.Tracks, insertMode, Both, false)
 			if i == 0 {
 				p.PlayFromBeginning()
 				insertMode = Append
@@ -561,7 +561,7 @@ func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Tr
 	if songs, err := fetchFn(); err != nil {
 		return err
 	} else {
-		p.LoadTracks(songs, Replace, false)
+		p.LoadTracks(songs, Replace, Both, false)
 		if p.engine.replayGainCfg.Mode == ReplayGainAuto {
 			p.SetReplayGainMode(player.ReplayGainTrack)
 		}
@@ -811,7 +811,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 		}
 
 		if len(tracks) > 0 {
-			p.LoadTracks(tracks, Append, false /*no need to shuffle, already random*/)
+			p.LoadTracks(tracks, Append, Both, false /*no need to shuffle, already random*/)
 		}
 	}()
 }
@@ -855,7 +855,8 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 				err := p.engine.LoadItems(
 					c.Arg.([]mediaprovider.MediaItem),
 					c.Arg2.(InsertQueueMode),
-					c.Arg3.(bool),
+					c.Arg3.(QueueType),
+					c.Arg4.(bool),
 				)
 				logIfErr("LoadItems", err)
 			case cmdLoadRadioStation:
