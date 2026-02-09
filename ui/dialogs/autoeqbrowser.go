@@ -50,8 +50,6 @@ func (ab *AutoEQBrowser) fetchAllProfiles() error {
 		return fmt.Errorf("failed to fetch AutoEQ index: %w", err)
 	}
 
-	log.Printf("Successfully fetched %d AutoEQ profiles", len(profiles))
-
 	// Convert to SearchResult format for display
 	ab.allProfileResults = sharedutil.MapSlice(profiles, ab.profileToSearchResult)
 	return nil

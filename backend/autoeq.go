@@ -24,10 +24,10 @@ import (
 )
 
 const (
-	autoEQIndexURL    = "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/results/INDEX.md"
-	autoEQBaseURL     = "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/results/"
-	indexCacheTTL     = 7 * 24 * time.Hour  // 7 days
-	profileCacheTTL   = 30 * 24 * time.Hour // 30 days
+	autoEQIndexURL     = "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/results/INDEX.md"
+	autoEQBaseURL      = "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/results/"
+	indexCacheTTL      = 7 * 24 * time.Hour  // 7 days
+	profileCacheTTL    = 30 * 24 * time.Hour // 30 days
 	maxMemoryCacheSize = 20                  // LRU cache size
 )
 
@@ -114,6 +114,7 @@ func (m *AutoEQManager) FetchIndex(ctx context.Context) ([]AutoEQProfileMetadata
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Successfully fetched %d AutoEQ profiles", len(profiles))
 
 	// Cache in memory and disk
 	m.indexCacheMutex.Lock()
@@ -359,7 +360,6 @@ func (m *AutoEQManager) fetchProfileFromNetwork(ctx context.Context, path string
 	// The file is named "{HeadphoneName} FixedBandEQ.txt"
 	encodedFileName := url.PathEscape(headphoneName + " FixedBandEQ.txt")
 	profileURL := autoEQBaseURL + encodedPath + "/" + encodedFileName
-	log.Printf("Fetching profile from: %s", profileURL)
 
 	ctx, cancel := context.WithTimeout(ctx, m.timeout)
 	defer cancel()
@@ -375,7 +375,6 @@ func (m *AutoEQManager) fetchProfileFromNetwork(ctx context.Context, path string
 	}
 	defer resp.Body.Close()
 
-	log.Printf("Profile fetch response: %d", resp.StatusCode)
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, ErrProfileNotFound
 	}
