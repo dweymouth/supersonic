@@ -886,7 +886,9 @@ func (p *playbackEngine) handleTimePosUpdate(seeked bool) {
 	isNearEnd := meta.Type != mediaprovider.MediaItemTypeRadioStation && s.TimePos > meta.Duration.Seconds()-10
 	if p.needToSetNextTrack && isNearEnd {
 		p.needToSetNextTrack = false
-		p.setNextTrack(p.nextPlayingIndex())
+		if nextIdx := p.nextPlayingIndex(); nextIdx >= 0 && nextIdx < len(p.playQueue) {
+			p.setNextTrack(nextIdx)
+		}
 	}
 	if p.callbacksDisabled {
 		return
