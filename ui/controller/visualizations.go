@@ -34,6 +34,10 @@ func (c *Controller) initVisualizations() {
 }
 
 func (c *Controller) ShowPeakMeter() {
+	// Peak meter only works with local MPV player
+	if _, ok := c.App.PlaybackManager.CurrentPlayer().(*mpv.Player); !ok {
+		return
+	}
 	if c.peakMeterWin != nil {
 		c.peakMeterWin.Show()
 		return
@@ -75,6 +79,16 @@ func (c *Controller) stopVisualizationAnim() {
 		c.visualizationAnim.Stop()
 		c.visualizationAnim = nil
 		c.App.LocalPlayer.SetPeaksEnabled(false)
+	}
+}
+
+// ClosePeakMeter closes the peak meter window if open
+func (c *Controller) ClosePeakMeter() {
+	c.stopVisualizationAnim()
+	if c.peakMeterWin != nil {
+		c.peakMeterWin.Close()
+		c.peakMeterWin = nil
+		c.peakMeter = nil
 	}
 }
 
