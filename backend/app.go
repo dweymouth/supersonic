@@ -622,6 +622,9 @@ func (a *App) SavePlayQueueIfEnabled() {
 func (a *App) LoadSavedPlayQueue() error {
 	queueFilePath := path.Join(a.configDir, savedQueueFile)
 	playQueue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
+	if err != nil {
+		return err
+	}
 
 	var unshuffledPlayQueue *SavedPlayQueue
 	var shuffledPlayQueue *SavedPlayQueue
@@ -642,9 +645,7 @@ func (a *App) LoadSavedPlayQueue() error {
 			return err
 		}
 	}
-	if err != nil {
-		return err
-	}
+
 	if len(playQueue.Tracks) == 0 {
 		return nil
 	}
