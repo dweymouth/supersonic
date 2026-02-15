@@ -610,7 +610,7 @@ func (a *App) SavePlayQueueIfEnabled() {
 	SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetActivePlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
 	if a.Config.Playback.Shuffle {
 		// if shuffle
-		// save the unshuffeled queue to enable unshuffling on restarting supersonic
+		// save the unshuffled queue to enable unshuffling on restarting supersonic
 		// save the shuffled queue again to enable checking if the playQueue was changed server side on start up
 
 		// both files are just saved locally
