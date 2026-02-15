@@ -405,8 +405,9 @@ func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueue
 	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
 }
 
-// Load items into the currently active queue. (shuffledPlayQueue/playQueue)
-// If replacing the current queue (!appendToQueue), playback will be stopped.
+// Replaces the specified queue (PlayQueue/ShuffledPlayQueue) with the given tracks.
+// This is used when starting supersonic to load the queue state and directly overrides any previous data.
+// For replacing the queue while supersonic is running, use LoadTracks
 func (p *PlaybackManager) SetQueueState(tracks []*mediaprovider.Track, queueType QueueType) {
 	p.cmdQueue.SetQueueState(tracks, queueType)
 }
