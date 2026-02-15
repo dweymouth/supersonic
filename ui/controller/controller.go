@@ -75,7 +75,7 @@ func New(app *backend.App, appVersion string, mainWindow fyne.Window) *Controlle
 	c.initVisualizations()
 	c.App.PlaybackManager.OnQueueChange(util.FyneDoFunc(func() {
 		if c.popUpQueue != nil {
-			c.popUpQueueList.SetItems(c.App.PlaybackManager.GetPlayQueue())
+			c.popUpQueueList.SetItems(c.App.PlaybackManager.GetActivePlayQueue())
 		}
 	}))
 	c.App.PlaybackManager.OnSongChange(func(track mediaprovider.MediaItem, _ *mediaprovider.Track) {
@@ -192,7 +192,7 @@ func (m *Controller) ShowPopUpPlayQueue() {
 	if m.popUpQueue == nil {
 		m.popUpQueueList = widgets.NewPlayQueueList(m.App.ImageManager, false)
 		m.popUpQueueList.Reorderable = true
-		m.popUpQueueList.SetItems(m.App.PlaybackManager.GetPlayQueue())
+		m.popUpQueueList.SetItems(m.App.PlaybackManager.GetActivePlayQueue())
 		m.ConnectPlayQueuelistActions(m.popUpQueueList)
 
 		title := widget.NewRichTextWithText(lang.L("Play Queue"))

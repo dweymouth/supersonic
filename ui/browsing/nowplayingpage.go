@@ -461,7 +461,7 @@ func (a *NowPlayingPage) Reload() {
 	a.relatedList.DisableRating = !a.canRate
 	a.relatedList.DisableSharing = !a.canShare
 
-	a.queue = a.pm.GetPlayQueue()
+	a.queue = a.pm.GetActivePlayQueue()
 	a.queueList.SetItems(a.queue)
 	a.totalTime = 0.0
 	for _, tr := range a.queue {

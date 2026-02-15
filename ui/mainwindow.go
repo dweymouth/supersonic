@@ -119,7 +119,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		})
 	})
 	app.PlaybackManager.OnQueueChange(func() {
-		fyne.Do(func() { m.Sidebar.SetQueueTracks(app.PlaybackManager.GetPlayQueue()) })
+		fyne.Do(func() { m.Sidebar.SetQueueTracks(app.PlaybackManager.GetActivePlayQueue()) })
 	})
 	app.ServerManager.OnServerConnected(func(conf *backend.ServerConfig) {
 		go m.RunOnServerConnectedTasks(conf, app, displayAppName)
