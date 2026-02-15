@@ -626,8 +626,8 @@ func (a *App) LoadSavedPlayQueue() error {
 	var unshuffledPlayQueue *SavedPlayQueue
 	var shuffledPlayQueue *SavedPlayQueue
 
-	isShuffe := a.Config.Playback.Shuffle
-	if isShuffe {
+	isShuffle := a.Config.Playback.Shuffle
+	if isShuffle {
 		unshuffledQueueFilePath := path.Join(a.configDir, savedUnshuffledQueueFile)
 		unshuffledPlayQueue, err = LoadPlayQueue(unshuffledQueueFilePath, a.ServerManager, false)
 
@@ -653,7 +653,7 @@ func (a *App) LoadSavedPlayQueue() error {
 		return nil
 	}
 
-	if isShuffe {
+	if isShuffle {
 		serverStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(playQueue.Tracks)
 		clientStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(shuffledPlayQueue.Tracks)
 
