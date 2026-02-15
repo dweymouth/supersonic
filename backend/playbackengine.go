@@ -650,7 +650,7 @@ func (p *playbackEngine) RemoveTracksFromQueue(idxs []int) {
 		// remove tracks by ID from playQueue
 		ids := p.GetTrackIdsFromIdx(idxs)
 		newPlayQueue := make([]mediaprovider.MediaItem, 0, p.getPlayQueueLength()-len(idxs))
-		for _, tr := range p.getActivePlayQueue() {
+		for _, tr := range p.getPlayQueue() {
 			if slices.Contains(ids, tr.Metadata().ID) {
 				//remove id from id list, handles having the same track present multiple times in playQueue
 				idx := slices.Index(ids, tr.Metadata().ID)
