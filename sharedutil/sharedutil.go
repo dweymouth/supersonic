@@ -113,7 +113,9 @@ func TracksToIDs(tracks []*mediaprovider.Track) []string {
 // idxToMove must contain only valid indexes into tracks, and no repeats
 func ReorderItems[T any](items []T, idxToMove []int, insertIdx int) []T {
 	if len(items) < 2 {
-		return items
+		cpy := make([]T, len(items))
+		copy(cpy, items)
+		return cpy
 	}
 	idxToMoveSet := ToSet(idxToMove)
 
