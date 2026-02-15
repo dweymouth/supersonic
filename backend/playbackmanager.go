@@ -401,6 +401,7 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueM
 
 // Load items into the currently active queue. (shuffledPlayQueue/playQueue)
 // If replacing the current queue (!appendToQueue), playback will be stopped.
+// Loading items into the shuffledPlayQueue may also modify the playQueue
 func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) {
 	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
 }
