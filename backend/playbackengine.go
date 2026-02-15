@@ -391,9 +391,6 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 
 	}
 
-	if p.nowPlayingIdx >= 0 && newNowPlayingIdx == -1 {
-		return
-	}
 	p.handleNextTrackUpdated()
 	p.nowPlayingIdx = newNowPlayingIdx
 	p.invokeNoArgCallbacks(p.onQueueChange)
