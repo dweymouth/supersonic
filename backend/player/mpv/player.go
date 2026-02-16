@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
@@ -69,11 +71,15 @@ type Player struct {
 	equalizer      Equalizer
 	peaksEnabled   bool
 	speed          float64
+	pauseFade      bool
+
+	icyTitleCb func(string)
 
 	fileLoadedLock sync.Mutex
 	fileLoadedSig  *sync.Cond
 
-	bgCancel context.CancelFunc
+	fadePauseCancel context.CancelFunc
+	bgCancel        context.CancelFunc
 }
 
 // Returns a new player.
@@ -126,6 +132,8 @@ func (p *Player) Init(maxCacheMB int) error {
 		if p.clientName != "" {
 			m.SetOptionString("audio-client-name", p.clientName)
 		}
+
+		m.ObserveProperty(0, "metadata", mpv.FORMAT_NODE)
 
 		if err := m.Initialize(); err != nil {
 			return fmt.Errorf("error initializing mpv: %s", err.Error())
@@ -308,6 +316,10 @@ func (p *Player) SetAudioExclusive(tf bool) {
 	}
 }
 
+func (p *Player) SetPauseFade(pauseFade bool) {
+	p.pauseFade = pauseFade
+}
+
 // Gets the current volume of the player.
 func (p *Player) GetVolume() int {
 	return p.vol
@@ -333,17 +345,47 @@ func (p *Player) Pause() error {
 	if p.status.State != player.Playing {
 		return nil
 	}
-	err := p.setPaused(true)
-	if err == nil {
+
+	if p.pauseFade {
 		p.prePausedState = p.status.State
 		p.setState(player.Paused)
+
+		v := p.vol
+		ctx, cancel := context.WithCancel(context.Background())
+		p.fadePauseCancel = cancel
+		go func() {
+			t := time.NewTicker(2 * time.Millisecond)
+			for c := 0; c < 100; c++ {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					p.mpv.SetProperty("volume", mpv.FORMAT_INT64, int64(v*(100-c)/100))
+				}
+			}
+			t.Stop()
+			p.SetVolume(p.vol)
+			p.setPaused(true)
+		}()
+		return nil
+	} else {
+		err := p.setPaused(true)
+		if err == nil {
+			p.prePausedState = p.status.State
+			p.setState(player.Paused)
+		}
+		return err
 	}
-	return err
 }
 
 // Continue playback and update the player state
 func (p *Player) Continue() error {
 	if p.status.State == player.Paused {
+		if p.fadePauseCancel != nil {
+			p.fadePauseCancel()
+			p.fadePauseCancel = nil
+			p.SetVolume(p.vol)
+		}
 		err := p.setPaused(false)
 		if err == nil {
 			p.setState(p.prePausedState)
@@ -354,9 +396,10 @@ func (p *Player) Continue() error {
 	return nil
 }
 
-func (p *Player) ForceRestartPlayback() error {
+func (p *Player) ForceRestartPlayback(isPaused bool) error {
 	p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, true)
-	return p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, false)
+	p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, false)
+	return p.mpv.SetProperty("pause", mpv.FORMAT_FLAG, isPaused)
 }
 
 // Get the current status of the player.
@@ -430,6 +473,16 @@ func (p *Player) GetMediaInfo() (MediaInfo, error) {
 	return info, nil
 }
 
+func (p *Player) ObserveIcyRadioTitle(cb func(string)) {
+	p.icyTitleCb = cb
+	p.mpv.ObserveProperty(1, "metadata/icy-title", mpv.FORMAT_STRING)
+}
+
+func (p *Player) UnobserveIcyRadioTitle() {
+	p.icyTitleCb = nil
+	p.mpv.UnobserveProperty(1)
+}
+
 func (p *Player) getInt64Property(propName string) (int64, error) {
 	playpos, err := p.mpv.GetProperty(propName, mpv.FORMAT_INT64)
 	if err != nil {
@@ -492,23 +545,19 @@ func (p *Player) setState(s player.State) {
 }
 
 func (p *Player) setAF() error {
-	af := ""
+	var filters []string
 	if p.peaksEnabled {
-		af = "@astats:astats=metadata=1:reset=1:measure_overall=none"
+		filters = append(filters, "@astats:astats=metadata=1:reset=1:measure_overall=none")
 	}
-	eq := p.equalizer
-	if eq == nil || !eq.IsEnabled() {
-		return p.mpv.SetPropertyString("af", af)
-	} else if p.peaksEnabled {
-		af = af + ","
+	if eq := p.equalizer; eq != nil && eq.IsEnabled() {
+		if math.Abs(eq.Preamp()) > 0.01 {
+			filters = append(filters, fmt.Sprintf("volume=volume=%0.1fdB", eq.Preamp()))
+		}
+		if eqAF := eq.Curve().String(); eqAF != "" {
+			filters = append(filters, eqAF)
+		}
 	}
-	if math.Abs(eq.Preamp()) > 0.01 {
-		af = fmt.Sprintf("%svolume=volume=%0.1fdB", af, eq.Preamp())
-	}
-	if eqAF := eq.Curve().String(); eqAF != "" {
-		af = fmt.Sprintf("%s,%s", af, eqAF)
-	}
-	return p.mpv.SetPropertyString("af", af)
+	return p.mpv.SetPropertyString("af", strings.Join(filters, ","))
 }
 
 func (p *Player) eventHandler(ctx context.Context) {
@@ -540,6 +589,11 @@ func (p *Player) eventHandler(ctx context.Context) {
 				p.status.Duration = 0
 				p.status.TimePos = 0
 				p.setState(player.Stopped)
+			case mpv.EVENT_PROPERTY_CHANGE:
+				if e.Reply_Userdata == 1 && p.icyTitleCb != nil {
+					p.icyTitleCb(p.mpv.GetPropertyString("metadata/icy-title"))
+				}
+
 			}
 		}
 	}

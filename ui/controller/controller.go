@@ -59,7 +59,7 @@ type Controller struct {
 
 	popUpQueue         *widget.PopUp
 	popUpQueueList     *widgets.PlayQueueList
-	stopAfterCurrent   *widget.Check
+	pauseAfterCurrent  *widget.Check
 	popUpQueueLastUsed int64
 	escapablePopUp     fyne.CanvasObject
 	haveModal          bool
@@ -198,10 +198,10 @@ func (m *Controller) ShowPopUpPlayQueue() {
 		title := widget.NewRichTextWithText(lang.L("Play Queue"))
 		title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 		title.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = true
-		m.stopAfterCurrent = widget.NewCheck(lang.L("Stop after current track"), func(b bool) {
-			m.App.PlaybackManager.SetStopAfterCurrent(b)
+		m.pauseAfterCurrent = widget.NewCheck(lang.L("Pause after current track"), func(b bool) {
+			m.App.PlaybackManager.SetPauseAfterCurrent(b)
 		})
-		bottomRow := container.NewHBox(layout.NewSpacer(), m.stopAfterCurrent)
+		bottomRow := container.NewHBox(layout.NewSpacer(), m.pauseAfterCurrent)
 		ctr := container.NewBorder(title, bottomRow, nil, nil,
 			container.NewPadded(m.popUpQueueList),
 		)
@@ -231,7 +231,7 @@ func (m *Controller) ShowPopUpPlayQueue() {
 						fynetooltip.DestroyPopUpToolTipLayer(m.popUpQueue)
 						m.popUpQueue = nil
 						m.popUpQueueList = nil
-						m.stopAfterCurrent = nil
+						m.pauseAfterCurrent = nil
 						m.popUpQueueLastUsed = 0
 						t.Stop()
 						return
@@ -260,7 +260,7 @@ func (m *Controller) ShowPopUpPlayQueue() {
 	))
 	pop.Resize(size)
 	popUpQueueList.ScrollToNowPlaying() // must come after resize
-	m.stopAfterCurrent.SetChecked(m.App.PlaybackManager.IsStopAfterCurrent())
+	m.pauseAfterCurrent.SetChecked(m.App.PlaybackManager.IsPauseAfterCurrent())
 	pop.ShowAtPosition(fyne.NewPos(
 		canvasSize.Width-size.Width-10,
 		canvasSize.Height-size.Height-100,
@@ -327,23 +327,50 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 		devs, themeFiles, bands,
 		c.App.ServerManager.Server.ClientDecidesScrobble(),
 		isLocalPlayer, isReplayGainPlayer, isEqualizerPlayer, canSavePlayQueue,
-		c.MainWindow)
+		c.App.EQPresetManager,
+		c.MainWindow,
+		c.App.AutoEQManager,
+		c.App.ImageManager,
+		c.ToastProvider)
 	dlg.OnReplayGainSettingsChanged = func() {
 		c.App.PlaybackManager.SetReplayGainOptions(c.App.Config.ReplayGain)
 	}
 	dlg.OnAudioExclusiveSettingChanged = func() {
 		c.App.LocalPlayer.SetAudioExclusive(c.App.Config.LocalPlayback.AudioExclusive)
 	}
+	dlg.OnPauseFadeSettingsChanged = func() {
+		c.App.LocalPlayer.SetPauseFade(c.App.Config.LocalPlayback.PauseFade)
+	}
 	dlg.OnAudioDeviceSettingChanged = func() {
 		c.App.LocalPlayer.SetAudioDevice(c.App.Config.LocalPlayback.AudioDeviceName)
 	}
 	dlg.OnThemeSettingChanged = themeUpdateCallbk
 	dlg.OnEqualizerSettingsChanged = func() {
-		// currently we only have one equalizer type
-		eq := c.App.LocalPlayer.Equalizer().(*mpv.ISO15BandEqualizer)
-		eq.Disabled = !c.App.Config.LocalPlayback.EqualizerEnabled
-		eq.EQPreamp = c.App.Config.LocalPlayback.EqualizerPreamp
-		copy(eq.BandGains[:], c.App.Config.LocalPlayback.GraphicEqualizerBands)
+		// Create the appropriate equalizer type based on config
+		var eq mpv.Equalizer
+		if c.App.Config.LocalPlayback.EqualizerType == "ISO10Band" {
+			eq10 := &mpv.ISO10BandEqualizer{
+				Disabled: !c.App.Config.LocalPlayback.EqualizerEnabled,
+				EQPreamp: c.App.Config.LocalPlayback.EqualizerPreamp,
+			}
+			// Copy up to 10 bands
+			numBands := min(len(c.App.Config.LocalPlayback.GraphicEqualizerBands), 10)
+			for i := 0; i < numBands; i++ {
+				eq10.BandGains[i] = c.App.Config.LocalPlayback.GraphicEqualizerBands[i]
+			}
+			eq = eq10
+		} else {
+			eq15 := &mpv.ISO15BandEqualizer{
+				Disabled: !c.App.Config.LocalPlayback.EqualizerEnabled,
+				EQPreamp: c.App.Config.LocalPlayback.EqualizerPreamp,
+			}
+			// Copy up to 15 bands
+			numBands := min(len(c.App.Config.LocalPlayback.GraphicEqualizerBands), 15)
+			for i := 0; i < numBands; i++ {
+				eq15.BandGains[i] = c.App.Config.LocalPlayback.GraphicEqualizerBands[i]
+			}
+			eq = eq15
+		}
 		c.App.LocalPlayer.SetEqualizer(eq)
 	}
 	dlg.OnPageNeedsRefresh = c.RefreshPageFunc

@@ -18,6 +18,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -76,12 +77,12 @@ func newPlaylistPage(
 	a.ExtendBaseWidget(a)
 	if h := a.widgetPool.Obtain(util.WidgetTypePlaylistPageHeader); h != nil {
 		a.header = h.(*PlaylistPageHeader)
-		a.header.page = a
 		a.header.Clear()
 	} else {
 		a.header = NewPlaylistPageHeader(a)
 	}
 	a.header.page = a
+	a.header.Compact = a.conf.CompactHeader
 	if tl := a.widgetPool.Obtain(util.WidgetTypeTracklist); tl != nil {
 		a.tracklist = tl.(*widgets.Tracklist)
 		a.tracklist.Reset()
@@ -304,6 +305,8 @@ func (a *PlaylistPage) onSearched(query string) {
 type PlaylistPageHeader struct {
 	widget.BaseWidget
 
+	Compact bool
+
 	page         *PlaylistPage
 	playlistInfo *mediaprovider.PlaylistWithTracks
 	image        *widgets.ImagePlaceholder
@@ -314,6 +317,7 @@ type PlaylistPageHeader struct {
 	createdAtLabel   *widget.Label
 	ownerLabel       *widget.Label
 	trackTimeLabel   *widget.Label
+	collapseBtn      *widgets.HeaderCollapseButton
 
 	fullSizeCoverFetching bool
 
@@ -326,7 +330,7 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 	a := &PlaylistPageHeader{page: page}
 	a.ExtendBaseWidget(a)
 
-	a.image = widgets.NewImagePlaceholder(myTheme.PlaylistIcon, 225)
+	a.image = widgets.NewImagePlaceholder(myTheme.PlaylistIcon, myTheme.HeaderImageSize)
 	a.image.OnTapped = func(*fyne.PointEvent) { go a.showPopUpCover() }
 	a.titleLabel = util.NewTruncatingRichText()
 	a.titleLabel.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
@@ -433,14 +437,25 @@ func NewPlaylistPageHeader(page *PlaylistPage) *PlaylistPageHeader {
 
 	buttonRow = container.NewHBox(a.editButton, playButton, shuffleBtn, searchBtn, menuBtn)
 
+	a.collapseBtn = widgets.NewHeaderCollapseButton(func() {
+		a.Compact = !a.Compact
+		a.page.conf.CompactHeader = a.Compact
+		a.page.Refresh()
+	})
+	a.collapseBtn.Hidden = true
+
 	a.container = util.AddHeaderBackground(
-		container.NewBorder(nil, nil, a.image, nil,
-			container.NewVBox(a.titleLabel, container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
-				a.descriptionLabel,
-				a.ownerLabel,
-				a.trackTimeLabel),
-				buttonRow,
-			)))
+		container.NewStack(
+			container.NewBorder(nil, nil, a.image, nil,
+				container.NewVBox(a.titleLabel, container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
+					a.descriptionLabel,
+					a.ownerLabel,
+					a.trackTimeLabel),
+					buttonRow,
+				)),
+			container.NewVBox(container.NewHBox(layout.NewSpacer(), a.collapseBtn)),
+		),
+	)
 	return a
 }
 
@@ -477,6 +492,33 @@ func (a *PlaylistPageHeader) Update(playlist *mediaprovider.PlaylistWithTracks) 
 		}
 	}
 	a.Refresh()
+}
+
+var _ desktop.Hoverable = (*PlaylistPageHeader)(nil)
+
+func (a *PlaylistPageHeader) MouseIn(*desktop.MouseEvent) {
+	a.collapseBtn.Show()
+	a.Refresh()
+}
+
+func (a *PlaylistPageHeader) MouseOut() {
+	a.collapseBtn.HideIfNotMousedIn()
+}
+
+func (a *PlaylistPageHeader) MouseMoved(*desktop.MouseEvent) {
+}
+
+func (a *PlaylistPageHeader) Refresh() {
+	a.descriptionLabel.Hidden = a.Compact
+	a.ownerLabel.Hidden = a.Compact
+	a.trackTimeLabel.Hidden = a.Compact
+	a.collapseBtn.Collapsed = a.Compact
+	if a.Compact {
+		a.image.SetMinSize(fyne.NewSquareSize(myTheme.CompactHeaderImageSize))
+	} else {
+		a.image.SetMinSize(fyne.NewSquareSize(myTheme.HeaderImageSize))
+	}
+	a.BaseWidget.Refresh()
 }
 
 // should be called asynchronously

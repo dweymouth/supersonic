@@ -25,6 +25,13 @@ type WaveformImageGenerator struct {
 	audioCache *AudioCache
 }
 
+// Buffer pool for waveform analysis to reduce allocations
+var audioBufferPool = sync.Pool{
+	New: func() any {
+		return &audio.IntBuffer{Data: make([]int, 4096)}
+	},
+}
+
 type WaveformImage = image.NRGBA
 
 func NewWaveformImage() *WaveformImage {
@@ -192,13 +199,19 @@ func (w *WaveformImageGenerator) StartWaveformGeneration(item *mediaprovider.Tra
 		}
 
 		// Start analyzing the converted wav file
-		data := &waveformData{}
+		data := &waveformData{notify: make(chan struct{}, 1)}
 		go func() {
 			err := analyzeWavFile(ctx, transcodeFile, data, item.Duration.Milliseconds(), func() bool { return wavConvertDone })
 			if err != nil {
 				job.setError(err)
 			}
 			data.done = true
+			// Final notification that processing is complete
+			select {
+			case data.notify <- struct{}{}:
+			default:
+			}
+			close(data.notify)
 		}()
 
 		// Start generating the waveform image
@@ -216,6 +229,7 @@ type waveformData struct {
 
 	progress int // first invalid index for Peak/RMS data
 	done     bool
+	notify   chan struct{} // signals when new data is available
 }
 
 func generateWaveformImage(ctx context.Context, data *waveformData, job *WaveformImageJob) {
@@ -227,14 +241,18 @@ func generateWaveformImage(ctx context.Context, data *waveformData, job *Wavefor
 	translucentColor := color.NRGBA{R: 255, G: 255, B: 255, A: 128}
 
 	for x := range 1024 {
-		for data.progress <= x {
-			if data.done {
-				return
-			}
-			if ctx.Err() != nil {
+		// Wait for data to be available instead of polling
+		for data.progress <= x && !data.done {
+			select {
+			case <-ctx.Done():
 				return // expired
+			case <-data.notify:
+				// New data available or processing complete
 			}
-			time.Sleep(50 * time.Millisecond)
+		}
+
+		if data.progress <= x {
+			return // done but data not available for this x
 		}
 
 		rmsPixels := int(data.RMS[x]) * centerY / 255
@@ -282,7 +300,10 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 		return err
 	}
 
-	buf := &audio.IntBuffer{Data: make([]int, 4096)}
+	// Get buffer from pool to reduce allocations
+	buf := audioBufferPool.Get().(*audio.IntBuffer)
+	defer audioBufferPool.Put(buf)
+
 	curChunk := 0
 	chunkSamples := make([]float64, 0, samplesPerChunk)
 	bytesPerSample := int64(2 * format.NumChannels) // 16-bit = 2 bytes per channel
@@ -353,6 +374,11 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 				}
 				curChunk++
 				data.progress = curChunk
+				// Notify that new data is available (non-blocking)
+				select {
+				case data.notify <- struct{}{}:
+				default:
+				}
 				chunkSamples = chunkSamples[:0]
 				if curChunk >= 1024 {
 					break
@@ -367,6 +393,11 @@ func analyzeWavFile(ctx context.Context, transcodeFile string, data *waveformDat
 		data.Peak[curChunk] = float64ToByte(peak)
 		data.RMS[curChunk] = float64ToByte(rms)
 		data.progress = curChunk + 1
+		// Notify that final data is available (non-blocking)
+		select {
+		case data.notify <- struct{}{}:
+		default:
+		}
 	}
 
 	return nil

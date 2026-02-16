@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	tracklistUpdateCounter = util.NewEventCounter(30)
+	tracklistUpdateCounter = util.NewEventCounter(20)
 
 	emptyTrack = util.TrackListModel{
 		Item: &mediaprovider.Track{
@@ -239,6 +239,7 @@ type tracklistRowBase struct {
 
 	// must be injected by extending widget
 	setColVisibility func(int, bool) bool
+	layout           func(fyne.Size)
 }
 
 type TracklistRow interface {
@@ -297,6 +298,9 @@ func NewExpandedTracklistRow(tracklist *Tracklist, im *backend.ImageManager, pla
 		c.Hidden = vis
 		return c.Hidden != wasHidden
 	}
+	t.layout = func(s fyne.Size) {
+		container.Layout.Layout(container.Objects, s)
+	}
 	return t
 }
 
@@ -316,8 +320,9 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 	t.tracklistRowBase.create(tracklist)
 	t.playingIcon = playingIcon
 
-	t.Content = container.New(tracklist.colLayout,
+	container := container.New(tracklist.colLayout,
 		t.num, t.name, t.artist, t.album, t.albumArtist, t.composer, t.genre, t.dur, t.year, t.favorite, t.rating, t.plays, t.lastPlayed, t.comment, t.bpm, t.bitrate, t.size, t.fileType, t.dateAdded, t.path)
+	t.Content = container
 
 	colHiddenPtrMap := map[int]*bool{
 		2:  &t.artist.Hidden,
@@ -347,6 +352,9 @@ func NewCompactTracklistRow(tracklist *Tracklist, playingIcon fyne.CanvasObject)
 		wasHidden := *ptr
 		*ptr = vis
 		return vis != wasHidden
+	}
+	t.layout = func(s fyne.Size) {
+		container.Layout.Layout(container.Objects, s)
 	}
 	return t
 }
@@ -409,8 +417,28 @@ func (t *tracklistRowBase) TrackID() string {
 	return t.trackID
 }
 
+func (t *tracklistRowBase) MinSize() fyne.Size {
+	// because tracklist rows have variable column visibility,
+	// we return a zero width here so that the tracklist
+	// can size based on the header instead.
+	s := t.BaseWidget.MinSize()
+	return fyne.NewSize(0, s.Height)
+}
+
 func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int, onUpdate func()) {
-	if tracklistUpdateCounter.NumEventsSince(time.Now().Add(-150*time.Millisecond)) > 20 {
+	// Show only columns configured to be visible
+	for i := 2; i < len(t.tracklist.columns); i++ {
+		t.setColVisibility(i, !t.tracklist.visibleColumns[i])
+	}
+	t.layout(t.Size())
+
+	// Ealy return if nothing else needs updating
+	if !t.needsUpdate(tm, rowNum) {
+		return
+	}
+
+	// Throttle updates when many are happening in a short time
+	if tracklistUpdateCounter.NumEventsSince(time.Now().Add(-300*time.Millisecond)) > 10 {
 		t.doUpdate(&emptyTrack, 1)
 		if t.nextUpdateModel == nil {
 			// queue to run later
@@ -434,11 +462,31 @@ func (t *tracklistRowBase) Update(tm *util.TrackListModel, rowNum int, onUpdate 
 	}
 }
 
+func (t *tracklistRowBase) needsUpdate(tm *util.TrackListModel, rowNum int) bool {
+	tr := tm.Track()
+	if tm.Selected != t.Selected {
+		return true
+	}
+	if t.trackID != tr.ID || t.trackNum != rowNum {
+		return true
+	}
+	if t.playCount != tr.PlayCount || t.isFavorite != tr.Favorite || t.rating.Rating != tr.Rating {
+		return true
+	}
+	if t.rating.IsDisabled != t.tracklist.Options.DisableRating {
+		return true
+	}
+	if isPlaying := t.tracklist.nowPlayingID == tr.ID; isPlaying != t.isPlaying {
+		return true
+	}
+	return false
+}
+
 func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
-	changed := false
+	fullRefresh := false
 	if tm.Selected != t.Selected {
 		t.Selected = tm.Selected
-		changed = true
+		fullRefresh = true
 	}
 
 	// Update info that can change if this row is bound to
@@ -457,7 +505,11 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.composer.BuildSegments(tr.ComposerNames, tr.ComposerIDs)
 		t.genre.BuildSegments(tr.Genres, tr.Genres)
 		t.dur.Text = util.SecondsToMMSS(tr.Duration.Seconds())
-		t.year.Text = strconv.Itoa(tr.Year)
+		if tr.Year != 0 {
+			t.year.Text = strconv.Itoa(tr.Year)
+		} else {
+			t.year.Text = ""
+		}
 		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
 		t.lastPlayed.Text = util.LastPlayedDisplayString(tr.LastPlayed)
 		t.comment.Text = strings.ReplaceAll(tr.Comment, "\n", " ")
@@ -469,7 +521,7 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.dateAdded.Text = util.FormatDate(tr.DateAdded)
 		t.path.Text = tr.FilePath
 		t.path.SetToolTip(tr.FilePath)
-		changed = true
+		fullRefresh = true
 	}
 
 	// Update track num if needed
@@ -489,21 +541,20 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		} else {
 			str = strconv.Itoa(rowNum)
 		}
-		t.num.Text = str
-		changed = true
+		t.num.SetText(str)
 	}
 
 	// Update play count if needed
 	if tr.PlayCount != t.playCount {
 		t.playCount = tr.PlayCount
-		t.plays.Text = strconv.Itoa(int(tr.PlayCount))
-		changed = true
+		t.plays.SetText(strconv.Itoa(int(tr.PlayCount)))
 	}
 
 	// Render whether track is playing or not
 	if isPlaying := t.tracklist.nowPlayingID == tr.ID; isPlaying != t.isPlaying {
 		t.isPlaying = isPlaying
 		t.name.Segments[0].(*widget.TextSegment).Style.TextStyle.Bold = isPlaying
+		t.name.Refresh()
 
 		if isPlaying {
 			t.originalNumColContent = t.Content.(*fyne.Container).Objects[0]
@@ -511,14 +562,14 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		} else {
 			t.Content.(*fyne.Container).Objects[0] = t.originalNumColContent
 		}
-		changed = true
+		canvas.Refresh(t)
 	}
 
 	// Update favorite column
 	if tr.Favorite != t.isFavorite {
 		t.isFavorite = tr.Favorite
 		t.favorite.Objects[0].(*FavoriteIcon).Favorite = tr.Favorite
-		changed = true
+		canvas.Refresh(t.favorite)
 	}
 
 	// Update rating column
@@ -531,14 +582,7 @@ func (t *tracklistRowBase) doUpdate(tm *util.TrackListModel, rowNum int) {
 		t.rating.Refresh()
 	}
 
-	// Show only columns configured to be visible
-	for i := 2; i < len(t.tracklist.columns); i++ {
-		if ch := t.setColVisibility(i, !t.tracklist.visibleColumns[i]); ch {
-			changed = true
-		}
-	}
-
-	if changed {
+	if fullRefresh {
 		tracklistUpdateCounter.Add()
 		t.Refresh()
 	}

@@ -12,6 +12,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 30
     defaults:
       run:
         shell: msys2 {0}
@@ -25,10 +26,10 @@ jobs:
           wget
           zip
           p7zip
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: '1.24'
 
@@ -38,15 +39,15 @@ jobs:
         pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-mpv
 
     - name: Install Fyne tool
-      run: go install fyne.io/fyne/v2/cmd/fyne@latest
+      run: go install fyne.io/tools/cmd/fyne@latest
 
     - name: Package
       run: make package_windows
 
     - name: Download mpv dll
       run: >
-        wget https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20251026/mpv-dev-x86_64-20251026-git-aa2dad0.7z &&
-        7z x mpv-dev-x86_64-20251026-git-aa2dad0.7z
+        wget https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20260110/mpv-dev-x86_64-20260110-git-3d980d8.7z &&
+        7z x mpv-dev-x86_64-20260110-git-3d980d8.7z
 
     - name: Download smtc dll
       run: >
@@ -61,13 +62,13 @@ jobs:
         path: win_inno_installscript.iss
 
     - name: Upload zip
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Supersonic_windows_x64.zip
         path: Supersonic-windows.zip
 
     - name: Upload installer
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Supersonic_windows_x64_installer.exe
         path: Output/supersonic-installer.exe

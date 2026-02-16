@@ -16,11 +16,12 @@ const (
 )
 
 type ServerConnection struct {
-	ServerType  ServerType
-	Hostname    string
-	AltHostname string
-	Username    string
-	LegacyAuth  bool
+	ServerType    ServerType
+	Hostname      string
+	AltHostname   string
+	Username      string
+	LegacyAuth    bool
+	SkipSSLVerify bool
 }
 
 type ServerConfig struct {
@@ -50,7 +51,7 @@ type AppConfig struct {
 	EnableLrcLib                bool
 	CustomLrcLibUrl             string
 	EnablePasswordStorage       bool
-	SkipSSLVerify               bool
+	SkipSSLVerify               bool // Deprecated: use per-server SkipSSLVerify. Drop in future version.
 	EnqueueBatchSize            int
 	Language                    string
 	DisableDPIDetection         bool
@@ -70,6 +71,7 @@ type AppConfig struct {
 
 type AlbumPageConfig struct {
 	TracklistColumns []string
+	CompactHeader    bool
 }
 
 // shared between Albums and Genre pages
@@ -84,6 +86,7 @@ type ArtistPageConfig struct {
 	InitialView      string
 	DiscographySort  string
 	TracklistColumns []string
+	CompactHeader    bool
 }
 
 type ArtistsPageConfig struct {
@@ -102,6 +105,7 @@ type GridViewConfig struct {
 
 type PlaylistPageConfig struct {
 	TracklistColumns []string
+	CompactHeader    bool
 }
 
 type PlaylistsPageConfig struct {
@@ -131,8 +135,13 @@ type LocalPlaybackConfig struct {
 	InMemoryCacheSizeMB   int
 	Volume                int
 	EqualizerEnabled      bool
+	EqualizerType         string    // "ISO10Band" or "ISO15Band"
 	EqualizerPreamp       float64
 	GraphicEqualizerBands []float64
+	ActiveEQPresetName    string // Name of currently selected EQ preset
+	AutoEQProfilePath     string // Path to applied AutoEQ profile (e.g., "oratory1990/over-ear/Sennheiser HD 650")
+	AutoEQProfileName     string // Display name of applied profile (e.g., "Sennheiser HD 650")
+	PauseFade             bool
 }
 
 type ScrobbleConfig struct {
@@ -208,7 +217,6 @@ func DefaultConfig(appVersionTag string) *Config {
 			ShowTrackChangeNotification:        false,
 			EnableLrcLib:                       true,
 			EnablePasswordStorage:              true,
-			SkipSSLVerify:                      false,
 			EnqueueBatchSize:                   100,
 			Language:                           "auto",
 			EnableAutoUpdateChecker:            true,
@@ -256,7 +264,7 @@ func DefaultConfig(appVersionTag string) *Config {
 		Playback: PlaybackConfig{
 			Autoplay:           false,
 			RepeatMode:         "None",
-			UseWaveformSeekbar: true,
+			UseWaveformSeekbar: false,
 		},
 		LocalPlayback: LocalPlaybackConfig{
 			// "auto" is the name to pass to MPV for autoselecting the output device
@@ -265,8 +273,10 @@ func DefaultConfig(appVersionTag string) *Config {
 			InMemoryCacheSizeMB:   30,
 			Volume:                100,
 			EqualizerEnabled:      false,
+			EqualizerType:         "ISO15Band",
 			EqualizerPreamp:       0,
 			GraphicEqualizerBands: make([]float64, 15),
+			PauseFade:             true,
 		},
 		Scrobbling: ScrobbleConfig{
 			Enabled:              true,
@@ -306,6 +316,7 @@ func ReadConfigFile(filepath, appVersionTag string) (*Config, error) {
 	if err := toml.NewDecoder(f).Decode(c); err != nil {
 		return nil, err
 	}
+	c.migrateDeprecatedSettings()
 
 	// Backfill Subsonic to empty ServerType fields
 	// for updating configs created before multiple MediaProviders were added
@@ -326,6 +337,8 @@ func (c *Config) WriteConfigFile(filepath string) error {
 	}
 	defer writeLock.Unlock()
 
+	// clear deprecated global SkipSSLVerify after migrating to per-server settings
+	c.Application.SkipSSLVerify = false
 	b, err := toml.Marshal(c)
 	if err != nil {
 		return err
@@ -333,4 +346,13 @@ func (c *Config) WriteConfigFile(filepath string) error {
 	os.WriteFile(filepath, b, 0o644)
 
 	return nil
+}
+
+func (c *Config) migrateDeprecatedSettings() {
+	// Migrate deprecated global SkipSSLVerify to per-server settings
+	if c.Application.SkipSSLVerify {
+		for _, s := range c.Servers {
+			s.SkipSSLVerify = true
+		}
+	}
 }

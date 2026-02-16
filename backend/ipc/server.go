@@ -21,7 +21,7 @@ type PlaybackHandler interface {
 	Continue()
 	SeekBackOrPrevious()
 	SeekNext()
-	SetStopAfterCurrent(bool)
+	SetPauseAfterCurrent(bool)
 	SeekSeconds(float64)
 	SeekBySeconds(float64)
 	Volume() int
@@ -43,13 +43,14 @@ type ServerManager interface {
 type serverImpl struct {
 	server    *http.Server
 	pbHandler PlaybackHandler
+	rateFn    func(int)
 	sm        ServerManager
 	showFn    func()
 	quitFn    func()
 }
 
-func NewServer(pbHandler PlaybackHandler, sm ServerManager, showFn, quitFn func()) IPCServer {
-	s := &serverImpl{pbHandler: pbHandler, sm: sm, showFn: showFn, quitFn: quitFn}
+func NewServer(pbHandler PlaybackHandler, rateFn func(int), sm ServerManager, showFn, quitFn func()) IPCServer {
+	s := &serverImpl{pbHandler: pbHandler, rateFn: rateFn, sm: sm, showFn: showFn, quitFn: quitFn}
 	s.server = &http.Server{
 		Handler: s.createHandler(),
 	}
@@ -83,8 +84,8 @@ func (s *serverImpl) createHandler() http.Handler {
 	m.HandleFunc(PausePath, s.makeSimpleEndpointHandler(s.pbHandler.Pause))
 	m.HandleFunc(PlayPausePath, s.makeSimpleEndpointHandler(s.pbHandler.PlayPause))
 	m.HandleFunc(StopPath, s.makeSimpleEndpointHandler(s.pbHandler.Stop))
-	m.HandleFunc(StopAfterCurrentPath, s.makeSimpleEndpointHandler(func() {
-		s.pbHandler.SetStopAfterCurrent(true)
+	m.HandleFunc(PauseAfterCurrentPath, s.makeSimpleEndpointHandler(func() {
+		s.pbHandler.SetPauseAfterCurrent(true)
 	}))
 	m.HandleFunc(PreviousPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekBackOrPrevious))
 	m.HandleFunc(NextPath, s.makeSimpleEndpointHandler(s.pbHandler.SeekNext))
@@ -172,6 +173,21 @@ func (s *serverImpl) createHandler() http.Handler {
 
 		return tracks, nil
 	}))
+	m.HandleFunc(RateCurrentTrackPath, func(w http.ResponseWriter, r *http.Request) {
+		v := r.URL.Query().Get("r")
+		if rating, err := strconv.Atoi(v); err == nil {
+			// convert to 0-5 range if needed
+			if rating > 5 {
+				rating = 5
+			} else if rating < 0 {
+				rating = 0
+			}
+			s.rateFn(rating)
+			s.writeOK(w)
+		} else {
+			s.writeErr(w, err)
+		}
+	})
 	return m
 }
 

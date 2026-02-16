@@ -83,8 +83,8 @@ func (c *Client) Stop() error {
 	return err
 }
 
-func (c *Client) StopAfterCurrent() error {
-	_, err := c.sendRequest(StopAfterCurrentPath)
+func (c *Client) PauseAfterCurrent() error {
+	_, err := c.sendRequest(PauseAfterCurrentPath)
 	return err
 }
 
@@ -115,6 +115,11 @@ func (c *Client) SetVolume(vol int) error {
 
 func (c *Client) AdjustVolumePct(pct float64) error {
 	_, err := c.sendRequest(AdjustVolumePctPath(pct))
+	return err
+}
+
+func (c *Client) RateCurrentTrack(rating int) error {
+	_, err := c.sendRequest(BuildRateCurrentTrackPath(rating))
 	return err
 }
 

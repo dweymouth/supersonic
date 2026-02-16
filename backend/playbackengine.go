@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -66,7 +67,7 @@ type playbackEngine struct {
 	isRadio       bool
 	loopMode      LoopMode
 
-	stopAfterCurrent bool // flag to stop playback after current track ends
+	pauseAfterCurrent bool // flag to pause playback after current track ends
 
 	// flags for handleOnTrackChange / handleOnStopped callbacks - reset to false in the callbacks
 	wasStopped       bool // true iff player was stopped before handleOnTrackChange invocation
@@ -102,8 +103,9 @@ type playbackEngine struct {
 	onPaused           []func()
 	onStopped          []func()
 	onPlaying          []func()
-	onPlayerChange     []func()
 	onQueueChange      []func()
+
+	onRadioMetadataChange []func(radioName, title, artist string)
 }
 
 func NewPlaybackEngine(
@@ -171,10 +173,6 @@ func (p *playbackEngine) unregisterPlayerCallbacks(pl player.BasePlayer) {
 }
 
 func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
-	// even if we don't successfully change players,
-	// make sure UI updates if needed (eg enabling cast button)
-	defer p.invokeNoArgCallbacks(p.onPlayerChange)
-
 	needToUnpause := false
 
 	stat := p.CurrentPlayer().GetStatus()
@@ -209,7 +207,6 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 		p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeStatus.TimePos)
 		p.pendingPlayerChange = false
 	}
-	p.invokeNoArgCallbacks(p.onPlayerChange)
 	vol := pl.GetVolume()
 	if oldVol != vol {
 		for _, cb := range p.onVolumeChange {
@@ -322,11 +319,13 @@ func (p *playbackEngine) SeekFwdBackN(n int) error {
 	if n == 0 || (idx == 0 && n < 0) {
 		return p.player.SeekSeconds(0) // seek back in current song
 	}
+
 	lastIdx := len(p.playQueue) - 1
-	if idx == lastIdx && n > 0 {
-		return nil // already on last track, nothing to seek next to
-	}
 	newIdx := min(lastIdx, max(0, idx+n))
+
+	if idx == lastIdx && n > 0 {
+		newIdx = 0
+	}
 	return p.PlayTrackAt(newIdx)
 }
 
@@ -346,13 +345,8 @@ func (p *playbackEngine) Stop() error {
 	return p.player.Stop(false)
 }
 
-func (p *playbackEngine) SetStopAfterCurrent(stopAfterCurrent bool) {
-	p.stopAfterCurrent = stopAfterCurrent
-	if p.stopAfterCurrent {
-		p.setNextTrack(-1) // clear next playing track from internal player, if any
-	} else if p.loopMode != LoopNone || p.nowPlayingIdx < len(p.playQueue)-1 {
-		p.needToSetNextTrack = true // need to restore next track to internal player queue
-	}
+func (p *playbackEngine) SetPauseAfterCurrent(pauseAfterCurrent bool) {
+	p.pauseAfterCurrent = pauseAfterCurrent
 }
 
 func (p *playbackEngine) Pause() error {
@@ -641,6 +635,12 @@ func (p *playbackEngine) handleOnTrackChange() {
 	p.invokeOnSongChangeCallbacks()
 	p.handleTimePosUpdate(false)
 	p.handleNextTrackUpdated()
+
+	if p.pauseAfterCurrent {
+		p.Pause()
+		p.SetPauseAfterCurrent(false)
+	}
+
 }
 
 func (p *playbackEngine) handleOnStopped() {
@@ -655,7 +655,7 @@ func (p *playbackEngine) handleOnStopped() {
 	p.alreadyScrobbled = false
 	p.wasStopped = true
 	p.nowPlayingIdx = -1
-	p.stopAfterCurrent = false
+	p.pauseAfterCurrent = false
 }
 
 // to be invoked as soon as the next item in the queue that should play changes
@@ -709,6 +709,22 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 				if filepath := p.audiocache.PathForCachedFile(track.ID); filepath != "" {
 					url = filepath
 				}
+			}
+			if mpvP, ok := p.player.(*mpv.Player); ok && !isTrack {
+				mpvP.ObserveIcyRadioTitle(func(icytitle string) {
+					var title, artist string
+					if s := strings.Split(icytitle, " - "); len(s) == 2 {
+						title, artist = s[1], s[0]
+					} else {
+						title = icytitle
+					}
+					log.Println("Radio metadata changed: ", icytitle)
+					for _, cb := range p.onRadioMetadataChange {
+						cb(meta.Name, title, artist)
+					}
+				})
+			} else if ok {
+				mpvP.UnobserveIcyRadioTitle()
 			}
 			if url == "" {
 				return errors.New("no stream URL")
@@ -877,9 +893,11 @@ func (p *playbackEngine) handleTimePosUpdate(seeked bool) {
 		meta = np.Metadata()
 	}
 	isNearEnd := meta.Type != mediaprovider.MediaItemTypeRadioStation && s.TimePos > meta.Duration.Seconds()-10
-	if p.needToSetNextTrack && !p.stopAfterCurrent && isNearEnd {
+	if p.needToSetNextTrack && isNearEnd {
 		p.needToSetNextTrack = false
-		p.setNextTrack(p.nextPlayingIndex())
+		if nextIdx := p.nextPlayingIndex(); nextIdx >= 0 && nextIdx < len(p.playQueue) {
+			p.setNextTrack(nextIdx)
+		}
 	}
 	if p.callbacksDisabled {
 		return

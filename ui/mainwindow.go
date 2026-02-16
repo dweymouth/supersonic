@@ -85,7 +85,10 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.NavHandler = m.Router.NavigateTo
 	m.Controller.ReloadFunc = m.BrowsingPane.Reload
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
-	m.Controller.RefreshPageFunc = m.BrowsingPane.RefreshPage
+	m.Controller.RefreshPageFunc = func() {
+		m.BrowsingPane.RefreshPage()
+		m.BottomPanel.Refresh()
+	}
 	m.Controller.SelectAllPageFunc = m.BrowsingPane.SelectAll
 	m.Controller.UnselectAllPageFunc = m.BrowsingPane.UnselectAll
 	m.Controller.ToastProvider = m.ToastOverlay
@@ -102,9 +105,18 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		))
 	}
 
-	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller, m.Controller.App.Config.Playback.UseWaveformSeekbar)
+	m.BottomPanel = NewBottomPanel(app.PlaybackManager, app.ImageManager, m.Controller, app.Config)
 	app.PlaybackManager.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
 		fyne.Do(func() { m.UpdateOnTrackChange(item) })
+	})
+	app.PlaybackManager.OnRadioMetadataChange(func(radioName, title, artist string) {
+		fyne.Do(func() {
+			if title != "" {
+				m.Window.SetTitle(fmt.Sprintf("%s – %s · %s", title, artist, res.DisplayName))
+			} else {
+				m.Window.SetTitle(fmt.Sprintf("%s · %s", radioName, res.DisplayName))
+			}
+		})
 	})
 	app.PlaybackManager.OnQueueChange(func() {
 		fyne.Do(func() { m.Sidebar.SetQueueTracks(app.PlaybackManager.GetPlayQueue()) })

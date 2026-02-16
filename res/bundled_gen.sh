@@ -22,6 +22,8 @@ fyne bundle -append -prefix Res icons/publicdomain/theatermasks.svg >> bundled.g
 fyne bundle -append -prefix Res icons/publicdomain/grid.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/list.svg >> bundled.go
 fyne bundle -append -prefix Res icons/publicdomain/filter.svg >> bundled.go
+fyne bundle -append -prefix Res icons/publicdomain/save.svg >> bundled.go
+fyne bundle -append -prefix Res icons/publicdomain/saveas.svg >> bundled.go
 fyne bundle -append -prefix Res icons/remix_design/broadcast.svg >> bundled.go
 fyne bundle -append -prefix Res icons/remix_design/repeat.svg >> bundled.go
 fyne bundle -append -prefix Res icons/remix_design/repeatone.svg >> bundled.go
@@ -31,6 +33,6 @@ fyne bundle -append -prefix Res icons/remix_design/updownarrow.svg >> bundled.go
 
 fyne bundle -append -prefix Res themes/default.toml >> bundled.go
 
-fyne bundle -append -prefix Res ../LICENSE >> bundled.go
+fyne bundle -append -prefix Res LICENSE >> bundled.go
 fyne bundle -append -prefix Res licenses/BSDLICENSE >> bundled.go
 fyne bundle -append -prefix Res licenses/MITLICENSE >> bundled.go

@@ -32,6 +32,10 @@ type PeakMeter struct {
 	lPeakHoldFrame uint64
 	rPeakHoldFrame uint64
 	frameCounter   uint64
+
+	// true iff only a layout is needed, rathern than a full refresh.
+	// cleared by the renderer
+	refreshLayoutOnly bool
 }
 
 func NewPeakMeter() *PeakMeter {
@@ -68,11 +72,17 @@ func (p *PeakMeter) UpdatePeaks(lPeak, rPeak, lRMS, rRMS float64) {
 	}
 
 	p.frameCounter++
+	p.refreshLayoutOnly = true
 	p.Refresh()
 }
 
 func (p *PeakMeter) CreateRenderer() fyne.WidgetRenderer {
 	return newPeakMeterRenderer(p)
+}
+
+func (p *PeakMeter) Refresh() {
+	p.refreshLayoutOnly = false
+	p.BaseWidget.Refresh()
 }
 
 type peakMeterRenderer struct {
@@ -168,6 +178,12 @@ func (l *peakMeterRenderer) Layout(size fyne.Size) {
 }
 
 func (l *peakMeterRenderer) Refresh() {
+	if l.p.refreshLayoutOnly {
+		l.p.refreshLayoutOnly = false
+		l.Layout(l.p.Size())
+		return
+	}
+
 	foreground := theme.ForegroundColor()
 	background := theme.BackgroundColor()
 	errC := theme.ErrorColor()

@@ -24,15 +24,18 @@ type BottomPanel struct {
 	AuxControls *widgets.AuxControls
 
 	container *fyne.Container
+
+	cfg *backend.Config
 }
 
 var _ fyne.Widget = (*BottomPanel)(nil)
 
-func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller, useWaveformSeekbar bool) *BottomPanel {
-	bp := &BottomPanel{}
+func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr *controller.Controller, cfg *backend.Config) *BottomPanel {
+	bp := &BottomPanel{cfg: cfg}
 	bp.ExtendBaseWidget(bp)
 
 	pm.OnSongChange(bp.onSongChange)
+	pm.OnRadioMetadataChange(bp.onRadioMetadataChange)
 	pm.OnWaveformImgUpdate(bp.updateWaveformImg)
 	pm.OnPlayTimeUpdate(func(cur, total float64, _ bool) {
 		fyne.Do(func() {
@@ -47,6 +50,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	pm.OnStopped(util.FyneDoFunc(func() { bp.Controls.SetPlaying(false) }))
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
+	bp.NowPlaying.ShowAlbumYear = cfg.AlbumsPage.ShowYears
 	bp.NowPlaying.OnCoverTapped = func() {
 		contr.NavigateTo(controller.NowPlayingRoute())
 	}
@@ -65,10 +69,8 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 			contr.DoAddTracksToPlaylistWorkflow([]string{tr.ID})
 		}
 	}
-	bp.NowPlaying.OnAlbumNameTapped = func() {
-		if tr, ok := pm.NowPlaying().(*mediaprovider.Track); ok {
-			contr.NavigateTo(controller.AlbumRoute(tr.AlbumID))
-		}
+	bp.NowPlaying.OnAlbumNameTapped = func(albumID string) {
+		contr.NavigateTo(controller.AlbumRoute(albumID))
 	}
 	bp.NowPlaying.OnArtistNameTapped = func(artistID string) {
 		contr.NavigateTo(controller.ArtistRoute(artistID))
@@ -86,7 +88,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 			contr.ShowShareDialog(tr.ID)
 		}
 	}
-	bp.Controls = widgets.NewPlayerControls(useWaveformSeekbar)
+	bp.Controls = widgets.NewPlayerControls(cfg.Playback.UseWaveformSeekbar)
 	bp.Controls.OnPlayPause(func() {
 		pm.PlayPause()
 	})
@@ -147,10 +149,25 @@ func (bp *BottomPanel) onSongChange(song mediaprovider.MediaItem, _ *mediaprovid
 	})
 }
 
+func (bp *BottomPanel) onRadioMetadataChange(radioName, title, artist string) {
+	fyne.Do(func() {
+		bp.NowPlaying.Update(&mediaprovider.Track{
+			Title:       title,
+			ArtistNames: []string{artist},
+			Album:       radioName,
+		})
+	})
+}
+
 func (bp *BottomPanel) updateWaveformImg(img *backend.WaveformImage) {
 	fyne.Do(func() {
 		bp.Controls.UpdateWaveformImg(img)
 	})
+}
+
+func (bp *BottomPanel) Refresh() {
+	bp.NowPlaying.ShowAlbumYear = bp.cfg.AlbumsPage.ShowYears
+	bp.BaseWidget.Refresh()
 }
 
 func (bp *BottomPanel) CreateRenderer() fyne.WidgetRenderer {

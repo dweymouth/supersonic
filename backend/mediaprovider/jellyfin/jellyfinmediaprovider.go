@@ -38,9 +38,9 @@ func (j *JellyfinServer) MediaProvider() mediaprovider.MediaProvider {
 	return newJellyfinMediaProvider(&j.Client)
 }
 
-var _ mediaprovider.MediaProvider = (*jellyfinMediaProvider)(nil)
+var _ mediaprovider.MediaProvider = (*JellyfinMediaProvider)(nil)
 
-type jellyfinMediaProvider struct {
+type JellyfinMediaProvider struct {
 	client          *jellyfin.Client
 	prefetchCoverCB func(coverArtID string)
 
@@ -51,17 +51,17 @@ type jellyfinMediaProvider struct {
 }
 
 func newJellyfinMediaProvider(cli *jellyfin.Client) mediaprovider.MediaProvider {
-	return &jellyfinMediaProvider{
+	return &JellyfinMediaProvider{
 		client:       cli,
 		genresCached: make([]*mediaprovider.Genre, 0),
 	}
 }
 
-func (j *jellyfinMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID string)) {
+func (j *JellyfinMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID string)) {
 	j.prefetchCoverCB = cb
 }
 
-func (j *jellyfinMediaProvider) GetLibraries() ([]mediaprovider.Library, error) {
+func (j *JellyfinMediaProvider) GetLibraries() ([]mediaprovider.Library, error) {
 	v, err := j.client.GetUserViews()
 	if err != nil {
 		return nil, err
@@ -71,41 +71,41 @@ func (j *jellyfinMediaProvider) GetLibraries() ([]mediaprovider.Library, error) 
 	}), nil
 }
 
-func (j *jellyfinMediaProvider) SetLibrary(id string) error {
+func (j *JellyfinMediaProvider) SetLibrary(id string) error {
 	j.currentLibraryID = id
 	j.genresCached = nil
 	return nil
 }
 
-func (j *jellyfinMediaProvider) CreatePlaylistWithTracks(name string, trackIDs []string) error {
+func (j *JellyfinMediaProvider) CreatePlaylistWithTracks(name string, trackIDs []string) error {
 	return j.client.CreatePlaylist(name, "", false, trackIDs)
 }
 
-func (j *jellyfinMediaProvider) DeletePlaylist(id string) error {
+func (j *JellyfinMediaProvider) DeletePlaylist(id string) error {
 	return j.client.DeletePlaylist(id)
 }
 
-func (j *jellyfinMediaProvider) CanMakePublicPlaylist() bool {
+func (j *JellyfinMediaProvider) CanMakePublicPlaylist() bool {
 	return false
 }
 
-func (j *jellyfinMediaProvider) EditPlaylist(id, name, description string, public bool) error {
+func (j *JellyfinMediaProvider) EditPlaylist(id, name, description string, public bool) error {
 	return j.client.UpdatePlaylistMetadata(id, name, description, false)
 }
 
-func (j *jellyfinMediaProvider) CreatePlaylist(name, description string, public bool) error {
+func (j *JellyfinMediaProvider) CreatePlaylist(name, description string, public bool) error {
 	return j.client.CreatePlaylist(name, description, public, nil)
 }
 
-func (j *jellyfinMediaProvider) AddPlaylistTracks(id string, trackIDsToAdd []string) error {
+func (j *JellyfinMediaProvider) AddPlaylistTracks(id string, trackIDsToAdd []string) error {
 	return j.client.AddSongsToPlaylist(id, trackIDsToAdd)
 }
 
-func (j *jellyfinMediaProvider) RemovePlaylistTracks(playlistID string, removeIdxs []int) error {
+func (j *JellyfinMediaProvider) RemovePlaylistTracks(playlistID string, removeIdxs []int) error {
 	return j.client.RemoveSongsFromPlaylist(playlistID, removeIdxs)
 }
 
-func (j *jellyfinMediaProvider) ReplacePlaylistTracks(playlistID string, trackIDs []string) error {
+func (j *JellyfinMediaProvider) ReplacePlaylistTracks(playlistID string, trackIDs []string) error {
 	pl, err := j.client.GetPlaylist(playlistID)
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func (j *jellyfinMediaProvider) ReplacePlaylistTracks(playlistID string, trackID
 	return j.client.AddSongsToPlaylist(playlistID, trackIDs)
 }
 
-func (j *jellyfinMediaProvider) GetAlbum(albumID string) (*mediaprovider.AlbumWithTracks, error) {
+func (j *JellyfinMediaProvider) GetAlbum(albumID string) (*mediaprovider.AlbumWithTracks, error) {
 	al, err := j.client.GetAlbum(albumID)
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func (j *jellyfinMediaProvider) GetAlbum(albumID string) (*mediaprovider.AlbumWi
 	return album, nil
 }
 
-func (j *jellyfinMediaProvider) GetAlbumInfo(albumID string) (*mediaprovider.AlbumInfo, error) {
+func (j *JellyfinMediaProvider) GetAlbumInfo(albumID string) (*mediaprovider.AlbumInfo, error) {
 	al, err := j.client.GetAlbum(albumID)
 	if err != nil {
 		return nil, err
@@ -148,7 +148,7 @@ func (j *jellyfinMediaProvider) GetAlbumInfo(albumID string) (*mediaprovider.Alb
 	}, nil
 }
 
-func (j *jellyfinMediaProvider) GetArtist(artistID string) (*mediaprovider.ArtistWithAlbums, error) {
+func (j *JellyfinMediaProvider) GetArtist(artistID string) (*mediaprovider.ArtistWithAlbums, error) {
 	ar, err := j.client.GetArtist(artistID)
 	if err != nil {
 		return nil, err
@@ -167,11 +167,11 @@ func (j *jellyfinMediaProvider) GetArtist(artistID string) (*mediaprovider.Artis
 	return artist, nil
 }
 
-func (j *jellyfinMediaProvider) GetArtistTracks(artistID string) ([]*mediaprovider.Track, error) {
+func (j *JellyfinMediaProvider) GetArtistTracks(artistID string) ([]*mediaprovider.Track, error) {
 	return helpers.GetArtistTracks(j, artistID)
 }
 
-func (j *jellyfinMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.ArtistInfo, error) {
+func (j *JellyfinMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.ArtistInfo, error) {
 	ar, err := j.client.GetArtist(artistID)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (j *jellyfinMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.A
 	}, nil
 }
 
-func (j *jellyfinMediaProvider) GetTrack(trackID string) (*mediaprovider.Track, error) {
+func (j *JellyfinMediaProvider) GetTrack(trackID string) (*mediaprovider.Track, error) {
 	tr, err := j.client.GetSong(trackID)
 	if err != nil {
 		return nil, err
@@ -194,7 +194,7 @@ func (j *jellyfinMediaProvider) GetTrack(trackID string) (*mediaprovider.Track, 
 	return toTrack(tr), nil
 }
 
-func (j *jellyfinMediaProvider) GetTopTracks(artist mediaprovider.Artist, limit int) ([]*mediaprovider.Track, error) {
+func (j *JellyfinMediaProvider) GetTopTracks(artist mediaprovider.Artist, limit int) ([]*mediaprovider.Track, error) {
 	var opts jellyfin.QueryOpts
 	opts.Paging.Limit = limit
 	opts.Filter.ArtistID = artist.ID
@@ -213,7 +213,7 @@ func (j *jellyfinMediaProvider) GetTopTracks(artist mediaprovider.Artist, limit 
 	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
-func (j *jellyfinMediaProvider) GetRandomTracks(genreName string, limit int) ([]*mediaprovider.Track, error) {
+func (j *JellyfinMediaProvider) GetRandomTracks(genreName string, limit int) ([]*mediaprovider.Track, error) {
 	var opts jellyfin.QueryOpts
 	opts.Paging.Limit = limit
 	opts.Filter.Genres = []string{genreName}
@@ -228,7 +228,7 @@ func (j *jellyfinMediaProvider) GetRandomTracks(genreName string, limit int) ([]
 	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
-func (j *jellyfinMediaProvider) GetSimilarTracks(artistID string, limit int) ([]*mediaprovider.Track, error) {
+func (j *JellyfinMediaProvider) GetSimilarTracks(artistID string, limit int) ([]*mediaprovider.Track, error) {
 	tr, err := j.client.GetInstantMix(artistID, jellyfin.TypeArtist, limit)
 	if err != nil {
 		return nil, err
@@ -236,11 +236,11 @@ func (j *jellyfinMediaProvider) GetSimilarTracks(artistID string, limit int) ([]
 	return sharedutil.MapSlice(tr, toTrack), nil
 }
 
-func (j *jellyfinMediaProvider) GetCoverArt(id string, size int) (image.Image, error) {
+func (j *JellyfinMediaProvider) GetCoverArt(id string, size int) (image.Image, error) {
 	return j.client.GetItemImage(id, "Primary", size, 92)
 }
 
-func (j *jellyfinMediaProvider) GetFavorites() (mediaprovider.Favorites, error) {
+func (j *JellyfinMediaProvider) GetFavorites() (mediaprovider.Favorites, error) {
 	var wg sync.WaitGroup
 	var favorites mediaprovider.Favorites
 
@@ -278,7 +278,7 @@ func (j *jellyfinMediaProvider) GetFavorites() (mediaprovider.Favorites, error) 
 	return favorites, nil
 }
 
-func (j *jellyfinMediaProvider) GetGenres() ([]*mediaprovider.Genre, error) {
+func (j *JellyfinMediaProvider) GetGenres() ([]*mediaprovider.Genre, error) {
 	if j.genresCached != nil && time.Now().Unix()-j.genresCachedAt < cacheValidDurationSeconds {
 		return j.genresCached, nil
 	}
@@ -298,7 +298,7 @@ func (j *jellyfinMediaProvider) GetGenres() ([]*mediaprovider.Genre, error) {
 	return j.genresCached, nil
 }
 
-func (j *jellyfinMediaProvider) GetPlaylists() ([]*mediaprovider.Playlist, error) {
+func (j *JellyfinMediaProvider) GetPlaylists() ([]*mediaprovider.Playlist, error) {
 	pl, err := j.client.GetPlaylists()
 	if err != nil {
 		return nil, err
@@ -306,7 +306,7 @@ func (j *jellyfinMediaProvider) GetPlaylists() ([]*mediaprovider.Playlist, error
 	return sharedutil.MapSlice(pl, j.toPlaylist), nil
 }
 
-func (j *jellyfinMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.PlaylistWithTracks, error) {
+func (j *JellyfinMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.PlaylistWithTracks, error) {
 	tr, err := j.client.GetPlaylistSongs(playlistID)
 	if err != nil {
 		return nil, err
@@ -323,7 +323,7 @@ func (j *jellyfinMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.P
 	return playlist, nil
 }
 
-func (j *jellyfinMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteParameters, favorite bool) error {
+func (j *JellyfinMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteParameters, favorite bool) error {
 	var allIDs []string
 	allIDs = append(allIDs, params.AlbumIDs...)
 	allIDs = append(allIDs, params.ArtistIDs...)
@@ -357,7 +357,7 @@ func (j *jellyfinMediaProvider) SetFavorite(params mediaprovider.RatingFavoriteP
 	return err
 }
 
-func (j *jellyfinMediaProvider) GetStreamURL(trackID string, transcode *mediaprovider.TranscodeSettings, forceRaw bool) (string, error) {
+func (j *JellyfinMediaProvider) GetStreamURL(trackID string, transcode *mediaprovider.TranscodeSettings, forceRaw bool) (string, error) {
 	var jfTranscode *jellyfin.TranscodeOptions
 	if transcode != nil {
 		jfTranscode = &jellyfin.TranscodeOptions{
@@ -371,7 +371,7 @@ func (j *jellyfinMediaProvider) GetStreamURL(trackID string, transcode *mediapro
 	return j.client.GetStreamURL(trackID, jfTranscode)
 }
 
-func (j *jellyfinMediaProvider) DownloadTrack(trackID string) (io.Reader, error) {
+func (j *JellyfinMediaProvider) DownloadTrack(trackID string) (io.Reader, error) {
 	url, err := j.client.GetStreamURL(trackID, nil)
 	if err != nil {
 		return nil, err
@@ -383,23 +383,23 @@ func (j *jellyfinMediaProvider) DownloadTrack(trackID string) (io.Reader, error)
 	return resp.Body, nil
 }
 
-func (j *jellyfinMediaProvider) ClientDecidesScrobble() bool { return false }
+func (j *JellyfinMediaProvider) ClientDecidesScrobble() bool { return false }
 
-func (j *jellyfinMediaProvider) TrackBeganPlayback(trackID string) error {
+func (j *JellyfinMediaProvider) TrackBeganPlayback(trackID string) error {
 	return j.client.UpdatePlayStatus(trackID, jellyfin.Start, 0)
 }
 
-func (j *jellyfinMediaProvider) TrackEndedPlayback(trackID string, position int, submission bool) error {
+func (j *JellyfinMediaProvider) TrackEndedPlayback(trackID string, position int, submission bool) error {
 	return j.client.UpdatePlayStatus(trackID, jellyfin.Stop, int64(position)*runTimeTicksPerMicrosecond*1_000_000)
 }
 
-func (j *jellyfinMediaProvider) RescanLibrary() error {
+func (j *JellyfinMediaProvider) RescanLibrary() error {
 	return j.client.RefreshLibrary()
 }
 
-var _ mediaprovider.LyricsProvider = (*jellyfinMediaProvider)(nil)
+var _ mediaprovider.LyricsProvider = (*JellyfinMediaProvider)(nil)
 
-func (j *jellyfinMediaProvider) GetLyrics(tr *mediaprovider.Track) (*mediaprovider.Lyrics, error) {
+func (j *JellyfinMediaProvider) GetLyrics(tr *mediaprovider.Track) (*mediaprovider.Lyrics, error) {
 	l, err := j.client.GetLyrics(tr.ID)
 	if err != nil {
 		return nil, err
@@ -407,7 +407,7 @@ func (j *jellyfinMediaProvider) GetLyrics(tr *mediaprovider.Track) (*mediaprovid
 	return &mediaprovider.Lyrics{
 		Title:  l.Metadata.Title,
 		Artist: l.Metadata.Artist,
-		Synced: l.Metadata.IsSynced || (len(l.Lyrics) > 0 && l.Lyrics[0].Start > 0),
+		Synced: l.Metadata.IsSynced || (len(l.Lyrics) > 0 && l.Lyrics[len(l.Lyrics)-1].Start > 0),
 		Lines:  sharedutil.MapSlice(l.Lyrics, toLyricLine),
 	}, nil
 }
@@ -515,13 +515,13 @@ func fillAlbum(a *jellyfin.Album, album *mediaprovider.Album) {
 	album.ReleaseTypes = mediaprovider.ReleaseTypeAlbum
 }
 
-func (j *jellyfinMediaProvider) toPlaylist(p *jellyfin.Playlist) *mediaprovider.Playlist {
+func (j *JellyfinMediaProvider) toPlaylist(p *jellyfin.Playlist) *mediaprovider.Playlist {
 	pl := &mediaprovider.Playlist{}
 	j.fillPlaylist(p, pl)
 	return pl
 }
 
-func (j *jellyfinMediaProvider) fillPlaylist(p *jellyfin.Playlist, pl *mediaprovider.Playlist) {
+func (j *JellyfinMediaProvider) fillPlaylist(p *jellyfin.Playlist, pl *mediaprovider.Playlist) {
 	pl.Name = p.Name
 	pl.ID = p.ID
 	pl.CoverArtID = p.ID
@@ -533,7 +533,7 @@ func (j *jellyfinMediaProvider) fillPlaylist(p *jellyfin.Playlist, pl *mediaprov
 	pl.Public = false
 }
 
-func (j *jellyfinMediaProvider) GetSongRadio(trackID string, count int) ([]*mediaprovider.Track, error) {
+func (j *JellyfinMediaProvider) GetSongRadio(trackID string, count int) ([]*mediaprovider.Track, error) {
 	tr, err := j.client.GetInstantMix(trackID, jellyfin.TypeSong, count)
 	if err != nil {
 		return nil, err

@@ -1,6 +1,6 @@
 <img src="res/appicon-128.png" alt="Supersonic logo" title="Supersonic" align="left" height="60px"/>
 <a href='https://flathub.org/apps/details/io.github.dweymouth.supersonic'><img height="50px" align="right" alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
-<a href='https://ko-fi.com/dweymouth'><img height='40' align='right' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com'/></a>
+<a href='https://ko-fi.com/dweymouth'><img height='40' align='right' src='https://cdn.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com'/></a>
 
 # Supersonic
 
@@ -8,7 +8,7 @@
 [![Last Release](https://img.shields.io/github/v/release/dweymouth/supersonic?logo=github&label=latest&style=flat)](https://github.com/dweymouth/supersonic/releases)
 [![Downloads](https://img.shields.io/github/downloads/dweymouth/supersonic/total?logo=github&style=flat)](https://github.com/dweymouth/supersonic/releases/latest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dweymouth/supersonic)](https://goreportcard.com/report/github.com/dweymouth/supersonic)
-<a href="https://discord.gg/VqmW48aZMh"><img src="https://dcbadge.vercel.app/api/server/VqmW48aZMh" width="20%"/></a>
+[![Discord](https://dcbadge.limes.pink/api/server/H6FC9bAMpF?style=flat)](https://discord.gg/H6FC9bAMpF)
 
 A lightweight cross-platform desktop client for Subsonic and Jellyfin music servers.
 
@@ -90,15 +90,12 @@ Supersonic is available on Homebrew via a custom brew tap, or via downloading th
 
 ```sh
 brew tap supersonic-app/supersonic
-brew install --no-quarantine supersonic
+brew install supersonic
+xattr -r -d com.apple.quarantine /Applications/Supersonic.app
 ```
 
-The `--no-quarantine` flag is important because Supersonic is distributed without having been [notarized](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution), and therefore will not run without this.
-You should also include it when upgrading in future:
-
-```
-brew upgrade --no-quarantine supersonic
-```
+The `xattr -r -d com.apple.quarantine` command is important because Supersonic is distributed without having been [notarized](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution), and therefore will not run without this.
+You should also re-run that xattr command when upgrading in future.
 
 **To install the downloaded .app bundle** from the [Releases page](https://github.com/dweymouth/supersonic/releases), unzip and then drag Supersonic.app to the Applications folder.
 

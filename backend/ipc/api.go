@@ -7,26 +7,27 @@ import (
 )
 
 const (
-	PingPath             = "/ping"
-	PlayPath             = "/transport/play"
-	PlayAlbumPath        = "/transport/play-album"      // ?id=<album ID>&t=<firstTrack>&s=<shuffle>
-	PlayPlaylistPath     = "/transport/play-playlist"   // ?id=<playlist ID>&t=<firstTrack>&s=<shuffle>
-	PlayTrackPath        = "/transport/play-track"      // ?id=<track ID>
-	SearchAlbumPath      = "/transport/search-album"    // ?s=<searchQuery>
-	SearchPlaylistPath   = "/transport/search-playlist" // ?s=<searchQuery>
-	SearchTrackPath      = "/transport/search-track"    // ?s=<searchQuery>
-	PlayPausePath        = "/transport/playpause"
-	PausePath            = "/transport/pause"
-	StopPath             = "/transport/stop"
-	StopAfterCurrentPath = "/transport/stop-after-current"
-	PreviousPath         = "/transport/previous"
-	NextPath             = "/transport/next"
-	TimePosPath          = "/transport/timepos" // ?s=<seconds>
-	SeekByPath           = "/transport/seek-by" // ?s=<+/- seconds>
-	VolumePath           = "/volume"            // ?v=<vol>
-	VolumeAdjustPath     = "/volume/adjust"     // ?pct=<+/- percentage>
-	ShowPath             = "/window/show"
-	QuitPath             = "/window/quit"
+	PingPath              = "/ping"
+	PlayPath              = "/transport/play"
+	PlayAlbumPath         = "/transport/play-album"      // ?id=<album ID>&t=<firstTrack>&s=<shuffle>
+	PlayPlaylistPath      = "/transport/play-playlist"   // ?id=<playlist ID>&t=<firstTrack>&s=<shuffle>
+	PlayTrackPath         = "/transport/play-track"      // ?id=<track ID>
+	SearchAlbumPath       = "/transport/search-album"    // ?s=<searchQuery>
+	SearchPlaylistPath    = "/transport/search-playlist" // ?s=<searchQuery>
+	SearchTrackPath       = "/transport/search-track"    // ?s=<searchQuery>
+	PlayPausePath         = "/transport/playpause"
+	PausePath             = "/transport/pause"
+	StopPath              = "/transport/stop"
+	PauseAfterCurrentPath = "/transport/pause-after-current"
+	PreviousPath          = "/transport/previous"
+	NextPath              = "/transport/next"
+	TimePosPath           = "/transport/timepos" // ?s=<seconds>
+	SeekByPath            = "/transport/seek-by" // ?s=<+/- seconds>
+	VolumePath            = "/volume"            // ?v=<vol>
+	VolumeAdjustPath      = "/volume/adjust"     // ?pct=<+/- percentage>
+	ShowPath              = "/window/show"
+	QuitPath              = "/window/quit"
+	RateCurrentTrackPath  = "/current_track/rate" // ?r=<rating 0-5>
 )
 
 type Response struct {
@@ -75,4 +76,8 @@ func BuildSearchPlaylistPath(search string) string {
 func BuildSearchTrackPath(search string) string {
 	s := url.QueryEscape(search)
 	return fmt.Sprintf("%s?s=%s", SearchTrackPath, s)
+}
+
+func BuildRateCurrentTrackPath(rating int) string {
+	return fmt.Sprintf("%s?r=%d", RateCurrentTrackPath, rating)
 }

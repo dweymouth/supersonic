@@ -10,6 +10,8 @@ To set up your development environment, you need the following things:
 * Libmpv and development headers installed (e.g. via apt, brew, or MinGW pacman)
 * A Subsonic server to connect to for testing (your own server or the Navidrome demo server)
 
+Alternately you can use a Dev Container.  See `.devcontainer/DEVCONTAINER.md` for more info
+
 ## Pull Request Process
 
 Before opening a pull request, please ensure the following things:

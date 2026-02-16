@@ -43,17 +43,19 @@ var (
 )
 
 type App struct {
-	Config          *Config
-	ServerManager   *ServerManager
-	LyricsManager   *LyricsManager
-	ImageManager    *ImageManager
-	AudioCache      *AudioCache
-	PlaybackManager *PlaybackManager
-	LocalPlayer     *mpv.Player
-	UpdateChecker   UpdateChecker
-	MPRISHandler    *MPRISHandler
-	WinSMTC         *windows.SMTC
-	ipcServer       ipc.IPCServer
+	Config           *Config
+	ServerManager    *ServerManager
+	LyricsManager    *LyricsManager
+	ImageManager     *ImageManager
+	AudioCache       *AudioCache
+	AutoEQManager    *AutoEQManager
+	EQPresetManager  *EQPresetManager
+	PlaybackManager  *PlaybackManager
+	LocalPlayer      *mpv.Player
+	UpdateChecker    UpdateChecker
+	MPRISHandler     *MPRISHandler
+	WinSMTC          *windows.SMTC
+	ipcServer        ipc.IPCServer
 
 	// UI callbacks to be set in main
 	OnReactivate func()
@@ -165,6 +167,11 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		fetch = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl, timeout)
 	}
 	a.LyricsManager = NewLyricsManager(a.ServerManager, fetch)
+	a.EQPresetManager = NewEQPresetManager(confDir)
+
+	// Initialize AutoEQ manager
+	autoEQTimeout := time.Duration(a.Config.Application.RequestTimeoutSeconds) * time.Second
+	a.AutoEQManager = NewAutoEQManager(filepath.Join(cacheDir, "autoeq"), autoEQTimeout)
 
 	// Periodically scan for remote players
 	go a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, true /*fastScan*/)
@@ -203,8 +210,21 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		ipc.DestroyConn() // cleanup socket possibly orphaned by crashed process
 		listener, err := ipc.Listen()
 		if err == nil {
+			ipcRatingHandler := func(rating int) {
+				if s := a.ServerManager.GetServer(); s != nil {
+					if tr := a.PlaybackManager.NowPlaying(); tr != nil && tr.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+						if supportsRating, ok := s.(mediaprovider.SupportsRating); ok {
+							supportsRating.SetRating(mediaprovider.RatingFavoriteParameters{
+								TrackIDs: []string{tr.Metadata().ID},
+							}, rating)
+						}
+					}
+				}
+			}
+
 			a.ipcServer = ipc.NewServer(
 				a.PlaybackManager,
+				ipcRatingHandler,
 				a.ServerManager,
 				a.callOnReactivate,
 				func() { _ = a.callOnExit() })
@@ -384,12 +404,33 @@ func (a *App) setupMPV() error {
 		PreampGain:      a.Config.ReplayGain.PreampGainDB,
 	})
 	a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
+	a.LocalPlayer.SetPauseFade(a.Config.LocalPlayback.PauseFade)
 
-	eq := &mpv.ISO15BandEqualizer{
-		EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
-		Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+	// Initialize the appropriate equalizer type based on config
+	var eq mpv.Equalizer
+	if a.Config.LocalPlayback.EqualizerType == "ISO10Band" {
+		eq10 := &mpv.ISO10BandEqualizer{
+			EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
+			Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+		}
+		// Copy up to 10 bands
+		numBands := min(len(a.Config.LocalPlayback.GraphicEqualizerBands), 10)
+		for i := 0; i < numBands; i++ {
+			eq10.BandGains[i] = a.Config.LocalPlayback.GraphicEqualizerBands[i]
+		}
+		eq = eq10
+	} else {
+		eq15 := &mpv.ISO15BandEqualizer{
+			EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
+			Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+		}
+		// Copy up to 15 bands
+		numBands := min(len(a.Config.LocalPlayback.GraphicEqualizerBands), 15)
+		for i := 0; i < numBands; i++ {
+			eq15.BandGains[i] = a.Config.LocalPlayback.GraphicEqualizerBands[i]
+		}
+		eq = eq15
 	}
-	copy(eq.BandGains[:], a.Config.LocalPlayback.GraphicEqualizerBands)
 	a.LocalPlayer.SetEqualizer(eq)
 
 	return nil
@@ -448,6 +489,15 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 			}
 		}()
 	})
+	a.PlaybackManager.OnRadioMetadataChange(func(radioName, title, artist string) {
+		if title != "" {
+			smtc.UpdateMetadata(title, artist)
+			smtc.UpdatePosition(0, 0)
+		} else {
+			smtc.UpdateMetadata(radioName, "")
+			smtc.UpdatePosition(0, 0)
+		}
+	})
 	a.PlaybackManager.OnSeek(func() {
 		playbackStatus := a.PlaybackManager.PlaybackStatus()
 		smtc.UpdatePosition(int(playbackStatus.TimePos*1000), int(playbackStatus.Duration*1000))
@@ -501,6 +551,12 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 	path := path.Join(a.cacheDir, serverID.String())
 	log.Printf("Deleting server cache dir: %s", path)
 	return os.RemoveAll(path)
+}
+
+// BackgroundContext returns the application's background context
+// which is canceled when the application shuts down.
+func (a *App) BackgroundContext() context.Context {
+	return a.bgrndCtx
 }
 
 func (a *App) Shutdown() {
@@ -598,8 +654,8 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.SeekNext()
 	case *FlagStop:
 		return cli.Stop()
-	case *FlagStopAfterCurrent:
-		return cli.StopAfterCurrent()
+	case *FlagPauseAfterCurrent:
+		return cli.PauseAfterCurrent()
 	case *FlagShow:
 		return cli.Show()
 	case VolumeCLIArg >= 0:
@@ -634,6 +690,8 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 			fmt.Println(data)
 		}
 		return err
+	case RateCurrentCLIArg >= 0:
+		return cli.RateCurrentTrack(RateCurrentCLIArg)
 	default:
 		return nil
 	}

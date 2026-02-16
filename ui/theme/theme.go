@@ -38,6 +38,9 @@ const (
 	AnimationDurationShort  = canvas.DurationShort
 	AnimationDurationMedium = 225 * time.Millisecond
 	AnimationDurationLong   = canvas.DurationStandard
+
+	HeaderImageSize        = 225
+	CompactHeaderImageSize = 95
 )
 
 var (
@@ -51,7 +54,7 @@ var (
 	RadioIcon         fyne.Resource = theme.NewThemedResource(res.ResBroadcastSvg)
 	FavoriteIcon      fyne.Resource = theme.NewThemedResource(res.ResHeartFilledSvg)
 	NotFavoriteIcon   fyne.Resource = theme.NewThemedResource(res.ResHeartOutlineSvg)
-	NowPlayingIcon    fyne.Resource = theme.NewThemedResource(res.ResHeadphonesSvg)
+	HeadphonesIcon    fyne.Resource = theme.NewThemedResource(res.ResHeadphonesSvg)
 	PlaylistIcon      fyne.Resource = theme.NewThemedResource(res.ResPlaylistSvg)
 	PlayNextIcon      fyne.Resource = theme.NewThemedResource(res.ResPlaylistAddNextSvg)
 	PlayQueueIcon     fyne.Resource = theme.NewThemedResource(res.ResPlayqueueSvg)
@@ -66,6 +69,8 @@ var (
 	SortIcon          fyne.Resource = theme.NewThemedResource(res.ResUpdownarrowSvg)
 	VisualizationIcon fyne.Resource = theme.NewThemedResource(res.ResOscilloscopeSvg)
 	LibraryIcon       fyne.Resource = theme.NewThemedResource(res.ResLibrarySvg)
+	SaveIcon          fyne.Resource = theme.NewThemedResource(res.ResSaveSvg)
+	SaveAsIcon        fyne.Resource = theme.NewThemedResource(res.ResSaveasSvg)
 )
 
 type AppearanceMode string

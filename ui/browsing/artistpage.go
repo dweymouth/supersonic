@@ -16,6 +16,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -30,9 +31,10 @@ var (
 var _ fyne.Widget = (*ArtistPage)(nil)
 
 type artistPageState struct {
-	artistID   string
-	activeView int
-	trackSort  widgets.TracklistSort
+	artistID     string
+	activeView   int
+	topTrackSort widgets.TracklistSort
+	allTrackSort widgets.TracklistSort
 
 	pool  *util.WidgetPool
 	cfg   *backend.ArtistPageConfig
@@ -41,8 +43,9 @@ type artistPageState struct {
 	im    *backend.ImageManager
 	contr *controller.Controller
 
-	gridScrollPos float32 // for album grid (or grouped releases)
-	listScrollPos float32 // for Top Tracks list
+	gridScrollPos    float32 // for album grid (or grouped releases)
+	topListScrollPos float32 // for Top Tracks list
+	allListScrollPos float32 // for All Tracks list
 
 	sectionVis          widgets.GroupedReleasesSectionVisibility
 	sectionVisNeedApply bool
@@ -56,6 +59,9 @@ type ArtistPage struct {
 
 	artistInfo *mediaprovider.ArtistWithAlbums
 
+	topTracks []*mediaprovider.Track
+	allTracks []*mediaprovider.Track
+
 	albumGrid       *widgets.GridView
 	groupedReleases *widgets.GroupedReleases
 	tracklistCtr    *fyne.Container
@@ -68,13 +74,21 @@ type ArtistPage struct {
 const (
 	viewTopTracks   = "Top Tracks"
 	viewDiscography = "Discography"
+	viewAllTracks   = "All Tracks"
 )
 
 func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.WidgetPool, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
 	activeView := 0
-	if cfg.InitialView == viewTopTracks {
+
+	switch cfg.InitialView {
+	case viewDiscography:
+		activeView = 0
+	case viewTopTracks:
 		activeView = 1
+	case viewAllTracks:
+		activeView = 2
 	}
+
 	return newArtistPage(artistPageState{
 		artistID:   artistID,
 		cfg:        cfg,
@@ -97,10 +111,11 @@ func newArtistPage(state artistPageState) *ArtistPage {
 		a.header = NewArtistPageHeader(a)
 	}
 	a.header.artistPage = a
+	a.header.Compact = a.cfg.CompactHeader
 	if img, ok := state.im.GetCachedArtistImage(state.artistID); ok {
 		a.header.artistImage.SetImage(img, true /*tappable*/)
 	}
-	viewToggle := widgets.NewToggleText(0, []string{lang.L("Discography"), lang.L("Top Tracks")})
+	viewToggle := widgets.NewToggleText(0, []string{lang.L("Discography"), lang.L("Top Tracks"), lang.L("All Tracks")})
 	viewToggle.SetActivatedLabel(a.activeView)
 	viewToggle.OnChanged = a.onViewChange
 	a.sortButton = widgets.NewSortChooserButton(util.LocalizeSlice(discographySorts), func(selIdx int) {
@@ -145,6 +160,8 @@ func (a *ArtistPage) Route() controller.Route {
 }
 
 func (a *ArtistPage) Reload() {
+	a.topTracks = nil
+	a.allTracks = nil
 	go a.load()
 }
 
@@ -153,8 +170,14 @@ func (a *ArtistPage) Save() SavedPage {
 	s := a.artistPageState
 	if a.tracklistCtr != nil {
 		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
-		s.listScrollPos = tl.GetScrollOffset()
-		s.trackSort = tl.Sorting()
+		switch a.activeView {
+		case 1:
+			s.topListScrollPos = tl.GetScrollOffset()
+			s.topTrackSort = tl.Sorting()
+		case 2:
+			s.allListScrollPos = tl.GetScrollOffset()
+			s.allTrackSort = tl.Sorting()
+		}
 		tl.Clear()
 		a.pool.Release(util.WidgetTypeTracklist, tl)
 	}
@@ -193,7 +216,7 @@ func (g *ArtistPage) Scroll(scrollAmt float32) {
 		g.albumGrid.ScrollToOffset(g.albumGrid.GetScrollOffset() + scrollAmt)
 	} else if g.activeView == 0 && g.groupedReleases != nil {
 		g.groupedReleases.ScrollToOffset(g.groupedReleases.GetScrollOffset() + scrollAmt)
-	} else if g.activeView == 1 && g.tracklistCtr != nil {
+	} else if (g.activeView == 1 || g.activeView == 2) && g.tracklistCtr != nil {
 		tl := g.tracklistCtr.Objects[0].(*widgets.Tracklist)
 		tl.ScrollBy(scrollAmt)
 	}
@@ -274,7 +297,13 @@ func (a *ArtistPage) sortAlbumsSlices(slices ...[]*mediaprovider.Album) {
 		}
 	case discographySorts[2]: /*name*/
 		sortFunc = func(x, y int) bool {
-			return curSlice[x].Name < curSlice[y].Name
+			sortStr := func(a *mediaprovider.Album) string {
+				if a.SortName != "" {
+					return a.SortName
+				}
+				return a.Name
+			}
+			return sortStr(curSlice[x]) < sortStr(curSlice[y])
 		}
 	}
 
@@ -298,11 +327,7 @@ func (a *ArtistPage) load() {
 		}
 		a.artistInfo = artist
 		a.header.Update(artist, a.im)
-		if a.activeView == 0 {
-			a.showAlbumGrid(false /*reSort*/)
-		} else {
-			go a.showTopTracks()
-		}
+		a.onViewChange(a.activeView)
 	})
 
 	info, err := a.mp.GetArtistInfo(a.artistID)
@@ -317,6 +342,11 @@ func (a *ArtistPage) load() {
 }
 
 func (a *ArtistPage) showAlbumGrid(reSort bool) {
+	if a.activeView == 0 && a.albumGrid != nil {
+		return // already showing album grid
+	}
+	a.activeView = 0
+
 	allAlbums := func() bool {
 		return slices.IndexFunc(a.artistInfo.Albums, func(al *mediaprovider.Album) bool {
 			return al.ReleaseTypes&mediaprovider.ReleaseTypeCompilation > 0 ||
@@ -329,7 +359,6 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 	if a.albumGrid == nil && a.groupedReleases == nil {
 		if a.artistInfo == nil {
 			// page not loaded yet or invalid artist
-			a.activeView = 0 // if page still loading, will show discography view first
 			return
 		}
 		if useGroupedReleases {
@@ -382,80 +411,158 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 	a.container.Objects[0].Refresh()
 }
 
-// should be called asynchronously
 func (a *ArtistPage) showTopTracks() {
-	updated := false
-	updatePage := func() {
-		a.sortButton.Hide()
-		a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
-		a.container.Objects[0].Refresh()
+	if a.activeView == 1 && a.tracklistCtr != nil {
+		return // already showing top tracks
 	}
 
+	var tl *widgets.Tracklist
 	if a.tracklistCtr == nil {
-		if a.artistInfo == nil {
-			// page not loaded yet or invalid artist
-			a.activeView = 1 // if page still loading, will show tracks view first
-			return
+		tl = a.obtainNewTracklist()
+		a.tracklistCtr = container.New(
+			&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
+			tl)
+		a.contr.ConnectTracklistActions(tl)
+	} else {
+		tl = a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		tl.Clear()
+	}
+	a.activeView = 1
+	tl.SetSorting(a.topTrackSort)
+	a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
+	a.container.Objects[0].Refresh()
+
+	updateTracklist := func(ts []*mediaprovider.Track) {
+		tl.SetTracks(ts)
+		tl.SetNowPlaying(a.nowPlayingID)
+		if a.topListScrollPos != 0 {
+			tl.ScrollToOffset(a.topListScrollPos)
 		}
+	}
+	if a.topTracks != nil {
+		updateTracklist(a.topTracks)
+		return
+	}
+
+	tl.SetLoading(true)
+	go func() {
 		ts, err := a.mp.GetTopTracks(a.artistInfo.Artist, 20)
 		if err != nil {
 			log.Printf("error getting top songs: %s", err.Error())
 			return
 		}
-		if a.disposed {
+		if a.disposed || a.activeView != 1 {
 			return
 		}
-		updated = true // mark that updatePage() will be called here
+
 		fyne.Do(func() {
-			var tl *widgets.Tracklist
-			if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
-				tl = t.(*widgets.Tracklist)
-				tl.Reset()
-				tl.SetTracks(ts)
-			} else {
-				tl = widgets.NewTracklist(ts, a.im, false)
-			}
-			tl.Options = widgets.TracklistOptions{AutoNumber: true}
-			_, canRate := a.mp.(mediaprovider.SupportsRating)
-			_, canShare := a.mp.(mediaprovider.SupportsSharing)
-			tl.Options.DisableRating = !canRate
-			tl.Options.DisableSharing = !canShare
-			tl.SetVisibleColumns(a.cfg.TracklistColumns)
-			tl.SetSorting(a.trackSort)
-			tl.OnVisibleColumnsChanged = func(cols []string) {
-				a.cfg.TracklistColumns = cols
-			}
-			tl.SetNowPlaying(a.nowPlayingID)
-			a.contr.ConnectTracklistActions(tl)
-			if a.listScrollPos != 0 {
-				tl.ScrollToOffset(a.listScrollPos)
-				a.listScrollPos = 0
-			}
-			a.tracklistCtr = container.New(
-				&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
-				tl)
-			updatePage()
+			a.topTracks = ts
+			tl.SetLoading(false)
+			updateTracklist(ts)
 		})
+	}()
+}
+
+func (a *ArtistPage) showAllTracks() {
+	if a.activeView == 2 && a.tracklistCtr != nil {
+		return // already showing all tracks
 	}
 
-	if !updated {
-		fyne.Do(updatePage)
+	var tl *widgets.Tracklist
+	if a.tracklistCtr == nil {
+		tl = a.obtainNewTracklist()
+		a.tracklistCtr = container.New(
+			&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 10},
+			tl)
+		a.contr.ConnectTracklistActions(tl)
+	} else {
+		tl = a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		tl.Clear()
 	}
+	a.activeView = 2
+	tl.SetSorting(a.allTrackSort)
+	a.container.Objects[0].(*fyne.Container).Objects[0] = a.tracklistCtr
+	a.container.Objects[0].Refresh()
+
+	updateTracklist := func(ts []*mediaprovider.Track) {
+		tl.SetTracks(ts)
+		tl.SetNowPlaying(a.nowPlayingID)
+		if a.allListScrollPos != 0 {
+			tl.ScrollToOffset(a.allListScrollPos)
+		}
+	}
+	if a.allTracks != nil {
+		updateTracklist(a.allTracks)
+		return
+	}
+
+	tl.SetLoading(true)
+	go func() {
+		ts, err := a.mp.GetArtistTracks(a.artistID)
+		if err != nil {
+			log.Printf("error getting all songs: %s", err.Error())
+			return
+		}
+		if a.disposed || a.activeView != 2 {
+			return
+		}
+
+		fyne.Do(func() {
+			a.allTracks = ts
+			tl.SetLoading(false)
+			updateTracklist(ts)
+		})
+	}()
+}
+
+func (a *ArtistPage) obtainNewTracklist() *widgets.Tracklist {
+	var tl *widgets.Tracklist
+	if t := a.pool.Obtain(util.WidgetTypeTracklist); t != nil {
+		tl = t.(*widgets.Tracklist)
+		tl.Reset()
+		tl.SetTracks([]*mediaprovider.Track{})
+	} else {
+		tl = widgets.NewTracklist([]*mediaprovider.Track{}, a.im, false)
+	}
+	tl.Options = widgets.TracklistOptions{AutoNumber: true}
+	_, canRate := a.mp.(mediaprovider.SupportsRating)
+	_, canShare := a.mp.(mediaprovider.SupportsSharing)
+	tl.Options.DisableRating = !canRate
+	tl.Options.DisableSharing = !canShare
+	tl.SetVisibleColumns(a.cfg.TracklistColumns)
+	tl.OnVisibleColumnsChanged = func(cols []string) {
+		a.cfg.TracklistColumns = cols
+	}
+	return tl
 }
 
 func (a *ArtistPage) onViewChange(num int) {
-	if num == 0 {
-		a.showAlbumGrid(false /*reSort*/)
-	} else {
-		// needs to request info from server if first time,
-		// so call it asynchronously
-		go a.showTopTracks()
+	// save current data
+	if a.tracklistCtr != nil {
+		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		switch a.activeView {
+		case 1:
+			a.topListScrollPos = tl.GetScrollOffset()
+			a.topTrackSort = tl.Sorting()
+		case 2:
+			a.allListScrollPos = tl.GetScrollOffset()
+			a.allTrackSort = tl.Sorting()
+		}
 	}
-	a.activeView = num
-	if num == 1 {
-		a.cfg.InitialView = viewTopTracks
-	} else {
+
+	switch num {
+	case 0:
+		a.showAlbumGrid(false /*reSort*/)
+		a.sortButton.Show()
 		a.cfg.InitialView = viewDiscography
+	case 1:
+		a.showTopTracks()
+		a.sortButton.Hide()
+		a.cfg.InitialView = viewTopTracks
+	case 2:
+		a.showAllTracks()
+		a.sortButton.Hide()
+		a.cfg.InitialView = viewAllTracks
 	}
 }
 
@@ -473,6 +580,8 @@ const artistBioNotAvailableKey = "Artist biography not available."
 type ArtistPageHeader struct {
 	widget.BaseWidget
 
+	Compact bool
+
 	artistID              string
 	artistPage            *ArtistPage
 	artistImage           *widgets.ImagePlaceholder
@@ -485,6 +594,7 @@ type ArtistPageHeader struct {
 	playRadioBtn          *widget.Button
 	menuBtn               *widget.Button
 	container             *fyne.Container
+	collapseBtn           *widgets.HeaderCollapseButton
 	fullSizeCoverFetching bool
 	// shareMenuItem  *fyne.MenuItem
 }
@@ -501,7 +611,7 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 	a.titleDisp.Segments[0].(*widget.TextSegment).Style = widget.RichTextStyle{
 		SizeName: theme.SizeNameHeadingText,
 	}
-	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, 225)
+	a.artistImage = widgets.NewImagePlaceholder(myTheme.ArtistIcon, myTheme.HeaderImageSize)
 	a.artistImage.OnTapped = func(*fyne.PointEvent) { a.showPopUpCover() }
 	a.favoriteBtn = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 	a.playBtn = widget.NewButtonWithIcon(lang.L("Play Discography"), theme.MediaPlayIcon(), func() {
@@ -546,6 +656,12 @@ func NewArtistPageHeader(page *ArtistPage) *ArtistPageHeader {
 
 	a.biographyDisp.Wrapping = fyne.TextWrapWord
 	a.biographyDisp.Truncation = fyne.TextTruncateEllipsis
+	a.collapseBtn = widgets.NewHeaderCollapseButton(func() {
+		a.Compact = !a.Compact
+		a.artistPage.cfg.CompactHeader = a.Compact
+		a.artistPage.Refresh()
+	})
+	a.collapseBtn.Hidden = true
 	a.ExtendBaseWidget(a)
 	a.createContainer()
 	return a
@@ -636,6 +752,32 @@ func (a *ArtistPageHeader) UpdateInfo(info *mediaprovider.ArtistInfo) {
 	}
 }
 
+var _ desktop.Hoverable = (*ArtistPageHeader)(nil)
+
+func (a *ArtistPageHeader) MouseIn(*desktop.MouseEvent) {
+	a.collapseBtn.Show()
+	a.Refresh()
+}
+
+func (a *ArtistPageHeader) MouseOut() {
+	a.collapseBtn.HideIfNotMousedIn()
+}
+
+func (a *ArtistPageHeader) MouseMoved(*desktop.MouseEvent) {
+}
+
+func (a *ArtistPageHeader) Refresh() {
+	a.biographyDisp.Hidden = a.Compact
+	a.similarArtists.Hidden = a.Compact
+	a.collapseBtn.Collapsed = a.Compact
+	if a.Compact {
+		a.artistImage.SetMinSize(fyne.NewSquareSize(myTheme.CompactHeaderImageSize))
+	} else {
+		a.artistImage.SetMinSize(fyne.NewSquareSize(myTheme.HeaderImageSize))
+	}
+	a.BaseWidget.Refresh()
+}
+
 // should NOT be called asynchronously
 func (a *ArtistPageHeader) showPopUpCover() {
 	if a.artistImageID == "" {
@@ -670,12 +812,16 @@ func (a *ArtistPageHeader) createContainer() {
 	btnContainer := container.NewHBox(util.NewHSpace(2), a.favoriteBtn, a.playBtn, a.playRadioBtn, a.menuBtn)
 
 	a.container = util.AddHeaderBackground(
-		container.NewBorder(nil, nil, a.artistImage, nil,
-			container.NewVBox(
-				container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
-					a.titleDisp, a.biographyDisp, a.similarArtists),
-				btnContainer),
-		))
+		container.NewStack(
+			container.NewBorder(nil, nil, a.artistImage, nil,
+				container.NewVBox(
+					container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
+						a.titleDisp, a.biographyDisp, a.similarArtists),
+					btnContainer),
+			),
+			container.NewVBox(container.NewHBox(layout.NewSpacer(), a.collapseBtn)),
+		),
+	)
 }
 
 func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {

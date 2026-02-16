@@ -12,8 +12,9 @@ on:
 jobs:
   build:
     runs-on: macos-15-intel
+    timeout-minutes: 30
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set up Xcode
       uses: maxim-lobanov/setup-xcode@v1
@@ -21,7 +22,7 @@ jobs:
         xcode-version: latest
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: '1.24'
 
@@ -32,7 +33,7 @@ jobs:
       run: export C_INCLUDE_PATH=/usr/local/include:/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib:$LIBRARY_PATH
 
     - name: Install Fyne tool
-      run: go install fyne.io/fyne/v2/cmd/fyne@latest
+      run: go install fyne.io/tools/cmd/fyne@latest
 
     - name: Build and package app bundles
       run: >
@@ -46,13 +47,13 @@ jobs:
         mv Supersonic.zip Supersonic_HighSierra+.zip
 
     - name: Upload Big Sur+ package
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Supersonic_mac_x64_BigSur+.zip
         path: Supersonic_BigSur+.zip
 
     - name: Upload High Sierra+ package
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Supersonic_mac_x64_HighSierra+.zip
         path: Supersonic_HighSierra+.zip

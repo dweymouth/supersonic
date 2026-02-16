@@ -17,15 +17,16 @@ import (
 type AddEditServerDialog struct {
 	widget.BaseWidget
 
-	ServerType backend.ServerType
-	Nickname   string
-	Host       string
-	AltHost    string
-	Username   string
-	Password   string
-	LegacyAuth bool
-	OnSubmit   func()
-	OnCancel   func()
+	ServerType    backend.ServerType
+	Nickname      string
+	Host          string
+	AltHost       string
+	Username      string
+	Password      string
+	LegacyAuth    bool
+	SkipSSLVerify bool
+	OnSubmit      func()
+	OnCancel      func()
 
 	passField  *widget.Entry
 	submitBtn  *widget.Button
@@ -45,6 +46,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 		a.AltHost = prefillServer.AltHostname
 		a.Username = prefillServer.Username
 		a.LegacyAuth = prefillServer.LegacyAuth
+		a.SkipSSLVerify = prefillServer.SkipSSLVerify
 	}
 
 	titleLabel := widget.NewLabel(title)
@@ -58,6 +60,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 			legacyAuthCheck.Hide()
 		}
 	})
+	skipSSLCheck := widget.NewCheckWithData(lang.L("Skip SSL certificate verification"), binding.BindBool(&a.SkipSSLVerify))
 	serverTypeChoice.Required = true
 	serverTypeChoice.Horizontal = true
 	selected := backend.ServerTypeSubsonic
@@ -113,7 +116,7 @@ func NewAddEditServerDialog(title string, cancelable bool, prefillServer *backen
 			widget.NewLabel(lang.L("Password")),
 			a.passField,
 		),
-		container.NewHBox(layout.NewSpacer(), legacyAuthCheck),
+		container.NewHBox(layout.NewSpacer(), legacyAuthCheck, skipSSLCheck),
 		widget.NewSeparator(),
 		bottomRow,
 	)

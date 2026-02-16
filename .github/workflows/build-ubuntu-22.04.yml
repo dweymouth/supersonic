@@ -12,11 +12,12 @@ jobs:
 
   build:
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: '1.24'
 
@@ -24,13 +25,13 @@ jobs:
       run: sudo apt update && sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev
 
     - name: Install Fyne tool
-      run: go install fyne.io/fyne/v2/cmd/fyne@latest
+      run: go install fyne.io/tools/cmd/fyne@latest
 
     - name: Fyne package
       run: make package_linux
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Supersonic_ubuntu_x64.tar.xz
         path: Supersonic.tar.xz

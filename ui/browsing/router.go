@@ -26,7 +26,7 @@ func NewRouter(app *backend.App, controller *controller.Controller, nav Navigati
 		App:        app,
 		Controller: controller,
 		Nav:        nav,
-		widgetPool: util.NewWidgetPool(),
+		widgetPool: util.NewWidgetPool(app.BackgroundContext()),
 	}
 	return r
 }
@@ -50,7 +50,7 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	case controller.Genres:
 		return NewGenresPage(r.Controller, r.App.ServerManager.Server)
 	case controller.NowPlaying:
-		return NewNowPlayingPage(&r.App.Config.NowPlayingConfig, r.Controller, r.widgetPool, r.App.ServerManager, r.App.LyricsManager, r.App.ImageManager, r.App.PlaybackManager, r.App.ServerManager.Server, canRate, canShare)
+		return NewNowPlayingPage(&r.App.Config.NowPlayingConfig, r.Controller, r.widgetPool, r.App.ServerManager, r.App.LyricsManager, r.App.ImageManager, r.App.PlaybackManager, r.App.ServerManager.Server, canRate, canShare, r.App.Config)
 	case controller.Playlist:
 		return NewPlaylistPage(rte.Arg, &r.App.Config.PlaylistPage, r.widgetPool, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager)
 	case controller.Playlists:
