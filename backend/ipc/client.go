@@ -128,6 +128,11 @@ func (c *Client) Show() error {
 	return err
 }
 
+func (c *Client) ReloadTheme() error {
+	_, err := c.sendRequest(ReloadThemePath)
+	return err
+}
+
 func (c *Client) Quit() error {
 	_, err := c.sendRequest(QuitPath)
 	return err
