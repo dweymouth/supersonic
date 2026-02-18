@@ -274,6 +274,7 @@ func (m *MainWindow) setInitialSize() {
 }
 
 func (m *MainWindow) ReloadTheme() {
+	m.theme.ReloadThemeFile()
 	fyne.CurrentApp().Settings().SetTheme(m.theme)
 }
 

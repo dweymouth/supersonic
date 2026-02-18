@@ -110,6 +110,11 @@ func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
 	return m
 }
 
+// ReloadThemeFile reloads the currently loaded theme file.
+func (m *MyTheme) ReloadThemeFile() {
+	m.loadedThemeFile = nil
+}
+
 func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
 	// load theme file if necessary
 	if m.loadedThemeFile == nil || m.config.ThemeFile != m.loadedThemeFilename {
