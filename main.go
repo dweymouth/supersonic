@@ -110,6 +110,7 @@ func main() {
 	mainWindow.Window.SetMaster()
 	myApp.OnReactivate = util.FyneDoFunc(mainWindow.Show)
 	myApp.OnExit = util.FyneDoFunc(mainWindow.Quit)
+	myApp.OnReloadTheme = util.FyneDoFunc(mainWindow.ReloadTheme)
 
 	if runtime.GOOS == "windows" {
 		windowStartupTasks := sync.OnceFunc(func() {

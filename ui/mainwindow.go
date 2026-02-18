@@ -273,6 +273,11 @@ func (m *MainWindow) setInitialSize() {
 	m.Window.Resize(m.DesiredSize())
 }
 
+func (m *MainWindow) ReloadTheme() {
+	m.theme.ReloadThemeFile()
+	fyne.CurrentApp().Settings().SetTheme(m.theme)
+}
+
 func (m *MainWindow) StartupPage() controller.Route {
 	switch m.App.Config.Application.StartupPage {
 	case "Artists":

@@ -41,16 +41,17 @@ type ServerManager interface {
 }
 
 type serverImpl struct {
-	server    *http.Server
-	pbHandler PlaybackHandler
-	rateFn    func(int)
-	sm        ServerManager
-	showFn    func()
-	quitFn    func()
+	server          *http.Server
+	pbHandler       PlaybackHandler
+	rateFn          func(int)
+	sm              ServerManager
+	showFn          func()
+	quitFn          func()
+	reloadThemeFn   func()
 }
 
-func NewServer(pbHandler PlaybackHandler, rateFn func(int), sm ServerManager, showFn, quitFn func()) IPCServer {
-	s := &serverImpl{pbHandler: pbHandler, rateFn: rateFn, sm: sm, showFn: showFn, quitFn: quitFn}
+func NewServer(pbHandler PlaybackHandler, rateFn func(int), sm ServerManager, showFn, quitFn, reloadThemeFn func()) IPCServer {
+	s := &serverImpl{pbHandler: pbHandler, rateFn: rateFn, sm: sm, showFn: showFn, quitFn: quitFn, reloadThemeFn: reloadThemeFn}
 	s.server = &http.Server{
 		Handler: s.createHandler(),
 	}
@@ -77,6 +78,7 @@ func (s *serverImpl) createHandler() http.Handler {
 	m.HandleFunc(ShowPath, s.makeSimpleEndpointHandler(func() {
 		s.showFn()
 	}))
+	m.HandleFunc(ReloadThemePath, s.makeSimpleEndpointHandler(s.reloadThemeFn))
 	m.HandleFunc(QuitPath, s.makeSimpleEndpointHandler(func() {
 		s.quitFn()
 	}))
