@@ -180,6 +180,14 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 	timeout := time.Second * time.Duration(s.config.Application.RequestTimeoutSeconds)
 
 	if connection.ServerType == ServerTypeJellyfin {
+		connection.Hostname = NormalizeJellyfinURL(connection.Hostname)
+		connection.AltHostname = NormalizeJellyfinURL(connection.AltHostname)
+	} else {
+		connection.Hostname = NormalizeServerURL(connection.Hostname)
+		connection.AltHostname = NormalizeServerURL(connection.AltHostname)
+	}
+
+	if connection.ServerType == ServerTypeJellyfin {
 		client, err := jellyfin.NewClient(connection.Hostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(timeout))
 		if err != nil {
 			log.Printf("error creating Jellyfin client: %s", err.Error())
