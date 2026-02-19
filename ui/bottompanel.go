@@ -122,6 +122,11 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.AuxControls.OnChangeAutoplay = func(autoplay bool) {
 		pm.SetAutoplay(autoplay)
 	}
+	bp.AuxControls.OnChangeSpeed = func(speed float64) {
+		pm.SetSpeed(speed)
+	}
+	// Set initial speed from playback manager
+	bp.AuxControls.SetSpeed(pm.Speed())
 	bp.AuxControls.OnShowPlayQueue(contr.ShowPopUpPlayQueue)
 	bp.AuxControls.OnShowCastMenu(contr.ShowCastMenu)
 

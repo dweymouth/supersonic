@@ -70,6 +70,7 @@ type Player struct {
 	clientName     string
 	equalizer      Equalizer
 	peaksEnabled   bool
+	speed          float64
 	pauseFade      bool
 
 	icyTitleCb func(string)
@@ -241,6 +242,32 @@ func (p *Player) SetVolume(vol int) error {
 	}
 	p.vol = vol
 	return nil
+}
+
+// Sets the playback speed of the player (0.25-4.0).
+// Speed value of 1.0 is normal speed.
+func (p *Player) SetSpeed(speed float64) error {
+	if !p.initialized {
+		return ErrUnitialized
+	}
+	if speed < 0.25 {
+		speed = 0.25
+	} else if speed > 4.0 {
+		speed = 4.0
+	}
+	err := p.mpv.SetProperty("speed", mpv.FORMAT_DOUBLE, speed)
+	if err == nil {
+		p.speed = speed
+	}
+	return err
+}
+
+// Gets the current playback speed of the player.
+func (p *Player) GetSpeed() float64 {
+	if p.speed == 0 {
+		return 1.0 // default speed
+	}
+	return p.speed
 }
 
 // Sets the ReplayGain options of the player.

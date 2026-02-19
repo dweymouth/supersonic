@@ -643,6 +643,14 @@ func (p *PlaybackManager) Volume() int {
 	return p.engine.CurrentPlayer().GetVolume()
 }
 
+func (p *PlaybackManager) SetSpeed(speed float64) {
+	p.cmdQueue.SetSpeed(speed)
+}
+
+func (p *PlaybackManager) Speed() float64 {
+	return p.engine.CurrentPlayer().GetSpeed()
+}
+
 func (p *PlaybackManager) SeekNext() {
 	p.cmdQueue.SeekNext()
 }
@@ -826,6 +834,8 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 				logIfErr(action, p.engine.SeekFwdBackN(c.Arg.(int)))
 			case cmdVolume:
 				logIfErr("Volume", p.engine.SetVolume(c.Arg.(int)))
+			case cmdSpeed:
+				logIfErr("Speed", p.engine.SetSpeed(c.Arg.(float64)))
 			case cmdLoopMode:
 				p.engine.SetLoopMode(c.Arg.(LoopMode))
 			case cmdStopAndClearPlayQueue:

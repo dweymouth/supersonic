@@ -27,6 +27,9 @@ type BasePlayer interface {
 	SetVolume(int) error
 	GetVolume() int
 
+	SetSpeed(float64) error
+	GetSpeed() float64
+
 	GetStatus() Status
 
 	Destroy()
