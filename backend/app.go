@@ -43,23 +43,23 @@ var (
 )
 
 type App struct {
-	Config           *Config
-	ServerManager    *ServerManager
-	LyricsManager    *LyricsManager
-	ImageManager     *ImageManager
-	AudioCache       *AudioCache
-	AutoEQManager    *AutoEQManager
-	EQPresetManager  *EQPresetManager
-	PlaybackManager  *PlaybackManager
-	LocalPlayer      *mpv.Player
-	UpdateChecker    UpdateChecker
-	MPRISHandler     *MPRISHandler
-	WinSMTC          *windows.SMTC
-	ipcServer        ipc.IPCServer
+	Config          *Config
+	ServerManager   *ServerManager
+	LyricsManager   *LyricsManager
+	ImageManager    *ImageManager
+	AudioCache      *AudioCache
+	AutoEQManager   *AutoEQManager
+	EQPresetManager *EQPresetManager
+	PlaybackManager *PlaybackManager
+	LocalPlayer     *mpv.Player
+	UpdateChecker   UpdateChecker
+	MPRISHandler    *MPRISHandler
+	WinSMTC         *windows.SMTC
+	ipcServer       ipc.IPCServer
 
 	// UI callbacks to be set in main
-	OnReactivate func()
-	OnExit       func()
+	OnReactivate  func()
+	OnExit        func()
 	OnReloadTheme func()
 
 	appName        string
@@ -283,6 +283,7 @@ func (a *App) ClearCaches() {
 			}
 		}
 	}
+	a.ImageManager.ClearInMemoryCache()
 }
 
 func checkPortablePath() string {
