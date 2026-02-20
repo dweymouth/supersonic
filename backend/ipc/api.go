@@ -26,6 +26,7 @@ const (
 	VolumePath            = "/volume"            // ?v=<vol>
 	VolumeAdjustPath      = "/volume/adjust"     // ?pct=<+/- percentage>
 	ShowPath              = "/window/show"
+	ReloadThemePath       = "/window/reload-theme"
 	QuitPath              = "/window/quit"
 	RateCurrentTrackPath  = "/current_track/rate" // ?r=<rating 0-5>
 )

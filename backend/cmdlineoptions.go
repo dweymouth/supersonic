@@ -32,6 +32,7 @@ var (
 	FlagPauseAfterCurrent = flag.Bool("pause-after-current", false, "pause playback after current track")
 	FlagStartMinimized    = flag.Bool("start-minimized", false, "start app minimized")
 	FlagShow              = flag.Bool("show", false, "show minimized app")
+	FlagReloadTheme       = flag.Bool("reload-theme", false, "reload the current theme")
 	FlagShuffle           = flag.Bool("shuffle", false, "shuffle the tracklist (to be used with either -play-album-by-id or -play-playlist-by-id)")
 	FlagVersion           = flag.Bool("version", false, "print app version and exit")
 	FlagHelp              = flag.Bool("help", false, "print command line options and exit")

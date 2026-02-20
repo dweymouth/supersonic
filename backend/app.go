@@ -61,8 +61,9 @@ type App struct {
 	ipcServer       ipc.IPCServer
 
 	// UI callbacks to be set in main
-	OnReactivate func()
-	OnExit       func()
+	OnReactivate  func()
+	OnExit        func()
+	OnReloadTheme func()
 
 	appName        string
 	displayAppName string
@@ -230,7 +231,8 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 				ipcRatingHandler,
 				a.ServerManager,
 				a.callOnReactivate,
-				func() { _ = a.callOnExit() })
+				func() { _ = a.callOnExit() },
+				a.callOnReloadTheme)
 			go a.ipcServer.Serve(listener)
 		} else {
 			log.Printf("error starting IPC server: %s", err.Error())
@@ -284,6 +286,7 @@ func (a *App) ClearCaches() {
 			}
 		}
 	}
+	a.ImageManager.ClearInMemoryCache()
 }
 
 func checkPortablePath() string {
@@ -336,6 +339,12 @@ func (a *App) startConfigWriter(ctx context.Context) {
 func (a *App) callOnReactivate() {
 	if a.OnReactivate != nil {
 		a.OnReactivate()
+	}
+}
+
+func (a *App) callOnReloadTheme() {
+	if a.OnReloadTheme != nil {
+		a.OnReloadTheme()
 	}
 }
 
@@ -710,6 +719,8 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.PauseAfterCurrent()
 	case *FlagShow:
 		return cli.Show()
+	case *FlagReloadTheme:
+		return cli.ReloadTheme()
 	case VolumeCLIArg >= 0:
 		return cli.SetVolume(VolumeCLIArg)
 	case VolumePctCLIArg != 0:
