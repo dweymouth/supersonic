@@ -371,16 +371,7 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 
 	newNowPlayingIdx := 0
 	if shuffle {
-		shuffledQueue := deepCopyMediaItemSlice(p.playQueue)
-		rand.Shuffle(len(shuffledQueue), func(i, j int) {
-			shuffledQueue[i], shuffledQueue[j] = shuffledQueue[j], shuffledQueue[i]
-		})
-		if p.nowPlayingIdx >= 0 && len(p.getPlayQueue()) > p.nowPlayingIdx {
-			nowPlayingID := p.getPlayQueue()[p.nowPlayingIdx].Metadata().ID
-			p.setShuffledPlayQueue(sharedutil.ReorderItems(shuffledQueue, []int{p.GetTrackIdxByIdFrom(shuffledQueue, nowPlayingID)}, 0))
-		} else {
-			return
-		}
+		p.LoadItemsAndPlayAtIdx(p.playQueue, true, p.nowPlayingIdx)
 	} else {
 		if p.nowPlayingIdx >= 0 && len(p.getShuffledPlayQueue()) > p.nowPlayingIdx {
 			nowPlayingID := p.getShuffledPlayQueue()[p.nowPlayingIdx].Metadata().ID
@@ -513,6 +504,32 @@ func (p *playbackEngine) SetQueueState(tracks []*mediaprovider.Track, queueType 
 func (p *playbackEngine) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) error {
 	newItems := deepCopyMediaItemSlice(items)
 	return p.doLoaditems(newItems, insertQueueMode, shuffle)
+}
+
+// Load items into the play queue.
+// If replacing the current queue (!appendToQueue), playback will be stopped.
+func (p *playbackEngine) LoadItemsAndPlayAtIdx(items []mediaprovider.MediaItem, shuffle bool, idx int) error {
+	newItems := deepCopyMediaItemSlice(items)
+
+	if p.shuffle || shuffle {
+		rand.Shuffle(len(newItems), func(i, j int) {
+			newItems[i], newItems[j] = newItems[j], newItems[i]
+		})
+		if idx < len(items) {
+			nowPlayingID := items[idx].Metadata().ID
+			p.setPlayQueue(deepCopyMediaItemSlice(items))
+			p.setShuffledPlayQueue(sharedutil.ReorderItems(newItems, []int{p.GetTrackIdxByIdFrom(newItems, nowPlayingID)}, 0))
+			p.PlayTrackAt(0)
+		}
+	} else {
+		p.doLoaditems(newItems, Replace, shuffle)
+		p.PlayTrackAt(idx)
+	}
+
+	p.handleNextTrackUpdated()
+	p.invokeNoArgCallbacks(p.onQueueChange)
+
+	return nil
 }
 
 // Load tracks into the play queue.

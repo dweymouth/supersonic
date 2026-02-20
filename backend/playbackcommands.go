@@ -25,6 +25,7 @@ const (
 	// arg2: InsertMode
 	// arg3: bool (shuffle)
 	cmdLoadItems
+	cmdLoadItemsAndPlayAtIdx
 	cmdSetQueueState
 	cmdLoadRadioStation // arg: *mediaprovider.RadioStation, arg2: InsertQueueMode
 
@@ -156,6 +157,18 @@ func (c *playbackCommandQueue) LoadItems(items []mediaprovider.MediaItem, insert
 		Arg:  items,
 		Arg2: insertQueueMode,
 		Arg3: shuffle,
+	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
+}
+
+func (c *playbackCommandQueue) LoadItemsAndPlayAtIdx(items []mediaprovider.MediaItem, shuffle bool, idx int) {
+	c.mutex.Lock()
+	c.queue = append(c.queue, playbackCommand{
+		Type: cmdLoadItemsAndPlayAtIdx,
+		Arg:  items,
+		Arg2: shuffle,
+		Arg3: idx,
 	})
 	c.mutex.Unlock()
 	c.cmdAvailable.Signal()

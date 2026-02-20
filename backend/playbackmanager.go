@@ -399,6 +399,12 @@ func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueM
 	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
 }
 
+// Replaces the playQueue with tracks and moves the track at idx to position 0
+func (p *PlaybackManager) LoadTracksAndPlayAtIdx(tracks []*mediaprovider.Track, shuffle bool, idx int) {
+	items := sharedutil.CopyTrackSliceToMediaItemSlice(tracks)
+	p.cmdQueue.LoadItemsAndPlayAtIdx(items, shuffle, idx)
+}
+
 // Load items into the currently active queue. (shuffledPlayQueue/playQueue)
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 // Loading items into the shuffledPlayQueue may also modify the playQueue
@@ -871,6 +877,13 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					c.Arg3.(bool),
 				)
 				logIfErr("LoadItems", err)
+			case cmdLoadItemsAndPlayAtIdx:
+				err := p.engine.LoadItemsAndPlayAtIdx(
+					c.Arg.([]mediaprovider.MediaItem),
+					c.Arg2.(bool),
+					c.Arg3.(int),
+				)
+				logIfErr("LoadItemsAndPlayAtIdx", err)
 			case cmdSetQueueState:
 				err := p.engine.SetQueueState(
 					c.Arg.([]*mediaprovider.Track),
