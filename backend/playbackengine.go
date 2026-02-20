@@ -371,7 +371,16 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 
 	newNowPlayingIdx := 0
 	if shuffle {
-		p.LoadItemsAndPlayAtIdx(p.playQueue, true, p.nowPlayingIdx)
+		shuffledQueue := deepCopyMediaItemSlice(p.playQueue)
+		rand.Shuffle(len(shuffledQueue), func(i, j int) {
+			shuffledQueue[i], shuffledQueue[j] = shuffledQueue[j], shuffledQueue[i]
+		})
+		if p.nowPlayingIdx >= 0 && len(p.getPlayQueue()) > p.nowPlayingIdx {
+			nowPlayingID := p.getPlayQueue()[p.nowPlayingIdx].Metadata().ID
+			p.setShuffledPlayQueue(sharedutil.ReorderItems(shuffledQueue, []int{p.GetTrackIdxByIdFrom(shuffledQueue, nowPlayingID)}, 0))
+		} else {
+			return
+		}
 	} else {
 		if p.nowPlayingIdx >= 0 && len(p.getShuffledPlayQueue()) > p.nowPlayingIdx {
 			nowPlayingID := p.getShuffledPlayQueue()[p.nowPlayingIdx].Metadata().ID
