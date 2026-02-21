@@ -10,7 +10,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/dweymouth/supersonic)](https://goreportcard.com/report/github.com/dweymouth/supersonic)
 [![Discord](https://dcbadge.limes.pink/api/server/H6FC9bAMpF?style=flat)](https://discord.gg/H6FC9bAMpF)
 
-A lightweight cross-platform desktop client for Subsonic and Jellyfin music servers.
+A lightweight cross-platform desktop client for Subsonic, Jellyfin, and MPD music servers.
 
 [Jump to installation instructions](https://github.com/dweymouth/supersonic#installation)
 
@@ -25,10 +25,11 @@ Screenshots of Supersonic running against the Navidrome demo server, showcasing 
 
 ## Supported servers
 
-Supersonic supports any music server with a Subsonic (or OpenSubsonic) API, or Jellyfin. A partial list of supported servers is as follows:
+Supersonic supports any music server with a Subsonic (or OpenSubsonic) API, Jellyfin, or MPD. A partial list of supported servers is as follows:
 
 * [Navidrome](https://navidrome.org)
 * [Jellyfin](https://jellyfin.org)
+* [MPD](https://www.musicpd.org) (Music Player Daemon)
 * [Gonic](https://github.com/sentriz/gonic)
 * [LMS](https://github.com/epoupon/lms)
 * [Nextcloud Music](https://apps.nextcloud.com/apps/music)
@@ -57,7 +58,7 @@ Supersonic supports any music server with a Subsonic (or OpenSubsonic) API, or J
 * [x] Lyrics support
 * [x] Internet radio station support (Subsonic)
 * [x] Cast to uPnP/DLNA devices
-* [ ] Server jukebox control (planned)
+* [x] MPD server support with jukebox playback control
 * [ ] Browse by folders (planned)
 * [ ] Offline mode (eventually planned)
 * [ ] iOS/Android support (maybe eventually planned)

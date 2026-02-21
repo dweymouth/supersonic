@@ -34,9 +34,10 @@ type PlayQueueListModel struct {
 type PlayQueueList struct {
 	widget.BaseWidget
 
-	Reorderable    bool
-	DisableRating  bool
-	DisableSharing bool
+	Reorderable     bool
+	DisableRating   bool
+	DisableSharing  bool
+	DisableDownload bool
 
 	// user action callbacks
 	OnPlayItemAt        func(idx int)
@@ -259,6 +260,7 @@ func (p *PlayQueueList) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		p.menu.SetRatingDisabled(p.DisableRating)
 		p.menu.SetInfoDisabled(len(selected) != 1)
 		p.menu.SetShareDisabled(p.DisableSharing || len(selected) != 1)
+		p.menu.SetDownloadDisabled(p.DisableDownload)
 		p.menu.ShowAtPosition(e.AbsolutePosition, fyne.CurrentApp().Driver().CanvasForObject(p))
 	} else {
 		p.ensureRadiosMenu()

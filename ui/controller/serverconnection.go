@@ -35,6 +35,7 @@ func (m *Controller) PromptForFirstServer() {
 					SkipSSLVerify: d.SkipSSLVerify,
 				}
 				server := m.App.ServerManager.AddServer(d.Nickname, conn)
+				server.StopOnDisconnect = d.StopOnDisconnect
 				if err := m.trySetPasswordAndConnectToServer(server, d.Password); err != nil {
 					log.Printf("error connecting to server: %s", err.Error())
 				}
@@ -140,6 +141,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 						server.Username = editD.Username
 						server.LegacyAuth = editD.LegacyAuth
 						server.SkipSSLVerify = editD.SkipSSLVerify
+						server.StopOnDisconnect = editD.StopOnDisconnect
 						m.trySetPasswordAndConnectToServer(server, editD.Password)
 						m.doModalClosed()
 					}
@@ -174,6 +176,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 							SkipSSLVerify: newD.SkipSSLVerify,
 						}
 						server := m.App.ServerManager.AddServer(newD.Nickname, conn)
+						server.StopOnDisconnect = newD.StopOnDisconnect
 						m.trySetPasswordAndConnectToServer(server, newD.Password)
 						m.doModalClosed()
 					}
