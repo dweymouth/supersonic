@@ -93,6 +93,11 @@ type playbackEngine struct {
 	pendingPlayerChange       bool
 	pendingPlayerChangeStatus player.Status
 
+	// set when restoring session state: track is conceptually loaded+paused
+	// but MPV hasn't been touched yet; cleared on Continue or playTrackAt
+	pendingLoadPaused    bool
+	pendingLoadStartTime float64
+
 	// Whether we need to set the next track on the Player
 	// before the current track completes (normally when 10 seconds remain
 	// in the time pos polling function)
@@ -301,10 +306,40 @@ func (p *playbackEngine) PlayTrackAt(idx int) error {
 	return p.playTrackAt(idx, 0)
 }
 
+// loadTrackPaused sets up engine state as if the track at idx is loaded and
+// paused at startTime, firing UI/OS-integration callbacks, but does NOT touch
+// the underlying player. Call Continue() to actually begin playback.
+func (p *playbackEngine) loadTrackPaused(idx int, startTime float64) error {
+	if l := p.getPlayQueueLength(); idx < 0 || idx >= l {
+		return fmt.Errorf("track index (%d) out of range (0-%d)", idx, l)
+	}
+	p.nowPlayingIdx = idx
+	nowPlaying := p.getPlayQueueItemAt(idx)
+	_, p.isRadio = nowPlaying.(*mediaprovider.RadioStation)
+	p.wasStopped = false
+	p.alreadyScrobbled = false
+	p.curTrackDuration = nowPlaying.Metadata().Duration.Seconds()
+	p.pendingLoadPaused = true
+	p.pendingLoadStartTime = startTime
+
+	// Pre-generate the waveform image for the paused track using the same hook
+	// that normally pre-generates waveforms for the upcoming track.
+	for _, cb := range p.onBeforeSongChange {
+		cb(nowPlaying)
+	}
+
+	p.invokeOnSongChangeCallbacks()
+	p.invokeNoArgCallbacks(p.onPaused)
+	p.handleTimePosUpdate(false)
+	p.handleNextTrackUpdated()
+	return nil
+}
+
 func (p *playbackEngine) playTrackAt(idx int, startTime float64) error {
 	if l := p.getPlayQueueLength(); idx < 0 || idx >= l {
 		return fmt.Errorf("track index (%d) out of range (0-%d)", idx, l)
 	}
+	p.pendingLoadPaused = false
 	// scrobble current track if needed
 	p.checkScrobble()
 	p.alreadyScrobbled = true
@@ -315,7 +350,10 @@ func (p *playbackEngine) playTrackAt(idx int, startTime float64) error {
 
 // Gets the curently playing media item, if any.
 func (p *playbackEngine) NowPlaying() mediaprovider.MediaItem {
-	if p.nowPlayingIdx < 0 || p.getPlayQueueLength() == 0 || p.player.GetStatus().State == player.Stopped {
+	if p.nowPlayingIdx < 0 || p.getPlayQueueLength() == 0 {
+		return nil
+	}
+	if !p.pendingLoadPaused && p.player.GetStatus().State == player.Stopped {
 		return nil
 	}
 	return p.getPlayQueueItemAt(p.nowPlayingIdx)
@@ -395,6 +433,13 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 }
 
 func (p *playbackEngine) PlaybackStatus() PlaybackStatus {
+	if p.pendingLoadPaused {
+		return PlaybackStatus{
+			State:    player.Paused,
+			TimePos:  p.pendingLoadStartTime,
+			Duration: p.curTrackDuration,
+		}
+	}
 	stat := p.pendingPlayerChangeStatus
 	if !p.pendingPlayerChange {
 		stat = p.CurrentPlayer().GetStatus()
@@ -466,6 +511,7 @@ func (p *playbackEngine) IsSeeking() bool {
 }
 
 func (p *playbackEngine) Stop() error {
+	p.pendingLoadPaused = false
 	return p.player.Stop(false)
 }
 
@@ -478,6 +524,15 @@ func (p *playbackEngine) Pause() error {
 }
 
 func (p *playbackEngine) Continue() error {
+	if p.pendingLoadPaused {
+		p.pendingLoadPaused = false
+		// Use pendingTrackChangeNum so handleOnTrackChange doesn't advance nowPlayingIdx.
+		// Set alreadyScrobbled so it doesn't try to scrobble the not-yet-played track.
+		p.pendingTrackChangeNum = p.nowPlayingIdx
+		p.alreadyScrobbled = true
+		return p.setTrack(p.nowPlayingIdx, false, p.pendingLoadStartTime)
+	}
+
 	if p.pendingPlayerChange {
 		p.pendingPlayerChange = false
 		return p.playTrackAt(p.nowPlayingIdx, p.pendingPlayerChangeStatus.TimePos)

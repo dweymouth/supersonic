@@ -510,6 +510,13 @@ func (p *PlaybackManager) PlayTrackAt(idx int) {
 	p.cmdQueue.PlayTrackAt(idx)
 }
 
+// LoadTrackPaused sets up engine state as if the track at idx is loaded and
+// paused at startTime, updating the UI and OS media integrations, without
+// starting MPV. Call Continue (or PlayPause) to begin actual playback.
+func (p *PlaybackManager) LoadTrackPaused(idx int, startTime float64) {
+	p.cmdQueue.LoadTrackPaused(idx, startTime)
+}
+
 func (p *PlaybackManager) PlayRandomSongs(genreName string) error {
 	return p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
 		tr, err := p.engine.sm.Server.GetRandomTracks(genreName, p.appCfg.EnqueueBatchSize)
@@ -895,6 +902,8 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					c.Arg.(*mediaprovider.RadioStation),
 					c.Arg2.(InsertQueueMode),
 				)
+			case cmdLoadTrackPaused:
+				logIfErr("LoadTrackPaused", p.engine.loadTrackPaused(c.Arg.(int), c.Arg2.(float64)))
 			case cmdForceRestartPlayback:
 				if mpv, ok := p.engine.CurrentPlayer().(*mpv.Player); ok {
 					log.Println("Force-restarting MPV playback")

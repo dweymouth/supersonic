@@ -683,11 +683,7 @@ func (a *App) LoadSavedPlayQueue() error {
 	}
 
 	if playQueue.TrackIndex >= 0 && playQueue.TrackIndex < len(playQueue.Tracks) {
-		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
-		a.PlaybackManager.PlayTrackAt(playQueue.TrackIndex)
-		a.PlaybackManager.Pause()
-		time.Sleep(100 * time.Millisecond) // MPV seek fails if run quickly after
-		a.PlaybackManager.SeekSeconds(playQueue.TimePos)
+		a.PlaybackManager.LoadTrackPaused(playQueue.TrackIndex, playQueue.TimePos)
 	}
 
 	return nil
