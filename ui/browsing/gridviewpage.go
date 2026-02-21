@@ -85,6 +85,14 @@ type GridViewPageAdapterGetItems interface {
 	SetItemsFunc(func() []widgets.GridViewItemModel)
 }
 
+// GridViewPageAdapterArtistImages is an optional adapter interface.
+// Adapters that show artist cards with externally-fetched images (e.g. MPD
+// using TheAudioDB) implement this so GridViewPage knows to enable the
+// artist-image loading callback. Album-grid adapters do not implement it.
+type GridViewPageAdapterArtistImages interface {
+	UsesArtistImages() bool
+}
+
 type SortableGridViewPageAdapter interface {
 	// Returns the list of sort orders
 	// and the index of the initially selected sort order
@@ -125,9 +133,12 @@ func NewGridViewPage[M, F any](
 	gp.grid.DisableDownload = isJukeboxOnly
 	adapter.InitGrid(gp.grid)
 
-	// Set up artist image loading callback for servers that support external artist images
-	// (like MPD which uses TheAudioDB)
-	gp.grid.OnLoadArtistImage = gp.loadArtistImage
+	// Set up artist image loading callback only for adapters that use it
+	// (e.g. MPD artist pages). Album pages and non-MPD providers don't implement
+	// GridViewPageAdapterArtistImages so their grids are unaffected.
+	if ai, ok := adapter.(GridViewPageAdapterArtistImages); ok && ai.UsesArtistImages() {
+		gp.grid.OnLoadArtistImage = gp.loadArtistImage
+	}
 
 	// If adapter supports SetItemsFunc, call it to inject the items dependency
 	if plfSetter, ok := adapter.(GridViewPageAdapterGetItems); ok {
@@ -341,6 +352,20 @@ func (s *savedGridViewPage[M, F]) Restore() Page {
 		gp.grid = widgets.NewGridViewFromState(state)
 	}
 	gp.adapter.InitGrid(gp.grid)
+
+	// Re-set the artist image loading callback on the restored grid so it
+	// references the new GridViewPage instance (the saved state's closure
+	// would point to the old, discarded instance). Only set for adapters
+	// that actually use external artist images.
+	if ai, ok := gp.adapter.(GridViewPageAdapterArtistImages); ok && ai.UsesArtistImages() {
+		gp.grid.OnLoadArtistImage = gp.loadArtistImage
+	}
+
+	// If adapter supports SetItemsFunc, inject the items dependency.
+	if plfSetter, ok := gp.adapter.(GridViewPageAdapterGetItems); ok {
+		plfSetter.SetItemsFunc(gp.grid.Items)
+	}
+
 	gp.createSearchAndFilter()
 	gp.createContainer()
 	return gp

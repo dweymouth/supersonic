@@ -81,3 +81,7 @@ func (a *artistsPageAdapter) InitGrid(gv *widgets.GridView) {
 func (a *artistsPageAdapter) RefreshGrid(gv *widgets.GridView) {
 	gv.Refresh()
 }
+
+// UsesArtistImages implements GridViewPageAdapterArtistImages.
+// Artist pages always want the external image loading callback.
+func (a *artistsPageAdapter) UsesArtistImages() bool { return true }

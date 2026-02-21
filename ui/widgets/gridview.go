@@ -61,13 +61,24 @@ type GridViewIterator interface {
 	NextN(int) []GridViewItemModel
 }
 
+// GridViewIteratorDone is an optional extension to GridViewIterator.
+// Iterators that support progressive background loading (e.g. MPD) implement
+// this so the GridView knows when it is truly finished vs. temporarily dry.
+type GridViewIteratorDone interface {
+	GridViewIterator
+	// Done returns true only when no more items will ever be produced.
+	// Returning false means the iterator may produce more items in the future.
+	Done() bool
+}
+
 type gridViewAlbumIterator struct {
-	iter BatchingIterator[mediaprovider.Album]
+	iter    BatchingIterator[mediaprovider.Album]
+	rawIter mediaprovider.AlbumIterator // kept to check Done() if available
 }
 
 func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
 	albums := g.iter.NextN(n)
-	return sharedutil.MapSlice(albums, func(al *mediaprovider.Album) GridViewItemModel {
+	result := sharedutil.MapSlice(albums, func(al *mediaprovider.Album) GridViewItemModel {
 		model := GridViewItemModel{
 			Name:         al.Name,
 			ID:           al.ID,
@@ -82,19 +93,36 @@ func (g gridViewAlbumIterator) NextN(n int) []GridViewItemModel {
 		}
 		return model
 	})
+	return result
+}
+
+// Done implements GridViewIteratorDone. It delegates to the underlying
+// iterator's Done() method if available, otherwise returns true.
+func (g gridViewAlbumIterator) Done() bool {
+	if d, ok := g.rawIter.(iteratorDone); ok {
+		return d.Done()
+	}
+	return true
 }
 
 func NewGridViewAlbumIterator(iter mediaprovider.AlbumIterator) GridViewIterator {
-	return gridViewAlbumIterator{iter: NewBatchingIterator(iter)}
+	return gridViewAlbumIterator{iter: NewBatchingIterator(iter), rawIter: iter}
+}
+
+// iteratorDone is an optional interface that underlying media iterators can
+// implement to signal whether they are truly finished or only temporarily dry.
+type iteratorDone interface {
+	Done() bool
 }
 
 type gridViewArtistIterator struct {
-	iter BatchingIterator[mediaprovider.Artist]
+	iter    BatchingIterator[mediaprovider.Artist]
+	rawIter mediaprovider.ArtistIterator // kept to check Done() if available
 }
 
 func (g gridViewArtistIterator) NextN(n int) []GridViewItemModel {
 	artists := g.iter.NextN(n)
-	return sharedutil.MapSlice(artists, func(ar *mediaprovider.Artist) GridViewItemModel {
+	result := sharedutil.MapSlice(artists, func(ar *mediaprovider.Artist) GridViewItemModel {
 		albumsLabel := lang.L("albums")
 		if ar.AlbumCount == 1 {
 			albumsLabel = lang.L("album")
@@ -112,10 +140,20 @@ func (g gridViewArtistIterator) NextN(n int) []GridViewItemModel {
 			IsFavorite:  ar.Favorite,
 		}
 	})
+	return result
+}
+
+// Done implements GridViewIteratorDone. It delegates to the underlying
+// iterator's Done() method if available, otherwise returns true.
+func (g gridViewArtistIterator) Done() bool {
+	if d, ok := g.rawIter.(iteratorDone); ok {
+		return d.Done()
+	}
+	return true
 }
 
 func NewGridViewArtistIterator(iter mediaprovider.ArtistIterator) GridViewIterator {
-	return gridViewArtistIterator{iter: NewBatchingIterator(iter)}
+	return gridViewArtistIterator{iter: NewBatchingIterator(iter), rawIter: iter}
 }
 
 type GridView struct {
@@ -439,6 +477,11 @@ func (g *GridView) loadItemImage(card *GridViewItem, item *GridViewItemModel) {
 	if item.ArtistID != "" && g.OnLoadArtistImage != nil {
 		artistID := item.ArtistID
 		coverArtID := item.CoverArtID
+		// Cancel any in-flight ImgLoader request and clear the image to the
+		// placeholder immediately — the same behaviour as ImgLoader.OnBeforeLoad
+		// on the standard path — so the recycled card never shows a stale image
+		// from the previous artist while the new one is being fetched.
+		card.ImgLoader.Load("") // cancels previous load and clears to placeholder
 		// Call the artist image loader - it will check cache synchronously
 		// and only spawn goroutine if needed
 		g.OnLoadArtistImage(artistID, func(img image.Image) {
@@ -481,6 +524,9 @@ func (g *GridView) checkFetchMoreItems(count int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	g.fetchCancel = cancel
 	go func() {
+		// Deadline for progressive-loading iterators (e.g. MPD): if the
+		// background loader stalls permanently, stop polling after 30 s.
+		fetchDeadline := time.Now().Add(30 * time.Second)
 		// keep repeating the fetch task as long as the user
 		// has scrolled near the bottom
 		for !g.done && g.highestShown >= g.lenItems()-10 {
@@ -495,6 +541,24 @@ func (g *GridView) checkFetchMoreItems(count int) {
 					g.items = append(g.items, items...)
 					g.stateMutex.Unlock()
 					if len(items) < batchFetchSize {
+						// Check if the iterator explicitly reports it is done.
+						// Iterators that support progressive background loading
+						// (e.g. MPD) implement GridViewIteratorDone and return
+						// Done()==false while data is still arriving.
+						if doneIter, ok := g.iter.(GridViewIteratorDone); ok && !doneIter.Done() {
+							// Not truly done — sleep briefly and retry so
+							// the background loader has time to add more items.
+							// A 30-second deadline guards against a permanently
+							// stalled provider keeping this goroutine alive.
+							if time.Now().Before(fetchDeadline) {
+								select {
+								case <-ctx.Done():
+									return
+								case <-time.After(200 * time.Millisecond):
+								}
+								continue
+							}
+						}
 						g.done = true
 					}
 					n += len(items)
