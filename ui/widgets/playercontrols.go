@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"github.com/dweymouth/supersonic/backend"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 
 	"fyne.io/fyne/v2"
@@ -84,13 +85,17 @@ type PlayerControls struct {
 
 	UseWaveformSeekbar bool
 
+	OnChangeShuffle func(shuffle bool)
+
 	slider         *TrackPosSlider
 	waveform       *WaveformSeekbar
 	curTimeLabel   *labelMinSize
 	totalTimeLabel *labelMinSize
+	shuffle        *IconButton
 	prev           *IconButton
 	playpause      *IconButton
 	next           *IconButton
+	loop           *IconButton
 	container      *fyne.Container
 
 	totalTime float64
@@ -114,7 +119,7 @@ func NewLabelMinSize(text string, minWidth float32) *labelMinSize {
 }
 
 // NewPlayerControls sets up the seek bar, and transport buttons.
-func NewPlayerControls(useWaveformSeekbar bool) *PlayerControls {
+func NewPlayerControls(useWaveformSeekbar bool, initialLoopMode backend.LoopMode, initialShuffle bool) *PlayerControls {
 	pc := &PlayerControls{UseWaveformSeekbar: useWaveformSeekbar}
 	pc.ExtendBaseWidget(pc)
 
@@ -139,15 +144,34 @@ func NewPlayerControls(useWaveformSeekbar bool) *PlayerControls {
 		}
 	}
 
+	pc.shuffle = NewIconButton(myTheme.ShuffleIcon, nil)
+	pc.shuffle.IconSize = IconButtonSizeSmallest
+	pc.shuffle.SetToolTip(lang.L("Shuffle"))
+	pc.shuffle.OnTapped = func() {
+		pc.SetShuffle(!pc.shuffle.Highlighted)
+		if pc.OnChangeShuffle != nil {
+			pc.OnChangeShuffle(pc.shuffle.Highlighted)
+		}
+	}
+
+	pc.loop = NewIconButton(myTheme.RepeatIcon, nil)
+	pc.loop.IconSize = IconButtonSizeSmallest
+	pc.loop.SetToolTip(lang.L("Repeat"))
+
+	pc.shuffle.Highlighted = initialShuffle
+	pc.SetLoopMode(initialLoopMode)
+
 	pc.prev = NewIconButton(theme.MediaSkipPreviousIcon(), func() {})
 	pc.prev.SetToolTip(lang.L("Previous"))
+	pc.prev.IconSize = IconButtonSizeSlightlyBigger
 	pc.next = NewIconButton(theme.MediaSkipNextIcon(), func() {})
 	pc.next.SetToolTip(lang.L("Next"))
+	pc.next.IconSize = IconButtonSizeSlightlyBigger
 	pc.playpause = NewIconButton(theme.MediaPlayIcon(), func() {})
 	pc.playpause.SetToolTip(lang.L("Play"))
 	pc.playpause.IconSize = IconButtonSizeBigger
 
-	buttons := container.NewHBox(layout.NewSpacer(), pc.prev, pc.playpause, pc.next, layout.NewSpacer())
+	buttons := container.NewHBox(layout.NewSpacer(), pc.shuffle, util.NewHSpace(2), pc.prev, pc.playpause, pc.next, util.NewHSpace(2), pc.loop, layout.NewSpacer())
 
 	seekCtrl := container.NewStack(
 		pc.slider,
@@ -172,6 +196,32 @@ func (pc *PlayerControls) OnSeek(f func(float64)) {
 
 func (pc *PlayerControls) OnSeekPrevious(f func()) {
 	pc.prev.OnTapped = f
+}
+
+func (pc *PlayerControls) OnChangeLoopMode(f func()) {
+	pc.loop.OnTapped = f
+}
+
+func (pc *PlayerControls) SetLoopMode(mode backend.LoopMode) {
+	switch mode {
+	case backend.LoopAll:
+		pc.loop.Highlighted = true
+		pc.loop.SetIcon(myTheme.RepeatIcon)
+	case backend.LoopOne:
+		pc.loop.Highlighted = true
+		pc.loop.SetIcon(myTheme.RepeatOneIcon)
+	case backend.LoopNone:
+		pc.loop.Highlighted = false
+		pc.loop.SetIcon(myTheme.RepeatIcon)
+	}
+}
+
+func (pc *PlayerControls) SetShuffle(isShuffle bool) {
+	if isShuffle == pc.shuffle.Highlighted {
+		return
+	}
+	pc.shuffle.Highlighted = isShuffle
+	pc.shuffle.Refresh()
 }
 
 func (pc *PlayerControls) OnSeekNext(f func()) {

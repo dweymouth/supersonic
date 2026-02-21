@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/dweymouth/supersonic/backend"
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
@@ -22,41 +21,22 @@ type AuxControls struct {
 	widget.BaseWidget
 
 	OnChangeAutoplay func(autoplay bool)
-	OnChangeShuffle  func(shuffle bool)
 
 	VolumeControl *VolumeControl
-	shuffle       *IconButton
 	autoplay      *IconButton
-	loop          *IconButton
 	cast          *IconButton
 	showQueue     *IconButton
 
 	container *fyne.Container
 }
 
-func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initialAutoplay bool, initialShuffle bool) *AuxControls {
+func NewAuxControls(initialVolume int, initialAutoplay bool) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
-		shuffle:       NewIconButton(myTheme.ShuffleIcon, nil),
 		autoplay:      NewIconButton(myTheme.AutoplayIcon, nil),
-		loop:          NewIconButton(myTheme.RepeatIcon, nil),
 		cast:          NewIconButton(myTheme.CastIcon, nil),
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
 	}
-
-	a.shuffle.Highlighted = initialShuffle
-	a.shuffle.IconSize = IconButtonSizeSmaller
-	a.shuffle.SetToolTip(lang.L("Shuffle"))
-	a.shuffle.OnTapped = func() {
-		a.SetShuffle(!a.shuffle.Highlighted)
-		if a.OnChangeShuffle != nil {
-			a.OnChangeShuffle(a.shuffle.Highlighted)
-		}
-	}
-
-	a.loop.IconSize = IconButtonSizeSmaller
-	a.loop.SetToolTip(lang.L("Repeat"))
-	a.SetLoopMode(initialLoopMode)
 
 	a.cast.IconSize = IconButtonSizeSmaller
 	a.cast.SetToolTip(lang.L("Cast to device"))
@@ -81,7 +61,7 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 			a.VolumeControl,
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(theme.Padding()*1.5),
-				layout.NewSpacer(), a.autoplay, a.shuffle, a.loop, a.cast, a.showQueue, util.NewHSpace(5)),
+				layout.NewSpacer(), a.autoplay, a.cast, a.showQueue, util.NewHSpace(5)),
 			layout.NewSpacer(),
 		),
 	)
@@ -91,32 +71,6 @@ func NewAuxControls(initialVolume int, initialLoopMode backend.LoopMode, initial
 func (a *AuxControls) CreateRenderer() fyne.WidgetRenderer {
 	a.ExtendBaseWidget(a)
 	return widget.NewSimpleRenderer(a.container)
-}
-
-func (a *AuxControls) OnChangeLoopMode(f func()) {
-	a.loop.OnTapped = f
-}
-
-func (a *AuxControls) SetLoopMode(mode backend.LoopMode) {
-	switch mode {
-	case backend.LoopAll:
-		a.loop.Highlighted = true
-		a.loop.SetIcon(myTheme.RepeatIcon)
-	case backend.LoopOne:
-		a.loop.Highlighted = true
-		a.loop.SetIcon(myTheme.RepeatOneIcon)
-	case backend.LoopNone:
-		a.loop.Highlighted = false
-		a.loop.SetIcon(myTheme.RepeatIcon)
-	}
-}
-
-func (a *AuxControls) SetShuffle(isShuffle bool) {
-	if isShuffle == a.shuffle.Highlighted {
-		return
-	}
-	a.shuffle.Highlighted = isShuffle
-	a.shuffle.Refresh()
 }
 
 func (a *AuxControls) DisableCastButton() {
