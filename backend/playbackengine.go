@@ -354,7 +354,6 @@ func (p *playbackEngine) GetTrackIdxByIdFrom(items []mediaprovider.MediaItem, id
 }
 
 func (p *playbackEngine) SetShuffle(shuffle bool) {
-
 	if p.shuffle == shuffle {
 		return
 	}
@@ -388,11 +387,10 @@ func (p *playbackEngine) SetShuffle(shuffle bool) {
 		} else {
 			return
 		}
-
 	}
 
-	p.handleNextTrackUpdated()
 	p.nowPlayingIdx = newNowPlayingIdx
+	p.handleNextTrackUpdated()
 	p.invokeNoArgCallbacks(p.onQueueChange)
 }
 
