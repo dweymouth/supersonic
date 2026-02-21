@@ -88,7 +88,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 			contr.ShowShareDialog(tr.ID)
 		}
 	}
-	bp.Controls = widgets.NewPlayerControls(cfg.Playback.UseWaveformSeekbar)
+	bp.Controls = widgets.NewPlayerControls(cfg.Playback.UseWaveformSeekbar, pm.GetLoopMode(), pm.IsShuffle())
 	bp.Controls.OnPlayPause(func() {
 		pm.PlayPause()
 	})
@@ -101,14 +101,20 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.Controls.OnSeek(func(f float64) {
 		pm.SeekFraction(f)
 	})
-
-	bp.AuxControls = widgets.NewAuxControls(pm.Volume(), pm.GetLoopMode(), pm.IsAutoplay(), pm.IsShuffle())
+	bp.Controls.OnChangeLoopMode(func() {
+		pm.SetNextLoopMode()
+	})
+	bp.Controls.OnChangeShuffle = func(shuffle bool) {
+		pm.SetShuffle(shuffle)
+	}
 	pm.OnLoopModeChange(func(lm backend.LoopMode) {
-		fyne.Do(func() { bp.AuxControls.SetLoopMode(lm) })
+		fyne.Do(func() { bp.Controls.SetLoopMode(lm) })
 	})
-	pm.OnShuffleChange(func(lm bool) {
-		fyne.Do(func() { bp.AuxControls.SetShuffle(lm) })
+	pm.OnShuffleChange(func(sh bool) {
+		fyne.Do(func() { bp.Controls.SetShuffle(sh) })
 	})
+
+	bp.AuxControls = widgets.NewAuxControls(pm.Volume(), pm.IsAutoplay())
 	pm.OnVolumeChange(func(vol int) {
 		fyne.Do(func() { bp.AuxControls.VolumeControl.SetVolume(vol) })
 	})
@@ -119,14 +125,8 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.AuxControls.VolumeControl.OnSetVolume = func(v int) {
 		pm.SetVolume(v)
 	}
-	bp.AuxControls.OnChangeLoopMode(func() {
-		pm.SetNextLoopMode()
-	})
 	bp.AuxControls.OnChangeAutoplay = func(autoplay bool) {
 		pm.SetAutoplay(autoplay)
-	}
-	bp.AuxControls.OnChangeShuffle = func(shuffle bool) {
-		pm.SetShuffle(shuffle)
 	}
 	bp.AuxControls.OnShowPlayQueue(contr.ShowPopUpPlayQueue)
 	bp.AuxControls.OnShowCastMenu(contr.ShowCastMenu)
