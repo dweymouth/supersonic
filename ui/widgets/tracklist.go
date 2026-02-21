@@ -41,10 +41,6 @@ type TracklistOptions struct {
 	// must be set before the context menu is shown for the first time
 	AuxiliaryMenuItems []*fyne.MenuItem
 
-	// DisablePlaybackMenu sets whether to disable playback options in
-	// the tracklist context menu.
-	DisablePlaybackMenu bool
-
 	// Disables sorting the tracklist by clicking individual columns.
 	DisableSorting bool
 
@@ -518,7 +514,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		t.list.Refresh()
 	}
 	if t.ctxMenu == nil {
-		t.ctxMenu = util.NewTrackContextMenu(t.Options.DisablePlaybackMenu, t.Options.AuxiliaryMenuItems)
+		t.ctxMenu = util.NewTrackContextMenu(false, t.Options.AuxiliaryMenuItems)
 		t.ctxMenu.OnPlay = func(shuffle bool) {
 			t.OnPlaySelection(t.SelectedTracks(), shuffle)
 		}
