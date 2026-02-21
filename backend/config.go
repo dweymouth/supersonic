@@ -123,6 +123,7 @@ type NowPlayingPageConfig struct {
 
 type PlaybackConfig struct {
 	Autoplay                 bool
+	Shuffle                  bool
 	RepeatMode               string
 	SkipOneStarWhenShuffling bool
 	SkipKeywordWhenShuffling string
@@ -263,6 +264,7 @@ func DefaultConfig(appVersionTag string) *Config {
 		},
 		Playback: PlaybackConfig{
 			Autoplay:           false,
+			Shuffle:            false,
 			RepeatMode:         "None",
 			UseWaveformSeekbar: false,
 		},

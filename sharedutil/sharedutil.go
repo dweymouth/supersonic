@@ -112,6 +112,11 @@ func TracksToIDs(tracks []*mediaprovider.Track) []string {
 // Reorder items and return a new track slice.
 // idxToMove must contain only valid indexes into tracks, and no repeats
 func ReorderItems[T any](items []T, idxToMove []int, insertIdx int) []T {
+	if len(items) < 2 {
+		cpy := make([]T, len(items))
+		copy(cpy, items)
+		return cpy
+	}
 	idxToMoveSet := ToSet(idxToMove)
 
 	newItems := make([]T, 0, len(items))
@@ -185,4 +190,12 @@ func DownloadFileWithContext(ctx context.Context, url string, destPath string) (
 	}
 
 	return true, nil
+}
+
+func CopyTrackSliceToMediaItemSlice(tracks []*mediaprovider.Track) []mediaprovider.MediaItem {
+	newTracks := make([]mediaprovider.MediaItem, len(tracks))
+	for i, tr := range tracks {
+		newTracks[i] = tr.Copy()
+	}
+	return newTracks
 }

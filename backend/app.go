@@ -21,6 +21,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/backend/windows"
+	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/google/uuid"
 
 	"github.com/20after4/configdir"
@@ -28,11 +29,13 @@ import (
 )
 
 const (
-	configFile       = "config.toml"
-	portableDir      = "supersonic_portable"
-	savedQueueFile   = "saved_queue.json"
-	themesDir        = "themes"
-	audioCacheSubdir = "audio"
+	configFile               = "config.toml"
+	portableDir              = "supersonic_portable"
+	savedQueueFile           = "saved_queue.json"
+	savedUnshuffledQueueFile = "saved_unshuffled_queue.json"
+	savedShuffledQueueFile   = "saved_shuffled_queue.json"
+	themesDir                = "themes"
+	audioCacheSubdir         = "audio"
 )
 
 var (
@@ -613,31 +616,80 @@ func (a *App) SavePlayQueueIfEnabled() {
 			queueServer = qs
 		}
 	}
-	SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
+	SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetActivePlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
+	if a.Config.Playback.Shuffle {
+		// if shuffle
+		// save the unshuffled queue to enable unshuffling on restarting supersonic
+		// save the shuffled queue again to enable checking if the playQueue was changed server side on start up
+
+		// both files are just saved locally
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetPlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedUnshuffledQueueFile), nil)
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetShuffledPlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedShuffledQueueFile), nil)
+	}
 }
 
 func (a *App) LoadSavedPlayQueue() error {
 	queueFilePath := path.Join(a.configDir, savedQueueFile)
-	queue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
+	playQueue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
 	if err != nil {
 		return err
 	}
-	if len(queue.Tracks) == 0 {
+
+	var unshuffledPlayQueue *SavedPlayQueue
+	var shuffledPlayQueue *SavedPlayQueue
+
+	isShuffle := a.Config.Playback.Shuffle
+	if isShuffle {
+		unshuffledQueueFilePath := path.Join(a.configDir, savedUnshuffledQueueFile)
+		unshuffledPlayQueue, err = LoadPlayQueue(unshuffledQueueFilePath, a.ServerManager, false)
+
+		if err != nil {
+			return err
+		}
+
+		shuffledQueueFilePath := path.Join(a.configDir, savedShuffledQueueFile)
+		shuffledPlayQueue, err = LoadPlayQueue(shuffledQueueFilePath, a.ServerManager, false)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(playQueue.Tracks) == 0 {
 		return nil
 	}
-	if len(a.PlaybackManager.GetPlayQueue()) > 0 {
+	if len(a.PlaybackManager.GetActivePlayQueue()) > 0 {
 		// don't restore play queue if the user has already queued new tracks
 		return nil
 	}
 
-	a.PlaybackManager.LoadTracks(queue.Tracks, Replace, false)
-	if queue.TrackIndex >= 0 && queue.TrackIndex < len(queue.Tracks) {
+	if isShuffle {
+		serverStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(playQueue.Tracks)
+		clientStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(shuffledPlayQueue.Tracks)
+
+		// Compare items by ID. This fails if any 2 elements don't match up. Two queues with the same items but different order will thus not count as same
+		if slices.EqualFunc(serverStatePlayQueue, clientStatePlayQueue, func(a, b mediaprovider.MediaItem) bool {
+			return (a.Metadata().ID == b.Metadata().ID)
+		}) {
+			a.PlaybackManager.SetQueueState(playQueue.Tracks, ShuffledPlayQueue)
+			a.PlaybackManager.SetQueueState(unshuffledPlayQueue.Tracks, PlayQueue)
+		} else {
+			a.PlaybackManager.SetShuffle(false)
+			a.PlaybackManager.SetQueueState(playQueue.Tracks, PlayQueue)
+		}
+
+	} else {
+		a.PlaybackManager.SetQueueState(playQueue.Tracks, PlayQueue)
+	}
+
+	if playQueue.TrackIndex >= 0 && playQueue.TrackIndex < len(playQueue.Tracks) {
 		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
-		a.PlaybackManager.PlayTrackAt(queue.TrackIndex)
+		a.PlaybackManager.PlayTrackAt(playQueue.TrackIndex)
 		a.PlaybackManager.Pause()
 		time.Sleep(100 * time.Millisecond) // MPV seek fails if run quickly after
-		a.PlaybackManager.SeekSeconds(queue.TimePos)
+		a.PlaybackManager.SeekSeconds(playQueue.TimePos)
 	}
+
 	return nil
 }
 

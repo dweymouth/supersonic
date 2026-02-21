@@ -109,7 +109,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 
 		// enqueue autoplay tracks if enabled and nearing end of queue
 		if p.cfg.Autoplay && !p.pendingAutoplay && totalTime-curTime < 10.0 &&
-			p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+			p.NowPlayingIndex() == p.engine.getPlayQueueLength()-1 {
 			p.enqueueAutoplayTracks()
 		}
 	})
@@ -132,7 +132,7 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			return
 		}
 		// workaround for https://github.com/dweymouth/supersonic/issues/483 (see above comment)
-		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlaybackStatus().State == player.Playing {
+		if p.NowPlayingIndex() != p.engine.getPlayQueueLength() && p.PlaybackStatus().State == player.Playing {
 			p.lastPlayTime = 0
 			go func() {
 				time.Sleep(300 * time.Millisecond)
@@ -333,6 +333,11 @@ func (p *PlaybackManager) OnLoopModeChange(cb func(LoopMode)) {
 	p.engine.onLoopModeChange = append(p.engine.onLoopModeChange, cb)
 }
 
+// Registers a callback that is notified whenever the shuffle state changes.
+func (p *PlaybackManager) OnShuffleChange(cb func(bool)) {
+	p.engine.onShuffleChange = append(p.engine.onShuffleChange, cb)
+}
+
 // Registers a callback that is notified whenever the volume changes.
 func (p *PlaybackManager) OnVolumeChange(cb func(int)) {
 	p.engine.onVolumeChange = append(p.engine.onVolumeChange, cb)
@@ -373,6 +378,10 @@ func (p *PlaybackManager) LoadAlbum(albumID string, insertQueueMode InsertQueueM
 	return nil
 }
 
+func (p *PlaybackManager) IsShuffle() bool {
+	return p.cfg.Shuffle
+}
+
 // Loads the specified playlist into the play queue.
 func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode InsertQueueMode, shuffle bool) error {
 	playlist, err := p.engine.sm.Server.GetPlaylist(playlistID)
@@ -386,14 +395,28 @@ func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode Insert
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) {
-	items := copyTrackSliceToMediaItemSlice(tracks)
+	items := sharedutil.CopyTrackSliceToMediaItemSlice(tracks)
 	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
 }
 
-// Load items into the play queue.
+// Replaces the playQueue with tracks and moves the track at idx to position 0
+func (p *PlaybackManager) LoadTracksAndPlayAtIdx(tracks []*mediaprovider.Track, shuffle bool, idx int) {
+	items := sharedutil.CopyTrackSliceToMediaItemSlice(tracks)
+	p.cmdQueue.LoadItemsAndPlayAtIdx(items, shuffle, idx)
+}
+
+// Load items into the currently active queue. (shuffledPlayQueue/playQueue)
 // If replacing the current queue (!appendToQueue), playback will be stopped.
+// Loading items into the shuffledPlayQueue may also modify the playQueue
 func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) {
 	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
+}
+
+// Replaces the specified queue (PlayQueue/ShuffledPlayQueue) with the given tracks.
+// This is used when starting supersonic to load the queue state and directly overrides any previous data.
+// For replacing the queue while supersonic is running, use LoadTracks
+func (p *PlaybackManager) SetQueueState(tracks []*mediaprovider.Track, queueType QueueType) {
+	p.cmdQueue.SetQueueState(tracks, queueType)
 }
 
 // Replaces the play queue with the given set of tracks.
@@ -566,8 +589,16 @@ func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Tr
 	}
 }
 
+func (p *PlaybackManager) GetActivePlayQueue() []mediaprovider.MediaItem {
+	return p.engine.GetActivePlayQueueDeepCopy()
+}
+
 func (p *PlaybackManager) GetPlayQueue() []mediaprovider.MediaItem {
-	return p.engine.GetPlayQueue()
+	return p.engine.GetPlayQueueDeepCopy()
+}
+
+func (p *PlaybackManager) GetShuffledPlayQueue() []mediaprovider.MediaItem {
+	return p.engine.GetShuffledPlayQueueDeepCopy()
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
@@ -634,9 +665,14 @@ func (p *PlaybackManager) SetVolume(vol int) {
 
 func (p *PlaybackManager) SetAutoplay(autoplay bool) {
 	p.cfg.Autoplay = autoplay
-	if autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+	if autoplay && p.NowPlayingIndex() == p.engine.getPlayQueueLength()-1 {
 		p.enqueueAutoplayTracks()
 	}
+}
+
+func (p *PlaybackManager) SetShuffle(shuffle bool) {
+	p.cfg.Shuffle = shuffle
+	p.engine.SetShuffle(shuffle)
 }
 
 func (p *PlaybackManager) Volume() int {
@@ -726,7 +762,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 	}
 
 	// last 500 played items
-	queue := p.GetPlayQueue()
+	queue := p.GetActivePlayQueue()
 	if l := len(queue); l > 500 {
 		queue = queue[l-500:]
 	}
@@ -841,6 +877,19 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					c.Arg3.(bool),
 				)
 				logIfErr("LoadItems", err)
+			case cmdLoadItemsAndPlayAtIdx:
+				err := p.engine.LoadItemsAndPlayAtIdx(
+					c.Arg.([]mediaprovider.MediaItem),
+					c.Arg2.(bool),
+					c.Arg3.(int),
+				)
+				logIfErr("LoadItemsAndPlayAtIdx", err)
+			case cmdSetQueueState:
+				err := p.engine.SetQueueState(
+					c.Arg.([]*mediaprovider.Track),
+					c.Arg2.(QueueType),
+				)
+				logIfErr("SetQueueState", err)
 			case cmdLoadRadioStation:
 				p.engine.LoadRadioStation(
 					c.Arg.(*mediaprovider.RadioStation),

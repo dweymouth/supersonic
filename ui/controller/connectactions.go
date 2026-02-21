@@ -31,11 +31,10 @@ func (m *Controller) connectTracklistActionsWithReplayGainMode(tracklist *widget
 		m.App.PlaybackManager.LoadTracks(tracks, backend.Append, false)
 	}
 	tracklist.OnPlayTrackAt = func(idx int) {
-		m.App.PlaybackManager.LoadTracks(tracklist.GetTracks(), backend.Replace, false)
+		m.App.PlaybackManager.LoadTracksAndPlayAtIdx(tracklist.GetTracks(), false, idx)
 		if m.App.Config.ReplayGain.Mode == backend.ReplayGainAuto {
 			m.App.PlaybackManager.SetReplayGainMode(mode)
 		}
-		m.App.PlaybackManager.PlayTrackAt(idx)
 	}
 	tracklist.OnPlaySelection = func(tracks []*mediaprovider.Track, shuffle bool) {
 		m.App.PlaybackManager.LoadTracks(tracks, backend.Replace, shuffle)
