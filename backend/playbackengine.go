@@ -926,7 +926,6 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 					} else {
 						title = icytitle
 					}
-					log.Println("Radio metadata changed: ", icytitle)
 					for _, cb := range p.onRadioMetadataChange {
 						cb(meta.Name, title, artist)
 					}
@@ -1097,6 +1096,9 @@ func (p *playbackEngine) handleTimePosUpdate(seeked bool) {
 		p.needToSetNextTrack = false
 		if nextIdx := p.nextPlayingIndex(); nextIdx >= 0 && nextIdx < len(p.playQueue) {
 			p.setNextTrack(nextIdx)
+		} else {
+			// no next track to play, ensure player knows this
+			p.setNextTrack(-1)
 		}
 	}
 	if p.callbacksDisabled {
