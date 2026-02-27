@@ -45,7 +45,8 @@ type PlaybackManager struct {
 	wfmImageJobs         [3]*WaveformImageJob
 
 	// whether autoplay tracks are currently being fetched/enqueued
-	pendingAutoplay bool
+	pendingAutoplay    bool
+	wasLoadTrackPaused bool
 }
 
 type RemotePlaybackDevice struct {
@@ -128,11 +129,18 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			// we need to call handleWaveformImageSongChange to ensure the waveform image is updated
 			// for the track that is loaded paused when starting the app
 			p.handleWaveformImageSongChange(item)
+			p.wasLoadTrackPaused = true
 		}
 	})
 
 	p.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
-		p.handleWaveformImageSongChange(item)
+		if p.wasLoadTrackPaused {
+			// if the song change was triggered by LoadTrackPaused when starting the app,
+			// we already called handleWaveformImageSongChange in the onBeforeSongChange hook above
+			p.wasLoadTrackPaused = false
+		} else {
+			p.handleWaveformImageSongChange(item)
+		}
 
 		if runtime.GOOS != "windows" {
 			return
