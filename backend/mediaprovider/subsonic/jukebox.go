@@ -14,6 +14,21 @@ func (s *subsonicMediaProvider) JukeboxStart() error {
 	return err
 }
 
+func (s *subsonicMediaProvider) JukeboxPlay(idx int) error {
+	if idx < 0 {
+		// -1 means continue from current position
+		return s.JukeboxStart()
+	}
+	// Use skip to jump to track, then start to ensure playback
+	_, err := s.client.JukeboxControl("skip",
+		map[string]string{"index": strconv.Itoa(idx)})
+	if err != nil {
+		return err
+	}
+	_, err = s.client.JukeboxControl("start", nil)
+	return err
+}
+
 func (s *subsonicMediaProvider) JukeboxStop() error {
 	_, err := s.client.JukeboxControl("stop", nil)
 	return err
@@ -66,4 +81,14 @@ func (s *subsonicMediaProvider) JukeboxGetStatus() (*mediaprovider.JukeboxStatus
 		Playing:         stat.Playing,
 		PositionSeconds: float64(stat.Position),
 	}, nil
+}
+
+func (s *subsonicMediaProvider) JukeboxGetQueue() ([]*mediaprovider.Track, int, error) {
+	// The go-subsonic library doesn't support retrieving the jukebox playlist entries
+	// Return empty queue - this feature is primarily for MPD
+	stat, err := s.client.JukeboxControl("status", nil)
+	if err != nil {
+		return nil, -1, err
+	}
+	return nil, stat.CurrentIndex, nil
 }

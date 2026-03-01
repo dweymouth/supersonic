@@ -18,6 +18,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/ipc"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
+	"github.com/dweymouth/supersonic/backend/player/jukebox"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/backend/windows"
@@ -165,6 +166,52 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
+
+	// Switch to JukeboxPlayer when connecting to a jukebox-only server (e.g., MPD)
+	a.ServerManager.OnServerConnected(func(cfg *ServerConfig) {
+		if jp, ok := a.ServerManager.Server.(mediaprovider.JukeboxOnlyServer); ok && jp.IsJukeboxOnly() {
+			if jbProvider, ok := a.ServerManager.Server.(mediaprovider.JukeboxProvider); ok {
+				log.Println("Connected to jukebox-only server, switching to JukeboxPlayer")
+				jukeboxPlayer := jukebox.NewJukeboxPlayer(a.bgrndCtx, jbProvider)
+				a.PlaybackManager.SetPlayer(jukeboxPlayer)
+
+				// Sync the queue from the jukebox server without affecting playback
+				go func() {
+					tracks, currentIdx, err := jbProvider.JukeboxGetQueue()
+					if err != nil {
+						log.Printf("Failed to get jukebox queue: %v", err)
+						return
+					}
+					if len(tracks) > 0 {
+						log.Printf("Syncing %d tracks from jukebox queue (current: %d)", len(tracks), currentIdx)
+						a.PlaybackManager.SyncQueueFromExternal(tracks, currentIdx)
+					}
+				}()
+			}
+		}
+	})
+
+	// Switch back to local player when logging out
+	a.ServerManager.OnLogout(func() {
+		if _, ok := a.PlaybackManager.CurrentPlayer().(*jukebox.JukeboxPlayer); ok {
+			// Check if the server has StopOnDisconnect enabled (e.g., MPD)
+			// We call JukeboxStop() directly on the provider because the playbackEngine's
+			// OnLogout callback runs before this one and sets the player state to stopped.
+			for _, sc := range a.Config.Servers {
+				if sc.ID == a.ServerManager.ServerID && sc.StopOnDisconnect {
+					if jp, ok := a.ServerManager.Server.(mediaprovider.JukeboxProvider); ok {
+						log.Println("Stopping playback on disconnect (StopOnDisconnect enabled)")
+						if err := jp.JukeboxStop(); err != nil {
+							log.Printf("Failed to stop jukebox: %v", err)
+						}
+					}
+					break
+				}
+			}
+			log.Println("Logged out, switching back to local player")
+			a.PlaybackManager.SetPlayer(a.LocalPlayer)
+		}
+	})
 	var fetch *LrcLibFetcher
 	if a.Config.Application.EnableLrcLib {
 		timeout := time.Duration(a.Config.Application.RequestTimeoutSeconds) * time.Second
@@ -287,6 +334,10 @@ func (a *App) ClearCaches() {
 		}
 	}
 	a.ImageManager.ClearInMemoryCache()
+	// Clear provider-specific caches (e.g., MPD artist info from Deezer/Wikipedia)
+	if cm, ok := a.ServerManager.Server.(mediaprovider.CacheManager); ok {
+		cm.ClearCaches()
+	}
 }
 
 func checkPortablePath() string {
@@ -598,6 +649,11 @@ func (a *App) Shutdown() {
 		a.WinSMTC.Shutdown()
 	}
 	a.PlaybackManager.DisableCallbacks()
+	// For jukebox players (like MPD), destroy before shutdown to prevent
+	// stopping playback that other clients might be using
+	if jp, ok := a.PlaybackManager.CurrentPlayer().(*jukebox.JukeboxPlayer); ok {
+		jp.Destroy()
+	}
 	a.PlaybackManager.Shutdown() // will trigger scrobble check
 	if a.AudioCache != nil {
 		a.AudioCache.Shutdown()
@@ -680,6 +736,12 @@ func (a *App) LoadSavedPlayQueue() error {
 
 	} else {
 		a.PlaybackManager.SetQueueState(playQueue.Tracks, PlayQueue)
+	}
+
+	// For jukebox-only servers (like MPD), only load the queue without
+	// starting playback - this avoids interrupting other MPD clients
+	if jp, ok := a.ServerManager.Server.(mediaprovider.JukeboxOnlyServer); ok && jp.IsJukeboxOnly() {
+		return nil
 	}
 
 	if playQueue.TrackIndex >= 0 && playQueue.TrackIndex < len(playQueue.Tracks) {
