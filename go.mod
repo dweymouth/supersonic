@@ -6,7 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.7.2
 	github.com/20after4/configdir v0.1.1
 	github.com/Microsoft/go-winio v0.6.2
-	github.com/boxes-ltd/imaging v1.7.4
+	github.com/boxes-ltd/imaging v1.7.5
 	github.com/cenkalti/dominantcolor v1.0.3
 	github.com/charlievieth/strcase v0.0.5
 	github.com/deluan/sanitize v0.0.0-20241120162836-fdfd8fdfaa55
@@ -64,7 +64,7 @@ require (
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/yuin/goldmark v1.7.16 // indirect
-	golang.org/x/image v0.35.0 // indirect
+	golang.org/x/image v0.36.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
