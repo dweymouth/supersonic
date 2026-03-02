@@ -42,7 +42,7 @@ jobs:
         make zip_macos
 
     - name: Upload package
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: Supersonic.zip
         path: Supersonic.zip
