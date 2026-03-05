@@ -511,7 +511,11 @@ func (p *playbackEngine) IsSeeking() bool {
 }
 
 func (p *playbackEngine) Stop() error {
-	p.pendingLoadPaused = false
+	if p.pendingLoadPaused {
+		p.pendingLoadPaused = false
+		p.pendingLoadStartTime = 0
+		p.handleOnStopped()
+	}
 	return p.player.Stop(false)
 }
 

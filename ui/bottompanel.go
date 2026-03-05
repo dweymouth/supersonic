@@ -47,7 +47,10 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 
 	pm.OnPaused(util.FyneDoFunc(func() { bp.Controls.SetPlaying(false) }))
 	pm.OnPlaying(util.FyneDoFunc(func() { bp.Controls.SetPlaying(true) }))
-	pm.OnStopped(util.FyneDoFunc(func() { bp.Controls.SetPlaying(false) }))
+	pm.OnStopped(util.FyneDoFunc(func() {
+		bp.Controls.SetPlaying(false)
+		bp.Controls.UpdatePlayTime(0, 0)
+	}))
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
 	bp.NowPlaying.ShowAlbumYear = cfg.AlbumsPage.ShowYears
