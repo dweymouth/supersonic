@@ -196,8 +196,12 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	needToUnpause := false
 
 	stat := p.CurrentPlayer().GetStatus()
-	if p.pendingPlayerChange {
+	if p.pendingPlayerChange || p.pendingLoadPaused {
 		stat.State = player.Paused
+	}
+	if p.pendingLoadPaused {
+		stat.TimePos = p.pendingLoadStartTime
+		stat.Duration = p.curTrackDuration
 	}
 
 	switch stat.State {
