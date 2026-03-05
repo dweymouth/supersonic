@@ -30,6 +30,8 @@ const (
 	cmdLoadRadioStation // arg: *mediaprovider.RadioStation, arg2: InsertQueueMode
 
 	cmdForceRestartPlayback
+
+	cmdLoadTrackPaused // arg: int (idx), arg2: float64 (startTime)
 )
 
 type playbackCommand struct {
@@ -180,6 +182,17 @@ func (c *playbackCommandQueue) SetQueueState(tracks []*mediaprovider.Track, queu
 		Type: cmdSetQueueState,
 		Arg:  tracks,
 		Arg2: queueType,
+	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
+}
+
+func (c *playbackCommandQueue) LoadTrackPaused(idx int, startTime float64) {
+	c.mutex.Lock()
+	c.queue = append(c.queue, playbackCommand{
+		Type: cmdLoadTrackPaused,
+		Arg:  idx,
+		Arg2: startTime,
 	})
 	c.mutex.Unlock()
 	c.cmdAvailable.Signal()

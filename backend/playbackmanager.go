@@ -45,7 +45,8 @@ type PlaybackManager struct {
 	wfmImageJobs         [3]*WaveformImageJob
 
 	// whether autoplay tracks are currently being fetched/enqueued
-	pendingAutoplay bool
+	pendingAutoplay    bool
+	wasLoadTrackPaused bool
 }
 
 type RemotePlaybackDevice struct {
@@ -115,18 +116,31 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 	})
 
 	p.engine.onBeforeSongChange = append(p.engine.onBeforeSongChange, func(item mediaprovider.MediaItem) {
-		if p.engine.playbackCfg.UseWaveformSeekbar {
-			if p.wfmGen != nil && item != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
-				if _, ok := p.findWfmImageJob(item.Metadata().ID, true); !ok {
-					// start generating waveform image for next-up track
-					p.addWfmImageJob(p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track)))
-				}
+		if item == nil || !p.engine.playbackCfg.UseWaveformSeekbar {
+			return
+		}
+		if p.wfmGen != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+			if _, ok := p.findWfmImageJob(item.Metadata().ID, true); !ok {
+				// start generating waveform image for next-up track
+				p.addWfmImageJob(p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track)))
 			}
+		}
+		if p.isLoadTrackPaused() {
+			// we need to call handleWaveformImageSongChange to ensure the waveform image is updated
+			// for the track that is loaded paused when starting the app
+			p.handleWaveformImageSongChange(item)
+			p.wasLoadTrackPaused = true
 		}
 	})
 
 	p.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
-		p.handleWaveformImageSongChange(item)
+		if p.wasLoadTrackPaused {
+			// if the song change was triggered by LoadTrackPaused when starting the app,
+			// we already called handleWaveformImageSongChange in the onBeforeSongChange hook above
+			p.wasLoadTrackPaused = false
+		} else {
+			p.handleWaveformImageSongChange(item)
+		}
 
 		if runtime.GOOS != "windows" {
 			return
@@ -508,6 +522,17 @@ func (p *PlaybackManager) PlayFromBeginning() {
 
 func (p *PlaybackManager) PlayTrackAt(idx int) {
 	p.cmdQueue.PlayTrackAt(idx)
+}
+
+// LoadTrackPaused sets up engine state as if the track at idx is loaded and
+// paused at startTime, updating the UI and OS media integrations, without
+// starting MPV. Call Continue (or PlayPause) to begin actual playback.
+func (p *PlaybackManager) LoadTrackPaused(idx int, startTime float64) {
+	p.cmdQueue.LoadTrackPaused(idx, startTime)
+}
+
+func (p *PlaybackManager) isLoadTrackPaused() bool {
+	return p.engine.pendingLoadPaused
 }
 
 func (p *PlaybackManager) PlayRandomSongs(genreName string) error {
@@ -895,6 +920,8 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					c.Arg.(*mediaprovider.RadioStation),
 					c.Arg2.(InsertQueueMode),
 				)
+			case cmdLoadTrackPaused:
+				logIfErr("LoadTrackPaused", p.engine.loadTrackPaused(c.Arg.(int), c.Arg2.(float64)))
 			case cmdForceRestartPlayback:
 				if mpv, ok := p.engine.CurrentPlayer().(*mpv.Player); ok {
 					log.Println("Force-restarting MPV playback")
