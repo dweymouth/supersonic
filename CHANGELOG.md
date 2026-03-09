@@ -1,5 +1,15 @@
 # Change Log
 
+## [Unreleased]
+
+### Added
+- MPD (Music Player Daemon) server support with jukebox playback control
+  - Full library browsing (albums, artists, tracks, playlists, genres)
+  - Favorites and ratings via MPD stickers
+  - Artist images from Deezer and biographies from Wikipedia
+  - Play count tracking
+  - Seamless integration with other MPD clients
+
 ## [0.21.0]
 
 ### Added
