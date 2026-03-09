@@ -1,6 +1,7 @@
 package mediaprovider
 
 import (
+	"context"
 	"image"
 	"io"
 	"net/url"
@@ -326,6 +327,27 @@ type JukeboxProvider interface {
 
 	// Sets the volume of the jukebox player (0-100)
 	JukeboxSetVolume(vol int) error
+
+	// JukeboxPlay starts playback at the specified queue index.
+	// Use idx -1 to continue from current position.
+	JukeboxPlay(idx int) error
+
+	// JukeboxGetQueue returns the current queue from the jukebox server.
+	// Returns the list of tracks and the currently playing index (-1 if nothing playing).
+	JukeboxGetQueue() ([]*Track, int, error)
+}
+
+// JukeboxOnlyServer is implemented by servers that only support jukebox mode
+// (i.e., no streaming URLs available, all playback must go through JukeboxProvider).
+// Examples: MPD servers.
+type JukeboxOnlyServer interface {
+	IsJukeboxOnly() bool
+}
+
+// CacheManager is optionally implemented by providers that have their own caches
+// that should be cleared when the user requests to clear caches.
+type CacheManager interface {
+	ClearCaches()
 }
 
 type JukeboxStatus struct {
@@ -333,6 +355,22 @@ type JukeboxStatus struct {
 	CurrentTrack    int
 	Playing         bool
 	PositionSeconds float64
+
+	// Audio info (optional, may not be available for all servers)
+	Bitrate    int    // kbps
+	SampleRate int    // Hz
+	BitDepth   int    // bits per sample
+	Channels   int    // number of channels
+	Codec      string // codec name (e.g., "flac", "mp3")
+}
+
+// JukeboxWatcher provides event-based status updates instead of polling.
+// This is optional - providers that don't support it will use polling fallback.
+type JukeboxWatcher interface {
+	// WatchPlaybackEvents returns a channel that receives events when playback state changes.
+	// The channel will be closed when the context is cancelled.
+	// Events are: "player", "mixer", "playlist", "options"
+	WatchPlaybackEvents(ctx context.Context) (<-chan string, error)
 }
 
 func genresMatch(filterGenres, albumGenres []string) bool {

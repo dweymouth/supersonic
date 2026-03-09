@@ -16,6 +16,20 @@ type TrackPlayer interface {
 	SetNextTrack(track *mediaprovider.Track) error
 }
 
+// QueuePlayer is an optional interface for players that support bulk queue loading.
+// This allows loading an entire playlist/album at once instead of track by track.
+type QueuePlayer interface {
+	// LoadQueue loads all tracks into the player's queue, replacing any existing queue.
+	// This should NOT start playback - call PlayQueueIndex after loading.
+	LoadQueue(tracks []*mediaprovider.Track) error
+	// PlayQueueIndex starts playback at the specified index in the loaded queue.
+	PlayQueueIndex(idx int) error
+	// IsQueueLoaded returns true if a queue has been loaded via LoadQueue.
+	IsQueueLoaded() bool
+	// ClearLoadedQueue clears the loaded queue state (e.g., when queue is modified).
+	ClearLoadedQueue()
+}
+
 type BasePlayer interface {
 	Continue() error
 	Pause() error
@@ -37,6 +51,8 @@ type BasePlayer interface {
 	OnPlaying(func())
 	OnSeek(func())
 	OnTrackChange(func())
+	OnVolumeChange(func(int))
+	OnAudioInfoChange(func())
 }
 
 type ReplayGainPlayer interface {
@@ -88,11 +104,13 @@ func (r ReplayGainMode) String() string {
 }
 
 type BasePlayerCallbackImpl struct {
-	onPaused      func()
-	onStopped     func()
-	onPlaying     func()
-	onSeek        func()
-	onTrackChange func()
+	onPaused          func()
+	onStopped         func()
+	onPlaying         func()
+	onSeek            func()
+	onTrackChange     func()
+	onVolumeChange    func(int)
+	onAudioInfoChange func()
 }
 
 // Sets a callback which is invoked when the player transitions to the Paused state.
@@ -149,5 +167,29 @@ func (p *BasePlayerCallbackImpl) InvokeOnSeek() {
 func (p *BasePlayerCallbackImpl) InvokeOnTrackChange() {
 	if p.onTrackChange != nil {
 		p.onTrackChange()
+	}
+}
+
+// Registers a callback which is invoked when the volume changes externally
+// (e.g., from jukebox server or another client).
+func (p *BasePlayerCallbackImpl) OnVolumeChange(cb func(int)) {
+	p.onVolumeChange = cb
+}
+
+func (p *BasePlayerCallbackImpl) InvokeOnVolumeChange(vol int) {
+	if p.onVolumeChange != nil {
+		p.onVolumeChange(vol)
+	}
+}
+
+// Registers a callback which is invoked when audio info changes during playback
+// (e.g., bitrate changes for VBR formats).
+func (p *BasePlayerCallbackImpl) OnAudioInfoChange(cb func()) {
+	p.onAudioInfoChange = cb
+}
+
+func (p *BasePlayerCallbackImpl) InvokeOnAudioInfoChange() {
+	if p.onAudioInfoChange != nil {
+		p.onAudioInfoChange()
 	}
 }
