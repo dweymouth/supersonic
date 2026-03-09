@@ -42,8 +42,9 @@ type tracksPageState struct {
 	conf       *backend.TracksPageConfig
 	mp         mediaprovider.MediaProvider
 	im         *backend.ImageManager
-	canRate    bool
-	canShare   bool
+	canRate     bool
+	canShare    bool
+	canDownload bool
 }
 
 func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig, pool *util.WidgetPool, mp mediaprovider.MediaProvider, im *backend.ImageManager) *TracksPage {
@@ -53,11 +54,14 @@ func NewTracksPage(contr *controller.Controller, conf *backend.TracksPageConfig,
 	t.tracklist = t.obtainTracklist()
 	_, t.canRate = mp.(mediaprovider.SupportsRating)
 	_, t.canShare = mp.(mediaprovider.SupportsSharing)
+	_, isJukeboxOnly := mp.(mediaprovider.JukeboxOnlyServer)
+	t.canDownload = !isJukeboxOnly
 	t.tracklist.Options = widgets.TracklistOptions{
-		DisableSorting: true,
-		DisableRating:  !t.canRate,
-		DisableSharing: !t.canShare,
-		AutoNumber:     true,
+		DisableSorting:  true,
+		DisableRating:   !t.canRate,
+		DisableSharing:  !t.canShare,
+		DisableDownload: !t.canDownload,
+		AutoNumber:      true,
 	}
 	t.tracklist.SetVisibleColumns(conf.TracklistColumns)
 	t.tracklist.OnVisibleColumnsChanged = func(cols []string) {
@@ -154,10 +158,11 @@ func (t *TracksPage) doSearch(query string) {
 	if t.searchTracklist == nil {
 		t.searchTracklist = t.obtainTracklist()
 		t.searchTracklist.Options = widgets.TracklistOptions{
-			AutoNumber:     true,
-			DisableSorting: true,
-			DisableRating:  !t.canRate,
-			DisableSharing: !t.canShare,
+			AutoNumber:      true,
+			DisableSorting:  true,
+			DisableRating:   !t.canRate,
+			DisableSharing:  !t.canShare,
+			DisableDownload: !t.canDownload,
 		}
 		t.searchTracklist.SetVisibleColumns(t.conf.TracklistColumns)
 		t.searchTracklist.SetNowPlaying(t.nowPlayingID)
