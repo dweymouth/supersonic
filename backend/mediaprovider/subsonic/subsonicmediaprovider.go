@@ -53,7 +53,7 @@ func (s *subsonicMediaProvider) GetLibraries() ([]mediaprovider.Library, error) 
 		return nil, err
 	}
 	return sharedutil.MapSlice(folders, func(f *subsonic.MusicFolder) mediaprovider.Library {
-		return mediaprovider.Library{ID: f.ID, Name: f.Name}
+		return mediaprovider.Library{ID: strconv.Itoa(f.ID), Name: f.Name}
 	}), nil
 }
 

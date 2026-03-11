@@ -127,8 +127,8 @@ github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410 h1:wuDH
 github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410/go.mod h1:XvGBPgXWkKrK+5OsoVkTcTZmwZac1Sj6miEn8q6uA20=
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449 h1:UHIPI43VzyWuIF8z8WVMdjMsC/orZTZQJraD/Iv+ghw=
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
-github.com/supersonic-app/go-subsonic v0.0.0-20260125165421-1efaa048a150 h1:Wh3EUdJI8bSr2nYtnkmG+bGNzEtGGSW3Rcg4eDM1a0M=
-github.com/supersonic-app/go-subsonic v0.0.0-20260125165421-1efaa048a150/go.mod h1:ClhAgC2qobwH19D6kdwULLYSHlOmldDGkdu2G2Z0Ijo=
+github.com/supersonic-app/go-subsonic v0.0.0-20260311143343-43acfbb184d2 h1:VtrqvDwb44RSErifxchVKYdCf62/cO2Cumyz+uPlqkI=
+github.com/supersonic-app/go-subsonic v0.0.0-20260311143343-43acfbb184d2/go.mod h1:ClhAgC2qobwH19D6kdwULLYSHlOmldDGkdu2G2Z0Ijo=
 github.com/supersonic-app/go-upnpcast v0.1.0 h1:SL0WVgnqvAVaLT9MSRhSeVwF9pcUw1cgBITKVoWXN3g=
 github.com/supersonic-app/go-upnpcast v0.1.0/go.mod h1:o/QGDTK3qdaS3h9Bt8aH5ywgbWbrPVzPCHlZYFs0IHY=
 github.com/yuin/goldmark v1.7.16 h1:n+CJdUxaFMiDUNnWC3dMWCIQJSkxH4uz3ZwQBkAlVNE=

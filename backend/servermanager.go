@@ -220,6 +220,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				User:         connection.Username,
 				PasswordAuth: connection.LegacyAuth,
 				ClientName:   res.AppName,
+				UseJSON:      true,
 			},
 		}
 		s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, cli.(*subsonicMP.SubsonicServer).Client.Client)
@@ -231,6 +232,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				User:         connection.Username,
 				PasswordAuth: connection.LegacyAuth,
 				ClientName:   res.AppName,
+				UseJSON:      true,
 			},
 		}
 		s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, altCli.(*subsonicMP.SubsonicServer).Client.Client)
