@@ -34,7 +34,7 @@ jobs:
           pacman -Syu &&
           pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-mpv
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@latest
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Package
         run: make package_windows
       - name: Download mpv dll
@@ -83,7 +83,7 @@ jobs:
       - name: Setup path
         run: export C_INCLUDE_PATH=/usr/local/include:/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib:$LIBRARY_PATH
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@latest
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Package app bundle
         run: >
           make package_macos &&
@@ -116,7 +116,7 @@ jobs:
       - name: Setup path
         run: export C_INCLUDE_PATH=/usr/local/include:/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib:$LIBRARY_PATH
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@latest
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Build and package app bundles
         run: >
           make package_macos &&
@@ -151,7 +151,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@latest
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Fyne package
         run: make package_linux
       - name: Rename artifact
@@ -175,7 +175,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
       - name: Install Fyne tool
-        run: go install fyne.io/tools/cmd/fyne@latest
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Fyne package
         run: make package_linux
       - name: Rename artifact
