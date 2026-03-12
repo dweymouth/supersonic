@@ -1,5 +1,30 @@
 # Change Log
 
+## [0.21.0]
+
+### Added
+- [#815](https://github.com/dweymouth/supersonic/pull/815) Shuffle play queue
+- [#816](https://github.com/dweymouth/supersonic/pull/816) All Tracks tab on Artist page
+- [#835](https://github.com/dweymouth/supersonic/pull/835) Equalizer improvements: 10-band EQ option, AutoEQ headphone profiles, preset management
+- [#700](https://github.com/dweymouth/supersonic/issues/700) Song Radio context menu item on play queue
+- [#845](https://github.com/dweymouth/supersonic/pull/845) Display radio stream ICY metadata
+- [#847](https://github.com/dweymouth/supersonic/pull/847) `rate-current` CLI option to rate the currently playing track
+- [#860](https://github.com/dweymouth/supersonic/pull/860) `-reload-theme` CLI flag to re-apply the current theme
+- Updated Polish and Chinese translations
+
+### Changed
+- [#862](https://github.com/dweymouth/supersonic/pull/862) Shuffle and repeat controls moved into main player controls
+- Waveform seekbar disabled by default
+- Use JSON instead of XML in Subsonic API requests
+
+### Fixed
+- [#854](https://github.com/dweymouth/supersonic/issues/854) Crash in playback engine during time position update
+- [#857](https://github.com/dweymouth/supersonic/issues/857) Clearing cache did not clear in-memory cache
+- [#861](https://github.com/dweymouth/supersonic/pull/861) Normalize server URLs before connecting
+- [#866](https://github.com/dweymouth/supersonic/issues/866) Race condition around context cancel func
+- [#867](https://github.com/dweymouth/supersonic/pull/867) Occasional momentary playback when loading saved play queue
+- Fix content not loading on startup until window focused
+
 ## [0.20.1]
 
 ### Added
