@@ -619,10 +619,14 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 		defer p.handleNextTrackUpdated()
 	}
 
+	if shuffle {
+		rand.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
+	}
+
 	insertIdx := p.getPlayQueueLength()
 
 	if insertQueueMode == Replace {
-		if shuffle || p.shuffle {
+		if p.shuffle {
 			shuffledItems := deepCopyMediaItemSlice(items)
 			rand.Shuffle(len(shuffledItems), func(i, j int) { shuffledItems[i], shuffledItems[j] = shuffledItems[j], shuffledItems[i] })
 
@@ -632,9 +636,6 @@ func (p *playbackEngine) doLoaditems(items []mediaprovider.MediaItem, insertQueu
 			p.insertItemsIntoPlayQueueAt(items, insertIdx, queueType)
 		}
 	} else {
-		if shuffle {
-			rand.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
-		}
 		if insertQueueMode == InsertNext {
 			insertIdx = p.nowPlayingIdx + 1
 		}
