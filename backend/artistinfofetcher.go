@@ -1,12 +1,12 @@
 package backend
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -147,9 +147,12 @@ func (f *ArtistInfoFetcher) FetchArtistInfo(artistName string) (*mediaprovider.A
 
 // fetchFromDeezer fetches artist info from Deezer API.
 func (f *ArtistInfoFetcher) fetchFromDeezer(artistName string) (*mediaprovider.ArtistInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), artistInfoTimeout)
+	defer cancel()
+
 	reqURL := fmt.Sprintf("%s/search/artist?q=%s", deezerBaseURL, url.QueryEscape(artistName))
 
-	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -268,24 +271,15 @@ func mapToWikipediaLang(appLang string) string {
 	}
 }
 
-// isValidLangCode checks that a language code is safe to use in a URL hostname.
-var validLangCode = regexp.MustCompile(`^[a-z]{2,3}$`)
-
-func isValidLangCode(code string) bool {
-	return validLangCode.MatchString(code)
-}
-
 // fetchWikipediaBio fetches biography from a specific Wikipedia language edition.
-func (f *ArtistInfoFetcher) fetchWikipediaBio(artistName, wikiLang string) (string, string) {
-	// Validate language code to prevent URL injection
-	if !isValidLangCode(wikiLang) {
-		return "", ""
-	}
+func (f *ArtistInfoFetcher) fetchWikipediaBio(artistName, lang string) (string, string) {
+	ctx, cancel := context.WithTimeout(context.Background(), artistInfoTimeout)
+	defer cancel()
 
 	title := strings.ReplaceAll(artistName, " ", "_")
-	reqURL := fmt.Sprintf("https://%s.wikipedia.org/api/rest_v1/page/summary/%s", wikiLang, url.PathEscape(title))
+	reqURL := fmt.Sprintf("https://%s.wikipedia.org/api/rest_v1/page/summary/%s", lang, url.PathEscape(title))
 
-	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return "", ""
 	}

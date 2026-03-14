@@ -336,7 +336,10 @@ func (a *ArtistPage) load() {
 	if artist != nil {
 		artistName = artist.Name
 	}
-	info, _ := a.aim.GetArtistInfo(a.artistID, artistName)
+	info, err := a.aim.GetArtistInfo(a.artistID, artistName)
+	if err != nil {
+		log.Printf("Failed to get artist info: %s", err.Error())
+	}
 	fyne.Do(func() {
 		if !a.disposed {
 			a.header.UpdateInfo(info)
