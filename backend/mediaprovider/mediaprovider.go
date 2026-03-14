@@ -344,12 +344,6 @@ type JukeboxOnlyServer interface {
 	IsJukeboxOnly() bool
 }
 
-// CacheManager is optionally implemented by providers that have their own caches
-// that should be cleared when the user requests to clear caches.
-type CacheManager interface {
-	ClearCaches()
-}
-
 type JukeboxStatus struct {
 	Volume          int
 	CurrentTrack    int

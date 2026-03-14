@@ -27,9 +27,9 @@ type albumsPageAdapter struct {
 	itemsFn func() []widgets.GridViewItemModel
 }
 
-func NewAlbumsPage(cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) Page {
+func NewAlbumsPage(cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, aim *backend.ArtistInfoManager, im *backend.ImageManager) Page {
 	adapter := &albumsPageAdapter{cfg: cfg, contr: contr, mp: mp, pm: pm}
-	return NewGridViewPage(adapter, pool, mp, im)
+	return NewGridViewPage(adapter, pool, mp, aim, im)
 }
 
 var _ GridViewPageAdapterGetItems = (*albumsPageAdapter)(nil)

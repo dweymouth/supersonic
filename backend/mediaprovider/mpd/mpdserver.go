@@ -22,7 +22,6 @@ var (
 // Compile-time interface assertions for MPDServer
 var _ mediaprovider.JukeboxOnlyServer = (*MPDServer)(nil)
 var _ mediaprovider.JukeboxProvider = (*MPDServer)(nil)
-var _ mediaprovider.CacheManager = (*MPDServer)(nil)
 
 const (
 	maxPoolSize     = 5 // Maximum number of concurrent connections (MPD default limit is often 10)
@@ -37,7 +36,6 @@ type pooledConn struct {
 // MPDServer implements mediaprovider.Server for MPD connections.
 type MPDServer struct {
 	Hostname string
-	Language string // User's preferred language for Wikipedia biographies
 
 	mu          sync.Mutex // Protects the pool and connection state
 	pool        []*pooledConn
@@ -70,8 +68,7 @@ func (s *MPDServer) Login(username, password string) mediaprovider.LoginResponse
 	s.connSem = make(chan struct{}, maxPoolSize)
 	s.activeConns = 0
 	s.provider = &mpdMediaProvider{
-		server:            s,
-		artistInfoFetcher: newArtistInfoFetcher(s.Language),
+		server: s,
 	}
 
 	log.Printf("Using MPD connection pool with max %d concurrent connections", maxPoolSize)
@@ -182,13 +179,6 @@ func (s *MPDServer) JukeboxPlay(idx int) error { return s.provider.JukeboxPlay(i
 // JukeboxGetQueue implements mediaprovider.JukeboxProvider by delegating to the provider.
 func (s *MPDServer) JukeboxGetQueue() ([]*mediaprovider.Track, int, error) {
 	return s.provider.JukeboxGetQueue()
-}
-
-// ClearCaches implements mediaprovider.CacheManager by delegating to the provider.
-func (s *MPDServer) ClearCaches() {
-	if s.provider != nil {
-		s.provider.ClearCaches()
-	}
 }
 
 // reconnect attempts to reconnect to the MPD server.

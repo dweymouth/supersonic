@@ -27,9 +27,8 @@ const (
 
 // mpdMediaProvider implements mediaprovider.MediaProvider for MPD.
 type mpdMediaProvider struct {
-	server            *MPDServer
-	prefetchCoverCB   func(coverArtID string)
-	artistInfoFetcher *artistInfoFetcher
+	server          *MPDServer
+	prefetchCoverCB func(coverArtID string)
 
 	genresCached   []*mediaprovider.Genre
 	genresCachedAt int64
@@ -62,28 +61,9 @@ var _ mediaprovider.JukeboxOnlyServer = (*mpdMediaProvider)(nil)
 // Ensure mpdMediaProvider implements SupportsRating
 var _ mediaprovider.SupportsRating = (*mpdMediaProvider)(nil)
 
-// Ensure mpdMediaProvider implements CacheManager
-var _ mediaprovider.CacheManager = (*mpdMediaProvider)(nil)
-
 // IsJukeboxOnly returns true because MPD only supports jukebox mode.
 func (m *mpdMediaProvider) IsJukeboxOnly() bool {
 	return true
-}
-
-// ClearCaches clears the artist info cache (Deezer/Wikipedia data).
-func (m *mpdMediaProvider) ClearCaches() {
-	if m.artistInfoFetcher != nil {
-		m.artistInfoFetcher.clearCache()
-	}
-	// Also clear local caches
-	m.albumsCached = nil
-	m.albumsCachedAt = 0
-	m.artistsCached = nil
-	m.artistsCachedAt = 0
-	m.genresCached = nil
-	m.genresCachedAt = 0
-	m.playlistsCached = nil
-	m.playlistsCachedAt = 0
 }
 
 func (m *mpdMediaProvider) SetPrefetchCoverCallback(cb func(coverArtID string)) {
@@ -287,18 +267,9 @@ func (m *mpdMediaProvider) GetArtistTracks(artistID string) ([]*mediaprovider.Tr
 }
 
 func (m *mpdMediaProvider) GetArtistInfo(artistID string) (*mediaprovider.ArtistInfo, error) {
-	// Decode artist name from ID
-	artistName, ok := decodeArtistID(artistID)
-	if !ok {
-		return &mediaprovider.ArtistInfo{}, nil
-	}
-
-	info, err := m.artistInfoFetcher.fetchArtistInfo(artistName)
-	if err != nil {
-		// Return empty info instead of failing
-		return &mediaprovider.ArtistInfo{}, nil
-	}
-	return info, nil
+	// MPD has no native artist info; the shared ArtistInfoManager
+	// handles external fetching from Deezer/Wikipedia as a fallback.
+	return &mediaprovider.ArtistInfo{}, nil
 }
 
 func (m *mpdMediaProvider) GetPlaylist(playlistID string) (*mediaprovider.PlaylistWithTracks, error) {

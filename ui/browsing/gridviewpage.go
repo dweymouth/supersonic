@@ -24,6 +24,7 @@ type GridViewPage[M, F any] struct {
 	adapter GridViewPageAdapter[M, F]
 	pool    *util.WidgetPool
 	mp      mediaprovider.MediaProvider
+	aim     *backend.ArtistInfoManager
 	im      *backend.ImageManager
 
 	grid            *widgets.GridView
@@ -106,12 +107,14 @@ func NewGridViewPage[M, F any](
 	adapter GridViewPageAdapter[M, F],
 	pool *util.WidgetPool,
 	mp mediaprovider.MediaProvider,
+	aim *backend.ArtistInfoManager,
 	im *backend.ImageManager,
 ) *GridViewPage[M, F] {
 	gp := &GridViewPage[M, F]{
 		adapter:   adapter,
 		pool:      pool,
 		mp:        mp,
+		aim:       aim,
 		im:        im,
 		filter:    adapter.Filter(),
 		filterBtn: adapter.FilterButton(),
@@ -263,7 +266,7 @@ func (g *GridViewPage[M, F]) CreateRenderer() fyne.WidgetRenderer {
 
 // loadArtistImage loads an artist image for display in the grid.
 // It first checks for a cached artist image, then tries to fetch from external source.
-func (g *GridViewPage[M, F]) loadArtistImage(artistID string, onLoaded func(image.Image)) {
+func (g *GridViewPage[M, F]) loadArtistImage(artistID, artistName string, onLoaded func(image.Image)) {
 	// First check if we have a cached artist image - do this synchronously to avoid flashing
 	if img, ok := g.im.GetCachedArtistImage(artistID); ok {
 		onLoaded(img)
@@ -272,8 +275,8 @@ func (g *GridViewPage[M, F]) loadArtistImage(artistID string, onLoaded func(imag
 
 	// Not cached - fetch asynchronously
 	go func() {
-		// Try to get artist info to fetch image from external source
-		info, err := g.mp.GetArtistInfo(artistID)
+		// Try to get artist info (server first, then Deezer/Wikipedia fallback)
+		info, err := g.aim.GetArtistInfo(artistID, artistName)
 		if err != nil || info == nil || info.ImageURL == "" {
 			// No artist image available - signal to use fallback
 			onLoaded(nil)
@@ -294,6 +297,7 @@ type savedGridViewPage[M, F any] struct {
 	adapter         GridViewPageAdapter[M, F]
 	im              *backend.ImageManager
 	mp              mediaprovider.MediaProvider
+	aim             *backend.ArtistInfoManager
 	searchText      string
 	filter          mediaprovider.MediaFilter[M, F]
 	pool            *util.WidgetPool
@@ -307,6 +311,7 @@ func (g *GridViewPage[M, F]) Save() SavedPage {
 		adapter:         g.adapter,
 		pool:            g.pool,
 		mp:              g.mp,
+		aim:             g.aim,
 		im:              g.im,
 		searchText:      g.searchText,
 		filter:          g.filter,
@@ -329,6 +334,7 @@ func (s *savedGridViewPage[M, F]) Restore() Page {
 		adapter:         s.adapter,
 		pool:            s.pool,
 		mp:              s.mp,
+		aim:             s.aim,
 		im:              s.im,
 		gridState:       s.gridState,
 		searchGridState: s.searchGridState,

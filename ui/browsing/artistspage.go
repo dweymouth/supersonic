@@ -21,9 +21,9 @@ type artistsPageAdapter struct {
 	filter mediaprovider.ArtistFilter
 }
 
-func NewArtistsPage(cfg *backend.ArtistsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) Page {
+func NewArtistsPage(cfg *backend.ArtistsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, aim *backend.ArtistInfoManager, im *backend.ImageManager) Page {
 	adapter := &artistsPageAdapter{cfg: cfg, contr: contr, mp: mp, pm: pm}
-	return NewGridViewPage(adapter, pool, mp, im)
+	return NewGridViewPage(adapter, pool, mp, aim, im)
 }
 
 func (a *artistsPageAdapter) Title() string { return lang.L("Artists") }

@@ -184,7 +184,6 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 	if connection.ServerType == ServerTypeMPD {
 		cli = &mpdMP.MPDServer{
 			Hostname: connection.Hostname,
-			Language: s.config.Application.Language,
 		}
 		// MPD doesn't use username and doesn't have alt hostname
 		resp := cli.Login("", password)

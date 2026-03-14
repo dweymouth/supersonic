@@ -199,8 +199,8 @@ type GridViewState struct {
 
 	// OnLoadArtistImage is called to load artist images for items with ArtistID set.
 	// If set, this callback is used instead of the standard cover thumbnail loading.
-	// The callback receives the artistID and a function to call with the loaded image.
-	OnLoadArtistImage func(artistID string, onLoaded func(image.Image))
+	// The callback receives the artistID, artistName, and a function to call with the loaded image.
+	OnLoadArtistImage func(artistID, artistName string, onLoaded func(image.Image))
 
 	scrollPos float32
 }
@@ -488,7 +488,7 @@ func (g *GridView) loadItemImage(card *GridViewItem, item *GridViewItemModel) {
 		card.ImgLoader.Load("") // cancels previous load and clears to placeholder
 		// Call the artist image loader - it will check cache synchronously
 		// and only spawn goroutine if needed
-		g.OnLoadArtistImage(artistID, func(img image.Image) {
+		g.OnLoadArtistImage(artistID, item.Name, func(img image.Image) {
 			fyne.Do(func() {
 				// Only update if card still shows the same item
 				if card.itemID == item.ID {

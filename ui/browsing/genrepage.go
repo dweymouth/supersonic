@@ -24,9 +24,9 @@ type genrePageAdapter struct {
 	filterBtn *widgets.AlbumFilterButton
 }
 
-func NewGenrePage(genre string, cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) Page {
+func NewGenrePage(genre string, cfg *backend.AlbumsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, aim *backend.ArtistInfoManager, im *backend.ImageManager) Page {
 	adapter := &genrePageAdapter{genre: genre, cfg: cfg, contr: contr, mp: mp, pm: pm}
-	return NewGridViewPage(adapter, pool, mp, im)
+	return NewGridViewPage(adapter, pool, mp, aim, im)
 }
 
 func (g *genrePageAdapter) Title() string { return g.genre }
