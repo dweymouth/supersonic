@@ -32,7 +32,8 @@ type GroupedReleasesSectionVisibility struct {
 type GroupedReleases struct {
 	widget.BaseWidget
 
-	ShowSuffix bool
+	ShowSuffix      bool
+	DisableDownload bool
 
 	Model GroupedReleasesModel
 
@@ -48,6 +49,7 @@ type GroupedReleases struct {
 
 	menu               *widget.PopUpMenu
 	shareMenuItem      *fyne.MenuItem
+	downloadMenuItem   *fyne.MenuItem
 	menuGridViewItemId string
 	imageFetcher       util.ImageFetcher
 	cardPool           sync.Pool
@@ -241,19 +243,20 @@ func (g *GroupedReleases) showContextMenu(card *GridViewItem, pos fyne.Position)
 			}
 		})
 		playlist.Icon = myTheme.PlaylistIcon
-		download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
+		g.downloadMenuItem = fyne.NewMenuItem(lang.L("Download")+"...", func() {
 			if g.OnDownload != nil {
 				g.OnDownload(g.menuGridViewItemId)
 			}
 		})
-		download.Icon = theme.DownloadIcon()
+		g.downloadMenuItem.Icon = theme.DownloadIcon()
 		g.shareMenuItem = fyne.NewMenuItem(lang.L("Share")+"...", func() {
 			g.OnShare(g.menuGridViewItemId)
 		})
 		g.shareMenuItem.Icon = myTheme.ShareIcon
-		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", play, shuffle, queueNext, queue, playlist, download, g.shareMenuItem),
+		g.menu = widget.NewPopUpMenu(fyne.NewMenu("", play, shuffle, queueNext, queue, playlist, g.downloadMenuItem, g.shareMenuItem),
 			fyne.CurrentApp().Driver().CanvasForObject(g))
 	}
+	g.downloadMenuItem.Disabled = g.DisableDownload
 	g.menu.ShowAtPosition(pos)
 }
 

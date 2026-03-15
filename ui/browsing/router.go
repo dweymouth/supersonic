@@ -38,15 +38,15 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	case controller.Album:
 		return NewAlbumPage(rte.Arg, &r.App.Config.AlbumPage, r.widgetPool, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager, r.Controller)
 	case controller.Albums:
-		return NewAlbumsPage(&r.App.Config.AlbumsPage, r.widgetPool, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager)
+		return NewAlbumsPage(&r.App.Config.AlbumsPage, r.widgetPool, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ArtistInfoManager, r.App.ImageManager)
 	case controller.Artist:
-		return NewArtistPage(rte.Arg, &r.App.Config.ArtistPage, r.widgetPool, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager, r.Controller)
+		return NewArtistPage(rte.Arg, &r.App.Config.ArtistPage, r.widgetPool, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ArtistInfoManager, r.App.ImageManager, r.Controller)
 	case controller.Artists:
-		return NewArtistsPage(&r.App.Config.ArtistsPage, r.widgetPool, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager)
+		return NewArtistsPage(&r.App.Config.ArtistsPage, r.widgetPool, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ArtistInfoManager, r.App.ImageManager)
 	case controller.Favorites:
 		return NewFavoritesPage(&r.App.Config.FavoritesPage, r.widgetPool, r.Controller, r.App.ServerManager.Server, r.App.PlaybackManager, r.App.ImageManager)
 	case controller.Genre:
-		return NewGenrePage(rte.Arg, &r.App.Config.AlbumsPage, r.widgetPool, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ImageManager)
+		return NewGenrePage(rte.Arg, &r.App.Config.AlbumsPage, r.widgetPool, r.Controller, r.App.PlaybackManager, r.App.ServerManager.Server, r.App.ArtistInfoManager, r.App.ImageManager)
 	case controller.Genres:
 		return NewGenresPage(r.Controller, r.App.ServerManager.Server)
 	case controller.NowPlaying:

@@ -300,6 +300,13 @@ func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
 	return p.engine.CurrentPlayer()
 }
 
+// SetPlayer sets the current player directly.
+// This is used for jukebox-only servers where the player cannot be created via RemotePlaybackDevice.
+func (p *PlaybackManager) SetPlayer(newPlayer player.BasePlayer) error {
+	p.cmdQueue.Clear()
+	return p.engine.SetPlayer(newPlayer)
+}
+
 func (p *PlaybackManager) OnPlayerChange(cb func()) {
 	p.onPlayerChange = append(p.onPlayerChange, cb)
 }
@@ -355,6 +362,11 @@ func (p *PlaybackManager) OnShuffleChange(cb func(bool)) {
 // Registers a callback that is notified whenever the volume changes.
 func (p *PlaybackManager) OnVolumeChange(cb func(int)) {
 	p.engine.onVolumeChange = append(p.engine.onVolumeChange, cb)
+}
+
+// Registers a callback that is notified whenever audio info changes during playback.
+func (p *PlaybackManager) OnAudioInfoChange(cb func()) {
+	p.engine.onAudioInfoChange = append(p.engine.onAudioInfoChange, cb)
 }
 
 // Registers a callback that is notified whenever the play queue changes.
@@ -535,6 +547,17 @@ func (p *PlaybackManager) isLoadTrackPaused() bool {
 	return p.engine.pendingLoadPaused
 }
 
+// SetNowPlayingIndex sets the now playing index without triggering playback.
+// This is used to sync with external jukebox players (like MPD) that are already playing.
+func (p *PlaybackManager) SetNowPlayingIndex(idx int) {
+	p.engine.SetNowPlayingIndex(idx)
+}
+
+// SyncQueueFromExternal syncs the local queue with an external jukebox player's queue
+// without affecting the remote player's state.
+func (p *PlaybackManager) SyncQueueFromExternal(tracks []*mediaprovider.Track, currentIdx int) {
+	p.engine.SyncQueueFromExternal(tracks, currentIdx)
+}
 func (p *PlaybackManager) PlayRandomSongs(genreName string) error {
 	return p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
 		tr, err := p.engine.sm.Server.GetRandomTracks(genreName, p.appCfg.EnqueueBatchSize)

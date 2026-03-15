@@ -21,9 +21,9 @@ type artistsPageAdapter struct {
 	filter mediaprovider.ArtistFilter
 }
 
-func NewArtistsPage(cfg *backend.ArtistsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager) Page {
+func NewArtistsPage(cfg *backend.ArtistsPageConfig, pool *util.WidgetPool, contr *controller.Controller, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, aim *backend.ArtistInfoManager, im *backend.ImageManager) Page {
 	adapter := &artistsPageAdapter{cfg: cfg, contr: contr, mp: mp, pm: pm}
-	return NewGridViewPage(adapter, pool, mp, im)
+	return NewGridViewPage(adapter, pool, mp, aim, im)
 }
 
 func (a *artistsPageAdapter) Title() string { return lang.L("Artists") }
@@ -72,10 +72,16 @@ func (a *artistsPageAdapter) InitGrid(gv *widgets.GridView) {
 	if r, canShare := a.mp.(mediaprovider.SupportsSharing); canShare {
 		canShareArtists = r.CanShareArtists()
 	}
+	_, isJukeboxOnly := a.mp.(mediaprovider.JukeboxOnlyServer)
 	gv.DisableSharing = !canShareArtists
+	gv.DisableDownload = isJukeboxOnly
 	a.contr.ConnectArtistGridActions(gv)
 }
 
 func (a *artistsPageAdapter) RefreshGrid(gv *widgets.GridView) {
 	gv.Refresh()
 }
+
+// UsesArtistImages implements GridViewPageAdapterArtistImages.
+// Artist pages always want the external image loading callback.
+func (a *artistsPageAdapter) UsesArtistImages() bool { return true }

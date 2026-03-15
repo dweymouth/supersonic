@@ -118,8 +118,10 @@ func (m *MyTheme) ReloadThemeFile() {
 func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
 	// load theme file if necessary
 	if m.loadedThemeFile == nil || m.config.ThemeFile != m.loadedThemeFilename {
-		t, err := ReadThemeFile(path.Join(m.themeFileDir, m.config.ThemeFile))
-		if err == nil {
+		if m.config.ThemeFile == "" {
+			// No custom theme file configured, use default
+			m.loadedThemeFile = m.defaultThemeFile
+		} else if t, err := ReadThemeFile(path.Join(m.themeFileDir, m.config.ThemeFile)); err == nil {
 			m.loadedThemeFile = t
 		} else {
 			log.Printf("failed to load theme file %q: %s", m.config.ThemeFile, err.Error())
