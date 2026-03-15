@@ -1,0 +1,8 @@
+//go:build !darwin
+
+package ui
+
+import "fyne.io/fyne/v2"
+
+func installReopenHandler(w fyne.Window) {
+}
