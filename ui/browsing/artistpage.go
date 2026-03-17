@@ -342,7 +342,7 @@ func (a *ArtistPage) load() {
 }
 
 func (a *ArtistPage) showAlbumGrid(reSort bool) {
-	if a.activeView == 0 && a.albumGrid != nil {
+	if a.activeView == 0 && (a.albumGrid != nil || a.groupedReleases != nil) && !reSort {
 		return // already showing album grid
 	}
 	a.activeView = 0
