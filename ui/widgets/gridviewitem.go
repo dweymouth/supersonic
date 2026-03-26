@@ -513,8 +513,10 @@ func (g *GridViewItem) Update(model *GridViewItemModel) {
 	g.secondaryText.Refresh()
 	g.Cover.ResetPlayButton()
 	if g.focused {
-		fyne.CurrentApp().Driver().CanvasForObject(g).Focus(nil)
-		g.FocusLost()
+		if c := fyne.CurrentApp().Driver().CanvasForObject(g); c != nil {
+			c.Unfocus()
+			g.FocusLost()
+		}
 	}
 }
 
@@ -589,7 +591,9 @@ func (g *GridViewItem) TypedRune(rune) {
 var _ fyne.Tappable = (*GridViewItem)(nil)
 
 func (g *GridViewItem) Tapped(*fyne.PointEvent) {
-	fyne.CurrentApp().Driver().CanvasForObject(g).Unfocus()
+	if c := fyne.CurrentApp().Driver().CanvasForObject(g); c != nil {
+		c.Unfocus()
+	}
 }
 
 func (g *GridViewItem) CreateRenderer() fyne.WidgetRenderer {

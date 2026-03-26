@@ -16,11 +16,12 @@ const (
 )
 
 type ServerConnection struct {
-	ServerType  ServerType
-	Hostname    string
-	AltHostname string
-	Username    string
-	LegacyAuth  bool
+	ServerType    ServerType
+	Hostname      string
+	AltHostname   string
+	Username      string
+	LegacyAuth    bool
+	SkipSSLVerify bool
 }
 
 type ServerConfig struct {
@@ -50,13 +51,18 @@ type AppConfig struct {
 	EnableLrcLib                bool
 	CustomLrcLibUrl             string
 	EnablePasswordStorage       bool
-	SkipSSLVerify               bool
+	SkipSSLVerify               bool // Deprecated: use per-server SkipSSLVerify. Drop in future version.
 	EnqueueBatchSize            int
 	Language                    string
 	DisableDPIDetection         bool
 	EnableAutoUpdateChecker     bool
 	RequestTimeoutSeconds       int
 	EnableOSMediaPlayerAPIs     bool
+	ShowSidebar                 bool
+	SidebarWidthFraction        float64
+	SidebarTab                  string
+
+	PreventScreensaverOnNowPlayingPage bool
 
 	FontNormalTTF string
 	FontBoldTTF   string
@@ -65,6 +71,7 @@ type AppConfig struct {
 
 type AlbumPageConfig struct {
 	TracklistColumns []string
+	CompactHeader    bool
 }
 
 // shared between Albums and Genre pages
@@ -79,6 +86,7 @@ type ArtistPageConfig struct {
 	InitialView      string
 	DiscographySort  string
 	TracklistColumns []string
+	CompactHeader    bool
 }
 
 type ArtistsPageConfig struct {
@@ -97,6 +105,7 @@ type GridViewConfig struct {
 
 type PlaylistPageConfig struct {
 	TracklistColumns []string
+	CompactHeader    bool
 }
 
 type PlaylistsPageConfig struct {
@@ -108,13 +117,17 @@ type TracksPageConfig struct {
 }
 
 type NowPlayingPageConfig struct {
-	InitialView string
+	InitialView        string
+	UseBackgroundImage bool
 }
 
 type PlaybackConfig struct {
-	Autoplay           bool
-	RepeatMode         string
-	UseWaveformSeekbar bool
+	Autoplay                 bool
+	Shuffle                  bool
+	RepeatMode               string
+	SkipOneStarWhenShuffling bool
+	SkipKeywordWhenShuffling string
+	UseWaveformSeekbar       bool
 }
 
 type LocalPlaybackConfig struct {
@@ -123,8 +136,13 @@ type LocalPlaybackConfig struct {
 	InMemoryCacheSizeMB   int
 	Volume                int
 	EqualizerEnabled      bool
+	EqualizerType         string    // "ISO10Band" or "ISO15Band"
 	EqualizerPreamp       float64
 	GraphicEqualizerBands []float64
+	ActiveEQPresetName    string // Name of currently selected EQ preset
+	AutoEQProfilePath     string // Path to applied AutoEQ profile (e.g., "oratory1990/over-ear/Sennheiser HD 650")
+	AutoEQProfileName     string // Display name of applied profile (e.g., "Sennheiser HD 650")
+	PauseFade             bool
 }
 
 type ScrobbleConfig struct {
@@ -140,8 +158,9 @@ type ReplayGainConfig struct {
 }
 
 type ThemeConfig struct {
-	ThemeFile  string
-	Appearance string
+	ThemeFile              string
+	Appearance             string
+	UseRoundedImageCorners bool
 }
 
 type TranscodingConfig struct {
@@ -183,28 +202,29 @@ var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists", "Artist
 func DefaultConfig(appVersionTag string) *Config {
 	return &Config{
 		Application: AppConfig{
-			WindowWidth:                 1000,
-			WindowHeight:                800,
-			LastCheckedVersion:          appVersionTag,
-			LastLaunchedVersion:         "",
-			EnableSystemTray:            true,
-			CloseToSystemTray:           false,
-			StartupPage:                 "Albums",
-			SettingsTab:                 "General",
-			AllowMultiInstance:          false,
-			MaxImageCacheSizeMB:         50,
-			UIScaleSize:                 "Normal",
-			SavePlayQueue:               true,
-			SaveQueueToServer:           false,
-			ShowTrackChangeNotification: false,
-			EnableLrcLib:                true,
-			EnablePasswordStorage:       true,
-			SkipSSLVerify:               false,
-			EnqueueBatchSize:            100,
-			Language:                    "auto",
-			EnableAutoUpdateChecker:     true,
-			RequestTimeoutSeconds:       15,
-			EnableOSMediaPlayerAPIs:     true,
+			WindowWidth:                        1000,
+			WindowHeight:                       800,
+			LastCheckedVersion:                 appVersionTag,
+			LastLaunchedVersion:                "",
+			EnableSystemTray:                   true,
+			CloseToSystemTray:                  false,
+			StartupPage:                        "Albums",
+			SettingsTab:                        "General",
+			AllowMultiInstance:                 false,
+			MaxImageCacheSizeMB:                50,
+			UIScaleSize:                        "Normal",
+			SavePlayQueue:                      true,
+			SaveQueueToServer:                  false,
+			ShowTrackChangeNotification:        false,
+			EnableLrcLib:                       true,
+			EnablePasswordStorage:              true,
+			EnqueueBatchSize:                   100,
+			Language:                           "auto",
+			EnableAutoUpdateChecker:            true,
+			RequestTimeoutSeconds:              15,
+			EnableOSMediaPlayerAPIs:            true,
+			SidebarWidthFraction:               0.8,
+			PreventScreensaverOnNowPlayingPage: false,
 		},
 		AlbumPage: AlbumPageConfig{
 			TracklistColumns: []string{"Artist", "Time", "Plays", "Favorite", "Rating"},
@@ -236,15 +256,17 @@ func DefaultConfig(appVersionTag string) *Config {
 			InitialView: "List",
 		},
 		NowPlayingConfig: NowPlayingPageConfig{
-			InitialView: "Play Queue",
+			InitialView:        "Play Queue",
+			UseBackgroundImage: true,
 		},
 		TracksPage: TracksPageConfig{
 			TracklistColumns: []string{"Album", "Time", "Plays"},
 		},
 		Playback: PlaybackConfig{
 			Autoplay:           false,
+			Shuffle:            false,
 			RepeatMode:         "None",
-			UseWaveformSeekbar: true,
+			UseWaveformSeekbar: false,
 		},
 		LocalPlayback: LocalPlaybackConfig{
 			// "auto" is the name to pass to MPV for autoselecting the output device
@@ -253,8 +275,10 @@ func DefaultConfig(appVersionTag string) *Config {
 			InMemoryCacheSizeMB:   30,
 			Volume:                100,
 			EqualizerEnabled:      false,
+			EqualizerType:         "ISO15Band",
 			EqualizerPreamp:       0,
 			GraphicEqualizerBands: make([]float64, 15),
+			PauseFade:             true,
 		},
 		Scrobbling: ScrobbleConfig{
 			Enabled:              true,
@@ -273,7 +297,8 @@ func DefaultConfig(appVersionTag string) *Config {
 			MaxBitRateKBPS:   160,
 		},
 		Theme: ThemeConfig{
-			Appearance: "Dark",
+			Appearance:             "Dark",
+			UseRoundedImageCorners: true,
 		},
 		PeakMeter: PeakMeterConfig{
 			WindowWidth:  375,
@@ -293,6 +318,7 @@ func ReadConfigFile(filepath, appVersionTag string) (*Config, error) {
 	if err := toml.NewDecoder(f).Decode(c); err != nil {
 		return nil, err
 	}
+	c.migrateDeprecatedSettings()
 
 	// Backfill Subsonic to empty ServerType fields
 	// for updating configs created before multiple MediaProviders were added
@@ -313,6 +339,8 @@ func (c *Config) WriteConfigFile(filepath string) error {
 	}
 	defer writeLock.Unlock()
 
+	// clear deprecated global SkipSSLVerify after migrating to per-server settings
+	c.Application.SkipSSLVerify = false
 	b, err := toml.Marshal(c)
 	if err != nil {
 		return err
@@ -320,4 +348,13 @@ func (c *Config) WriteConfigFile(filepath string) error {
 	os.WriteFile(filepath, b, 0o644)
 
 	return nil
+}
+
+func (c *Config) migrateDeprecatedSettings() {
+	// Migrate deprecated global SkipSSLVerify to per-server settings
+	if c.Application.SkipSSLVerify {
+		for _, s := range c.Servers {
+			s.SkipSSLVerify = true
+		}
+	}
 }

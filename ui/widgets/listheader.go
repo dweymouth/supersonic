@@ -64,7 +64,7 @@ func NewListHeader(cols []ListColumn, layout *layouts.ColumnsLayout) *ListHeader
 		l.columnVisible[i] = true
 	}
 	rect := myTheme.NewThemedRectangle(myTheme.ColorNameListHeader)
-	rect.CornerRadiusName = theme.SizeNameSelectionRadius
+	rect.CornerRadius = theme.SelectionRadiusSize()
 	l.container = container.NewStack(rect, l.columnsContainer)
 	l.ExtendBaseWidget(l)
 	l.buildColumns()

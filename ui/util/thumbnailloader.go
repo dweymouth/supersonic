@@ -49,12 +49,16 @@ func (i *ThumbnailLoader) Load(coverID string) {
 		i.OnBeforeLoad()
 	}
 	i.prevLoadCancel = i.im.GetCoverThumbnailAsync(coverID, func(img image.Image, err error) {
-		if err != nil {
-			log.Printf("Error loading cover image: %s", err.Error())
-		} else {
-			fyne.Do(func() { i.callOnLoaded(img) })
-		}
-		i.prevLoadCancel() // Done. Release resources associated with un-cancelled ctx
+		fyne.Do(func() {
+			if err != nil {
+				log.Printf("Error loading cover image: %s", err.Error())
+			} else {
+				i.callOnLoaded(img)
+			}
+			if i.prevLoadCancel != nil {
+				i.prevLoadCancel() // Cancel the context to release resources if not already cancelled
+			}
+		})
 	})
 }
 

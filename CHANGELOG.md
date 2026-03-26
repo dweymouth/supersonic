@@ -1,5 +1,92 @@
 # Change Log
 
+## [0.21.0]
+
+### Added
+- [#815](https://github.com/dweymouth/supersonic/pull/815) Shuffle play queue
+- [#816](https://github.com/dweymouth/supersonic/pull/816) All Tracks tab on Artist page
+- [#835](https://github.com/dweymouth/supersonic/pull/835) Equalizer improvements: 10-band EQ option, AutoEQ headphone profiles, preset management
+- [#700](https://github.com/dweymouth/supersonic/issues/700) Song Radio context menu item on play queue
+- [#845](https://github.com/dweymouth/supersonic/pull/845) Display radio stream ICY metadata
+- [#847](https://github.com/dweymouth/supersonic/pull/847) `rate-current` CLI option to rate the currently playing track
+- [#860](https://github.com/dweymouth/supersonic/pull/860) `-reload-theme` CLI flag to re-apply the current theme
+- Updated Polish and Chinese translations
+
+### Changed
+- [#862](https://github.com/dweymouth/supersonic/pull/862) Shuffle and repeat controls moved into main player controls
+- Waveform seekbar disabled by default
+- Use JSON instead of XML in Subsonic API requests
+
+### Fixed
+- [#854](https://github.com/dweymouth/supersonic/issues/854) Crash in playback engine during time position update
+- [#857](https://github.com/dweymouth/supersonic/issues/857) Clearing cache did not clear in-memory cache
+- [#861](https://github.com/dweymouth/supersonic/pull/861) Normalize server URLs before connecting
+- [#866](https://github.com/dweymouth/supersonic/issues/866) Race condition around context cancel func
+- [#867](https://github.com/dweymouth/supersonic/pull/867) Occasional momentary playback when loading saved play queue
+- Fix content not loading on startup until window focused
+
+## [0.20.1]
+
+### Added
+- Improved translations for Chinese, Japanese, Italian
+- [#814](https://github.com/dweymouth/supersonic/pull/814) Setting to disable fade out on pause
+
+### Changed
+- [#798](https://github.com/dweymouth/supersonic/issues/798) Ignore SSL validation setting migrated to per-server option
+
+### Fixed
+- [#614](https://github.com/dweymouth/supersonic/issues/614) Some uPnP devices not recognized
+- [#809](https://github.com/dweymouth/supersonic/issues/809) Jellyfin synced lyrics not shown as synced if first line starts at 00:00.00
+- [#804](https://github.com/dweymouth/supersonic/issues/804) Regression in peak meter animation smoothness
+- Some optimizations of tracklist rendering
+- [#810](https://github.com/dweymouth/supersonic/issues/810) Autoplay tracks enqueuing too early
+- [#834](https://github.com/dweymouth/supersonic/pull/834) Fix equalizer filter string for ffmpeg
+- [#813](https://github.com/dweymouth/supersonic/issues/813) Unnecessarily large minimum window width for pages with tracklist
+- [#485](https://github.com/dweymouth/supersonic/discussions/485) Use sort tags for sorting artist discography by album name (OpenSubsonic only)
+- [#384](https://github.com/dweymouth/supersonic/issues/384) for Jellyfin - Add to Playlist dialog not showing playlists when logged in with username in different case
+- Fix Now Playing background dissolve animation when next track has same cover art as previous
+
+## [0.20.0]
+
+### Added
+- [#775](https://github.com/dweymouth/supersonic/issues/775) Quickly fade out audio when pausing
+- [#774](https://github.com/dweymouth/supersonic/issues/774) Add collapsed/compact view for page headers
+- [#745](https://github.com/dweymouth/supersonic/issues/745) Add option to prevent screensaver or screen sleep on Now Playing page
+- [#744](https://github.com/dweymouth/supersonic/pull/744) Add lyrics tab to sidebar
+- [#742](https://github.com/dweymouth/supersonic/issues/742) Add additional tracklist columns for Genre, Album Artist, File Type, Date Added
+- [#741](https://github.com/dweymouth/supersonic/issues/741) Show year on Now Playing page
+- Option to round image corners throughout app
+- Option to used blurred album cover for background of Now Playing page
+- [#566](https://github.com/dweymouth/supersonic/issues/566) Left click on system tray icon raises app window
+- Button in Advanced tab of settings window to clear caches
+
+### Changed
+- [#790](https://github.com/dweymouth/supersonic/issues/790) Seeking Next while playing the last track in queue now cycles around back to the beginning
+- [#787](https://github.com/dweymouth/supersonic/issues/787) Behavior and naming of "Stop after current track" changed to "Pause after current track"
+- [#759](https://github.com/dweymouth/supersonic/pull/759) Migrate to Fyne 2.7
+
+### Fixed
+- [#748](https://github.com/dweymouth/supersonic/issues/748) LrcLib fetcher no longer crashes on tracks with no artist name
+- [#660](https://github.com/dweymouth/supersonic/issues/660) Windows now playing notifications are now silent, and include album cover
+
+## [0.19.0]
+
+### Added
+- [#732](https://github.com/dweymouth/supersonic/pull/732) Add toggleable side bar play queue
+- [#724](https://github.com/dweymouth/supersonic/pull/724) Add a setting to skip one-star tracks or tracks with specific keyword when shuffling
+- [#716](https://github.com/dweymouth/supersonic/issues/716) Add a Last Played column to tracklists
+- [#714](https://github.com/dweymouth/supersonic/issues/714) Add a Create Playlist button to the playlists page
+- [#579](https://github.com/dweymouth/supersonic/issues/579) Save play queue on all queue changes rather than on shutdown
+- Left and Right keybindings for seeking back/forward 10 sec
+
+### Fixed
+- [#737](https://github.com/dweymouth/supersonic/issues/737) Peak Meter visualization crashing with custom themes
+- [#735](https://github.com/dweymouth/supersonic/issues/735) Adjust spacing for rating/favorite widget on Now Playing page
+- [#729](https://github.com/dweymouth/supersonic/issues/729) Occasional crashing on lyrics viewer
+- [#414](https://github.com/dweymouth/supersonic/issues/414) Jellyfin M3U playlists not showing up
+- Occasional hangs when loading artist pages
+- Improved LrcLib lyrics fetching with unknown album or artist name
+
 ## [0.18.1]
 
 ### Added

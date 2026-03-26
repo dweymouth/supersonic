@@ -16,8 +16,10 @@ type IconButtonSize int
 
 const (
 	IconButtonSizeNormal IconButtonSize = iota
+	IconButtonSizeSlightlyBigger
 	IconButtonSizeBigger
 	IconButtonSizeSmaller
+	IconButtonSizeSmallest
 )
 
 type IconButton struct {
@@ -141,8 +143,12 @@ func (i *IconButton) iconSize() fyne.Size {
 	switch i.IconSize {
 	case IconButtonSizeBigger:
 		return fyne.NewSquareSize(theme.IconInlineSize() * 2)
+	case IconButtonSizeSlightlyBigger:
+		return fyne.NewSquareSize(theme.IconInlineSize() * 1.37)
 	case IconButtonSizeSmaller:
 		return fyne.NewSquareSize(theme.IconInlineSize())
+	case IconButtonSizeSmallest:
+		return fyne.NewSquareSize(theme.IconInlineSize() * 0.9)
 	default:
 		return fyne.NewSquareSize(theme.IconInlineSize() * 1.3333)
 	}

@@ -2,9 +2,12 @@
 Type=Application
 Version=1.0
 Name=Supersonic
+GenericName=Music Player
 Comment=A lightweight cross-platform desktop client for Subsonic music servers
+Keywords=music;audio;player;subsonic;navidrome;streaming;
 Path=/usr/bin
 Exec=supersonic-desktop
 Terminal=false
 Icon=supersonic-desktop
-Categories=Audio;AudioVideo
+StartupWMClass=Supersonic
+Categories=Audio;AudioVideo;Music;Player;

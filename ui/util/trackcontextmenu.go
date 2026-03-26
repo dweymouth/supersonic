@@ -31,6 +31,12 @@ func NewTrackContextMenu(disablePlaybackMenu bool, auxItems []*fyne.MenuItem) *T
 	tcm := &TrackContextMenu{}
 
 	tcm.menu = fyne.NewMenu("")
+	tcm.songRadioMenuItem = fyne.NewMenuItem(lang.L("Play song radio"), func() {
+		if tcm.OnPlaySongRadio != nil {
+			tcm.OnPlaySongRadio()
+		}
+	})
+	tcm.songRadioMenuItem.Icon = myTheme.RadioIcon
 	if !disablePlaybackMenu {
 		play := fyne.NewMenuItem(lang.L("Play"), func() {
 			if tcm.OnPlay != nil {
@@ -56,12 +62,6 @@ func NewTrackContextMenu(disablePlaybackMenu bool, auxItems []*fyne.MenuItem) *T
 			}
 		})
 		add.Icon = theme.ContentAddIcon()
-		tcm.songRadioMenuItem = fyne.NewMenuItem(lang.L("Play song radio"), func() {
-			if tcm.OnPlaySongRadio != nil {
-				tcm.OnPlaySongRadio()
-			}
-		})
-		tcm.songRadioMenuItem.Icon = myTheme.RadioIcon
 		tcm.menu.Items = append(tcm.menu.Items,
 			play, shuffle, playNext, add, tcm.songRadioMenuItem)
 	}
@@ -104,6 +104,9 @@ func NewTrackContextMenu(disablePlaybackMenu bool, auxItems []*fyne.MenuItem) *T
 	})
 	tcm.shareMenuItem.Icon = myTheme.ShareIcon
 	tcm.menu.Items = append(tcm.menu.Items, tcm.shareMenuItem)
+	if disablePlaybackMenu {
+		tcm.menu.Items = append(tcm.menu.Items, tcm.songRadioMenuItem)
+	}
 	tcm.menu.Items = append(tcm.menu.Items, fyne.NewMenuItemSeparator())
 	tcm.menu.Items = append(tcm.menu.Items, favorite, unfavorite)
 	tcm.ratingSubmenu = NewRatingSubmenu(func(rating int) {

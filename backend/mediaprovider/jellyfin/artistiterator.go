@@ -9,7 +9,7 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-func (j *jellyfinMediaProvider) ArtistSortOrders() []string {
+func (j *JellyfinMediaProvider) ArtistSortOrders() []string {
 	return []string{
 		mediaprovider.ArtistSortAlbumCount,
 		mediaprovider.ArtistSortNameAZ,
@@ -17,7 +17,7 @@ func (j *jellyfinMediaProvider) ArtistSortOrders() []string {
 	}
 }
 
-func (j *jellyfinMediaProvider) IterateArtists(sortOrder string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
+func (j *JellyfinMediaProvider) IterateArtists(sortOrder string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
 	var jfSort jellyfin.Sort
 	var disablePagination bool
 	var sortFn func([]*jellyfin.Artist) []*jellyfin.Artist
@@ -63,7 +63,7 @@ func (j *jellyfinMediaProvider) IterateArtists(sortOrder string, filter mediapro
 	return helpers.NewArtistIterator(fetcher, filter, j.prefetchCoverCB)
 }
 
-func (j *jellyfinMediaProvider) SearchArtists(searchQuery string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
+func (j *JellyfinMediaProvider) SearchArtists(searchQuery string, filter mediaprovider.ArtistFilter) mediaprovider.ArtistIterator {
 	// TODO: Jellyfin API is not returning search results for artists.
 	//       Uncomment the following code once the issue is resolved.
 	//       Related issue: https://github.com/jellyfin/jellyfin/issues/8222

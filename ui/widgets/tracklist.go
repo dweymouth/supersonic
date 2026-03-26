@@ -41,10 +41,6 @@ type TracklistOptions struct {
 	// must be set before the context menu is shown for the first time
 	AuxiliaryMenuItems []*fyne.MenuItem
 
-	// DisablePlaybackMenu sets whether to disable playback options in
-	// the tracklist context menu.
-	DisablePlaybackMenu bool
-
 	// Disables sorting the tracklist by clicking individual columns.
 	DisableSorting bool
 
@@ -79,6 +75,7 @@ type Tracklist struct {
 
 	OnShowArtistPage func(artistID string)
 	OnShowAlbumPage  func(albumID string)
+	OnShowGenrePage  func(genre string)
 
 	OnColumnVisibilityMenuShown func(*widget.PopUp)
 	OnVisibleColumnsChanged     func([]string)
@@ -432,8 +429,12 @@ func (t *Tracklist) doSortTracks() {
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Title })
 	case ColumnArtist:
 		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().ArtistNames, ", ") })
+	case ColumnAlbumArtist:
+		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().AlbumArtistNames, ", ") })
 	case ColumnAlbum:
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Album })
+	case ColumnGenre:
+		t.stringSort(func(tr *util.TrackListModel) string { return strings.Join(tr.Track().Genres, ", ") })
 	case ColumnPath:
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().FilePath })
 	case ColumnRating:
@@ -446,8 +447,12 @@ func (t *Tracklist) doSortTracks() {
 		t.intSort(func(tr *util.TrackListModel) int64 { return tr.Track().Size })
 	case ColumnPlays:
 		t.intSort(func(tr *util.TrackListModel) int64 { return int64(tr.Track().PlayCount) })
+	case ColumnLastPlayed:
+		t.intSort(func(tr *util.TrackListModel) int64 { return tr.Track().LastPlayed.Unix() })
 	case ColumnComment:
 		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Comment })
+	case ColumnFileType:
+		t.stringSort(func(tr *util.TrackListModel) string { return tr.Track().Extension })
 	case ColumnBPM:
 		t.intSort(func(tr *util.TrackListModel) int64 { return int64(tr.Track().BPM) })
 	case ColumnBitrate:
@@ -459,6 +464,8 @@ func (t *Tracklist) doSortTracks() {
 			}
 			return 0
 		})
+	case ColumnDateAdded:
+		t.intSort(func(tr *util.TrackListModel) int64 { return tr.Track().DateAdded.Unix() })
 	}
 }
 
@@ -507,7 +514,7 @@ func (t *Tracklist) onShowContextMenu(e *fyne.PointEvent, trackIdx int) {
 		t.list.Refresh()
 	}
 	if t.ctxMenu == nil {
-		t.ctxMenu = util.NewTrackContextMenu(t.Options.DisablePlaybackMenu, t.Options.AuxiliaryMenuItems)
+		t.ctxMenu = util.NewTrackContextMenu(false, t.Options.AuxiliaryMenuItems)
 		t.ctxMenu.OnPlay = func(shuffle bool) {
 			t.OnPlaySelection(t.SelectedTracks(), shuffle)
 		}
@@ -592,6 +599,12 @@ func (t *Tracklist) onArtistTapped(artistID string) {
 func (t *Tracklist) onAlbumTapped(albumID string) {
 	if t.OnShowAlbumPage != nil {
 		t.OnShowAlbumPage(albumID)
+	}
+}
+
+func (t *Tracklist) onGenreTapped(genre string) {
+	if t.OnShowGenrePage != nil {
+		t.OnShowGenrePage(genre)
 	}
 }
 

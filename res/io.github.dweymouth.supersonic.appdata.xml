@@ -63,33 +63,45 @@
   </screenshots>
 
  <releases>
-  <release date="2025-09-13" version="0.18.1">
+  <release date="2026-03-11" version="0.21.0">
    <description>
      <p>
-       Version 0.18.1 of Supersonic
+       Version 0.21.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Save and use the most recently selected music library when re-launching app</li>
-       <li>Add Artists to the supported list of startup pages</li>
+       <li>Shuffle play queue</li>
+       <li>All Tracks tab on Artist page</li>
+       <li>Equalizer improvements: 10-band EQ option, AutoEQ headphone profiles, preset management</li>
+       <li>Song Radio context menu item on play queue</li>
+       <li>Display radio stream ICY metadata</li>
+       <li>-rate-current CLI option to rate the currently playing track</li>
+       <li>-reload-theme CLI flag to re-apply the current theme</li>
+       <li>Updated Polish and Chinese translations</li>
+     </ul>
+
+     <p>
+       Changed
+     </p>
+     <ul>
+       <li>Shuffle and repeat controls moved into main player controls</li>
+       <li>Waveform seekbar disabled by default</li>
+       <li>Use JSON instead of XML in Subsonic API requests</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Occasionally crashing on Linux when monitors go idle</li>
-       <li>AppImage: failing to start due to "No GLXFBConfigs returned</li>
-       <li>AppImage: failing to start on openSUSE-Tumbleweed and CachyOS</li>
-       <li>Rework format for now playing status line</li>
-       <li>Silenty failing to add large number of tracks to playlist (OpenSubsonic servers)</li>
-       <li>Fail to start on Windows ARM64 or older x64 CPUs</li>
-       <li>Search results limited to 20 items</li>
-       <li>Transcoding not working with Jellyfin</li>
-       <li>Crashing on "Shuffle albums" if fewer than 20 albums available</li>
+       <li>Crash in playback engine during time position update</li>
+       <li>Clearing cache did not clear in-memory cache</li>
+       <li>Normalize server URLs before connecting</li>
+       <li>Race condition around context cancel func</li>
+       <li>Occasional momentary playback when loading saved play queue</li>
+       <li>Fix content not loading on startup until window focused</li>
      </ul>
 
    </description>

@@ -33,9 +33,14 @@ const (
 	SizeNameSubText           fyne.ThemeSizeName = "subText"           // in between Text and Caption
 	SizeNameSuffixText        fyne.ThemeSizeName = "suffixText"        // a tiny bit smaller than subText
 
+	SizeNameImageCornerRadius fyne.ThemeSizeName = "imageCornerRadius"
+
 	AnimationDurationShort  = canvas.DurationShort
 	AnimationDurationMedium = 225 * time.Millisecond
 	AnimationDurationLong   = canvas.DurationStandard
+
+	HeaderImageSize        = 225
+	CompactHeaderImageSize = 95
 )
 
 var (
@@ -49,7 +54,7 @@ var (
 	RadioIcon         fyne.Resource = theme.NewThemedResource(res.ResBroadcastSvg)
 	FavoriteIcon      fyne.Resource = theme.NewThemedResource(res.ResHeartFilledSvg)
 	NotFavoriteIcon   fyne.Resource = theme.NewThemedResource(res.ResHeartOutlineSvg)
-	NowPlayingIcon    fyne.Resource = theme.NewThemedResource(res.ResHeadphonesSvg)
+	HeadphonesIcon    fyne.Resource = theme.NewThemedResource(res.ResHeadphonesSvg)
 	PlaylistIcon      fyne.Resource = theme.NewThemedResource(res.ResPlaylistSvg)
 	PlayNextIcon      fyne.Resource = theme.NewThemedResource(res.ResPlaylistAddNextSvg)
 	PlayQueueIcon     fyne.Resource = theme.NewThemedResource(res.ResPlayqueueSvg)
@@ -60,9 +65,12 @@ var (
 	FilterIcon        fyne.Resource = theme.NewThemedResource(res.ResFilterSvg)
 	RepeatIcon        fyne.Resource = theme.NewThemedResource(res.ResRepeatSvg)
 	RepeatOneIcon     fyne.Resource = theme.NewThemedResource(res.ResRepeatoneSvg)
+	SidebarIcon       fyne.Resource = theme.NewThemedResource(res.ResSidebarSvg)
 	SortIcon          fyne.Resource = theme.NewThemedResource(res.ResUpdownarrowSvg)
 	VisualizationIcon fyne.Resource = theme.NewThemedResource(res.ResOscilloscopeSvg)
 	LibraryIcon       fyne.Resource = theme.NewThemedResource(res.ResLibrarySvg)
+	SaveIcon          fyne.Resource = theme.NewThemedResource(res.ResSaveSvg)
+	SaveAsIcon        fyne.Resource = theme.NewThemedResource(res.ResSaveasSvg)
 )
 
 type AppearanceMode string
@@ -100,6 +108,11 @@ func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
 		log.Fatalf("Failed to load builtin theme: %v", err.Error())
 	}
 	return m
+}
+
+// ReloadThemeFile reloads the currently loaded theme file.
+func (m *MyTheme) ReloadThemeFile() {
+	m.loadedThemeFile = nil
 }
 
 func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
@@ -285,6 +298,11 @@ func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
 		return 12
 	case theme.SizeNameScrollBar:
 		return 14
+	case SizeNameImageCornerRadius:
+		if m.config.UseRoundedImageCorners {
+			return theme.InputRadiusSize()
+		}
+		return 0
 	default:
 		return theme.DefaultTheme().Size(name)
 	}

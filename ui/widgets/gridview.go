@@ -286,7 +286,9 @@ func (g *GridView) Resize(size fyne.Size) {
 var _ fyne.Tappable = (*GridView)(nil)
 
 func (g *GridView) Tapped(*fyne.PointEvent) {
-	fyne.CurrentApp().Driver().CanvasForObject(g).Unfocus()
+	if c := fyne.CurrentApp().Driver().CanvasForObject(g); c != nil {
+		c.Unfocus()
+	}
 }
 
 func (g *GridView) createGridWrap() {
@@ -343,7 +345,9 @@ func (g *GridView) createNewItemCard() fyne.CanvasObject {
 			g.grid.ScrollTo(focusIndex)
 			g.stateMutex.RLock()
 			if item, ok := g.itemForIndex[focusIndex]; ok {
-				fyne.CurrentApp().Driver().CanvasForObject(g).Focus(item)
+				if c := fyne.CurrentApp().Driver().CanvasForObject(g); c != nil {
+					c.Focus(item)
+				}
 			}
 			g.stateMutex.RUnlock()
 		}

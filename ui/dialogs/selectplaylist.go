@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/deluan/sanitize"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
+	"github.com/dweymouth/supersonic/backend/mediaprovider/jellyfin"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/util"
 )
@@ -49,7 +50,13 @@ func (sp *SelectPlaylist) fetchUserOwnedPlaylists() {
 		log.Printf("error getting playlists: %s", err.Error())
 	}
 	userPlaylists := sharedutil.FilterSlice(playlists, func(playlist *mediaprovider.Playlist) bool {
-		return playlist.Owner == sp.loggedInUser
+		if _, isJellyfin := sp.mp.(*jellyfin.JellyfinMediaProvider); isJellyfin {
+			// Jellyfin usernames are case-insensitive
+			return strings.EqualFold(playlist.Owner, sp.loggedInUser)
+		} else {
+			// Subsonic usernames are case-sensitive
+			return playlist.Owner == sp.loggedInUser
+		}
 	})
 	sp.allPlaylistResuts = sharedutil.MapSlice(userPlaylists, sp.playlistToSearchResult)
 }

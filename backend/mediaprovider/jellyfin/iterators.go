@@ -9,7 +9,7 @@ import (
 	"github.com/dweymouth/supersonic/sharedutil"
 )
 
-func (j *jellyfinMediaProvider) AlbumSortOrders() []string {
+func (j *JellyfinMediaProvider) AlbumSortOrders() []string {
 	return []string{
 		mediaprovider.AlbumSortRecentlyAdded,
 		mediaprovider.AlbumSortRandom,
@@ -20,7 +20,7 @@ func (j *jellyfinMediaProvider) AlbumSortOrders() []string {
 	}
 }
 
-func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
+func (j *JellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
 	var jfSort jellyfin.Sort
 	switch sortOrder {
 	case mediaprovider.AlbumSortRecentlyAdded:
@@ -75,7 +75,7 @@ func (j *jellyfinMediaProvider) IterateAlbums(sortOrder string, filter mediaprov
 	return helpers.NewAlbumIterator(fetcher, modifiedFilter, j.prefetchCoverCB)
 }
 
-func (j *jellyfinMediaProvider) SearchAlbums(searchQuery string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
+func (j *JellyfinMediaProvider) SearchAlbums(searchQuery string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
 	fetcher := func(offs, limit int) ([]*mediaprovider.Album, error) {
 		var opts jellyfin.QueryOpts
 		opts.Paging = jellyfin.Paging{StartIndex: offs, Limit: limit}
@@ -89,7 +89,7 @@ func (j *jellyfinMediaProvider) SearchAlbums(searchQuery string, filter mediapro
 	return helpers.NewAlbumIterator(fetcher, filter, j.prefetchCoverCB)
 }
 
-func (j *jellyfinMediaProvider) IterateTracks(searchQuery string) mediaprovider.TrackIterator {
+func (j *JellyfinMediaProvider) IterateTracks(searchQuery string) mediaprovider.TrackIterator {
 	var fetcher helpers.TrackFetchFn
 	if searchQuery == "" {
 		fetcher = func(offs, limit int) ([]*mediaprovider.Track, error) {

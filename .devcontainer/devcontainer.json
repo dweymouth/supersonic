@@ -1,0 +1,32 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/go .
+{
+	"name": "Supersonic",
+	"dockerFile": "Dockerfile",
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	"features": {
+		"desktop-lite": {
+			"password": "your_password",
+			"webPort": "6080",
+			"vncPort": "5901"
+		},
+	},
+	"containerEnv": {
+		"VNC_RESOLUTION": "1920x1080x24",
+		"APPIMAGE_EXTRACT_AND_RUN": "1",
+	},
+	"runArgs": [
+		"--device=/dev/snd:/dev/snd",
+		"--group-add=audio",
+	],
+	"postStartCommand": "sudo setfacl -m u:vscode:rw /dev/snd/*",
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [5901, 6080],
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"onCreateCommand": {
+		"log": "echo 'Starting post-create script...'",
+		"go": ".devcontainer/init-go.sh",
+		"config": "bash -c 'mkdir -p ~/.config/supersonic && (cp .devcontainer/custom-config.toml ~/.config/supersonic/config.toml 2> /dev/null || cp .devcontainer/default-config.toml ~/.config/supersonic/config.toml)'",
+		"keyring": "bash -c '.devcontainer/init-keychain.sh'",
+	},
+}

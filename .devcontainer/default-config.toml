@@ -1,0 +1,36 @@
+[Application]
+WindowWidth = 1900
+WindowHeight = 1000
+
+[[Servers]]
+ServerType = 'Subsonic'
+Hostname = 'https://demo.navidrome.org'
+AltHostname = ''
+Username = 'demo'
+LegacyAuth = false
+ID = 'f9056891-50cc-4161-9e27-f50f3db32a8c'
+Nickname = 'Navidrome Demo'
+Default = true
+SelectedLibrary = ''
+
+[[Servers]]
+ServerType = 'Jellyfin'
+Hostname = 'https://demo.jellyfin.org/stable'
+AltHostname = ''
+Username = 'demo'
+LegacyAuth = false
+ID = 'e9056891-50cc-4161-9e27-f50f3db32a8c'
+Nickname = 'Jellyfin Demo'
+Default = false
+SelectedLibrary = ''
+
+[[Servers]]
+ServerType = 'Subsonic'
+Hostname = 'http://host.docker.internal:4533'
+AltHostname = ''
+Username = 'fillMeIn'
+LegacyAuth = false
+ID = 'e537432d-1875-404e-999e-591db0087052'
+Nickname = 'Navidrome Localhost Example'
+Default = false
+SelectedLibrary = ''

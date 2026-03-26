@@ -25,9 +25,13 @@ const (
 	// arg2: InsertMode
 	// arg3: bool (shuffle)
 	cmdLoadItems
+	cmdLoadItemsAndPlayAtIdx
+	cmdSetQueueState
 	cmdLoadRadioStation // arg: *mediaprovider.RadioStation, arg2: InsertQueueMode
 
 	cmdForceRestartPlayback
+
+	cmdLoadTrackPaused // arg: int (idx), arg2: float64 (startTime)
 )
 
 type playbackCommand struct {
@@ -160,6 +164,40 @@ func (c *playbackCommandQueue) LoadItems(items []mediaprovider.MediaItem, insert
 	c.cmdAvailable.Signal()
 }
 
+func (c *playbackCommandQueue) LoadItemsAndPlayAtIdx(items []mediaprovider.MediaItem, shuffle bool, idx int) {
+	c.mutex.Lock()
+	c.queue = append(c.queue, playbackCommand{
+		Type: cmdLoadItemsAndPlayAtIdx,
+		Arg:  items,
+		Arg2: shuffle,
+		Arg3: idx,
+	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
+}
+
+func (c *playbackCommandQueue) SetQueueState(tracks []*mediaprovider.Track, queueType QueueType) {
+	c.mutex.Lock()
+	c.queue = append(c.queue, playbackCommand{
+		Type: cmdSetQueueState,
+		Arg:  tracks,
+		Arg2: queueType,
+	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
+}
+
+func (c *playbackCommandQueue) LoadTrackPaused(idx int, startTime float64) {
+	c.mutex.Lock()
+	c.queue = append(c.queue, playbackCommand{
+		Type: cmdLoadTrackPaused,
+		Arg:  idx,
+		Arg2: startTime,
+	})
+	c.mutex.Unlock()
+	c.cmdAvailable.Signal()
+}
+
 func (c *playbackCommandQueue) addCommand(command playbackCommand) {
 	c.mutex.Lock()
 	c.queue = append(c.queue, command)
@@ -194,7 +232,7 @@ func (c *playbackCommandQueue) seekBackOrFwd(direction int) {
 		switch cmd.Type {
 		case cmdSeekFwdBackN:
 			lastIdx = i
-		case cmdRemoveTracksFromQueue, cmdLoadItems, cmdPlayTrackAt,
+		case cmdRemoveTracksFromQueue, cmdLoadItems, cmdSetQueueState, cmdPlayTrackAt,
 			cmdLoadRadioStation, cmdUpdatePlayQueue, cmdStopAndClearPlayQueue:
 			// any queue-modifying command means we can't coalesce any
 			// more seekFwdBackN commands before here

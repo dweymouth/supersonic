@@ -110,16 +110,10 @@ func main() {
 	mainWindow.Window.SetMaster()
 	myApp.OnReactivate = util.FyneDoFunc(mainWindow.Show)
 	myApp.OnExit = util.FyneDoFunc(mainWindow.Quit)
+	myApp.OnReloadTheme = util.FyneDoFunc(mainWindow.ReloadTheme)
 
-	windowStartupTasks := sync.OnceFunc(func() {
-		defaultServer := myApp.ServerManager.GetDefaultServer()
-		if defaultServer == nil {
-			mainWindow.Controller.PromptForFirstServer()
-		} else if !*backend.FlagStartMinimized { // If the minimized start flag was passed, the connection is already established.
-			mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
-		}
-
-		if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" {
+		windowStartupTasks := sync.OnceFunc(func() {
 			mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
 				hwnd := ctx.(driver.WindowsWindowContext).HWND
 				if myApp.Config.Application.EnableOSMediaPlayerAPIs {
@@ -127,9 +121,9 @@ func main() {
 				}
 				myApp.SetupWindowsTaskbarButtons(hwnd)
 			})
-		}
-	})
-	fyneApp.Lifecycle().SetOnEnteredForeground(windowStartupTasks)
+		})
+		fyneApp.Lifecycle().SetOnEnteredForeground(windowStartupTasks)
+	}
 
 	if *backend.FlagStartMinimized {
 		if err = myApp.LoginToDefaultServer(); err != nil {
@@ -138,6 +132,15 @@ func main() {
 		}
 		fyneApp.Run()
 	} else {
+		fyneApp.Lifecycle().SetOnStarted(func() {
+			defaultServer := myApp.ServerManager.GetDefaultServer()
+			if defaultServer == nil {
+				mainWindow.Controller.PromptForFirstServer()
+			} else if !*backend.FlagStartMinimized { // If the minimized start flag was passed, the connection is already established.
+				mainWindow.Controller.DoConnectToServerWorkflow(defaultServer)
+			}
+		})
+
 		mainWindow.ShowAndRun()
 	}
 

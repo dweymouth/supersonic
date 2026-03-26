@@ -1,0 +1,23 @@
+[keyring]
+display-name=login
+ctime=1763913973
+mtime=0
+lock-on-idle=false
+lock-after=false
+
+[1]
+item-type=0
+display-name=Password for 'f9056891-50cc-4161-9e27-f50f3db32a8c' on 'supersonic'
+secret=demo
+mtime=1763914175
+ctime=1763914175
+
+[1:attribute0]
+name=service
+type=string
+value=supersonic
+
+[1:attribute1]
+name=username
+type=string
+value=f9056891-50cc-4161-9e27-f50f3db32a8c

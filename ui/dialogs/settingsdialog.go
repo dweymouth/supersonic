@@ -2,6 +2,7 @@ package dialogs
 
 import (
 	"errors"
+	"log"
 	"math"
 	"os"
 	"slices"
@@ -33,20 +34,32 @@ type SettingsDialog struct {
 
 	OnReplayGainSettingsChanged    func()
 	OnAudioExclusiveSettingChanged func()
+	OnPauseFadeSettingsChanged     func()
 	OnAudioDeviceSettingChanged    func()
 	OnThemeSettingChanged          func()
 	OnDismiss                      func()
 	OnEqualizerSettingsChanged     func()
 	OnPageNeedsRefresh             func()
+	OnClearCaches                  func()
 
-	config       *backend.Config
-	audioDevices []mpv.AudioDevice
-	themeFiles   map[string]string // filename -> displayName
-	promptText   *widget.RichText
+	config          *backend.Config
+	audioDevices    []mpv.AudioDevice
+	themeFiles      map[string]string // filename -> displayName
+	promptText      *widget.RichText
+	eqPresetManager *backend.EQPresetManager
+	autoEQManager   *backend.AutoEQManager
+	imageManager    util.ImageFetcher
+	window          fyne.Window
+	toastProvider   ToastProvider
 
 	clientDecidesScrobble bool
 
 	content fyne.CanvasObject
+}
+
+type ToastProvider interface {
+	ShowSuccessToast(message string)
+	ShowErrorToast(message string)
 }
 
 // TODO: having this depend on the mpv package for the AudioDevice type is kinda gross. Refactor.
@@ -60,9 +73,23 @@ func NewSettingsDialog(
 	isReplayGainPlayer bool,
 	isEqualizerPlayer bool,
 	canSavePlayQueue bool,
+	eqPresetMgr *backend.EQPresetManager,
 	window fyne.Window,
+	autoEQManager *backend.AutoEQManager,
+	imageManager util.ImageFetcher,
+	toastProvider ToastProvider,
 ) *SettingsDialog {
-	s := &SettingsDialog{config: config, audioDevices: audioDeviceList, themeFiles: themeFileList, clientDecidesScrobble: clientDecidesScrobble}
+	s := &SettingsDialog{
+		config:                config,
+		audioDevices:          audioDeviceList,
+		themeFiles:            themeFileList,
+		clientDecidesScrobble: clientDecidesScrobble,
+		eqPresetManager:       eqPresetMgr,
+		autoEQManager:         autoEQManager,
+		imageManager:          imageManager,
+		window:                window,
+		toastProvider:         toastProvider,
+	}
 	s.ExtendBaseWidget(s)
 
 	// TODO: It may be a nicer UX to always create the equalizer tab,
@@ -167,7 +194,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 	if s.config.Application.SaveQueueToServer {
 		saveToServer.Selected = toServer
 	}
-	saveQueue := widget.NewCheck(lang.L("Save play queue on exit"), func(save bool) {
+	saveQueue := widget.NewCheck(lang.L("Save play queue"), func(save bool) {
 		s.config.Application.SavePlayQueue = save
 		if save && canSaveQueueToServer {
 			saveToServer.Enable()
@@ -183,7 +210,7 @@ func (s *SettingsDialog) createGeneralTab(canSaveQueueToServer bool) *container.
 
 	trackNotif := widget.NewCheckWithData(lang.L("Show notification on track change"),
 		binding.BindBool(&s.config.Application.ShowTrackChangeNotification))
-	albumGridYears := widget.NewCheck(lang.L("Show year in album grid cards"), func(b bool) {
+	albumGridYears := widget.NewCheck(lang.L("Show year in album grid and now playing"), func(b bool) {
 		s.config.AlbumsPage.ShowYears = b
 		s.config.FavoritesPage.ShowAlbumYears = b
 		if s.OnPageNeedsRefresh != nil {
@@ -406,9 +433,18 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 	})
 	audioExclusive.Checked = s.config.LocalPlayback.AudioExclusive
 
+	pauseFade := widget.NewCheck(lang.L("Fade out on pause"), func(checked bool) {
+		s.config.LocalPlayback.PauseFade = checked
+		if s.OnPauseFadeSettingsChanged != nil {
+			s.OnPauseFadeSettingsChanged()
+		}
+	})
+	pauseFade.Checked = s.config.LocalPlayback.PauseFade
+
 	if !isLocalPlayer {
 		deviceSelect.Disable()
 		audioExclusive.Disable()
+		pauseFade.Disable()
 	}
 	if !isReplayGainPlayer {
 		replayGainSelect.Disable()
@@ -423,20 +459,35 @@ func (s *SettingsDialog) createPlaybackTab(isLocalPlayer, isReplayGainPlayer boo
 				widget.NewLabel(lang.L("Audio device")), container.NewBorder(nil, nil, nil, util.NewHSpace(70), deviceSelect),
 				layout.NewSpacer(), audioExclusive,
 			)),
+		pauseFade,
 		s.newSectionSeparator(),
 		disableTranscode,
 		container.NewHBox(transcode, transcodeCodec, transcodeBitRate),
 		s.newSectionSeparator(),
-		widget.NewRichText(&widget.TextSegment{Text: "ReplayGain", Style: util.BoldRichTextStyle}),
+		widget.NewLabelWithStyle("ReplayGain", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel(lang.L("ReplayGain mode")), container.NewGridWithColumns(2, replayGainSelect),
 			widget.NewLabel(lang.L("ReplayGain preamp")), container.NewHBox(preampGain, widget.NewLabel("dB")),
 			widget.NewLabel(lang.L("Prevent clipping")), preventClipping,
 		),
+		s.newSectionSeparator(),
+		widget.NewLabelWithStyle(lang.L("When enqueuing random"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewCheckWithData(lang.L("Skip one-star tracks"), binding.BindBool(&s.config.Playback.SkipOneStarWhenShuffling)),
+		container.NewBorder(nil, nil,
+			widget.NewLabel(lang.L("Skip tracks with keyword")), nil,
+			widget.NewEntryWithData(binding.BindString(&s.config.Playback.SkipKeywordWhenShuffling)),
+		),
 	))
 }
 
 func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem {
+	// Ensure GraphicEqualizerBands matches the expected number of bands
+	if len(s.config.LocalPlayback.GraphicEqualizerBands) != len(eqBands) {
+		newBands := make([]float64, len(eqBands))
+		copy(newBands, s.config.LocalPlayback.GraphicEqualizerBands)
+		s.config.LocalPlayback.GraphicEqualizerBands = newBands
+	}
+
 	enabled := widget.NewCheck(lang.L("Enabled"), func(b bool) {
 		s.config.LocalPlayback.EqualizerEnabled = b
 		if s.OnEqualizerSettingsChanged != nil {
@@ -446,7 +497,11 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 	enabled.Checked = s.config.LocalPlayback.EqualizerEnabled
 	geq := NewGraphicEqualizer(s.config.LocalPlayback.EqualizerPreamp,
 		eqBands,
-		s.config.LocalPlayback.GraphicEqualizerBands)
+		s.config.LocalPlayback.GraphicEqualizerBands,
+		s.config.LocalPlayback.EqualizerType,
+		s.eqPresetManager,
+		s.window,
+		s.config.LocalPlayback.ActiveEQPresetName)
 	debouncer := util.NewDebouncer(350*time.Millisecond, func() {
 		if s.OnEqualizerSettingsChanged != nil {
 			s.OnEqualizerSettingsChanged()
@@ -460,8 +515,148 @@ func (s *SettingsDialog) createEqualizerTab(eqBands []string) *container.TabItem
 		s.config.LocalPlayback.EqualizerPreamp = g
 		debouncer()
 	}
+	geq.OnManualAdjustment = func() {
+		// Clear AutoEQ profile when user manually adjusts sliders
+		// Preset name persists so Save button can overwrite the loaded preset
+		s.config.LocalPlayback.AutoEQProfilePath = ""
+		s.config.LocalPlayback.AutoEQProfileName = ""
+		geq.ClearProfileLabel()
+	}
+	geq.OnLoadAutoEQProfile = func() {
+		s.openAutoEQBrowser(geq, debouncer)
+	}
+	geq.OnPresetSelected = func(presetName string) {
+		// Save the active preset name in config
+		s.config.LocalPlayback.ActiveEQPresetName = presetName
+	}
+	geq.OnPresetDeleted = func(presetName string) {
+		// Clear active preset name if the deleted preset was active
+		if s.config.LocalPlayback.ActiveEQPresetName == presetName {
+			s.config.LocalPlayback.ActiveEQPresetName = ""
+		}
+	}
+	geq.OnEQTypeChanged = func(eqType string) {
+		// Update config with new EQ type
+		s.config.LocalPlayback.EqualizerType = eqType
+
+		// Convert bands using interpolation to preserve EQ curve shape
+		var newBands []float64
+		currentBands := s.config.LocalPlayback.GraphicEqualizerBands
+
+		if eqType == "ISO10Band" {
+			// Converting from 15-band to 10-band
+			if len(currentBands) == 15 {
+				// Use interpolation to downsample
+				var bands15 [15]float64
+				copy(bands15[:], currentBands)
+				bands10 := backend.InterpolateEQ15BandTo10Band(bands15)
+				newBands = bands10[:]
+			} else {
+				// Already 10-band or invalid size, just copy what we can
+				newBands = make([]float64, 10)
+				numCopy := min(len(currentBands), 10)
+				copy(newBands, currentBands[:numCopy])
+			}
+		} else {
+			// Converting from 10-band to 15-band
+			if len(currentBands) == 10 {
+				// Use interpolation to upsample
+				var bands10 [10]float64
+				copy(bands10[:], currentBands)
+				bands15 := backend.InterpolateEQ10To15Band(bands10)
+				newBands = bands15[:]
+			} else {
+				// Already 15-band or invalid size, just copy what we can
+				newBands = make([]float64, 15)
+				numCopy := min(len(currentBands), 15)
+				copy(newBands, currentBands[:numCopy])
+			}
+		}
+		s.config.LocalPlayback.GraphicEqualizerBands = newBands
+
+		// Dynamically rebuild the UI with the correct number of sliders
+		geq.RebuildForEQType(eqType, newBands)
+
+		// Apply the change to the player
+		if s.OnEqualizerSettingsChanged != nil {
+			s.OnEqualizerSettingsChanged()
+		}
+	}
+
+	// Restore profile label if a profile is currently applied
+	if s.config.LocalPlayback.AutoEQProfileName != "" {
+		geq.SetProfileLabel(s.config.LocalPlayback.AutoEQProfileName)
+	}
+
 	cont := container.NewBorder(enabled, nil, nil, nil, geq)
 	return container.NewTabItem(lang.L("Equalizer"), cont)
+}
+
+func (s *SettingsDialog) openAutoEQBrowser(geq *GraphicEqualizer, debouncer func()) {
+	if s.autoEQManager == nil {
+		log.Printf("ERROR: AutoEQ manager not available (nil)")
+		return
+	}
+	if s.imageManager == nil {
+		log.Printf("ERROR: Image manager not available (nil)")
+		return
+	}
+
+	browser := NewAutoEQBrowser(s.autoEQManager, s.imageManager, s.toastProvider)
+
+	// Show in a modal popup dialog
+	var popup *widget.PopUp
+	popup = widget.NewModalPopUp(browser.SearchDialog, s.window.Canvas())
+
+	browser.SetOnProfileSelected(func(profile *backend.AutoEQProfile) {
+		s.applyAutoEQProfile(profile, geq, debouncer)
+		popup.Hide()
+	})
+	browser.SetOnDismiss(func() {
+		popup.Hide()
+	})
+
+	popup.Show()
+	s.window.Canvas().Focus(browser.GetSearchEntry())
+}
+
+func (s *SettingsDialog) applyAutoEQProfile(profile *backend.AutoEQProfile, geq *GraphicEqualizer, debouncer func()) {
+	// Use native 10-band AutoEQ profile
+	// Update config to use ISO10Band type
+	s.config.LocalPlayback.EqualizerType = "ISO10Band"
+	s.config.LocalPlayback.EqualizerPreamp = profile.Preamp
+	s.config.LocalPlayback.AutoEQProfilePath = profile.Path
+	s.config.LocalPlayback.AutoEQProfileName = profile.Name
+	s.config.LocalPlayback.ActiveEQPresetName = "" // Clear preset when applying AutoEQ
+
+	// Ensure GraphicEqualizerBands has the right size for 10 bands
+	if len(s.config.LocalPlayback.GraphicEqualizerBands) != 10 {
+		s.config.LocalPlayback.GraphicEqualizerBands = make([]float64, 10)
+	}
+
+	// Copy native 10-band values
+	for i := 0; i < 10; i++ {
+		s.config.LocalPlayback.GraphicEqualizerBands[i] = profile.Bands[i]
+	}
+
+	// Update UI using applyPreset to avoid triggering manual adjustment
+	preset := backend.EQPreset{
+		Name:   profile.Name,
+		Type:   "ISO10Band",
+		Preamp: profile.Preamp,
+		Bands:  profile.Bands[:],
+	}
+	geq.applyPreset(preset)
+
+	// Clear preset dropdown and loaded preset state since AutoEQ is now active
+	geq.ClearPresetSelection()
+	geq.ClearLoadedPresetState()
+
+	// Show profile label
+	geq.SetProfileLabel(profile.Name)
+
+	// Trigger equalizer update
+	debouncer()
 }
 
 func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabItem {
@@ -563,6 +758,16 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	})
 	useWaveformSeekbar.Checked = s.config.Playback.UseWaveformSeekbar
 
+	nowPlayingBackground := widget.NewCheckWithData(lang.L("Use blurred album cover for Now Playing page background"), binding.BindBool(&s.config.NowPlayingConfig.UseBackgroundImage))
+
+	useRoundedImageCorners := widget.NewCheck(lang.L("Use rounded image corners"), func(b bool) {
+		s.config.Theme.UseRoundedImageCorners = b
+		if s.OnPageNeedsRefresh != nil {
+			s.OnPageNeedsRefresh()
+		}
+	})
+	useRoundedImageCorners.Checked = s.config.Theme.UseRoundedImageCorners
+
 	return container.NewTabItem(lang.L("Appearance"), container.NewVBox(
 		util.NewHSpace(0), // insert a theme.Padding amount of space at top
 		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
@@ -575,6 +780,8 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		disableDPI,
 		s.newSectionSeparator(),
 		useWaveformSeekbar,
+		nowPlayingBackground,
+		useRoundedImageCorners,
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("Application font"), Style: util.BoldRichTextStyle}),
 		container.New(layout.NewFormLayout(),
@@ -586,7 +793,6 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 
 func (s *SettingsDialog) createAdvancedTab() *container.TabItem {
 	multi := widget.NewCheckWithData(lang.L("Allow multiple app instances"), binding.BindBool(&s.config.Application.AllowMultiInstance))
-	sslSkip := widget.NewCheckWithData(lang.L("Skip SSL certificate verification"), binding.BindBool(&s.config.Application.SkipSSLVerify))
 	update := widget.NewCheckWithData(lang.L("Automatically check for updates"), binding.BindBool(&s.config.Application.EnableAutoUpdateChecker))
 	lrclib := widget.NewCheckWithData(lang.L("Enable LrcLib lyrics fetcher"), binding.BindBool(&s.config.Application.EnableLrcLib))
 
@@ -603,10 +809,18 @@ func (s *SettingsDialog) createAdvancedTab() *container.TabItem {
 	}
 	percentEntry.Text = strconv.Itoa(s.config.Application.MaxImageCacheSizeMB)
 
+	clearCaches := widget.NewButton(lang.L("Clear caches"), func() {
+		if s.OnClearCaches != nil {
+			s.OnClearCaches()
+		}
+	})
+
 	imgCacheCfg := container.NewHBox(
 		widget.NewLabel(lang.L("Maximum image cache size")),
 		percentEntry,
 		widget.NewLabel("MB"),
+		layout.NewSpacer(),
+		clearCaches,
 	)
 
 	osMediaAPIs := widget.NewCheck(lang.L("Enable OS media player integration"), func(b bool) {
@@ -615,12 +829,15 @@ func (s *SettingsDialog) createAdvancedTab() *container.TabItem {
 	})
 	osMediaAPIs.Checked = s.config.Application.EnableOSMediaPlayerAPIs
 
+	preventScreensaver := widget.NewCheckWithData(lang.L("Prevent screensaver on Now Playing page"),
+		binding.BindBool(&s.config.Application.PreventScreensaverOnNowPlayingPage))
+
 	return container.NewTabItem(lang.L("Advanced"), container.NewVBox(
 		multi,
-		sslSkip,
 		update,
 		lrclib,
 		osMediaAPIs,
+		preventScreensaver,
 		imgCacheCfg,
 	))
 }

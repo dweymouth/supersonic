@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dweymouth/go-jellyfin"
@@ -180,12 +181,20 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 	timeout := time.Second * time.Duration(s.config.Application.RequestTimeoutSeconds)
 
 	if connection.ServerType == ServerTypeJellyfin {
+		connection.Hostname = NormalizeJellyfinURL(connection.Hostname)
+		connection.AltHostname = NormalizeJellyfinURL(connection.AltHostname)
+	} else {
+		connection.Hostname = NormalizeServerURL(connection.Hostname)
+		connection.AltHostname = NormalizeServerURL(connection.AltHostname)
+	}
+
+	if connection.ServerType == ServerTypeJellyfin {
 		client, err := jellyfin.NewClient(connection.Hostname, res.AppName, res.AppVersion, jellyfin.WithTimeout(timeout))
 		if err != nil {
 			log.Printf("error creating Jellyfin client: %s", err.Error())
 			return nil, err
 		}
-		s.checkSetInsecureSkipVerify(client.HTTPClient)
+		s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, client.HTTPClient)
 		cli = &jellyfinMP.JellyfinServer{
 			Client: *client,
 		}
@@ -196,7 +205,7 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				log.Printf("error creating Jellyfin alternative client: %s", err.Error())
 				return nil, err
 			}
-			s.checkSetInsecureSkipVerify(altClient.HTTPClient)
+			s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, altClient.HTTPClient)
 			altCli = &jellyfinMP.JellyfinServer{
 				Client: *altClient,
 			}
@@ -211,9 +220,10 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				User:         connection.Username,
 				PasswordAuth: connection.LegacyAuth,
 				ClientName:   res.AppName,
+				UseJSON:      true,
 			},
 		}
-		s.checkSetInsecureSkipVerify(cli.(*subsonicMP.SubsonicServer).Client.Client)
+		s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, cli.(*subsonicMP.SubsonicServer).Client.Client)
 		altCli = &subsonicMP.SubsonicServer{
 			Client: subsonic.Client{
 				UserAgent:    ua,
@@ -222,9 +232,10 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 				User:         connection.Username,
 				PasswordAuth: connection.LegacyAuth,
 				ClientName:   res.AppName,
+				UseJSON:      true,
 			},
 		}
-		s.checkSetInsecureSkipVerify(altCli.(*subsonicMP.SubsonicServer).Client.Client)
+		s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, altCli.(*subsonicMP.SubsonicServer).Client.Client)
 	}
 	var authError error
 	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
@@ -255,8 +266,8 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 	}
 }
 
-func (s *ServerManager) checkSetInsecureSkipVerify(cli *http.Client) {
-	if s.config.Application.SkipSSLVerify {
+func (s *ServerManager) checkSetInsecureSkipVerify(skip bool, cli *http.Client) {
+	if skip {
 		cli.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
@@ -265,4 +276,29 @@ func (s *ServerManager) checkSetInsecureSkipVerify(cli *http.Client) {
 
 func (a *ServerManager) GetServer() mediaprovider.MediaProvider {
 	return a.Server
+}
+
+// NormalizeServerURL applies common normalization to a server URL:
+// prepends "http://" if no scheme is present, then strips trailing slashes.
+func NormalizeServerURL(rawURL string) string {
+	if rawURL == "" {
+		return ""
+	}
+	if !strings.Contains(rawURL, "://") {
+		rawURL = "http://" + rawURL
+	}
+	rawURL = strings.TrimRight(rawURL, "/")
+	return rawURL
+}
+
+// NormalizeJellyfinURL applies common normalization then additionally strips
+// known Jellyfin web UI path suffixes (/web/index.html and /web).
+func NormalizeJellyfinURL(rawURL string) string {
+	rawURL = NormalizeServerURL(rawURL)
+	if strings.HasSuffix(rawURL, "/web/index.html") {
+		rawURL = strings.TrimSuffix(rawURL, "/web/index.html")
+	} else if strings.HasSuffix(rawURL, "/web") {
+		rawURL = strings.TrimSuffix(rawURL, "/web")
+	}
+	return rawURL
 }

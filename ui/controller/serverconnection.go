@@ -27,11 +27,12 @@ func (m *Controller) PromptForFirstServer() {
 					m.doModalClosed()
 				})
 				conn := backend.ServerConnection{
-					ServerType:  d.ServerType,
-					Hostname:    d.Host,
-					AltHostname: d.AltHost,
-					Username:    d.Username,
-					LegacyAuth:  d.LegacyAuth,
+					ServerType:    d.ServerType,
+					Hostname:      d.Host,
+					AltHostname:   d.AltHost,
+					Username:      d.Username,
+					LegacyAuth:    d.LegacyAuth,
+					SkipSSLVerify: d.SkipSSLVerify,
 				}
 				server := m.App.ServerManager.AddServer(d.Nickname, conn)
 				if err := m.trySetPasswordAndConnectToServer(server, d.Password); err != nil {
@@ -138,6 +139,7 @@ func (m *Controller) PromptForLoginAndConnect() {
 						server.Nickname = editD.Nickname
 						server.Username = editD.Username
 						server.LegacyAuth = editD.LegacyAuth
+						server.SkipSSLVerify = editD.SkipSSLVerify
 						m.trySetPasswordAndConnectToServer(server, editD.Password)
 						m.doModalClosed()
 					}
@@ -164,11 +166,12 @@ func (m *Controller) PromptForLoginAndConnect() {
 						// connection is good
 						newPop.Hide()
 						conn := backend.ServerConnection{
-							ServerType:  newD.ServerType,
-							Hostname:    newD.Host,
-							AltHostname: newD.AltHost,
-							Username:    newD.Username,
-							LegacyAuth:  newD.LegacyAuth,
+							ServerType:    newD.ServerType,
+							Hostname:      newD.Host,
+							AltHostname:   newD.AltHost,
+							Username:      newD.Username,
+							LegacyAuth:    newD.LegacyAuth,
+							SkipSSLVerify: newD.SkipSSLVerify,
 						}
 						server := m.App.ServerManager.AddServer(newD.Nickname, conn)
 						m.trySetPasswordAndConnectToServer(server, newD.Password)
@@ -233,11 +236,12 @@ func (c *Controller) tryConnectToServer(ctx context.Context, server *backend.Ser
 func (c *Controller) testConnectionAndUpdateDialogText(dlg *dialogs.AddEditServerDialog) bool {
 	fyne.Do(func() { dlg.SetInfoText(lang.L("Testing connection") + "...") })
 	conn := backend.ServerConnection{
-		ServerType:  dlg.ServerType,
-		Hostname:    dlg.Host,
-		AltHostname: dlg.AltHost,
-		Username:    dlg.Username,
-		LegacyAuth:  dlg.LegacyAuth,
+		ServerType:    dlg.ServerType,
+		Hostname:      dlg.Host,
+		AltHostname:   dlg.AltHost,
+		Username:      dlg.Username,
+		LegacyAuth:    dlg.LegacyAuth,
+		SkipSSLVerify: dlg.SkipSSLVerify,
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

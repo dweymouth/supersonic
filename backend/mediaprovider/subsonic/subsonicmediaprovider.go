@@ -53,7 +53,7 @@ func (s *subsonicMediaProvider) GetLibraries() ([]mediaprovider.Library, error) 
 		return nil, err
 	}
 	return sharedutil.MapSlice(folders, func(f *subsonic.MusicFolder) mediaprovider.Library {
-		return mediaprovider.Library{ID: f.ID, Name: f.Name}
+		return mediaprovider.Library{ID: strconv.Itoa(f.ID), Name: f.Name}
 	}), nil
 }
 
@@ -62,9 +62,30 @@ func (s *subsonicMediaProvider) SetLibrary(id string) error {
 	return nil
 }
 
-func (s *subsonicMediaProvider) CreatePlaylist(name string, trackIDs []string) error {
+func (s *subsonicMediaProvider) CreatePlaylistWithTracks(name string, trackIDs []string) error {
 	s.playlistsCached = nil
 	return s.client.CreatePlaylistWithTracks(trackIDs, map[string]string{"name": name})
+}
+
+func (s *subsonicMediaProvider) CreatePlaylist(name, description string, public bool) error {
+	pl, err := s.client.CreatePlaylist(map[string]string{"name": name})
+	if err != nil {
+		return err
+	}
+	if pl == nil || (description == "" && !public) {
+		// Subsonic <= 1.14.0 doesn't return a playlist
+		// Not having the ID, we can't set the description or public property
+		return nil
+	}
+
+	params := make(map[string]string)
+	if description != "" {
+		params["description"] = description
+	}
+	if public {
+		params["public"] = "true"
+	}
+	return s.client.UpdatePlaylist(pl.ID, params)
 }
 
 func (s *subsonicMediaProvider) DeletePlaylist(id string) error {
@@ -523,6 +544,15 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 		artistIDs = append(artistIDs, ch.ArtistID)
 	}
 
+	var albumArtistNames, albumArtistIDs []string
+	if len(ch.AlbumArtists) > 0 {
+		// OpenSubsonic extension
+		for _, a := range ch.AlbumArtists {
+			albumArtistIDs = append(albumArtistIDs, a.ID)
+			albumArtistNames = append(albumArtistNames, a.Name)
+		}
+	}
+
 	var rGain mediaprovider.ReplayGainInfo
 	if rg := ch.ReplayGain; rg != nil {
 		rGain.AlbumGain = rg.AlbumGain
@@ -549,35 +579,39 @@ func toTrack(ch *subsonic.Child) *mediaprovider.Track {
 	}
 
 	return &mediaprovider.Track{
-		ID:            ch.ID,
-		CoverArtID:    ch.CoverArt,
-		ParentID:      ch.Parent,
-		Title:         ch.Title,
-		Duration:      time.Duration(ch.Duration) * time.Second,
-		TrackNumber:   ch.Track,
-		DiscNumber:    ch.DiscNumber,
-		Genres:        genres,
-		ArtistIDs:     artistIDs,
-		ArtistNames:   artistNames,
-		ComposerIDs:   composerIDs,
-		ComposerNames: composers,
-		Album:         ch.Album,
-		AlbumID:       ch.AlbumID,
-		Year:          ch.Year,
-		Rating:        ch.UserRating,
-		Favorite:      !ch.Starred.IsZero(),
-		PlayCount:     int(ch.PlayCount),
-		LastPlayed:    ch.Played,
-		FilePath:      ch.Path,
-		Size:          ch.Size,
-		BitRate:       ch.BitRate,
-		ContentType:   ch.ContentType,
-		Comment:       ch.Comment,
-		BPM:           ch.BPM,
-		ReplayGain:    rGain,
-		SampleRate:    ch.SamplingRate,
-		BitDepth:      ch.BitDepth,
-		Channels:      ch.ChannelCount,
+		ID:               ch.ID,
+		CoverArtID:       ch.CoverArt,
+		ParentID:         ch.Parent,
+		Title:            ch.Title,
+		Duration:         time.Duration(ch.Duration) * time.Second,
+		TrackNumber:      ch.Track,
+		DiscNumber:       ch.DiscNumber,
+		Genres:           genres,
+		ArtistIDs:        artistIDs,
+		ArtistNames:      artistNames,
+		AlbumArtistIDs:   albumArtistIDs,
+		AlbumArtistNames: albumArtistNames,
+		ComposerIDs:      composerIDs,
+		ComposerNames:    composers,
+		Album:            ch.Album,
+		AlbumID:          ch.AlbumID,
+		Year:             ch.Year,
+		Rating:           ch.UserRating,
+		Favorite:         !ch.Starred.IsZero(),
+		PlayCount:        int(ch.PlayCount),
+		LastPlayed:       ch.Played,
+		DateAdded:        ch.Created,
+		FilePath:         ch.Path,
+		Size:             ch.Size,
+		BitRate:          ch.BitRate,
+		ContentType:      ch.ContentType,
+		Extension:        ch.Suffix,
+		Comment:          ch.Comment,
+		BPM:              ch.BPM,
+		ReplayGain:       rGain,
+		SampleRate:       ch.SamplingRate,
+		BitDepth:         ch.BitDepth,
+		Channels:         ch.ChannelCount,
 	}
 }
 
@@ -633,6 +667,7 @@ func fillAlbum(subAlbum *subsonic.AlbumID3, album *mediaprovider.Album) {
 	album.ID = subAlbum.ID
 	album.CoverArtID = subAlbum.CoverArt
 	album.Name = subAlbum.Name
+	album.SortName = subAlbum.SortName
 	album.Duration = time.Duration(subAlbum.Duration) * time.Second
 	album.ArtistIDs = artistIDs
 	album.ArtistNames = artistNames

@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/charlievieth/strcase"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/dlna"
@@ -27,7 +28,8 @@ type PlaybackManager struct {
 	wfmGen   *WaveformImageGenerator
 	cache    *AudioCache
 	cmdQueue *playbackCommandQueue
-	cfg      *AppConfig
+	appCfg   *AppConfig
+	cfg      *PlaybackConfig
 
 	localPlayer         player.BasePlayer
 	remotePlayersLock   sync.Mutex
@@ -35,13 +37,16 @@ type PlaybackManager struct {
 	currentRemotePlayer *RemotePlaybackDevice
 
 	onWaveformImgUpdate []func(*WaveformImage)
-
-	autoplay bool
+	onPlayerChange      []func()
 
 	lastPlayTime         float64
 	lastPlayingID        string
 	wfmUpdateImageCancel context.CancelFunc
 	wfmImageJobs         [3]*WaveformImageJob
+
+	// whether autoplay tracks are currently being fetched/enqueued
+	pendingAutoplay    bool
+	wasLoadTrackPaused bool
 }
 
 type RemotePlaybackDevice struct {
@@ -66,8 +71,8 @@ func NewPlaybackManager(
 	pm := &PlaybackManager{
 		engine:      e,
 		cmdQueue:    q,
-		cfg:         appCfg,
-		autoplay:    playbackCfg.Autoplay,
+		appCfg:      appCfg,
+		cfg:         playbackCfg,
 		localPlayer: p,
 		cache:       c,
 	}
@@ -100,33 +105,48 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 	// On Windows, MPV sometimes fails to start playback when switching to a track
 	// with a different sample rate than the previous. If this is detected,
 	// send a command to the MPV player to force restart playback.
-	p.OnPlayTimeUpdate(func(curTime, _ float64, _ bool) {
+	p.OnPlayTimeUpdate(func(curTime, totalTime float64, _ bool) {
 		p.lastPlayTime = curTime
+
+		// enqueue autoplay tracks if enabled and nearing end of queue
+		if p.cfg.Autoplay && !p.pendingAutoplay && totalTime-curTime < 10.0 &&
+			p.NowPlayingIndex() == p.engine.getPlayQueueLength()-1 {
+			p.enqueueAutoplayTracks()
+		}
 	})
 
 	p.engine.onBeforeSongChange = append(p.engine.onBeforeSongChange, func(item mediaprovider.MediaItem) {
-		if p.engine.playbackCfg.UseWaveformSeekbar {
-			if p.wfmGen != nil && item != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
-				if _, ok := p.findWfmImageJob(item.Metadata().ID, true); !ok {
-					// start generating waveform image for next-up track
-					p.addWfmImageJob(p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track)))
-				}
+		if item == nil || !p.engine.playbackCfg.UseWaveformSeekbar {
+			return
+		}
+		if p.wfmGen != nil && item.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+			if _, ok := p.findWfmImageJob(item.Metadata().ID, true); !ok {
+				// start generating waveform image for next-up track
+				p.addWfmImageJob(p.wfmGen.StartWaveformGeneration(item.(*mediaprovider.Track)))
 			}
+		}
+		if p.isLoadTrackPaused() {
+			// we need to call handleWaveformImageSongChange to ensure the waveform image is updated
+			// for the track that is loaded paused when starting the app
+			p.handleWaveformImageSongChange(item)
+			p.wasLoadTrackPaused = true
 		}
 	})
 
 	p.OnSongChange(func(item mediaprovider.MediaItem, _ *mediaprovider.Track) {
-		// Autoplay if enabled and we are on the last track
-		if p.autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
-			p.enqueueAutoplayTracks()
+		if p.wasLoadTrackPaused {
+			// if the song change was triggered by LoadTrackPaused when starting the app,
+			// we already called handleWaveformImageSongChange in the onBeforeSongChange hook above
+			p.wasLoadTrackPaused = false
+		} else {
+			p.handleWaveformImageSongChange(item)
 		}
-		p.handleWaveformImageSongChange(item)
 
 		if runtime.GOOS != "windows" {
 			return
 		}
 		// workaround for https://github.com/dweymouth/supersonic/issues/483 (see above comment)
-		if p.NowPlayingIndex() != len(p.engine.playQueue) && p.PlaybackStatus().State == player.Playing {
+		if p.NowPlayingIndex() != p.engine.getPlayQueueLength() && p.PlaybackStatus().State == player.Playing {
 			p.lastPlayTime = 0
 			go func() {
 				time.Sleep(300 * time.Millisecond)
@@ -247,6 +267,14 @@ func (p *PlaybackManager) CurrentRemotePlayer() *RemotePlaybackDevice {
 }
 
 func (p *PlaybackManager) SetRemotePlayer(rp *RemotePlaybackDevice) error {
+	// Even in case of failure, call onPlayerChange callbacks to update UI
+	// (such as enabling/disabling cast button)
+	defer func() {
+		for _, cb := range p.onPlayerChange {
+			cb()
+		}
+	}()
+
 	p.cmdQueue.Clear()
 	if rp == nil {
 		if err := p.engine.SetPlayer(p.localPlayer); err != nil {
@@ -273,7 +301,7 @@ func (p *PlaybackManager) CurrentPlayer() player.BasePlayer {
 }
 
 func (p *PlaybackManager) OnPlayerChange(cb func()) {
-	p.engine.onPlayerChange = append(p.engine.onPlayerChange, cb)
+	p.onPlayerChange = append(p.onPlayerChange, cb)
 }
 
 func (p *PlaybackManager) OnWaveformImgUpdate(cb func(*WaveformImage)) {
@@ -304,6 +332,11 @@ func (p *PlaybackManager) OnSongChange(cb func(nowPlaying mediaprovider.MediaIte
 	p.engine.onSongChange = append(p.engine.onSongChange, cb)
 }
 
+// Sets a callback that is notified whenever the Icy radio metadata changes.
+func (p *PlaybackManager) OnRadioMetadataChange(cb func(radioName, title, artist string)) {
+	p.engine.onRadioMetadataChange = append(p.engine.onRadioMetadataChange, cb)
+}
+
 // Registers a callback that is notified whenever the play time should be updated.
 func (p *PlaybackManager) OnPlayTimeUpdate(cb func(curTime float64, totalTime float64, seeked bool)) {
 	p.engine.onPlayTimeUpdate = append(p.engine.onPlayTimeUpdate, cb)
@@ -312,6 +345,11 @@ func (p *PlaybackManager) OnPlayTimeUpdate(cb func(curTime float64, totalTime fl
 // Registers a callback that is notified whenever the loop mode changes.
 func (p *PlaybackManager) OnLoopModeChange(cb func(LoopMode)) {
 	p.engine.onLoopModeChange = append(p.engine.onLoopModeChange, cb)
+}
+
+// Registers a callback that is notified whenever the shuffle state changes.
+func (p *PlaybackManager) OnShuffleChange(cb func(bool)) {
+	p.engine.onShuffleChange = append(p.engine.onShuffleChange, cb)
 }
 
 // Registers a callback that is notified whenever the volume changes.
@@ -354,6 +392,10 @@ func (p *PlaybackManager) LoadAlbum(albumID string, insertQueueMode InsertQueueM
 	return nil
 }
 
+func (p *PlaybackManager) IsShuffle() bool {
+	return p.cfg.Shuffle
+}
+
 // Loads the specified playlist into the play queue.
 func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode InsertQueueMode, shuffle bool) error {
 	playlist, err := p.engine.sm.Server.GetPlaylist(playlistID)
@@ -367,14 +409,28 @@ func (p *PlaybackManager) LoadPlaylist(playlistID string, insertQueueMode Insert
 // Load tracks into the play queue.
 // If replacing the current queue (!appendToQueue), playback will be stopped.
 func (p *PlaybackManager) LoadTracks(tracks []*mediaprovider.Track, insertQueueMode InsertQueueMode, shuffle bool) {
-	items := copyTrackSliceToMediaItemSlice(tracks)
+	items := sharedutil.CopyTrackSliceToMediaItemSlice(tracks)
 	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
 }
 
-// Load items into the play queue.
+// Replaces the playQueue with tracks and moves the track at idx to position 0
+func (p *PlaybackManager) LoadTracksAndPlayAtIdx(tracks []*mediaprovider.Track, shuffle bool, idx int) {
+	items := sharedutil.CopyTrackSliceToMediaItemSlice(tracks)
+	p.cmdQueue.LoadItemsAndPlayAtIdx(items, shuffle, idx)
+}
+
+// Load items into the currently active queue. (shuffledPlayQueue/playQueue)
 // If replacing the current queue (!appendToQueue), playback will be stopped.
+// Loading items into the shuffledPlayQueue may also modify the playQueue
 func (p *PlaybackManager) LoadItems(items []mediaprovider.MediaItem, insertQueueMode InsertQueueMode, shuffle bool) {
 	p.cmdQueue.LoadItems(items, insertQueueMode, shuffle)
+}
+
+// Replaces the specified queue (PlayQueue/ShuffledPlayQueue) with the given tracks.
+// This is used when starting supersonic to load the queue state and directly overrides any previous data.
+// For replacing the queue while supersonic is running, use LoadTracks
+func (p *PlaybackManager) SetQueueState(tracks []*mediaprovider.Track, queueType QueueType) {
+	p.cmdQueue.SetQueueState(tracks, queueType)
 }
 
 // Replaces the play queue with the given set of tracks.
@@ -468,15 +524,36 @@ func (p *PlaybackManager) PlayTrackAt(idx int) {
 	p.cmdQueue.PlayTrackAt(idx)
 }
 
+// LoadTrackPaused sets up engine state as if the track at idx is loaded and
+// paused at startTime, updating the UI and OS media integrations, without
+// starting MPV. Call Continue (or PlayPause) to begin actual playback.
+func (p *PlaybackManager) LoadTrackPaused(idx int, startTime float64) {
+	p.cmdQueue.LoadTrackPaused(idx, startTime)
+}
+
+func (p *PlaybackManager) isLoadTrackPaused() bool {
+	return p.engine.pendingLoadPaused
+}
+
 func (p *PlaybackManager) PlayRandomSongs(genreName string) error {
 	return p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
-		return p.engine.sm.Server.GetRandomTracks(genreName, p.cfg.EnqueueBatchSize)
+		tr, err := p.engine.sm.Server.GetRandomTracks(genreName, p.appCfg.EnqueueBatchSize)
+		if err != nil {
+			return nil, err
+		}
+		return sharedutil.FilterSlice(tr, func(t *mediaprovider.Track) bool {
+			skipKwd := p.cfg.SkipKeywordWhenShuffling
+			include :=
+				(skipKwd == "" || !strcase.Contains(t.Title, skipKwd)) &&
+					(!p.cfg.SkipOneStarWhenShuffling || t.Rating != 1)
+			return include
+		}), nil
 	})
 }
 
 func (p *PlaybackManager) PlaySimilarSongs(id string) error {
 	return p.fetchAndPlayTracks(func() ([]*mediaprovider.Track, error) {
-		return p.engine.sm.Server.GetSimilarTracks(id, p.cfg.EnqueueBatchSize)
+		return p.engine.sm.Server.GetSimilarTracks(id, p.appCfg.EnqueueBatchSize)
 	})
 }
 
@@ -537,8 +614,16 @@ func (p *PlaybackManager) fetchAndPlayTracks(fetchFn func() ([]*mediaprovider.Tr
 	}
 }
 
+func (p *PlaybackManager) GetActivePlayQueue() []mediaprovider.MediaItem {
+	return p.engine.GetActivePlayQueueDeepCopy()
+}
+
 func (p *PlaybackManager) GetPlayQueue() []mediaprovider.MediaItem {
-	return p.engine.GetPlayQueue()
+	return p.engine.GetPlayQueueDeepCopy()
+}
+
+func (p *PlaybackManager) GetShuffledPlayQueue() []mediaprovider.MediaItem {
+	return p.engine.GetShuffledPlayQueueDeepCopy()
 }
 
 // Any time the user changes the favorite status of a track elsewhere in the app,
@@ -592,7 +677,7 @@ func (p *PlaybackManager) GetLoopMode() LoopMode {
 }
 
 func (p *PlaybackManager) IsAutoplay() bool {
-	return p.autoplay
+	return p.cfg.Autoplay
 }
 
 func (p *PlaybackManager) PlaybackStatus() PlaybackStatus {
@@ -604,10 +689,15 @@ func (p *PlaybackManager) SetVolume(vol int) {
 }
 
 func (p *PlaybackManager) SetAutoplay(autoplay bool) {
-	p.autoplay = autoplay
-	if autoplay && p.NowPlayingIndex() == len(p.engine.playQueue)-1 {
+	p.cfg.Autoplay = autoplay
+	if autoplay && p.NowPlayingIndex() == p.engine.getPlayQueueLength()-1 {
 		p.enqueueAutoplayTracks()
 	}
+}
+
+func (p *PlaybackManager) SetShuffle(shuffle bool) {
+	p.cfg.Shuffle = shuffle
+	p.engine.SetShuffle(shuffle)
 }
 
 func (p *PlaybackManager) Volume() int {
@@ -677,12 +767,12 @@ func (p *PlaybackManager) PlayPause() {
 	}
 }
 
-func (p *PlaybackManager) SetStopAfterCurrent(stopAfterCurrent bool) {
-	p.engine.SetStopAfterCurrent(stopAfterCurrent)
+func (p *PlaybackManager) SetPauseAfterCurrent(pauseAfterCurrent bool) {
+	p.engine.SetPauseAfterCurrent(pauseAfterCurrent)
 }
 
-func (p *PlaybackManager) IsStopAfterCurrent() bool {
-	return p.engine.stopAfterCurrent
+func (p *PlaybackManager) IsPauseAfterCurrent() bool {
+	return p.engine.pauseAfterCurrent
 }
 
 func (p *PlaybackManager) enqueueAutoplayTracks() {
@@ -697,7 +787,7 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 	}
 
 	// last 500 played items
-	queue := p.GetPlayQueue()
+	queue := p.GetActivePlayQueue()
 	if l := len(queue); l > 500 {
 		queue = queue[l-500:]
 	}
@@ -705,28 +795,35 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 	// tracks we will enqueue
 	var tracks []*mediaprovider.Track
 
-	filterRecentlyPlayed := func(tracks []*mediaprovider.Track) []*mediaprovider.Track {
+	filterAutoplayTracks := func(tracks []*mediaprovider.Track) []*mediaprovider.Track {
 		return sharedutil.FilterSlice(tracks, func(t *mediaprovider.Track) bool {
-			return !slices.ContainsFunc(queue, func(i mediaprovider.MediaItem) bool {
+			shouldSkip :=
+				(p.cfg.SkipOneStarWhenShuffling && t.Rating == 1) ||
+					(p.cfg.SkipKeywordWhenShuffling != "" && strcase.Contains(t.Title, p.cfg.SkipKeywordWhenShuffling))
+			recentlyPlayed := slices.ContainsFunc(queue, func(i mediaprovider.MediaItem) bool {
 				return i.Metadata().Type == mediaprovider.MediaItemTypeTrack && i.Metadata().ID == t.ID
 			})
+			return !shouldSkip && !recentlyPlayed
 		})
 	}
 
 	// since this func is invoked in a callback from the playback engine,
 	// need to do the rest async as it may take time and block other callbacks
+	p.pendingAutoplay = true
 	go func() {
+		defer func() { p.pendingAutoplay = false }()
+
 		// first 2 strategies - similar by artist, and similar by genres - only work for tracks
 		if nowPlaying.Metadata().Type == mediaprovider.MediaItemTypeTrack {
 			tr := nowPlaying.(*mediaprovider.Track)
 
 			// similar tracks by artist
 			if len(tr.ArtistIDs) > 0 {
-				similar, err := s.GetSimilarTracks(tr.ArtistIDs[0], p.cfg.EnqueueBatchSize)
+				similar, err := s.GetSimilarTracks(tr.ArtistIDs[0], p.appCfg.EnqueueBatchSize)
 				if err != nil {
 					log.Printf("autoplay error: failed to get similar tracks: %v", err)
 				}
-				tracks = filterRecentlyPlayed(similar)
+				tracks = filterAutoplayTracks(similar)
 			}
 
 			// fallback to random tracks from genre
@@ -735,11 +832,11 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 					if g == "" {
 						continue
 					}
-					byGenre, err := s.GetRandomTracks(g, p.cfg.EnqueueBatchSize)
+					byGenre, err := s.GetRandomTracks(g, p.appCfg.EnqueueBatchSize)
 					if err != nil {
 						log.Printf("autoplay error: failed to get tracks by genre: %v", err)
 					}
-					tracks = filterRecentlyPlayed(byGenre)
+					tracks = filterAutoplayTracks(byGenre)
 					if len(tracks) > 0 {
 						break
 					}
@@ -750,11 +847,11 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 		// random tracks works regardless of the type of the last playing media
 		if len(tracks) == 0 {
 			// fallback to random tracks
-			random, err := s.GetRandomTracks("", p.cfg.EnqueueBatchSize)
+			random, err := s.GetRandomTracks("", p.appCfg.EnqueueBatchSize)
 			if err != nil {
 				log.Printf("autoplay error: failed to get random tracks: %v", err)
 			}
-			tracks = filterRecentlyPlayed(random)
+			tracks = filterAutoplayTracks(random)
 		}
 
 		if len(tracks) > 0 {
@@ -805,15 +902,37 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					c.Arg3.(bool),
 				)
 				logIfErr("LoadItems", err)
+			case cmdLoadItemsAndPlayAtIdx:
+				err := p.engine.LoadItemsAndPlayAtIdx(
+					c.Arg.([]mediaprovider.MediaItem),
+					c.Arg2.(bool),
+					c.Arg3.(int),
+				)
+				logIfErr("LoadItemsAndPlayAtIdx", err)
+			case cmdSetQueueState:
+				err := p.engine.SetQueueState(
+					c.Arg.([]*mediaprovider.Track),
+					c.Arg2.(QueueType),
+				)
+				logIfErr("SetQueueState", err)
 			case cmdLoadRadioStation:
 				p.engine.LoadRadioStation(
 					c.Arg.(*mediaprovider.RadioStation),
 					c.Arg2.(InsertQueueMode),
 				)
+			case cmdLoadTrackPaused:
+				logIfErr("LoadTrackPaused", p.engine.loadTrackPaused(c.Arg.(int), c.Arg2.(float64)))
 			case cmdForceRestartPlayback:
 				if mpv, ok := p.engine.CurrentPlayer().(*mpv.Player); ok {
 					log.Println("Force-restarting MPV playback")
-					mpv.ForceRestartPlayback()
+
+					// restart player, but perserve the state
+					isPaused := false
+					stat := p.engine.CurrentPlayer().GetStatus()
+					if stat.State == player.Paused {
+						isPaused = true
+					}
+					mpv.ForceRestartPlayback(isPaused)
 				}
 			}
 			if c.OnDone != nil {

@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/boxes-ltd/imaging"
 	"github.com/cenkalti/dominantcolor"
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
@@ -42,6 +43,7 @@ type NowPlayingPage struct {
 	curLyrics     *mediaprovider.Lyrics
 	curLyricsID   string // id of track currently shown in lyrics
 	curRelatedID  string // id of track currrently used to populate related list
+	curCoverArt   string // id of cover art currently shown in background / card
 	totalTime     float64
 	lastPlayPos   float64
 	queue         []mediaprovider.MediaItem
@@ -49,19 +51,20 @@ type NowPlayingPage struct {
 	alreadyLoaded bool
 
 	// widgets for render
-	background     *canvas.LinearGradient
-	queueList      *widgets.PlayQueueList
-	relatedList    *widgets.PlayQueueList
-	lyricsViewer   *widgets.LyricsViewer
-	card           *widgets.LargeNowPlayingCard
-	statusLabel    *widget.Label
-	tabs           *container.AppTabs
-	lyricsLoading  *widgets.LoadingDots
-	relatedLoading *widgets.LoadingDots
-	container      *fyne.Container
+	backgroundImgA     *canvas.Image
+	backgroundImgB     *canvas.Image
+	backgroundGradient *canvas.LinearGradient
+	queueList          *widgets.PlayQueueList
+	relatedList        *widgets.PlayQueueList
+	lyricsViewer       *widgets.LyricsViewer
+	card               *widgets.LargeNowPlayingCard
+	statusLabel        *widget.Label
+	tabs               *container.AppTabs
+	lyricsLoading      *widgets.LoadingDots
+	relatedLoading     *widgets.LoadingDots
+	container          *fyne.Container
 
 	// cancel funcs for background fetch tasks
-	lyricFetchCancel   context.CancelFunc
 	imageLoadCancel    context.CancelFunc
 	relatedFetchCancel context.CancelFunc
 }
@@ -72,11 +75,12 @@ type nowPlayingPageState struct {
 	pool     *util.WidgetPool
 	sm       *backend.ServerManager
 	pm       *backend.PlaybackManager
+	lm       *backend.LyricsManager
 	im       *backend.ImageManager
 	mp       mediaprovider.MediaProvider
 	canRate  bool
 	canShare bool
-	lrcFetch *backend.LrcLibFetcher
+	cfg      *backend.Config
 }
 
 func NewNowPlayingPage(
@@ -84,15 +88,16 @@ func NewNowPlayingPage(
 	contr *controller.Controller,
 	pool *util.WidgetPool,
 	sm *backend.ServerManager,
+	lm *backend.LyricsManager,
 	im *backend.ImageManager,
 	pm *backend.PlaybackManager,
 	mp mediaprovider.MediaProvider,
 	canRate bool,
 	canShare bool,
-	lrcLibFetcher *backend.LrcLibFetcher,
+	cfg *backend.Config,
 ) *NowPlayingPage {
 	state := nowPlayingPageState{
-		conf: conf, contr: contr, pool: pool, sm: sm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, lrcFetch: lrcLibFetcher,
+		conf: conf, contr: contr, pool: pool, sm: sm, lm: lm, im: im, pm: pm, mp: mp, canRate: canRate, canShare: canShare, cfg: cfg,
 	}
 	if page, ok := pool.Obtain(util.WidgetTypeNowPlayingPage).(*NowPlayingPage); ok && page != nil {
 		page.nowPlayingPageState = state
@@ -125,6 +130,7 @@ func NewNowPlayingPage(
 	a.card.OnSetRating = func(rating int) {
 		a.contr.SetTrackRatings([]string{a.nowPlayingID}, rating)
 	}
+	a.card.ShowAlbumYear = cfg.AlbumsPage.ShowYears
 
 	a.queueList = widgets.NewPlayQueueList(a.im, false)
 	a.relatedList = widgets.NewPlayQueueList(a.im, true)
@@ -233,7 +239,9 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 			a.updateRelatedList()
 		}
 		c := theme.Color(myTheme.ColorNamePageBackground)
-		a.background = canvas.NewLinearGradient(c, c, 0)
+		a.backgroundGradient = canvas.NewLinearGradient(c, c, 0)
+		a.backgroundImgA = canvas.NewImageFromImage(nil)
+		a.backgroundImgB = canvas.NewImageFromImage(nil)
 
 		mainContent := container.NewGridWithColumns(2,
 			container.New(paddedLayout, a.card),
@@ -241,7 +249,9 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 				util.AddHeaderBackgroundWithColorName(
 					a.tabs, myTheme.ColorNameNowPlayingPanel)))
 		a.container = container.NewStack(
-			a.background,
+			a.backgroundImgA,
+			a.backgroundImgB,
+			a.backgroundGradient,
 			mainContent,
 			container.NewVBox(
 				layout.NewSpacer(),
@@ -298,8 +308,12 @@ func (a *NowPlayingPage) OnSongChange(song mediaprovider.MediaItem, lastScrobble
 	a.card.Update(song)
 	if song == nil {
 		a.card.SetCoverImage(nil)
-	} else {
-		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.Metadata().CoverArtID, a.onImageLoaded)
+		a.curCoverArt = ""
+	} else if artID := song.Metadata().CoverArtID; artID != a.curCoverArt {
+		a.imageLoadCancel = a.im.GetFullSizeCoverArtAsync(song.Metadata().CoverArtID, func(img image.Image, err error) {
+			a.curCoverArt = artID
+			a.onImageLoaded(img, err)
+		})
 	}
 
 	if a.tabs != nil && a.tabs.SelectedIndex() == 1 /*lyrics*/ {
@@ -319,27 +333,49 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 		return
 	}
 
-	c := dominantcolor.Find(img)
-	if c == a.background.StartColor {
-		return
-	}
-
-	// Fyne animation starting is currently thread-safe,
-	// despite not being marked as such
-	// TODO: if this changes, use fyne.Do
-	anim := canvas.NewColorRGBAAnimation(
-		a.background.StartColor, c, myTheme.AnimationDurationMedium, func(c color.Color) {
-			a.background.StartColor = c
-			a.background.Refresh()
+	if a.conf.UseBackgroundImage {
+		resized := imaging.Resize(img, 300, 0, imaging.NearestNeighbor)
+		blurred := imaging.Blur(resized, 10.0)
+		fyne.Do(func() {
+			if a.backgroundGradient.StartColor != color.Transparent {
+				a.backgroundGradient.StartColor = color.Transparent
+				a.backgroundGradient.Refresh()
+			}
+			a.backgroundImgA.Hidden = false
+			a.backgroundImgB.Hidden = false
+			a.backgroundImgA.Image = a.backgroundImgB.Image
+			a.backgroundImgB.Image = blurred
+			fyne.NewAnimation(myTheme.AnimationDurationMedium, func(f float32) {
+				a.backgroundImgA.Translucency = float64(f)
+				a.backgroundImgB.Translucency = float64(1 - f)
+				a.backgroundImgA.Refresh()
+				a.backgroundImgB.Refresh()
+			}).Start()
 		})
-	anim.Start()
+	} else {
+		c := dominantcolor.Find(img)
+		if c == a.backgroundGradient.StartColor {
+			return
+		}
+		if !a.backgroundImgA.Hidden {
+			a.backgroundImgA.Hide()
+		}
+		if !a.backgroundImgB.Hidden {
+			a.backgroundImgB.Hide()
+		}
+		// Fyne animation starting is currently thread-safe,
+		// despite not being marked as such
+		// TODO: if this changes, use fyne.Do
+		anim := canvas.NewColorRGBAAnimation(
+			a.backgroundGradient.StartColor, c, myTheme.AnimationDurationMedium, func(c color.Color) {
+				a.backgroundGradient.StartColor = c
+				a.backgroundGradient.Refresh()
+			})
+		anim.Start()
+	}
 }
 
 func (a *NowPlayingPage) updateLyrics() {
-	if a.lyricFetchCancel != nil {
-		a.lyricFetchCancel()
-	}
-
 	if a.nowPlayingID == a.curLyricsID {
 		if a.nowPlayingID != "" {
 			// just need to sync the current time
@@ -354,8 +390,6 @@ func (a *NowPlayingPage) updateLyrics() {
 		return
 	}
 	a.curLyricsID = a.nowPlayingID
-	ctx, cancel := context.WithCancel(context.Background())
-	a.lyricFetchCancel = cancel
 	a.lyricsLoading.Start()
 	// set the widget to an empty (not nil) lyric during fetch
 	// to keep it from showing "Lyrics not available"
@@ -365,27 +399,11 @@ func (a *NowPlayingPage) updateLyrics() {
 		Lines:  []mediaprovider.LyricLine{{Text: ""}},
 	})
 	tr, _ := a.nowPlaying.(*mediaprovider.Track)
-	go a.fetchLyrics(ctx, tr)
-}
 
-func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Track) {
-	var lyrics *mediaprovider.Lyrics
-	var err error
-	if lp, ok := a.sm.Server.(mediaprovider.LyricsProvider); ok {
-		if lyrics, err = lp.GetLyrics(song); err != nil {
-			log.Printf("Error fetching lyrics: %v", err)
+	a.lm.FetchLyricsAsync(tr, func(id string, lyrics *mediaprovider.Lyrics) {
+		if id != a.nowPlayingID {
+			return
 		}
-	}
-	if lyrics == nil && a.lrcFetch != nil {
-		lyrics, err = a.lrcFetch.FetchLrcLibLyrics(song.Title, song.ArtistNames[0], song.Album, int(song.Duration.Seconds()))
-		if err != nil {
-			log.Println(err.Error())
-		}
-	}
-	select {
-	case <-ctx.Done():
-		return
-	default:
 		fyne.Do(func() {
 			a.lyricsLoading.Stop()
 			a.lyricsViewer.EnableTapToSeek()
@@ -395,7 +413,7 @@ func (a *NowPlayingPage) fetchLyrics(ctx context.Context, song *mediaprovider.Tr
 				a.lyricsViewer.OnSeeked(a.lastPlayPos)
 			}
 		})
-	}
+	})
 }
 
 func (a *NowPlayingPage) updateRelatedList() {
@@ -443,7 +461,7 @@ func (a *NowPlayingPage) Reload() {
 	a.relatedList.DisableRating = !a.canRate
 	a.relatedList.DisableSharing = !a.canShare
 
-	a.queue = a.pm.GetPlayQueue()
+	a.queue = a.pm.GetActivePlayQueue()
 	a.queueList.SetItems(a.queue)
 	a.totalTime = 0.0
 	for _, tr := range a.queue {
@@ -464,7 +482,7 @@ func (a *NowPlayingPage) Reload() {
 }
 
 func (s *nowPlayingPageState) Restore() Page {
-	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.im, s.pm, s.mp, s.canRate, s.canShare, s.lrcFetch)
+	return NewNowPlayingPage(s.conf, s.contr, s.pool, s.sm, s.lm, s.im, s.pm, s.mp, s.canRate, s.canShare, s.cfg)
 }
 
 var _ CanShowPlayTime = (*NowPlayingPage)(nil)
@@ -509,14 +527,17 @@ func (a *NowPlayingPage) UnselectAll() {
 }
 
 func (a *NowPlayingPage) Refresh() {
-	if a.background != nil {
+	if a.backgroundGradient != nil {
 		c := theme.Color(myTheme.ColorNamePageBackground)
-		if c != a.background.EndColor {
-			a.background.EndColor = c
-			a.background.Refresh()
+		if c != a.backgroundGradient.EndColor {
+			a.backgroundGradient.EndColor = c
+			a.backgroundGradient.Refresh()
 		}
 	}
 	a.BaseWidget.Refresh()
+
+	a.card.ShowAlbumYear = a.cfg.AlbumsPage.ShowYears
+	a.card.Update(a.nowPlaying)
 }
 
 func (a *NowPlayingPage) saveSelectedTab(tabNum int) {

@@ -43,6 +43,11 @@ type MPRISHandler struct {
 	pm           *PlaybackManager
 	s            *server.Server
 	evt          *events.EventHandler
+
+	// current radio metadata
+	radioStationName string
+	radioIcyTitle    string
+	radioIcyArtist   string
 }
 
 func NewMPRISHandler(playerName string, pm *PlaybackManager) *MPRISHandler {
@@ -62,6 +67,14 @@ func NewMPRISHandler(playerName string, pm *PlaybackManager) *MPRISHandler {
 		} else {
 			m.curTrackPath = dbusTrackIDPrefix + encodeTrackId(tr.Metadata().ID)
 		}
+		if m.connErr == nil {
+			m.evt.Player.OnTitle()
+		}
+	})
+	pm.OnRadioMetadataChange(func(radioName, title, artist string) {
+		m.radioStationName = radioName
+		m.radioIcyTitle = title
+		m.radioIcyArtist = artist
 		if m.connErr == nil {
 			m.evt.Player.OnTitle()
 		}
@@ -276,12 +289,23 @@ func (m *MPRISHandler) Metadata() (types.Metadata, error) {
 			artURL = u
 		}
 	}
+
+	title := meta.Name
+	artists := meta.Artists
+	album := meta.Album
+	// if playing a radio station, override title/artist with current Icy metadata if present
+	if m.radioStationName == title && m.radioIcyTitle != "" {
+		title = m.radioIcyTitle
+		artists = []string{m.radioIcyArtist}
+		album = m.radioStationName
+	}
+
 	mprisMeta := types.Metadata{
 		TrackId:     dbus.ObjectPath(trackObjPath),
 		Length:      secondsToMicroseconds(status.Duration),
-		Title:       meta.Name,
-		Album:       meta.Album,
-		Artist:      meta.Artists,
+		Title:       title,
+		Album:       album,
+		Artist:      artists,
 		DiscNumber:  discNumber,
 		TrackNumber: trackNumber,
 		UserRating:  float64(userRating) / 5,

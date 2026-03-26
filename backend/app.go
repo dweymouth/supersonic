@@ -21,6 +21,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/backend/windows"
+	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/google/uuid"
 
 	"github.com/20after4/configdir"
@@ -28,10 +29,13 @@ import (
 )
 
 const (
-	configFile     = "config.toml"
-	portableDir    = "supersonic_portable"
-	savedQueueFile = "saved_queue.json"
-	themesDir      = "themes"
+	configFile               = "config.toml"
+	portableDir              = "supersonic_portable"
+	savedQueueFile           = "saved_queue.json"
+	savedUnshuffledQueueFile = "saved_unshuffled_queue.json"
+	savedShuffledQueueFile   = "saved_shuffled_queue.json"
+	themesDir                = "themes"
+	audioCacheSubdir         = "audio"
 )
 
 var (
@@ -44,19 +48,22 @@ var (
 type App struct {
 	Config          *Config
 	ServerManager   *ServerManager
+	LyricsManager   *LyricsManager
 	ImageManager    *ImageManager
 	AudioCache      *AudioCache
+	AutoEQManager   *AutoEQManager
+	EQPresetManager *EQPresetManager
 	PlaybackManager *PlaybackManager
 	LocalPlayer     *mpv.Player
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
 	WinSMTC         *windows.SMTC
 	ipcServer       ipc.IPCServer
-	LrcLibFetcher   *LrcLibFetcher
 
 	// UI callbacks to be set in main
-	OnReactivate func()
-	OnExit       func()
+	OnReactivate  func()
+	OnExit        func()
+	OnReloadTheme func()
 
 	appName        string
 	displayAppName string
@@ -146,7 +153,7 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	a.ServerManager = NewServerManager(appName, appVersion, a.Config, !portableMode && a.Config.Application.EnablePasswordStorage)
 	a.ImageManager = NewImageManager(a.bgrndCtx, a.ServerManager, cacheDir)
 	if a.Config.Playback.UseWaveformSeekbar {
-		ac, err := NewAudioCache(a.bgrndCtx, a.ServerManager, filepath.Join(cacheDir, "audio"))
+		ac, err := NewAudioCache(a.bgrndCtx, a.ServerManager, filepath.Join(cacheDir, audioCacheSubdir))
 		if err != nil {
 			log.Printf("failed to create audio cache: %s", err.Error())
 		}
@@ -158,10 +165,17 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
 		_, _ = a.ImageManager.GetCoverThumbnail(coverID)
 	})
+	var fetch *LrcLibFetcher
 	if a.Config.Application.EnableLrcLib {
 		timeout := time.Duration(a.Config.Application.RequestTimeoutSeconds) * time.Second
-		a.LrcLibFetcher = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl, timeout)
+		fetch = NewLrcLibFetcher(a.cacheDir, a.Config.Application.CustomLrcLibUrl, timeout)
 	}
+	a.LyricsManager = NewLyricsManager(a.ServerManager, fetch)
+	a.EQPresetManager = NewEQPresetManager(confDir)
+
+	// Initialize AutoEQ manager
+	autoEQTimeout := time.Duration(a.Config.Application.RequestTimeoutSeconds) * time.Second
+	a.AutoEQManager = NewAutoEQManager(filepath.Join(cacheDir, "autoeq"), autoEQTimeout)
 
 	// Periodically scan for remote players
 	go a.PlaybackManager.ScanRemotePlayers(a.bgrndCtx, true /*fastScan*/)
@@ -188,16 +202,37 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		SetSystemSleepDisabled(false)
 	})
 
+	a.PlaybackManager.OnQueueChange(func() {
+		go a.SavePlayQueueIfEnabled()
+	})
+	a.PlaybackManager.OnSongChange(func(_ mediaprovider.MediaItem, _ *mediaprovider.Track) {
+		go a.SavePlayQueueIfEnabled()
+	})
+
 	// Start IPC server if another not already running in a different instance
 	if cli == nil {
 		ipc.DestroyConn() // cleanup socket possibly orphaned by crashed process
 		listener, err := ipc.Listen()
 		if err == nil {
+			ipcRatingHandler := func(rating int) {
+				if s := a.ServerManager.GetServer(); s != nil {
+					if tr := a.PlaybackManager.NowPlaying(); tr != nil && tr.Metadata().Type == mediaprovider.MediaItemTypeTrack {
+						if supportsRating, ok := s.(mediaprovider.SupportsRating); ok {
+							supportsRating.SetRating(mediaprovider.RatingFavoriteParameters{
+								TrackIDs: []string{tr.Metadata().ID},
+							}, rating)
+						}
+					}
+				}
+			}
+
 			a.ipcServer = ipc.NewServer(
 				a.PlaybackManager,
+				ipcRatingHandler,
 				a.ServerManager,
 				a.callOnReactivate,
-				func() { _ = a.callOnExit() })
+				func() { _ = a.callOnExit() },
+				a.callOnReloadTheme)
 			go a.ipcServer.Serve(listener)
 		} else {
 			log.Printf("error starting IPC server: %s", err.Error())
@@ -236,6 +271,22 @@ func (a *App) IsPortableMode() bool {
 
 func (a *App) ThemesDir() string {
 	return filepath.Join(a.configDir, themesDir)
+}
+
+func (a *App) ClearCaches() {
+	if a.cacheDir != "" {
+		entries, _ := os.ReadDir(a.cacheDir)
+		for _, e := range entries {
+			// The audio cache directory is necessary for
+			// proper playback of enqueued tracks, and also
+			// doesn't accumulate more than a few entries.
+			// Leave it alone.
+			if e.Name() != audioCacheSubdir {
+				_ = os.RemoveAll(filepath.Join(a.cacheDir, e.Name()))
+			}
+		}
+	}
+	a.ImageManager.ClearInMemoryCache()
 }
 
 func checkPortablePath() string {
@@ -288,6 +339,12 @@ func (a *App) startConfigWriter(ctx context.Context) {
 func (a *App) callOnReactivate() {
 	if a.OnReactivate != nil {
 		a.OnReactivate()
+	}
+}
+
+func (a *App) callOnReloadTheme() {
+	if a.OnReloadTheme != nil {
+		a.OnReloadTheme()
 	}
 }
 
@@ -359,12 +416,33 @@ func (a *App) setupMPV() error {
 		PreampGain:      a.Config.ReplayGain.PreampGainDB,
 	})
 	a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
+	a.LocalPlayer.SetPauseFade(a.Config.LocalPlayback.PauseFade)
 
-	eq := &mpv.ISO15BandEqualizer{
-		EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
-		Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+	// Initialize the appropriate equalizer type based on config
+	var eq mpv.Equalizer
+	if a.Config.LocalPlayback.EqualizerType == "ISO10Band" {
+		eq10 := &mpv.ISO10BandEqualizer{
+			EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
+			Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+		}
+		// Copy up to 10 bands
+		numBands := min(len(a.Config.LocalPlayback.GraphicEqualizerBands), 10)
+		for i := 0; i < numBands; i++ {
+			eq10.BandGains[i] = a.Config.LocalPlayback.GraphicEqualizerBands[i]
+		}
+		eq = eq10
+	} else {
+		eq15 := &mpv.ISO15BandEqualizer{
+			EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
+			Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
+		}
+		// Copy up to 15 bands
+		numBands := min(len(a.Config.LocalPlayback.GraphicEqualizerBands), 15)
+		for i := 0; i < numBands; i++ {
+			eq15.BandGains[i] = a.Config.LocalPlayback.GraphicEqualizerBands[i]
+		}
+		eq = eq15
 	}
-	copy(eq.BandGains[:], a.Config.LocalPlayback.GraphicEqualizerBands)
 	a.LocalPlayer.SetEqualizer(eq)
 
 	return nil
@@ -423,6 +501,15 @@ func (a *App) SetupWindowsSMTC(hwnd uintptr) {
 			}
 		}()
 	})
+	a.PlaybackManager.OnRadioMetadataChange(func(radioName, title, artist string) {
+		if title != "" {
+			smtc.UpdateMetadata(title, artist)
+			smtc.UpdatePosition(0, 0)
+		} else {
+			smtc.UpdateMetadata(radioName, "")
+			smtc.UpdatePosition(0, 0)
+		}
+	})
 	a.PlaybackManager.OnSeek(func() {
 		playbackStatus := a.PlaybackManager.PlaybackStatus()
 		smtc.UpdatePosition(int(playbackStatus.TimePos*1000), int(playbackStatus.Duration*1000))
@@ -478,6 +565,12 @@ func (a *App) DeleteServerCacheDir(serverID uuid.UUID) error {
 	return os.RemoveAll(path)
 }
 
+// BackgroundContext returns the application's background context
+// which is canceled when the application shuts down.
+func (a *App) BackgroundContext() context.Context {
+	return a.bgrndCtx
+}
+
 func (a *App) Shutdown() {
 	if a.logFile != nil {
 		a.logFile.Close()
@@ -523,31 +616,76 @@ func (a *App) SavePlayQueueIfEnabled() {
 			queueServer = qs
 		}
 	}
-	SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
+	SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetActivePlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedQueueFile), queueServer)
+	if a.Config.Playback.Shuffle {
+		// if shuffle
+		// save the unshuffled queue to enable unshuffling on restarting supersonic
+		// save the shuffled queue again to enable checking if the playQueue was changed server side on start up
+
+		// both files are just saved locally
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetPlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedUnshuffledQueueFile), nil)
+		SavePlayQueue(a.ServerManager.ServerID.String(), a.PlaybackManager.GetShuffledPlayQueue(), a.PlaybackManager, path.Join(a.configDir, savedShuffledQueueFile), nil)
+	}
 }
 
 func (a *App) LoadSavedPlayQueue() error {
 	queueFilePath := path.Join(a.configDir, savedQueueFile)
-	queue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
+	playQueue, err := LoadPlayQueue(queueFilePath, a.ServerManager, a.Config.Application.SaveQueueToServer)
 	if err != nil {
 		return err
 	}
-	if len(queue.Tracks) == 0 {
+
+	var unshuffledPlayQueue *SavedPlayQueue
+	var shuffledPlayQueue *SavedPlayQueue
+
+	isShuffle := a.Config.Playback.Shuffle
+	if isShuffle {
+		unshuffledQueueFilePath := path.Join(a.configDir, savedUnshuffledQueueFile)
+		unshuffledPlayQueue, err = LoadPlayQueue(unshuffledQueueFilePath, a.ServerManager, false)
+
+		if err != nil {
+			return err
+		}
+
+		shuffledQueueFilePath := path.Join(a.configDir, savedShuffledQueueFile)
+		shuffledPlayQueue, err = LoadPlayQueue(shuffledQueueFilePath, a.ServerManager, false)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(playQueue.Tracks) == 0 {
 		return nil
 	}
-	if len(a.PlaybackManager.GetPlayQueue()) > 0 {
+	if len(a.PlaybackManager.GetActivePlayQueue()) > 0 {
 		// don't restore play queue if the user has already queued new tracks
 		return nil
 	}
 
-	a.PlaybackManager.LoadTracks(queue.Tracks, Replace, false)
-	if queue.TrackIndex >= 0 && queue.TrackIndex < len(queue.Tracks) {
-		// TODO: This isn't ideal but doesn't seem to cause an audible play-for-a-split-second artifact
-		a.PlaybackManager.PlayTrackAt(queue.TrackIndex)
-		a.PlaybackManager.Pause()
-		time.Sleep(100 * time.Millisecond) // MPV seek fails if run quickly after
-		a.PlaybackManager.SeekSeconds(queue.TimePos)
+	if isShuffle {
+		serverStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(playQueue.Tracks)
+		clientStatePlayQueue := sharedutil.CopyTrackSliceToMediaItemSlice(shuffledPlayQueue.Tracks)
+
+		// Compare items by ID. This fails if any 2 elements don't match up. Two queues with the same items but different order will thus not count as same
+		if slices.EqualFunc(serverStatePlayQueue, clientStatePlayQueue, func(a, b mediaprovider.MediaItem) bool {
+			return (a.Metadata().ID == b.Metadata().ID)
+		}) {
+			a.PlaybackManager.SetQueueState(playQueue.Tracks, ShuffledPlayQueue)
+			a.PlaybackManager.SetQueueState(unshuffledPlayQueue.Tracks, PlayQueue)
+		} else {
+			a.PlaybackManager.SetShuffle(false)
+			a.PlaybackManager.SetQueueState(playQueue.Tracks, PlayQueue)
+		}
+
+	} else {
+		a.PlaybackManager.SetQueueState(playQueue.Tracks, PlayQueue)
 	}
+
+	if playQueue.TrackIndex >= 0 && playQueue.TrackIndex < len(playQueue.Tracks) {
+		a.PlaybackManager.LoadTrackPaused(playQueue.TrackIndex, playQueue.TimePos)
+	}
+
 	return nil
 }
 
@@ -573,10 +711,12 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.SeekNext()
 	case *FlagStop:
 		return cli.Stop()
-	case *FlagStopAfterCurrent:
-		return cli.StopAfterCurrent()
+	case *FlagPauseAfterCurrent:
+		return cli.PauseAfterCurrent()
 	case *FlagShow:
 		return cli.Show()
+	case *FlagReloadTheme:
+		return cli.ReloadTheme()
 	case VolumeCLIArg >= 0:
 		return cli.SetVolume(VolumeCLIArg)
 	case VolumePctCLIArg != 0:
@@ -609,6 +749,8 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 			fmt.Println(data)
 		}
 		return err
+	case RateCurrentCLIArg >= 0:
+		return cli.RateCurrentTrack(RateCurrentCLIArg)
 	default:
 		return nil
 	}

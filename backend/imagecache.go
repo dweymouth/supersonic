@@ -18,7 +18,9 @@ type CacheItem struct {
 	lastAccessed int64
 }
 
-// A custom in-memory cache for images with the following eviction strategy:
+// ImageCache is a thread-safe in-memory cache for images with LRU eviction.
+//
+// Eviction strategy:
 //  1. If there are fewer than MinSize items in the cache, none will be evicted
 //  2. If a new addition would make the cache exceed MaxSize, an item will be immediately evicted
 //     2a. in this case, evict the LRU expired item or if none expired, the LRU item
@@ -39,23 +41,30 @@ type ImageCache struct {
 	cache map[string]CacheItem
 }
 
+// ErrNotFound is returned when a requested cache item does not exist.
 var ErrNotFound = errors.New("item not found")
 
+// Init initializes the cache and starts a background goroutine for periodic eviction.
+// The goroutine stops when the provided context is cancelled.
 func (i *ImageCache) Init(ctx context.Context, evictionInterval time.Duration) {
 	i.cache = make(map[string]CacheItem)
 	go i.periodicallyEvict(ctx, evictionInterval)
 }
 
-// holds writer lock for O(i.MaxSize) worst case
+// SetWithTTL stores an image in the cache with a custom time-to-live duration.
+// If the cache is at MaxSize, an item will be evicted using LRU strategy.
+// Thread-safe. Holds writer lock for O(MaxSize) worst case.
 func (i *ImageCache) SetWithTTL(key string, val image.Image, ttl time.Duration) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
+	now := time.Now().Unix()
 	if v, ok := i.cache[key]; ok {
 		v.val = val
 		v.ttl = ttl
 		v.expiresAt = time.Now().Add(v.ttl).Unix()
-		v.lastAccessed = time.Now().Unix()
+		v.lastAccessed = now
+		i.cache[key] = v // Update the map with modified struct
 		return
 	}
 	if len(i.cache) == i.MaxSize {
@@ -65,14 +74,18 @@ func (i *ImageCache) SetWithTTL(key string, val image.Image, ttl time.Duration) 
 		val:          val,
 		ttl:          ttl,
 		expiresAt:    time.Now().Add(ttl).Unix(),
-		lastAccessed: time.Now().Unix(),
+		lastAccessed: now,
 	}
 }
 
+// Set stores an image in the cache with the default TTL.
+// See SetWithTTL for more details.
 func (i *ImageCache) Set(key string, val image.Image) {
 	i.SetWithTTL(key, val, i.DefaultTTL)
 }
 
+// Has returns true if the key exists in the cache, expired or not.
+// Thread-safe.
 func (i *ImageCache) Has(key string) bool {
 	i.mu.RLock()
 	defer i.mu.RUnlock()
@@ -81,51 +94,72 @@ func (i *ImageCache) Has(key string) bool {
 	return ok
 }
 
+// Get retrieves an image from the cache and updates its last accessed time.
+// Returns ErrNotFound if the key doesn't exist.
+// Thread-safe.
 func (i *ImageCache) Get(key string) (image.Image, error) {
 	return i.GetResetTTL(key, false)
 }
 
+// GetResetTTL retrieves an image and optionally resets its expiration time.
+// If resetTTL is true, the expiration is reset to now + original TTL.
+// Returns ErrNotFound if the key doesn't exist.
+// Thread-safe.
 func (i *ImageCache) GetResetTTL(key string, resetTTL bool) (image.Image, error) {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
+	i.mu.Lock()
+	defer i.mu.Unlock()
 
 	if v, ok := i.cache[key]; ok {
 		v.lastAccessed = time.Now().Unix()
 		if resetTTL {
 			v.expiresAt = time.Now().Add(v.ttl).Unix()
 		}
+		i.cache[key] = v // Update the map with modified struct
 		return v.val, nil
 	}
 	return nil, ErrNotFound
 }
 
-// Gets the image if it exists and extends TTL to time.Now + ttl iff the image would expire before then
+// GetExtendTTL retrieves an image and extends its TTL if it would expire sooner.
+// The expiration time is extended to now + ttl only if the current expiration
+// is earlier than that time.
+// Returns ErrNotFound if the key doesn't exist.
+// Thread-safe.
 func (i *ImageCache) GetExtendTTL(key string, ttl time.Duration) (image.Image, error) {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
+	i.mu.Lock()
+	defer i.mu.Unlock()
 	if v, ok := i.cache[key]; ok {
 		v.lastAccessed = time.Now().Unix()
-		if v.expiresAt < time.Now().Add(ttl).Unix() {
-			v.expiresAt = time.Now().Add(ttl).Unix()
+		newExpiry := time.Now().Add(ttl).Unix()
+		if v.expiresAt < newExpiry {
+			v.expiresAt = newExpiry
 		}
+		i.cache[key] = v // Update the map with modified struct
 		return v.val, nil
 	}
 	return nil, ErrNotFound
 }
 
+// GetWithNewTTL retrieves an image and replaces its TTL with a new value.
+// The expiration time is set to now + newTtl.
+// Returns ErrNotFound if the key doesn't exist.
+// Thread-safe.
 func (i *ImageCache) GetWithNewTTL(key string, newTtl time.Duration) (image.Image, error) {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
+	i.mu.Lock()
+	defer i.mu.Unlock()
 
 	if v, ok := i.cache[key]; ok {
 		v.lastAccessed = time.Now().Unix()
 		v.expiresAt = time.Now().Add(newTtl).Unix()
 		v.ttl = newTtl
+		i.cache[key] = v // Update the map with modified struct
 		return v.val, nil
 	}
 	return nil, ErrNotFound
 }
 
+// Clear removes all items from the cache.
+// Thread-safe.
 func (i *ImageCache) Clear() {
 	i.mu.Lock()
 	defer i.mu.Unlock()
@@ -137,24 +171,33 @@ func (i *ImageCache) Clear() {
 func (i *ImageCache) evictOne() {
 	now := time.Now().Unix()
 	var lruKey string
-	lruTime := now
+	lruTime := now + 1 // Initialize to future time so any item will be less
 	var lruExpiredKey string
-	lruExpiredTime := now
+	lruExpiredTime := now + 1 // Initialize to future time
+	hasExpired := false
+
+	// Single pass through the cache to find both LRU expired and LRU items
 	for k, v := range i.cache {
-		if v.expiresAt < now && v.lastAccessed < lruExpiredTime {
-			lruExpiredTime = v.lastAccessed
-			lruExpiredKey = k
+		if v.expiresAt < now {
+			// This item is expired
+			if v.lastAccessed < lruExpiredTime {
+				lruExpiredTime = v.lastAccessed
+				lruExpiredKey = k
+				hasExpired = true
+			}
 		}
+		// Track LRU regardless of expiration
 		if v.lastAccessed < lruTime {
 			lruTime = v.lastAccessed
 			lruKey = k
 		}
 	}
-	if lruExpiredTime < now {
-		// deleting LRU expired item
+
+	if hasExpired {
+		// Prefer deleting LRU expired item
 		delete(i.cache, lruExpiredKey)
 	} else {
-		// no expired items, delete LRU non-expired item
+		// No expired items, delete LRU non-expired item
 		delete(i.cache, lruKey)
 	}
 }

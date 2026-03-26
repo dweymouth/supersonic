@@ -1,6 +1,10 @@
 package mediaprovider
 
-import "time"
+import (
+	"time"
+
+	"fyne.io/fyne/v2"
+)
 
 // Bit field flag for the ReleaseTypes property
 type ReleaseType = int32
@@ -67,6 +71,7 @@ type Album struct {
 	ID           string
 	CoverArtID   string
 	Name         string
+	SortName     string
 	Duration     time.Duration
 	ArtistIDs    []string
 	ArtistNames  []string
@@ -123,35 +128,39 @@ type Genre struct {
 }
 
 type Track struct {
-	ID            string
-	CoverArtID    string
-	ParentID      string
-	Title         string
-	Duration      time.Duration
-	TrackNumber   int
-	DiscNumber    int
-	Genres        []string
-	ArtistIDs     []string
-	ArtistNames   []string
-	ComposerIDs   []string
-	ComposerNames []string
-	Album         string
-	AlbumID       string
-	Year          int
-	Rating        int
-	Favorite      bool
-	Size          int64
-	PlayCount     int
-	LastPlayed    time.Time
-	FilePath      string
-	BitRate       int
-	ContentType   string
-	Comment       string
-	BPM           int
-	ReplayGain    ReplayGainInfo
-	SampleRate    int
-	BitDepth      int
-	Channels      int
+	ID               string
+	CoverArtID       string
+	ParentID         string
+	Title            string
+	Duration         time.Duration
+	TrackNumber      int
+	DiscNumber       int
+	Genres           []string
+	ArtistIDs        []string
+	ArtistNames      []string
+	AlbumArtistIDs   []string
+	AlbumArtistNames []string
+	ComposerIDs      []string
+	ComposerNames    []string
+	Album            string
+	AlbumID          string
+	Year             int
+	Rating           int
+	Favorite         bool
+	Size             int64
+	PlayCount        int
+	LastPlayed       time.Time
+	FilePath         string
+	BitRate          int
+	ContentType      string
+	Comment          string
+	BPM              int
+	ReplayGain       ReplayGainInfo
+	SampleRate       int
+	BitDepth         int
+	Extension        string
+	Channels         int
+	DateAdded        time.Time
 }
 
 type ReplayGainInfo struct {
@@ -277,6 +286,7 @@ const (
 	ContentTypeTrack
 	ContentTypeGenre
 	ContentTypeRadioStation
+	ContentTypeOther
 )
 
 func (c ContentType) String() string {
@@ -293,6 +303,8 @@ func (c ContentType) String() string {
 		return "Genre"
 	case ContentTypeRadioStation:
 		return "Radio station"
+	case ContentTypeOther:
+		return "Other"
 	default:
 		return "Unknown"
 	}
@@ -303,6 +315,9 @@ type SearchResult struct {
 	ID      string
 	CoverID string
 	Type    ContentType
+
+	// Optional icon to display instead of the default for this content type
+	Icon fyne.Resource
 
 	// for Album / Playlist: track count
 	//     Artist / Genre: album count

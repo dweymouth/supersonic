@@ -67,7 +67,9 @@ func (g *FocusList) FocusNeighbor(curItem widget.ListItemID, up bool) {
 	other := g.ItemForID(focusIdx)
 	g.mutex.Unlock()
 	if other != nil {
-		fyne.CurrentApp().Driver().CanvasForObject(g).Focus(other.(fyne.Focusable))
+		if c := fyne.CurrentApp().Driver().CanvasForObject(g); c != nil {
+			c.Focus(other.(fyne.Focusable))
+		}
 	}
 }
 
@@ -120,8 +122,7 @@ func (l *FocusListRowBase) SetItemID(id widget.ListItemID) {
 
 func (l *FocusListRowBase) EnsureUnfocused() {
 	if l.Focused {
-		c := fyne.CurrentApp().Driver().CanvasForObject(l)
-		if c != nil {
+		if c := fyne.CurrentApp().Driver().CanvasForObject(l); c != nil {
 			c.Unfocus()
 		}
 	}

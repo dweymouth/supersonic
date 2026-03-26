@@ -31,6 +31,7 @@ func NewSearchEntry() *SearchEntry {
 
 // For use only by extending widgets
 func (sf *SearchEntry) Init() {
+	sf.Icon = theme.SearchIcon()
 	sf.PlaceHolder = lang.L("Search")
 	sf.ActionItem = NewClearTextButton(func() {
 		sf.SetText("")
@@ -49,7 +50,9 @@ func (sf *SearchEntry) Init() {
 func (s *SearchEntry) TypedKey(e *fyne.KeyEvent) {
 	if e.Name == fyne.KeyEscape {
 		s.SetText("")
-		fyne.CurrentApp().Driver().CanvasForObject(s).Unfocus()
+		if c := fyne.CurrentApp().Driver().CanvasForObject(s); c != nil {
+			c.Unfocus()
+		}
 		return
 	}
 	s.Entry.TypedKey(e)
@@ -83,7 +86,7 @@ func (s *SearchEntry) updateActionButton() bool {
 	btn := s.ActionItem.(*searchActionButton)
 	oldResouce := btn.Resource
 	if s.Text == "" {
-		btn.Resource = theme.SearchIcon()
+		btn.Resource = nil
 	} else {
 		btn.Resource = theme.ContentClearIcon()
 	}
@@ -111,7 +114,6 @@ func (s *SearchEntry) sendSearch(text string) {
 func NewClearTextButton(onTapped func()) *searchActionButton {
 	c := &searchActionButton{OnTapped: onTapped}
 	c.ExtendBaseWidget(c)
-	c.Resource = theme.SearchIcon()
 	c.icon = widget.NewIcon(c.Resource)
 	return c
 }

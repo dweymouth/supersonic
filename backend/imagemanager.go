@@ -66,10 +66,7 @@ func NewImageManager(ctx context.Context, s *ServerManager, baseCacheDir string)
 		maxOnDiskCacheSizeBytes: defaultDiskCacheSizeBytes,
 		serverFetchSema:         make(chan any, maxConcurrentServerFetches),
 	}
-	s.OnLogout(func() {
-		i.thumbnailCache.Clear()
-		i.clearFullSizeCover()
-	})
+	s.OnLogout(i.ClearInMemoryCache)
 	i.thumbnailCache.OnEvictTaskRan = func() {
 		i.clearFullSizeCoverIfExpired()
 		i.pruneOnDiskCache()
@@ -193,6 +190,12 @@ func (i *ImageManager) RefreshCachedArtistImageIfExpired(artistID string, imgURL
 		_, err = i.FetchAndCacheArtistImage(artistID, imgURL)
 	}
 	return err
+}
+
+// ClearInMemoryCache clears images from the in-memory caches.
+func (i *ImageManager) ClearInMemoryCache() {
+	i.thumbnailCache.Clear()
+	i.clearFullSizeCover()
 }
 
 func (i *ImageManager) ensureCoverCacheDir() string {

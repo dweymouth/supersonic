@@ -100,6 +100,58 @@ func FormatItemDate(date mediaprovider.ItemDate) string {
 	return sb.String()
 }
 
+func FormatDate(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+
+	v := []int{
+		t.Local().Year(),
+		int(t.Local().Month()),
+		t.Local().Day(),
+	}
+	id := mediaprovider.ItemDate{
+		Year:  &v[0],
+		Month: &v[1],
+		Day:   &v[2],
+	}
+
+	return FormatItemDate(id)
+}
+
+func LastPlayedDisplayString(t time.Time) string {
+	if t.IsZero() {
+		return lang.L("never")
+	}
+	switch d := time.Since(t); {
+	case d.Hours() < 1:
+		mins := int(d.Minutes())
+		return lang.LocalizePluralKey("x_minutes_ago",
+			fmt.Sprintf("%d minutes ago", mins), mins,
+			map[string]string{"minutes": strconv.Itoa(mins)})
+	case d.Hours() < 24:
+		hrs := int(d.Hours())
+		return lang.LocalizePluralKey("x_hours_ago",
+			fmt.Sprintf("%d hours ago", hrs), hrs,
+			map[string]string{"hours": strconv.Itoa(hrs)})
+	case d.Hours() < 24*31:
+		days := int(d.Hours() / 24)
+		return lang.LocalizePluralKey("x_days_ago",
+			fmt.Sprintf("%d days ago", days), days,
+			map[string]string{"days": strconv.Itoa(days)})
+	case d.Hours() < 24*365:
+		months := int(d.Hours() / (24 * 31))
+		return lang.LocalizePluralKey("x_months_ago",
+			fmt.Sprintf("%d months ago", months), months,
+			map[string]string{"months": strconv.Itoa(months)})
+	default:
+		years := int(d.Hours() / (24 * 365))
+		return lang.LocalizePluralKey("x_years_ago",
+			fmt.Sprintf("%d years ago", years), years,
+			map[string]string{"years": strconv.Itoa(years)})
+	}
+}
+
 var BoldRichTextStyle = widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}, Inline: true}
 
 func MakeOpaque(c color.Color) color.Color {
@@ -313,7 +365,7 @@ func AddHeaderBackground(obj fyne.CanvasObject) *fyne.Container {
 
 func AddHeaderBackgroundWithColorName(obj fyne.CanvasObject, colorName fyne.ThemeColorName) *fyne.Container {
 	bgrnd := myTheme.NewThemedRectangle(colorName)
-	bgrnd.CornerRadiusName = theme.SizeNameInputRadius
+	bgrnd.CornerRadius = theme.InputRadiusSize()
 	return container.NewStack(bgrnd,
 		container.New(&layout.CustomPaddedLayout{LeftPadding: 10, RightPadding: 10, TopPadding: 10, BottomPadding: 10},
 			obj))
@@ -368,22 +420,29 @@ type ToolTipRichText struct {
 	OnTapped   func(e *fyne.PointEvent)
 }
 
-type HSpace struct {
+type Space struct {
 	widget.BaseWidget
 
-	Width float32
+	Width  float32
+	Height float32
 }
 
-func NewHSpace(w float32) *HSpace {
-	h := &HSpace{Width: w}
-	h.ExtendBaseWidget(h)
-	return h
+func NewHSpace(w float32) *Space {
+	s := &Space{Width: w}
+	s.ExtendBaseWidget(s)
+	return s
 }
 
-func (h *HSpace) MinSize() fyne.Size {
-	return fyne.NewSize(h.Width, 0)
+func NewVSpace(h float32) *Space {
+	s := &Space{Height: h}
+	s.ExtendBaseWidget(s)
+	return s
 }
 
-func (h *HSpace) CreateRenderer() fyne.WidgetRenderer {
+func (h *Space) MinSize() fyne.Size {
+	return fyne.NewSize(h.Width, h.Height)
+}
+
+func (h *Space) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(layout.NewSpacer())
 }

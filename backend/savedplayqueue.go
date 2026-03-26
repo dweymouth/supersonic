@@ -24,8 +24,7 @@ type serializedSavedPlayQueue struct {
 
 // SavePlayQueue saves the current play queue and playback position to a JSON file.
 // If the provided CanSavePlayQueue server is non-nil, it will also save to the server.
-func SavePlayQueue(serverID string, pm *PlaybackManager, filepath string, server mediaprovider.CanSavePlayQueue) error {
-	queue := pm.GetPlayQueue()
+func SavePlayQueue(serverID string, queue []mediaprovider.MediaItem, pm *PlaybackManager, filepath string, server mediaprovider.CanSavePlayQueue) error {
 	stats := pm.PlaybackStatus()
 	trackIdx := pm.NowPlayingIndex()
 

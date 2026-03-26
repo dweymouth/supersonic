@@ -17,6 +17,8 @@ type Router struct {
 	Controller *controller.Controller
 	Nav        NavigationHandler
 	widgetPool *util.WidgetPool
+
+	OnNavigateTo func(controller.Route)
 }
 
 func NewRouter(app *backend.App, controller *controller.Controller, nav NavigationHandler) Router {
@@ -24,7 +26,7 @@ func NewRouter(app *backend.App, controller *controller.Controller, nav Navigati
 		App:        app,
 		Controller: controller,
 		Nav:        nav,
-		widgetPool: util.NewWidgetPool(),
+		widgetPool: util.NewWidgetPool(app.BackgroundContext()),
 	}
 	return r
 }
@@ -48,7 +50,7 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	case controller.Genres:
 		return NewGenresPage(r.Controller, r.App.ServerManager.Server)
 	case controller.NowPlaying:
-		return NewNowPlayingPage(&r.App.Config.NowPlayingConfig, r.Controller, r.widgetPool, r.App.ServerManager, r.App.ImageManager, r.App.PlaybackManager, r.App.ServerManager.Server, canRate, canShare, r.App.LrcLibFetcher)
+		return NewNowPlayingPage(&r.App.Config.NowPlayingConfig, r.Controller, r.widgetPool, r.App.ServerManager, r.App.LyricsManager, r.App.ImageManager, r.App.PlaybackManager, r.App.ServerManager.Server, canRate, canShare, r.App.Config)
 	case controller.Playlist:
 		return NewPlaylistPage(rte.Arg, &r.App.Config.PlaylistPage, r.widgetPool, r.Controller, r.App.ServerManager, r.App.PlaybackManager, r.App.ImageManager)
 	case controller.Playlists:
@@ -63,8 +65,11 @@ func (r Router) CreatePage(rte controller.Route) Page {
 	return nil
 }
 
-func (r Router) NavigateTo(rte controller.Route) {
+func (r *Router) NavigateTo(rte controller.Route) {
 	if rte != r.Nav.CurrentPage() {
 		r.Nav.SetPage(r.CreatePage(rte))
+	}
+	if r.OnNavigateTo != nil {
+		r.OnNavigateTo(rte)
 	}
 }

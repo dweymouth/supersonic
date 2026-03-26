@@ -272,7 +272,11 @@ func (s *searchResult) Update(result *mediaprovider.SearchResult) {
 	}
 	s.id = result.ID
 	s.contentType = result.Type
-	s.image.PlaceholderIcon = placeholderIconForContentType(result.Type)
+	if result.Icon != nil {
+		s.image.PlaceholderIcon = result.Icon
+	} else {
+		s.image.PlaceholderIcon = placeholderIconForContentType(result.Type)
+	}
 	s.imageLoader.Load(result.CoverID)
 	s.title.SetText(result.Name)
 
@@ -300,19 +304,29 @@ func (s *searchResult) Update(result *mediaprovider.SearchResult) {
 		} else {
 			secondaryText = ""
 		}
+	case mediaprovider.ContentTypeOther:
+		secondaryText = result.ArtistName
 	}
-	s.secondary.Segments = []widget.RichTextSegment{
-		&widget.TextSegment{
-			Text:  result.Type.String(),
-			Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, TextStyle: fyne.TextStyle{Bold: true}, Inline: true},
-		},
+
+	if result.Type == mediaprovider.ContentTypeOther {
+		s.secondary.Segments = []widget.RichTextSegment{}
+	} else {
+		s.secondary.Segments = []widget.RichTextSegment{
+			&widget.TextSegment{
+				Text:  result.Type.String(),
+				Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, TextStyle: fyne.TextStyle{Bold: true}, Inline: true},
+			},
+		}
 	}
 	if secondaryText != "" {
+		if len(s.secondary.Segments) > 0 {
+			s.secondary.Segments = append(s.secondary.Segments,
+				&widget.TextSegment{
+					Text:  " · ",
+					Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
+				})
+		}
 		s.secondary.Segments = append(s.secondary.Segments,
-			&widget.TextSegment{
-				Text:  " · ",
-				Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
-			},
 			&widget.TextSegment{
 				Text:  secondaryText,
 				Style: widget.RichTextStyle{SizeName: theme.SizeNameCaptionText, Inline: true},
