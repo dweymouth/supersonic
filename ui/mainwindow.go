@@ -515,7 +515,7 @@ func (m *MainWindow) addShortcuts() {
 		m.Controller.SelectAll()
 	})
 	m.Canvas().AddShortcut(&shortcuts.ShortcutCloseWindow, func(_ fyne.Shortcut) {
-		if m.App.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
+		if runtime.GOOS == "darwin" || (m.App.Config.Application.CloseToSystemTray && m.HaveSystemTray()) {
 			m.Window.Hide()
 		}
 	})
