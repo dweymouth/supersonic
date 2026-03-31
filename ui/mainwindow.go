@@ -185,7 +185,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 
 	m.Window.SetCloseIntercept(func() {
 		m.SaveWindowSettings()
-		if runtime.GOOS == "darwin" || (app.Config.Application.CloseToSystemTray && m.HaveSystemTray()) {
+		if (runtime.GOOS == "darwin" && !isRealQuit()) || (app.Config.Application.CloseToSystemTray && m.HaveSystemTray()) {
 			m.Window.Hide()
 		} else {
 			m.Window.Close()

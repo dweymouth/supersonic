@@ -6,3 +6,7 @@ import "fyne.io/fyne/v2"
 
 func installReopenHandler(w fyne.Window) {
 }
+
+func isRealQuit() bool {
+	return false
+}

@@ -3,6 +3,7 @@
 #import <AppKit/AppKit.h>
 
 extern void appReopened(void);
+extern void appShouldTerminate(void);
 
 @interface ReopenDelegate : NSObject<NSApplicationDelegate>
 @property (nonatomic, strong) id<NSApplicationDelegate> wrapped;
@@ -10,6 +11,16 @@ extern void appReopened(void);
 
 
 @implementation ReopenDelegate
+
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
+    // Set the quitting flag before GLFW's delegate fires close requests for
+    // each window, so our close intercept knows to close rather than hide.
+    appShouldTerminate();
+    if ([self.wrapped respondsToSelector:_cmd]) {
+        return [self.wrapped applicationShouldTerminate:sender];
+    }
+    return NSTerminateNow;
+}
 
 - (BOOL)applicationShouldHandleReopen:(NSApplication *)app
                     hasVisibleWindows:(BOOL)hasVisible {
