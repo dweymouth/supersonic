@@ -15,7 +15,6 @@ import (
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
-	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
@@ -595,12 +594,12 @@ func (a *NowPlayingPage) formatStatusLine() {
 	}
 }
 
-func (a *NowPlayingPage) formatMediaInfoStr(player player.BasePlayer) string {
-	mpv, ok := player.(*mpv.Player)
+func (a *NowPlayingPage) formatMediaInfoStr(p player.BasePlayer) string {
+	lp, ok := p.(player.LocalPlayer)
 	if !ok {
 		return ""
 	}
-	audioInfo, err := mpv.GetMediaInfo()
+	audioInfo, err := lp.GetMediaInfo()
 	if err != nil {
 		log.Printf("error getting playback status: %s", err.Error())
 		return ""
