@@ -1,8 +1,10 @@
 // av_player.c — FFmpeg + miniaudio audio player
 // One translation unit: defines miniaudio implementation here.
 
+// Use FFmpeg for all decoding; disable miniaudio decoders
+#define MA_NO_DECODING
+#define MA_NO_ENCODING
 #define MA_IMPLEMENTATION
-#define MA_NO_FLAC  // Use FFmpeg for FLAC decoding instead
 #include "miniaudio.h"
 
 #include "av_player.h"
@@ -94,6 +96,18 @@ struct av_player {
     // EOF flag set by decode loop; cleared when ring drains
     atomic_int       eof_reached;      // 1 = decoder exhausted
     atomic_int       next_consumed;    // 1 = next track has been swapped in
+
+    // Protects pointer swaps of dec/next_dec between the decode goroutine
+    // (gapless swap in av_player_decode_step) and the playback manager
+    // goroutine (av_player_open_next).  Never held during slow operations
+    // like decoder_free — only during pointer reads/writes.
+    ma_mutex         decoder_lock;
+
+    // Protects the active decoder's filter graph (filter_graph, buffersrc_ctx,
+    // buffersink_ctx) against concurrent rebuilds from av_player_set_filters /
+    // av_player_set_peaks_enabled while av_player_decode_step is using those
+    // pointers.  Held briefly around each individual filter API call.
+    ma_mutex         filter_lock;
 };
 
 // --------------------------------------------------------------------------
@@ -506,6 +520,8 @@ av_player_t *av_player_create(void) {
     atomic_store(&p->r_peak, -INFINITY);
     atomic_store(&p->l_rms,  -INFINITY);
     atomic_store(&p->r_rms,  -INFINITY);
+    ma_mutex_init(&p->decoder_lock);
+    ma_mutex_init(&p->filter_lock);
     return p;
 }
 
@@ -529,6 +545,8 @@ void av_player_destroy(av_player_t *p) {
     decoder_free(p->dec);
     decoder_free(p->next_dec);
     ring_free(&p->ring);
+    ma_mutex_uninit(&p->decoder_lock);
+    ma_mutex_uninit(&p->filter_lock);
     free(p);
 }
 
@@ -586,8 +604,14 @@ int av_player_open(av_player_t *p, const char *url, double start_time,
 int av_player_open_next(av_player_t *p, const char *url,
                         const char *eq_filter, double rg_gain_db, int rg_prevent_clip)
 {
-    decoder_free(p->next_dec);
+    // Atomically take ownership of the old next decoder so that the decode
+    // goroutine cannot simultaneously free it during a gapless swap.
+    ma_mutex_lock(&p->decoder_lock);
+    decoder_t *old_next = p->next_dec;
     p->next_dec = NULL;
+    ma_mutex_unlock(&p->decoder_lock);
+
+    decoder_free(old_next);  // free outside the lock — can be slow
     atomic_store(&p->next_consumed, 0);
 
     if (!url || url[0] == '\0') return 0;
@@ -606,7 +630,10 @@ int av_player_open_next(av_player_t *p, const char *url,
                                      d->eq_filter, d->rg_gain_db, d->rg_prevent_clip);
     if (ret < 0) { decoder_free(d); return ret; }
 
+    // Publish the new decoder atomically.
+    ma_mutex_lock(&p->decoder_lock);
     p->next_dec = d;
+    ma_mutex_unlock(&p->decoder_lock);
     return 0;
 }
 
@@ -675,8 +702,11 @@ int av_player_set_filters(av_player_t *p,
     strncpy(p->dec->eq_filter, eq_filter ? eq_filter : "", sizeof(p->dec->eq_filter) - 1);
     p->dec->rg_gain_db      = rg_gain_db;
     p->dec->rg_prevent_clip = rg_prevent_clip;
-    return decoder_build_filter_graph(p->dec, p->peaks_enabled,
-                                      p->dec->eq_filter, rg_gain_db, rg_prevent_clip);
+    ma_mutex_lock(&p->filter_lock);
+    int ret = decoder_build_filter_graph(p->dec, p->peaks_enabled,
+                                         p->dec->eq_filter, rg_gain_db, rg_prevent_clip);
+    ma_mutex_unlock(&p->filter_lock);
+    return ret;
 }
 
 int av_player_get_state(av_player_t *p) {
@@ -708,8 +738,10 @@ void av_player_get_peaks(av_player_t *p,
 void av_player_set_peaks_enabled(av_player_t *p, int enabled) {
     p->peaks_enabled = enabled;
     if (p->dec) {
+        ma_mutex_lock(&p->filter_lock);
         decoder_build_filter_graph(p->dec, enabled,
                                    p->dec->eq_filter, p->dec->rg_gain_db, p->dec->rg_prevent_clip);
+        ma_mutex_unlock(&p->filter_lock);
     }
 }
 
@@ -794,9 +826,16 @@ static int drain_sink(av_player_t *p, decoder_t *d) {
         // Retry previously-stalled frame.
         ff = d->pending_frame;
     } else {
-        // Pull next frame from filter graph.
+        // Pull next frame from filter graph — hold filter_lock so a concurrent
+        // filter rebuild cannot free/replace buffersink_ctx mid-call.
         ff = d->filt_frame;
+        ma_mutex_lock(&p->filter_lock);
         int ret = av_buffersink_get_frame(d->buffersink_ctx, ff);
+        AVRational tb = (ff->pts != AV_NOPTS_VALUE)
+                        ? av_buffersink_get_time_base(d->buffersink_ctx)
+                        : (AVRational){0, 1};
+        ma_mutex_unlock(&p->filter_lock);
+
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
             return AVERROR(EAGAIN);  // nothing ready
         }
@@ -804,7 +843,6 @@ static int drain_sink(av_player_t *p, decoder_t *d) {
 
         // Update time position from this frame's pts.
         if (ff->pts != AV_NOPTS_VALUE) {
-            AVRational tb = av_buffersink_get_time_base(d->buffersink_ctx);
             double t = (double)ff->pts * av_q2d(tb);
             atomic_store_explicit((_Atomic double *)&p->time_pos, t, memory_order_relaxed);
         }
@@ -871,11 +909,18 @@ int av_player_decode_step(av_player_t *p) {
     // in the ring.  Swap to the next decoder immediately — before the ring
     // drains — so the ring stays filled and there is no audible gap.
     if (atomic_load(&p->eof_reached)) {
-        if (p->next_dec) {
-            // Gapless: swap in next decoder while ring still has audio data.
-            decoder_free(p->dec);
-            p->dec = p->next_dec;
+        // Gapless: atomically swap in next decoder while ring still has audio
+        // data.  We hold the lock only for the pointer swap; the actual free
+        // of the old decoder happens outside to keep the critical section short.
+        ma_mutex_lock(&p->decoder_lock);
+        decoder_t *next = p->next_dec;
+        if (next) {
+            decoder_t *old_dec = p->dec;
+            p->dec = next;
             p->next_dec = NULL;
+            ma_mutex_unlock(&p->decoder_lock);
+
+            decoder_free(old_dec);  // free outside the lock
             atomic_store(&p->eof_reached, 0);
             atomic_store(&p->next_consumed, 1);
 
@@ -891,6 +936,7 @@ int av_player_decode_step(av_player_t *p) {
 
             return AVPLAYER_DECODE_NEXT_READY;  // Go should invoke OnTrackChange
         }
+        ma_mutex_unlock(&p->decoder_lock);
         // No next track: wait for ring to drain before signalling stopped.
         if (ring_avail(&p->ring) == 0) {
             atomic_store(&p->state, AVPLAYER_STATE_STOPPED);
@@ -909,11 +955,15 @@ int av_player_decode_step(av_player_t *p) {
         // Drain decoder
         AVFrame *frame = d->frame;
         while (avcodec_receive_frame(d->codec_ctx, frame) >= 0) {
+            ma_mutex_lock(&p->filter_lock);
             (void)av_buffersrc_add_frame_flags(d->buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_PUSH);
+            ma_mutex_unlock(&p->filter_lock);
             av_frame_unref(frame);
         }
         // Flush filter graph
+        ma_mutex_lock(&p->filter_lock);
         (void)av_buffersrc_add_frame_flags(d->buffersrc_ctx, NULL, AV_BUFFERSRC_FLAG_PUSH);
+        ma_mutex_unlock(&p->filter_lock);
         // Drain sink into ring
         while (drain_sink(p, d) == 0) {}
 
@@ -946,7 +996,9 @@ int av_player_decode_step(av_player_t *p) {
     // Receive all decoded frames
     AVFrame *frame = d->frame;
     while ((ret = avcodec_receive_frame(d->codec_ctx, frame)) == 0) {
+        ma_mutex_lock(&p->filter_lock);
         int r2 = av_buffersrc_add_frame_flags(d->buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_PUSH);
+        ma_mutex_unlock(&p->filter_lock);
         av_frame_unref(frame);
         if (r2 < 0) break;
 
