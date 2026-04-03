@@ -55,6 +55,7 @@ typedef struct {
     atomic_int      write_idx;   // next frame to write (mod cap)
     atomic_int      read_idx;    // next frame to read  (mod cap)
     atomic_int      fill;        // frames available to read
+    _Atomic long long frames_written_total; // cumulative frames written since last av_player_open
 } ring_buf_t;
 
 struct av_player {
@@ -97,6 +98,17 @@ struct av_player {
     atomic_int       eof_reached;      // 1 = decoder exhausted
     atomic_int       next_consumed;    // 1 = next track has been swapped in
 
+    // Gapless track-change delay: AVPLAYER_DECODE_NEXT_READY is held back until
+    // frames_played_total reaches track_change_threshold, meaning the new track's
+    // audio has actually started playing out of the ring buffer.
+    _Atomic long long frames_played_total;   // incremented in ma_data_callback
+    atomic_int        pending_track_change;  // 1 = waiting to fire NEXT_READY
+    long long         track_change_threshold; // non-atomic: only accessed by decode goroutine
+    // Position clock: position = position_offset + (frames_played_total - position_clock_ref) / rate
+    // Reset on av_player_open, av_player_seek, and when NEXT_READY fires.
+    _Atomic double    position_offset;    // seconds at last clock reset
+    _Atomic long long position_clock_ref; // frames_played_total at last clock reset
+
     // Protects pointer swaps of dec/next_dec between the decode goroutine
     // (gapless swap in av_player_decode_step) and the playback manager
     // goroutine (av_player_open_next).  Never held during slow operations
@@ -120,6 +132,7 @@ static void ring_init(ring_buf_t *r) {
     atomic_store(&r->write_idx, 0);
     atomic_store(&r->read_idx,  0);
     atomic_store(&r->fill,      0);
+    atomic_store_explicit((_Atomic long long *)&r->frames_written_total, 0LL, memory_order_relaxed);
 }
 
 static void ring_free(ring_buf_t *r) {
@@ -165,6 +178,8 @@ static int ring_write(ring_buf_t *r, const float *src, int n_frames) {
 
     atomic_store(&r->write_idx, (wi + n_frames) % cap);
     atomic_fetch_add(&r->fill, n_frames);
+    atomic_fetch_add_explicit((_Atomic long long *)&r->frames_written_total,
+                              (long long)n_frames, memory_order_relaxed);
     return n_frames;
 }
 
@@ -224,13 +239,11 @@ static void decoder_free(decoder_t *d) {
     free(d);
 }
 
-// Build filter graph: abuffer → [astats] → [EQ] → [volume] → aformat → aresample → abuffersink
+// Build filter graph: abuffer → [EQ] → [volume] → aformat → aresample → abuffersink
 // eq_filter: comma-separated avfilter fragment, or NULL/""
 // rg_gain_db: volume adjustment in dB (0 = no change)
 // rg_prevent_clip: non-zero → add alimiter at 0 dBFS
-// peaks_enabled: non-zero → prepend astats filter
 static int decoder_build_filter_graph(decoder_t *d,
-                                      int peaks_enabled,
                                       const char *eq_filter,
                                       double rg_gain_db,
                                       int rg_prevent_clip)
@@ -275,12 +288,6 @@ static int decoder_build_filter_graph(decoder_t *d,
     // We use avfilter_graph_parse_ptr to assemble the full chain.
     char chain[8192];
     chain[0] = '\0';
-
-    // astats (peak measurement)
-    if (peaks_enabled) {
-        strncat(chain, "astats=metadata=1:reset=1:measure_overall=none,",
-                sizeof(chain) - strlen(chain) - 1);
-    }
 
     // User EQ bands
     if (eq_filter && eq_filter[0] != '\0') {
@@ -441,6 +448,39 @@ static void ma_data_callback(ma_device *device, void *output, const void *input,
     }
 
     int got = ring_read(&p->ring, out, (int)frame_count);
+    if (got > 0)
+        atomic_fetch_add_explicit((_Atomic long long *)&p->frames_played_total,
+                                  (long long)got, memory_order_relaxed);
+
+    // Compute peaks from pre-volume PCM (represents the demuxed/decoded signal).
+    if (p->peaks_enabled && got > 0) {
+        float l_max = 0.0f, r_max = 0.0f;
+        float l_sq = 0.0f, r_sq = 0.0f;
+        for (int i = 0; i < got; i++) {
+            float l = out[i * AVPLAYER_CHANNELS + 0];
+            float r = out[i * AVPLAYER_CHANNELS + 1];
+            float al = l < 0.0f ? -l : l;
+            float ar = r < 0.0f ? -r : r;
+            if (al > l_max) l_max = al;
+            if (ar > r_max) r_max = ar;
+            l_sq += l * l;
+            r_sq += r * r;
+        }
+        double lp = (l_max > 0.0f) ? 20.0 * log10((double)l_max) : -INFINITY;
+        double rp = (r_max > 0.0f) ? 20.0 * log10((double)r_max) : -INFINITY;
+        double lr = (l_sq > 0.0f) ? 10.0 * log10((double)(l_sq / got)) : -INFINITY;
+        double rr = (r_sq > 0.0f) ? 10.0 * log10((double)(r_sq / got)) : -INFINITY;
+        atomic_store_explicit((_Atomic double *)&p->l_peak, lp, memory_order_relaxed);
+        atomic_store_explicit((_Atomic double *)&p->r_peak, rp, memory_order_relaxed);
+        atomic_store_explicit((_Atomic double *)&p->l_rms,  lr, memory_order_relaxed);
+        atomic_store_explicit((_Atomic double *)&p->r_rms,  rr, memory_order_relaxed);
+    } else if (got == 0) {
+        atomic_store_explicit((_Atomic double *)&p->l_peak, -INFINITY, memory_order_relaxed);
+        atomic_store_explicit((_Atomic double *)&p->r_peak, -INFINITY, memory_order_relaxed);
+        atomic_store_explicit((_Atomic double *)&p->l_rms,  -INFINITY, memory_order_relaxed);
+        atomic_store_explicit((_Atomic double *)&p->r_rms,  -INFINITY, memory_order_relaxed);
+    }
+
     // Apply volume
     float vol = p->volume;
     if (vol < 0.9999f || vol > 1.0001f) {
@@ -558,6 +598,11 @@ int av_player_open(av_player_t *p, const char *url, double start_time,
     ring_clear(&p->ring);
     atomic_store(&p->eof_reached, 0);
     atomic_store(&p->next_consumed, 0);
+    atomic_store(&p->pending_track_change, 0);
+    atomic_store_explicit((_Atomic long long *)&p->frames_played_total, 0LL, memory_order_relaxed);
+    atomic_store_explicit((_Atomic long long *)&p->ring.frames_written_total, 0LL, memory_order_relaxed);
+    atomic_store_explicit((_Atomic double *)&p->position_offset, 0.0, memory_order_relaxed);
+    atomic_store_explicit((_Atomic long long *)&p->position_clock_ref, 0LL, memory_order_relaxed);
 
     decoder_free(p->next_dec);
     p->next_dec = NULL;
@@ -576,8 +621,7 @@ int av_player_open(av_player_t *p, const char *url, double start_time,
     d->rg_gain_db      = rg_gain_db;
     d->rg_prevent_clip = rg_prevent_clip;
 
-    ret = decoder_build_filter_graph(d, p->peaks_enabled,
-                                     d->eq_filter, d->rg_gain_db, d->rg_prevent_clip);
+    ret = decoder_build_filter_graph(d, d->eq_filter, d->rg_gain_db, d->rg_prevent_clip);
     if (ret < 0) { decoder_free(d); return ret; }
 
     // Populate media info
@@ -626,8 +670,7 @@ int av_player_open_next(av_player_t *p, const char *url,
     d->rg_gain_db      = rg_gain_db;
     d->rg_prevent_clip = rg_prevent_clip;
 
-    ret = decoder_build_filter_graph(d, p->peaks_enabled,
-                                     d->eq_filter, d->rg_gain_db, d->rg_prevent_clip);
+    ret = decoder_build_filter_graph(d, d->eq_filter, d->rg_gain_db, d->rg_prevent_clip);
     if (ret < 0) { decoder_free(d); return ret; }
 
     // Publish the new decoder atomically.
@@ -641,6 +684,7 @@ void av_player_stop(av_player_t *p) {
     atomic_store(&p->state, AVPLAYER_STATE_STOPPED);
     ring_clear(&p->ring);
     atomic_store(&p->eof_reached, 0);
+    atomic_store(&p->pending_track_change, 0);
     decoder_free(p->dec);   p->dec      = NULL;
     decoder_free(p->next_dec); p->next_dec = NULL;
     atomic_store_explicit((_Atomic double *)&p->time_pos, 0.0, memory_order_relaxed);
@@ -677,15 +721,20 @@ int av_player_seek(av_player_t *p, double seconds) {
         av_frame_unref(p->dec->filt_frame);
     }
     // Reinit the filter graph to avoid corruption
-    decoder_build_filter_graph(p->dec, p->peaks_enabled,
-                                p->dec->eq_filter, p->dec->rg_gain_db, p->dec->rg_prevent_clip);
+    decoder_build_filter_graph(p->dec,
+                               p->dec->eq_filter, p->dec->rg_gain_db, p->dec->rg_prevent_clip);
 
     // Discard any pending frame from before the seek.
     av_frame_free(&p->dec->pending_frame);
 
     ring_clear(&p->ring);
     atomic_store(&p->eof_reached, 0);
-    atomic_store_explicit((_Atomic double *)&p->time_pos, seconds, memory_order_relaxed);
+    atomic_store(&p->pending_track_change, 0);
+    // Reset position clock to the seek target.
+    long long played_now = atomic_load_explicit(
+        (_Atomic long long *)&p->frames_played_total, memory_order_relaxed);
+    atomic_store_explicit((_Atomic double *)&p->position_offset, seconds, memory_order_relaxed);
+    atomic_store_explicit((_Atomic long long *)&p->position_clock_ref, played_now, memory_order_relaxed);
     return 0;
 }
 
@@ -703,8 +752,7 @@ int av_player_set_filters(av_player_t *p,
     p->dec->rg_gain_db      = rg_gain_db;
     p->dec->rg_prevent_clip = rg_prevent_clip;
     ma_mutex_lock(&p->filter_lock);
-    int ret = decoder_build_filter_graph(p->dec, p->peaks_enabled,
-                                         p->dec->eq_filter, rg_gain_db, rg_prevent_clip);
+    int ret = decoder_build_filter_graph(p->dec, p->dec->eq_filter, rg_gain_db, rg_prevent_clip);
     ma_mutex_unlock(&p->filter_lock);
     return ret;
 }
@@ -714,7 +762,11 @@ int av_player_get_state(av_player_t *p) {
 }
 
 double av_player_get_position(av_player_t *p) {
-    return atomic_load_explicit((_Atomic double *)&p->time_pos, memory_order_relaxed);
+    double offset = atomic_load_explicit((_Atomic double *)&p->position_offset, memory_order_relaxed);
+    long long ref  = atomic_load_explicit((_Atomic long long *)&p->position_clock_ref, memory_order_relaxed);
+    long long played = atomic_load_explicit((_Atomic long long *)&p->frames_played_total, memory_order_relaxed);
+    double result = offset + (double)(played - ref) / AVPLAYER_SAMPLE_RATE;
+    return result < 0.0 ? 0.0 : result;
 }
 
 double av_player_get_duration(av_player_t *p) {
@@ -737,11 +789,11 @@ void av_player_get_peaks(av_player_t *p,
 
 void av_player_set_peaks_enabled(av_player_t *p, int enabled) {
     p->peaks_enabled = enabled;
-    if (p->dec) {
-        ma_mutex_lock(&p->filter_lock);
-        decoder_build_filter_graph(p->dec, enabled,
-                                   p->dec->eq_filter, p->dec->rg_gain_db, p->dec->rg_prevent_clip);
-        ma_mutex_unlock(&p->filter_lock);
+    if (!enabled) {
+        atomic_store_explicit((_Atomic double *)&p->l_peak, -INFINITY, memory_order_relaxed);
+        atomic_store_explicit((_Atomic double *)&p->r_peak, -INFINITY, memory_order_relaxed);
+        atomic_store_explicit((_Atomic double *)&p->l_rms,  -INFINITY, memory_order_relaxed);
+        atomic_store_explicit((_Atomic double *)&p->r_rms,  -INFINITY, memory_order_relaxed);
     }
 }
 
@@ -792,24 +844,6 @@ int av_player_set_exclusive(av_player_t *p, int exclusive) {
 // Decode step — called from Go goroutine in a tight loop
 // --------------------------------------------------------------------------
 
-// Update peak values from a filtered frame's metadata
-static void update_peaks(av_player_t *p, AVFrame *frame) {
-    if (!p->peaks_enabled) return;
-    AVDictionaryEntry *e;
-
-    e = av_dict_get(frame->metadata, "lavfi.astats.1.Peak_level", NULL, 0);
-    if (e) atomic_store_explicit((_Atomic double *)&p->l_peak, atof(e->value), memory_order_relaxed);
-
-    e = av_dict_get(frame->metadata, "lavfi.astats.2.Peak_level", NULL, 0);
-    if (e) atomic_store_explicit((_Atomic double *)&p->r_peak, atof(e->value), memory_order_relaxed);
-
-    e = av_dict_get(frame->metadata, "lavfi.astats.1.RMS_level", NULL, 0);
-    if (e) atomic_store_explicit((_Atomic double *)&p->l_rms, atof(e->value), memory_order_relaxed);
-
-    e = av_dict_get(frame->metadata, "lavfi.astats.2.RMS_level", NULL, 0);
-    if (e) atomic_store_explicit((_Atomic double *)&p->r_rms, atof(e->value), memory_order_relaxed);
-}
-
 // Attempt to write one filtered frame to the ring buffer.
 //
 // If d->pending_frame is set, we retry that frame first (it didn't fit last
@@ -846,7 +880,6 @@ static int drain_sink(av_player_t *p, decoder_t *d) {
             double t = (double)ff->pts * av_q2d(tb);
             atomic_store_explicit((_Atomic double *)&p->time_pos, t, memory_order_relaxed);
         }
-        update_peaks(p, ff);
     }
 
     // Try to write to ring (all-or-nothing).
@@ -872,6 +905,19 @@ static int drain_sink(av_player_t *p, decoder_t *d) {
 }
 
 int av_player_decode_step(av_player_t *p) {
+    // Check if a delayed track-change signal is ready to fire.
+    if (atomic_load_explicit(&p->pending_track_change, memory_order_relaxed)) {
+        long long played = atomic_load_explicit(
+            (_Atomic long long *)&p->frames_played_total, memory_order_relaxed);
+        if (played >= p->track_change_threshold) {
+            atomic_store(&p->pending_track_change, 0);
+            // Reset position clock so the new track starts from 0.
+            atomic_store_explicit((_Atomic double *)&p->position_offset, 0.0, memory_order_relaxed);
+            atomic_store_explicit((_Atomic long long *)&p->position_clock_ref, (long long)played, memory_order_relaxed);
+            return AVPLAYER_DECODE_NEXT_READY;
+        }
+    }
+
     if (atomic_load(&p->state) == AVPLAYER_STATE_STOPPED) {
         return AVPLAYER_DECODE_STOPPED;
     }
@@ -912,19 +958,24 @@ int av_player_decode_step(av_player_t *p) {
         // Gapless: atomically swap in next decoder while ring still has audio
         // data.  We hold the lock only for the pointer swap; the actual free
         // of the old decoder happens outside to keep the critical section short.
+        decoder_t *next = NULL;
+        decoder_t *old_dec = NULL;
+
         ma_mutex_lock(&p->decoder_lock);
-        decoder_t *next = p->next_dec;
+        next = p->next_dec;
         if (next) {
-            decoder_t *old_dec = p->dec;
+            old_dec = p->dec;
             p->dec = next;
             p->next_dec = NULL;
-            ma_mutex_unlock(&p->decoder_lock);
+        }
+        ma_mutex_unlock(&p->decoder_lock);
 
+        if (next) {
             decoder_free(old_dec);  // free outside the lock
             atomic_store(&p->eof_reached, 0);
             atomic_store(&p->next_consumed, 1);
 
-            // Update duration / time
+            // Update duration / time for the new track
             atomic_store_explicit((_Atomic double *)&p->duration, p->dec->duration, memory_order_relaxed);
             atomic_store_explicit((_Atomic double *)&p->time_pos, 0.0, memory_order_relaxed);
 
@@ -934,11 +985,20 @@ int av_player_decode_step(av_player_t *p) {
             p->media_info.sample_rate = p->dec->codec_ctx->sample_rate;
             p->media_info.channels    = p->dec->codec_ctx->ch_layout.nb_channels;
 
-            return AVPLAYER_DECODE_NEXT_READY;  // Go should invoke OnTrackChange
+            // Delay NEXT_READY until the new track's audio actually starts playing.
+            // Use frames_played_total + ring.fill (not frames_written_total) so the
+            // threshold is correct even if a prior seek broke the written-total
+            // invariant via ring_clear.
+            long long fp = atomic_load_explicit(
+                (_Atomic long long *)&p->frames_played_total, memory_order_relaxed);
+            int fill = atomic_load(&p->ring.fill);
+            p->track_change_threshold = fp + (long long)fill;
+            atomic_store(&p->pending_track_change, 1);
+            // d is now stale (pointed at the freed old decoder); refresh it.
+            d = p->dec;
         }
-        ma_mutex_unlock(&p->decoder_lock);
         // No next track: wait for ring to drain before signalling stopped.
-        if (ring_avail(&p->ring) == 0) {
+        if (!next && ring_avail(&p->ring) == 0) {
             atomic_store(&p->state, AVPLAYER_STATE_STOPPED);
             return AVPLAYER_DECODE_STOPPED;
         }
