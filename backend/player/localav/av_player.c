@@ -65,6 +65,22 @@ typedef struct {
     _Atomic long long frames_written_total; // cumulative frames written since last av_player_open
 } ring_buf_t;
 
+// Bitrate history ring: maps ring-write frame positions to per-packet bitrates,
+// so that GetMediaInfo can return the bitrate matching the currently playing audio
+// rather than the most recently decoded packet (which is ~ring-buffer-duration ahead).
+// Producer: decode goroutine (sole writer). Consumer: Go thread via av_player_get_media_info.
+#define BITRATE_HISTORY_SIZE 512  // covers ~4s at typical packet rates
+
+typedef struct {
+    long long frame_pos;  // ring.frames_written_total at time of capture
+    int       bitrate;    // bits per second
+} bitrate_entry_t;
+
+typedef struct {
+    bitrate_entry_t entries[BITRATE_HISTORY_SIZE];
+    _Atomic int     write_idx;  // next slot to write (mod BITRATE_HISTORY_SIZE)
+} bitrate_history_t;
+
 struct av_player {
     // Current decoder
     decoder_t       *dec;
@@ -133,6 +149,9 @@ struct av_player {
     // The other bank is safe to write to between swaps.
     eq_bank_t        eq_banks[2];
     atomic_int       eq_active_idx;
+
+    // Bitrate history for display sync (see bitrate_history_t above)
+    bitrate_history_t bitrate_hist;
 };
 
 // --------------------------------------------------------------------------
@@ -632,6 +651,7 @@ int av_player_open(av_player_t *p, const char *url, double start_time,
     atomic_store_explicit((_Atomic long long *)&p->ring.frames_written_total, 0LL, memory_order_relaxed);
     atomic_store_explicit((_Atomic double *)&p->position_offset, 0.0, memory_order_relaxed);
     atomic_store_explicit((_Atomic long long *)&p->position_clock_ref, 0LL, memory_order_relaxed);
+    memset(&p->bitrate_hist, 0, sizeof(p->bitrate_hist));
 
     decoder_free(p->next_dec);
     p->next_dec = NULL;
@@ -759,6 +779,12 @@ int av_player_seek(av_player_t *p, double seconds) {
         (_Atomic long long *)&p->frames_played_total, memory_order_relaxed);
     atomic_store_explicit((_Atomic double *)&p->position_offset, seconds, memory_order_relaxed);
     atomic_store_explicit((_Atomic long long *)&p->position_clock_ref, played_now, memory_order_relaxed);
+    // Realign frames_written_total to frames_played_total so post-seek bitrate
+    // history entries (frame_pos >= played_now) are immediately visible to the
+    // lookup in av_player_get_media_info without waiting for the gap to drain.
+    atomic_store_explicit((_Atomic long long *)&p->ring.frames_written_total,
+                          played_now, memory_order_relaxed);
+    memset(&p->bitrate_hist, 0, sizeof(p->bitrate_hist));
     return 0;
 }
 
@@ -863,7 +889,27 @@ void av_player_set_peaks_enabled(av_player_t *p, int enabled) {
 
 void av_player_get_media_info(av_player_t *p, av_media_info_t *info) {
     *info = p->media_info;
-    info->bitrate = atomic_load(&p->cur_bitrate);
+
+    // Return the bitrate entry whose frame position is closest to (but not
+    // exceeding) frames_played_total, so the displayed bitrate tracks the
+    // audio currently being written to the sound card rather than the most
+    // recently decoded packet (~ring-buffer-duration ahead).
+    long long played = atomic_load_explicit(
+        (_Atomic long long *)&p->frames_played_total, memory_order_relaxed);
+
+    bitrate_history_t *h = &p->bitrate_hist;
+    int wi = atomic_load_explicit(&h->write_idx, memory_order_acquire);
+
+    int best_bitrate = atomic_load(&p->cur_bitrate); // fallback if history empty
+    for (int i = 0; i < BITRATE_HISTORY_SIZE; i++) {
+        int idx = (wi - 1 - i + BITRATE_HISTORY_SIZE) % BITRATE_HISTORY_SIZE;
+        if (h->entries[idx].frame_pos > 0 && h->entries[idx].frame_pos <= played) {
+            best_bitrate = h->entries[idx].bitrate;
+            break;
+        }
+    }
+
+    info->bitrate = best_bitrate;
 }
 
 int av_player_list_devices(av_device_info_t *devices, int max_devices) {
@@ -1110,6 +1156,17 @@ int av_player_decode_step(av_player_t *p) {
             int bps = (int)((double)d->pkt->size * 8.0 / dur_secs);
             atomic_store(&p->cur_bitrate, bps);
             p->media_info.bitrate = bps;
+
+            // Push (frame_pos, bitrate) to history ring so GetMediaInfo can
+            // return the bitrate matching the currently playing audio rather
+            // than the most recently decoded packet.
+            bitrate_history_t *h = &p->bitrate_hist;
+            int wi = atomic_load_explicit(&h->write_idx, memory_order_relaxed);
+            h->entries[wi].frame_pos = atomic_load_explicit(
+                (_Atomic long long *)&p->ring.frames_written_total, memory_order_relaxed);
+            h->entries[wi].bitrate = bps;
+            atomic_store_explicit(&h->write_idx, (wi + 1) % BITRATE_HISTORY_SIZE,
+                                  memory_order_release);
         }
     }
 
