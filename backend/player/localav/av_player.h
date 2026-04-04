@@ -63,18 +63,14 @@ void av_player_destroy(av_player_t *p);
 
 // ---- Playback --------------------------------------------------------
 
-// Open a URL and prepare for playback.  rg_gain_db is the ReplayGain volume
-// adjustment in dB to apply (0.0 = no change).  rg_prevent_clip: non-zero
-// means clamp output to 0 dBFS.
+// Open a URL and prepare for playback.
 // Returns 0 on success.
-int av_player_open(av_player_t *p, const char *url, double start_time,
-                   double rg_gain_db, int rg_prevent_clip);
+int av_player_open(av_player_t *p, const char *url, double start_time);
 
 // Pre-open the next URL for gapless playback.  Call while current track is
 // playing; the decode loop will seamlessly switch when current track ends.
 // Pass NULL/empty url to clear any queued next track.
-int av_player_open_next(av_player_t *p, const char *url,
-                        double rg_gain_db, int rg_prevent_clip);
+int av_player_open_next(av_player_t *p, const char *url);
 
 // Stop playback and discard any buffered audio.
 void av_player_stop(av_player_t *p);
@@ -89,13 +85,14 @@ int av_player_seek(av_player_t *p, double seconds);
 // Set playback volume (0.0–1.0).
 void av_player_set_volume(av_player_t *p, float volume);
 
-// ---- Filters ---------------------------------------------------------
+// ---- ReplayGain ------------------------------------------------------
 
-// Rebuild the audio filter graph with new ReplayGain settings.
-// Takes effect on the current track; safe to call while playing.
-int av_player_set_filters(av_player_t *p,
-                          double rg_gain_db,
-                          int rg_prevent_clip);
+// Set ReplayGain mode (0=off, 1=track, 2=album), prevent-clipping flag, and
+// preamp offset in dB.  Reads tags from the current decoder's metadata and
+// applies the computed gain immediately.  Also arms a pending gain switch at
+// the next gapless track boundary so the new track's gain takes effect
+// exactly when its audio starts playing.
+void av_player_set_replay_gain(av_player_t *p, int mode, int prevent_clip, double preamp_db);
 
 // Update EQ bands and preamp (lock-free swap; takes effect on next audio callback).
 // preamp_db is applied after peak metering and before EQ bands.

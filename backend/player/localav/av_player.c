@@ -42,8 +42,11 @@ typedef struct decoder {
     AVFrame         *pending_frame; // filtered frame that didn't fit in ring — retry next step
     int              audio_stream_idx;
     double           duration;      // seconds; 0 if unknown
-    double           rg_gain_db;
-    int              rg_prevent_clip;
+    // ReplayGain tag values read from file metadata (defaults: gain=0.0, peak=1.0)
+    double           rg_track_gain_db;
+    double           rg_album_gain_db;
+    float            rg_track_peak;
+    float            rg_album_peak;
     char             url[2048];
 } decoder_t;
 
@@ -152,6 +155,18 @@ struct av_player {
 
     // Bitrate history for display sync (see bitrate_history_t above)
     bitrate_history_t bitrate_hist;
+
+    // ReplayGain output-stage gain (applied in miniaudio callback as a linear multiplier).
+    // rg_gain is the active gain; a pending switch fires when frames_played_total
+    // reaches rg_switch_threshold (set at gapless track boundary).
+    _Atomic float      rg_gain;             // current linear gain (1.0 = no adjustment)
+    _Atomic float      rg_gain_pending;     // gain for the next track
+    _Atomic long long  rg_switch_threshold; // switch when frames_played_total >= this
+    atomic_int         rg_switch_pending;   // 1 = a switch is waiting
+    // Settings written from Go; read by decode loop at gapless swap.
+    int    rg_mode;        // 0=off, 1=track, 2=album
+    int    rg_prevent_clip;
+    double rg_preamp_db;   // additional dB offset (from ReplayGainOptions.PreampGain)
 };
 
 // --------------------------------------------------------------------------
@@ -271,13 +286,9 @@ static void decoder_free(decoder_t *d) {
     free(d);
 }
 
-// Build filter graph: abuffer → [volume] → [limiter] → aresample → aformat → abuffersink
-// rg_gain_db: volume adjustment in dB (0 = no change)
-// rg_prevent_clip: non-zero → add alimiter at 0 dBFS
-// EQ is applied separately in the miniaudio callback via ma_peak2.
-static int decoder_build_filter_graph(decoder_t *d,
-                                      double rg_gain_db,
-                                      int rg_prevent_clip)
+// Build filter graph: abuffer → aresample → aformat → abuffersink
+// ReplayGain and EQ are both applied in the miniaudio callback.
+static int decoder_build_filter_graph(decoder_t *d)
 {
     if (d->filter_graph) {
         avfilter_graph_free(&d->filter_graph);
@@ -316,28 +327,9 @@ static int decoder_build_filter_graph(decoder_t *d,
     // below rather than via deprecated av_opt_set_int_list on the sink.
 
     // --- Build filter chain string ---
-    // We use avfilter_graph_parse_ptr to assemble the full chain.
-    // EQ is handled separately in the miniaudio callback via ma_peak2.
-    char chain[8192];
-    chain[0] = '\0';
-
-    // Volume (preamp / ReplayGain)
-    if (fabs(rg_gain_db) > 0.001) {
-        char vol[64];
-        snprintf(vol, sizeof(vol), "volume=volume=%0.3fdB,", rg_gain_db);
-        strncat(chain, vol, sizeof(chain) - strlen(chain) - 1);
-    }
-
-    // Prevent clipping with a simple limiter
-    if (rg_prevent_clip && fabs(rg_gain_db) > 0.001) {
-        strncat(chain, "alimiter=level_in=1:level_out=1:limit=0.9999:attack=1:release=5:level=disabled,",
-                sizeof(chain) - strlen(chain) - 1);
-    }
-
-    // Resample to fixed output rate + convert to interleaved f32 stereo
-    strncat(chain, "aresample=" AVPLAYER_SAMPLE_RATE_STR ",", sizeof(chain) - strlen(chain) - 1);
-    strncat(chain, "aformat=sample_fmts=flt:channel_layouts=stereo",
-            sizeof(chain) - strlen(chain) - 1);
+    // ReplayGain and EQ are applied in the miniaudio callback; only resample + format here.
+    const char *chain = "aresample=" AVPLAYER_SAMPLE_RATE_STR
+                        ",aformat=sample_fmts=flt:channel_layouts=stereo";
 
     // Link: in → chain → out
     AVFilterInOut *outputs = avfilter_inout_alloc();
@@ -374,6 +366,77 @@ static int decoder_build_filter_graph(decoder_t *d,
 fail:
     avfilter_graph_free(&graph);
     return ret;
+}
+
+// Look up a metadata key in container-level and stream-level dicts.
+// Tries uppercase first, then lowercase.  Returns the entry or NULL.
+static AVDictionaryEntry *rg_dict_get(AVFormatContext *fmt_ctx, int stream_idx,
+                                       const char *key_upper, const char *key_lower)
+{
+    AVDictionary *dicts[2] = {
+        fmt_ctx->metadata,
+        fmt_ctx->streams[stream_idx]->metadata
+    };
+    for (int i = 0; i < 2; i++) {
+        if (!dicts[i]) continue;
+        AVDictionaryEntry *e = av_dict_get(dicts[i], key_upper, NULL, 0);
+        if (!e) e = av_dict_get(dicts[i], key_lower, NULL, 0);
+        if (e) return e;
+    }
+    return NULL;
+}
+
+// Read all four ReplayGain tags from d->fmt_ctx into d->rg_* fields.
+// Defaults: gain = 0.0 dB, peak = 1.0 (linear).
+static void decoder_read_rg_tags(decoder_t *d) {
+    d->rg_track_gain_db = 0.0;
+    d->rg_album_gain_db = 0.0;
+    d->rg_track_peak    = 1.0f;
+    d->rg_album_peak    = 1.0f;
+
+    AVDictionaryEntry *e;
+    // Gain values: "−6.23 dB" — atof stops at the non-numeric ' ' or 'd'
+    e = rg_dict_get(d->fmt_ctx, d->audio_stream_idx,
+                    "REPLAYGAIN_TRACK_GAIN", "replaygain_track_gain");
+    if (e) d->rg_track_gain_db = atof(e->value);
+
+    e = rg_dict_get(d->fmt_ctx, d->audio_stream_idx,
+                    "REPLAYGAIN_ALBUM_GAIN", "replaygain_album_gain");
+    if (e) d->rg_album_gain_db = atof(e->value);
+
+    // Peak values: linear 0..1 (e.g. "0.988312")
+    e = rg_dict_get(d->fmt_ctx, d->audio_stream_idx,
+                    "REPLAYGAIN_TRACK_PEAK", "replaygain_track_peak");
+    if (e) d->rg_track_peak = (float)atof(e->value);
+
+    e = rg_dict_get(d->fmt_ctx, d->audio_stream_idx,
+                    "REPLAYGAIN_ALBUM_PEAK", "replaygain_album_peak");
+    if (e) d->rg_album_peak = (float)atof(e->value);
+}
+
+// Compute the linear RG gain multiplier for the given decoder and settings.
+// rg_mode: 0=off, 1=track, 2=album (falls back to track if album tag absent).
+static float compute_rg_gain(const decoder_t *d, int rg_mode, int prevent_clip, double preamp_db) {
+    if (!d || rg_mode == 0) return 1.0f;
+
+    double gain_db;
+    float  peak;
+    if (rg_mode == 2 && d->rg_album_gain_db != 0.0) {
+        gain_db = d->rg_album_gain_db;
+        peak    = d->rg_album_peak;
+    } else {
+        gain_db = d->rg_track_gain_db;
+        peak    = d->rg_track_peak;
+    }
+
+    gain_db += preamp_db;
+    float linear = (float)pow(10.0, gain_db / 20.0);
+
+    if (prevent_clip && peak > 0.0f) {
+        float max_gain = 1.0f / peak;
+        if (linear > max_gain) linear = max_gain;
+    }
+    return linear;
 }
 
 // Open a URL; populate dec->fmt_ctx, codec_ctx, audio_stream_idx, duration.
@@ -430,32 +493,13 @@ static int decoder_open(decoder_t *d, const char *url) {
     d->duration = dur_secs;
 
     strncpy(d->url, url, sizeof(d->url) - 1);
+    decoder_read_rg_tags(d);
     return 0;
 
 fail:
     avcodec_free_context(&d->codec_ctx);
     avformat_close_input(&d->fmt_ctx);
     return ret;
-}
-
-// Read ReplayGain metadata from format context tags.
-// Returns 0 if nothing found.
-static double read_rg_gain(AVFormatContext *fmt_ctx, int use_album) {
-    const char *track_key = "REPLAYGAIN_TRACK_GAIN";
-    const char *album_key = "REPLAYGAIN_ALBUM_GAIN";
-    AVDictionaryEntry *e = NULL;
-
-    if (use_album) {
-        e = av_dict_get(fmt_ctx->metadata, album_key, NULL, AV_DICT_IGNORE_SUFFIX);
-        if (!e) e = av_dict_get(fmt_ctx->metadata, "replaygain_album_gain", NULL, AV_DICT_IGNORE_SUFFIX);
-    }
-    if (!e) {
-        e = av_dict_get(fmt_ctx->metadata, track_key, NULL, AV_DICT_IGNORE_SUFFIX);
-        if (!e) e = av_dict_get(fmt_ctx->metadata, "replaygain_track_gain", NULL, AV_DICT_IGNORE_SUFFIX);
-    }
-    if (!e) return 0.0;
-    // value like "-6.23 dB" — atof stops at non-numeric
-    return atof(e->value);
 }
 
 // --------------------------------------------------------------------------
@@ -519,6 +563,27 @@ static void ma_data_callback(ma_device *device, void *output, const void *input,
             for (int b = 0; b < eq->num_bands; b++) {
                 ma_peak2_process_pcm_frames(&eq->filters[b], out, out, (ma_uint64)got);
             }
+        }
+    }
+
+    // Switch RG gain at track boundary if pending
+    if (atomic_load_explicit(&p->rg_switch_pending, memory_order_acquire)) {
+        long long fp = atomic_load_explicit(
+            (_Atomic long long *)&p->frames_played_total, memory_order_relaxed);
+        if (fp >= atomic_load_explicit(&p->rg_switch_threshold, memory_order_relaxed)) {
+            atomic_store_explicit(&p->rg_gain,
+                atomic_load_explicit(&p->rg_gain_pending, memory_order_relaxed),
+                memory_order_relaxed);
+            atomic_store_explicit(&p->rg_switch_pending, 0, memory_order_relaxed);
+        }
+    }
+
+    // Apply ReplayGain
+    if (got > 0) {
+        float rg = atomic_load_explicit(&p->rg_gain, memory_order_relaxed);
+        if (rg != 1.0f && rg > 0.0f) {
+            for (int i = 0; i < got * AVPLAYER_CHANNELS; i++)
+                out[i] *= rg;
         }
     }
 
@@ -638,8 +703,7 @@ void av_player_destroy(av_player_t *p) {
     free(p);
 }
 
-int av_player_open(av_player_t *p, const char *url, double start_time,
-                   double rg_gain_db, int rg_prevent_clip)
+int av_player_open(av_player_t *p, const char *url, double start_time)
 {
     // Stop current playback
     atomic_store(&p->state, AVPLAYER_STATE_STOPPED);
@@ -664,10 +728,7 @@ int av_player_open(av_player_t *p, const char *url, double start_time,
     int ret = decoder_open(d, url);
     if (ret < 0) { decoder_free(d); return ret; }
 
-    d->rg_gain_db      = rg_gain_db;
-    d->rg_prevent_clip = rg_prevent_clip;
-
-    ret = decoder_build_filter_graph(d, d->rg_gain_db, d->rg_prevent_clip);
+    ret = decoder_build_filter_graph(d);
     if (ret < 0) { decoder_free(d); return ret; }
 
     // Populate media info
@@ -683,6 +744,12 @@ int av_player_open(av_player_t *p, const char *url, double start_time,
 
     p->dec = d;
 
+    // Compute and apply RG gain from the newly opened track's tags.
+    atomic_store(&p->rg_switch_pending, 0);
+    atomic_store_explicit(&p->rg_gain,
+        compute_rg_gain(d, p->rg_mode, p->rg_prevent_clip, p->rg_preamp_db),
+        memory_order_relaxed);
+
     if (start_time > 0.0) {
         av_player_seek(p, start_time);
     }
@@ -691,8 +758,7 @@ int av_player_open(av_player_t *p, const char *url, double start_time,
     return 0;
 }
 
-int av_player_open_next(av_player_t *p, const char *url,
-                        double rg_gain_db, int rg_prevent_clip)
+int av_player_open_next(av_player_t *p, const char *url)
 {
     // Atomically take ownership of the old next decoder so that the decode
     // goroutine cannot simultaneously free it during a gapless swap.
@@ -712,10 +778,7 @@ int av_player_open_next(av_player_t *p, const char *url,
     int ret = decoder_open(d, url);
     if (ret < 0) { decoder_free(d); return ret; }
 
-    d->rg_gain_db      = rg_gain_db;
-    d->rg_prevent_clip = rg_prevent_clip;
-
-    ret = decoder_build_filter_graph(d, d->rg_gain_db, d->rg_prevent_clip);
+    ret = decoder_build_filter_graph(d);
     if (ret < 0) { decoder_free(d); return ret; }
 
     // Publish the new decoder atomically.
@@ -766,7 +829,7 @@ int av_player_seek(av_player_t *p, double seconds) {
         av_frame_unref(p->dec->filt_frame);
     }
     // Reinit the filter graph to avoid corruption
-    decoder_build_filter_graph(p->dec, p->dec->rg_gain_db, p->dec->rg_prevent_clip);
+    decoder_build_filter_graph(p->dec);
 
     // Discard any pending frame from before the seek.
     av_frame_free(&p->dec->pending_frame);
@@ -785,6 +848,7 @@ int av_player_seek(av_player_t *p, double seconds) {
     atomic_store_explicit((_Atomic long long *)&p->ring.frames_written_total,
                           played_now, memory_order_relaxed);
     memset(&p->bitrate_hist, 0, sizeof(p->bitrate_hist));
+    atomic_store(&p->rg_switch_pending, 0);
     return 0;
 }
 
@@ -792,17 +856,15 @@ void av_player_set_volume(av_player_t *p, float volume) {
     p->volume = volume;
 }
 
-int av_player_set_filters(av_player_t *p,
-                          double rg_gain_db,
-                          int rg_prevent_clip)
-{
-    if (!p->dec) return -1;
-    p->dec->rg_gain_db      = rg_gain_db;
-    p->dec->rg_prevent_clip = rg_prevent_clip;
-    ma_mutex_lock(&p->filter_lock);
-    int ret = decoder_build_filter_graph(p->dec, rg_gain_db, rg_prevent_clip);
-    ma_mutex_unlock(&p->filter_lock);
-    return ret;
+void av_player_set_replay_gain(av_player_t *p, int mode, int prevent_clip, double preamp_db) {
+    p->rg_mode         = mode;
+    p->rg_prevent_clip = prevent_clip;
+    p->rg_preamp_db    = preamp_db;
+    // Clear any pending track-boundary switch; mode change applies immediately.
+    atomic_store(&p->rg_switch_pending, 0);
+    atomic_store_explicit(&p->rg_gain,
+        compute_rg_gain(p->dec, mode, prevent_clip, preamp_db),
+        memory_order_release);
 }
 
 void av_player_set_eq(av_player_t *p, const av_eq_band_t *bands, int num_bands, double preamp_db) {
@@ -1104,6 +1166,13 @@ int av_player_decode_step(av_player_t *p) {
             int fill = atomic_load(&p->ring.fill);
             p->track_change_threshold = fp + (long long)fill;
             atomic_store(&p->pending_track_change, 1);
+            // Schedule RG gain switch at the same boundary as the track change.
+            atomic_store_explicit(&p->rg_gain_pending,
+                compute_rg_gain(p->dec, p->rg_mode, p->rg_prevent_clip, p->rg_preamp_db),
+                memory_order_relaxed);
+            atomic_store_explicit(&p->rg_switch_threshold,
+                (long long)p->track_change_threshold, memory_order_relaxed);
+            atomic_store_explicit(&p->rg_switch_pending, 1, memory_order_release);
             // d is now stale (pointed at the freed old decoder); refresh it.
             d = p->dec;
         }

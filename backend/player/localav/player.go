@@ -42,9 +42,7 @@ type Player struct {
 	peaksEnabled   bool
 
 	// next-track state (mirrors what we've sent to C via av_player_open_next)
-	nextURL           string
-	nextRGGainDB      float64
-	nextRGPreventClip int
+	nextURL string
 
 	status player.Status
 
@@ -84,18 +82,16 @@ func (p *Player) PlayFile(url string, _ mediaprovider.MediaItemMetadata, startTi
 	}
 	p.stopDecodeLoop()
 
-	rgGain, rgClip := p.replayGainParams()
-
 	curl := C.CString(url)
 	defer C.free(unsafe.Pointer(curl))
 
-	ret := C.av_player_open(p.ctx, curl, C.double(startTime),
-		C.double(rgGain), C.int(rgClip))
+	ret := C.av_player_open(p.ctx, curl, C.double(startTime))
 	if ret != 0 {
 		return errorf("av_player_open failed: %d", int(ret))
 	}
 
 	p.updateEQ()
+	p.updateReplayGain()
 	p.status.State = player.Playing
 	p.startDecodeLoop()
 	p.InvokeOnTrackChange()
@@ -109,16 +105,12 @@ func (p *Player) SetNextFile(url string, _ mediaprovider.MediaItemMetadata) erro
 	}
 	p.mu.Lock()
 	p.nextURL = url
-	p.nextRGGainDB, p.nextRGPreventClip = p.replayGainParams()
 	p.mu.Unlock()
-
-	rgGain := p.nextRGGainDB
-	rgClip := p.nextRGPreventClip
 
 	curl := C.CString(url)
 	defer C.free(unsafe.Pointer(curl))
 
-	ret := C.av_player_open_next(p.ctx, curl, C.double(rgGain), C.int(rgClip))
+	ret := C.av_player_open_next(p.ctx, curl)
 	if ret != 0 {
 		return errorf("av_player_open_next failed: %d", int(ret))
 	}
@@ -231,7 +223,8 @@ func (p *Player) Destroy() {
 
 func (p *Player) SetReplayGainOptions(opts player.ReplayGainOptions) error {
 	p.replayGainOpts = opts
-	return p.rebuildFilters()
+	p.updateReplayGain()
+	return nil
 }
 
 // ---- Extended API (matching mpv.Player extras used by UI/controller) ---
@@ -366,26 +359,22 @@ func (p *Player) updateEQ() {
 	C.av_player_set_eq(p.ctx, &bands[0], C.int(len(bands)), C.double(preamp))
 }
 
-// replayGainParams returns the ReplayGain volume offset and clip flag.
-// EQ preamp is handled separately in the miniaudio callback via updateEQ.
-func (p *Player) replayGainParams() (gainDB float64, preventClip int) {
-	gainDB = 0
+func (p *Player) updateReplayGain() {
+	if !p.initd || p.ctx == nil {
+		return
+	}
+	var mode, preventClip C.int
+	switch p.replayGainOpts.Mode {
+	case player.ReplayGainTrack:
+		mode = 1
+	case player.ReplayGainAlbum:
+		mode = 2
+	}
 	if p.replayGainOpts.PreventClipping {
 		preventClip = 1
 	}
-	return
-}
-
-func (p *Player) rebuildFilters() error {
-	if !p.initd || p.ctx == nil {
-		return nil
-	}
-	rgGain, rgClip := p.replayGainParams()
-	ret := C.av_player_set_filters(p.ctx, C.double(rgGain), C.int(rgClip))
-	if ret != 0 {
-		return errorf("set_filters failed: %d", int(ret))
-	}
-	return nil
+	C.av_player_set_replay_gain(p.ctx, mode, preventClip,
+		C.double(p.replayGainOpts.PreampGain))
 }
 
 func (p *Player) fadeAndPause() {
