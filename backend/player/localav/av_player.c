@@ -44,9 +44,16 @@ typedef struct decoder {
     double           duration;      // seconds; 0 if unknown
     double           rg_gain_db;
     int              rg_prevent_clip;
-    char             eq_filter[4096];
     char             url[2048];
 } decoder_t;
+
+// EQ bank: one set of up to AVPLAYER_MAX_EQ_BANDS ma_peak2 biquad filters
+typedef struct {
+    ma_peak2  filters[AVPLAYER_MAX_EQ_BANDS];
+    int       num_bands;
+    int       initialized;
+    float     preamp;  // linear gain (1.0 = 0 dB)
+} eq_bank_t;
 
 // SPSC ring buffer — producer: decode goroutine, consumer: miniaudio callback
 typedef struct {
@@ -120,6 +127,12 @@ struct av_player {
     // av_player_set_peaks_enabled while av_player_decode_step is using those
     // pointers.  Held briefly around each individual filter API call.
     ma_mutex         filter_lock;
+
+    // EQ double-buffer: updated from Go thread, read in audio callback.
+    // eq_active_idx (0 or 1) selects which bank the callback reads.
+    // The other bank is safe to write to between swaps.
+    eq_bank_t        eq_banks[2];
+    atomic_int       eq_active_idx;
 };
 
 // --------------------------------------------------------------------------
@@ -239,12 +252,11 @@ static void decoder_free(decoder_t *d) {
     free(d);
 }
 
-// Build filter graph: abuffer → [EQ] → [volume] → aformat → aresample → abuffersink
-// eq_filter: comma-separated avfilter fragment, or NULL/""
+// Build filter graph: abuffer → [volume] → [limiter] → aresample → aformat → abuffersink
 // rg_gain_db: volume adjustment in dB (0 = no change)
 // rg_prevent_clip: non-zero → add alimiter at 0 dBFS
+// EQ is applied separately in the miniaudio callback via ma_peak2.
 static int decoder_build_filter_graph(decoder_t *d,
-                                      const char *eq_filter,
                                       double rg_gain_db,
                                       int rg_prevent_clip)
 {
@@ -286,14 +298,9 @@ static int decoder_build_filter_graph(decoder_t *d,
 
     // --- Build filter chain string ---
     // We use avfilter_graph_parse_ptr to assemble the full chain.
+    // EQ is handled separately in the miniaudio callback via ma_peak2.
     char chain[8192];
     chain[0] = '\0';
-
-    // User EQ bands
-    if (eq_filter && eq_filter[0] != '\0') {
-        strncat(chain, eq_filter, sizeof(chain) - strlen(chain) - 1);
-        strncat(chain, ",", sizeof(chain) - strlen(chain) - 1);
-    }
 
     // Volume (preamp / ReplayGain)
     if (fabs(rg_gain_db) > 0.001) {
@@ -481,6 +488,21 @@ static void ma_data_callback(ma_device *device, void *output, const void *input,
         atomic_store_explicit((_Atomic double *)&p->r_rms,  -INFINITY, memory_order_relaxed);
     }
 
+    // Apply EQ preamp + bands (after peaks, before volume — peak meter reflects raw decoded signal)
+    if (got > 0) {
+        int eq_idx = atomic_load_explicit(&p->eq_active_idx, memory_order_acquire);
+        eq_bank_t *eq = &p->eq_banks[eq_idx];
+        if (eq->preamp != 1.0f && eq->preamp > 0.0f) {
+            for (int i = 0; i < got * AVPLAYER_CHANNELS; i++)
+                out[i] *= eq->preamp;
+        }
+        if (eq->initialized && eq->num_bands > 0) {
+            for (int b = 0; b < eq->num_bands; b++) {
+                ma_peak2_process_pcm_frames(&eq->filters[b], out, out, (ma_uint64)got);
+            }
+        }
+    }
+
     // Apply volume
     float vol = p->volume;
     if (vol < 0.9999f || vol > 1.0001f) {
@@ -587,11 +609,18 @@ void av_player_destroy(av_player_t *p) {
     ring_free(&p->ring);
     ma_mutex_uninit(&p->decoder_lock);
     ma_mutex_uninit(&p->filter_lock);
+    // Clean up EQ banks
+    for (int b = 0; b < 2; b++) {
+        if (p->eq_banks[b].initialized) {
+            for (int i = 0; i < p->eq_banks[b].num_bands; i++)
+                ma_peak2_uninit(&p->eq_banks[b].filters[i], NULL);
+        }
+    }
     free(p);
 }
 
 int av_player_open(av_player_t *p, const char *url, double start_time,
-                   const char *eq_filter, double rg_gain_db, int rg_prevent_clip)
+                   double rg_gain_db, int rg_prevent_clip)
 {
     // Stop current playback
     atomic_store(&p->state, AVPLAYER_STATE_STOPPED);
@@ -615,13 +644,10 @@ int av_player_open(av_player_t *p, const char *url, double start_time,
     int ret = decoder_open(d, url);
     if (ret < 0) { decoder_free(d); return ret; }
 
-    // Apply ReplayGain from tags if gain not explicitly provided
-    // (rg_gain_db == 0 means use tags; nonzero means caller already computed it)
-    strncpy(d->eq_filter, eq_filter ? eq_filter : "", sizeof(d->eq_filter) - 1);
     d->rg_gain_db      = rg_gain_db;
     d->rg_prevent_clip = rg_prevent_clip;
 
-    ret = decoder_build_filter_graph(d, d->eq_filter, d->rg_gain_db, d->rg_prevent_clip);
+    ret = decoder_build_filter_graph(d, d->rg_gain_db, d->rg_prevent_clip);
     if (ret < 0) { decoder_free(d); return ret; }
 
     // Populate media info
@@ -646,7 +672,7 @@ int av_player_open(av_player_t *p, const char *url, double start_time,
 }
 
 int av_player_open_next(av_player_t *p, const char *url,
-                        const char *eq_filter, double rg_gain_db, int rg_prevent_clip)
+                        double rg_gain_db, int rg_prevent_clip)
 {
     // Atomically take ownership of the old next decoder so that the decode
     // goroutine cannot simultaneously free it during a gapless swap.
@@ -666,11 +692,10 @@ int av_player_open_next(av_player_t *p, const char *url,
     int ret = decoder_open(d, url);
     if (ret < 0) { decoder_free(d); return ret; }
 
-    strncpy(d->eq_filter, eq_filter ? eq_filter : "", sizeof(d->eq_filter) - 1);
     d->rg_gain_db      = rg_gain_db;
     d->rg_prevent_clip = rg_prevent_clip;
 
-    ret = decoder_build_filter_graph(d, d->eq_filter, d->rg_gain_db, d->rg_prevent_clip);
+    ret = decoder_build_filter_graph(d, d->rg_gain_db, d->rg_prevent_clip);
     if (ret < 0) { decoder_free(d); return ret; }
 
     // Publish the new decoder atomically.
@@ -721,8 +746,7 @@ int av_player_seek(av_player_t *p, double seconds) {
         av_frame_unref(p->dec->filt_frame);
     }
     // Reinit the filter graph to avoid corruption
-    decoder_build_filter_graph(p->dec,
-                               p->dec->eq_filter, p->dec->rg_gain_db, p->dec->rg_prevent_clip);
+    decoder_build_filter_graph(p->dec, p->dec->rg_gain_db, p->dec->rg_prevent_clip);
 
     // Discard any pending frame from before the seek.
     av_frame_free(&p->dec->pending_frame);
@@ -743,18 +767,58 @@ void av_player_set_volume(av_player_t *p, float volume) {
 }
 
 int av_player_set_filters(av_player_t *p,
-                          const char *eq_filter,
                           double rg_gain_db,
                           int rg_prevent_clip)
 {
     if (!p->dec) return -1;
-    strncpy(p->dec->eq_filter, eq_filter ? eq_filter : "", sizeof(p->dec->eq_filter) - 1);
     p->dec->rg_gain_db      = rg_gain_db;
     p->dec->rg_prevent_clip = rg_prevent_clip;
     ma_mutex_lock(&p->filter_lock);
-    int ret = decoder_build_filter_graph(p->dec, p->dec->eq_filter, rg_gain_db, rg_prevent_clip);
+    int ret = decoder_build_filter_graph(p->dec, rg_gain_db, rg_prevent_clip);
     ma_mutex_unlock(&p->filter_lock);
     return ret;
+}
+
+void av_player_set_eq(av_player_t *p, const av_eq_band_t *bands, int num_bands, double preamp_db) {
+    if (num_bands > AVPLAYER_MAX_EQ_BANDS)
+        num_bands = AVPLAYER_MAX_EQ_BANDS;
+
+    int active = atomic_load_explicit(&p->eq_active_idx, memory_order_relaxed);
+    int target = 1 - active;
+    eq_bank_t *bank = &p->eq_banks[target];
+
+    // Uninit stale filters in the target bank (deferred cleanup from previous swap)
+    if (bank->initialized) {
+        for (int i = 0; i < bank->num_bands; i++)
+            ma_peak2_uninit(&bank->filters[i], NULL);
+        bank->initialized = 0;
+        bank->num_bands = 0;
+    }
+
+    bank->preamp = (preamp_db != 0.0) ? (float)pow(10.0, preamp_db / 20.0) : 1.0f;
+
+    if (num_bands == 0 || !bands) {
+        bank->num_bands = 0;
+        atomic_store_explicit(&p->eq_active_idx, target, memory_order_release);
+        return;
+    }
+
+    for (int i = 0; i < num_bands; i++) {
+        ma_peak2_config cfg = ma_peak2_config_init(
+            ma_format_f32, AVPLAYER_CHANNELS, AVPLAYER_SAMPLE_RATE,
+            bands[i].gain_db, bands[i].q, bands[i].frequency);
+        if (ma_peak2_init(&cfg, NULL, &bank->filters[i]) != MA_SUCCESS) {
+            // Roll back filters already initialised in this bank
+            for (int j = 0; j < i; j++)
+                ma_peak2_uninit(&bank->filters[j], NULL);
+            bank->num_bands = 0;
+            return;  // keep old EQ active
+        }
+    }
+    bank->num_bands = num_bands;
+    bank->initialized = 1;
+
+    atomic_store_explicit(&p->eq_active_idx, target, memory_order_release);
 }
 
 int av_player_get_state(av_player_t *p) {

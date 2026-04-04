@@ -21,8 +21,17 @@
 #define AVPLAYER_CHANNELS           2
 // Ring buffer capacity in frames (~4 seconds)
 #define AVPLAYER_RING_FRAMES    (AVPLAYER_SAMPLE_RATE * 4)
+// Maximum number of parametric EQ bands
+#define AVPLAYER_MAX_EQ_BANDS   15
 
 typedef struct av_player av_player_t;
+
+// One parametric EQ band passed from Go (numeric params, no FFmpeg strings)
+typedef struct {
+    double frequency;   // center frequency in Hz
+    double gain_db;     // gain in dB (0 = no effect)
+    double q;           // Q factor
+} av_eq_band_t;
 
 // Audio device info (for enumeration)
 typedef struct {
@@ -54,19 +63,18 @@ void av_player_destroy(av_player_t *p);
 
 // ---- Playback --------------------------------------------------------
 
-// Open a URL and prepare for playback.  eq_filter is a libavfilter graph
-// fragment string (may be NULL or "").  rg_gain_db is the ReplayGain volume
+// Open a URL and prepare for playback.  rg_gain_db is the ReplayGain volume
 // adjustment in dB to apply (0.0 = no change).  rg_prevent_clip: non-zero
 // means clamp output to 0 dBFS.
 // Returns 0 on success.
 int av_player_open(av_player_t *p, const char *url, double start_time,
-                   const char *eq_filter, double rg_gain_db, int rg_prevent_clip);
+                   double rg_gain_db, int rg_prevent_clip);
 
 // Pre-open the next URL for gapless playback.  Call while current track is
 // playing; the decode loop will seamlessly switch when current track ends.
 // Pass NULL/empty url to clear any queued next track.
 int av_player_open_next(av_player_t *p, const char *url,
-                        const char *eq_filter, double rg_gain_db, int rg_prevent_clip);
+                        double rg_gain_db, int rg_prevent_clip);
 
 // Stop playback and discard any buffered audio.
 void av_player_stop(av_player_t *p);
@@ -83,12 +91,16 @@ void av_player_set_volume(av_player_t *p, float volume);
 
 // ---- Filters ---------------------------------------------------------
 
-// Rebuild the audio filter graph with new EQ / ReplayGain settings.
+// Rebuild the audio filter graph with new ReplayGain settings.
 // Takes effect on the current track; safe to call while playing.
 int av_player_set_filters(av_player_t *p,
-                          const char *eq_filter,
                           double rg_gain_db,
                           int rg_prevent_clip);
+
+// Update EQ bands and preamp (lock-free swap; takes effect on next audio callback).
+// preamp_db is applied after peak metering and before EQ bands.
+// Pass NULL/0 bands to disable EQ bands (preamp still applies if non-zero).
+void av_player_set_eq(av_player_t *p, const av_eq_band_t *bands, int num_bands, double preamp_db);
 
 // ---- Status ----------------------------------------------------------
 

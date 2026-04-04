@@ -139,6 +139,23 @@ func (e EqualizerBand) String() string {
 		e.Frequency, e.Gain, e.WidthType.String(), e.Width)
 }
 
+// QFactor returns the Q factor for this band, converting from whatever WidthType is used.
+func (e EqualizerBand) QFactor() float64 {
+	switch e.WidthType {
+	case WidthTypeQ:
+		return e.Width
+	case WidthTypeOctave:
+		return 1.0 / (2.0 * math.Sinh(math.Log(2)/2.0*e.Width))
+	case WidthTypeHz:
+		if e.Width > 0 {
+			return float64(e.Frequency) / e.Width
+		}
+		return 1.0
+	default:
+		return 1.0
+	}
+}
+
 type EqualizerCurve []EqualizerBand
 
 func (e EqualizerCurve) String() string {

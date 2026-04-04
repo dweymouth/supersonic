@@ -13,7 +13,6 @@ import "C"
 
 import (
 	"math"
-	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -43,9 +42,8 @@ type Player struct {
 	peaksEnabled   bool
 
 	// next-track state (mirrors what we've sent to C via av_player_open_next)
-	nextURL          string
-	nextEQFilter     string
-	nextRGGainDB     float64
+	nextURL           string
+	nextRGGainDB      float64
 	nextRGPreventClip int
 
 	status player.Status
@@ -86,20 +84,18 @@ func (p *Player) PlayFile(url string, _ mediaprovider.MediaItemMetadata, startTi
 	}
 	p.stopDecodeLoop()
 
-	eqFilter := p.buildEQFilter()
 	rgGain, rgClip := p.replayGainParams()
 
 	curl := C.CString(url)
-	ceq := C.CString(eqFilter)
 	defer C.free(unsafe.Pointer(curl))
-	defer C.free(unsafe.Pointer(ceq))
 
-	ret := C.av_player_open(p.ctx, curl, C.double(startTime), ceq,
+	ret := C.av_player_open(p.ctx, curl, C.double(startTime),
 		C.double(rgGain), C.int(rgClip))
 	if ret != 0 {
 		return errorf("av_player_open failed: %d", int(ret))
 	}
 
+	p.updateEQ()
 	p.status.State = player.Playing
 	p.startDecodeLoop()
 	p.InvokeOnTrackChange()
@@ -113,20 +109,16 @@ func (p *Player) SetNextFile(url string, _ mediaprovider.MediaItemMetadata) erro
 	}
 	p.mu.Lock()
 	p.nextURL = url
-	p.nextEQFilter = p.buildEQFilter()
 	p.nextRGGainDB, p.nextRGPreventClip = p.replayGainParams()
 	p.mu.Unlock()
 
-	eqFilter := p.nextEQFilter
 	rgGain := p.nextRGGainDB
 	rgClip := p.nextRGPreventClip
 
 	curl := C.CString(url)
-	ceq := C.CString(eqFilter)
 	defer C.free(unsafe.Pointer(curl))
-	defer C.free(unsafe.Pointer(ceq))
 
-	ret := C.av_player_open_next(p.ctx, curl, ceq, C.double(rgGain), C.int(rgClip))
+	ret := C.av_player_open_next(p.ctx, curl, C.double(rgGain), C.int(rgClip))
 	if ret != 0 {
 		return errorf("av_player_open_next failed: %d", int(ret))
 	}
@@ -246,7 +238,8 @@ func (p *Player) SetReplayGainOptions(opts player.ReplayGainOptions) error {
 
 func (p *Player) SetEqualizer(eq player.Equalizer) error {
 	p.equalizer = eq
-	return p.rebuildFilters()
+	p.updateEQ()
+	return nil
 }
 
 func (p *Player) Equalizer() player.Equalizer {
@@ -345,29 +338,38 @@ func (p *Player) setVolumeCGo(vol int) {
 	C.av_player_set_volume(p.ctx, C.float(float32(vol)/100.0))
 }
 
-func (p *Player) buildEQFilter() string {
+func (p *Player) updateEQ() {
+	if !p.initd || p.ctx == nil {
+		return
+	}
 	if p.equalizer == nil || !p.equalizer.IsEnabled() {
-		return ""
+		C.av_player_set_eq(p.ctx, nil, 0, 0)
+		return
 	}
-	var parts []string
-	if math.Abs(p.equalizer.Preamp()) > 0.01 {
-		// Preamp handled via rg_gain_db offset — include it in the filter string
-		// so it's distinct from the ReplayGain volume adjustment
+	preamp := p.equalizer.Preamp()
+	curve := p.equalizer.Curve()
+	bands := make([]C.av_eq_band_t, 0, len(curve))
+	for _, b := range curve {
+		if math.Abs(b.Gain) < 0.02 {
+			continue
+		}
+		bands = append(bands, C.av_eq_band_t{
+			frequency: C.double(b.Frequency),
+			gain_db:   C.double(b.Gain),
+			q:         C.double(b.QFactor()),
+		})
 	}
-	if s := p.equalizer.Curve().String(); s != "" {
-		parts = append(parts, s)
+	if len(bands) == 0 {
+		C.av_player_set_eq(p.ctx, nil, 0, C.double(preamp))
+		return
 	}
-	return strings.Join(parts, ",")
+	C.av_player_set_eq(p.ctx, &bands[0], C.int(len(bands)), C.double(preamp))
 }
 
-// replayGainParams returns the total volume offset (preamp + RG mode) and clip flag.
+// replayGainParams returns the ReplayGain volume offset and clip flag.
+// EQ preamp is handled separately in the miniaudio callback via updateEQ.
 func (p *Player) replayGainParams() (gainDB float64, preventClip int) {
 	gainDB = 0
-	if p.equalizer != nil && p.equalizer.IsEnabled() {
-		gainDB += p.equalizer.Preamp()
-	}
-	// Note: actual per-track RG gain is read from file tags by the C layer
-	// when rg_gain_db is 0.  For now we pass the preamp only.
 	if p.replayGainOpts.PreventClipping {
 		preventClip = 1
 	}
@@ -378,11 +380,8 @@ func (p *Player) rebuildFilters() error {
 	if !p.initd || p.ctx == nil {
 		return nil
 	}
-	eqFilter := p.buildEQFilter()
 	rgGain, rgClip := p.replayGainParams()
-	ceq := C.CString(eqFilter)
-	defer C.free(unsafe.Pointer(ceq))
-	ret := C.av_player_set_filters(p.ctx, ceq, C.double(rgGain), C.int(rgClip))
+	ret := C.av_player_set_filters(p.ctx, C.double(rgGain), C.int(rgClip))
 	if ret != 0 {
 		return errorf("set_filters failed: %d", int(ret))
 	}
