@@ -40,6 +40,7 @@ type Player struct {
 	equalizer      player.Equalizer
 	replayGainOpts player.ReplayGainOptions
 	peaksEnabled   bool
+	icyTitleCb     func(string)
 
 	// next-track state (mirrors what we've sent to C via av_player_open_next)
 	nextURL string
@@ -318,12 +319,16 @@ func (p *Player) GetPeaks() (float64, float64, float64, float64) {
 	return float64(lp), float64(rp), float64(lr), float64(rr)
 }
 
-// ObserveIcyRadioTitle is a no-op stub; ICY metadata is not yet implemented
-// in the localav backend.
-func (p *Player) ObserveIcyRadioTitle(_ func(string)) {}
+// ObserveIcyRadioTitle registers a callback that is invoked whenever the ICY
+// StreamTitle changes on a playing internet radio stream.
+func (p *Player) ObserveIcyRadioTitle(cb func(string)) {
+	p.icyTitleCb = cb
+}
 
-// UnobserveIcyRadioTitle is a no-op stub.
-func (p *Player) UnobserveIcyRadioTitle() {}
+// UnobserveIcyRadioTitle clears the ICY title callback.
+func (p *Player) UnobserveIcyRadioTitle() {
+	p.icyTitleCb = nil
+}
 
 // ---- Internal helpers ------------------------------------------------
 
@@ -425,6 +430,13 @@ func (p *Player) decodeLoop(stop <-chan struct{}) {
 		}
 
 		result := int(C.av_player_decode_step(p.ctx))
+
+		if result == C.AVPLAYER_DECODE_OK && p.icyTitleCb != nil {
+			var icyBuf [512]C.char
+			if C.av_player_check_icy_title(p.ctx, &icyBuf[0], 512) != 0 {
+				p.icyTitleCb(C.GoString(&icyBuf[0]))
+			}
+		}
 
 		switch result {
 		case C.AVPLAYER_DECODE_OK:

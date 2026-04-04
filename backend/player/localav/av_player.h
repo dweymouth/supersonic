@@ -123,6 +123,14 @@ void av_player_set_peaks_enabled(av_player_t *p, int enabled);
 
 void av_player_get_media_info(av_player_t *p, av_media_info_t *info);
 
+// ---- ICY metadata ----------------------------------------------------
+
+// Check whether the ICY StreamTitle has changed since the last call.
+// If changed, copies the new title into buf (NUL-terminated, at most buflen-1 bytes)
+// and returns 1.  Returns 0 if unchanged or no ICY metadata is available.
+// Must be called from the decode goroutine only.
+int av_player_check_icy_title(av_player_t *p, char *buf, int buflen);
+
 // ---- Device management -----------------------------------------------
 
 // Fill devices[0..max_devices-1].  Returns the number of devices filled.

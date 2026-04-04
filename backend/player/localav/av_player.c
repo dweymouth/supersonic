@@ -167,6 +167,10 @@ struct av_player {
     int    rg_mode;        // 0=off, 1=track, 2=album
     int    rg_prevent_clip;
     double rg_preamp_db;   // additional dB offset (from ReplayGainOptions.PreampGain)
+
+    // ICY metadata: last seen StreamTitle, for change detection.
+    // Only accessed from the decode goroutine and av_player_open (after decode stops).
+    char   last_icy_title[512];
 };
 
 // --------------------------------------------------------------------------
@@ -722,6 +726,8 @@ int av_player_open(av_player_t *p, const char *url, double start_time)
     decoder_free(p->dec);
     p->dec = NULL;
 
+    p->last_icy_title[0] = '\0';
+
     decoder_t *d = decoder_alloc();
     if (!d) return AVERROR(ENOMEM);
 
@@ -947,6 +953,27 @@ void av_player_set_peaks_enabled(av_player_t *p, int enabled) {
         atomic_store_explicit((_Atomic double *)&p->l_rms,  -INFINITY, memory_order_relaxed);
         atomic_store_explicit((_Atomic double *)&p->r_rms,  -INFINITY, memory_order_relaxed);
     }
+}
+
+// Check whether the ICY StreamTitle in the current decoder's metadata has changed
+// since the last call.  If it has, copies the new title into buf (up to buflen-1
+// bytes, NUL-terminated) and returns 1.  Returns 0 if unchanged or unavailable.
+// Only call from the decode goroutine.
+int av_player_check_icy_title(av_player_t *p, char *buf, int buflen) {
+    if (buflen <= 0) return 0;
+    const char *title = "";
+    if (p->dec && p->dec->fmt_ctx) {
+        AVDictionaryEntry *e = av_dict_get(p->dec->fmt_ctx->metadata, "StreamTitle", NULL, 0);
+        if (e && e->value) title = e->value;
+    }
+    if (strcmp(title, p->last_icy_title) != 0) {
+        strncpy(p->last_icy_title, title, sizeof(p->last_icy_title) - 1);
+        p->last_icy_title[sizeof(p->last_icy_title) - 1] = '\0';
+        strncpy(buf, title, buflen - 1);
+        buf[buflen - 1] = '\0';
+        return 1;
+    }
+    return 0;
 }
 
 void av_player_get_media_info(av_player_t *p, av_media_info_t *info) {
