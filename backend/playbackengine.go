@@ -262,6 +262,7 @@ func (p *playbackEngine) getPlayQueueLength() int {
 }
 
 func (p *playbackEngine) clearPlayQueue() {
+	p.checkScrobble()
 	p.player.Stop(false)
 	p.nowPlayingIdx = -1
 	p.playQueue = nil
