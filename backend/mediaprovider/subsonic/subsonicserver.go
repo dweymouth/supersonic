@@ -11,7 +11,20 @@ type SubsonicServer struct {
 
 func (s *SubsonicServer) Login(username, password string) mediaprovider.LoginResponse {
 	s.User = username
-	err := s.Client.Authenticate(password)
+
+	pr, err := s.Client.Ping()
+	if err != nil {
+		return mediaprovider.LoginResponse{
+			Error:       err,
+			IsAuthError: err == subsonicCli.ErrAuthenticationFailure,
+		}
+	}
+	if pr.Type == "funkwhale" {
+		// Funkwhale doesn't use correct types for IDs in the JSON response
+		// and shows no progress in fixing this, so use the XML API
+		s.Client.UseJSON = false
+	}
+	err = s.Client.Authenticate(password)
 	return mediaprovider.LoginResponse{
 		Error:       err,
 		IsAuthError: err == subsonicCli.ErrAuthenticationFailure,
