@@ -262,6 +262,7 @@ func (p *playbackEngine) getPlayQueueLength() int {
 }
 
 func (p *playbackEngine) clearPlayQueue() {
+	p.checkScrobble()
 	p.player.Stop(false)
 	p.nowPlayingIdx = -1
 	p.playQueue = nil
@@ -576,12 +577,13 @@ func (p *playbackEngine) LoadItems(items []mediaprovider.MediaItem, insertQueueM
 	return p.doLoaditems(newItems, insertQueueMode, shuffle)
 }
 
-// Load items into the play queue.
-// If replacing the current queue (!appendToQueue), playback will be stopped.
+// Load items into the play queue and play the track at idx.
+// Replaces the playQueue, shuffledPlayQueue, or both
 func (p *playbackEngine) LoadItemsAndPlayAtIdx(items []mediaprovider.MediaItem, shuffle bool, idx int) error {
 	newItems := deepCopyMediaItemSlice(items)
 
 	if p.shuffle || shuffle {
+		p.clearPlayQueue()
 		rand.Shuffle(len(newItems), func(i, j int) {
 			newItems[i], newItems[j] = newItems[j], newItems[i]
 		})
