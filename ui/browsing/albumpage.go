@@ -102,8 +102,10 @@ func newAlbumPage(
 	a.tracklist.SetSorting(sort)
 	_, canRate := a.mp.(mediaprovider.SupportsRating)
 	_, canShare := a.mp.(mediaprovider.SupportsSharing)
+	_, isJukeboxOnly := a.mp.(mediaprovider.JukeboxOnlyServer)
 	a.tracklist.Options.DisableRating = !canRate
 	a.tracklist.Options.DisableSharing = !canShare
+	a.tracklist.Options.DisableDownload = isJukeboxOnly
 	a.tracklist.OnVisibleColumnsChanged = func(cols []string) {
 		a.cfg.TracklistColumns = cols
 	}
@@ -219,6 +221,7 @@ type AlbumPageHeader struct {
 	genreLabel            *widgets.MultiHyperlink
 	miscLabel             *widget.Label
 	shareMenuItem         *fyne.MenuItem
+	downloadMenuItem      *fyne.MenuItem
 	collapseBtn           *widgets.HeaderCollapseButton
 	artistReleaseTypeLine *fyne.Container
 
@@ -280,10 +283,10 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 					sharedutil.TracksToIDs(a.page.tracks))
 			})
 			playlist.Icon = myTheme.PlaylistIcon
-			download := fyne.NewMenuItem(lang.L("Download")+"...", func() {
+			a.downloadMenuItem = fyne.NewMenuItem(lang.L("Download")+"...", func() {
 				a.page.contr.ShowDownloadDialog(a.page.tracks, a.titleLabel.String())
 			})
-			download.Icon = theme.DownloadIcon()
+			a.downloadMenuItem.Icon = theme.DownloadIcon()
 			info := fyne.NewMenuItem(lang.L("Show info")+"...", func() {
 				a.page.contr.ShowAlbumInfoDialog(a.albumID, a.titleLabel.String(), a.cover.Image())
 			})
@@ -292,11 +295,13 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 				a.page.contr.ShowShareDialog(a.albumID)
 			})
 			a.shareMenuItem.Icon = myTheme.ShareIcon
-			menu := fyne.NewMenu("", playNext, queue, playlist, download, info, a.shareMenuItem)
+			menu := fyne.NewMenu("", playNext, queue, playlist, a.downloadMenuItem, info, a.shareMenuItem)
 			pop = widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(a))
 		}
 		_, canShare := page.mp.(mediaprovider.SupportsSharing)
+		_, isJukeboxOnly := page.mp.(mediaprovider.JukeboxOnlyServer)
 		a.shareMenuItem.Disabled = !canShare
+		a.downloadMenuItem.Disabled = isJukeboxOnly
 		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)
 		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+menuBtn.Size().Height))
 	}

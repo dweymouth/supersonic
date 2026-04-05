@@ -370,7 +370,9 @@ func (a *FavoritesPage) onShowFavoriteArtists() {
 				if r, canShare := a.mp.(mediaprovider.SupportsSharing); canShare {
 					canShareArtists = r.CanShareArtists()
 				}
+				_, isJukeboxOnly := a.mp.(mediaprovider.JukeboxOnlyServer)
 				a.artistGrid.DisableSharing = !canShareArtists
+				a.artistGrid.DisableDownload = isJukeboxOnly
 				a.contr.ConnectArtistGridActions(a.artistGrid)
 				a.container.Objects[0] = a.artistGrid
 				a.Refresh()
@@ -396,6 +398,7 @@ func buildArtistGridViewModel(artists []*mediaprovider.Artist) []widgets.GridVie
 		model = append(model, widgets.GridViewItemModel{
 			ID:          ar.ID,
 			CoverArtID:  ar.CoverArtID,
+			ArtistID:    ar.ID, // Set for external artist image loading
 			Name:        ar.Name,
 			Secondary:   []string{albumsMsg},
 			CanFavorite: true,
@@ -439,8 +442,10 @@ func (a *FavoritesPage) onShowFavoriteSongs() {
 				tracklist.Options = widgets.TracklistOptions{AutoNumber: true}
 				_, canRate := a.mp.(mediaprovider.SupportsRating)
 				_, canShare := a.mp.(mediaprovider.SupportsSharing)
+				_, isJukeboxOnly := a.mp.(mediaprovider.JukeboxOnlyServer)
 				tracklist.Options.DisableRating = !canRate
 				tracklist.Options.DisableSharing = !canShare
+				tracklist.Options.DisableDownload = isJukeboxOnly
 				tracklist.SetVisibleColumns(a.cfg.TracklistColumns)
 				tracklist.SetSorting(a.trackSort)
 				tracklist.OnVisibleColumnsChanged = func(cols []string) {
