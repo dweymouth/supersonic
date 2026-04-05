@@ -48,7 +48,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version: 'stable'
       - name: Install Dependencies
         run: >
           pacman -Syu &&
@@ -97,7 +97,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version: 'stable'
       - name: Install Dependencies
         run: brew install --force mpv && brew install --force dylibbundler
       - name: Setup path
@@ -130,7 +130,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version: 'stable'
       - name: Install Dependencies
         run: brew install --force mpv && brew install --force dylibbundler
       - name: Setup path
@@ -167,7 +167,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version: 'stable'
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
       - name: Install Fyne tool
@@ -191,7 +191,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version: 'stable'
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
       - name: Install Fyne tool
@@ -215,7 +215,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version: 'stable'
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
       - name: Build
