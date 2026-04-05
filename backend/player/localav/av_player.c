@@ -721,8 +721,14 @@ int av_player_open(av_player_t *p, const char *url, double start_time)
     atomic_store_explicit((_Atomic long long *)&p->position_clock_ref, 0LL, memory_order_relaxed);
     memset(&p->bitrate_hist, 0, sizeof(p->bitrate_hist));
 
-    decoder_free(p->next_dec);
+    // Acquire decoder_lock to prevent racing with av_player_open_next which
+    // also reads/frees next_dec under this lock.
+    ma_mutex_lock(&p->decoder_lock);
+    decoder_t *old_next = p->next_dec;
     p->next_dec = NULL;
+    ma_mutex_unlock(&p->decoder_lock);
+    decoder_free(old_next);
+
     decoder_free(p->dec);
     p->dec = NULL;
 
@@ -800,7 +806,12 @@ void av_player_stop(av_player_t *p) {
     atomic_store(&p->eof_reached, 0);
     atomic_store(&p->pending_track_change, 0);
     decoder_free(p->dec);   p->dec      = NULL;
-    decoder_free(p->next_dec); p->next_dec = NULL;
+
+    ma_mutex_lock(&p->decoder_lock);
+    decoder_t *old_next = p->next_dec;
+    p->next_dec = NULL;
+    ma_mutex_unlock(&p->decoder_lock);
+    decoder_free(old_next);
     atomic_store_explicit((_Atomic double *)&p->time_pos, 0.0, memory_order_relaxed);
     atomic_store_explicit((_Atomic double *)&p->duration,  0.0, memory_order_relaxed);
 }
