@@ -1123,6 +1123,10 @@ func (pm *playbackEngine) invokeNoArgCallbacks(cbs []func()) {
 }
 
 func (p *playbackEngine) startPollTimePos() {
+	if p.cancelPollPos != nil {
+		return // already polling
+	}
+
 	ctx, cancel := context.WithCancel(p.ctx)
 	p.cancelPollPos = cancel
 	pollFrequency := 250 * time.Millisecond
