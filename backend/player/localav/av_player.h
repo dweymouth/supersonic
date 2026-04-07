@@ -131,6 +131,18 @@ void av_player_get_media_info(av_player_t *p, av_media_info_t *info);
 // Must be called from the decode goroutine only.
 int av_player_check_icy_title(av_player_t *p, char *buf, int buflen);
 
+// ---- Waveform analysis (no player instance required) -----------------
+
+// Decode in_url and compute per-chunk peak/RMS values for waveform rendering.
+// Writes 1024 bytes each to out_peak and out_rms arrays, updating *progress
+// atomically as each chunk completes (Go polls this for progressive rendering).
+// duration_ms is the expected track duration used to compute chunk sizes.
+// Runs synchronously; does not require av_player_t or miniaudio.
+// Returns 0 on success, negative AVERROR code on failure.
+int av_analyze_waveform(const char *in_url, int64_t duration_ms,
+                        uint8_t *out_peak, uint8_t *out_rms,
+                        _Atomic int *progress, _Atomic int *cancel);
+
 // ---- Device management -----------------------------------------------
 
 // Fill devices[0..max_devices-1].  Returns the number of devices filled.
