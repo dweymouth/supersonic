@@ -155,7 +155,7 @@ func (s *searchAlbumIter) Next() *mediaprovider.Album {
 
 	// prefetch more search results from server
 	if s.prefetched == nil {
-		results := s.searchIterBase.fetchResults()
+		results := s.searchIterBase.fetchHybridResults("album")
 		if results == nil {
 			s.done = true
 			s.albumIDset = nil
@@ -166,8 +166,29 @@ func (s *searchAlbumIter) Next() *mediaprovider.Album {
 		s.addNewAlbums(results.Album)
 		s.albumOffset += len(results.Album)
 
-		// skip aggressive prefetching of artists and songs' albums to prevent N+1 cascades
+		// add results from artists search (fallback discovery)
+		for _, artist := range results.Artist {
+			artist, err := s.s.GetArtist(artist.ID)
+			if err != nil || artist == nil {
+				log.Printf("error fetching artist: %s", err.Error())
+			} else {
+				s.addNewAlbums(artist.Album)
+			}
+		}
 		s.artistOffset += len(results.Artist)
+
+		// add results from songs search (fallback discovery)
+		for _, song := range results.Song {
+			if song.AlbumID == "" {
+				continue
+			}
+			album, err := s.s.GetAlbum(song.AlbumID)
+			if err != nil || album == nil {
+				log.Printf("error fetching album: %s", err.Error())
+			} else {
+				s.addNewAlbums([]*subsonic.AlbumID3{album})
+			}
+		}
 		s.songOffset += len(results.Song)
 	}
 

@@ -112,7 +112,7 @@ func (s *searchArtistIter) Next() *mediaprovider.Artist {
 
 	// prefetch more search results from server
 	if s.prefetched == nil {
-		results := s.searchIterBase.fetchResults()
+		results := s.searchIterBase.fetchHybridResults("artist")
 		if results == nil {
 			s.done = true
 			s.artistIDset = nil
@@ -122,6 +122,12 @@ func (s *searchArtistIter) Next() *mediaprovider.Artist {
 		// add results from artists search
 		s.addNewArtists(results.Artist)
 		s.artistOffset += len(results.Artist)
+
+		// skip aggressive discovery for other types in artist view for now
+		// as there's no clear way to map albums/songs to unique artists reliably
+		// without getting duplicates or irrelevant hits.
+		s.albumOffset += len(results.Album)
+		s.songOffset += len(results.Song)
 	}
 
 	// return from prefetched results

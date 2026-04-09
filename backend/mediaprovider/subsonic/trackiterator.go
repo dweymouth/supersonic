@@ -89,14 +89,14 @@ func (s *searchTracksIterator) Next() *mediaprovider.Track {
 
 	// prefetch more search results from server
 	if len(s.prefetched) == 0 {
-		results := s.searchIterBase.fetchResults()
+		results := s.searchIterBase.fetchHybridResults("song")
 
 		if results != nil {
 			// add results from songs search
 			s.addNewTracks(results.Song)
 			s.songOffset += len(results.Song)
 
-			// add results from artists search
+			// add results from artists search (fallback discovery)
 			for _, artist := range results.Artist {
 				artist, err := s.s.GetArtist(artist.ID)
 				if err != nil {
@@ -107,7 +107,7 @@ func (s *searchTracksIterator) Next() *mediaprovider.Track {
 			}
 			s.artistOffset += len(results.Artist)
 
-			// add results from albums search
+			// add results from albums search (fallback discovery)
 			s.addNewTracksFromAlbums(results.Album)
 			s.albumOffset += len(results.Album)
 		}
