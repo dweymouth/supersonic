@@ -13,6 +13,9 @@ type searchIterBase struct {
 	artistOffset  int
 	albumOffset   int
 	songOffset    int
+	artistCount   int
+	albumCount    int
+	songCount     int
 	s             *subsonic.Client
 }
 
@@ -21,6 +24,9 @@ func (s *searchIterBase) fetchResults() *subsonic.SearchResult3 {
 		"artistOffset": strconv.Itoa(s.artistOffset),
 		"albumOffset":  strconv.Itoa(s.albumOffset),
 		"songOffset":   strconv.Itoa(s.songOffset),
+		"artistCount":  strconv.Itoa(s.artistCount),
+		"albumCount":   strconv.Itoa(s.albumCount),
+		"songCount":    strconv.Itoa(s.songCount),
 	}
 	if s.musicFolderId != "" {
 		searchOpts["musicFolderId"] = s.musicFolderId

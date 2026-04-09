@@ -22,6 +22,9 @@ func (s *subsonicMediaProvider) IterateTracks(searchQuery string) mediaprovider.
 			s:             s.client,
 			query:         searchQuery,
 			musicFolderId: s.currentLibraryID,
+			songCount:     50, // default page size for dedicated search
+			artistCount:   0,
+			albumCount:    0,
 		},
 		trackIDset: make(map[string]bool),
 	}

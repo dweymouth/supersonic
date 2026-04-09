@@ -138,6 +138,9 @@ func (s *subsonicMediaProvider) newSearchAlbumIter(query string, filter mediapro
 			query:         query,
 			s:             s.client,
 			musicFolderId: s.currentLibraryID,
+			albumCount:    50, // default page size for dedicated search
+			artistCount:   0,
+			songCount:     0,
 		},
 		prefetchCB: cb,
 		filter:     filter,
