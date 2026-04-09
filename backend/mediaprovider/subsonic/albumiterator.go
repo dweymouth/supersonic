@@ -169,8 +169,10 @@ func (s *searchAlbumIter) Next() *mediaprovider.Album {
 		// add results from artists search (fallback discovery)
 		for _, artist := range results.Artist {
 			artist, err := s.s.GetArtist(artist.ID)
-			if err != nil || artist == nil {
+			if err != nil {
 				log.Printf("error fetching artist: %s", err.Error())
+			} else if artist == nil {
+				log.Printf("artist not found")
 			} else {
 				s.addNewAlbums(artist.Album)
 			}
@@ -183,8 +185,10 @@ func (s *searchAlbumIter) Next() *mediaprovider.Album {
 				continue
 			}
 			album, err := s.s.GetAlbum(song.AlbumID)
-			if err != nil || album == nil {
+			if err != nil {
 				log.Printf("error fetching album: %s", err.Error())
+			} else if album == nil {
+				log.Printf("album not found")
 			} else {
 				s.addNewAlbums([]*subsonic.AlbumID3{album})
 			}
