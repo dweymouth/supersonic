@@ -209,6 +209,7 @@ type RadioStation struct {
 	ID          string
 	HomePageURL string
 	StreamURL   string
+	CoverArtID  string
 }
 
 type MediaItemType int
@@ -267,9 +268,10 @@ func (r *RadioStation) Metadata() MediaItemMetadata {
 		return MediaItemMetadata{}
 	}
 	return MediaItemMetadata{
-		Type: MediaItemTypeRadioStation,
-		ID:   r.ID,
-		Name: r.Name,
+		Type:       MediaItemTypeRadioStation,
+		ID:         r.ID,
+		Name:       r.Name,
+		CoverArtID: r.CoverArtID,
 	}
 }
 

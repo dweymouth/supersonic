@@ -22,7 +22,7 @@ require (
 	github.com/quarckster/go-mpris-server v1.0.3
 	github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410
 	github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449
-	github.com/supersonic-app/go-subsonic v0.0.0-20260405192806-29d84070230a
+	github.com/supersonic-app/go-subsonic v0.0.0-20260409151555-0d5fb7d4801a
 	github.com/supersonic-app/go-upnpcast v0.1.0
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/net v0.50.0

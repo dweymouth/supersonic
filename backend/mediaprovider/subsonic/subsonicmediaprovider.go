@@ -508,6 +508,7 @@ func (s *subsonicMediaProvider) GetRadioStations() ([]*mediaprovider.RadioStatio
 			Name:        rs.Name,
 			HomePageURL: rs.HomePageUrl,
 			StreamURL:   rs.StreamUrl,
+			CoverArtID:  rs.CoverArt,
 		}
 	})
 	s.radiosCachedAt = time.Now().Unix()
