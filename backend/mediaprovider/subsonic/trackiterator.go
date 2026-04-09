@@ -53,8 +53,10 @@ func (a *allTracksIterator) Next() *mediaprovider.Track {
 				return nil
 			}
 			alWithTracks, err := a.s.GetAlbum(al.ID)
-			if err != nil || alWithTracks == nil {
+			if err != nil {
 				log.Printf("error fetching album: %s", err.Error())
+			} else if alWithTracks == nil {
+				log.Printf("album not found")
 				continue // try next album
 			}
 			haveNextAlbum = true
@@ -98,10 +100,12 @@ func (s *searchTracksIterator) Next() *mediaprovider.Track {
 
 			// add results from artists search (fallback discovery)
 			for _, artist := range results.Artist {
-				artist, err := s.s.GetArtist(artist.ID)
-				if err != nil {
-					log.Printf("error fetching artist: %s", err.Error())
-				} else {
+			artist, err := s.s.GetArtist(artist.ID)
+			if err != nil {
+				log.Printf("error fetching artist: %s", err.Error())
+			} else if artist == nil {
+				log.Printf("artist not found")
+			} else {
 					s.addNewTracksFromAlbums(artist.Album)
 				}
 			}
@@ -145,6 +149,8 @@ func (s *searchTracksIterator) addNewTracksFromAlbums(albums []*subsonic.AlbumID
 	for _, al := range albums {
 		if album, err := s.s.GetAlbum(al.ID); err != nil {
 			log.Printf("error fetching album: %s", err.Error())
+		} else if album == nil {
+			log.Printf("album not found")
 		} else {
 			s.addNewTracks(album.Song)
 		}
