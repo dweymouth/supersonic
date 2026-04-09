@@ -163,29 +163,8 @@ func (s *searchAlbumIter) Next() *mediaprovider.Album {
 		s.addNewAlbums(results.Album)
 		s.albumOffset += len(results.Album)
 
-		// add results from artists search
-		for _, artist := range results.Artist {
-			artist, err := s.s.GetArtist(artist.ID)
-			if err != nil || artist == nil {
-				log.Printf("error fetching artist: %s", err.Error())
-			} else {
-				s.addNewAlbums(artist.Album)
-			}
-		}
+		// skip aggressive prefetching of artists and songs' albums to prevent N+1 cascades
 		s.artistOffset += len(results.Artist)
-
-		// add results from songs search
-		for _, song := range results.Song {
-			if song.AlbumID == "" {
-				continue
-			}
-			album, err := s.s.GetAlbum(song.AlbumID)
-			if err != nil || album == nil {
-				log.Printf("error fetching album: %s", err.Error())
-			} else {
-				s.addNewAlbums([]*subsonic.AlbumID3{album})
-			}
-		}
 		s.songOffset += len(results.Song)
 	}
 
