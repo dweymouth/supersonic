@@ -240,7 +240,7 @@ func (s *subsonicMediaProvider) newRandomIter(filter mediaprovider.AlbumFilter, 
 			}
 			return s.client.GetAlbumList2("random", args)
 		}),
-		filter, s.prefetchCoverCB)
+		filter, cb)
 }
 
 func (s *subsonicMediaProvider) baseIterFromSimpleSortOrder(sort string, filter mediaprovider.AlbumFilter) mediaprovider.AlbumIterator {
