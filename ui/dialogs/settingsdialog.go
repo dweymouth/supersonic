@@ -2,6 +2,8 @@ package dialogs
 
 import (
 	"errors"
+	"fmt"
+	"image/color"
 	"log"
 	"math"
 	"os"
@@ -19,6 +21,7 @@ import (
 	"github.com/dweymouth/supersonic/ui/widgets"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
@@ -37,6 +40,7 @@ type SettingsDialog struct {
 	OnPauseFadeSettingsChanged     func()
 	OnAudioDeviceSettingChanged    func()
 	OnThemeSettingChanged          func()
+	OnAccentColorChanged           func() // Lightweight callback for instant accent updates
 	OnDismiss                      func()
 	OnEqualizerSettingsChanged     func()
 	OnPageNeedsRefresh             func()
@@ -696,6 +700,157 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		themeModeSelect.SetSelectedIndex(0)
 	}
 
+	// Custom Accent Color Engine UI
+	useCustomAccent := widget.NewCheck(lang.L("Use custom accent color"), func(b bool) {
+		log.Printf("DEBUG Settings: UseCustomAccent changed to %v", b)
+		s.config.Theme.UseCustomAccent = b
+		log.Printf("DEBUG Settings: s.config.Theme.UseCustomAccent is now %v", s.config.Theme.UseCustomAccent)
+		if s.OnThemeSettingChanged != nil {
+			s.OnThemeSettingChanged()
+		}
+	})
+	useCustomAccent.Checked = s.config.Theme.UseCustomAccent
+
+	// Ensure we have valid values (defaults should be set in config loading, but ensure here)
+	// Also update the config with defaults so they get saved
+	if s.config.Theme.AccentColor == "" {
+		s.config.Theme.AccentColor = "#FF8A45" // Default orange accent
+	}
+	if s.config.Theme.Saturation == 0 {
+		s.config.Theme.Saturation = 1.0
+	}
+	if s.config.Theme.Contrast == 0 {
+		s.config.Theme.Contrast = 1.0
+	}
+	if s.config.Theme.BaseMode == "" || s.config.Theme.BaseMode == "dark" {
+		s.config.Theme.BaseMode = "grey"
+	}
+
+	// Hue slider (0-360) for rainbow color selection
+	hueSlider := widget.NewSlider(0, 360)
+	hueSlider.SetValue(hexToHue(s.config.Theme.AccentColor))
+	hueSlider.Step = 1
+
+	// Color preview rectangle
+	colorPreview := canvas.NewRectangle(colorFromHex(s.config.Theme.AccentColor))
+	colorPreview.SetMinSize(fyne.NewSize(40, 24))
+
+	hueSlider.OnChanged = func(hue float64) {
+		s.config.Theme.AccentColor = hueToHex(hue)
+		colorPreview.FillColor = colorFromHex(s.config.Theme.AccentColor)
+		colorPreview.Refresh()
+		if s.OnAccentColorChanged != nil {
+			s.OnAccentColorChanged()
+		}
+	}
+
+	// Helper to get ranges from theme package (single source of truth)
+	getRanges := func(mode string) myTheme.SliderRanges {
+		return myTheme.GetSliderRanges(mode)
+	}
+	clamp := func(val, min, max float64) float64 {
+		if val < min {
+			return min
+		}
+		if val > max {
+			return max
+		}
+		return val
+	}
+
+	// Create sliders with initial ranges based on current base mode
+	initRanges := getRanges(s.config.Theme.BaseMode)
+
+	saturationSlider := widget.NewSlider(initRanges.SatMin, initRanges.SatMax)
+	saturationSlider.SetValue(clamp(s.config.Theme.Saturation, initRanges.SatMin, initRanges.SatMax))
+	saturationSlider.Step = 0.05
+
+	contrastSlider := widget.NewSlider(initRanges.ContrastMin, initRanges.ContrastMax)
+	contrastSlider.SetValue(clamp(s.config.Theme.Contrast, initRanges.ContrastMin, initRanges.ContrastMax))
+	contrastSlider.Step = 0.05
+
+	// Create select without callback first to avoid triggering during init
+	baseModeSelect := widget.NewSelect([]string{"light", "black", "grey"}, nil)
+	baseModeSelect.SetSelected(s.config.Theme.BaseMode)
+
+	// Now set up the callback after sliders are fully initialized
+	baseModeSelect.OnChanged = func(mode string) {
+		s.config.Theme.BaseMode = mode
+
+		// Update slider ranges based on new base mode
+		newRanges := getRanges(mode)
+
+		// Clamp current values to new ranges and update sliders
+		newSat := clamp(saturationSlider.Value, newRanges.SatMin, newRanges.SatMax)
+		newCon := clamp(contrastSlider.Value, newRanges.ContrastMin, newRanges.ContrastMax)
+
+		saturationSlider.Min = newRanges.SatMin
+		saturationSlider.Max = newRanges.SatMax
+		contrastSlider.Min = newRanges.ContrastMin
+		contrastSlider.Max = newRanges.ContrastMax
+
+		saturationSlider.SetValue(newSat)
+		contrastSlider.SetValue(newCon)
+
+		s.config.Theme.Saturation = newSat
+		s.config.Theme.Contrast = newCon
+
+		if s.OnAccentColorChanged != nil {
+			s.OnAccentColorChanged()
+		}
+	}
+
+	// Set up OnChanged handlers for sliders (after baseModeSelect is created)
+	saturationSlider.OnChanged = func(f float64) {
+		s.config.Theme.Saturation = f
+		if s.OnAccentColorChanged != nil {
+			s.OnAccentColorChanged()
+		}
+	}
+
+	contrastSlider.OnChanged = func(f float64) {
+		s.config.Theme.Contrast = f
+		if s.OnAccentColorChanged != nil {
+			s.OnAccentColorChanged()
+		}
+	}
+
+	// Disable custom accent controls if not enabled
+	hueSlider.Disable()
+	saturationSlider.Disable()
+	contrastSlider.Disable()
+	baseModeSelect.Disable()
+	if useCustomAccent.Checked {
+		hueSlider.Enable()
+		saturationSlider.Enable()
+		contrastSlider.Enable()
+		baseModeSelect.Enable()
+	}
+
+	// Re-set slider values after enabling controls (Fyne doesn't apply SetValue correctly when disabled)
+	saturationSlider.SetValue(clamp(s.config.Theme.Saturation, initRanges.SatMin, initRanges.SatMax))
+	contrastSlider.SetValue(clamp(s.config.Theme.Contrast, initRanges.ContrastMin, initRanges.ContrastMax))
+	// Store the original OnChanged that updates config and triggers theme change
+	originalOnChanged := useCustomAccent.OnChanged
+	useCustomAccent.OnChanged = func(b bool) {
+		// First call the original callback to update config and trigger theme change
+		if originalOnChanged != nil {
+			originalOnChanged(b)
+		}
+		// Then enable/disable controls based on state
+		if b {
+			hueSlider.Enable()
+			saturationSlider.Enable()
+			contrastSlider.Enable()
+			baseModeSelect.Enable()
+		} else {
+			hueSlider.Disable()
+			saturationSlider.Disable()
+			contrastSlider.Disable()
+			baseModeSelect.Disable()
+		}
+	}
+
 	normalFontEntry := widget.NewEntry()
 	normalFontEntry.SetPlaceHolder("path to .ttf or empty to use default")
 	normalFontEntry.Text = s.config.Application.FontNormalTTF
@@ -773,6 +928,14 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
 			container.NewHBox(widget.NewLabel(lang.L("Mode")), themeModeSelect, util.NewHSpace(5)), // right
 			themeFileSelect, // center
+		),
+		s.newSectionSeparator(),
+		widget.NewRichText(&widget.TextSegment{Text: lang.L("Custom Accent Color"), Style: util.BoldRichTextStyle}),
+		container.NewHBox(useCustomAccent, util.NewHSpace(20), widget.NewLabel(lang.L("Base mode")), baseModeSelect),
+		container.NewBorder(nil, nil, nil, colorPreview, hueSlider),
+		container.New(layout.NewFormLayout(),
+			widget.NewLabel(lang.L("Saturation")), saturationSlider,
+			widget.NewLabel(lang.L("Contrast")), contrastSlider,
 		),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("UI Scaling"), Style: util.BoldRichTextStyle}),
 		uiScaleRadio,
@@ -920,4 +1083,94 @@ func (s *SettingsDialog) getActiveTabNumFromConfig() int {
 	default:
 		return 0
 	}
+}
+
+// colorFromHex converts a hex color string to a color.Color
+func colorFromHex(hex string) color.Color {
+	r, g, b := hexToRGB(hex)
+	return color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}
+}
+
+// hexToRGB converts a hex color string to RGB values
+func hexToRGB(hex string) (r, g, b float64) {
+	if len(hex) < 7 || hex[0] != '#' {
+		return 255, 136, 69 // default orange
+	}
+	rval, _ := strconv.ParseInt(hex[1:3], 16, 64)
+	gval, _ := strconv.ParseInt(hex[3:5], 16, 64)
+	bval, _ := strconv.ParseInt(hex[5:7], 16, 64)
+	return float64(rval), float64(gval), float64(bval)
+}
+
+// rgbToHex converts RGB values to a hex color string
+func rgbToHex(r, g, b float64) string {
+	return fmt.Sprintf("#%02X%02X%02X", int(r), int(g), int(b))
+}
+
+// hexToHue extracts the hue (0-360) from a hex color
+func hexToHue(hex string) float64 {
+	r, g, b := hexToRGB(hex)
+	return rgbToHue(r, g, b)
+}
+
+// rgbToHue converts RGB to hue value (0-360)
+func rgbToHue(r, g, b float64) float64 {
+	max := math.Max(r, math.Max(g, b))
+	min := math.Min(r, math.Min(g, b))
+	delta := max - min
+
+	if delta == 0 {
+		return 0
+	}
+
+	var hue float64
+	switch {
+	case max == r:
+		hue = ((g - b) / delta)
+		if g < b {
+			hue += 6
+		}
+	case max == g:
+		hue = ((b-r)/delta + 2)
+	default:
+		hue = ((r-g)/delta + 4)
+	}
+
+	return hue * 60
+}
+
+// hueToRGB converts a hue value (0-360) to a full saturation RGB color
+func hueToRGB(hue float64) (r, g, b float64) {
+	hue = math.Mod(hue, 360)
+	if hue < 0 {
+		hue += 360
+	}
+
+	c := 255.0 // full saturation
+	x := c * (1 - math.Abs(math.Mod(hue/60, 2)-1))
+	m := 0.0
+
+	var r1, g1, b1 float64
+	switch {
+	case hue < 60:
+		r1, g1, b1 = c, x, 0
+	case hue < 120:
+		r1, g1, b1 = x, c, 0
+	case hue < 180:
+		r1, g1, b1 = 0, c, x
+	case hue < 240:
+		r1, g1, b1 = 0, x, c
+	case hue < 300:
+		r1, g1, b1 = x, 0, c
+	default:
+		r1, g1, b1 = c, 0, x
+	}
+
+	return r1 + m, g1 + m, b1 + m
+}
+
+// hueToHex converts a hue value (0-360) to a hex color string
+func hueToHex(hue float64) string {
+	r, g, b := hueToRGB(hue)
+	return rgbToHex(r, g, b)
 }

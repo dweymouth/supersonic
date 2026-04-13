@@ -308,7 +308,7 @@ func (c *Controller) ShowAboutDialog() {
 	pop.Show()
 }
 
-func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map[string]string) {
+func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), accentColorUpdateCallbk func(), onCloseCallbk func(), themeFiles map[string]string) {
 	devs, err := c.App.LocalPlayer.ListAudioDevices()
 	if err != nil {
 		log.Printf("error listing audio devices: %v", err)
@@ -344,6 +344,7 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 		c.App.LocalPlayer.SetAudioDevice(c.App.Config.LocalPlayback.AudioDeviceName)
 	}
 	dlg.OnThemeSettingChanged = themeUpdateCallbk
+	dlg.OnAccentColorChanged = accentColorUpdateCallbk
 	dlg.OnEqualizerSettingsChanged = func() {
 		// Create the appropriate equalizer type based on config
 		var eq mpv.Equalizer
@@ -380,6 +381,10 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), themeFiles map
 		pop.Hide()
 		fynetooltip.DestroyPopUpToolTipLayer(pop)
 		c.doModalClosed()
+		// Finalize theme changes (SetTheme for accent color changes)
+		if onCloseCallbk != nil {
+			onCloseCallbk()
+		}
 		c.App.SaveConfigFile()
 	}
 	c.ClosePopUpOnEscape(pop)

@@ -552,10 +552,68 @@ func (m *MainWindow) addShortcuts() {
 	m.Canvas().SetOnMouseForward(m.BrowsingPane.GoForward)
 }
 
+// deepRefresh recursively forces all canvas objects to repaint immediately
+// This triggers color re-query from theme without full SetTheme overhead
+func deepRefresh(obj fyne.CanvasObject) {
+	if obj == nil {
+		return
+	}
+	switch c := obj.(type) {
+	case *fyne.Container:
+		for _, child := range c.Objects {
+			deepRefresh(child)
+		}
+	case *container.Split:
+		deepRefresh(c.Leading)
+		deepRefresh(c.Trailing)
+	case *uicontainer.Split:
+		deepRefresh(c.Leading)
+		deepRefresh(c.Trailing)
+	case *container.AppTabs:
+		for _, item := range c.Items {
+			deepRefresh(item.Content)
+		}
+	case *container.Scroll:
+		deepRefresh(c.Content)
+	}
+	obj.Refresh()
+}
+
 func (m *MainWindow) showSettingsDialog() {
-	m.Controller.ShowSettingsDialog(func() {
+	// Full theme reload for theme file changes
+	themeUpdateCallbk := func() {
+		m.theme.ReloadThemeFile()
 		fyne.CurrentApp().Settings().SetTheme(m.theme)
-	}, m.theme.ListThemeFiles())
+	}
+
+	// Accent color update - instant visual refresh at 60fps while dragging
+	// Theme is only saved to disk when dialog closes (no debouncer needed)
+	var lastUpdate time.Time
+	accentUpdateCallbk := func() {
+		m.theme.InvalidatePaletteCache()
+
+		// Throttle to 60fps (16ms)
+		now := time.Now()
+		if now.Sub(lastUpdate) < 16*time.Millisecond {
+			return
+		}
+		lastUpdate = now
+
+		// Deep refresh for instant preview
+		deepRefresh(m.Window.Content())
+		if canv := m.Window.Canvas(); canv != nil {
+			for _, overlay := range canv.Overlays().List() {
+				deepRefresh(overlay)
+			}
+		}
+	}
+
+	// Finalize theme on dialog close (SetTheme for accent color changes)
+	onCloseCallbk := func() {
+		fyne.CurrentApp().Settings().SetTheme(m.theme)
+	}
+
+	m.Controller.ShowSettingsDialog(themeUpdateCallbk, accentUpdateCallbk, onCloseCallbk, m.theme.ListThemeFiles())
 }
 
 func (m *MainWindow) Show() {

@@ -97,6 +97,14 @@ type MyTheme struct {
 	loadedThemeFilename string
 	loadedThemeFile     *ThemeFile
 	defaultThemeFile    *ThemeFile
+
+	cachedPalette       *Palette
+	cachedPaletteConfig struct {
+		accentColor string
+		saturation  float64
+		contrast    float64
+		baseMode    string
+	}
 }
 
 var _ fyne.Theme = (*MyTheme)(nil)
@@ -113,9 +121,123 @@ func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
 // ReloadThemeFile reloads the currently loaded theme file.
 func (m *MyTheme) ReloadThemeFile() {
 	m.loadedThemeFile = nil
+	m.cachedPalette = nil
+}
+
+// InvalidatePaletteCache clears only the palette cache for instant accent updates
+// without the overhead of full theme reload. Use this when only accent settings change.
+func (m *MyTheme) InvalidatePaletteCache() {
+	m.cachedPalette = nil
+}
+
+func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette) color.Color {
+	switch name {
+	case ColorNameInactiveLyric:
+		return BlendColors(palette.TextPrimary, palette.Surface, 0.33)
+	case ColorNameHoveredIconButton:
+		// Icons use accent color, hovered is brighter version
+		return brightenColor(palette.Accent, 0.25)
+	case ColorNameIconButton:
+		// Icons tinted with accent color
+		return palette.Accent
+	case ColorNameNowPlayingPanel:
+		r, g, b, _ := palette.PageHeader.RGBA()
+		return color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: 180}
+	case ColorNameListHeader:
+		return palette.ListHeader
+	case ColorNamePageBackground:
+		return palette.PageBackground
+	case ColorNamePageHeader:
+		return palette.PageHeader
+	case theme.ColorNameBackground:
+		return palette.Background
+	case theme.ColorNameButton:
+		return palette.Surface
+	case theme.ColorNameDisabled:
+		return palette.TextSecondary
+	case theme.ColorNameDisabledButton:
+		return palette.Surface
+	case theme.ColorNameError:
+		return palette.Danger
+	case theme.ColorNameFocus:
+		// Use SurfaceHover for focus to match selection/hover behavior
+		return palette.SurfaceHover
+	case theme.ColorNameForeground:
+		return palette.TextPrimary
+	case theme.ColorNameHover:
+		return palette.SurfaceHover
+	case theme.ColorNameHyperlink:
+		return palette.Hyperlink
+	case theme.ColorNameInputBackground:
+		return palette.Surface
+	case theme.ColorNameInputBorder:
+		return palette.Surface
+	case theme.ColorNameMenuBackground:
+		// Use MenuBackground for menu background - subtle accent tint
+		// that doesn't compete with the stronger SurfaceHover used for focus/selection
+		return palette.MenuBackground
+	case theme.ColorNameOverlayBackground:
+		return palette.Background
+	case theme.ColorNamePlaceHolder:
+		return palette.TextSecondary
+	case theme.ColorNamePressed:
+		return palette.Accent
+	case theme.ColorNamePrimary:
+		return palette.Accent
+	case theme.ColorNameScrollBar:
+		return palette.TextPrimary
+	case theme.ColorNameSelection:
+		// Use surfaceHover for selection - it's already calibrated based on surface luminance
+		// This ensures good contrast in both light and dark modes
+		return palette.SurfaceHover
+	case theme.ColorNameSeparator:
+		return palette.Surface
+	case theme.ColorNameShadow:
+		// Use a semi-transparent dark version of background for shadows
+		// instead of solid black for more natural shadows
+		shadow := palette.Background
+		r, g, b, _ := shadow.RGBA()
+		return color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: 80}
+	case theme.ColorNameSuccess:
+		return palette.Success
+	case theme.ColorNameWarning:
+		return palette.Accent
+	default:
+		return palette.TextPrimary
+	}
 }
 
 func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
+	// Use custom accent palette if enabled
+	if m.config.UseCustomAccent {
+		// Check if we need to regenerate the palette
+		if m.cachedPalette == nil ||
+			m.cachedPaletteConfig.accentColor != m.config.AccentColor ||
+			m.cachedPaletteConfig.saturation != m.config.Saturation ||
+			m.cachedPaletteConfig.contrast != m.config.Contrast ||
+			m.cachedPaletteConfig.baseMode != m.config.BaseMode {
+
+			log.Printf("DEBUG Theme: Generating palette with BaseMode=%s, AccentColor=%s", m.config.BaseMode, m.config.AccentColor)
+			palette, err := GeneratePalette(m.config.AccentColor, m.config.Saturation, m.config.Contrast, m.config.BaseMode)
+			if err != nil {
+				log.Printf("failed to generate palette: %v", err)
+				// Fall through to TOML theme
+			} else {
+				m.cachedPalette = palette
+				m.cachedPaletteConfig.accentColor = m.config.AccentColor
+				m.cachedPaletteConfig.saturation = m.config.Saturation
+				m.cachedPaletteConfig.contrast = m.config.Contrast
+				m.cachedPaletteConfig.baseMode = m.config.BaseMode
+				log.Printf("DEBUG Theme: Palette generated, Background=%v", palette.Background)
+			}
+		}
+
+		if m.cachedPalette != nil {
+			return m.getColorFromPalette(name, m.cachedPalette)
+		}
+		log.Printf("DEBUG Theme: cachedPalette is nil, falling through to TOML theme")
+	}
+
 	// load theme file if necessary
 	if m.loadedThemeFile == nil || m.config.ThemeFile != m.loadedThemeFilename {
 		t, err := ReadThemeFile(path.Join(m.themeFileDir, m.config.ThemeFile))
