@@ -748,14 +748,89 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	hueSlider.SetValue(hexToHue(s.config.Theme.AccentColor))
 	hueSlider.Step = 1
 
-	// Color preview rectangle
-	colorPreview := canvas.NewRectangle(colorFromHex(s.config.Theme.AccentColor))
-	colorPreview.SetMinSize(fyne.NewSize(40, 24))
+	// Palette preview rectangles - created once, colors updated on slider changes
+	palettePreviewRects := []*canvas.Rectangle{}
+	previewColors := []float32{20, 20, 20, 30, 20, 20} // widths for: Background, Surface, SurfaceHover, Accent, TextSecondary, TextPrimary
+
+	// Create color swatches container with padding
+	swatchesContainer := container.NewHBox()
+	for _, size := range previewColors {
+		rect := canvas.NewRectangle(color.Transparent)
+		rect.SetMinSize(fyne.NewSize(size, 24))
+		rect.CornerRadius = theme.InputRadiusSize()
+		palettePreviewRects = append(palettePreviewRects, rect)
+		swatchesContainer.Add(rect)
+	}
+
+	// Background for preview (Surface color from palette)
+	previewBg := canvas.NewRectangle(color.Transparent)
+	previewBg.SetMinSize(fyne.NewSize(130, 28))
+	previewBg.CornerRadius = theme.InputRadiusSize()
+
+	// Wrap swatches with padding inside the background
+	palettePreview := container.NewStack(
+		previewBg,
+		container.NewPadded(swatchesContainer),
+	)
+
+	// Generate palette and update preview colors
+	updatePalettePreview := func() {
+		palette, err := myTheme.GeneratePalette(
+			s.config.Theme.AccentColor,
+			s.config.Theme.Saturation,
+			s.config.Theme.Contrast,
+			s.config.Theme.BaseMode,
+		)
+		if err != nil {
+			// Fallback to accent color
+			c := colorFromHex(s.config.Theme.AccentColor)
+			for _, rect := range palettePreviewRects {
+				rect.FillColor = c
+				rect.Refresh()
+			}
+			previewBg.FillColor = c
+			previewBg.Refresh()
+			return
+		}
+
+		colors := []color.Color{
+			palette.Background,
+			palette.Surface,
+			palette.SurfaceHover,
+			palette.Accent,
+			palette.TextSecondary,
+			palette.TextPrimary,
+		}
+
+		for i, rect := range palettePreviewRects {
+			rect.FillColor = colors[i]
+			rect.Refresh()
+		}
+		// Calculate average color from palette for distinctive background
+		avgR, avgG, avgB := 0, 0, 0
+		allColors := []color.Color{palette.Background, palette.Surface, palette.SurfaceHover, palette.Accent, palette.TextSecondary, palette.TextPrimary}
+		for _, c := range allColors {
+			r, g, b, _ := c.RGBA()
+			avgR += int(r >> 8)
+			avgG += int(g >> 8)
+			avgB += int(b >> 8)
+		}
+		avgColor := color.RGBA{
+			R: uint8(avgR / len(allColors)),
+			G: uint8(avgG / len(allColors)),
+			B: uint8(avgB / len(allColors)),
+			A: 255,
+		}
+		previewBg.FillColor = avgColor
+		previewBg.Refresh()
+	}
+
+	// Initial palette generation
+	updatePalettePreview()
 
 	hueSlider.OnChanged = func(hue float64) {
 		s.config.Theme.AccentColor = hueToHex(hue)
-		colorPreview.FillColor = colorFromHex(s.config.Theme.AccentColor)
-		colorPreview.Refresh()
+		updatePalettePreview()
 		if s.OnAccentColorChanged != nil {
 			s.OnAccentColorChanged()
 		}
@@ -789,6 +864,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	// Set up OnChanged handlers for sliders
 	saturationSlider.OnChanged = func(f float64) {
 		s.config.Theme.Saturation = f
+		updatePalettePreview()
 		if s.OnAccentColorChanged != nil {
 			s.OnAccentColorChanged()
 		}
@@ -796,6 +872,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 
 	contrastSlider.OnChanged = func(f float64) {
 		s.config.Theme.Contrast = f
+		updatePalettePreview()
 		if s.OnAccentColorChanged != nil {
 			s.OnAccentColorChanged()
 		}
@@ -917,9 +994,11 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	accentControls := container.NewVBox(
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("Accent Color"), Style: util.BoldRichTextStyle}),
-		// Hue slider with color preview and extract button in one row
+		// Hue slider with palette preview and extract button in one row
 		container.NewBorder(nil, nil, nil,
-			container.NewHBox(colorPreview, util.NewHSpace(10),
+			container.NewHBox(
+				palettePreview,
+				util.NewHSpace(10),
 				widget.NewButton(lang.L("Extract from playing track"), func() {
 					if s.OnExtractFromCover != nil {
 						s.OnExtractFromCover()
@@ -928,9 +1007,10 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 			),
 			hueSlider,
 		),
-		container.New(layout.NewFormLayout(),
-			widget.NewLabel(lang.L("Saturation")), saturationSlider,
-			widget.NewLabel(lang.L("Contrast")), contrastSlider,
+		// Saturation and Contrast on same row, 50/50 split
+		container.NewGridWithColumns(2,
+			container.NewBorder(nil, nil, widget.NewLabel(lang.L("Saturation")), nil, saturationSlider),
+			container.NewBorder(nil, nil, widget.NewLabel(lang.L("Contrast")), nil, contrastSlider),
 		),
 	)
 

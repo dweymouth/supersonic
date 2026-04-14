@@ -162,11 +162,11 @@ func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette
 	case ColorNameInactiveLyric:
 		return BlendColors(palette.TextPrimary, palette.Surface, 0.33)
 	case ColorNameHoveredIconButton:
-		// Hover: use accent color with guaranteed contrast against default
-		return ensureHoverContrast(palette.Accent, palette.TextSecondary)
+		// Hover: pure accent color
+		return palette.Accent
 	case ColorNameActiveIconButton:
-		// Active/Selected: use accent color with guaranteed contrast against default
-		return ensureHoverContrast(palette.Accent, palette.TextSecondary)
+		// Active/Selected: brightened accent for clear distinction from hover
+		return brightenColor(palette.Accent, 0.25)
 	case ColorNameIconButton:
 		// Default: use neutral text color (no accent) for consistency
 		return palette.TextSecondary
@@ -573,8 +573,8 @@ func ensureHoverContrast(accent, defaultColor color.Color) color.Color {
 	hoverLum := (0.299*float64(ar) + 0.587*float64(ag) + 0.114*float64(ab)) / 65535.0
 	defaultLum := (0.299*float64(dr) + 0.587*float64(dg) + 0.114*float64(db)) / 65535.0
 
-	// Minimum contrast threshold
-	const minContrast = 0.25
+	// Minimum contrast threshold - higher for icon visibility
+	const minContrast = 0.40
 
 	contrast := hoverLum - defaultLum
 	if contrast < 0 {
