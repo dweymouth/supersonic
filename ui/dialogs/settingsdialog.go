@@ -897,7 +897,13 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	})
 	useWaveformSeekbar.Checked = s.config.Playback.UseWaveformSeekbar
 
-	nowPlayingBackground := widget.NewCheckWithData(lang.L("Use blurred album cover for Now Playing page background"), binding.BindBool(&s.config.NowPlayingConfig.UseBackgroundImage))
+	nowPlayingBackground := widget.NewCheck(lang.L("Use blurred album cover for Now Playing page background"), func(b bool) {
+		s.config.NowPlayingConfig.UseBackgroundImage = b
+		if s.OnPageNeedsRefresh != nil {
+			s.OnPageNeedsRefresh()
+		}
+	})
+	nowPlayingBackground.Checked = s.config.NowPlayingConfig.UseBackgroundImage
 
 	useRoundedImageCorners := widget.NewCheck(lang.L("Use rounded image corners"), func(b bool) {
 		s.config.Theme.UseRoundedImageCorners = b

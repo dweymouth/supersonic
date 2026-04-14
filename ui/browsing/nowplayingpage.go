@@ -38,17 +38,20 @@ type NowPlayingPage struct {
 	nowPlayingPageState
 
 	// volatile state
-	nowPlaying    mediaprovider.MediaItem
-	nowPlayingID  string
-	curLyrics     *mediaprovider.Lyrics
-	curLyricsID   string // id of track currently shown in lyrics
-	curRelatedID  string // id of track currrently used to populate related list
-	curCoverArt   string // id of cover art currently shown in background / card
-	totalTime     float64
-	lastPlayPos   float64
-	queue         []mediaprovider.MediaItem
-	related       []*mediaprovider.Track
-	alreadyLoaded bool
+	nowPlaying          mediaprovider.MediaItem
+	nowPlayingID        string
+	curLyrics           *mediaprovider.Lyrics
+	curLyricsID         string      // id of track currently shown in lyrics
+	curRelatedID        string      // id of track currrently used to populate related list
+	curCoverArt         string      // id of cover art currently shown in background / card
+	curCoverImage       image.Image // current cover art image
+	cachedBlurredImage  image.Image // cached blurred version of current cover
+	cachedDominantColor color.Color // cached dominant color of current cover
+	totalTime           float64
+	lastPlayPos         float64
+	queue               []mediaprovider.MediaItem
+	related             []*mediaprovider.Track
+	alreadyLoaded       bool
 
 	// widgets for render
 	backgroundImgA     *canvas.Image
@@ -328,50 +331,150 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 		log.Printf("error loading cover art: %v\n", err)
 	}
 
+	// Clear cache if image changed
+	if img != a.curCoverImage {
+		a.cachedBlurredImage = nil
+		a.cachedDominantColor = nil
+	}
+	a.curCoverImage = img
 	fyne.Do(func() { a.card.SetCoverImage(img) })
 	if img == nil {
 		return
 	}
 
+	// Fyne animation starting is currently thread-safe,
+	// despite not being marked as such
+	// TODO: if this changes, use fyne.Do
+	a.applyBackgroundFromImage(img)
+}
+
+// applyBackgroundFromImage applies the background (blurred image or gradient)
+// based on the current config. Uses cached processed images when available.
+func (a *NowPlayingPage) applyBackgroundFromImage(img image.Image) {
 	if a.conf.UseBackgroundImage {
-		resized := imaging.Resize(img, 300, 0, imaging.NearestNeighbor)
-		blurred := imaging.Blur(resized, 10.0)
-		fyne.Do(func() {
-			if a.backgroundGradient.StartColor != color.Transparent {
-				a.backgroundGradient.StartColor = color.Transparent
-				a.backgroundGradient.Refresh()
-			}
-			a.backgroundImgA.Hidden = false
-			a.backgroundImgB.Hidden = false
-			a.backgroundImgA.Image = a.backgroundImgB.Image
-			a.backgroundImgB.Image = blurred
-			fyne.NewAnimation(myTheme.AnimationDurationMedium, func(f float32) {
-				a.backgroundImgA.Translucency = float64(f)
-				a.backgroundImgB.Translucency = float64(1 - f)
-				a.backgroundImgA.Refresh()
-				a.backgroundImgB.Refresh()
-			}).Start()
-		})
-	} else {
-		c := dominantcolor.Find(img)
-		if c == a.backgroundGradient.StartColor {
+		// Check if we have cached blurred image for current cover
+		if a.cachedBlurredImage != nil {
+			// Use cached blurred image immediately
+			a.applyBlurredBackground(a.cachedBlurredImage)
 			return
 		}
-		if !a.backgroundImgA.Hidden {
-			a.backgroundImgA.Hide()
+
+		// Process blurred image in background
+		go func() {
+			resized := imaging.Resize(img, 300, 0, imaging.NearestNeighbor)
+			blurred := imaging.Blur(resized, 10.0)
+			a.cachedBlurredImage = blurred
+
+			fyne.Do(func() {
+				a.applyBlurredBackground(blurred)
+			})
+		}()
+	} else {
+		// Check if we have cached dominant color
+		if a.cachedDominantColor != nil {
+			a.applyGradientBackground(a.cachedDominantColor)
+			return
 		}
-		if !a.backgroundImgB.Hidden {
+
+		// Process dominant color in background
+		go func() {
+			c := dominantcolor.Find(img)
+			a.cachedDominantColor = c
+
+			fyne.Do(func() {
+				a.applyGradientBackground(c)
+			})
+		}()
+	}
+}
+
+// applyBlurredBackground applies a pre-processed blurred image with smooth transition
+func (a *NowPlayingPage) applyBlurredBackground(blurred image.Image) {
+	// Check if coming from gradient mode (images were hidden)
+	fromGradient := a.backgroundImgA.Hidden && a.backgroundImgB.Hidden
+
+	// Make gradient transparent so images show through
+	a.backgroundGradient.StartColor = color.Transparent
+	a.backgroundGradient.Refresh()
+
+	if fromGradient {
+		// Coming from gradient: just show the image immediately, no crossfade
+		a.backgroundImgA.Hidden = false
+		a.backgroundImgB.Hidden = false
+		a.backgroundImgA.Image = blurred
+		a.backgroundImgB.Image = blurred
+		a.backgroundImgA.Translucency = 0.0
+		a.backgroundImgB.Translucency = 0.0
+		a.backgroundImgA.Refresh()
+		a.backgroundImgB.Refresh()
+	} else {
+		// Already showing blurred: crossfade to new image
+		a.backgroundImgA.Hidden = false
+		a.backgroundImgB.Hidden = false
+		a.backgroundImgA.Image = a.backgroundImgB.Image
+		a.backgroundImgB.Image = blurred
+		a.backgroundImgA.Translucency = 0.0
+		a.backgroundImgB.Translucency = 1.0
+		a.backgroundImgA.Refresh()
+		a.backgroundImgB.Refresh()
+
+		fyne.NewAnimation(myTheme.AnimationDurationMedium, func(f float32) {
+			a.backgroundImgA.Translucency = float64(f)
+			a.backgroundImgB.Translucency = float64(1 - f)
+			a.backgroundImgA.Refresh()
+			a.backgroundImgB.Refresh()
+		}).Start()
+	}
+}
+
+// applyGradientBackground applies a gradient with the given dominant color
+func (a *NowPlayingPage) applyGradientBackground(c color.Color) {
+	if c == a.backgroundGradient.StartColor && a.backgroundImgA.Hidden && a.backgroundImgB.Hidden {
+		return
+	}
+
+	// Ensure images stay visible during transition
+	wasHiddenA := a.backgroundImgA.Hidden
+	wasHiddenB := a.backgroundImgB.Hidden
+	a.backgroundImgA.Hidden = false
+	a.backgroundImgB.Hidden = false
+
+	// Set gradient to target color immediately (no color animation = no dark flash)
+	a.backgroundGradient.StartColor = c
+	a.backgroundGradient.Refresh()
+
+	// Animate images fading out to reveal the gradient smoothly
+	startTranslucencyA := a.backgroundImgA.Translucency
+	startTranslucencyB := a.backgroundImgB.Translucency
+
+	fyne.NewAnimation(myTheme.AnimationDurationMedium, func(f float32) {
+		// Fade out images to reveal gradient underneath
+		if !wasHiddenA {
+			a.backgroundImgA.Translucency = startTranslucencyA + (1-startTranslucencyA)*float64(f)
+		}
+		if !wasHiddenB {
+			a.backgroundImgB.Translucency = startTranslucencyB + (1-startTranslucencyB)*float64(f)
+		}
+		a.backgroundImgA.Refresh()
+		a.backgroundImgB.Refresh()
+
+		// Hide images completely at end
+		if f >= 0.99 {
+			a.backgroundImgA.Hide()
 			a.backgroundImgB.Hide()
 		}
-		// Fyne animation starting is currently thread-safe,
-		// despite not being marked as such
-		// TODO: if this changes, use fyne.Do
-		anim := canvas.NewColorRGBAAnimation(
-			a.backgroundGradient.StartColor, c, myTheme.AnimationDurationMedium, func(c color.Color) {
-				a.backgroundGradient.StartColor = c
-				a.backgroundGradient.Refresh()
-			})
-		anim.Start()
+	}).Start()
+}
+
+// blendColors interpolates between two colors
+func blendColors(from, to color.Color, t float32) color.Color {
+	r1, g1, b1, a1 := from.RGBA()
+	r2, g2, b2, a2 := to.RGBA()
+	return color.NRGBA{
+		R: uint8((1-t)*float32(r1>>8) + t*float32(r2>>8)),
+		G: uint8((1-t)*float32(g1>>8) + t*float32(g2>>8)),
+		B: uint8((1-t)*float32(b1>>8) + t*float32(b2>>8)),
+		A: uint8((1-t)*float32(a1>>8) + t*float32(a2>>8)),
 	}
 }
 
@@ -450,11 +553,28 @@ func (a *NowPlayingPage) updateRelatedList() {
 	}(ctx)
 }
 
-func (a *NowPlayingPage) OnPlayQueueChange() {
-	a.Reload()
+func (a *NowPlayingPage) Reload() {
+	// Update background based on current config and cover image
+	// Guard against nil widgets during construction
+	if a.backgroundImgA == nil || a.backgroundImgB == nil {
+		return
+	}
+
+	if a.curCoverImage != nil {
+		a.applyBackgroundFromImage(a.curCoverImage)
+	} else if !a.conf.UseBackgroundImage {
+		// No image and no background setting - just hide the images
+		if !a.backgroundImgA.Hidden {
+			a.backgroundImgA.Hide()
+		}
+		if !a.backgroundImgB.Hidden {
+			a.backgroundImgB.Hide()
+		}
+	}
 }
 
-func (a *NowPlayingPage) Reload() {
+func (a *NowPlayingPage) OnPlayQueueChange() {
+	a.Reload()
 	a.card.DisableRating = !a.canRate
 	a.queueList.DisableRating = !a.canRate
 	a.queueList.DisableSharing = !a.canShare

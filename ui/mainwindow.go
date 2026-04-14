@@ -89,6 +89,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
 	m.Controller.RefreshPageFunc = func() {
 		m.BrowsingPane.RefreshPage()
+		m.BrowsingPane.Reload()
 		m.BottomPanel.Refresh()
 	}
 	m.Controller.SelectAllPageFunc = m.BrowsingPane.SelectAll
@@ -625,6 +626,8 @@ func (m *MainWindow) showSettingsDialog() {
 	// Finalize theme on dialog close - single SetTheme call updates all icons
 	onCloseCallbk := func() {
 		fyne.CurrentApp().Settings().SetTheme(m.theme)
+		// Reload current page to apply any config changes (e.g., background image setting)
+		m.BrowsingPane.Reload()
 	}
 
 	m.Controller.ShowSettingsDialog(themeUpdateCallbk, accentUpdateCallbk, onCloseCallbk, m.theme.ListThemeFiles())
