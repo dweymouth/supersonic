@@ -921,20 +921,20 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	accentControls := container.NewVBox(
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("Accent Color"), Style: util.BoldRichTextStyle}),
-		container.NewBorder(nil, nil, nil, colorPreview, hueSlider),
+		// Hue slider with color preview and extract button in one row
+		container.NewBorder(nil, nil, nil,
+			container.NewHBox(colorPreview, util.NewHSpace(10),
+				widget.NewButton(lang.L("Extract from playing track"), func() {
+					if s.OnExtractFromCover != nil {
+						s.OnExtractFromCover()
+					}
+				}),
+			),
+			hueSlider,
+		),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel(lang.L("Saturation")), saturationSlider,
 			widget.NewLabel(lang.L("Contrast")), contrastSlider,
-		),
-		s.newSectionSeparator(),
-		widget.NewRichText(&widget.TextSegment{Text: lang.L("Dynamic Accent from Cover Art"), Style: util.BoldRichTextStyle}),
-		container.NewHBox(
-			widget.NewButton(lang.L("Extract from playing track"), func() {
-				if s.OnExtractFromCover != nil {
-					s.OnExtractFromCover()
-				}
-			}),
-			util.NewHSpace(10),
 		),
 	)
 
