@@ -55,6 +55,7 @@ type Controller struct {
 	SelectAllPageFunc   func()
 	UnselectAllPageFunc func()
 	ToastProvider       ToastProvider
+	DeepRefreshFunc     func()
 
 	popUpQueue         *widget.PopUp
 	popUpQueueList     *widgets.PlayQueueList
@@ -345,6 +346,9 @@ func (c *Controller) ShowSettingsDialog(themeUpdateCallbk func(), accentColorUpd
 	}
 	dlg.OnThemeSettingChanged = themeUpdateCallbk
 	dlg.OnAccentColorChanged = accentColorUpdateCallbk
+	dlg.OnExtractFromCover = func() {
+		c.extractAndTransitionAccentFromCover()
+	}
 	dlg.OnEqualizerSettingsChanged = func() {
 		// Create the appropriate equalizer type based on config
 		var eq mpv.Equalizer
@@ -659,4 +663,57 @@ func (c *Controller) GetSongRadioTracks(sourceTrack *mediaprovider.Track) ([]*me
 	tracks := []*mediaprovider.Track{sourceTrack}
 	tracks = append(tracks, filteredTracks...)
 	return tracks, nil
+}
+
+// extractAndTransitionAccentFromCover extracts a vibrant color from the current track's
+// cover art and smoothly transitions the theme to that color.
+func (c *Controller) extractAndTransitionAccentFromCover() {
+	if !c.App.Config.Theme.UseCustomAccent {
+		log.Println("Cover extraction: UseCustomAccent is disabled, skipping")
+		return
+	}
+
+	// Get current playing item
+	nowPlaying := c.App.PlaybackManager.NowPlaying()
+	if nowPlaying == nil {
+		log.Println("Cover extraction: No current track")
+		return
+	}
+
+	// Get cover ID from the track
+	coverID := nowPlaying.Metadata().CoverArtID
+	if coverID == "" {
+		log.Println("Cover extraction: No cover art ID available")
+		return
+	}
+
+	// Get cover image (blocking call in goroutine)
+	coverImg, err := c.App.ImageManager.GetCoverThumbnail(coverID)
+	if err != nil || coverImg == nil {
+		log.Printf("Cover extraction: Failed to get cover art: %v", err)
+		return
+	}
+
+	// Extract dominant color
+	extractor := myTheme.NewColorExtractor()
+	accentHex, err := extractor.ExtractAccentFromImage(coverImg)
+	if err != nil {
+		log.Printf("Cover extraction: Failed to extract color: %v", err)
+		return
+	}
+
+	log.Printf("Cover extraction: Extracted accent color %s from track %s", accentHex, nowPlaying.Metadata().Name)
+
+	// Apply accent color immediately (no transition)
+	if theme, ok := fyne.CurrentApp().Settings().Theme().(*myTheme.MyTheme); ok {
+		theme.SetAccentColor(accentHex)
+	} else {
+		log.Println("Cover extraction: Current theme is not MyTheme, cannot apply accent")
+	}
+}
+
+// SetupAutoCoverExtraction is disabled - manual extraction only via settings dialog
+func (c *Controller) SetupAutoCoverExtraction() {
+	// Auto-extraction disabled per user request
+	// Use manual "Extract from Cover" button in settings dialog instead
 }

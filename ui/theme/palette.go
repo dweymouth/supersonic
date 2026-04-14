@@ -21,9 +21,9 @@ func GetSliderRanges(baseMode string) SliderRanges {
 	case "light":
 		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.0, ContrastMax: 0.5}
 	case "black":
-		return SliderRanges{SatMin: 0.5, SatMax: 1.0, ContrastMin: 0.5, ContrastMax: 1.0}
-	case "grey":
 		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.5, ContrastMax: 1.0}
+	case "grey":
+		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.75, ContrastMax: 1.0}
 	default:
 		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.5, ContrastMax: 1.0}
 	}
@@ -65,6 +65,42 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		// Silently desaturate the accent slightly to make it usable
 		accentS = 0.85
 		accent = hslToRgb(accentH, accentS, accentL)
+	}
+
+	// Adapt accent color for dark modes (black/grey) to ensure visibility
+	// When extracting from cover art, dark/unsaturated colors get lost on dark backgrounds
+	baseModeLower := strings.ToLower(baseMode)
+	if baseModeLower == "black" || baseModeLower == "grey" {
+		// For dark modes: ensure accent has minimum brightness
+		// Dark muddy colors (< 0.35 lightness) need to be lightened
+		if accentL < 0.40 {
+			// Lighten dark colors significantly for visibility on dark backgrounds
+			accentL = 0.35 + (accentL * 0.4) // Map 0.0-0.4 -> 0.35-0.51
+		}
+		if accentL < 0.50 {
+			// Further boost for very dark extracted colors
+			accentL = 0.45 + ((accentL - 0.35) * 0.5)
+		}
+		// For light colors (> 0.60 lightness), don't darken them - they're already visible
+		// This preserves B&W light grays that are extracted for visibility
+		if accentL > 0.65 {
+			// Keep light colors light, just clamp to max 0.75 for consistency
+			accentL = clampFloat(accentL, 0, 0.75)
+		}
+		// Boost saturation for dark modes - but NOT for B&W/monochrome colors
+		// If saturation is very low (< 0.05), the color is intentionally desaturated (B&W)
+		// Only boost colors that already have some saturation
+		if accentS >= 0.05 && accentS < 0.50 {
+			accentS = 0.50 + (accentS * 0.3)
+		} else if accentS >= 0.05 && accentS < 0.70 {
+			accentS = 0.60 + ((accentS - 0.50) * 0.5)
+		}
+		// Clamp and apply
+		accentS = clampFloat(accentS, 0, 1)
+		accentL = clampFloat(accentL, 0, 1)
+		accent = hslToRgb(accentH, accentS, accentL)
+		// Recalculate HSL after modification
+		accentH, accentS, accentL = rgbToHsl(accent)
 	}
 
 	// Apply safety clamp using the same ranges as UI sliders
@@ -150,9 +186,11 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	pageHeader := hslToRgb(accentH, bgSat, adjustLightness(pageHeaderL))
 	listHeader := hslToRgb(accentH, bgSat, adjustLightness(listHeaderL))
 
-	// Text colors are already set in the switch statement above
-	textPrimary := textPrimaryRGB
-	textSecondary := textSecondaryRGB
+	// Ensure text has enough contrast against Surface background
+	// Calculate surface luminance and adjust text colors if needed
+	surfLum := (float64(surf.R)*0.299 + float64(surf.G)*0.587 + float64(surf.B)*0.114) / 255.0
+	textPrimary := ensureContrast(textPrimaryRGB, surf, surfLum)
+	textSecondary := ensureContrast(textSecondaryRGB, surf, surfLum)
 
 	// Apply saturation to accent (slider affects accent intensity)
 	if saturation != 1.0 {
@@ -169,7 +207,6 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	// Blend ratio is inversely proportional to surface lightness:
 	// - Light surfaces (light mode): strong hover (24-28% accent)
 	// - Dark surfaces (dark modes): stronger hover (32-36% accent)
-	surfLum := (float64(surf.R)*0.299 + float64(surf.G)*0.587 + float64(surf.B)*0.114) / 255.0
 	hoverBlendRatio := 0.36 - (surfLum * 0.08) // 0.36 when black, 0.28 when white
 	surfaceHover := blendColors(accent, surf, clampFloat(hoverBlendRatio, 0.24, 0.40))
 
@@ -283,6 +320,44 @@ func calculateTextOnAccent(c color.RGBA) color.Color {
 		return color.Black
 	}
 	return color.White
+}
+
+// ensureContrast adjusts text color to ensure minimum contrast against background
+// Returns darkened text for light backgrounds, lightened text for dark backgrounds
+func ensureContrast(textColor, bgColor color.RGBA, bgLum float64) color.RGBA {
+	// Calculate text luminance
+	textLum := (float64(textColor.R)*0.299 + float64(textColor.G)*0.587 + float64(textColor.B)*0.114) / 255.0
+
+	// Determine if we need dark or light text based on background
+	if bgLum > 0.5 {
+		// Light background: ensure text is dark enough (luminance < 0.3)
+		if textLum > 0.3 {
+			// Text too light for light background, darken it
+			factor := 0.3 / textLum
+			return color.RGBA{
+				R: uint8(float64(textColor.R) * factor),
+				G: uint8(float64(textColor.G) * factor),
+				B: uint8(float64(textColor.B) * factor),
+				A: textColor.A,
+			}
+		}
+	} else {
+		// Dark background: ensure text is light enough (luminance > 0.6)
+		if textLum < 0.6 {
+			// Text too dark for dark background, lighten it
+			factor := 0.6 / textLum
+			if factor > 3.0 {
+				factor = 3.0 // Cap maximum brightening
+			}
+			return color.RGBA{
+				R: uint8(clampFloat(float64(textColor.R)*factor, 0, 255)),
+				G: uint8(clampFloat(float64(textColor.G)*factor, 0, 255)),
+				B: uint8(clampFloat(float64(textColor.B)*factor, 0, 255)),
+				A: textColor.A,
+			}
+		}
+	}
+	return textColor
 }
 
 func clamp(v float64) float64 {

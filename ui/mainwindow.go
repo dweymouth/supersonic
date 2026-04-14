@@ -72,6 +72,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		m.SetupSystemTrayMenu(displayAppName, fyneApp)
 	}
 	m.Controller = controller.New(app, appVersion, m.Window)
+	m.Controller.SetupAutoCoverExtraction()
 	m.BrowsingPane = browsing.NewBrowsingPane(app.PlaybackManager, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
 	m.Sidebar = NewSidebar(m.Controller, m.App.PlaybackManager, m.App.ImageManager, m.App.LyricsManager)
 	if m.App.Config.Application.SidebarTab == "Lyrics" {
@@ -93,6 +94,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.SelectAllPageFunc = m.BrowsingPane.SelectAll
 	m.Controller.UnselectAllPageFunc = m.BrowsingPane.UnselectAll
 	m.Controller.ToastProvider = m.ToastOverlay
+	m.Controller.DeepRefreshFunc = m.DeepRefresh
 
 	if runtime.GOOS == "darwin" {
 		// Fyne will extract out an "About" menu item and
@@ -553,11 +555,13 @@ func (m *MainWindow) addShortcuts() {
 }
 
 // deepRefresh recursively forces all canvas objects to repaint immediately
-// This triggers color re-query from theme without full SetTheme overhead
+// Simple approach: recursive Refresh() calls without expensive renderer creation
 func deepRefresh(obj fyne.CanvasObject) {
 	if obj == nil {
 		return
 	}
+
+	// Handle container types by recursing into children
 	switch c := obj.(type) {
 	case *fyne.Container:
 		for _, child := range c.Objects {
@@ -576,30 +580,47 @@ func deepRefresh(obj fyne.CanvasObject) {
 	case *container.Scroll:
 		deepRefresh(c.Content)
 	}
+
+	// Simple refresh - let Fyne handle internal updates
 	obj.Refresh()
 }
 
+// DeepRefresh recursively forces all canvas objects to repaint immediately.
+// This triggers color re-query from theme. Use during color transitions.
+func (m *MainWindow) DeepRefresh() {
+	deepRefresh(m.content)
+	m.Window.Canvas().Refresh(m.content)
+}
+
 func (m *MainWindow) showSettingsDialog() {
+	// Sync current theme values to config so sliders show correct values
+	// Theme config may have changed via cover extraction or other means
+	m.App.Config.Theme.AccentColor = m.theme.GetConfig().AccentColor
+	m.App.Config.Theme.Saturation = m.theme.GetConfig().Saturation
+	m.App.Config.Theme.Contrast = m.theme.GetConfig().Contrast
+	m.App.Config.Theme.BaseMode = m.theme.GetConfig().BaseMode
+	m.App.Config.Theme.UseCustomAccent = m.theme.GetConfig().UseCustomAccent
+
 	// Full theme reload for theme file changes
 	themeUpdateCallbk := func() {
 		m.theme.ReloadThemeFile()
 		fyne.CurrentApp().Settings().SetTheme(m.theme)
 	}
 
-	// Accent color update - instant visual refresh at 60fps while dragging
-	// Theme is only saved to disk when dialog closes (no debouncer needed)
+	// Accent color update with throttle for smooth slider dragging
+	// SetTheme is expensive, so we throttle to avoid lag
 	var lastUpdate time.Time
 	accentUpdateCallbk := func() {
 		m.theme.InvalidatePaletteCache()
 
-		// Throttle to 60fps (16ms)
+		// Throttle to ~60fps (16ms)
 		now := time.Now()
 		if now.Sub(lastUpdate) < 16*time.Millisecond {
 			return
 		}
 		lastUpdate = now
 
-		// Deep refresh for instant preview
+		// Deep refresh for instant preview while dragging sliders
 		deepRefresh(m.Window.Content())
 		if canv := m.Window.Canvas(); canv != nil {
 			for _, overlay := range canv.Overlays().List() {
@@ -608,7 +629,7 @@ func (m *MainWindow) showSettingsDialog() {
 		}
 	}
 
-	// Finalize theme on dialog close (SetTheme for accent color changes)
+	// Finalize theme on dialog close - single SetTheme call updates all icons
 	onCloseCallbk := func() {
 		fyne.CurrentApp().Settings().SetTheme(m.theme)
 	}

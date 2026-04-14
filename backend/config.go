@@ -167,6 +167,9 @@ type ThemeConfig struct {
 	Saturation      float64 // Saturation multiplier (default 1.0)
 	Contrast        float64 // Contrast multiplier (default 1.0)
 	BaseMode        string  // Base mode: "dark", "light", "black", "grey"
+	// Dynamic accent from cover art
+	AutoExtractFromCover bool // Extract accent color automatically from playing track's cover
+	TransitionDurationMs int  // Duration of smooth color transition in milliseconds (default 400)
 }
 
 type TranscodingConfig struct {

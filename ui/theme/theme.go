@@ -3,6 +3,7 @@ package theme
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"image/color"
 	"log"
 	"os"
@@ -130,6 +131,31 @@ func (m *MyTheme) InvalidatePaletteCache() {
 	m.cachedPalette = nil
 }
 
+// GetConfig returns the current theme configuration for UI synchronization
+func (m *MyTheme) GetConfig() *backend.ThemeConfig {
+	return m.config
+}
+
+// SetAccentColor sets the accent color immediately without transition.
+// This invalidates the cache and applies the new color instantly.
+func (m *MyTheme) SetAccentColor(accentHex string) {
+	m.config.AccentColor = accentHex
+	m.cachedPalette = nil
+
+	// Generate new palette and apply immediately
+	palette, err := GeneratePalette(accentHex, m.config.Saturation, m.config.Contrast, m.config.BaseMode)
+	if err != nil {
+		log.Printf("Failed to generate palette: %v", err)
+		return
+	}
+	m.cachedPalette = palette
+
+	// Notify Fyne to invalidate cache and redraw all widgets
+	fyne.Do(func() {
+		fyne.CurrentApp().Settings().SetTheme(m)
+	})
+}
+
 func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette) color.Color {
 	switch name {
 	case ColorNameInactiveLyric:
@@ -232,6 +258,7 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 			}
 		}
 
+		// Use cached palette
 		if m.cachedPalette != nil {
 			return m.getColorFromPalette(name, m.cachedPalette)
 		}
@@ -504,4 +531,11 @@ func readTTFFile(filepath string) ([]byte, error) {
 		log.Printf("error loading custom font %q: %s", filepath, err.Error())
 	}
 	return content, err
+}
+
+// colorToHex converts a color.Color to a hex string (e.g., "#FF6A00")
+func colorToHex(c color.Color) string {
+	r, g, b, _ := c.RGBA()
+	// Convert from 16-bit to 8-bit
+	return fmt.Sprintf("#%02X%02X%02X", uint8(r>>8), uint8(g>>8), uint8(b>>8))
 }
