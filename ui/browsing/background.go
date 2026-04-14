@@ -79,12 +79,15 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 				width, height = 1920, 1080
 			}
 			resized := imaging.Fill(img, width, height, imaging.Center, imaging.Lanczos)
-			blurred := imaging.Blur(resized, 50.0)
+			flipped := imaging.FlipH(resized)
+			adjusted := adjustBrightnessForTheme(flipped)
+
+			blurred := imaging.Blur(adjusted, 50.0)
 			// Flip horizontally as requested
-			flipped := imaging.FlipH(blurred)
-			b.CachedBlurredImage = flipped
+			// Adjust brightness based on theme for better contrast
+			b.CachedBlurredImage = blurred
 			fyne.Do(func() {
-				b.applyBlurredBackground(flipped)
+				b.applyBlurredBackground(blurred)
 			})
 		}()
 	} else {
@@ -95,9 +98,11 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 		}
 		go func() {
 			c := dominantcolor.Find(img)
-			b.CachedDominantColor = c
+			// Adjust the extracted color based on theme
+			adjusted := adjustColorForTheme(c)
+			b.CachedDominantColor = adjusted
 			fyne.Do(func() {
-				b.applyGradientBackground(c)
+				b.applyGradientBackground(adjusted)
 			})
 		}()
 	}
@@ -107,6 +112,41 @@ func (b *BackgroundManager) HideImages() {
 	if !b.BackgroundImgA.Hidden {
 		b.BackgroundImgA.Hide()
 		b.BackgroundImgB.Hide()
+	}
+}
+
+// adjustBrightnessForTheme adjusts image brightness based on current theme
+// Returns adjusted image and caches result
+func adjustBrightnessForTheme(img image.Image) image.Image {
+	if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantDark {
+		log.Println("Dark theme detected")
+		// Dark theme: darken the image significantly for contrast
+		return imaging.AdjustBrightness(img, -50)
+	}
+	// Light theme: lighten the image
+	return imaging.AdjustBrightness(img, 50)
+}
+
+// adjustColorForTheme adjusts the brightness of an extracted dominant color
+// Dark theme: darken the color (0.6x)
+// Light theme: lighten the color (1.2x)
+func adjustColorForTheme(c color.Color) color.Color {
+	r, g, b, a := c.RGBA()
+	// Convert from 16-bit to 8-bit
+	r8, g8, b8 := float64(r>>8), float64(g>>8), float64(b>>8)
+
+	var factor float64
+	if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantDark {
+		factor = 0.6 // Darken for dark theme
+	} else {
+		factor = 1.2 // Lighten for light theme
+	}
+
+	return color.NRGBA{
+		R: uint8(min(255, int(r8*factor))),
+		G: uint8(min(255, int(g8*factor))),
+		B: uint8(min(255, int(b8*factor))),
+		A: uint8(a >> 8),
 	}
 }
 
