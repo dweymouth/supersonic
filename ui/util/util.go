@@ -371,6 +371,10 @@ func AddHeaderBackgroundWithColorName(obj fyne.CanvasObject, colorName fyne.Them
 			obj))
 }
 
+func AddHeaderBackgroundTransparent(obj fyne.CanvasObject) *fyne.Container {
+	return container.New(&layout.CustomPaddedLayout{LeftPadding: 10, RightPadding: 10, TopPadding: 10, BottomPadding: 10}, obj)
+}
+
 func NewTruncatingRichText() *widget.RichText {
 	rt := widget.NewRichTextWithText("")
 	rt.Truncation = fyne.TextTruncateEllipsis

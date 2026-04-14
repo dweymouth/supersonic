@@ -72,6 +72,7 @@ type AppConfig struct {
 type AlbumPageConfig struct {
 	TracklistColumns []string
 	CompactHeader    bool
+	BackgroundMode   string // "disabled", "gradient", "blur"
 }
 
 // shared between Albums and Genre pages
@@ -87,6 +88,7 @@ type ArtistPageConfig struct {
 	DiscographySort  string
 	TracklistColumns []string
 	CompactHeader    bool
+	BackgroundMode   string // "disabled", "gradient", "blur"
 }
 
 type ArtistsPageConfig struct {

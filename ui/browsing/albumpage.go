@@ -2,6 +2,7 @@ package browsing
 
 import (
 	"fmt"
+	"image"
 	"log"
 	"strconv"
 	"strings"
@@ -28,12 +29,16 @@ type AlbumPage struct {
 
 	albumPageState
 
-	disposed     bool
-	header       *AlbumPageHeader
-	tracks       []*mediaprovider.Track
-	tracklist    *widgets.Tracklist
-	nowPlayingID string
-	container    *fyne.Container
+	disposed      bool
+	header        *AlbumPageHeader
+	tracks        []*mediaprovider.Track
+	tracklist     *widgets.Tracklist
+	nowPlayingID  string
+	container     *fyne.Container
+	bgManager     *BackgroundManager
+	curCoverImage image.Image
+
+	rendererReady bool
 }
 
 type albumPageState struct {
@@ -109,9 +114,11 @@ func newAlbumPage(
 	}
 	a.contr.ConnectTracklistActionsWithReplayGainAlbum(a.tracklist)
 
-	a.container = container.NewBorder(
-		container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 15, BottomPadding: 10}, a.header),
-		nil, nil, nil, container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 15}, a.tracklist))
+	// Initialize bgManager early so CreateRenderer can include it in the Stack
+	a.bgManager = NewBackgroundManager()
+
+	// Note: a.container is created in CreateRenderer with the Stack layout
+	// so the background images are properly included
 
 	a.tracklist.SetLoading(true)
 	go a.load()
@@ -119,6 +126,42 @@ func newAlbumPage(
 }
 
 func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
+	if a.container == nil {
+		// Create main content
+		mainContent := container.NewBorder(
+			container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 15, BottomPadding: 10}, a.header),
+			nil, nil, nil, container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, BottomPadding: 15}, a.tracklist))
+
+		// Stack background under content (same order as nowplayingpage)
+		a.container = container.NewStack(
+			a.bgManager.BackgroundImgA,
+			a.bgManager.BackgroundImgB,
+			a.bgManager.BackgroundGradient,
+			mainContent,
+		)
+		// Set gradient end color to theme background
+		a.bgManager.SetGradientEndColor(theme.Color(theme.ColorNameBackground))
+		log.Printf("[AlbumPage] Stack created with %d objects", len(a.container.Objects))
+		log.Printf("[AlbumPage] Gradient hidden: %v", a.bgManager.BackgroundGradient.Hidden)
+	}
+	a.rendererReady = true
+	// Apply background if we have a pending image
+	if a.curCoverImage != nil && a.cfg.BackgroundMode != "disabled" {
+		useBlur := a.cfg.BackgroundMode == "blur"
+		a.bgManager.ApplyBackground(a.curCoverImage, a.cfg.BackgroundMode, useBlur)
+		// Make header and tracklist header transparent so background shows through
+		log.Printf("[AlbumPage] Setting header and tracklist transparent")
+		a.header.SetTransparentBackground(true)
+		a.tracklist.SetHeaderTransparent(true)
+	} else {
+		// Background disabled - hide background layers and restore opaque headers
+		log.Printf("[AlbumPage] Background disabled, hiding layers and restoring opaque headers")
+		a.bgManager.hideImages()
+		a.bgManager.BackgroundGradient.Hidden = true
+		a.bgManager.BackgroundGradient.Refresh()
+		a.header.SetTransparentBackground(false)
+		a.tracklist.SetHeaderTransparent(false)
+	}
 	return widget.NewSimpleRenderer(a.container)
 }
 
@@ -149,7 +192,37 @@ func (a *AlbumPage) OnSongChange(track mediaprovider.MediaItem, lastScrobbledIfA
 
 func (a *AlbumPage) Reload() {
 	a.tracklist.SetLoading(true)
+	// Update background based on current config
+	if a.bgManager != nil && a.curCoverImage != nil {
+		useBlur := a.cfg.BackgroundMode == "blur"
+		a.bgManager.ApplyBackground(a.curCoverImage, a.cfg.BackgroundMode, useBlur)
+	}
 	go a.load()
+}
+
+// onImageLoaded receives the loaded cover image and applies background
+func (a *AlbumPage) onImageLoaded(img image.Image) {
+	log.Printf("[AlbumPage] onImageLoaded called, img=%v, rendererReady=%v", img != nil, a.rendererReady)
+	if a.bgManager == nil {
+		log.Printf("[AlbumPage] bgManager is nil! This shouldn't happen.")
+		return
+	}
+	// Store the image
+	a.curCoverImage = img
+	// Only apply if renderer is ready (container has size)
+	if !a.rendererReady {
+		log.Printf("[AlbumPage] Renderer not ready yet, deferring background application")
+		return
+	}
+	useBlur := a.cfg.BackgroundMode == "blur"
+	log.Printf("[AlbumPage] Applying background: mode=%s, useBlur=%v", a.cfg.BackgroundMode, useBlur)
+	a.bgManager.ApplyIfChanged(img, nil, a.cfg.BackgroundMode, useBlur)
+	// Make header and tracklist transparent when background is active
+	if a.cfg.BackgroundMode != "disabled" {
+		log.Printf("[AlbumPage] Setting header and tracklist transparent from onImageLoaded")
+		a.header.SetTransparentBackground(true)
+		a.tracklist.SetHeaderTransparent(true)
+	}
 }
 
 var _ CanSelectAll = (*AlbumPage)(nil)
@@ -211,18 +284,24 @@ type AlbumPageHeader struct {
 
 	page *AlbumPage
 
+	TransparentBackground bool
+
 	cover                 *widgets.ImagePlaceholder
 	titleLabel            *widget.RichText
 	releaseTypeLabel      *widget.RichText
 	artistLabel           *widgets.MultiHyperlink
 	artistLabelSpace      *util.Space // TODO: remove when no longer needed
 	genreLabel            *widgets.MultiHyperlink
+	bgRect                *myTheme.ThemedRectangle
 	miscLabel             *widget.Label
 	shareMenuItem         *fyne.MenuItem
 	collapseBtn           *widgets.HeaderCollapseButton
 	artistReleaseTypeLine *fyne.Container
 
 	toggleFavButton *widgets.FavoriteButton
+	playButton      *widget.Button
+	shuffleBtn      *widget.Button
+	menuBtn         *widget.Button
 
 	fullSizeCoverFetching bool
 
@@ -256,16 +335,16 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		a.page.contr.NavigateTo(controller.GenreRoute(genre))
 	}
 	a.miscLabel = widget.NewLabel("")
-	playButton := widget.NewButtonWithIcon(lang.L("Play"), theme.MediaPlayIcon(), func() {
+	a.playButton = widget.NewButtonWithIcon(lang.L("Play"), theme.MediaPlayIcon(), func() {
 		go a.page.pm.PlayAlbum(a.page.albumID, 0, false)
 	})
-	shuffleBtn := widget.NewButtonWithIcon(lang.L("Shuffle"), myTheme.ShuffleIcon, func() {
+	a.shuffleBtn = widget.NewButtonWithIcon(lang.L("Shuffle"), myTheme.ShuffleIcon, func() {
 		a.page.pm.LoadTracks(a.page.tracklist.GetTracks(), backend.Replace, true)
 		a.page.pm.PlayFromBeginning()
 	})
 	var pop *widget.PopUpMenu
-	menuBtn := widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
-	menuBtn.OnTapped = func() {
+	a.menuBtn = widget.NewButtonWithIcon("", theme.MoreHorizontalIcon(), nil)
+	a.menuBtn.OnTapped = func() {
 		if pop == nil {
 			playNext := fyne.NewMenuItem(lang.L("Play next"), func() {
 				go a.page.pm.LoadAlbum(a.albumID, backend.InsertNext, false /*shuffle*/)
@@ -297,8 +376,8 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 		}
 		_, canShare := page.mp.(mediaprovider.SupportsSharing)
 		a.shareMenuItem.Disabled = !canShare
-		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(menuBtn)
-		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+menuBtn.Size().Height))
+		pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(a.menuBtn)
+		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+a.menuBtn.Size().Height))
 	}
 	a.toggleFavButton = widgets.NewFavoriteButton(func() { go a.toggleFavorited() })
 
@@ -317,28 +396,55 @@ func NewAlbumPageHeader(page *AlbumPage) *AlbumPageHeader {
 	a.artistReleaseTypeLine = container.NewStack(
 		a.releaseTypeLabel,
 		container.NewBorder(nil, nil, a.artistLabelSpace, nil, a.artistLabel))
-	// TODO: there's got to be a way to make this less convoluted. Custom layout?
-	a.container = util.AddHeaderBackground(
-		container.NewStack(
+	// Note: container is created in CreateRenderer to support transparent background option
+	return a
+}
+
+func (a *AlbumPageHeader) SetTransparentBackground(transparent bool) {
+	if a.TransparentBackground != transparent {
+		a.TransparentBackground = transparent
+		// Simply toggle the visibility of our fixed background rectangle
+		if a.bgRect != nil {
+			if transparent {
+				a.bgRect.Hide()
+			} else {
+				a.bgRect.Show()
+			}
+		}
+	}
+}
+
+func (a *AlbumPageHeader) CreateRenderer() fyne.WidgetRenderer {
+	if a.container == nil {
+		content := container.NewStack(
 			container.NewBorder(nil, nil, a.cover, nil,
 				container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-10),
 					a.titleLabel,
 					container.NewVBox(
 						container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-12), a.artistReleaseTypeLine, a.genreLabel, a.miscLabel),
 						container.NewVBox(
-							container.NewHBox(util.NewHSpace(2), playButton, shuffleBtn, menuBtn),
+							container.NewHBox(util.NewHSpace(2), a.playButton, a.shuffleBtn, a.menuBtn),
 							container.NewHBox(util.NewHSpace(2), a.toggleFavButton),
 						),
 					),
 				),
 			),
 			container.NewVBox(container.NewHBox(layout.NewSpacer(), a.collapseBtn)),
-		),
-	)
-	return a
-}
+		)
+		// Create background rectangle (always present, toggle visibility)
+		a.bgRect = myTheme.NewThemedRectangle(myTheme.ColorNamePageHeader)
+		a.bgRect.CornerRadius = theme.InputRadiusSize()
 
-func (a *AlbumPageHeader) CreateRenderer() fyne.WidgetRenderer {
+		// Check if page has background enabled - if so, hide the header background
+		backgroundEnabled := a.page != nil && a.page.cfg != nil && a.page.cfg.BackgroundMode != "" && a.page.cfg.BackgroundMode != "disabled"
+		if a.TransparentBackground || backgroundEnabled {
+			a.bgRect.Hide()
+		}
+
+		// Wrap content with padding and stack with background
+		paddedContent := container.New(&layout.CustomPaddedLayout{LeftPadding: 10, RightPadding: 10, TopPadding: 10, BottomPadding: 10}, content)
+		a.container = container.NewStack(a.bgRect, paddedContent)
+	}
 	return widget.NewSimpleRenderer(a.container)
 }
 
@@ -359,6 +465,10 @@ func (a *AlbumPageHeader) Update(album *mediaprovider.AlbumWithTracks, im *backe
 		if cover, err := im.GetCoverThumbnail(album.CoverArtID); err == nil {
 			fyne.Do(func() {
 				a.cover.SetImage(cover, true)
+				// Notify album page for background processing
+				if a.page != nil {
+					a.page.onImageLoaded(cover)
+				}
 				a.cover.Refresh()
 			})
 		} else {

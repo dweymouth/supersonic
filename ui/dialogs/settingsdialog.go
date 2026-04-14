@@ -982,6 +982,37 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	})
 	nowPlayingBackground.Checked = s.config.NowPlayingConfig.UseBackgroundImage
 
+	// Background mode for Album and Artist pages (shared setting)
+	backgroundModeOptions := []string{lang.L("Disabled"), lang.L("Gradient"), lang.L("Blur")}
+	albumArtistBackground := widget.NewRadioGroup(backgroundModeOptions, func(choice string) {
+		mode := "disabled"
+		if choice == lang.L("Gradient") {
+			mode = "gradient"
+		} else if choice == lang.L("Blur") {
+			mode = "blur"
+		}
+		s.config.AlbumPage.BackgroundMode = mode
+		s.config.ArtistPage.BackgroundMode = mode
+		if s.OnPageNeedsRefresh != nil {
+			s.OnPageNeedsRefresh()
+		}
+	})
+	albumArtistBackground.Horizontal = true
+	albumArtistBackground.Required = true
+	// Set initial value
+	initialMode := s.config.AlbumPage.BackgroundMode
+	if initialMode == "" {
+		initialMode = "disabled"
+	}
+	switch initialMode {
+	case "gradient":
+		albumArtistBackground.Selected = lang.L("Gradient")
+	case "blur":
+		albumArtistBackground.Selected = lang.L("Blur")
+	default:
+		albumArtistBackground.Selected = lang.L("Disabled")
+	}
+
 	useRoundedImageCorners := widget.NewCheck(lang.L("Use rounded image corners"), func(b bool) {
 		s.config.Theme.UseRoundedImageCorners = b
 		if s.OnPageNeedsRefresh != nil {
@@ -1050,6 +1081,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		s.newSectionSeparator(),
 		useWaveformSeekbar,
 		nowPlayingBackground,
+		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Album/Artist page background")), nil, albumArtistBackground),
 		useRoundedImageCorners,
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("Application font"), Style: util.BoldRichTextStyle}),

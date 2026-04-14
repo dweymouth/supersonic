@@ -7,7 +7,27 @@ import (
 	"log"
 	"math"
 	"strings"
+	"sync"
+	"time"
 )
+
+// Cache entry with timestamp for TTL
+type paletteCacheEntry struct {
+	palette   *Palette
+	timestamp time.Time
+}
+
+// Global cache with 1-minute TTL
+var (
+	paletteCache    = make(map[string]paletteCacheEntry)
+	paletteCacheMux sync.RWMutex
+	paletteCacheTTL = 1 * time.Minute
+)
+
+// generateCacheKey creates a unique key for the palette parameters
+func generateCacheKey(accentHex string, saturation, contrast float64, baseMode string) string {
+	return fmt.Sprintf("%s|%.3f|%.3f|%s", accentHex, saturation, contrast, baseMode)
+}
 
 // SliderRanges defines the min/max ranges for saturation and contrast sliders per base mode
 type SliderRanges struct {
@@ -48,7 +68,19 @@ type Palette struct {
 
 // GeneratePalette creates a color palette from the given configuration
 // All background colors are derived from the accent color with HSL adjustments
+// Results are cached with 1-minute TTL for performance
 func GeneratePalette(accentHex string, saturation, contrast float64, baseMode string) (*Palette, error) {
+	// Check cache first
+	cacheKey := generateCacheKey(accentHex, saturation, contrast, baseMode)
+	paletteCacheMux.RLock()
+	entry, found := paletteCache[cacheKey]
+	paletteCacheMux.RUnlock()
+
+	if found && time.Since(entry.timestamp) < paletteCacheTTL {
+		// Cache hit and not expired
+		return entry.palette, nil
+	}
+
 	accent, err := hexToColor(accentHex)
 	if err != nil {
 		return nil, fmt.Errorf("invalid accent color: %w", err)
@@ -239,7 +271,7 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	// Set hyperlink color to accent
 	hyperlink := accent
 
-	return &Palette{
+	palette := &Palette{
 		Accent:         accent,
 		Background:     bg,
 		Surface:        surf,
@@ -254,7 +286,17 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		PageHeader:     pageHeader,
 		ListHeader:     listHeader,
 		Hyperlink:      hyperlink,
-	}, nil
+	}
+
+	// Store in cache
+	paletteCacheMux.Lock()
+	paletteCache[cacheKey] = paletteCacheEntry{
+		palette:   palette,
+		timestamp: time.Now(),
+	}
+	paletteCacheMux.Unlock()
+
+	return palette, nil
 }
 
 // hexToColor parses a hex color string (#RRGGBB or #RRGGBBAA)
