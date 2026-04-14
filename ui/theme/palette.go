@@ -23,8 +23,6 @@ func GetSliderRanges(baseMode string) SliderRanges {
 		return SliderRanges{SatMin: 0.0, SatMax: 0.5, ContrastMin: 0.25, ContrastMax: 1.0}
 	case "black":
 		return SliderRanges{SatMin: 0.0, SatMax: 0.75, ContrastMin: 0.25, ContrastMax: 1.0}
-	case "grey":
-		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.75, ContrastMax: 1.0}
 	default:
 		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.5, ContrastMax: 1.0}
 	}
@@ -106,15 +104,36 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 
 	switch strings.ToLower(baseMode) {
 	case "black":
-		// AMOLED: near-black backgrounds, clear separation
-		bgL = 0.04     // Very dark background
-		surfL = 0.10   // Slightly lighter surface for cards/inputs
-		pageBgL = 0.03 // Page background slightly darker
-		pageHeaderL = 0.14
-		listHeaderL = 0.12
-		// Text: accent hue, very desaturated, high lightness
-		textPrimaryRGB = hslToRgb(accentH, 0.06, 0.98)
-		textSecondaryRGB = hslToRgb(accentH, 0.05, 0.70)
+		// Hybrid: black (AMOLED) at high contrast, grey at low contrast
+		// Interpolate based on contrast: 0.0-0.5 -> grey-like, 0.5-1.0 -> black
+		greyFactor := clampFloat((contrast-0.5)*2, 0, 1) // 0.0 at low contrast, 1.0 at high contrast
+
+		// Black values (high contrast)
+		bgLBlack, surfLBlack, pageBgLBlack := 0.04, 0.10, 0.03
+		pageHeaderLBlack, listHeaderLBlack := 0.14, 0.12
+		satPrimaryBlack, satSecondaryBlack := 0.06, 0.05
+		lumPrimaryBlack, lumSecondaryBlack := 0.98, 0.70
+
+		// Grey values (low contrast)
+		bgLGrey, surfLGrey, pageBgLGrey := 0.12, 0.18, 0.10
+		pageHeaderLGrey, listHeaderLGrey := 0.22, 0.20
+		satPrimaryGrey, satSecondaryGrey := 0.08, 0.06
+		lumPrimaryGrey, lumSecondaryGrey := 0.96, 0.65
+
+		// Interpolate
+		bgL = bgLGrey + (bgLBlack-bgLGrey)*greyFactor
+		surfL = surfLGrey + (surfLBlack-surfLGrey)*greyFactor
+		pageBgL = pageBgLGrey + (pageBgLBlack-pageBgLGrey)*greyFactor
+		pageHeaderL = pageHeaderLGrey + (pageHeaderLBlack-pageHeaderLGrey)*greyFactor
+		listHeaderL = listHeaderLGrey + (listHeaderLBlack-listHeaderLGrey)*greyFactor
+
+		satPrimary := satPrimaryGrey + (satPrimaryBlack-satPrimaryGrey)*greyFactor
+		satSecondary := satSecondaryGrey + (satSecondaryBlack-satSecondaryGrey)*greyFactor
+		lumPrimary := lumPrimaryGrey + (lumPrimaryBlack-lumPrimaryGrey)*greyFactor
+		lumSecondary := lumSecondaryGrey + (lumSecondaryBlack-lumSecondaryGrey)*greyFactor
+
+		textPrimaryRGB = hslToRgb(accentH, satPrimary, lumPrimary)
+		textSecondaryRGB = hslToRgb(accentH, satSecondary, lumSecondary)
 	case "grey":
 		// Grey mode: mid-tone greys with good contrast
 		bgL = 0.12     // Dark grey background (darker)

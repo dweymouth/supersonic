@@ -706,8 +706,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		case string(myTheme.AppearanceLight):
 			s.config.Theme.BaseMode = "light"
 		case string(myTheme.AppearanceAuto):
-			// Auto uses grey as default (will adapt to system in future)
-			s.config.Theme.BaseMode = "grey"
+			s.config.Theme.BaseMode = "black"
 		}
 	}
 
@@ -742,15 +741,6 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	// Also update the config with defaults so they get saved
 	if s.config.Theme.AccentColor == "" {
 		s.config.Theme.AccentColor = "#FF8A45" // Default orange accent
-	}
-	if s.config.Theme.Saturation == 0 {
-		s.config.Theme.Saturation = 1.0
-	}
-	if s.config.Theme.Contrast == 0 {
-		s.config.Theme.Contrast = 1.0
-	}
-	if s.config.Theme.BaseMode == "" || s.config.Theme.BaseMode == "dark" {
-		s.config.Theme.BaseMode = "grey"
 	}
 
 	// Hue slider (0-360) for rainbow color selection

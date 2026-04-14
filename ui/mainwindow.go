@@ -593,12 +593,6 @@ func (m *MainWindow) DeepRefresh() {
 }
 
 func (m *MainWindow) showSettingsDialog() {
-	// Sync current theme values to config so sliders show correct values
-	// Theme config may have changed via cover extraction or other means
-	m.App.Config.Theme.AccentColor = m.theme.GetConfig().AccentColor
-	m.App.Config.Theme.Saturation = m.theme.GetConfig().Saturation
-	m.App.Config.Theme.Contrast = m.theme.GetConfig().Contrast
-	m.App.Config.Theme.BaseMode = m.theme.GetConfig().BaseMode
 
 	// Full theme reload for theme file changes
 	themeUpdateCallbk := func() {
