@@ -745,8 +745,8 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 
 	// Hue slider (0-360) for rainbow color selection
 	hueSlider := widget.NewSlider(0, 360)
-	hueSlider.SetValue(hexToHue(s.config.Theme.AccentColor))
 	hueSlider.Step = 1
+	hueSlider.SetValue(hexToHue(s.config.Theme.AccentColor))
 
 	// Palette preview rectangles - created once, colors updated on slider changes
 	palettePreviewRects := []*canvas.Rectangle{}
@@ -854,12 +854,12 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	initRanges := getRanges(s.config.Theme.BaseMode)
 
 	saturationSlider := widget.NewSlider(initRanges.SatMin, initRanges.SatMax)
-	saturationSlider.SetValue(clamp(s.config.Theme.Saturation, initRanges.SatMin, initRanges.SatMax))
 	saturationSlider.Step = 0.05
+	saturationSlider.SetValue(clamp(s.config.Theme.Saturation, initRanges.SatMin, initRanges.SatMax))
 
 	contrastSlider := widget.NewSlider(initRanges.ContrastMin, initRanges.ContrastMax)
-	contrastSlider.SetValue(clamp(s.config.Theme.Contrast, initRanges.ContrastMin, initRanges.ContrastMax))
 	contrastSlider.Step = 0.05
+	contrastSlider.SetValue(clamp(s.config.Theme.Contrast, initRanges.ContrastMin, initRanges.ContrastMax))
 
 	// Set up OnChanged handlers for sliders
 	saturationSlider.OnChanged = func(f float64) {
