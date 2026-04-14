@@ -666,31 +666,27 @@ func (c *Controller) GetSongRadioTracks(sourceTrack *mediaprovider.Track) ([]*me
 }
 
 // extractAndTransitionAccentFromCover extracts a vibrant color from the current track's
-// cover art and smoothly transitions the theme to that color.
+// cover art and applies it as the theme accent color.
 func (c *Controller) extractAndTransitionAccentFromCover() {
 	if c.App.Config.Theme.ThemeFile != "dynamic" {
-		log.Println("Cover extraction: Dynamic theme not active, skipping")
 		return
 	}
 
 	// Get current playing item
 	nowPlaying := c.App.PlaybackManager.NowPlaying()
 	if nowPlaying == nil {
-		log.Println("Cover extraction: No current track")
 		return
 	}
 
 	// Get cover ID from the track
 	coverID := nowPlaying.Metadata().CoverArtID
 	if coverID == "" {
-		log.Println("Cover extraction: No cover art ID available")
 		return
 	}
 
 	// Get cover image (blocking call in goroutine)
 	coverImg, err := c.App.ImageManager.GetCoverThumbnail(coverID)
 	if err != nil || coverImg == nil {
-		log.Printf("Cover extraction: Failed to get cover art: %v", err)
 		return
 	}
 
@@ -698,22 +694,19 @@ func (c *Controller) extractAndTransitionAccentFromCover() {
 	extractor := myTheme.NewColorExtractor()
 	accentHex, err := extractor.ExtractAccentFromImage(coverImg)
 	if err != nil {
-		log.Printf("Cover extraction: Failed to extract color: %v", err)
 		return
 	}
-
-	log.Printf("Cover extraction: Extracted accent color %s from track %s", accentHex, nowPlaying.Metadata().Name)
 
 	// Apply accent color immediately (no transition)
 	if theme, ok := fyne.CurrentApp().Settings().Theme().(*myTheme.MyTheme); ok {
 		theme.SetAccentColor(accentHex)
-	} else {
-		log.Println("Cover extraction: Current theme is not MyTheme, cannot apply accent")
 	}
 }
 
 // SetupAutoCoverExtraction is disabled - manual extraction only via settings dialog
 func (c *Controller) SetupAutoCoverExtraction() {
-	// Auto-extraction disabled per user request
+	// Auto-extraction disabled. There's no good transition feeling
+	// without killing the CPU. but the idea is nice. Can be implemented
+	// but there will be some lags because it needs to do heavy re rendering.
 	// Use manual "Extract from Cover" button in settings dialog instead
 }

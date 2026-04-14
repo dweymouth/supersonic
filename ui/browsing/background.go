@@ -1,9 +1,9 @@
 package browsing
 
 import (
+	"context"
 	"image"
 	"image/color"
-	"log"
 
 	"github.com/boxes-ltd/imaging"
 	"github.com/cenkalti/dominantcolor"
@@ -25,6 +25,10 @@ type BackgroundManager struct {
 
 	targetWidth  int
 	targetHeight int
+
+	// Context for cancelling ongoing background processing
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // NewBackgroundManager creates background widgets
@@ -39,6 +43,7 @@ func NewBackgroundManager() *BackgroundManager {
 	// Use Stretch with pre-processed "cover" sized images
 	b.BackgroundImgA.FillMode = canvas.ImageFillStretch
 	b.BackgroundImgB.FillMode = canvas.ImageFillStretch
+	b.ctx, b.cancel = context.WithCancel(context.Background())
 	return b
 }
 
@@ -53,12 +58,16 @@ func (b *BackgroundManager) SetTargetSize(width, height int) {
 // ApplyBackground applies background based on mode: "blur", "gradient", or "disabled"
 // When mode is empty, it defaults to gradient behavior (for nowplaying page compatibility)
 func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlur bool) {
-	log.Printf("[BackgroundManager] ApplyBackground: mode=%q, useBlur=%v, img=%v", mode, useBlur, img != nil)
 	if img == nil || mode == "disabled" {
-		log.Printf("[BackgroundManager] Hiding images (img=%v, mode=%q)", img, mode)
 		b.HideImages()
 		return
 	}
+
+	// Cancel any ongoing processing before starting new work
+	if b.cancel != nil {
+		b.cancel()
+	}
+	b.ctx, b.cancel = context.WithCancel(context.Background())
 
 	// Clear cache if image changed
 	if img != b.CachedBlurredImage && img != nil {
@@ -72,7 +81,7 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 			b.applyBlurredBackground(b.CachedBlurredImage)
 			return
 		}
-		go func() {
+		go func(ctx context.Context) {
 			// Use detected size or fallback to 1920x1080 if not set
 			width, height := b.targetWidth, b.targetHeight
 			if width == 0 || height == 0 {
@@ -82,29 +91,43 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 			flipped := imaging.FlipH(resized)
 			adjusted := adjustBrightnessForTheme(flipped)
 
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
 			blurred := imaging.Blur(adjusted, 50.0)
-			// Flip horizontally as requested
-			// Adjust brightness based on theme for better contrast
 			b.CachedBlurredImage = blurred
-			fyne.Do(func() {
-				b.applyBlurredBackground(blurred)
-			})
-		}()
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				fyne.Do(func() {
+					b.applyBlurredBackground(blurred)
+				})
+			}
+		}(b.ctx)
 	} else {
 		// Default to gradient (handles mode="gradient" and mode="" for nowplaying)
 		if b.CachedDominantColor != nil {
 			b.applyGradientBackground(b.CachedDominantColor)
 			return
 		}
-		go func() {
+		go func(ctx context.Context) {
 			c := dominantcolor.Find(img)
 			// Adjust the extracted color based on theme
 			adjusted := adjustColorForTheme(c)
 			b.CachedDominantColor = adjusted
-			fyne.Do(func() {
-				b.applyGradientBackground(adjusted)
-			})
-		}()
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				fyne.Do(func() {
+					b.applyGradientBackground(adjusted)
+				})
+			}
+		}(b.ctx)
 	}
 }
 
@@ -119,7 +142,6 @@ func (b *BackgroundManager) HideImages() {
 // Returns adjusted image and caches result
 func adjustBrightnessForTheme(img image.Image) image.Image {
 	if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantDark {
-		log.Println("Dark theme detected")
 		// Dark theme: darken the image significantly for contrast
 		return imaging.AdjustBrightness(img, -50)
 	}
@@ -177,7 +199,6 @@ func (b *BackgroundManager) ApplyIfChanged(newImg, currentImg image.Image, mode 
 
 // applyBlurredBackground applies a pre-processed blurred image with smooth transition
 func (b *BackgroundManager) applyBlurredBackground(blurred image.Image) {
-	log.Printf("[BackgroundManager] applyBlurredBackground called, blurred size=%v", blurred.Bounds())
 	// Check if coming from gradient mode (images were hidden)
 	fromGradient := b.BackgroundImgA.Hidden && b.BackgroundImgB.Hidden
 

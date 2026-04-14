@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"image/color"
-	"log"
 	"math"
 	"strings"
 	"sync"
@@ -88,7 +87,6 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 
 	// Convert accent to HSL for dynamic adjustments
 	accentH, accentS, accentL := rgbToHsl(accent)
-	log.Printf("DEBUG Theme: Input accent=%s, HSL={%.2f, %.2f, %.2f}", accentHex, accentH, accentS, accentL)
 
 	// Adapt accent color for dark modes (black/grey) to ensure visibility
 	// When extracting from cover art, dark/unsaturated colors get lost on dark backgrounds
@@ -121,7 +119,6 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		accent = hslToRgb(accentH, accentS, accentL)
 		// Recalculate HSL after modification
 		accentH, accentS, accentL = rgbToHsl(accent)
-		log.Printf("DEBUG Theme: After dark mode boost HSL={%.2f, %.2f, %.2f}", accentH, accentS, accentL)
 	}
 
 	// Apply safety clamp using the same ranges as UI sliders
@@ -236,18 +233,12 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 
 	// Apply saturation to accent (slider affects accent intensity)
 	if saturation != 1.0 {
-		log.Printf("DEBUG Theme: Applying saturation multiplier=%.2f", saturation)
 		accent = applySaturationToHSL(accentH, accentS, accentL, saturation)
 		accentH, accentS, accentL = rgbToHsl(accent)
-		log.Printf("DEBUG Theme: After saturation HSL={%.2f, %.2f, %.2f}", accentH, accentS, accentL)
 	}
 
 	// Apply contrast adjustment to accent
-	accentBeforeContrast := accent
 	accent = applyContrast(accent, contrast, baseMode == "light")
-	if accent != accentBeforeContrast {
-		log.Printf("DEBUG Theme: Contrast changed accent (was: %v, now: %v)", accentBeforeContrast, accent)
-	}
 
 	// Ensure minimum contrast between Surface and Accent for hyperlink readability
 	accent = ensureSurfaceContrast(accent, surf, isLight)
