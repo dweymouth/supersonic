@@ -86,7 +86,7 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	}
 
 	// Convert accent to HSL for dynamic adjustments
-	accentH, accentS, accentL := rgbToHsl(accent)
+	accentH, accentS, accentL := rgbToHslColor(accent)
 
 	// Adapt accent color for dark modes (black/grey) to ensure visibility
 	// When extracting from cover art, dark/unsaturated colors get lost on dark backgrounds
@@ -118,7 +118,7 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		accentL = clampFloat(accentL, 0, 1)
 		accent = hslToRgb(accentH, accentS, accentL)
 		// Recalculate HSL after modification
-		accentH, accentS, accentL = rgbToHsl(accent)
+		accentH, accentS, accentL = rgbToHslColor(accent)
 	}
 
 	// Apply safety clamp using the same ranges as UI sliders
@@ -228,13 +228,13 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	// Ensure text has enough contrast against Surface background
 	// Calculate surface luminance and adjust text colors if needed
 	surfLum := (float64(surf.R)*0.299 + float64(surf.G)*0.587 + float64(surf.B)*0.114) / 255.0
-	textPrimary := ensureContrast(textPrimaryRGB, surf, surfLum)
-	textSecondary := ensureContrast(textSecondaryRGB, surf, surfLum)
+	textPrimary := ensureContrast(textPrimaryRGB, surfLum)
+	textSecondary := ensureContrast(textSecondaryRGB, surfLum)
 
 	// Apply saturation to accent (slider affects accent intensity)
 	if saturation != 1.0 {
 		accent = applySaturationToHSL(accentH, accentS, accentL, saturation)
-		accentH, accentS, accentL = rgbToHsl(accent)
+		accentH, accentS, accentL = rgbToHslColor(accent)
 	}
 
 	// Apply contrast adjustment to accent
@@ -391,7 +391,7 @@ func calculateTextOnAccent(c color.RGBA) color.Color {
 
 // ensureContrast adjusts text color to ensure minimum contrast against background
 // Returns darkened text for light backgrounds, lightened text for dark backgrounds
-func ensureContrast(textColor, bgColor color.RGBA, bgLum float64) color.RGBA {
+func ensureContrast(textColor color.RGBA, bgLum float64) color.RGBA {
 	// Calculate text luminance
 	textLum := (float64(textColor.R)*0.299 + float64(textColor.G)*0.587 + float64(textColor.B)*0.114) / 255.0
 
@@ -465,134 +465,4 @@ func ensureSurfaceContrast(accent, surface color.Color, isLight bool) color.RGBA
 
 func clamp(v float64) float64 {
 	return math.Max(0, math.Min(255, v))
-}
-
-// applySaturationToHSL applies a saturation multiplier to HSL values and returns RGB
-func applySaturationToHSL(h, s, l, saturationMultiplier float64) color.RGBA {
-	newSat := clampFloat(s*saturationMultiplier, 0, 1)
-	return hslToRgb(h, newSat, l)
-}
-
-// clampFloat constrains a float value between min and max
-func clampFloat(v, min, max float64) float64 {
-	if v < min {
-		return min
-	}
-	if v > max {
-		return max
-	}
-	return v
-}
-
-// blendColors blends two colors with the given fraction of the first color
-func blendColors(a, b color.Color, fractionA float64) color.Color {
-	ra, ga, ba, aa := a.RGBA()
-	rb, gb, bb, ab := b.RGBA()
-
-	fractionB := 1 - fractionA
-	rAvg := uint8(float64(ra/257)*fractionA + float64(rb/257)*fractionB)
-	gAvg := uint8(float64(ga/257)*fractionA + float64(gb/257)*fractionB)
-	bAvg := uint8(float64(ba/257)*fractionA + float64(bb/257)*fractionB)
-	aAvg := uint8(float64(aa/257)*fractionA + float64(ab/257)*fractionB)
-	return color.RGBA{R: rAvg, G: gAvg, B: bAvg, A: aAvg}
-}
-
-// rgbToHsl converts RGB to HSL color space
-// Returns hue (0-360), saturation (0-1), lightness (0-1)
-func rgbToHsl(c color.RGBA) (h, s, l float64) {
-	r := float64(c.R) / 255.0
-	g := float64(c.G) / 255.0
-	b := float64(c.B) / 255.0
-
-	max := math.Max(r, math.Max(g, b))
-	min := math.Min(r, math.Min(g, b))
-	delta := max - min
-
-	// Lightness
-	l = (max + min) / 2
-
-	// Saturation
-	if delta == 0 {
-		s = 0
-		h = 0 // undefined, set to 0
-	} else {
-		if l < 0.5 {
-			s = delta / (max + min)
-		} else {
-			s = delta / (2 - max - min)
-		}
-
-		// Hue
-		switch {
-		case max == r:
-			h = (g - b) / delta
-			if g < b {
-				h += 6
-			}
-		case max == g:
-			h = (b-r)/delta + 2
-		default:
-			h = (r-g)/delta + 4
-		}
-		h *= 60
-	}
-
-	return h, s, l
-}
-
-// hslToRgb converts HSL to RGB color space
-// Takes hue (0-360), saturation (0-1), lightness (0-1)
-func hslToRgb(h, s, l float64) color.RGBA {
-	h = math.Mod(h, 360)
-	if h < 0 {
-		h += 360
-	}
-
-	var r, g, b float64
-
-	if s == 0 {
-		// Grayscale
-		r, g, b = l, l, l
-	} else {
-		var q float64
-		if l < 0.5 {
-			q = l * (1 + s)
-		} else {
-			q = l + s - l*s
-		}
-		p := 2*l - q
-
-		hk := h / 360.0
-
-		r = hueToRgb(p, q, hk+1.0/3.0)
-		g = hueToRgb(p, q, hk)
-		b = hueToRgb(p, q, hk-1.0/3.0)
-	}
-
-	return color.RGBA{
-		R: uint8(r * 255),
-		G: uint8(g * 255),
-		B: uint8(b * 255),
-		A: 255,
-	}
-}
-
-// hueToRgb is a helper function for hslToRgb
-func hueToRgb(p, q, t float64) float64 {
-	if t < 0 {
-		t += 1
-	}
-	if t > 1 {
-		t -= 1
-	}
-	if t < 1.0/6.0 {
-		return p + (q-p)*6*t
-	}
-	if t < 1.0/2.0 {
-		return q
-	}
-	if t < 2.0/3.0 {
-		return p + (q-p)*(2.0/3.0-t)*6
-	}
-	return p
 }

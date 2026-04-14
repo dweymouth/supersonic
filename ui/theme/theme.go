@@ -3,7 +3,6 @@ package theme
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"image/color"
 	"log"
 	"os"
@@ -248,7 +247,6 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 			m.cachedPaletteConfig.contrast != m.config.Contrast ||
 			m.cachedPaletteConfig.baseMode != m.config.BaseMode {
 
-			log.Printf("DEBUG Theme: Generating palette with BaseMode=%s, AccentColor=%s", m.config.BaseMode, m.config.AccentColor)
 			palette, err := GeneratePalette(m.config.AccentColor, m.config.Saturation, m.config.Contrast, m.config.BaseMode)
 			if err != nil {
 				log.Printf("failed to generate palette: %v", err)
@@ -259,7 +257,6 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 				m.cachedPaletteConfig.saturation = m.config.Saturation
 				m.cachedPaletteConfig.contrast = m.config.Contrast
 				m.cachedPaletteConfig.baseMode = m.config.BaseMode
-				log.Printf("DEBUG Theme: Palette generated, Background=%v", palette.Background)
 			}
 		}
 
@@ -267,7 +264,6 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 		if m.cachedPalette != nil {
 			return m.getColorFromPalette(name, m.cachedPalette)
 		}
-		log.Printf("DEBUG Theme: cachedPalette is nil, falling through to TOML theme")
 	}
 
 	// load theme file if necessary
@@ -493,108 +489,6 @@ func BlendColors(a, b color.Color, fractionA float64) color.Color {
 	return color.RGBA{R: rAvg, G: gAvg, B: bAvg, A: aAvg}
 }
 
-func brightenColor(c color.Color, fraction float64) color.Color {
-	r, g, b, a := c.RGBA()
-	r, g, b = brightenComponent(r, fraction), brightenComponent(g, fraction), brightenComponent(b, fraction)
-	return color.RGBA{
-		R: uint8(r >> 8),
-		G: uint8(g >> 8),
-		B: uint8(b >> 8),
-		A: uint8(a >> 8),
-	}
-}
-
-func darkenColor(c color.Color, fraction float64) color.Color {
-	r, g, b, a := c.RGBA()
-	r, g, b = darkenComponent(r, fraction), darkenComponent(g, fraction), darkenComponent(b, fraction)
-	return color.RGBA{
-		R: uint8(r >> 8),
-		G: uint8(g >> 8),
-		B: uint8(b >> 8),
-		A: uint8(a >> 8),
-	}
-}
-
-func brightenComponent(component uint32, fraction float64) uint32 {
-	brightened := min(component+uint32(float64(component)*fraction), 0xffff)
-	return brightened
-}
-
-func darkenComponent(component uint32, fraction float64) uint32 {
-	i := uint32(float64(component) * fraction)
-	if i > component {
-		return 0
-	}
-	return component - i
-}
-
-// ensureContrastAgainstSurface adjusts color to ensure minimum contrast against surface
-// Used for icons to guarantee visibility regardless of accent color
-func ensureContrastAgainstSurface(iconColor, surfaceColor color.Color) color.Color {
-	ir, ig, ib, _ := iconColor.RGBA()
-	sr, sg, sb, _ := surfaceColor.RGBA()
-
-	// Calculate luminance (0-1 range)
-	iconLum := (0.299*float64(ir) + 0.587*float64(ig) + 0.114*float64(ib)) / 65535.0
-	surfLum := (0.299*float64(sr) + 0.587*float64(sg) + 0.114*float64(sb)) / 65535.0
-
-	// Minimum contrast ratio - higher for better visibility
-	minContrast := 0.35 // Increased from 0.25 for better visibility
-
-	actualContrast := iconLum - surfLum
-	if actualContrast < 0 {
-		actualContrast = -actualContrast
-	}
-
-	if actualContrast < minContrast {
-		// Need to adjust icon color for more contrast
-		if surfLum > 0.5 {
-			// Surface is light, darken icon significantly
-			return darkenColor(iconColor, 0.5) // Darken by 50%
-		} else {
-			// Surface is dark, lighten icon significantly
-			return brightenColor(iconColor, 0.6) // Brighten by 60%
-		}
-	}
-
-	return iconColor
-}
-
-// ensureHoverContrast guarantees hover icon color has minimum contrast against default
-// This handles extreme accent colors (white/black) that would blend with TextSecondary
-func ensureHoverContrast(accent, defaultColor color.Color) color.Color {
-	// Start with slightly brightened accent
-	hover := brightenColor(accent, 0.20)
-
-	// Calculate luminances
-	ar, ag, ab, _ := hover.RGBA()
-	dr, dg, db, _ := defaultColor.RGBA()
-
-	hoverLum := (0.299*float64(ar) + 0.587*float64(ag) + 0.114*float64(ab)) / 65535.0
-	defaultLum := (0.299*float64(dr) + 0.587*float64(dg) + 0.114*float64(db)) / 65535.0
-
-	// Minimum contrast threshold - higher for icon visibility
-	const minContrast = 0.40
-
-	contrast := hoverLum - defaultLum
-	if contrast < 0 {
-		contrast = -contrast
-	}
-
-	// If contrast is insufficient, adjust hover color
-	if contrast < minContrast {
-		if defaultLum > 0.5 {
-			// Default is light, hover needs to be darker
-			return darkenColor(hover, 0.8)
-		} else {
-			// Default is dark, hover needs to be lighter
-			return brightenColor(hover, 0.7)
-		}
-	}
-
-	return hover
-}
-
 func readTTFFile(filepath string) ([]byte, error) {
 	if !strings.HasSuffix(filepath, ".ttf") {
 		err := errors.New("only .ttf fonts are supported")
@@ -606,11 +500,4 @@ func readTTFFile(filepath string) ([]byte, error) {
 		log.Printf("error loading custom font %q: %s", filepath, err.Error())
 	}
 	return content, err
-}
-
-// colorToHex converts a color.Color to a hex string (e.g., "#FF6A00")
-func colorToHex(c color.Color) string {
-	r, g, b, _ := c.RGBA()
-	// Convert from 16-bit to 8-bit
-	return fmt.Sprintf("#%02X%02X%02X", uint8(r>>8), uint8(g>>8), uint8(b>>8))
 }

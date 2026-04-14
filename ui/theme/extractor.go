@@ -3,7 +3,6 @@ package theme
 import (
 	"fmt"
 	"image"
-	"image/color"
 	"math"
 	"sort"
 )
@@ -60,7 +59,7 @@ func (ce *ColorExtractor) ExtractAccentFromImage(img image.Image) (string, error
 			g8 := uint8(g >> 8)
 			b8 := uint8(b >> 8)
 
-			h, s, l := rgbToHslFloat(r8, g8, b8)
+			h, s, l := rgbToHsl(r8, g8, b8)
 
 			// Calculate vibrancy: prefer saturated colors with medium luminance
 			// Penalize grays (low saturation), blacks (low luminance), and whites (high luminance)
@@ -215,91 +214,4 @@ func (ce *ColorExtractor) ExtractAccentFromImage(img image.Image) (string, error
 	avgR, avgG, avgB = boostSaturation(avgR, avgG, avgB, 1.15)
 
 	return fmt.Sprintf("#%02X%02X%02X", avgR, avgG, avgB), nil
-}
-
-// rgbToHslFloat converts RGB to HSL with float64 precision
-func rgbToHslFloat(r, g, b uint8) (h, s, l float64) {
-	rf := float64(r) / 255.0
-	gf := float64(g) / 255.0
-	bf := float64(b) / 255.0
-
-	max := math.Max(rf, math.Max(gf, bf))
-	min := math.Min(rf, math.Min(gf, bf))
-	delta := max - min
-
-	// Lightness
-	l = (max + min) / 2.0
-
-	// Saturation
-	if delta == 0 {
-		s = 0
-	} else {
-		s = delta / (1.0 - math.Abs(2.0*l-1.0))
-	}
-
-	// Hue
-	if delta == 0 {
-		h = 0
-	} else {
-		switch max {
-		case rf:
-			h = math.Mod((gf-bf)/delta, 6.0)
-			if gf < bf {
-				h += 6.0
-			}
-		case gf:
-			h = (bf-rf)/delta + 2.0
-		case bf:
-			h = (rf-gf)/delta + 4.0
-		}
-		h *= 60.0
-	}
-
-	return h, s, l
-}
-
-// boostSaturation increases the saturation of a color
-func boostSaturation(r, g, b uint8, factor float64) (uint8, uint8, uint8) {
-	h, s, l := rgbToHslFloat(r, g, b)
-
-	// Boost saturation
-	s = math.Min(s*factor, 1.0)
-
-	// Convert back to RGB
-	c := (1.0 - math.Abs(2.0*l-1.0)) * s
-	x := c * (1.0 - math.Abs(math.Mod(h/60.0, 2.0)-1.0))
-	m := l - c/2.0
-
-	var rf, gf, bf float64
-
-	switch {
-	case h < 60:
-		rf, gf, bf = c, x, 0
-	case h < 120:
-		rf, gf, bf = x, c, 0
-	case h < 180:
-		rf, gf, bf = 0, c, x
-	case h < 240:
-		rf, gf, bf = 0, x, c
-	case h < 300:
-		rf, gf, bf = x, 0, c
-	default:
-		rf, gf, bf = c, 0, x
-	}
-
-	return uint8((rf + m) * 255.0), uint8((gf + m) * 255.0), uint8((bf + m) * 255.0)
-}
-
-// interpolateColor linearly interpolates between two RGB colors
-func interpolateColor(c1, c2 color.Color, t float64) color.Color {
-	r1, g1, b1, a1 := c1.RGBA()
-	r2, g2, b2, a2 := c2.RGBA()
-
-	// Convert from 16-bit to 8-bit and interpolate
-	r := uint8((float64(r1>>8)*(1-t) + float64(r2>>8)*t))
-	g := uint8((float64(g1>>8)*(1-t) + float64(g2>>8)*t))
-	b := uint8((float64(b1>>8)*(1-t) + float64(b2>>8)*t))
-	a := uint8((float64(a1>>8)*(1-t) + float64(a2>>8)*t))
-
-	return color.RGBA{R: r, G: g, B: b, A: a}
 }

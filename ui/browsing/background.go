@@ -97,7 +97,7 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 			default:
 			}
 
-			blurred := imaging.Blur(adjusted, 50.0)
+			blurred := imaging.Blur(adjusted, 15.0)
 			b.CachedBlurredImage = blurred
 			select {
 			case <-ctx.Done():
