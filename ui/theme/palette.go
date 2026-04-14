@@ -217,6 +217,9 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		log.Printf("DEBUG Theme: Contrast changed accent (was: %v, now: %v)", accentBeforeContrast, accent)
 	}
 
+	// Ensure minimum contrast between Surface and Accent for hyperlink readability
+	accent = ensureSurfaceContrast(accent, surf, isLight)
+
 	// Calculate text color on accent based on luminance
 	textOnAccent := calculateTextOnAccent(accent)
 
@@ -389,6 +392,42 @@ func ensureContrast(textColor, bgColor color.RGBA, bgLum float64) color.RGBA {
 		}
 	}
 	return textColor
+}
+
+// ensureSurfaceContrast guarantees minimum contrast between Surface and Accent colors
+// This ensures hyperlinks remain readable regardless of the selected accent color
+func ensureSurfaceContrast(accent, surface color.Color, isLight bool) color.RGBA {
+	ar, ag, ab, _ := accent.RGBA()
+	sr, sg, sb, _ := surface.RGBA()
+
+	// Calculate luminances (0-1 range)
+	accentLum := (0.299*float64(ar) + 0.587*float64(ag) + 0.114*float64(ab)) / 65535.0
+	surfaceLum := (0.299*float64(sr) + 0.587*float64(sg) + 0.114*float64(sb)) / 65535.0
+
+	// Minimum contrast threshold (30% luminance difference)
+	const minContrast = 0.30
+
+	diff := accentLum - surfaceLum
+	if diff < 0 {
+		diff = -diff
+	}
+
+	// If contrast is sufficient, return accent unchanged
+	if diff >= minContrast {
+		return color.RGBA{R: uint8(ar >> 8), G: uint8(ag >> 8), B: uint8(ab >> 8), A: 255}
+	}
+
+	// Need to adjust accent for more contrast
+	accentRGB := color.RGBA{R: uint8(ar >> 8), G: uint8(ag >> 8), B: uint8(ab >> 8), A: 255}
+
+	if isLight {
+		// Light mode: Surface is light (~0.88-0.96), accent needs to be darker
+		// Darken accent significantly to contrast against light surface
+		return darkenColor(accentRGB, 0.6).(color.RGBA)
+	}
+	// Dark mode: Surface is dark (~0.10-0.18), accent needs to be lighter
+	// Lighten accent significantly to contrast against dark surface
+	return brightenColor(accentRGB, 0.8).(color.RGBA)
 }
 
 func clamp(v float64) float64 {
