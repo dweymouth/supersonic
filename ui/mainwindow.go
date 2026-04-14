@@ -599,7 +599,6 @@ func (m *MainWindow) showSettingsDialog() {
 	m.App.Config.Theme.Saturation = m.theme.GetConfig().Saturation
 	m.App.Config.Theme.Contrast = m.theme.GetConfig().Contrast
 	m.App.Config.Theme.BaseMode = m.theme.GetConfig().BaseMode
-	m.App.Config.Theme.UseCustomAccent = m.theme.GetConfig().UseCustomAccent
 
 	// Full theme reload for theme file changes
 	themeUpdateCallbk := func() {

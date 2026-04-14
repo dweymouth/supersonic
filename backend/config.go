@@ -162,12 +162,11 @@ type ThemeConfig struct {
 	Appearance             string
 	UseRoundedImageCorners bool
 
-	// Dynamic theme configuration
-	UseCustomAccent bool    // Whether to use custom accent color
-	AccentColor     string  // Hex color code for accent
-	Saturation      float64 // Saturation multiplier (default 1.0)
-	Contrast        float64 // Contrast multiplier (default 1.0)
-	BaseMode        string  // Base mode: "dark", "light", "black", "grey"
+	// Dynamic theme configuration (enabled when ThemeFile == "dynamic")
+	AccentColor string  // Hex color code for accent
+	Saturation  float64 // Saturation multiplier (default 1.0)
+	Contrast    float64 // Contrast multiplier (default 1.0)
+	BaseMode    string  // Base mode: "dark", "light", "black", "grey"
 }
 
 type TranscodingConfig struct {

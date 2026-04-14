@@ -665,9 +665,16 @@ func (s *SettingsDialog) applyAutoEQProfile(profile *backend.AutoEQProfile, geq 
 }
 
 func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabItem {
-	themeNames := []string{"Default"}
-	themeFileNames := []string{""}
-	i, selIndex := 1, 0
+	// Theme list: Default, Dynamic, then .toml files
+	themeNames := []string{"Default", "Dynamic"}
+	themeFileNames := []string{"", "dynamic"}
+	i, selIndex := 2, 0
+
+	// Check for Dynamic theme first
+	if s.config.Theme.ThemeFile == "dynamic" {
+		selIndex = 1
+	}
+
 	for filename, displayname := range s.themeFiles {
 		themeFileNames = append(themeFileNames, filename)
 		themeNames = append(themeNames, displayname)
@@ -679,38 +686,57 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 
 	themeFileSelect := widget.NewSelect(themeNames, nil)
 	themeFileSelect.SetSelectedIndex(selIndex)
-	themeFileSelect.OnChanged = func(_ string) {
-		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
-		if s.OnThemeSettingChanged != nil {
-			s.OnThemeSettingChanged()
-		}
-	}
+
+	// Mode select - always Dark/Light/Auto for both traditional and dynamic themes
 	themeModeSelect := widget.NewSelect([]string{
 		string(myTheme.AppearanceDark),
 		string(myTheme.AppearanceLight),
 		string(myTheme.AppearanceAuto),
 	}, nil)
-	themeModeSelect.OnChanged = func(_ string) {
-		s.config.Theme.Appearance = themeModeSelect.Options[themeModeSelect.SelectedIndex()]
-		if s.OnThemeSettingChanged != nil {
-			s.OnThemeSettingChanged()
-		}
-	}
 	themeModeSelect.SetSelected(s.config.Theme.Appearance)
 	if themeModeSelect.Selected == "" {
 		themeModeSelect.SetSelectedIndex(0)
 	}
 
-	// Custom Accent Color Engine UI
-	useCustomAccent := widget.NewCheck(lang.L("Use custom accent color"), func(b bool) {
-		log.Printf("DEBUG Settings: UseCustomAccent changed to %v", b)
-		s.config.Theme.UseCustomAccent = b
-		log.Printf("DEBUG Settings: s.config.Theme.UseCustomAccent is now %v", s.config.Theme.UseCustomAccent)
+	// Helper to update baseMode from appearance when in dynamic mode
+	updateBaseMode := func(appearance string) {
+		switch appearance {
+		case string(myTheme.AppearanceDark):
+			s.config.Theme.BaseMode = "black"
+		case string(myTheme.AppearanceLight):
+			s.config.Theme.BaseMode = "light"
+		case string(myTheme.AppearanceAuto):
+			// Auto uses grey as default (will adapt to system in future)
+			s.config.Theme.BaseMode = "grey"
+		}
+	}
+
+	themeFileSelect.OnChanged = func(_ string) {
+		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
+		// Update base mode if switching to dynamic
+		if s.config.Theme.ThemeFile == "dynamic" {
+			updateBaseMode(themeModeSelect.Selected)
+		}
 		if s.OnThemeSettingChanged != nil {
 			s.OnThemeSettingChanged()
 		}
-	})
-	useCustomAccent.Checked = s.config.Theme.UseCustomAccent
+	}
+
+	themeModeSelect.OnChanged = func(value string) {
+		s.config.Theme.Appearance = value
+		// If in dynamic mode, also update baseMode
+		if s.config.Theme.ThemeFile == "dynamic" {
+			updateBaseMode(value)
+		}
+		if s.OnThemeSettingChanged != nil {
+			s.OnThemeSettingChanged()
+		}
+	}
+
+	// Set initial base mode if dynamic is selected
+	if s.config.Theme.ThemeFile == "dynamic" {
+		updateBaseMode(s.config.Theme.Appearance)
+	}
 
 	// Ensure we have valid values (defaults should be set in config loading, but ensure here)
 	// Also update the config with defaults so they get saved
@@ -770,38 +796,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	contrastSlider.SetValue(clamp(s.config.Theme.Contrast, initRanges.ContrastMin, initRanges.ContrastMax))
 	contrastSlider.Step = 0.05
 
-	// Create select without callback first to avoid triggering during init
-	baseModeSelect := widget.NewSelect([]string{"light", "black", "grey"}, nil)
-	baseModeSelect.SetSelected(s.config.Theme.BaseMode)
-
-	// Now set up the callback after sliders are fully initialized
-	baseModeSelect.OnChanged = func(mode string) {
-		s.config.Theme.BaseMode = mode
-
-		// Update slider ranges based on new base mode
-		newRanges := getRanges(mode)
-
-		// Clamp current values to new ranges and update sliders
-		newSat := clamp(saturationSlider.Value, newRanges.SatMin, newRanges.SatMax)
-		newCon := clamp(contrastSlider.Value, newRanges.ContrastMin, newRanges.ContrastMax)
-
-		saturationSlider.Min = newRanges.SatMin
-		saturationSlider.Max = newRanges.SatMax
-		contrastSlider.Min = newRanges.ContrastMin
-		contrastSlider.Max = newRanges.ContrastMax
-
-		saturationSlider.SetValue(newSat)
-		contrastSlider.SetValue(newCon)
-
-		s.config.Theme.Saturation = newSat
-		s.config.Theme.Contrast = newCon
-
-		if s.OnAccentColorChanged != nil {
-			s.OnAccentColorChanged()
-		}
-	}
-
-	// Set up OnChanged handlers for sliders (after baseModeSelect is created)
+	// Set up OnChanged handlers for sliders
 	saturationSlider.OnChanged = func(f float64) {
 		s.config.Theme.Saturation = f
 		if s.OnAccentColorChanged != nil {
@@ -816,39 +811,37 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		}
 	}
 
-	// Disable custom accent controls if not enabled
-	hueSlider.Disable()
-	saturationSlider.Disable()
-	contrastSlider.Disable()
-	baseModeSelect.Disable()
-	if useCustomAccent.Checked {
-		hueSlider.Enable()
-		saturationSlider.Enable()
-		contrastSlider.Enable()
-		baseModeSelect.Enable()
+	// Helper to check if Dynamic theme is selected
+	isDynamic := func() bool {
+		return themeFileNames[themeFileSelect.SelectedIndex()] == "dynamic"
 	}
 
-	// Re-set slider values after enabling controls (Fyne doesn't apply SetValue correctly when disabled)
-	saturationSlider.SetValue(clamp(s.config.Theme.Saturation, initRanges.SatMin, initRanges.SatMax))
-	contrastSlider.SetValue(clamp(s.config.Theme.Contrast, initRanges.ContrastMin, initRanges.ContrastMax))
-	// Store the original OnChanged that updates config and triggers theme change
-	originalOnChanged := useCustomAccent.OnChanged
-	useCustomAccent.OnChanged = func(b bool) {
-		// First call the original callback to update config and trigger theme change
-		if originalOnChanged != nil {
-			originalOnChanged(b)
-		}
-		// Then enable/disable controls based on state
-		if b {
+	// Enable/disable accent controls based on Dynamic theme selection
+	updateAccentControls := func() {
+		if isDynamic() {
 			hueSlider.Enable()
 			saturationSlider.Enable()
 			contrastSlider.Enable()
-			baseModeSelect.Enable()
 		} else {
 			hueSlider.Disable()
 			saturationSlider.Disable()
 			contrastSlider.Disable()
-			baseModeSelect.Disable()
+		}
+	}
+
+	// Initial state
+	updateAccentControls()
+
+	// Update controls when theme changes
+	themeFileSelect.OnChanged = func(name string) {
+		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
+		// Update base mode if switching to dynamic
+		if s.config.Theme.ThemeFile == "dynamic" {
+			updateBaseMode(themeModeSelect.Selected)
+		}
+		updateAccentControls()
+		if s.OnThemeSettingChanged != nil {
+			s.OnThemeSettingChanged()
 		}
 	}
 
@@ -924,15 +917,10 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	})
 	useRoundedImageCorners.Checked = s.config.Theme.UseRoundedImageCorners
 
-	return container.NewTabItem(lang.L("Appearance"), container.NewVBox(
-		util.NewHSpace(0), // insert a theme.Padding amount of space at top
-		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
-			container.NewHBox(widget.NewLabel(lang.L("Mode")), themeModeSelect, util.NewHSpace(5)), // right
-			themeFileSelect, // center
-		),
+	// Create accent color controls container (shown only for Dynamic theme)
+	accentControls := container.NewVBox(
 		s.newSectionSeparator(),
-		widget.NewRichText(&widget.TextSegment{Text: lang.L("Custom Accent Color"), Style: util.BoldRichTextStyle}),
-		container.NewHBox(useCustomAccent, util.NewHSpace(20), widget.NewLabel(lang.L("Base mode")), baseModeSelect),
+		widget.NewRichText(&widget.TextSegment{Text: lang.L("Accent Color"), Style: util.BoldRichTextStyle}),
 		container.NewBorder(nil, nil, nil, colorPreview, hueSlider),
 		container.New(layout.NewFormLayout(),
 			widget.NewLabel(lang.L("Saturation")), saturationSlider,
@@ -948,6 +936,37 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 			}),
 			util.NewHSpace(10),
 		),
+	)
+
+	// Show/hide accent controls based on Dynamic theme selection
+	updateAccentVisibility := func() {
+		if isDynamic() {
+			accentControls.Show()
+		} else {
+			accentControls.Hide()
+		}
+		accentControls.Refresh()
+	}
+
+	// Initial visibility
+	updateAccentVisibility()
+
+	// Update visibility when theme changes
+	originalThemeFileOnChanged := themeFileSelect.OnChanged
+	themeFileSelect.OnChanged = func(name string) {
+		if originalThemeFileOnChanged != nil {
+			originalThemeFileOnChanged(name)
+		}
+		updateAccentVisibility()
+	}
+
+	return container.NewTabItem(lang.L("Appearance"), container.NewVBox(
+		util.NewHSpace(0), // insert a theme.Padding amount of space at top
+		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Theme")), /*left*/
+			container.NewHBox(widget.NewLabel(lang.L("Mode")), themeModeSelect, util.NewHSpace(5)), // right
+			themeFileSelect, // center
+		),
+		accentControls,
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("UI Scaling"), Style: util.BoldRichTextStyle}),
 		uiScaleRadio,
 		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Grid card size")), nil, gridCardSize),

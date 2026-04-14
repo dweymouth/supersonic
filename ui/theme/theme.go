@@ -239,8 +239,8 @@ func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette
 }
 
 func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
-	// Use custom accent palette if enabled
-	if m.config.UseCustomAccent {
+	// Use custom accent palette if Dynamic theme is selected
+	if m.config.ThemeFile == "dynamic" {
 		// Check if we need to regenerate the palette
 		if m.cachedPalette == nil ||
 			m.cachedPaletteConfig.accentColor != m.config.AccentColor ||

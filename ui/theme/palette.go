@@ -20,9 +20,9 @@ type SliderRanges struct {
 func GetSliderRanges(baseMode string) SliderRanges {
 	switch strings.ToLower(baseMode) {
 	case "light":
-		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.0, ContrastMax: 0.5}
+		return SliderRanges{SatMin: 0.0, SatMax: 0.5, ContrastMin: 0.25, ContrastMax: 1.0}
 	case "black":
-		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.5, ContrastMax: 1.0}
+		return SliderRanges{SatMin: 0.0, SatMax: 0.75, ContrastMin: 0.25, ContrastMax: 1.0}
 	case "grey":
 		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.75, ContrastMax: 1.0}
 	default:
@@ -311,7 +311,9 @@ func applyContrast(c color.RGBA, contrast float64, isLightMode bool) color.RGBA 
 		// This provides very subtle adjustment, preserving color brightness
 		multiplier = 0.92 + (contrast * 0.16) // 0.0->0.92, 0.5->1.0
 	} else {
-		multiplier = contrast
+		// Dark mode: contrast slider 0.0-1.0 maps to multiplier 0.5-1.0
+		// Minimum 0.5 ensures color is never crushed to black
+		multiplier = 0.5 + (contrast * 0.5) // 0.0->0.5, 1.0->1.0
 	}
 
 	r := clamp(float64(c.R) * multiplier)

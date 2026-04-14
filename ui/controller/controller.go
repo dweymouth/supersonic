@@ -668,8 +668,8 @@ func (c *Controller) GetSongRadioTracks(sourceTrack *mediaprovider.Track) ([]*me
 // extractAndTransitionAccentFromCover extracts a vibrant color from the current track's
 // cover art and smoothly transitions the theme to that color.
 func (c *Controller) extractAndTransitionAccentFromCover() {
-	if !c.App.Config.Theme.UseCustomAccent {
-		log.Println("Cover extraction: UseCustomAccent is disabled, skipping")
+	if c.App.Config.Theme.ThemeFile != "dynamic" {
+		log.Println("Cover extraction: Dynamic theme not active, skipping")
 		return
 	}
 
