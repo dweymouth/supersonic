@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"image/color"
+	"log"
 	"math"
 	"strings"
 )
@@ -57,15 +58,7 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 
 	// Convert accent to HSL for dynamic adjustments
 	accentH, accentS, accentL := rgbToHsl(accent)
-
-	// Validate accent color: neon colors (high sat + high lum) are harsh in light mode
-	// Log warning but don't block - user can still choose them if they really want
-	if accentS > 0.85 && accentL > 0.65 {
-		// Neon color detected in light mode - this will be eye-bleeding
-		// Silently desaturate the accent slightly to make it usable
-		accentS = 0.85
-		accent = hslToRgb(accentH, accentS, accentL)
-	}
+	log.Printf("DEBUG Theme: Input accent=%s, HSL={%.2f, %.2f, %.2f}", accentHex, accentH, accentS, accentL)
 
 	// Adapt accent color for dark modes (black/grey) to ensure visibility
 	// When extracting from cover art, dark/unsaturated colors get lost on dark backgrounds
@@ -81,12 +74,9 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 			// Further boost for very dark extracted colors
 			accentL = 0.45 + ((accentL - 0.35) * 0.5)
 		}
-		// For light colors (> 0.60 lightness), don't darken them - they're already visible
-		// This preserves B&W light grays that are extracted for visibility
-		if accentL > 0.65 {
-			// Keep light colors light, just clamp to max 0.75 for consistency
-			accentL = clampFloat(accentL, 0, 0.75)
-		}
+		// For light colors (> 0.60 lightness), keep them as-is
+		// Bright accents like yellow need to stay bright for visibility
+		// No clamping applied - user gets the color they selected
 		// Boost saturation for dark modes - but NOT for B&W/monochrome colors
 		// If saturation is very low (< 0.05), the color is intentionally desaturated (B&W)
 		// Only boost colors that already have some saturation
@@ -101,6 +91,7 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		accent = hslToRgb(accentH, accentS, accentL)
 		// Recalculate HSL after modification
 		accentH, accentS, accentL = rgbToHsl(accent)
+		log.Printf("DEBUG Theme: After dark mode boost HSL={%.2f, %.2f, %.2f}", accentH, accentS, accentL)
 	}
 
 	// Apply safety clamp using the same ranges as UI sliders
@@ -194,11 +185,18 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 
 	// Apply saturation to accent (slider affects accent intensity)
 	if saturation != 1.0 {
+		log.Printf("DEBUG Theme: Applying saturation multiplier=%.2f", saturation)
 		accent = applySaturationToHSL(accentH, accentS, accentL, saturation)
+		accentH, accentS, accentL = rgbToHsl(accent)
+		log.Printf("DEBUG Theme: After saturation HSL={%.2f, %.2f, %.2f}", accentH, accentS, accentL)
 	}
 
 	// Apply contrast adjustment to accent
+	accentBeforeContrast := accent
 	accent = applyContrast(accent, contrast, baseMode == "light")
+	if accent != accentBeforeContrast {
+		log.Printf("DEBUG Theme: Contrast changed accent (was: %v, now: %v)", accentBeforeContrast, accent)
+	}
 
 	// Calculate text color on accent based on luminance
 	textOnAccent := calculateTextOnAccent(accent)
@@ -296,10 +294,22 @@ func parseHexByte(s string) (uint8, error) {
 }
 
 // applyContrast adjusts the contrast of a color
+// For bright colors, preserves original to avoid crushing bright accents
 func applyContrast(c color.RGBA, contrast float64, isLightMode bool) color.RGBA {
+	// Calculate luminance (0-255 scale)
+	luminance := 0.299*float64(c.R) + 0.587*float64(c.G) + 0.114*float64(c.B)
+
+	// For bright colors (> 55% luminance), skip contrast adjustment entirely
+	// This preserves bright accents like cyan, yellow, and green (#00FF00 luminance=150)
+	if luminance > 140 { // 140 = ~0.55 * 255
+		return c // Return original color unchanged
+	}
+
 	var multiplier float64
 	if isLightMode {
-		multiplier = 0.7 * contrast
+		// Light mode: contrast slider 0.0-0.5 maps to multiplier 0.92-1.0
+		// This provides very subtle adjustment, preserving color brightness
+		multiplier = 0.92 + (contrast * 0.16) // 0.0->0.92, 0.5->1.0
 	} else {
 		multiplier = contrast
 	}

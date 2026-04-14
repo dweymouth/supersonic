@@ -28,6 +28,7 @@ const (
 	ColorNameInactiveLyric     fyne.ThemeColorName = "InactiveLyric"
 	ColorNameIconButton        fyne.ThemeColorName = "IconButton"
 	ColorNameHoveredIconButton fyne.ThemeColorName = "HoveredIconButton"
+	ColorNameActiveIconButton  fyne.ThemeColorName = "ActiveIconButton"
 	ColorNameNowPlayingPanel   fyne.ThemeColorName = "NowPlayingPanel"
 
 	SizeNameSubSubHeadingText fyne.ThemeSizeName = "subSubHeadingText" // in between Text and SubHeadingText
@@ -161,11 +162,14 @@ func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette
 	case ColorNameInactiveLyric:
 		return BlendColors(palette.TextPrimary, palette.Surface, 0.33)
 	case ColorNameHoveredIconButton:
-		// Icons use accent color, hovered is brighter version
-		return brightenColor(palette.Accent, 0.25)
+		// Hover: use accent color with guaranteed contrast against default
+		return ensureHoverContrast(palette.Accent, palette.TextSecondary)
+	case ColorNameActiveIconButton:
+		// Active/Selected: use accent color with guaranteed contrast against default
+		return ensureHoverContrast(palette.Accent, palette.TextSecondary)
 	case ColorNameIconButton:
-		// Icons tinted with accent color
-		return palette.Accent
+		// Default: use neutral text color (no accent) for consistency
+		return palette.TextSecondary
 	case ColorNameNowPlayingPanel:
 		r, g, b, _ := palette.PageHeader.RGBA()
 		return color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: 180}
@@ -209,6 +213,7 @@ func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette
 	case theme.ColorNamePressed:
 		return palette.Accent
 	case theme.ColorNamePrimary:
+		// Primary: use accent color directly for checkboxes, tabs, buttons
 		return palette.Accent
 	case theme.ColorNameScrollBar:
 		return palette.TextPrimary
@@ -302,6 +307,9 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 		}
 		// For light theme, use a darker version of the foreground color for hover
 		return darkenColor(foreground, 0.33)
+	case ColorNameActiveIconButton:
+		// For theme files, use Primary color for active/selected icons (backward compatible)
+		return colorOrDefault(colors.Primary, defColors.Primary, theme.ColorNamePrimary, variant)
 	case ColorNameIconButton:
 		foreground := colorOrDefault(colors.Foreground, defColors.Foreground, theme.ColorNameForeground, variant)
 		if variant == theme.VariantDark {
@@ -518,6 +526,73 @@ func darkenComponent(component uint32, fraction float64) uint32 {
 		return 0
 	}
 	return component - i
+}
+
+// ensureContrastAgainstSurface adjusts color to ensure minimum contrast against surface
+// Used for icons to guarantee visibility regardless of accent color
+func ensureContrastAgainstSurface(iconColor, surfaceColor color.Color) color.Color {
+	ir, ig, ib, _ := iconColor.RGBA()
+	sr, sg, sb, _ := surfaceColor.RGBA()
+
+	// Calculate luminance (0-1 range)
+	iconLum := (0.299*float64(ir) + 0.587*float64(ig) + 0.114*float64(ib)) / 65535.0
+	surfLum := (0.299*float64(sr) + 0.587*float64(sg) + 0.114*float64(sb)) / 65535.0
+
+	// Minimum contrast ratio - higher for better visibility
+	minContrast := 0.35 // Increased from 0.25 for better visibility
+
+	actualContrast := iconLum - surfLum
+	if actualContrast < 0 {
+		actualContrast = -actualContrast
+	}
+
+	if actualContrast < minContrast {
+		// Need to adjust icon color for more contrast
+		if surfLum > 0.5 {
+			// Surface is light, darken icon significantly
+			return darkenColor(iconColor, 0.5) // Darken by 50%
+		} else {
+			// Surface is dark, lighten icon significantly
+			return brightenColor(iconColor, 0.6) // Brighten by 60%
+		}
+	}
+
+	return iconColor
+}
+
+// ensureHoverContrast guarantees hover icon color has minimum contrast against default
+// This handles extreme accent colors (white/black) that would blend with TextSecondary
+func ensureHoverContrast(accent, defaultColor color.Color) color.Color {
+	// Start with slightly brightened accent
+	hover := brightenColor(accent, 0.20)
+
+	// Calculate luminances
+	ar, ag, ab, _ := hover.RGBA()
+	dr, dg, db, _ := defaultColor.RGBA()
+
+	hoverLum := (0.299*float64(ar) + 0.587*float64(ag) + 0.114*float64(ab)) / 65535.0
+	defaultLum := (0.299*float64(dr) + 0.587*float64(dg) + 0.114*float64(db)) / 65535.0
+
+	// Minimum contrast threshold
+	const minContrast = 0.25
+
+	contrast := hoverLum - defaultLum
+	if contrast < 0 {
+		contrast = -contrast
+	}
+
+	// If contrast is insufficient, adjust hover color
+	if contrast < minContrast {
+		if defaultLum > 0.5 {
+			// Default is light, hover needs to be darker
+			return darkenColor(hover, 0.8)
+		} else {
+			// Default is dark, hover needs to be lighter
+			return brightenColor(hover, 0.7)
+		}
+	}
+
+	return hover
 }
 
 func readTTFFile(filepath string) ([]byte, error) {

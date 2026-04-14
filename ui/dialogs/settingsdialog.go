@@ -948,50 +948,6 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 			}),
 			util.NewHSpace(10),
 		),
-		func() *fyne.Container {
-			// Create checkbox with proper initialization
-			autoExtractCheck := widget.NewCheck(lang.L("Auto-extract from playing tracks"), func(b bool) {
-				s.config.Theme.AutoExtractFromCover = b
-			})
-			autoExtractCheck.Checked = s.config.Theme.AutoExtractFromCover
-
-			// Create entry for transition duration
-			durationEntry := widget.NewEntry()
-			durationEntry.SetText(fmt.Sprintf("%d", s.config.Theme.TransitionDurationMs))
-			if s.config.Theme.TransitionDurationMs == 0 {
-				s.config.Theme.TransitionDurationMs = 400
-				durationEntry.SetText("400")
-			}
-			durationEntry.SetPlaceHolder("400")
-			durationEntry.Validator = func(s string) error {
-				if s == "" {
-					return nil
-				}
-				_, err := fmt.Sscanf(s, "%d", new(int))
-				return err
-			}
-			durationEntry.OnChanged = func(str string) {
-				var ms int
-				if _, err := fmt.Sscanf(str, "%d", &ms); err == nil {
-					if ms < 50 {
-						ms = 50
-					}
-					if ms > 2000 {
-						ms = 2000
-					}
-					s.config.Theme.TransitionDurationMs = ms
-				}
-			}
-
-			return container.NewHBox(
-				autoExtractCheck,
-				util.NewHSpace(10),
-				container.New(layout.NewFormLayout(),
-					widget.NewLabel(lang.L("Transition (ms)")),
-					durationEntry,
-				),
-			)
-		}(),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("UI Scaling"), Style: util.BoldRichTextStyle}),
 		uiScaleRadio,
 		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Grid card size")), nil, gridCardSize),

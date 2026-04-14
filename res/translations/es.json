@@ -32,6 +32,8 @@
     "Artists": "Artistas",
     "Audio Drama": "Drama de audio",
     "Audio device": "Dispositivo de audio",
+    "Auto-extract from playing tracks": "Auto-extraer de pistas en reproducción",
+    "Base mode": "Modo base",
     "Audiobook": "Audiolibro",
     "Aug": "Ago",
     "Authentication failed": "Autenticación fallida",
@@ -62,6 +64,8 @@
     "Compilation": "Compilación",
     "Compilations": "Compilaciónes",
     "Composer": "Compositor",
+    "Contrast": "Contraste",
+    "Custom Accent Color": "Color personalizado",
     "Composers": "Composers",
     "Configure your music server to add radio stations": "Configura tu servidor de música para agregar estaciones de radio",
     "Confirm Delete Playlist": "Confirmar eliminación de la lista de reproducción",
@@ -74,6 +78,7 @@
     "Create new playlist": "Crear nueva lista de reproducción",
     "DJ-Mix": "Mezcla de DJ",
     "Date added": "Date added",
+    "Dynamic Accent from Cover Art": "Acento dinámico de portada",
     "Dec": "Dic",
     "Delete": "Delete",
     "Delete Playlist": "Eliminar lista de reproducción",
@@ -119,6 +124,7 @@
     "Error loading AutoEQ profiles": "Error loading AutoEQ profiles",
     "Error updating playlist": "Error updating playlist",
     "Exclusive mode": "Modo exclusivo",
+    "Extract from playing track": "Extraer de pista en reproducción",
     "Fade out on pause": "Fade out on pause",
     "Failed to load profile": "Failed to load profile",
     "Fav.": "Fav.",
@@ -202,6 +208,7 @@
     "Playback": "Reproducción",
     "Playing": "Reproduciendo",
     "Playlist": "Lista de reproducción",
+    "Saturation": "Saturación",
     "Playlists": "Listas de reproducción",
     "Plays": "Reproducciones",
     "Please select a preset to delete": "Please select a preset to delete",
@@ -310,6 +317,7 @@
     "Unable to play song radio": "Unable to play song radio",
     "Unset favorite": "Quitar de favoritos",
     "Use blurred album cover for Now Playing page background": "Use blurred album cover for Now Playing page background",
+    "Use custom accent color": "Usar color personalizado",
     "Use legacy authentication": "Usar autenticación legacy",
     "Use rounded image corners": "Use rounded image corners",
     "Use waveform seekbar": "Use waveform seekbar",
@@ -342,6 +350,14 @@
     "playlist.addedtracks": {
         "one": "Se ha añadido una pista a la lista de reproducción",
         "other": "Se han añadido {{.trackCount}} pistas a la lista de reproducción"
+    },
+    "{{.albumsCount}} albums": {
+        "one": "{{.albumsCount}} álbum",
+        "other": "{{.albumsCount}} álbumes"
+    },
+    "{{.trackCount}} tracks": {
+        "one": "{{.trackCount}} pista",
+        "other": "{{.trackCount}} pistas"
     },
     "reissued": "emitido nuevamente",
     "sec": "seg",

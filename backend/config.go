@@ -161,15 +161,13 @@ type ThemeConfig struct {
 	ThemeFile              string
 	Appearance             string
 	UseRoundedImageCorners bool
-	// Custom accent color engine fields
-	UseCustomAccent bool    // If true, use accent-based palette generation instead of TOML file
-	AccentColor     string  // Hex color (e.g., "#FF8A45")
+
+	// Dynamic theme configuration
+	UseCustomAccent bool    // Whether to use custom accent color
+	AccentColor     string  // Hex color code for accent
 	Saturation      float64 // Saturation multiplier (default 1.0)
 	Contrast        float64 // Contrast multiplier (default 1.0)
 	BaseMode        string  // Base mode: "dark", "light", "black", "grey"
-	// Dynamic accent from cover art
-	AutoExtractFromCover bool // Extract accent color automatically from playing track's cover
-	TransitionDurationMs int  // Duration of smooth color transition in milliseconds (default 400)
 }
 
 type TranscodingConfig struct {
