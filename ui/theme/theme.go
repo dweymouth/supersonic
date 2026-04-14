@@ -223,11 +223,18 @@ func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette
 	case theme.ColorNameSeparator:
 		return palette.Surface
 	case theme.ColorNameShadow:
-		// Use a semi-transparent dark version of background for shadows
-		// instead of solid black for more natural shadows
-		shadow := palette.Background
-		r, g, b, _ := shadow.RGBA()
-		return color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: 80}
+		// Use neutral gray for shadows to avoid color tint from accent
+		// Shadow should be neutral and not draw attention to itself
+		_, _, bgL := rgbToHslColor(palette.Background)
+		var gray uint8
+		if bgL > 0.5 {
+			// Light mode: dark gray shadow
+			gray = 0x00
+		} else {
+			// Dark mode: slightly lighter shadow for visibility
+			gray = 0x10
+		}
+		return color.RGBA{R: gray, G: gray, B: gray, A: 100}
 	case theme.ColorNameSuccess:
 		return palette.Success
 	case theme.ColorNameWarning:

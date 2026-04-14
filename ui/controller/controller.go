@@ -692,13 +692,16 @@ func (c *Controller) extractAndTransitionAccentFromCover() {
 
 	// Extract dominant color
 	extractor := myTheme.NewColorExtractor()
-	accentHex, err := extractor.ExtractAccentFromImage(coverImg)
+	extractedHex, err := extractor.ExtractAccentFromImage(coverImg)
 	if err != nil {
 		return
 	}
 
-	// Apply accent color immediately (no transition)
+	// Normalize extracted color for current theme mode to ensure visibility
 	if theme, ok := fyne.CurrentApp().Settings().Theme().(*myTheme.MyTheme); ok {
+		baseMode := theme.GetConfig().BaseMode
+		normalizer := myTheme.NewColorNormalizer()
+		accentHex := normalizer.NormalizeForMode(extractedHex, baseMode)
 		theme.SetAccentColor(accentHex)
 	}
 }

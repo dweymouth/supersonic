@@ -139,29 +139,68 @@ func (b *BackgroundManager) HideImages() {
 }
 
 // adjustBrightnessForTheme adjusts image brightness based on current theme
-// Returns adjusted image and caches result
+// Uses the palette's background lightness as reference for coherent styling
 func adjustBrightnessForTheme(img image.Image) image.Image {
-	if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantDark {
-		// Dark theme: darken the image significantly for contrast
-		return imaging.AdjustBrightness(img, -50)
+	isDark := fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantDark
+
+	// Get the current theme to access palette
+	appTheme := fyne.CurrentApp().Settings().Theme()
+	var targetLuminance float64
+
+	if themePtr, ok := appTheme.(*myTheme.MyTheme); ok && themePtr.GetConfig().ThemeFile == "dynamic" {
+		// Use palette reference for coherent adjustment
+		cfg := themePtr.GetConfig()
+		palette, err := myTheme.GeneratePalette(cfg.AccentColor,
+			cfg.Saturation,
+			cfg.Contrast,
+			cfg.BaseMode)
+		if err == nil && palette != nil {
+			// Target: make image align with page background luminance
+			r, g, b, _ := palette.PageBackground.RGBA()
+			targetLuminance = (0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)) / 65535.0
+		}
 	}
-	// Light theme: lighten the image
-	return imaging.AdjustBrightness(img, 50)
+
+	if targetLuminance == 0 {
+		// Fallback to default behavior
+		if isDark {
+			return imaging.AdjustBrightness(img, -40.0)
+		}
+		return imaging.AdjustBrightness(img, 30.0)
+	}
+
+	// Calculate adjustment needed to match target luminance
+	// Assuming average image has ~0.5 luminance
+	adjustment := (targetLuminance - 0.5) * 100 // Scale to imaging adjustment range
+	return imaging.AdjustBrightness(img, adjustment)
 }
 
-// adjustColorForTheme adjusts the brightness of an extracted dominant color
-// Dark theme: darken the color (0.6x)
-// Light theme: lighten the color (1.2x)
+// adjustColorForTheme adjusts the extracted dominant color for theme coherence
+// Uses palette accent as reference to ensure gradient matches the UI theme
 func adjustColorForTheme(c color.Color) color.Color {
+	isDark := fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantDark
+
+	// Get the current theme's accent color for coherence
+	appTheme := fyne.CurrentApp().Settings().Theme()
+	if themePtr, ok := appTheme.(*myTheme.MyTheme); ok && themePtr.GetConfig().ThemeFile == "dynamic" {
+		// Blend extracted color with theme accent for coherence
+		cfg := themePtr.GetConfig()
+		palette, err := myTheme.GeneratePalette(cfg.AccentColor, cfg.Saturation, cfg.Contrast, cfg.BaseMode)
+		if err == nil && palette != nil {
+			// Mix 30% extracted color with 70% theme accent
+			return myTheme.BlendColors(c, palette.Accent, 0.30)
+		}
+	}
+
+	// Fallback: standard adjustment
 	r, g, b, a := c.RGBA()
-	// Convert from 16-bit to 8-bit
 	r8, g8, b8 := float64(r>>8), float64(g>>8), float64(b>>8)
 
 	var factor float64
-	if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantDark {
-		factor = 0.6 // Darken for dark theme
+	if isDark {
+		factor = 0.7
 	} else {
-		factor = 1.2 // Lighten for light theme
+		factor = 1.15
 	}
 
 	return color.NRGBA{

@@ -65,8 +65,8 @@ type Palette struct {
 	Hyperlink      color.Color
 }
 
-// GeneratePalette creates a color palette from the given configuration
-// All background colors are derived from the accent color with HSL adjustments
+// GeneratePalette creates a unified color palette from the given configuration
+// Uses consistent formulas across all base modes for coherence
 // Results are cached with 1-minute TTL for performance
 func GeneratePalette(accentHex string, saturation, contrast float64, baseMode string) (*Palette, error) {
 	// Check cache first
@@ -76,191 +76,129 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	paletteCacheMux.RUnlock()
 
 	if found && time.Since(entry.timestamp) < paletteCacheTTL {
-		// Cache hit and not expired
 		return entry.palette, nil
 	}
 
-	accent, err := hexToColor(accentHex)
-	if err != nil {
-		return nil, fmt.Errorf("invalid accent color: %w", err)
-	}
-
-	// Convert accent to HSL for dynamic adjustments
+	// Normalize accent color for the mode (ensures visibility)
+	normalizer := NewColorNormalizer()
+	normalizedHex := normalizer.NormalizeForMode(accentHex, baseMode)
+	accent, _ := hexToColor(normalizedHex)
 	accentH, accentS, accentL := rgbToHslColor(accent)
 
-	// Adapt accent color for dark modes (black/grey) to ensure visibility
-	// When extracting from cover art, dark/unsaturated colors get lost on dark backgrounds
-	baseModeLower := strings.ToLower(baseMode)
-	if baseModeLower == "black" || baseModeLower == "grey" {
-		// For dark modes: ensure accent has minimum brightness
-		// Dark muddy colors (< 0.35 lightness) need to be lightened
-		if accentL < 0.40 {
-			// Lighten dark colors significantly for visibility on dark backgrounds
-			accentL = 0.35 + (accentL * 0.4) // Map 0.0-0.4 -> 0.35-0.51
-		}
-		if accentL < 0.50 {
-			// Further boost for very dark extracted colors
-			accentL = 0.45 + ((accentL - 0.35) * 0.5)
-		}
-		// For light colors (> 0.60 lightness), keep them as-is
-		// Bright accents like yellow need to stay bright for visibility
-		// No clamping applied - user gets the color they selected
-		// Boost saturation for dark modes - but NOT for B&W/monochrome colors
-		// If saturation is very low (< 0.05), the color is intentionally desaturated (B&W)
-		// Only boost colors that already have some saturation
-		if accentS >= 0.05 && accentS < 0.50 {
-			accentS = 0.50 + (accentS * 0.3)
-		} else if accentS >= 0.05 && accentS < 0.70 {
-			accentS = 0.60 + ((accentS - 0.50) * 0.5)
-		}
-		// Clamp and apply
-		accentS = clampFloat(accentS, 0, 1)
-		accentL = clampFloat(accentL, 0, 1)
-		accent = hslToRgb(accentH, accentS, accentL)
-		// Recalculate HSL after modification
-		accentH, accentS, accentL = rgbToHslColor(accent)
-	}
-
-	// Apply safety clamp using the same ranges as UI sliders
-	ranges := GetSliderRanges(baseMode)
-	saturation = clampFloat(saturation, ranges.SatMin, ranges.SatMax)
-	contrast = clampFloat(contrast, ranges.ContrastMin, ranges.ContrastMax)
-
-	// Lightness values calibrated for proper contrast
-	// Background < Surface < Text (dark modes) or Background > Surface > Text (light mode)
-	var bgL, surfL, pageBgL, pageHeaderL, listHeaderL float64
-	var textPrimaryRGB, textSecondaryRGB color.RGBA
-
-	switch strings.ToLower(baseMode) {
-	case "black":
-		// Hybrid: black (AMOLED) at high contrast, grey at low contrast
-		// Interpolate based on contrast: 0.0-0.5 -> grey-like, 0.5-1.0 -> black
-		greyFactor := clampFloat((contrast-0.5)*2, 0, 1) // 0.0 at low contrast, 1.0 at high contrast
-
-		// Black values (high contrast)
-		bgLBlack, surfLBlack, pageBgLBlack := 0.04, 0.10, 0.03
-		pageHeaderLBlack, listHeaderLBlack := 0.14, 0.12
-		satPrimaryBlack, satSecondaryBlack := 0.06, 0.05
-		lumPrimaryBlack, lumSecondaryBlack := 0.98, 0.70
-
-		// Grey values (low contrast)
-		bgLGrey, surfLGrey, pageBgLGrey := 0.12, 0.18, 0.10
-		pageHeaderLGrey, listHeaderLGrey := 0.22, 0.20
-		satPrimaryGrey, satSecondaryGrey := 0.08, 0.06
-		lumPrimaryGrey, lumSecondaryGrey := 0.96, 0.65
-
-		// Interpolate
-		bgL = bgLGrey + (bgLBlack-bgLGrey)*greyFactor
-		surfL = surfLGrey + (surfLBlack-surfLGrey)*greyFactor
-		pageBgL = pageBgLGrey + (pageBgLBlack-pageBgLGrey)*greyFactor
-		pageHeaderL = pageHeaderLGrey + (pageHeaderLBlack-pageHeaderLGrey)*greyFactor
-		listHeaderL = listHeaderLGrey + (listHeaderLBlack-listHeaderLGrey)*greyFactor
-
-		satPrimary := satPrimaryGrey + (satPrimaryBlack-satPrimaryGrey)*greyFactor
-		satSecondary := satSecondaryGrey + (satSecondaryBlack-satSecondaryGrey)*greyFactor
-		lumPrimary := lumPrimaryGrey + (lumPrimaryBlack-lumPrimaryGrey)*greyFactor
-		lumSecondary := lumSecondaryGrey + (lumSecondaryBlack-lumSecondaryGrey)*greyFactor
-
-		textPrimaryRGB = hslToRgb(accentH, satPrimary, lumPrimary)
-		textSecondaryRGB = hslToRgb(accentH, satSecondary, lumSecondary)
-	case "grey":
-		// Grey mode: mid-tone greys with good contrast
-		bgL = 0.12     // Dark grey background (darker)
-		surfL = 0.18   // Lighter grey for surfaces (darker)
-		pageBgL = 0.10 // Slightly darker page bg (darker)
-		pageHeaderL = 0.22
-		listHeaderL = 0.20
-		// Text: accent hue, low saturation
-		textPrimaryRGB = hslToRgb(accentH, 0.08, 0.96)
-		textSecondaryRGB = hslToRgb(accentH, 0.06, 0.65)
-	case "light":
-		// Light mode: light backgrounds with DARK text for contrast
-		bgL = 0.88     // Light grey background (not pure white for less eye strain)
-		surfL = 0.96   // Near-white surface
-		pageBgL = 0.92 // Slightly darker page background
-		pageHeaderL = 0.82
-		listHeaderL = 0.85
-		// Text: accent hue, low saturation, dark
-		textPrimaryRGB = hslToRgb(accentH, 0.12, 0.10)   // Dark text with subtle tint
-		textSecondaryRGB = hslToRgb(accentH, 0.10, 0.35) // Medium grey with tint
-	default: // grey (default dark mode)
-		bgL = 0.12     // Dark grey background (darker)
-		surfL = 0.18   // Lighter grey for surfaces (darker)
-		pageBgL = 0.10 // Slightly darker page bg (darker)
-		pageHeaderL = 0.22
-		listHeaderL = 0.20
-		// Text: accent hue, low saturation
-		textPrimaryRGB = hslToRgb(accentH, 0.08, 0.96)
-		textSecondaryRGB = hslToRgb(accentH, 0.06, 0.65)
-	}
-
-	// Apply contrast inversely to backgrounds (darker in dark modes, lighter in light)
-	// Contrast 1.0 = neutral, >1.0 = more contrast (deeper bg, brighter text), <1.0 = less contrast
-	contrastFactor := contrast
-	isLight := baseMode == "light"
-
-	// Adjust lightness: in dark modes, higher contrast = darker bg; in light mode, higher contrast = lighter bg
-	adjustLightness := func(l float64) float64 {
-		if isLight {
-			// Light mode: higher contrast pushes bg lighter
-			return clampFloat(l+(contrastFactor-1.0)*0.05, 0.75, 1.0)
-		}
-		// Dark modes: higher contrast pushes bg darker
-		return clampFloat(l-(contrastFactor-1.0)*0.08, 0.0, 0.4)
-	}
-
-	// Background saturation: fixed low base with minimal slider influence
-	// This prevents backgrounds from becoming oversaturated and losing the accent relationship
-	baseBgSat := 0.12 // Fixed low saturation for backgrounds (subtle tint)
-	if baseMode == "black" {
-		baseBgSat = 0.06 // Black mode: even more subtle
-	}
-	// Saturation slider has minimal effect on backgrounds (0.5x to 1.5x range)
-	bgSatMultiplier := 0.5 + (saturation * 0.5)
-	bgSat := baseBgSat * bgSatMultiplier
-
-	bg := hslToRgb(accentH, bgSat, adjustLightness(bgL))
-	surf := hslToRgb(accentH, bgSat, adjustLightness(surfL))
-	pageBg := hslToRgb(accentH, bgSat, adjustLightness(pageBgL))
-	pageHeader := hslToRgb(accentH, bgSat, adjustLightness(pageHeaderL))
-	listHeader := hslToRgb(accentH, bgSat, adjustLightness(listHeaderL))
-
-	// Ensure text has enough contrast against Surface background
-	// Calculate surface luminance and adjust text colors if needed
-	surfLum := (float64(surf.R)*0.299 + float64(surf.G)*0.587 + float64(surf.B)*0.114) / 255.0
-	textPrimary := ensureContrast(textPrimaryRGB, surfLum)
-	textSecondary := ensureContrast(textSecondaryRGB, surfLum)
-
-	// Apply saturation to accent (slider affects accent intensity)
+	// Apply saturation/contrast sliders to accent
 	if saturation != 1.0 {
-		accent = applySaturationToHSL(accentH, accentS, accentL, saturation)
-		accentH, accentS, accentL = rgbToHslColor(accent)
+		accentS = clampFloat(accentS*saturation, 0, 1)
+	}
+	if contrast != 1.0 {
+		// Contrast affects lightness: >1 = more extreme, <1 = closer to mid
+		midpoint := 0.5
+		accentL = midpoint + (accentL-midpoint)*contrast
+		accentL = clampFloat(accentL, 0.15, 0.85)
+	}
+	accent = hslToRgb(accentH, accentS, accentL)
+
+	// Determine mode characteristics
+	isLight := strings.ToLower(baseMode) == "light"
+	isBlack := strings.ToLower(baseMode) == "black"
+
+	// Unified palette generation using consistent ratios
+	// All values derived from accent hue with mode-specific lightness
+	var bgL, surfL, pageBgL, pageHeaderL, listHeaderL, textPrimaryL, textSecondaryL float64
+	var bgSat float64
+
+	if isLight {
+		// Light mode: light backgrounds, darker text for contrast
+		bgL = 0.94
+		surfL = 1.0 // Pure white for surfaces
+		pageBgL = 0.96
+		pageHeaderL = 0.90
+		listHeaderL = 0.92
+		textPrimaryL = 0.08   // Darker for better contrast (was 0.12)
+		textSecondaryL = 0.28 // Darker gray (was 0.40)
+		bgSat = 0.03
+	} else if isBlack {
+		// Black/AMOLED mode: pure black to dark grey
+		bgL = 0.02
+		surfL = 0.10
+		pageBgL = 0.04
+		pageHeaderL = 0.14
+		listHeaderL = 0.12
+		textPrimaryL = 0.95
+		textSecondaryL = 0.65
+		bgSat = 0.04
+	} else {
+		// Dark mode (default): dark greys
+		bgL = 0.10
+		surfL = 0.16
+		pageBgL = 0.08
+		pageHeaderL = 0.20
+		listHeaderL = 0.18
+		textPrimaryL = 0.94
+		textSecondaryL = 0.62
+		bgSat = 0.06
 	}
 
-	// Apply contrast adjustment to accent
-	accent = applyContrast(accent, contrast, baseMode == "light")
+	// Apply contrast adjustment to background lightness
+	// Higher contrast = more separation from middle grey
+	contrastDelta := (contrast - 1.0) * 0.08
+	if isLight {
+		// Light mode: higher contrast = lighter backgrounds
+		bgL = clampFloat(bgL+contrastDelta, 0.85, 1.0)
+		surfL = clampFloat(surfL+contrastDelta*0.5, 0.90, 1.0)
+	} else {
+		// Dark mode: higher contrast = darker backgrounds
+		bgL = clampFloat(bgL-contrastDelta, 0.0, 0.25)
+		surfL = clampFloat(surfL-contrastDelta*0.5, 0.05, 0.30)
+	}
 
-	// Ensure minimum contrast between Surface and Accent for hyperlink readability
-	accent = ensureSurfaceContrast(accent, surf, isLight)
+	// Generate colors from accent hue with calculated lightness
+	bg := hslToRgb(accentH, bgSat, bgL)
+	surf := hslToRgb(accentH, bgSat, surfL)
+	pageBg := hslToRgb(accentH, bgSat, pageBgL)
+	pageHeader := hslToRgb(accentH, bgSat, pageHeaderL)
+	listHeader := hslToRgb(accentH, bgSat*0.8, listHeaderL)
 
-	// Calculate text color on accent based on luminance
+	// Text colors: accent hue with low saturation for subtle tint
+	textSat := 0.08
+	if isLight {
+		textSat = 0.12 // Slightly more saturation in light mode for visibility
+	}
+	textPrimaryRGB := hslToRgb(accentH, textSat, textPrimaryL)
+	textSecondaryRGB := hslToRgb(accentH, textSat*0.7, textSecondaryL)
+
+	// Ensure WCAG contrast compliance
+	textPrimary, _ := EnsureContrast(textPrimaryRGB, surf, 4.5)
+	textSecondary, _ := EnsureContrast(textSecondaryRGB, surf, 3.0) // AA for large text
+
+	// Calculate text on accent
 	textOnAccent := calculateTextOnAccent(accent)
 
-	// Generate surface hover color by blending accent with surface
-	// Blend ratio is inversely proportional to surface lightness:
-	// - Light surfaces (light mode): strong hover (24-28% accent)
-	// - Dark surfaces (dark modes): stronger hover (32-36% accent)
-	hoverBlendRatio := 0.36 - (surfLum * 0.08) // 0.36 when black, 0.28 when white
-	surfaceHover := blendColors(accent, surf, clampFloat(hoverBlendRatio, 0.24, 0.40))
+	// Surface hover: blend accent with surface
+	hoverRatio := 0.22
+	if !isLight {
+		hoverRatio = 0.28 // Stronger hover in dark modes
+	}
+	surfaceHover := blendColors(accent, surf, hoverRatio)
 
-	// Menu background: subtle accent tint, half the intensity of SurfaceHover
-	// - Light surfaces: ~12-14% accent
-	// - Dark surfaces: ~16-18% accent
-	menuBlendRatio := 0.18 - (surfLum * 0.04) // 0.18 when black, 0.14 when white
-	menuBackground := blendColors(accent, surf, clampFloat(menuBlendRatio, 0.12, 0.20))
+	// Menu background: subtler blend
+	menuBackground := blendColors(accent, surf, hoverRatio*0.5)
 
-	// Set hyperlink color to accent
+	// Success/Danger: keep standard but tint slightly with accent hue
+	success := hslToRgb(140.0, 0.60, 0.45) // Green
+	danger := hslToRgb(0.0, 0.70, 0.50)    // Red
+
+	// For hyperlinks in light mode, darken the accent to ensure contrast against light backgrounds
 	hyperlink := accent
+	if isLight {
+		// Darken accent for hyperlinks in light mode (70% of original luminance)
+		_, accentS, accentL := rgbToHslColor(accent)
+		hyperlink = hslToRgb(accentH, accentS, accentL*0.65)
+		// Ensure minimum darkness for hyperlinks
+		hLinkLum := (0.299*float64(hyperlink.R) + 0.587*float64(hyperlink.G) + 0.114*float64(hyperlink.B)) / 255.0
+		if hLinkLum > 0.35 {
+			hyperlink = hslToRgb(accentH, accentS, 0.35)
+		}
+	}
 
 	palette := &Palette{
 		Accent:         accent,
@@ -271,8 +209,8 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		TextPrimary:    textPrimary,
 		TextSecondary:  textSecondary,
 		TextOnAccent:   textOnAccent,
-		Success:        color.RGBA{R: 26, G: 179, B: 77, A: 255},
-		Danger:         color.RGBA{R: 204, G: 51, B: 51, A: 255},
+		Success:        success,
+		Danger:         danger,
 		PageBackground: pageBg,
 		PageHeader:     pageHeader,
 		ListHeader:     listHeader,

@@ -88,24 +88,10 @@ func (ce *ColorExtractor) ExtractAccentFromImage(img image.Image) (string, error
 	avgSaturation := totalSaturation / float64(len(samples))
 	avgLuminance := totalLuminance / float64(len(samples))
 
-	// If image is essentially black & white (low saturation), extract subtle metallic accent
-	// The accent is desaturated but has enough lightness to be visible in dark modes
+	// If image is essentially black & white (low saturation), use normalizer for coherent accent
 	if avgSaturation < 0.25 {
-		// For B&W images, create a subtle warm/cool metallic accent
-		// Light B&W -> warm silver (amber tint)
-		// Dark B&W -> steel blue (cool tint)
-		var hue float64
-		if avgLuminance > 0.5 {
-			hue = 40.0 // Warm amber for light images
-		} else {
-			hue = 210.0 // Cool blue for dark images
-		}
-		saturation := 0.001 // Very subtle tint
-		// Always use light luminance so it's visible in dark/black modes
-		// Force light grays (0.70-0.85) regardless of image luminance
-		lightness := 0.70 + (avgLuminance * 0.15) // Range 0.70-0.85
-		accent := hslToRgb(hue, saturation, lightness)
-		return fmt.Sprintf("#%02X%02X%02X", accent.R, accent.G, accent.B), nil
+		// Return placeholder - actual color will be normalized by caller based on theme mode
+		return NormalizeGrayscaleForMode(avgLuminance, "dark"), nil
 	}
 
 	// Filter out low-quality colors (grays, near-blacks, near-whites)
