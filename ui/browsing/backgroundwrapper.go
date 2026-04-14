@@ -1,0 +1,75 @@
+package browsing
+
+import (
+	"image"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+)
+
+// BackgroundWrapper wraps content with a background layer that can display
+// blurred or gradient backgrounds based on cover/artist images.
+type BackgroundWrapper struct {
+	widget.BaseWidget
+
+	bgManager *BackgroundManager
+	Content   fyne.CanvasObject
+	container *fyne.Container
+}
+
+// NewBackgroundWrapper creates a new wrapper with the given content.
+func NewBackgroundWrapper(content fyne.CanvasObject) *BackgroundWrapper {
+	bw := &BackgroundWrapper{
+		Content:   content,
+		bgManager: NewBackgroundManager(),
+	}
+	bw.ExtendBaseWidget(bw)
+	return bw
+}
+
+// ApplyBackground applies a background image with the given mode.
+// Mode can be "blur", "gradient", or "disabled".
+// Automatically detects container size for dynamic resolution processing.
+func (bw *BackgroundWrapper) ApplyBackground(img image.Image, mode string, useBlur bool) {
+	// Auto-detect size from container if available
+	if bw.container != nil {
+		size := bw.container.Size()
+		if size.Width > 0 && size.Height > 0 {
+			bw.bgManager.SetTargetSize(int(size.Width), int(size.Height))
+		}
+	}
+	if mode == "disabled" || img == nil {
+		bw.bgManager.HideImages()
+		bw.bgManager.BackgroundGradient.Hide()
+	} else {
+		bw.bgManager.BackgroundGradient.Show()
+		bw.bgManager.ApplyBackground(img, mode, useBlur)
+	}
+}
+
+// BgManager returns the internal BackgroundManager for advanced usage.
+func (bw *BackgroundWrapper) BgManager() *BackgroundManager {
+	return bw.bgManager
+}
+
+// SetTargetSize sets the target resolution for blur processing.
+// Call this when the window/container size changes for dynamic resolution.
+func (bw *BackgroundWrapper) SetTargetSize(width, height int) {
+	bw.bgManager.SetTargetSize(width, height)
+}
+
+// CreateRenderer creates the renderer for this widget.
+func (bw *BackgroundWrapper) CreateRenderer() fyne.WidgetRenderer {
+	if bw.container == nil {
+		bw.bgManager.SetGradientEndColor(theme.Color(theme.ColorNameBackground))
+		bw.container = container.NewStack(
+			bw.bgManager.BackgroundImgA,
+			bw.bgManager.BackgroundImgB,
+			bw.bgManager.BackgroundGradient,
+			bw.Content,
+		)
+	}
+	return widget.NewSimpleRenderer(bw.container)
+}

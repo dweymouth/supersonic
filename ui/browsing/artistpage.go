@@ -37,12 +37,13 @@ type artistPageState struct {
 	topTrackSort widgets.TracklistSort
 	allTrackSort widgets.TracklistSort
 
-	pool  *util.WidgetPool
-	cfg   *backend.ArtistPageConfig
-	pm    *backend.PlaybackManager
-	mp    mediaprovider.MediaProvider
-	im    *backend.ImageManager
-	contr *controller.Controller
+	pool           *util.WidgetPool
+	cfg            *backend.ArtistPageConfig
+	pm             *backend.PlaybackManager
+	mp             mediaprovider.MediaProvider
+	im             *backend.ImageManager
+	contr          *controller.Controller
+	backgroundMode string // global background mode from AppConfig
 
 	gridScrollPos    float32 // for album grid (or grouped releases)
 	topListScrollPos float32 // for Top Tracks list
@@ -70,14 +71,13 @@ type ArtistPage struct {
 	nowPlayingID    string
 	header          *ArtistPageHeader
 	container       *fyne.Container
-	bgManager       *BackgroundManager
+	bgWrapper       *BackgroundWrapper
+	contentCtr      *fyne.Container // main content area (inside bgWrapper)
 	curArtistImage  image.Image
 
 	// Saved for CreateRenderer
 	viewToggle    *widgets.ToggleText
 	viewToggleRow *fyne.Container
-
-	rendererReady bool
 }
 
 const (
@@ -86,7 +86,7 @@ const (
 	viewAllTracks   = "All Tracks"
 )
 
-func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.WidgetPool, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
+func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, backgroundMode string, pool *util.WidgetPool, pm *backend.PlaybackManager, mp mediaprovider.MediaProvider, im *backend.ImageManager, contr *controller.Controller) *ArtistPage {
 	activeView := 0
 
 	switch cfg.InitialView {
@@ -99,14 +99,15 @@ func NewArtistPage(artistID string, cfg *backend.ArtistPageConfig, pool *util.Wi
 	}
 
 	return newArtistPage(artistPageState{
-		artistID:   artistID,
-		cfg:        cfg,
-		pool:       pool,
-		pm:         pm,
-		mp:         mp,
-		im:         im,
-		contr:      contr,
-		activeView: activeView,
+		artistID:       artistID,
+		cfg:            cfg,
+		backgroundMode: backgroundMode,
+		pool:           pool,
+		pm:             pm,
+		mp:             mp,
+		im:             im,
+		contr:          contr,
+		activeView:     activeView,
 	})
 }
 
@@ -149,11 +150,7 @@ func newArtistPage(state artistPageState) *ArtistPage {
 	a.viewToggle = viewToggle
 	a.viewToggleRow = viewToggleRow
 
-	// Initialize background manager
-	a.bgManager = NewBackgroundManager()
-
-	// Note: a.container is created in CreateRenderer with the Stack layout
-	// so the background images are properly included
+	// Background wrapper will be created in CreateRenderer
 
 	go a.load()
 	return a
@@ -181,33 +178,39 @@ func (a *ArtistPage) Reload() {
 	a.topTracks = nil
 	a.allTracks = nil
 	// Update background based on current config
-	if a.bgManager != nil && a.curArtistImage != nil {
-		useBlur := a.cfg.BackgroundMode == "blur"
-		a.bgManager.ApplyBackground(a.curArtistImage, a.cfg.BackgroundMode, useBlur)
+	if a.bgWrapper != nil {
+		if a.backgroundMode != "disabled" && a.curArtistImage != nil {
+			useBlur := a.backgroundMode == "blur"
+			a.bgWrapper.ApplyBackground(a.curArtistImage, a.backgroundMode, useBlur)
+			a.header.SetTransparentBackground(true)
+			if a.tracklistCtr != nil {
+				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+				tl.SetHeaderTransparent(true)
+			}
+		} else {
+			a.bgWrapper.ApplyBackground(nil, "disabled", false)
+			a.header.SetTransparentBackground(false)
+			if a.tracklistCtr != nil {
+				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+				tl.SetHeaderTransparent(false)
+			}
+		}
 	}
 	go a.load()
 }
 
 // onImageLoaded receives the loaded artist image and applies background
 func (a *ArtistPage) onImageLoaded(img image.Image) {
-	log.Printf("[ArtistPage] onImageLoaded called, img=%v, rendererReady=%v", img != nil, a.rendererReady)
-	if a.bgManager == nil {
-		log.Printf("[ArtistPage] bgManager is nil! This shouldn't happen.")
-		return
-	}
 	// Store the image
 	a.curArtistImage = img
-	// Only apply if renderer is ready (container has size)
-	if !a.rendererReady {
-		log.Printf("[ArtistPage] Renderer not ready yet, deferring background application")
+	// Only apply if wrapper is ready (renderer created)
+	if a.bgWrapper == nil {
 		return
 	}
-	useBlur := a.cfg.BackgroundMode == "blur"
-	log.Printf("[ArtistPage] Applying background: mode=%s, useBlur=%v", a.cfg.BackgroundMode, useBlur)
-	a.bgManager.ApplyIfChanged(img, a.curArtistImage, a.cfg.BackgroundMode, useBlur)
+	useBlur := a.backgroundMode == "blur"
+	a.bgWrapper.ApplyBackground(img, a.backgroundMode, useBlur)
 	// Make header and tracklist transparent when background is active
-	if a.cfg.BackgroundMode != "disabled" {
-		log.Printf("[ArtistPage] Setting header and tracklist transparent from onImageLoaded")
+	if a.backgroundMode != "disabled" {
 		a.header.SetTransparentBackground(true)
 		if a.tracklistCtr != nil {
 			tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
@@ -453,14 +456,12 @@ func (a *ArtistPage) showAlbumGrid(reSort bool) {
 		}
 	}
 	a.sortButton.Show()
-	// Objects[3] is the main content container (after background layers)
 	if useGroupedReleases {
-		a.container.Objects[3].(*fyne.Container).Objects[0] = a.groupedReleases
-		a.container.Objects[3].Refresh()
+		a.contentCtr.Objects[0] = a.groupedReleases
 	} else {
-		a.container.Objects[3].(*fyne.Container).Objects[0] = a.albumGrid
+		a.contentCtr.Objects[0] = a.albumGrid
 	}
-	a.container.Objects[3].Refresh()
+	a.contentCtr.Refresh()
 }
 
 func (a *ArtistPage) showTopTracks() {
@@ -481,8 +482,8 @@ func (a *ArtistPage) showTopTracks() {
 	}
 	a.activeView = 1
 	tl.SetSorting(a.topTrackSort)
-	a.container.Objects[3].(*fyne.Container).Objects[0] = a.tracklistCtr
-	a.container.Objects[3].Refresh()
+	a.contentCtr.Objects[0] = a.tracklistCtr
+	a.contentCtr.Refresh()
 
 	updateTracklist := func(ts []*mediaprovider.Track) {
 		tl.SetTracks(ts)
@@ -533,8 +534,8 @@ func (a *ArtistPage) showAllTracks() {
 	}
 	a.activeView = 2
 	tl.SetSorting(a.allTrackSort)
-	a.container.Objects[3].(*fyne.Container).Objects[0] = a.tracklistCtr
-	a.container.Objects[3].Refresh()
+	a.contentCtr.Objects[0] = a.tracklistCtr
+	a.contentCtr.Refresh()
 
 	updateTracklist := func(ts []*mediaprovider.Track) {
 		tl.SetTracks(ts)
@@ -586,7 +587,7 @@ func (a *ArtistPage) obtainNewTracklist() *widgets.Tracklist {
 		a.cfg.TracklistColumns = cols
 	}
 	// Set tracklist header transparency based on background mode
-	if a.cfg.BackgroundMode != "" && a.cfg.BackgroundMode != "disabled" {
+	if a.backgroundMode != "" && a.backgroundMode != "disabled" {
 		tl.SetHeaderTransparent(true)
 	} else {
 		tl.SetHeaderTransparent(false)
@@ -628,42 +629,31 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 	a.ExtendBaseWidget(a)
 	if a.container == nil {
 		// Create main content with view toggle row
-		mainContent := container.NewBorder(
+		a.contentCtr = container.NewBorder(
 			container.New(&layout.CustomPaddedLayout{LeftPadding: 15, RightPadding: 15, TopPadding: 15, BottomPadding: 10}, a.header),
 			nil, nil, nil,
 			container.NewBorder(a.viewToggleRow, nil, nil, nil, layout.NewSpacer()))
 
-		// Stack background under content (same order as nowplayingpage)
-		a.container = container.NewStack(
-			a.bgManager.BackgroundImgA,
-			a.bgManager.BackgroundImgB,
-			a.bgManager.BackgroundGradient,
-			mainContent,
-		)
-		// Set gradient end color to theme background
-		a.bgManager.SetGradientEndColor(theme.Color(theme.ColorNameBackground))
-	}
-	a.rendererReady = true
-	// Apply background if we have a pending image
-	if a.curArtistImage != nil && a.cfg.BackgroundMode != "disabled" {
-		useBlur := a.cfg.BackgroundMode == "blur"
-		a.bgManager.ApplyBackground(a.curArtistImage, a.cfg.BackgroundMode, useBlur)
-		// Make header transparent so background shows through
-		a.header.SetTransparentBackground(true)
-		if a.tracklistCtr != nil {
-			tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
-			tl.SetHeaderTransparent(true)
+		// Wrap with background
+		a.bgWrapper = NewBackgroundWrapper(a.contentCtr)
+		// Apply background if we have a pending image
+		if a.curArtistImage != nil && a.backgroundMode != "disabled" {
+			useBlur := a.backgroundMode == "blur"
+			a.bgWrapper.ApplyBackground(a.curArtistImage, a.backgroundMode, useBlur)
+			a.header.SetTransparentBackground(true)
+			if a.tracklistCtr != nil {
+				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+				tl.SetHeaderTransparent(true)
+			}
+		} else {
+			a.bgWrapper.ApplyBackground(nil, "disabled", false)
+			a.header.SetTransparentBackground(false)
+			if a.tracklistCtr != nil {
+				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+				tl.SetHeaderTransparent(false)
+			}
 		}
-	} else {
-		// Background disabled - hide background layers and restore opaque headers
-		a.bgManager.hideImages()
-		a.bgManager.BackgroundGradient.Hidden = true
-		a.bgManager.BackgroundGradient.Refresh()
-		a.header.SetTransparentBackground(false)
-		if a.tracklistCtr != nil {
-			tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
-			tl.SetHeaderTransparent(false)
-		}
+		a.container = container.NewStack(a.bgWrapper)
 	}
 	return widget.NewSimpleRenderer(a.container)
 }
@@ -955,7 +945,7 @@ func (a *ArtistPageHeader) CreateRenderer() fyne.WidgetRenderer {
 		a.bgRect.CornerRadius = theme.InputRadiusSize()
 
 		// Check if page has background enabled - if so, hide the header background
-		backgroundEnabled := a.artistPage != nil && a.artistPage.cfg != nil && a.artistPage.cfg.BackgroundMode != "" && a.artistPage.cfg.BackgroundMode != "disabled"
+		backgroundEnabled := a.artistPage != nil && a.artistPage.backgroundMode != "" && a.artistPage.backgroundMode != "disabled"
 		if a.TransparentBackground || backgroundEnabled {
 			a.bgRect.Hide()
 		}

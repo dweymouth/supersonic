@@ -48,7 +48,7 @@ type NowPlayingPage struct {
 	alreadyLoaded bool
 
 	// widgets for render
-	bgManager      *BackgroundManager
+	bgWrapper      *BackgroundWrapper
 	queueList      *widgets.PlayQueueList
 	relatedList    *widgets.PlayQueueList
 	lyricsViewer   *widgets.LyricsViewer
@@ -233,21 +233,20 @@ func (a *NowPlayingPage) CreateRenderer() fyne.WidgetRenderer {
 		} else if initialTab == 2 /*related*/ {
 			a.updateRelatedList()
 		}
-		a.bgManager = NewBackgroundManager()
-		c := theme.Color(myTheme.ColorNamePageBackground)
-		a.bgManager.BackgroundGradient.StartColor = c
-		a.bgManager.BackgroundGradient.EndColor = c
-
 		mainContent := container.NewGridWithColumns(2,
 			container.New(paddedLayout, a.card),
 			container.New(paddedLayout,
 				util.AddHeaderBackgroundWithColorName(
 					a.tabs, myTheme.ColorNameNowPlayingPanel)))
+
+		// Wrap with background
+		a.bgWrapper = NewBackgroundWrapper(mainContent)
+		c := theme.Color(myTheme.ColorNamePageBackground)
+		a.bgWrapper.BgManager().BackgroundGradient.StartColor = c
+		a.bgWrapper.BgManager().BackgroundGradient.EndColor = c
+
 		a.container = container.NewStack(
-			a.bgManager.BackgroundImgA,
-			a.bgManager.BackgroundImgB,
-			a.bgManager.BackgroundGradient,
-			mainContent,
+			a.bgWrapper,
 			container.NewVBox(
 				layout.NewSpacer(),
 				container.NewBorder(nil, nil, util.NewHSpace(1), util.NewHSpace(1),
@@ -322,8 +321,12 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 	if err != nil {
 		log.Printf("error loading cover art: %v\n", err)
 	}
-	if a.bgManager != nil {
-		a.bgManager.ApplyIfChanged(img, a.curCoverImage, "", a.conf.UseBackgroundImage)
+	if a.bgWrapper != nil {
+		mode := ""
+		if !a.conf.UseBackgroundImage {
+			mode = "disabled"
+		}
+		a.bgWrapper.ApplyBackground(img, mode, a.conf.UseBackgroundImage)
 	}
 	a.curCoverImage = img
 	fyne.Do(func() { a.card.SetCoverImage(img) })
@@ -407,16 +410,15 @@ func (a *NowPlayingPage) updateRelatedList() {
 func (a *NowPlayingPage) Reload() {
 	// Update background based on current config and cover image
 	// Guard against nil widgets during construction
-	if a.bgManager == nil {
+	if a.bgWrapper == nil {
 		return
 	}
 
-	if a.curCoverImage != nil {
-		a.bgManager.ApplyBackground(a.curCoverImage, "", a.conf.UseBackgroundImage)
-	} else if !a.conf.UseBackgroundImage {
-		// No image and no background setting - just hide the images
-		a.bgManager.hideImages()
+	mode := ""
+	if !a.conf.UseBackgroundImage {
+		mode = "disabled"
 	}
+	a.bgWrapper.ApplyBackground(a.curCoverImage, mode, a.conf.UseBackgroundImage)
 }
 
 func (a *NowPlayingPage) OnPlayQueueChange() {
@@ -493,11 +495,12 @@ func (a *NowPlayingPage) UnselectAll() {
 }
 
 func (a *NowPlayingPage) Refresh() {
-	if a.bgManager != nil && a.bgManager.BackgroundGradient != nil {
+	if a.bgWrapper != nil {
 		c := theme.Color(myTheme.ColorNamePageBackground)
-		if c != a.bgManager.BackgroundGradient.EndColor {
-			a.bgManager.BackgroundGradient.EndColor = c
-			a.bgManager.BackgroundGradient.Refresh()
+		bg := a.bgWrapper.BgManager().BackgroundGradient
+		if c != bg.EndColor {
+			bg.EndColor = c
+			bg.Refresh()
 		}
 	}
 	a.BaseWidget.Refresh()

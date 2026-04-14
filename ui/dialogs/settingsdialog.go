@@ -982,35 +982,34 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	})
 	nowPlayingBackground.Checked = s.config.NowPlayingConfig.UseBackgroundImage
 
-	// Background mode for Album and Artist pages (shared setting)
+	// Background mode for Album, Artist and Playlist pages (shared setting)
 	backgroundModeOptions := []string{lang.L("Disabled"), lang.L("Gradient"), lang.L("Blur")}
-	albumArtistBackground := widget.NewRadioGroup(backgroundModeOptions, func(choice string) {
+	backgroundModeRadio := widget.NewRadioGroup(backgroundModeOptions, func(choice string) {
 		mode := "disabled"
 		if choice == lang.L("Gradient") {
 			mode = "gradient"
 		} else if choice == lang.L("Blur") {
 			mode = "blur"
 		}
-		s.config.AlbumPage.BackgroundMode = mode
-		s.config.ArtistPage.BackgroundMode = mode
+		s.config.Application.BackgroundMode = mode
 		if s.OnPageNeedsRefresh != nil {
 			s.OnPageNeedsRefresh()
 		}
 	})
-	albumArtistBackground.Horizontal = true
-	albumArtistBackground.Required = true
+	backgroundModeRadio.Horizontal = true
+	backgroundModeRadio.Required = true
 	// Set initial value
-	initialMode := s.config.AlbumPage.BackgroundMode
+	initialMode := s.config.Application.BackgroundMode
 	if initialMode == "" {
 		initialMode = "disabled"
 	}
 	switch initialMode {
 	case "gradient":
-		albumArtistBackground.Selected = lang.L("Gradient")
+		backgroundModeRadio.Selected = lang.L("Gradient")
 	case "blur":
-		albumArtistBackground.Selected = lang.L("Blur")
+		backgroundModeRadio.Selected = lang.L("Blur")
 	default:
-		albumArtistBackground.Selected = lang.L("Disabled")
+		backgroundModeRadio.Selected = lang.L("Disabled")
 	}
 
 	useRoundedImageCorners := widget.NewCheck(lang.L("Use rounded image corners"), func(b bool) {
@@ -1081,7 +1080,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		s.newSectionSeparator(),
 		useWaveformSeekbar,
 		nowPlayingBackground,
-		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Album/Artist page background")), nil, albumArtistBackground),
+		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Page background mode")), nil, backgroundModeRadio),
 		useRoundedImageCorners,
 		s.newSectionSeparator(),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("Application font"), Style: util.BoldRichTextStyle}),
