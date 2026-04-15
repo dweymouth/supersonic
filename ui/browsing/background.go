@@ -73,15 +73,20 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 	b.ctx, b.cancel = context.WithCancel(context.Background())
 
 	// Clear cache if image changed
+	b.mu.Lock()
 	if img != b.CachedBlurredImage && img != nil {
 		b.CachedBlurredImage = nil
 		b.CachedDominantColor = nil
 	}
+	b.mu.Unlock()
 
 	// If blur is requested (explicit mode or useBlur flag), apply blurred background
 	if mode == "blur" || useBlur {
-		if b.CachedBlurredImage != nil {
-			b.applyBlurredBackground(b.CachedBlurredImage)
+		b.mu.Lock()
+		cachedImg := b.CachedBlurredImage
+		b.mu.Unlock()
+		if cachedImg != nil {
+			b.applyBlurredBackground(cachedImg)
 			return
 		}
 		go func(ctx context.Context) {
@@ -113,10 +118,13 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 		}(b.ctx)
 	} else {
 		// Default to gradient (handles mode="gradient" and mode="" for nowplaying)
-		if b.CachedDominantColor != nil {
+		b.mu.Lock()
+		cachedColor := b.CachedDominantColor
+		b.mu.Unlock()
+		if cachedColor != nil {
 			// Even for cached colors, re-apply theme adjustment
 			// Theme may have changed since color was cached
-			adjusted := adjustColorForTheme(b.CachedDominantColor)
+			adjusted := adjustColorForTheme(cachedColor)
 			b.applyGradientBackground(adjusted)
 			return
 		}
@@ -230,8 +238,10 @@ func (b *BackgroundManager) ensureGradientEndColor() {
 // ApplyIfChanged checks if image changed, clears cache, and applies background if not nil
 func (b *BackgroundManager) ApplyIfChanged(newImg, currentImg image.Image, mode string, useBlur bool) {
 	if newImg != currentImg {
+		b.mu.Lock()
 		b.CachedBlurredImage = nil
 		b.CachedDominantColor = nil
+		b.mu.Unlock()
 	}
 	if newImg != nil {
 		b.ApplyBackground(newImg, mode, useBlur)

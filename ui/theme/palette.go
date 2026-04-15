@@ -6,27 +6,7 @@ import (
 	"image/color"
 	"math"
 	"strings"
-	"sync"
-	"time"
 )
-
-// Cache entry with timestamp for TTL
-type paletteCacheEntry struct {
-	palette   *Palette
-	timestamp time.Time
-}
-
-// Global cache with 1-minute TTL
-var (
-	paletteCache    = make(map[string]paletteCacheEntry)
-	paletteCacheMux sync.RWMutex
-	paletteCacheTTL = 1 * time.Minute
-)
-
-// generateCacheKey creates a unique key for the palette parameters
-func generateCacheKey(accentHex string, saturation, contrast float64, baseMode string) string {
-	return fmt.Sprintf("%s|%.3f|%.3f|%s", accentHex, saturation, contrast, baseMode)
-}
 
 // SliderRanges defines the min/max ranges for saturation and contrast sliders per base mode
 type SliderRanges struct {
@@ -66,19 +46,9 @@ type Palette struct {
 }
 
 // GeneratePalette creates a unified color palette from the given configuration
-// Uses consistent formulas across all base modes for coherence
-// Results are cached with 1-minute TTL for performance
+// Uses consistent formulas across all base modes for coherence.
+// Note: Caching is handled by MyTheme.cachedPalette, not here, to avoid double caching.
 func GeneratePalette(accentHex string, saturation, contrast float64, baseMode string) (*Palette, error) {
-	// Check cache first
-	cacheKey := generateCacheKey(accentHex, saturation, contrast, baseMode)
-	paletteCacheMux.RLock()
-	entry, found := paletteCache[cacheKey]
-	paletteCacheMux.RUnlock()
-
-	if found && time.Since(entry.timestamp) < paletteCacheTTL {
-		return entry.palette, nil
-	}
-
 	// Normalize accent color for the mode (ensures visibility)
 	normalizer := NewColorNormalizer()
 	normalizedHex := normalizer.NormalizeForMode(accentHex, baseMode)
@@ -219,14 +189,6 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		Hyperlink:      hyperlink,
 	}
 
-	// Store in cache
-	paletteCacheMux.Lock()
-	paletteCache[cacheKey] = paletteCacheEntry{
-		palette:   palette,
-		timestamp: time.Now(),
-	}
-	paletteCacheMux.Unlock()
-
 	return palette, nil
 }
 
@@ -288,36 +250,6 @@ func parseHexByte(s string) (uint8, error) {
 	return b[0], nil
 }
 
-// applyContrast adjusts the contrast of a color
-// For bright colors, preserves original to avoid crushing bright accents
-func applyContrast(c color.RGBA, contrast float64, isLightMode bool) color.RGBA {
-	// Calculate luminance (0-255 scale)
-	luminance := 0.299*float64(c.R) + 0.587*float64(c.G) + 0.114*float64(c.B)
-
-	// For bright colors (> 55% luminance), skip contrast adjustment entirely
-	// This preserves bright accents like cyan, yellow, and green (#00FF00 luminance=150)
-	if luminance > 140 { // 140 = ~0.55 * 255
-		return c // Return original color unchanged
-	}
-
-	var multiplier float64
-	if isLightMode {
-		// Light mode: contrast slider 0.0-0.5 maps to multiplier 0.92-1.0
-		// This provides very subtle adjustment, preserving color brightness
-		multiplier = 0.92 + (contrast * 0.16) // 0.0->0.92, 0.5->1.0
-	} else {
-		// Dark mode: contrast slider 0.0-1.0 maps to multiplier 0.5-1.0
-		// Minimum 0.5 ensures color is never crushed to black
-		multiplier = 0.5 + (contrast * 0.5) // 0.0->0.5, 1.0->1.0
-	}
-
-	r := clamp(float64(c.R) * multiplier)
-	g := clamp(float64(c.G) * multiplier)
-	b := clamp(float64(c.B) * multiplier)
-
-	return color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: c.A}
-}
-
 // calculateTextOnAccent determines the best text color (black or white) based on luminance
 func calculateTextOnAccent(c color.RGBA) color.Color {
 	// Calculate luminance using standard formula
@@ -327,82 +259,4 @@ func calculateTextOnAccent(c color.RGBA) color.Color {
 		return color.Black
 	}
 	return color.White
-}
-
-// ensureContrast adjusts text color to ensure minimum contrast against background
-// Returns darkened text for light backgrounds, lightened text for dark backgrounds
-func ensureContrast(textColor color.RGBA, bgLum float64) color.RGBA {
-	// Calculate text luminance
-	textLum := (float64(textColor.R)*0.299 + float64(textColor.G)*0.587 + float64(textColor.B)*0.114) / 255.0
-
-	// Determine if we need dark or light text based on background
-	if bgLum > 0.5 {
-		// Light background: ensure text is dark enough (luminance < 0.3)
-		if textLum > 0.3 {
-			// Text too light for light background, darken it
-			factor := 0.3 / textLum
-			return color.RGBA{
-				R: uint8(float64(textColor.R) * factor),
-				G: uint8(float64(textColor.G) * factor),
-				B: uint8(float64(textColor.B) * factor),
-				A: textColor.A,
-			}
-		}
-	} else {
-		// Dark background: ensure text is light enough (luminance > 0.6)
-		if textLum < 0.6 {
-			// Text too dark for dark background, lighten it
-			factor := 0.6 / textLum
-			if factor > 3.0 {
-				factor = 3.0 // Cap maximum brightening
-			}
-			return color.RGBA{
-				R: uint8(clampFloat(float64(textColor.R)*factor, 0, 255)),
-				G: uint8(clampFloat(float64(textColor.G)*factor, 0, 255)),
-				B: uint8(clampFloat(float64(textColor.B)*factor, 0, 255)),
-				A: textColor.A,
-			}
-		}
-	}
-	return textColor
-}
-
-// ensureSurfaceContrast guarantees minimum contrast between Surface and Accent colors
-// This ensures hyperlinks remain readable regardless of the selected accent color
-func ensureSurfaceContrast(accent, surface color.Color, isLight bool) color.RGBA {
-	ar, ag, ab, _ := accent.RGBA()
-	sr, sg, sb, _ := surface.RGBA()
-
-	// Calculate luminances (0-1 range)
-	accentLum := (0.299*float64(ar) + 0.587*float64(ag) + 0.114*float64(ab)) / 65535.0
-	surfaceLum := (0.299*float64(sr) + 0.587*float64(sg) + 0.114*float64(sb)) / 65535.0
-
-	// Minimum contrast threshold (30% luminance difference)
-	const minContrast = 0.30
-
-	diff := accentLum - surfaceLum
-	if diff < 0 {
-		diff = -diff
-	}
-
-	// If contrast is sufficient, return accent unchanged
-	if diff >= minContrast {
-		return color.RGBA{R: uint8(ar >> 8), G: uint8(ag >> 8), B: uint8(ab >> 8), A: 255}
-	}
-
-	// Need to adjust accent for more contrast
-	accentRGB := color.RGBA{R: uint8(ar >> 8), G: uint8(ag >> 8), B: uint8(ab >> 8), A: 255}
-
-	if isLight {
-		// Light mode: Surface is light (~0.88-0.96), accent needs to be darker
-		// Darken accent significantly to contrast against light surface
-		return darkenColor(accentRGB, 0.6).(color.RGBA)
-	}
-	// Dark mode: Surface is dark (~0.10-0.18), accent needs to be lighter
-	// Lighten accent significantly to contrast against dark surface
-	return brightenColor(accentRGB, 0.8).(color.RGBA)
-}
-
-func clamp(v float64) float64 {
-	return math.Max(0, math.Min(255, v))
 }

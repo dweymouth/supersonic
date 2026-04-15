@@ -690,16 +690,21 @@ func (c *Controller) extractAndTransitionAccentFromCover() {
 		return
 	}
 
+	// Get base mode for grayscale handling
+	baseMode := "dark" // default fallback
+	if theme, ok := fyne.CurrentApp().Settings().Theme().(*myTheme.MyTheme); ok {
+		baseMode = theme.GetConfig().BaseMode
+	}
+
 	// Extract dominant color
 	extractor := myTheme.NewColorExtractor()
-	extractedHex, err := extractor.ExtractAccentFromImage(coverImg)
+	extractedHex, err := extractor.ExtractAccentFromImage(coverImg, baseMode)
 	if err != nil {
 		return
 	}
 
 	// Normalize extracted color for current theme mode to ensure visibility
 	if theme, ok := fyne.CurrentApp().Settings().Theme().(*myTheme.MyTheme); ok {
-		baseMode := theme.GetConfig().BaseMode
 		normalizer := myTheme.NewColorNormalizer()
 		accentHex := normalizer.NormalizeForMode(extractedHex, baseMode)
 		theme.SetAccentColor(accentHex)

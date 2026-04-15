@@ -21,8 +21,9 @@ func NewColorExtractor() *ColorExtractor {
 }
 
 // ExtractAccentFromImage extracts a vibrant accent color from an image.
+// baseMode is used for grayscale images to generate an appropriate accent ("dark", "light", or "black").
 // Returns hex color string (e.g., "#FF6A00") or error.
-func (ce *ColorExtractor) ExtractAccentFromImage(img image.Image) (string, error) {
+func (ce *ColorExtractor) ExtractAccentFromImage(img image.Image, baseMode string) (string, error) {
 	if img == nil {
 		return "", fmt.Errorf("nil image")
 	}
@@ -91,7 +92,7 @@ func (ce *ColorExtractor) ExtractAccentFromImage(img image.Image) (string, error
 	// If image is essentially black & white (low saturation), use normalizer for coherent accent
 	if avgSaturation < 0.25 {
 		// Return placeholder - actual color will be normalized by caller based on theme mode
-		return NormalizeGrayscaleForMode(avgLuminance, "dark"), nil
+		return NormalizeGrayscaleForMode(avgLuminance, baseMode), nil
 	}
 
 	// Filter out low-quality colors (grays, near-blacks, near-whites)

@@ -123,12 +123,6 @@ func boostSaturation(r, g, b uint8, factor float64) (uint8, uint8, uint8) {
 	return c.R, c.G, c.B
 }
 
-// applySaturationToHSL applies a saturation multiplier to HSL values and returns RGB
-func applySaturationToHSL(h, s, l, saturationMultiplier float64) color.RGBA {
-	newSat := clampFloat(s*saturationMultiplier, 0, 1)
-	return HslToRgb(h, newSat, l)
-}
-
 // brightenColor brightens a color by the given fraction (0-1)
 func brightenColor(c color.Color, fraction float64) color.Color {
 	r, g, b, a := c.RGBA()
