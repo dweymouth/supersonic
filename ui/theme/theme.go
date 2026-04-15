@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dweymouth/supersonic/backend"
@@ -21,6 +22,8 @@ import (
 )
 
 const (
+	ThemeFileDynamic = "dynamic" // Special theme file name for dynamic accent color theme
+
 	ColorNameListHeader        fyne.ThemeColorName = "ListHeader"
 	ColorNamePageBackground    fyne.ThemeColorName = "PageBackground"
 	ColorNamePageHeader        fyne.ThemeColorName = "PageHeader"
@@ -106,6 +109,7 @@ type MyTheme struct {
 		contrast    float64
 		baseMode    string
 	}
+	paletteMu sync.Mutex // protects cachedPalette and cachedPaletteConfig
 }
 
 var _ fyne.Theme = (*MyTheme)(nil)
@@ -122,13 +126,17 @@ func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
 // ReloadThemeFile reloads the currently loaded theme file.
 func (m *MyTheme) ReloadThemeFile() {
 	m.loadedThemeFile = nil
+	m.paletteMu.Lock()
 	m.cachedPalette = nil
+	m.paletteMu.Unlock()
 }
 
 // InvalidatePaletteCache clears only the palette cache for instant accent updates
 // without the overhead of full theme reload. Use this when only accent settings change.
 func (m *MyTheme) InvalidatePaletteCache() {
+	m.paletteMu.Lock()
 	m.cachedPalette = nil
+	m.paletteMu.Unlock()
 }
 
 // GetConfig returns the current theme configuration for UI synchronization
@@ -140,7 +148,6 @@ func (m *MyTheme) GetConfig() *backend.ThemeConfig {
 // This invalidates the cache and applies the new color instantly.
 func (m *MyTheme) SetAccentColor(accentHex string) {
 	m.config.AccentColor = accentHex
-	m.cachedPalette = nil
 
 	// Generate new palette and apply immediately
 	palette, err := GeneratePalette(accentHex, m.config.Saturation, m.config.Contrast, m.config.BaseMode)
@@ -148,7 +155,10 @@ func (m *MyTheme) SetAccentColor(accentHex string) {
 		log.Printf("Failed to generate palette: %v", err)
 		return
 	}
+
+	m.paletteMu.Lock()
 	m.cachedPalette = palette
+	m.paletteMu.Unlock()
 
 	// Notify Fyne to invalidate cache and redraw all widgets
 	fyne.Do(func() {
@@ -246,7 +256,8 @@ func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette
 
 func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
 	// Use custom accent palette if Dynamic theme is selected
-	if m.config.ThemeFile == "dynamic" {
+	if m.config.ThemeFile == ThemeFileDynamic {
+		m.paletteMu.Lock()
 		// Check if we need to regenerate the palette
 		if m.cachedPalette == nil ||
 			m.cachedPaletteConfig.accentColor != m.config.AccentColor ||
@@ -266,10 +277,12 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 				m.cachedPaletteConfig.baseMode = m.config.BaseMode
 			}
 		}
+		palette := m.cachedPalette
+		m.paletteMu.Unlock()
 
-		// Use cached palette
-		if m.cachedPalette != nil {
-			return m.getColorFromPalette(name, m.cachedPalette)
+		// Use cached palette outside lock
+		if palette != nil {
+			return m.getColorFromPalette(name, palette)
 		}
 	}
 

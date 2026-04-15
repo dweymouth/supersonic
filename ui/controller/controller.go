@@ -55,7 +55,6 @@ type Controller struct {
 	SelectAllPageFunc   func()
 	UnselectAllPageFunc func()
 	ToastProvider       ToastProvider
-	DeepRefreshFunc     func()
 
 	popUpQueue         *widget.PopUp
 	popUpQueueList     *widgets.PlayQueueList
@@ -709,12 +708,4 @@ func (c *Controller) extractAndTransitionAccentFromCover() {
 		accentHex := normalizer.NormalizeForMode(extractedHex, baseMode)
 		theme.SetAccentColor(accentHex)
 	}
-}
-
-// SetupAutoCoverExtraction is disabled - manual extraction only via settings dialog
-func (c *Controller) SetupAutoCoverExtraction() {
-	// Auto-extraction disabled. There's no good transition feeling
-	// without killing the CPU. but the idea is nice. Can be implemented
-	// but there will be some lags because it needs to do heavy re rendering.
-	// Use manual "Extract from Cover" button in settings dialog instead
 }

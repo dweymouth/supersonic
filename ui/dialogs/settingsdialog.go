@@ -671,7 +671,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	i, selIndex := 2, 0
 
 	// Check for Dynamic theme first
-	if s.config.Theme.ThemeFile == "dynamic" {
+	if s.config.Theme.ThemeFile == myTheme.ThemeFileDynamic {
 		selIndex = 1
 	}
 
@@ -717,7 +717,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	themeFileSelect.OnChanged = func(_ string) {
 		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
 		// Update base mode if switching to dynamic
-		if s.config.Theme.ThemeFile == "dynamic" {
+		if s.config.Theme.ThemeFile == myTheme.ThemeFileDynamic {
 			updateBaseMode(themeModeSelect.Selected)
 		}
 		if s.OnThemeSettingChanged != nil {
@@ -728,7 +728,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	themeModeSelect.OnChanged = func(value string) {
 		s.config.Theme.Appearance = value
 		// If in dynamic mode, also update baseMode
-		if s.config.Theme.ThemeFile == "dynamic" {
+		if s.config.Theme.ThemeFile == myTheme.ThemeFileDynamic {
 			updateBaseMode(value)
 		}
 		if s.OnThemeSettingChanged != nil {
@@ -737,7 +737,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	}
 
 	// Set initial base mode if dynamic is selected
-	if s.config.Theme.ThemeFile == "dynamic" {
+	if s.config.Theme.ThemeFile == myTheme.ThemeFileDynamic {
 		updateBaseMode(s.config.Theme.Appearance)
 	}
 
@@ -920,7 +920,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	themeFileSelect.OnChanged = func(name string) {
 		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
 		// Update base mode if switching to dynamic
-		if s.config.Theme.ThemeFile == "dynamic" {
+		if s.config.Theme.ThemeFile == myTheme.ThemeFileDynamic {
 			updateBaseMode(themeModeSelect.Selected)
 		}
 		updateAccentControls()

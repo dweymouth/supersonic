@@ -72,7 +72,6 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		m.SetupSystemTrayMenu(displayAppName, fyneApp)
 	}
 	m.Controller = controller.New(app, appVersion, m.Window)
-	m.Controller.SetupAutoCoverExtraction()
 	m.BrowsingPane = browsing.NewBrowsingPane(app.PlaybackManager, m.Controller, func() { m.Router.NavigateTo(m.StartupPage()) })
 	m.Sidebar = NewSidebar(m.Controller, m.App.PlaybackManager, m.App.ImageManager, m.App.LyricsManager)
 	if m.App.Config.Application.SidebarTab == "Lyrics" {
@@ -88,14 +87,12 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 	m.Controller.ReloadFunc = m.BrowsingPane.Reload
 	m.Controller.CurPageFunc = m.BrowsingPane.CurrentPage
 	m.Controller.RefreshPageFunc = func() {
-		m.BrowsingPane.RefreshPage()
 		m.BrowsingPane.Reload()
 		m.BottomPanel.Refresh()
 	}
 	m.Controller.SelectAllPageFunc = m.BrowsingPane.SelectAll
 	m.Controller.UnselectAllPageFunc = m.BrowsingPane.UnselectAll
 	m.Controller.ToastProvider = m.ToastOverlay
-	m.Controller.DeepRefreshFunc = m.DeepRefresh
 
 	if runtime.GOOS == "darwin" {
 		// Fyne will extract out an "About" menu item and
@@ -555,44 +552,6 @@ func (m *MainWindow) addShortcuts() {
 	m.Canvas().SetOnMouseForward(m.BrowsingPane.GoForward)
 }
 
-// deepRefresh recursively forces all canvas objects to repaint immediately
-// Simple approach: recursive Refresh() calls without expensive renderer creation
-func deepRefresh(obj fyne.CanvasObject) {
-	if obj == nil {
-		return
-	}
-
-	// Handle container types by recursing into children
-	switch c := obj.(type) {
-	case *fyne.Container:
-		for _, child := range c.Objects {
-			deepRefresh(child)
-		}
-	case *container.Split:
-		deepRefresh(c.Leading)
-		deepRefresh(c.Trailing)
-	case *uicontainer.Split:
-		deepRefresh(c.Leading)
-		deepRefresh(c.Trailing)
-	case *container.AppTabs:
-		for _, item := range c.Items {
-			deepRefresh(item.Content)
-		}
-	case *container.Scroll:
-		deepRefresh(c.Content)
-	}
-
-	// Simple refresh - let Fyne handle internal updates
-	obj.Refresh()
-}
-
-// DeepRefresh recursively forces all canvas objects to repaint immediately.
-// This triggers color re-query from theme. Use during color transitions.
-func (m *MainWindow) DeepRefresh() {
-	deepRefresh(m.content)
-	m.Window.Canvas().Refresh(m.content)
-}
-
 func (m *MainWindow) showSettingsDialog() {
 
 	// Full theme reload for theme file changes
@@ -602,24 +561,20 @@ func (m *MainWindow) showSettingsDialog() {
 	}
 
 	// Accent color update with throttle for smooth slider dragging
-	// SetTheme is expensive, so we throttle to avoid lag
 	var lastUpdate time.Time
 	accentUpdateCallbk := func() {
 		m.theme.InvalidatePaletteCache()
 
-		// Throttle to ~60fps (16ms)
+		// Throttle to ~30fps (33ms) for performance
 		now := time.Now()
-		if now.Sub(lastUpdate) < 16*time.Millisecond {
+		if now.Sub(lastUpdate) < 33*time.Millisecond {
 			return
 		}
 		lastUpdate = now
 
-		// Deep refresh for instant preview while dragging sliders
-		deepRefresh(m.Window.Content())
-		if canv := m.Window.Canvas(); canv != nil {
-			for _, overlay := range canv.Overlays().List() {
-				deepRefresh(overlay)
-			}
+		// Refresh main content for instant preview
+		if content := m.Window.Content(); content != nil {
+			content.Refresh()
 		}
 	}
 
