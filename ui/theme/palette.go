@@ -39,11 +39,11 @@ type SliderRanges struct {
 func GetSliderRanges(baseMode string) SliderRanges {
 	switch strings.ToLower(baseMode) {
 	case "light":
-		return SliderRanges{SatMin: 0.0, SatMax: 0.5, ContrastMin: 0.25, ContrastMax: 1.0}
+		return SliderRanges{SatMin: 0.5, SatMax: 1.0, ContrastMin: 0.5, ContrastMax: 1.0}
 	case "black":
-		return SliderRanges{SatMin: 0.0, SatMax: 0.75, ContrastMin: 0.25, ContrastMax: 1.0}
+		return SliderRanges{SatMin: 0.5, SatMax: 1.0, ContrastMin: 0, ContrastMax: 1.0}
 	default:
-		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.5, ContrastMax: 1.0}
+		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.0, ContrastMax: 1.0}
 	}
 }
 
