@@ -706,7 +706,11 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		case string(myTheme.AppearanceLight):
 			s.config.Theme.BaseMode = "light"
 		case string(myTheme.AppearanceAuto):
-			s.config.Theme.BaseMode = "black"
+			if myTheme.IsDarkMode(fyne.CurrentApp()) {
+				s.config.Theme.BaseMode = "black"
+			} else {
+				s.config.Theme.BaseMode = "light"
+			}
 		}
 	}
 
