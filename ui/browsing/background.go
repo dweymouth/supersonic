@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"sync"
 
 	"github.com/boxes-ltd/imaging"
 	"github.com/cenkalti/dominantcolor"
@@ -23,6 +24,7 @@ type BackgroundManager struct {
 
 	CachedBlurredImage  image.Image
 	CachedDominantColor color.Color
+	mu                  sync.Mutex // protects CachedBlurredImage and CachedDominantColor
 
 	targetWidth  int
 	targetHeight int
@@ -83,12 +85,10 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 			return
 		}
 		go func(ctx context.Context) {
-			// Use detected size or fallback to 1920x1080 if not set
-			width, height := b.targetWidth, b.targetHeight
-			if width == 0 || height == 0 {
-				width, height = 1920, 1080
-			}
-			resized := imaging.Fill(img, width, height, imaging.Center, imaging.Lanczos)
+			// Performance optimization: resize to small size first, then blur
+			// Use 16:9 aspect ratio to match screen proportions and avoid stretching
+			// Fyne will stretch this small image to fill the screen
+			resized := imaging.Fill(img, 128, 72, imaging.Center, imaging.NearestNeighbor)
 			flipped := imaging.FlipH(resized)
 			adjusted := adjustBrightnessForTheme(flipped)
 
@@ -98,8 +98,10 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 			default:
 			}
 
-			blurred := imaging.Blur(adjusted, 15.0)
+			blurred := imaging.Blur(adjusted, 5.0)
+			b.mu.Lock()
 			b.CachedBlurredImage = blurred
+			b.mu.Unlock()
 			select {
 			case <-ctx.Done():
 				return
@@ -122,7 +124,9 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 			c := dominantcolor.Find(img)
 			// Adjust the extracted color based on theme
 			adjusted := adjustColorForTheme(c)
-			b.CachedDominantColor = c // Store raw color, adjustment applied on use
+			b.mu.Lock()
+			b.CachedDominantColor = c
+			b.mu.Unlock() // Store raw color, adjustment applied on use
 			select {
 			case <-ctx.Done():
 				return
@@ -135,6 +139,7 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 	}
 }
 
+// HideImages hides the background images
 func (b *BackgroundManager) HideImages() {
 	if !b.BackgroundImgA.Hidden {
 		b.BackgroundImgA.Hide()
@@ -276,7 +281,10 @@ func (b *BackgroundManager) applyBlurredBackground(blurred image.Image) {
 // The EndColor of the gradient should be set by the caller (page) to match the theme background
 func (b *BackgroundManager) applyGradientBackground(c color.Color) {
 	b.ensureGradientEndColor()
-	if c == b.BackgroundGradient.StartColor && b.BackgroundImgA.Hidden && b.BackgroundImgB.Hidden {
+	// Compare colors by RGBA values (handles different color types)
+	cr, cg, cb, ca := c.RGBA()
+	sr, sg, sb, sa := b.BackgroundGradient.StartColor.RGBA()
+	if cr == sr && cg == sg && cb == sb && ca == sa && b.BackgroundImgA.Hidden && b.BackgroundImgB.Hidden {
 		return
 	}
 

@@ -213,7 +213,6 @@ func (t *Tracklist) SetLoading(loading bool) {
 }
 
 func (t *Tracklist) SetHeaderTransparent(transparent bool) {
-	log.Printf("[Tracklist] SetHeaderTransparent called: hdr==nil: %v", t.hdr == nil)
 	if t.hdr != nil {
 		t.hdr.SetTransparentBackground(transparent)
 	}
