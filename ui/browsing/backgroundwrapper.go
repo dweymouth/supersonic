@@ -31,13 +31,13 @@ func NewBackgroundWrapper(content fyne.CanvasObject) *BackgroundWrapper {
 
 // ApplyBackground applies a background image with the given mode.
 // Mode can be "blur", "gradient", or "disabled".
-func (bw *BackgroundWrapper) ApplyBackground(img image.Image, mode string, useBlur bool) {
+func (bw *BackgroundWrapper) ApplyBackground(img image.Image, mode string) {
 	if mode == "disabled" || img == nil {
 		bw.bgManager.HideImages()
 		bw.bgManager.BackgroundGradient.Hide()
 	} else {
 		bw.bgManager.BackgroundGradient.Show()
-		bw.bgManager.ApplyBackground(img, mode, useBlur)
+		bw.bgManager.ApplyBackground(img, mode)
 	}
 }
 

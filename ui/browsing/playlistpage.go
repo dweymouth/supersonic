@@ -135,12 +135,11 @@ func (a *PlaylistPage) CreateRenderer() fyne.WidgetRenderer {
 			mode = "gradient" // default to gradient
 		}
 		if a.curCoverImage != nil && mode != "disabled" {
-			useBlur := mode == "blur"
-			a.bgWrapper.ApplyBackground(a.curCoverImage, mode, useBlur)
+			a.bgWrapper.ApplyBackground(a.curCoverImage, mode)
 			a.header.SetTransparentBackground(true)
 			a.tracklist.SetHeaderTransparent(true)
 		} else {
-			a.bgWrapper.ApplyBackground(nil, "disabled", false)
+			a.bgWrapper.ApplyBackground(nil, "disabled")
 			a.header.SetTransparentBackground(false)
 			a.tracklist.SetHeaderTransparent(false)
 		}
@@ -183,13 +182,12 @@ func (a *PlaylistPage) Reload() {
 			mode = "gradient" // default to gradient
 		}
 		if a.curCoverImage != nil && mode != "disabled" {
-			useBlur := mode == "blur"
-			a.bgWrapper.ApplyBackground(a.curCoverImage, mode, useBlur)
+			a.bgWrapper.ApplyBackground(a.curCoverImage, mode)
 			a.header.SetTransparentBackground(true)
 			a.tracklist.SetHeaderTransparent(true)
 		} else {
 			// Disabled mode - hide background and restore opaque headers
-			a.bgWrapper.ApplyBackground(nil, "disabled", false)
+			a.bgWrapper.ApplyBackground(nil, "disabled")
 			a.header.SetTransparentBackground(false)
 			a.tracklist.SetHeaderTransparent(false)
 		}
@@ -209,8 +207,7 @@ func (a *PlaylistPage) onImageLoaded(img image.Image) {
 	if mode == "" {
 		mode = "gradient" // default to gradient
 	}
-	useBlur := mode == "blur"
-	a.bgWrapper.ApplyBackground(img, mode, useBlur)
+	a.bgWrapper.ApplyBackground(img, mode)
 	// Make header and tracklist transparent when background is active
 	if mode != "disabled" {
 		a.header.SetTransparentBackground(true)

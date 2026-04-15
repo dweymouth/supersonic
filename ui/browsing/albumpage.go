@@ -134,12 +134,11 @@ func (a *AlbumPage) CreateRenderer() fyne.WidgetRenderer {
 		a.bgWrapper = NewBackgroundWrapper(mainContent)
 		// Apply background if we have a pending image
 		if a.curCoverImage != nil && a.backgroundMode != "disabled" {
-			useBlur := a.backgroundMode == "blur"
-			a.bgWrapper.ApplyBackground(a.curCoverImage, a.backgroundMode, useBlur)
+			a.bgWrapper.ApplyBackground(a.curCoverImage, a.backgroundMode)
 			a.header.SetTransparentBackground(true)
 			a.tracklist.SetHeaderTransparent(true)
 		} else {
-			a.bgWrapper.ApplyBackground(nil, "disabled", false)
+			a.bgWrapper.ApplyBackground(nil, "disabled")
 			a.header.SetTransparentBackground(false)
 			a.tracklist.SetHeaderTransparent(false)
 		}
@@ -178,12 +177,11 @@ func (a *AlbumPage) Reload() {
 	// Update background based on current config
 	if a.bgWrapper != nil {
 		if a.backgroundMode != "disabled" && a.curCoverImage != nil {
-			useBlur := a.backgroundMode == "blur"
-			a.bgWrapper.ApplyBackground(a.curCoverImage, a.backgroundMode, useBlur)
+			a.bgWrapper.ApplyBackground(a.curCoverImage, a.backgroundMode)
 			a.header.SetTransparentBackground(true)
 			a.tracklist.SetHeaderTransparent(true)
 		} else {
-			a.bgWrapper.ApplyBackground(nil, "disabled", false)
+			a.bgWrapper.ApplyBackground(nil, "disabled")
 			a.header.SetTransparentBackground(false)
 			a.tracklist.SetHeaderTransparent(false)
 		}
@@ -199,8 +197,7 @@ func (a *AlbumPage) onImageLoaded(img image.Image) {
 	if a.bgWrapper == nil {
 		return
 	}
-	useBlur := a.backgroundMode == "blur"
-	a.bgWrapper.ApplyBackground(img, a.backgroundMode, useBlur)
+	a.bgWrapper.ApplyBackground(img, a.backgroundMode)
 	// Make header and tracklist transparent when background is active
 	if a.backgroundMode != "disabled" {
 		a.header.SetTransparentBackground(true)

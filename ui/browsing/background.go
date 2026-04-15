@@ -49,7 +49,7 @@ func NewBackgroundManager() *BackgroundManager {
 
 // ApplyBackground applies background based on mode: "blur", "gradient", or "disabled"
 // When mode is empty, it defaults to gradient behavior (for nowplaying page compatibility)
-func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlur bool) {
+func (b *BackgroundManager) ApplyBackground(img image.Image, mode string) {
 	if img == nil || mode == "disabled" {
 		b.HideImages()
 		return
@@ -63,14 +63,14 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 
 	// Clear cache if image changed
 	b.mu.Lock()
-	if img != b.CachedBlurredImage && img != nil {
+	if img != b.CachedBlurredImage {
 		b.CachedBlurredImage = nil
 		b.CachedDominantColor = nil
 	}
 	b.mu.Unlock()
 
-	// If blur is requested (explicit mode or useBlur flag), apply blurred background
-	if mode == "blur" || useBlur {
+	// If blur is requested, apply blurred background
+	if mode == "blur" {
 		b.mu.Lock()
 		cachedImg := b.CachedBlurredImage
 		b.mu.Unlock()
@@ -78,11 +78,11 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 			b.applyBlurredBackground(cachedImg)
 			return
 		}
-		go func(ctx context.Context) {
+		go func(ctx context.Context, sourceImg image.Image) {
 			// Performance optimization: resize to small size first, then blur
 			// Use 16:9 aspect ratio to match screen proportions and avoid stretching
 			// Fyne will stretch this small image to fill the screen
-			resized := imaging.Fill(img, 128, 72, imaging.Center, imaging.NearestNeighbor)
+			resized := imaging.Fill(sourceImg, 128, 72, imaging.Center, imaging.NearestNeighbor)
 			flipped := imaging.FlipH(resized)
 			adjusted := adjustBrightnessForTheme(flipped)
 
@@ -93,9 +93,22 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 			}
 
 			blurred := imaging.Blur(adjusted, 5.0)
+
+			// Double-check context before writing to cache
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
 			b.mu.Lock()
-			b.CachedBlurredImage = blurred
+			// Only cache if this is still the current processing context
+			// by checking if the source image matches what we started with
+			if b.ctx == ctx {
+				b.CachedBlurredImage = blurred
+			}
 			b.mu.Unlock()
+
 			select {
 			case <-ctx.Done():
 				return
@@ -104,7 +117,7 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 					b.applyBlurredBackground(blurred)
 				})
 			}
-		}(b.ctx)
+		}(b.ctx, img)
 	} else {
 		// Default to gradient (handles mode="gradient" and mode="" for nowplaying)
 		b.mu.Lock()
@@ -117,13 +130,25 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 			b.applyGradientBackground(adjusted)
 			return
 		}
-		go func(ctx context.Context) {
-			c := dominantcolor.Find(img)
+		go func(ctx context.Context, sourceImg image.Image) {
+			c := dominantcolor.Find(sourceImg)
 			// Adjust the extracted color based on theme
 			adjusted := adjustColorForTheme(c)
+
+			// Double-check context before writing to cache
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
 			b.mu.Lock()
-			b.CachedDominantColor = c
-			b.mu.Unlock() // Store raw color, adjustment applied on use
+			// Only cache if this is still the current processing context
+			if b.ctx == ctx {
+				b.CachedDominantColor = c
+			}
+			b.mu.Unlock()
+
 			select {
 			case <-ctx.Done():
 				return
@@ -132,7 +157,7 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 					b.applyGradientBackground(adjusted)
 				})
 			}
-		}(b.ctx)
+		}(b.ctx, img)
 	}
 }
 
@@ -222,19 +247,6 @@ func (b *BackgroundManager) ensureGradientEndColor() {
 	// Check if color is zero/transparent (all components zero)
 	if cr == 0 && cg == 0 && cb == 0 && ca == 0 {
 		b.BackgroundGradient.EndColor = theme.Color(theme.ColorNameBackground)
-	}
-}
-
-// ApplyIfChanged checks if image changed, clears cache, and applies background if not nil
-func (b *BackgroundManager) ApplyIfChanged(newImg, currentImg image.Image, mode string, useBlur bool) {
-	if newImg != currentImg {
-		b.mu.Lock()
-		b.CachedBlurredImage = nil
-		b.CachedDominantColor = nil
-		b.mu.Unlock()
-	}
-	if newImg != nil {
-		b.ApplyBackground(newImg, mode, useBlur)
 	}
 }
 

@@ -180,15 +180,14 @@ func (a *ArtistPage) Reload() {
 	// Update background based on current config
 	if a.bgWrapper != nil {
 		if a.backgroundMode != "disabled" && a.curArtistImage != nil {
-			useBlur := a.backgroundMode == "blur"
-			a.bgWrapper.ApplyBackground(a.curArtistImage, a.backgroundMode, useBlur)
+			a.bgWrapper.ApplyBackground(a.curArtistImage, a.backgroundMode)
 			a.header.SetTransparentBackground(true)
 			if a.tracklistCtr != nil {
 				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
 				tl.SetHeaderTransparent(true)
 			}
 		} else {
-			a.bgWrapper.ApplyBackground(nil, "disabled", false)
+			a.bgWrapper.ApplyBackground(nil, "disabled")
 			a.header.SetTransparentBackground(false)
 			if a.tracklistCtr != nil {
 				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
@@ -207,8 +206,7 @@ func (a *ArtistPage) onImageLoaded(img image.Image) {
 	if a.bgWrapper == nil {
 		return
 	}
-	useBlur := a.backgroundMode == "blur"
-	a.bgWrapper.ApplyBackground(img, a.backgroundMode, useBlur)
+	a.bgWrapper.ApplyBackground(img, a.backgroundMode)
 	// Make header and tracklist transparent when background is active
 	if a.backgroundMode != "disabled" {
 		a.header.SetTransparentBackground(true)
@@ -638,15 +636,14 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 		a.bgWrapper = NewBackgroundWrapper(a.contentCtr)
 		// Apply background if we have a pending image
 		if a.curArtistImage != nil && a.backgroundMode != "disabled" {
-			useBlur := a.backgroundMode == "blur"
-			a.bgWrapper.ApplyBackground(a.curArtistImage, a.backgroundMode, useBlur)
+			a.bgWrapper.ApplyBackground(a.curArtistImage, a.backgroundMode)
 			a.header.SetTransparentBackground(true)
 			if a.tracklistCtr != nil {
 				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
 				tl.SetHeaderTransparent(true)
 			}
 		} else {
-			a.bgWrapper.ApplyBackground(nil, "disabled", false)
+			a.bgWrapper.ApplyBackground(nil, "disabled")
 			a.header.SetTransparentBackground(false)
 			if a.tracklistCtr != nil {
 				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)

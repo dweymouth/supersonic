@@ -322,11 +322,11 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 		log.Printf("error loading cover art: %v\n", err)
 	}
 	if a.bgWrapper != nil {
-		mode := ""
+		mode := "blur"
 		if !a.conf.UseBackgroundImage {
 			mode = "disabled"
 		}
-		a.bgWrapper.ApplyBackground(img, mode, a.conf.UseBackgroundImage)
+		a.bgWrapper.ApplyBackground(img, mode)
 	}
 	a.curCoverImage = img
 	fyne.Do(func() { a.card.SetCoverImage(img) })
@@ -414,11 +414,11 @@ func (a *NowPlayingPage) Reload() {
 		return
 	}
 
-	mode := ""
+	mode := "blur"
 	if !a.conf.UseBackgroundImage {
 		mode = "disabled"
 	}
-	a.bgWrapper.ApplyBackground(a.curCoverImage, mode, a.conf.UseBackgroundImage)
+	a.bgWrapper.ApplyBackground(a.curCoverImage, mode)
 }
 
 func (a *NowPlayingPage) OnPlayQueueChange() {
