@@ -47,16 +47,16 @@ func rgbToHsl(r, g, b uint8) (h, s, l float64) {
 	return h, s, l
 }
 
-// rgbToHslColor converts a color.Color to HSL values
-func rgbToHslColor(c color.Color) (h, s, l float64) {
+// RgbToHslColor converts a color.Color to HSL values (exported for external use)
+func RgbToHslColor(c color.Color) (h, s, l float64) {
 	r, g, b, _ := c.RGBA()
 	// Convert from 16-bit to 8-bit
 	return rgbToHsl(uint8(r>>8), uint8(g>>8), uint8(b>>8))
 }
 
-// hslToRgb converts HSL to RGB color space
+// HslToRgb converts HSL to RGB color space (exported for external use)
 // Takes hue (0-360), saturation (0-1), lightness (0-1)
-func hslToRgb(h, s, l float64) color.RGBA {
+func HslToRgb(h, s, l float64) color.RGBA {
 	h = math.Mod(h, 360)
 	if h < 0 {
 		h += 360
@@ -91,7 +91,7 @@ func hslToRgb(h, s, l float64) color.RGBA {
 	}
 }
 
-// hueToRgb is a helper function for hslToRgb
+// hueToRgb is a helper function for HslToRgb
 func hueToRgb(p, q, t float64) float64 {
 	if t < 0 {
 		t += 1
@@ -119,14 +119,14 @@ func boostSaturation(r, g, b uint8, factor float64) (uint8, uint8, uint8) {
 	s = math.Min(s*factor, 1.0)
 
 	// Convert back to RGB
-	c := hslToRgb(h, s, l)
+	c := HslToRgb(h, s, l)
 	return c.R, c.G, c.B
 }
 
 // applySaturationToHSL applies a saturation multiplier to HSL values and returns RGB
 func applySaturationToHSL(h, s, l, saturationMultiplier float64) color.RGBA {
 	newSat := clampFloat(s*saturationMultiplier, 0, 1)
-	return hslToRgb(h, newSat, l)
+	return HslToRgb(h, newSat, l)
 }
 
 // brightenColor brightens a color by the given fraction (0-1)

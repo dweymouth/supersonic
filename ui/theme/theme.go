@@ -225,7 +225,7 @@ func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette
 	case theme.ColorNameShadow:
 		// Use neutral gray for shadows to avoid color tint from accent
 		// Shadow should be neutral and not draw attention to itself
-		_, _, bgL := rgbToHslColor(palette.Background)
+		_, _, bgL := RgbToHslColor(palette.Background)
 		var gray uint8
 		if bgL > 0.5 {
 			// Light mode: dark gray shadow
@@ -482,6 +482,24 @@ func (m *MyTheme) getVariant(defVariant fyne.ThemeVariant) fyne.ThemeVariant {
 		return theme.VariantLight
 	}
 	return defVariant
+}
+
+// IsDarkMode returns true if the current theme is in dark mode.
+// It checks the Supersonic config first (Appearance setting), falling back to OS detection.
+func IsDarkMode(app fyne.App) bool {
+	appTheme := app.Settings().Theme()
+	if themePtr, ok := appTheme.(*MyTheme); ok {
+		cfg := themePtr.GetConfig()
+		appearanceLower := strings.ToLower(cfg.Appearance)
+		if appearanceLower == "dark" {
+			return true
+		} else if appearanceLower == "light" {
+			return false
+		}
+		// "auto" - fall back to OS detection
+	}
+	// Fallback to OS detection
+	return app.Settings().ThemeVariant() == theme.VariantDark
 }
 
 func BlendColors(a, b color.Color, fractionA float64) color.Color {

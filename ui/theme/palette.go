@@ -83,7 +83,7 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	normalizer := NewColorNormalizer()
 	normalizedHex := normalizer.NormalizeForMode(accentHex, baseMode)
 	accent, _ := hexToColor(normalizedHex)
-	accentH, accentS, accentL := rgbToHslColor(accent)
+	accentH, accentS, accentL := RgbToHslColor(accent)
 
 	// Apply saturation/contrast sliders to accent
 	if saturation != 1.0 {
@@ -95,7 +95,7 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		accentL = midpoint + (accentL-midpoint)*contrast
 		accentL = clampFloat(accentL, 0.15, 0.85)
 	}
-	accent = hslToRgb(accentH, accentS, accentL)
+	accent = HslToRgb(accentH, accentS, accentL)
 
 	// Determine mode characteristics
 	isLight := strings.ToLower(baseMode) == "light"
@@ -152,19 +152,19 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	}
 
 	// Generate colors from accent hue with calculated lightness
-	bg := hslToRgb(accentH, bgSat, bgL)
-	surf := hslToRgb(accentH, bgSat, surfL)
-	pageBg := hslToRgb(accentH, bgSat, pageBgL)
-	pageHeader := hslToRgb(accentH, bgSat, pageHeaderL)
-	listHeader := hslToRgb(accentH, bgSat*0.8, listHeaderL)
+	bg := HslToRgb(accentH, bgSat, bgL)
+	surf := HslToRgb(accentH, bgSat, surfL)
+	pageBg := HslToRgb(accentH, bgSat, pageBgL)
+	pageHeader := HslToRgb(accentH, bgSat, pageHeaderL)
+	listHeader := HslToRgb(accentH, bgSat*0.8, listHeaderL)
 
 	// Text colors: accent hue with low saturation for subtle tint
 	textSat := 0.08
 	if isLight {
 		textSat = 0.12 // Slightly more saturation in light mode for visibility
 	}
-	textPrimaryRGB := hslToRgb(accentH, textSat, textPrimaryL)
-	textSecondaryRGB := hslToRgb(accentH, textSat*0.7, textSecondaryL)
+	textPrimaryRGB := HslToRgb(accentH, textSat, textPrimaryL)
+	textSecondaryRGB := HslToRgb(accentH, textSat*0.7, textSecondaryL)
 
 	// Ensure WCAG contrast compliance
 	textPrimary, _ := EnsureContrast(textPrimaryRGB, surf, 4.5)
@@ -184,21 +184,23 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	menuBackground := blendColors(accent, surf, hoverRatio*0.5)
 
 	// Success/Danger: keep standard but tint slightly with accent hue
-	success := hslToRgb(140.0, 0.60, 0.45) // Green
-	danger := hslToRgb(0.0, 0.70, 0.50)    // Red
+	success := HslToRgb(140.0, 0.60, 0.45) // Green
+	danger := HslToRgb(0.0, 0.70, 0.50)    // Red
 
-	// For hyperlinks in light mode, darken the accent to ensure contrast against light backgrounds
+	// Ensure hyperlinks are highly legible against both surfaces and backgrounds
 	hyperlink := accent
 	if isLight {
-		// Darken accent for hyperlinks in light mode (70% of original luminance)
-		_, accentS, accentL := rgbToHslColor(accent)
-		hyperlink = hslToRgb(accentH, accentS, accentL*0.65)
-		// Ensure minimum darkness for hyperlinks
-		hLinkLum := (0.299*float64(hyperlink.R) + 0.587*float64(hyperlink.G) + 0.114*float64(hyperlink.B)) / 255.0
-		if hLinkLum > 0.35 {
-			hyperlink = hslToRgb(accentH, accentS, 0.35)
-		}
+		// In light mode, ensure it's dark enough to pop
+		_, accentS, accentL := RgbToHslColor(accent)
+		hyperlink = HslToRgb(accentH, accentS, math.Min(accentL, 0.35))
+	} else {
+		// In dark mode, ensure it's bright enough to pop
+		_, accentS, accentL := RgbToHslColor(accent)
+		hyperlink = HslToRgb(accentH, accentS, math.Max(accentL, 0.65))
 	}
+	// Final safety check against actual background colors to guarantee WCAG AA
+	hyperlink, _ = EnsureContrast(hyperlink, surf, 4.5)
+	hyperlink, _ = EnsureContrast(hyperlink, bg, 4.5)
 
 	palette := &Palette{
 		Accent:         accent,

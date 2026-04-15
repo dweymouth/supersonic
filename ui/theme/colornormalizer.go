@@ -22,9 +22,9 @@ type ColorNormalizer struct {
 // NewColorNormalizer creates a normalizer with sensible defaults
 func NewColorNormalizer() *ColorNormalizer {
 	return &ColorNormalizer{
-		MinLuminanceDark:  0.35, // Dark colors need at least this to be visible
-		MaxLuminanceLight: 0.65, // Light colors need at most this to be visible
-		MinSaturation:     0.15, // Too desaturated = grey
+		MinLuminanceDark:  0.55, // High luminance so accents pop against dark backgrounds
+		MaxLuminanceLight: 0.40, // Low luminance so accents pop against light backgrounds
+		MinSaturation:     0.25, // Prevent accents from looking too muddy/gray
 		MaxSaturation:     1.0,  // Allow full saturation
 	}
 }
@@ -41,7 +41,7 @@ func (cn *ColorNormalizer) NormalizeForMode(hexColor string, baseMode string) st
 		return "#66B2FF"
 	}
 
-	h, s, l := rgbToHslColor(c)
+	h, s, l := RgbToHslColor(c)
 	isLight := baseMode == "light"
 
 	// Normalize luminance based on mode
@@ -80,7 +80,7 @@ func (cn *ColorNormalizer) NormalizeForMode(hexColor string, baseMode string) st
 	s = clampFloat(s, 0, 1)
 	l = clampFloat(l, 0, 1)
 
-	normalized := hslToRgb(h, s, l)
+	normalized := HslToRgb(h, s, l)
 	return fmt.Sprintf("#%02X%02X%02X", normalized.R, normalized.G, normalized.B)
 }
 
@@ -177,7 +177,7 @@ func NormalizeGrayscaleForMode(avgLuminance float64, baseMode string) string {
 		lightness = 0.65 + avgLuminance*0.2
 	}
 
-	accent := hslToRgb(hue, saturation, lightness)
+	accent := HslToRgb(hue, saturation, lightness)
 	return fmt.Sprintf("#%02X%02X%02X", accent.R, accent.G, accent.B)
 }
 

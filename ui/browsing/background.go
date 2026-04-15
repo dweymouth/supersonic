@@ -4,6 +4,7 @@ import (
 	"context"
 	"image"
 	"image/color"
+	"math"
 
 	"github.com/boxes-ltd/imaging"
 	"github.com/cenkalti/dominantcolor"
@@ -111,14 +112,17 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string, useBlu
 	} else {
 		// Default to gradient (handles mode="gradient" and mode="" for nowplaying)
 		if b.CachedDominantColor != nil {
-			b.applyGradientBackground(b.CachedDominantColor)
+			// Even for cached colors, re-apply theme adjustment
+			// Theme may have changed since color was cached
+			adjusted := adjustColorForTheme(b.CachedDominantColor)
+			b.applyGradientBackground(adjusted)
 			return
 		}
 		go func(ctx context.Context) {
 			c := dominantcolor.Find(img)
 			// Adjust the extracted color based on theme
 			adjusted := adjustColorForTheme(c)
-			b.CachedDominantColor = adjusted
+			b.CachedDominantColor = c // Store raw color, adjustment applied on use
 			select {
 			case <-ctx.Done():
 				return
@@ -141,7 +145,8 @@ func (b *BackgroundManager) HideImages() {
 // adjustBrightnessForTheme adjusts image brightness based on current theme
 // Uses the palette's background lightness as reference for coherent styling
 func adjustBrightnessForTheme(img image.Image) image.Image {
-	isDark := fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantDark
+	// Use centralized theme detection
+	isDark := myTheme.IsDarkMode(fyne.CurrentApp())
 
 	// Get the current theme to access palette
 	appTheme := fyne.CurrentApp().Settings().Theme()
@@ -176,39 +181,31 @@ func adjustBrightnessForTheme(img image.Image) image.Image {
 }
 
 // adjustColorForTheme adjusts the extracted dominant color for theme coherence
-// Uses palette accent as reference to ensure gradient matches the UI theme
+// It creates a soft glow by locking the luminance away from text colors,
+// guaranteeing legibility without needing complex clash-detection hacks.
 func adjustColorForTheme(c color.Color) color.Color {
-	isDark := fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantDark
+	// Use centralized theme detection from theme package
+	isDark := myTheme.IsDarkMode(fyne.CurrentApp())
 
-	// Get the current theme's accent color for coherence
-	appTheme := fyne.CurrentApp().Settings().Theme()
-	if themePtr, ok := appTheme.(*myTheme.MyTheme); ok && themePtr.GetConfig().ThemeFile == "dynamic" {
-		// Blend extracted color with theme accent for coherence
-		cfg := themePtr.GetConfig()
-		palette, err := myTheme.GeneratePalette(cfg.AccentColor, cfg.Saturation, cfg.Contrast, cfg.BaseMode)
-		if err == nil && palette != nil {
-			// Mix 30% extracted color with 70% theme accent
-			return myTheme.BlendColors(c, palette.Accent, 0.30)
-		}
+	cH, cS, _ := myTheme.RgbToHslColor(c)
+
+	// Premium UI: Smooth, tasteful color tint instead of raw dominant color
+	// Cap saturation so it's elegant (not garish or neon)
+	targetS := math.Min(cS, 0.65)
+	if targetS < 0.15 {
+		targetS = 0.15 // Prevent it from being entirely grayscale
 	}
 
-	// Fallback: standard adjustment
-	r, g, b, a := c.RGBA()
-	r8, g8, b8 := float64(r>>8), float64(g>>8), float64(b>>8)
-
-	var factor float64
+	// Strict Luminance for guaranteed contrast and premium "glow" look
+	var targetL float64
 	if isDark {
-		factor = 0.7
+		targetL = 0.16 // Dark, rich glow (contrasts with white text)
 	} else {
-		factor = 1.15
+		targetL = 0.88 // Soft, pastel glow (contrasts with black text)
 	}
 
-	return color.NRGBA{
-		R: uint8(min(255, int(r8*factor))),
-		G: uint8(min(255, int(g8*factor))),
-		B: uint8(min(255, int(b8*factor))),
-		A: uint8(a >> 8),
-	}
+	result := myTheme.HslToRgb(cH, targetS, targetL)
+	return result
 }
 
 // SetGradientEndColor sets the end color of the gradient (should be theme background)
@@ -292,7 +289,7 @@ func (b *BackgroundManager) applyGradientBackground(c color.Color) {
 
 	// Ensure gradient is visible
 	b.BackgroundGradient.Hidden = false
-	// Set gradient StartColor to the dominant color (EndColor is maintained by the page/theme)
+	// Set gradient StartColor to the dominant color
 	b.BackgroundGradient.StartColor = c
 	b.BackgroundGradient.Refresh()
 

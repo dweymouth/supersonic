@@ -828,9 +828,22 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	// Initial palette generation
 	updatePalettePreview()
 
-	hueSlider.OnChanged = func(hue float64) {
-		s.config.Theme.AccentColor = hueToHex(hue)
-		updatePalettePreview()
+	// Debounce timer for smooth slider updates
+	var debounceTimer *time.Timer
+
+	hueSlider.OnChanged = func(perceptualHue float64) {
+		// Convert perceptual slider value to actual HSL hue
+		linearHue := perceptualHueToLinear(perceptualHue)
+		s.config.Theme.AccentColor = hueToHex(linearHue)
+
+		// Debounce palette preview updates to avoid lag
+		if debounceTimer != nil {
+			debounceTimer.Stop()
+		}
+		debounceTimer = time.AfterFunc(50*time.Millisecond, func() {
+			fyne.Do(updatePalettePreview)
+		})
+
 		if s.OnAccentColorChanged != nil {
 			s.OnAccentColorChanged()
 		}
@@ -1244,10 +1257,63 @@ func rgbToHex(r, g, b float64) string {
 	return fmt.Sprintf("#%02X%02X%02X", int(r), int(g), int(b))
 }
 
-// hexToHue extracts the hue (0-360) from a hex color
+// perceptualHueToLinear maps a perceptually-uniform slider value (0-360) to actual HSL hue
+// This compresses ranges with high visual variance (blues 200-260) and stretches uniform ranges
+func perceptualHueToLinear(perceptual float64) float64 {
+	// Normalize to 0-1
+	normalized := perceptual / 360.0
+
+	// Apply perceptual curve: ease-in-out with compression in blue-purple range
+	// Using a modified sigmoid-like curve with specific control points
+	// Control points: 0->0, 0.3->0.25 (green-cyan), 0.5->0.5 (blue), 0.7->0.75 (purple-magenta), 1->1
+
+	var linear float64
+	switch {
+	case normalized < 0.3:
+		// Red to Cyan: stretch slightly (0-0.3 -> 0-0.25)
+		linear = normalized * (0.25 / 0.3)
+	case normalized < 0.5:
+		// Cyan to Blue: compress (0.3-0.5 -> 0.25-0.5)
+		linear = 0.25 + (normalized-0.3)*(0.25/0.2)
+	case normalized < 0.7:
+		// Blue to Purple: heavy compression (0.5-0.7 -> 0.5-0.75)
+		linear = 0.5 + (normalized-0.5)*(0.25/0.2)
+	default:
+		// Purple to Red: stretch (0.7-1.0 -> 0.75-1.0)
+		linear = 0.75 + (normalized-0.7)*(0.25/0.3)
+	}
+
+	return linear * 360.0
+}
+
+// linearHueToPerceptual does the inverse: converts actual HSL hue to slider position
+func linearHueToPerceptual(linear float64) float64 {
+	normalized := linear / 360.0
+
+	var perceptual float64
+	switch {
+	case normalized < 0.25:
+		// Red to Cyan
+		perceptual = normalized * (0.3 / 0.25)
+	case normalized < 0.5:
+		// Cyan to Blue
+		perceptual = 0.3 + (normalized-0.25)*(0.2/0.25)
+	case normalized < 0.75:
+		// Blue to Purple
+		perceptual = 0.5 + (normalized-0.5)*(0.2/0.25)
+	default:
+		// Purple to Red
+		perceptual = 0.7 + (normalized-0.75)*(0.3/0.25)
+	}
+
+	return perceptual * 360.0
+}
+
+// hexToHue extracts the perceptual hue (0-360) from a hex color for the slider
 func hexToHue(hex string) float64 {
 	r, g, b := hexToRGB(hex)
-	return rgbToHue(r, g, b)
+	linearHue := rgbToHue(r, g, b)
+	return linearHueToPerceptual(linearHue)
 }
 
 // rgbToHue converts RGB to hue value (0-360)
