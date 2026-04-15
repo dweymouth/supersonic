@@ -159,19 +159,32 @@ func newArtistPage(state artistPageState) *ArtistPage {
 var _ CanSelectAll = (*ArtistPage)(nil)
 
 func (a *ArtistPage) SelectAll() {
-	if a.activeView == 1 && a.tracklistCtr != nil {
-		a.tracklistCtr.Objects[0].(*widgets.Tracklist).SelectAll()
+	if a.activeView == 1 {
+		if tl := a.getTracklistFromCtr(); tl != nil {
+			tl.SelectAll()
+		}
 	}
 }
 
 func (a *ArtistPage) UnselectAll() {
-	if a.tracklistCtr != nil {
-		a.tracklistCtr.Objects[0].(*widgets.Tracklist).UnselectAll()
+	if tl := a.getTracklistFromCtr(); tl != nil {
+		tl.UnselectAll()
 	}
 }
 
 func (a *ArtistPage) Route() controller.Route {
 	return controller.ArtistRoute(a.artistID)
+}
+
+// getTracklistFromCtr safely extracts the Tracklist from tracklistCtr container
+func (a *ArtistPage) getTracklistFromCtr() *widgets.Tracklist {
+	if a.tracklistCtr == nil || len(a.tracklistCtr.Objects) == 0 {
+		return nil
+	}
+	if tl, ok := a.tracklistCtr.Objects[0].(*widgets.Tracklist); ok {
+		return tl
+	}
+	return nil
 }
 
 func (a *ArtistPage) Reload() {
@@ -182,15 +195,13 @@ func (a *ArtistPage) Reload() {
 		if a.backgroundMode != "disabled" && a.curArtistImage != nil {
 			a.bgWrapper.ApplyBackground(a.curArtistImage, a.backgroundMode)
 			a.header.SetTransparentBackground(true)
-			if a.tracklistCtr != nil {
-				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+			if tl := a.getTracklistFromCtr(); tl != nil {
 				tl.SetHeaderTransparent(true)
 			}
 		} else {
 			a.bgWrapper.ApplyBackground(nil, "disabled")
 			a.header.SetTransparentBackground(false)
-			if a.tracklistCtr != nil {
-				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+			if tl := a.getTracklistFromCtr(); tl != nil {
 				tl.SetHeaderTransparent(false)
 			}
 		}
@@ -210,8 +221,7 @@ func (a *ArtistPage) onImageLoaded(img image.Image) {
 	// Make header and tracklist transparent when background is active
 	if a.backgroundMode != "disabled" {
 		a.header.SetTransparentBackground(true)
-		if a.tracklistCtr != nil {
-			tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+		if tl := a.getTracklistFromCtr(); tl != nil {
 			tl.SetHeaderTransparent(true)
 		}
 	}
@@ -220,8 +230,7 @@ func (a *ArtistPage) onImageLoaded(img image.Image) {
 func (a *ArtistPage) Save() SavedPage {
 	a.disposed = true
 	s := a.artistPageState
-	if a.tracklistCtr != nil {
-		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+	if tl := a.getTracklistFromCtr(); tl != nil {
 		switch a.activeView {
 		case 1:
 			s.topListScrollPos = tl.GetScrollOffset()
@@ -595,8 +604,7 @@ func (a *ArtistPage) obtainNewTracklist() *widgets.Tracklist {
 
 func (a *ArtistPage) onViewChange(num int) {
 	// save current data
-	if a.tracklistCtr != nil {
-		tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+	if tl := a.getTracklistFromCtr(); tl != nil {
 		switch a.activeView {
 		case 1:
 			a.topListScrollPos = tl.GetScrollOffset()
@@ -638,15 +646,13 @@ func (a *ArtistPage) CreateRenderer() fyne.WidgetRenderer {
 		if a.curArtistImage != nil && a.backgroundMode != "disabled" {
 			a.bgWrapper.ApplyBackground(a.curArtistImage, a.backgroundMode)
 			a.header.SetTransparentBackground(true)
-			if a.tracklistCtr != nil {
-				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+			if tl := a.getTracklistFromCtr(); tl != nil {
 				tl.SetHeaderTransparent(true)
 			}
 		} else {
 			a.bgWrapper.ApplyBackground(nil, "disabled")
 			a.header.SetTransparentBackground(false)
-			if a.tracklistCtr != nil {
-				tl := a.tracklistCtr.Objects[0].(*widgets.Tracklist)
+			if tl := a.getTracklistFromCtr(); tl != nil {
 				tl.SetHeaderTransparent(false)
 			}
 		}

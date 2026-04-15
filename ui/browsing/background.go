@@ -24,11 +24,14 @@ type BackgroundManager struct {
 
 	CachedBlurredImage  image.Image
 	CachedDominantColor color.Color
-	mu                  sync.Mutex // protects CachedBlurredImage and CachedDominantColor
+	mu                  sync.Mutex // protects CachedBlurredImage, CachedDominantColor, and generation
 
 	// Context for cancelling ongoing background processing
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	// Generation counter to prevent race conditions between goroutines
+	generation uint64
 }
 
 // NewBackgroundManager creates background widgets
@@ -61,12 +64,14 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string) {
 	}
 	b.ctx, b.cancel = context.WithCancel(context.Background())
 
-	// Clear cache if image changed
+	// Clear cache if image changed and increment generation
 	b.mu.Lock()
 	if img != b.CachedBlurredImage {
 		b.CachedBlurredImage = nil
 		b.CachedDominantColor = nil
 	}
+	b.generation++
+	currentGen := b.generation
 	b.mu.Unlock()
 
 	// If blur is requested, apply blurred background
@@ -78,7 +83,7 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string) {
 			b.applyBlurredBackground(cachedImg)
 			return
 		}
-		go func(ctx context.Context, sourceImg image.Image) {
+		go func(ctx context.Context, sourceImg image.Image, gen uint64) {
 			// Performance optimization: resize to small size first, then blur
 			// Use 16:9 aspect ratio to match screen proportions and avoid stretching
 			// Fyne will stretch this small image to fill the screen
@@ -102,9 +107,8 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string) {
 			}
 
 			b.mu.Lock()
-			// Only cache if this is still the current processing context
-			// by checking if the source image matches what we started with
-			if b.ctx == ctx {
+			// Only cache if generation hasn't changed (no newer request started)
+			if b.generation == gen {
 				b.CachedBlurredImage = blurred
 			}
 			b.mu.Unlock()
@@ -117,7 +121,7 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string) {
 					b.applyBlurredBackground(blurred)
 				})
 			}
-		}(b.ctx, img)
+		}(b.ctx, img, currentGen)
 	} else {
 		// Default to gradient (handles mode="gradient" and mode="" for nowplaying)
 		b.mu.Lock()
@@ -130,7 +134,7 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string) {
 			b.applyGradientBackground(adjusted)
 			return
 		}
-		go func(ctx context.Context, sourceImg image.Image) {
+		go func(ctx context.Context, sourceImg image.Image, gen uint64) {
 			c := dominantcolor.Find(sourceImg)
 			// Adjust the extracted color based on theme
 			adjusted := adjustColorForTheme(c)
@@ -143,8 +147,8 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string) {
 			}
 
 			b.mu.Lock()
-			// Only cache if this is still the current processing context
-			if b.ctx == ctx {
+			// Only cache if generation hasn't changed (no newer request started)
+			if b.generation == gen {
 				b.CachedDominantColor = c
 			}
 			b.mu.Unlock()
@@ -157,7 +161,7 @@ func (b *BackgroundManager) ApplyBackground(img image.Image, mode string) {
 					b.applyGradientBackground(adjusted)
 				})
 			}
-		}(b.ctx, img)
+		}(b.ctx, img, currentGen)
 	}
 }
 
