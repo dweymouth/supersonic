@@ -160,19 +160,6 @@ func darkenComponent(component uint32, fraction float64) uint32 {
 	return component - i
 }
 
-// blendColors blends two colors with the given fraction of the first color
-func blendColors(a, b color.Color, fractionA float64) color.Color {
-	ra, ga, ba, aa := a.RGBA()
-	rb, gb, bb, ab := b.RGBA()
-
-	fractionB := 1 - fractionA
-	rAvg := uint8(float64(ra/257)*fractionA + float64(rb/257)*fractionB)
-	gAvg := uint8(float64(ga/257)*fractionA + float64(gb/257)*fractionB)
-	bAvg := uint8(float64(ba/257)*fractionA + float64(bb/257)*fractionB)
-	aAvg := uint8(float64(aa/257)*fractionA + float64(ab/257)*fractionB)
-	return color.RGBA{R: rAvg, G: gAvg, B: bAvg, A: aAvg}
-}
-
 // clampFloat constrains a float value between min and max
 func clampFloat(v, min, max float64) float64 {
 	if v < min {

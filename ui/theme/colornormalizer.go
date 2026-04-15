@@ -207,7 +207,7 @@ func BlendWithMode(base, overlay color.Color, amount float64, baseMode string) c
 	}
 
 	// Simple alpha blend as default
-	return blendColors(base, overlay, amount)
+	return BlendColors(base, overlay, amount)
 }
 
 // ClampColorToGamut ensures RGB values are in valid range

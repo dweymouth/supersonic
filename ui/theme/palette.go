@@ -148,10 +148,10 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	if !isLight {
 		hoverRatio = 0.28 // Stronger hover in dark modes
 	}
-	surfaceHover := blendColors(accent, surf, hoverRatio)
+	surfaceHover := BlendColors(accent, surf, hoverRatio)
 
 	// Menu background: subtler blend
-	menuBackground := blendColors(accent, surf, hoverRatio*0.5)
+	menuBackground := BlendColors(accent, surf, hoverRatio*0.5)
 
 	// Success/Danger: keep standard but tint slightly with accent hue
 	success := HslToRgb(140.0, 0.60, 0.45) // Green
