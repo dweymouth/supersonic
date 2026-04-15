@@ -26,9 +26,6 @@ type BackgroundManager struct {
 	CachedDominantColor color.Color
 	mu                  sync.Mutex // protects CachedBlurredImage and CachedDominantColor
 
-	targetWidth  int
-	targetHeight int
-
 	// Context for cancelling ongoing background processing
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -48,14 +45,6 @@ func NewBackgroundManager() *BackgroundManager {
 	b.BackgroundImgB.FillMode = canvas.ImageFillStretch
 	b.ctx, b.cancel = context.WithCancel(context.Background())
 	return b
-}
-
-// SetTargetSize sets the target resolution for blur processing (call when window size changes)
-func (b *BackgroundManager) SetTargetSize(width, height int) {
-	if width > 0 && height > 0 {
-		b.targetWidth = width
-		b.targetHeight = height
-	}
 }
 
 // ApplyBackground applies background based on mode: "blur", "gradient", or "disabled"
@@ -229,8 +218,9 @@ func (b *BackgroundManager) SetGradientEndColor(c color.Color) {
 
 // ensureGradientEndColor sets the EndColor to theme background if it's currently zero/transparent
 func (b *BackgroundManager) ensureGradientEndColor() {
-	r, _, _, _ := b.BackgroundGradient.EndColor.RGBA()
-	if r == 0 {
+	cr, cg, cb, ca := b.BackgroundGradient.EndColor.RGBA()
+	// Check if color is zero/transparent (all components zero)
+	if cr == 0 && cg == 0 && cb == 0 && ca == 0 {
 		b.BackgroundGradient.EndColor = theme.Color(theme.ColorNameBackground)
 	}
 }

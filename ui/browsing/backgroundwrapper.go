@@ -31,15 +31,7 @@ func NewBackgroundWrapper(content fyne.CanvasObject) *BackgroundWrapper {
 
 // ApplyBackground applies a background image with the given mode.
 // Mode can be "blur", "gradient", or "disabled".
-// Automatically detects container size for dynamic resolution processing.
 func (bw *BackgroundWrapper) ApplyBackground(img image.Image, mode string, useBlur bool) {
-	// Auto-detect size from container if available
-	if bw.container != nil {
-		size := bw.container.Size()
-		if size.Width > 0 && size.Height > 0 {
-			bw.bgManager.SetTargetSize(int(size.Width), int(size.Height))
-		}
-	}
 	if mode == "disabled" || img == nil {
 		bw.bgManager.HideImages()
 		bw.bgManager.BackgroundGradient.Hide()
@@ -52,12 +44,6 @@ func (bw *BackgroundWrapper) ApplyBackground(img image.Image, mode string, useBl
 // BgManager returns the internal BackgroundManager for advanced usage.
 func (bw *BackgroundWrapper) BgManager() *BackgroundManager {
 	return bw.bgManager
-}
-
-// SetTargetSize sets the target resolution for blur processing.
-// Call this when the window/container size changes for dynamic resolution.
-func (bw *BackgroundWrapper) SetTargetSize(width, height int) {
-	bw.bgManager.SetTargetSize(width, height)
 }
 
 // CreateRenderer creates the renderer for this widget.

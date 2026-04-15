@@ -560,22 +560,23 @@ func (m *MainWindow) showSettingsDialog() {
 		fyne.CurrentApp().Settings().SetTheme(m.theme)
 	}
 
-	// Accent color update with throttle for smooth slider dragging
-	var lastUpdate time.Time
+	// Accent color update with debounce for smooth slider dragging
+	var debounceTimer *time.Timer
 	accentUpdateCallbk := func() {
 		m.theme.InvalidatePaletteCache()
 
-		// Throttle to ~30fps (33ms) for performance
-		now := time.Now()
-		if now.Sub(lastUpdate) < 33*time.Millisecond {
-			return
+		// Debounce to ~30fps (33ms) for performance
+		// Cancel any pending refresh and schedule a new one
+		if debounceTimer != nil {
+			debounceTimer.Stop()
 		}
-		lastUpdate = now
-
-		// Refresh main content for instant preview
-		if content := m.Window.Content(); content != nil {
-			content.Refresh()
-		}
+		debounceTimer = time.AfterFunc(33*time.Millisecond, func() {
+			fyne.Do(func() {
+				if content := m.Window.Content(); content != nil {
+					content.Refresh()
+				}
+			})
+		})
 	}
 
 	// Finalize theme on dialog close - single SetTheme call updates all icons
