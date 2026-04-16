@@ -37,6 +37,9 @@ type subsonicMediaProvider struct {
 
 	radiosCached   []*mediaprovider.RadioStation
 	radiosCachedAt int64 // unix
+
+	playbackReportOnce      sync.Once
+	playbackReportSupported bool
 }
 
 func SubsonicMediaProvider(subsonicClient *subsonic.Client) mediaprovider.MediaProvider {
@@ -458,6 +461,30 @@ func (s *subsonicMediaProvider) GetLyrics(track *mediaprovider.Track) (*mediapro
 
 // CanSavePlayQueue interface
 var _ mediaprovider.CanSavePlayQueue = (*subsonicMediaProvider)(nil)
+
+// CanReportPlayback interface
+var _ mediaprovider.CanReportPlayback = (*subsonicMediaProvider)(nil)
+
+func (s *subsonicMediaProvider) ReportPlayback(trackID string, positionMs int64, state string) error {
+	s.playbackReportOnce.Do(func() {
+		ext, err := s.client.GetOpenSubsonicExtensions()
+		s.playbackReportSupported = err == nil && slices.ContainsFunc(ext,
+			func(e *subsonic.OpenSubsonicExtension) bool {
+				return e.Name == subsonic.PlaybackReport
+			})
+	})
+	if !s.playbackReportSupported {
+		return nil
+	}
+	ignoreScrobble := true
+	return s.client.ReportPlayback(subsonic.ReportPlaybackParameters{
+		MediaID:        trackID,
+		MediaType:      subsonic.PlaybackMediaTypeSong,
+		PositionMs:     positionMs,
+		State:          subsonic.PlaybackState(state),
+		IgnoreScrobble: &ignoreScrobble,
+	})
+}
 
 func (s *subsonicMediaProvider) SavePlayQueue(trackIDs []string, currentTrackIdx int, timeSeconds int) error {
 	if len(trackIDs) == 0 {
