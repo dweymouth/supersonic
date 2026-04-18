@@ -40,8 +40,8 @@ type SettingsDialog struct {
 	OnPauseFadeSettingsChanged     func()
 	OnAudioDeviceSettingChanged    func()
 	OnThemeSettingChanged          func()
-	OnAccentColorChanged           func() // Lightweight callback for instant accent updates
-	OnExtractFromCover             func() // Extract accent color from current track cover art
+	OnAccentColorChanged           func()        // Lightweight callback for instant accent updates
+	OnExtractFromCover             func() string // Extract accent color from current track cover art, returns hex color or empty string
 	OnDismiss                      func()
 	OnEqualizerSettingsChanged     func()
 	OnPageNeedsRefresh             func()
@@ -1048,7 +1048,14 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 				util.NewHSpace(10),
 				widget.NewButton(lang.L("Extract from playing track"), func() {
 					if s.OnExtractFromCover != nil {
-						s.OnExtractFromCover()
+						if extractedHex := s.OnExtractFromCover(); extractedHex != "" {
+							// Update config with extracted color
+							s.config.Theme.AccentColor = extractedHex
+							// Update slider to match new color
+							hueSlider.SetValue(hexToHue(extractedHex))
+							// Update palette preview
+							updatePalettePreview()
+						}
 					}
 				}),
 			),
