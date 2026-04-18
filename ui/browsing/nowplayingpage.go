@@ -495,14 +495,6 @@ func (a *NowPlayingPage) UnselectAll() {
 }
 
 func (a *NowPlayingPage) Refresh() {
-	if a.bgWrapper != nil {
-		c := theme.Color(myTheme.ColorNamePageBackground)
-		bg := a.bgWrapper.BgManager().BackgroundGradient
-		if c != bg.EndColor {
-			bg.EndColor = c
-			bg.Refresh()
-		}
-	}
 	a.BaseWidget.Refresh()
 
 	a.card.ShowAlbumYear = a.cfg.AlbumsPage.ShowYears

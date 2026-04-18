@@ -46,6 +46,17 @@ func (bw *BackgroundWrapper) BgManager() *BackgroundManager {
 	return bw.bgManager
 }
 
+// Refresh updates the background gradient color when theme changes.
+func (bw *BackgroundWrapper) Refresh() {
+	if bw.bgManager != nil {
+		c := theme.Color(theme.ColorNameBackground)
+		if c != bw.bgManager.BackgroundGradient.EndColor {
+			bw.bgManager.SetGradientEndColor(c)
+		}
+	}
+	bw.BaseWidget.Refresh()
+}
+
 // CreateRenderer creates the renderer for this widget.
 func (bw *BackgroundWrapper) CreateRenderer() fyne.WidgetRenderer {
 	if bw.container == nil {
