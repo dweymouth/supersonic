@@ -203,6 +203,9 @@ func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette
 		return palette.SurfaceHover
 	case theme.ColorNameForeground:
 		return palette.TextPrimary
+	case theme.ColorNameForegroundOnPrimary:
+		// Use TextOnAccent for text/icons on primary/accent buttons
+		return palette.TextOnAccent
 	case theme.ColorNameHover:
 		return palette.SurfaceHover
 	case theme.ColorNameHyperlink:
