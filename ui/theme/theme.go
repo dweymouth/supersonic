@@ -225,7 +225,9 @@ func (m *MyTheme) getColorFromPalette(name fyne.ThemeColorName, palette *Palette
 		// Primary: use accent color directly for checkboxes, tabs, buttons
 		return palette.Accent
 	case theme.ColorNameScrollBar:
-		return palette.TextPrimary
+		return palette.Hyperlink
+	case theme.ColorNameScrollBarBackground:
+		return palette.SurfaceHover
 	case theme.ColorNameSelection:
 		// Use surfaceHover for selection - it's already calibrated based on surface luminance
 		// This ensures good contrast in both light and dark modes
