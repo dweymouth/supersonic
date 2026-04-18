@@ -19,11 +19,11 @@ type SliderRanges struct {
 func GetSliderRanges(baseMode string) SliderRanges {
 	switch strings.ToLower(baseMode) {
 	case "light":
-		return SliderRanges{SatMin: 0.5, SatMax: 1.0, ContrastMin: 0.5, ContrastMax: 1.0}
+		return SliderRanges{SatMin: 0.5, SatMax: 1.5, ContrastMin: 0.5, ContrastMax: 1.0}
 	case "black":
-		return SliderRanges{SatMin: 0.5, SatMax: 1.0, ContrastMin: 0, ContrastMax: 1.0}
+		return SliderRanges{SatMin: 0.5, SatMax: 1.5, ContrastMin: 0, ContrastMax: 1.0}
 	default:
-		return SliderRanges{SatMin: 0.0, SatMax: 1.0, ContrastMin: 0.0, ContrastMax: 1.0}
+		return SliderRanges{SatMin: 0.0, SatMax: 1.5, ContrastMin: 0.0, ContrastMax: 1.0}
 	}
 }
 
@@ -57,7 +57,8 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 
 	// Apply saturation/contrast sliders to accent
 	if saturation != 1.0 {
-		accentS = clampFloat(accentS*saturation, 0, 1)
+		// Allow oversaturation (>1.0) for more vibrant colors
+		accentS = math.Max(0, accentS*saturation)
 	}
 	if contrast != 1.0 {
 		// Contrast affects lightness: >1 = more extreme, <1 = closer to mid
@@ -65,11 +66,20 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 		accentL = midpoint + (accentL-midpoint)*contrast
 		accentL = clampFloat(accentL, 0.15, 0.85)
 	}
-	accent = HslToRgb(accentH, accentS, accentL)
-
 	// Determine mode characteristics
 	isLight := strings.ToLower(baseMode) == "light"
 	isBlack := strings.ToLower(baseMode) == "black"
+
+	// Apply luminosity correction for legibility only when contrast is low/medium
+	// When contrast > 1.0, user wants extreme colors, so respect their choice
+	if contrast <= 1.0 {
+		if isLight {
+			accentL = math.Min(accentL, 0.45)
+		} else {
+			accentL = math.Max(accentL, 0.55)
+		}
+	}
+	accent = HslToRgb(accentH, math.Min(accentS, 1.0), accentL)
 
 	// Unified palette generation using consistent ratios
 	// All values derived from accent hue with mode-specific lightness
@@ -157,20 +167,8 @@ func GeneratePalette(accentHex string, saturation, contrast float64, baseMode st
 	success := HslToRgb(140.0, 0.60, 0.45) // Green
 	danger := HslToRgb(0.0, 0.70, 0.50)    // Red
 
-	// Ensure hyperlinks are highly legible against both surfaces and backgrounds
+	// Hyperlink: use the processed accent directly (luminosity correction already applied)
 	hyperlink := accent
-	if isLight {
-		// In light mode, ensure it's dark enough to pop
-		_, accentS, accentL := RgbToHslColor(accent)
-		hyperlink = HslToRgb(accentH, accentS, math.Min(accentL, 0.35))
-	} else {
-		// In dark mode, ensure it's bright enough to pop
-		_, accentS, accentL := RgbToHslColor(accent)
-		hyperlink = HslToRgb(accentH, accentS, math.Max(accentL, 0.65))
-	}
-	// Final safety check against actual background colors to guarantee WCAG AA
-	hyperlink, _ = EnsureContrast(hyperlink, surf, 4.5)
-	hyperlink, _ = EnsureContrast(hyperlink, bg, 4.5)
 
 	palette := &Palette{
 		Accent:         accent,
