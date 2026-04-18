@@ -29,20 +29,20 @@ func NewColorNormalizer() *ColorNormalizer {
 	}
 }
 
-// NormalizeForMode adjusts any hex color to be appropriate for the given base mode
+// NormalizeForMode adjusts any hex color to be appropriate for the given appearance mode
 // Returns a color guaranteed to have sufficient contrast against backgrounds
-func (cn *ColorNormalizer) NormalizeForMode(hexColor string, baseMode string) string {
+func (cn *ColorNormalizer) NormalizeForMode(hexColor string, appearance string) string {
 	c, err := hexToColor(hexColor)
 	if err != nil {
 		// Return a safe default based on mode
-		if baseMode == "light" {
+		if appearance == string(AppearanceLight) {
 			return "#0066CC"
 		}
 		return "#66B2FF"
 	}
 
 	h, s, l := RgbToHslColor(c)
-	isLight := baseMode == "light"
+	isLight := appearance == string(AppearanceLight)
 
 	// Normalize luminance based on mode
 	if isLight {
@@ -154,9 +154,9 @@ func EnsureContrast(foreground, background color.Color, minRatio float64) (color
 }
 
 // NormalizeGrayscaleForMode creates an appropriate accent for B&W/grayscale images
-// Returns a subtle tint that works with the base mode
-func NormalizeGrayscaleForMode(avgLuminance float64, baseMode string) string {
-	isLight := baseMode == "light"
+// Returns a subtle tint that works with the given appearance mode
+func NormalizeGrayscaleForMode(avgLuminance float64, appearance string) string {
+	isLight := appearance == string(AppearanceLight)
 
 	// For grayscale images, create subtle warm/cool metallic accent
 	var hue float64
@@ -198,7 +198,7 @@ func IsLightColor(c color.Color) bool {
 }
 
 // BlendWithMode blends two colors, mode-aware (multiply for dark, screen for light effects)
-func BlendWithMode(base, overlay color.Color, amount float64, baseMode string) color.Color {
+func BlendWithMode(base, overlay color.Color, amount float64, appearance string) color.Color {
 	if amount <= 0 {
 		return base
 	}

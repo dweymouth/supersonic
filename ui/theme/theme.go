@@ -107,7 +107,7 @@ type MyTheme struct {
 		accentColor string
 		saturation  float64
 		contrast    float64
-		baseMode    string
+		appearance  string
 	}
 	paletteMu sync.Mutex // protects cachedPalette and cachedPaletteConfig
 }
@@ -154,7 +154,7 @@ func (m *MyTheme) SetAccentColor(accentHex string) {
 	m.config.AccentColor = accentHex
 
 	// Generate new palette and apply immediately
-	palette, err := GeneratePalette(accentHex, m.config.Saturation, m.config.Contrast, m.config.BaseMode)
+	palette, err := GeneratePalette(accentHex, m.config.Saturation, m.config.Contrast, m.config.Appearance)
 	if err != nil {
 		log.Printf("Failed to generate palette: %v", err)
 		return
@@ -272,9 +272,9 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 			m.cachedPaletteConfig.accentColor != m.config.AccentColor ||
 			m.cachedPaletteConfig.saturation != m.config.Saturation ||
 			m.cachedPaletteConfig.contrast != m.config.Contrast ||
-			m.cachedPaletteConfig.baseMode != m.config.BaseMode {
+			m.cachedPaletteConfig.appearance != m.config.Appearance {
 
-			palette, err := GeneratePalette(m.config.AccentColor, m.config.Saturation, m.config.Contrast, m.config.BaseMode)
+			palette, err := GeneratePalette(m.config.AccentColor, m.config.Saturation, m.config.Contrast, m.config.Appearance)
 			if err != nil {
 				log.Printf("failed to generate palette: %v", err)
 				// Fall through to TOML theme
@@ -283,7 +283,7 @@ func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) 
 				m.cachedPaletteConfig.accentColor = m.config.AccentColor
 				m.cachedPaletteConfig.saturation = m.config.Saturation
 				m.cachedPaletteConfig.contrast = m.config.Contrast
-				m.cachedPaletteConfig.baseMode = m.config.BaseMode
+				m.cachedPaletteConfig.appearance = m.config.Appearance
 			}
 		}
 		palette := m.cachedPalette

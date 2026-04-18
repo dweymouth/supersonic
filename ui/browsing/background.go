@@ -189,7 +189,7 @@ func adjustBrightnessForTheme(img image.Image) image.Image {
 		palette, err := myTheme.GeneratePalette(cfg.AccentColor,
 			cfg.Saturation,
 			cfg.Contrast,
-			cfg.BaseMode)
+			cfg.Appearance)
 		if err == nil && palette != nil {
 			// Target: make image align with page background luminance
 			r, g, b, _ := palette.PageBackground.RGBA()

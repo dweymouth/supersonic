@@ -172,7 +172,6 @@ type ThemeConfig struct {
 	AccentColor string  // Hex color code for accent
 	Saturation  float64 // Saturation multiplier (default 1.0)
 	Contrast    float64 // Contrast multiplier (default 1.0)
-	BaseMode    string  // Base mode: "dark", "light"
 }
 
 type TranscodingConfig struct {

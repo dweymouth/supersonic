@@ -698,28 +698,8 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		themeModeSelect.SetSelectedIndex(0)
 	}
 
-	// Helper to update baseMode from appearance when in dynamic mode
-	updateBaseMode := func(appearance string) {
-		switch appearance {
-		case string(myTheme.AppearanceDark):
-			s.config.Theme.BaseMode = "black"
-		case string(myTheme.AppearanceLight):
-			s.config.Theme.BaseMode = "light"
-		case string(myTheme.AppearanceAuto):
-			if myTheme.IsDarkMode(fyne.CurrentApp()) {
-				s.config.Theme.BaseMode = "black"
-			} else {
-				s.config.Theme.BaseMode = "light"
-			}
-		}
-	}
-
 	themeFileSelect.OnChanged = func(_ string) {
 		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
-		// Update base mode if switching to dynamic
-		if s.config.Theme.ThemeFile == myTheme.ThemeFileDynamic {
-			updateBaseMode(themeModeSelect.Selected)
-		}
 		if s.OnThemeSettingChanged != nil {
 			s.OnThemeSettingChanged()
 		}
@@ -727,18 +707,9 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 
 	themeModeSelect.OnChanged = func(value string) {
 		s.config.Theme.Appearance = value
-		// If in dynamic mode, also update baseMode
-		if s.config.Theme.ThemeFile == myTheme.ThemeFileDynamic {
-			updateBaseMode(value)
-		}
 		if s.OnThemeSettingChanged != nil {
 			s.OnThemeSettingChanged()
 		}
-	}
-
-	// Set initial base mode if dynamic is selected
-	if s.config.Theme.ThemeFile == myTheme.ThemeFileDynamic {
-		updateBaseMode(s.config.Theme.Appearance)
 	}
 
 	// Ensure we have valid values (defaults should be set in config loading, but ensure here)
@@ -783,7 +754,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 			s.config.Theme.AccentColor,
 			s.config.Theme.Saturation,
 			s.config.Theme.Contrast,
-			s.config.Theme.BaseMode,
+			s.config.Theme.Appearance,
 		)
 		if err != nil {
 			// Fallback to accent color
@@ -867,8 +838,8 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		return val
 	}
 
-	// Create sliders with initial ranges based on current base mode
-	initRanges := getRanges(s.config.Theme.BaseMode)
+	// Create sliders with initial ranges based on current appearance
+	initRanges := getRanges(s.config.Theme.Appearance)
 
 	saturationSlider := widget.NewSlider(initRanges.SatMin, initRanges.SatMax)
 	saturationSlider.Step = 0.05
@@ -919,10 +890,6 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	// Update controls when theme changes
 	themeFileSelect.OnChanged = func(name string) {
 		s.config.Theme.ThemeFile = themeFileNames[themeFileSelect.SelectedIndex()]
-		// Update base mode if switching to dynamic
-		if s.config.Theme.ThemeFile == myTheme.ThemeFileDynamic {
-			updateBaseMode(themeModeSelect.Selected)
-		}
 		updateAccentControls()
 		if s.OnThemeSettingChanged != nil {
 			s.OnThemeSettingChanged()
