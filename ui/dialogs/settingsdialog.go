@@ -744,7 +744,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 	// Ensure we have valid values (defaults should be set in config loading, but ensure here)
 	// Also update the config with defaults so they get saved
 	if s.config.Theme.AccentColor == "" {
-		s.config.Theme.AccentColor = "#FF8A45" // Default orange accent
+		s.config.Theme.AccentColor = "#286ef4" // Classic Supersonic blue
 	}
 
 	// Hue slider (0-360) for rainbow color selection

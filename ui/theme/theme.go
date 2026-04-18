@@ -120,6 +120,10 @@ func NewMyTheme(config *backend.ThemeConfig, themeFileDir string) *MyTheme {
 	if m.defaultThemeFile, err = DecodeThemeFile(bytes.NewReader(res.ResDefaultToml.StaticContent)); err != nil {
 		log.Fatalf("Failed to load builtin theme: %v", err.Error())
 	}
+	// Ensure dynamic theme has a default accent color matching the classic Supersonic blue
+	if config.AccentColor == "" {
+		config.AccentColor = "#286ef4" // Classic Supersonic blue (from Default theme Hyperlink)
+	}
 	return m
 }
 
