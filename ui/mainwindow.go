@@ -557,7 +557,12 @@ func (m *MainWindow) showSettingsDialog() {
 	// Full theme reload for theme file changes
 	themeUpdateCallbk := func() {
 		m.theme.ReloadThemeFile()
+		m.theme.InvalidatePaletteCache()
 		fyne.CurrentApp().Settings().SetTheme(m.theme)
+		// Force refresh of all content
+		if content := m.Window.Content(); content != nil {
+			content.Refresh()
+		}
 	}
 
 	// Accent color update with debounce for smooth slider dragging

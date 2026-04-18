@@ -161,8 +161,11 @@ func (m *MyTheme) SetAccentColor(accentHex string) {
 	m.paletteMu.Unlock()
 
 	// Notify Fyne to invalidate cache and redraw all widgets
+	// Use nil first to force a complete refresh, then set the actual theme
 	fyne.Do(func() {
-		fyne.CurrentApp().Settings().SetTheme(m)
+		settings := fyne.CurrentApp().Settings()
+		settings.SetTheme(nil)
+		settings.SetTheme(m)
 	})
 }
 
