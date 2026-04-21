@@ -505,7 +505,7 @@ func (s *subsonicMediaProvider) GetRadioStations() ([]*mediaprovider.RadioStatio
 		return &mediaprovider.RadioStation{
 			// TODO - subsonic library is missing ID in its radiostation object. add it
 			ID:          "radio-" + strings.ReplaceAll(rs.Name, " ", ""),
-			Name:        rs.Name,
+			StationName: rs.Name,
 			HomePageURL: rs.HomePageUrl,
 			StreamURL:   rs.StreamUrl,
 			CoverArtID:  rs.CoverArt,
