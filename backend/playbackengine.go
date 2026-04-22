@@ -1130,12 +1130,12 @@ func (p *playbackEngine) reportPlayback(state string) {
 	if p.getPlayQueueLength() == 0 || p.nowPlayingIdx < 0 {
 		return
 	}
-	if _, isRadio := p.getPlayQueueItemAt(p.nowPlayingIdx).(*mediaprovider.RadioStation); isRadio {
+	np := p.NowPlaying()
+	if np == nil || np.Metadata().Type != mediaprovider.MediaItemTypeTrack {
 		return
 	}
-	track := p.getPlayQueueItemAt(p.nowPlayingIdx).(*mediaprovider.Track)
 	posMs := int64(p.latestTrackPosition * 1000)
-	go reporter.ReportPlayback(track.ID, posMs, state)
+	go reporter.ReportPlayback(np.Metadata().ID, posMs, state)
 }
 
 func (pm *playbackEngine) invokeNoArgCallbacks(cbs []func()) {
