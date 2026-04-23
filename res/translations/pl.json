@@ -109,7 +109,7 @@
     "Edit": "Edytuj",
     "Edit Playlist": "Edytuj playlistę",
     "Edit server": "Edytuj serwer",
-    "Enable LrcLib lyrics fetcher": "Włącz pobieranie tekstu piosenki z LrcLib",
+    "Enable LrcLib lyrics fetcher": "Włącz pobieranie tekstu utworu z LrcLib",
     "Enable OS media player integration": "Włącz integrację z systemowym odtwarzaczem muzyki",
     "Enable system tray": "Włącz chowanie do zasobnika",
     "Enabled": "Włączony",
@@ -158,8 +158,8 @@
     "Locally": "Lokalnie",
     "Log Out": "Wyloguj",
     "Login to Server": "Logowanie do Serwera",
-    "Lyrics": "Tekst piosenki",
-    "Lyrics not available": "Tekst piosenki nie jest dostępny",
+    "Lyrics": "Tekst utworu",
+    "Lyrics not available": "Tekst utworu nie jest dostępny",
     "Mar": "Mar",
     "Maximum image cache size": "Maksymalny rozmiar cache dla obrazków",
     "May": "May",
@@ -340,7 +340,7 @@
     "none selected": "wybrano nic",
     "optional": "opcjonalne",
     "or when": "lub kiedy",
-    "percent of track is played": "procent odtworzonej piosenki",
+    "percent of track is played": "procent odtworzonego utworu",
     "playlist.addedtracks": {
         "one": "Dodano jeden utwór do playlisty",
         "other": "Dodano {{.trackCount}} utworów do playlisty"
