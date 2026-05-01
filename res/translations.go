@@ -13,6 +13,7 @@ type TranslationInfo struct {
 
 var TranslationsInfo = []TranslationInfo{
 	{Name: "de", DisplayName: "Deutsch", TranslationFileName: "de.json"},
+	{Name: "el", DisplayName: "Ελληνικά", TranslationFileName: "el.json"},
 	{Name: "en", DisplayName: "English", TranslationFileName: "en.json"},
 	{Name: "es", DisplayName: "Español", TranslationFileName: "es.json"},
 	{Name: "fr", DisplayName: "Français", TranslationFileName: "fr.json"},
