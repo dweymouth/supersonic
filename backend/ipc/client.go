@@ -118,6 +118,10 @@ func (c *Client) AdjustVolumePct(pct float64) error {
 	return err
 }
 
+func (c *Client) CurrentTrack() (string, error) {
+	return c.sendRequest(CurrentTrackPath)
+}
+
 func (c *Client) RateCurrentTrack(rating int) error {
 	_, err := c.sendRequest(BuildRateCurrentTrackPath(rating))
 	return err

@@ -57,6 +57,10 @@ type PlaybackManager struct {
 type urlCacheEntry struct {
 	url      string
 	cachedAt time.Time
+	// current radio metadata
+	radioStationName string
+	radioIcyTitle    string
+	radioIcyArtist   string
 }
 
 type RemotePlaybackDevice struct {
@@ -213,6 +217,11 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 				}
 			}()
 		}
+	})
+	p.OnRadioMetadataChange(func(radioName, title, artist string) {
+		p.radioStationName = radioName
+		p.radioIcyTitle = title
+		p.radioIcyArtist = artist
 	})
 }
 
@@ -377,7 +386,15 @@ func (p *PlaybackManager) DisableCallbacks() {
 
 // Gets the now playing media item, if any.
 func (p *PlaybackManager) NowPlaying() mediaprovider.MediaItem {
-	return p.engine.NowPlaying()
+	item := p.engine.NowPlaying()
+	if station, ok := item.(*mediaprovider.RadioStation); ok {
+		station = station.Copy().(*mediaprovider.RadioStation)
+		station.StationName = p.radioStationName
+		station.Title = p.radioIcyTitle
+		station.Artists = []string{p.radioIcyArtist}
+		item = station
+	}
+	return item
 }
 
 func (p *PlaybackManager) NowPlayingIndex() int {
