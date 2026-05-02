@@ -1,6 +1,7 @@
 package mediaprovider
 
 import (
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -205,11 +206,14 @@ type SavedPlayQueue struct {
 }
 
 type RadioStation struct {
-	Name        string
 	ID          string
+	StationName string
 	HomePageURL string
 	StreamURL   string
-	CoverArtID  string
+
+	Title      string
+	Artists    []string
+	CoverArtID string
 }
 
 type MediaItemType int
@@ -267,16 +271,30 @@ func (r *RadioStation) Metadata() MediaItemMetadata {
 	if r == nil {
 		return MediaItemMetadata{}
 	}
+	name := r.Title
+	if name == "" {
+		name = r.StationName
+	}
 	return MediaItemMetadata{
 		Type:       MediaItemTypeRadioStation,
 		ID:         r.ID,
-		Name:       r.Name,
+		Name:       name,
 		CoverArtID: r.CoverArtID,
+		Artists:    r.Artists,
 	}
 }
 
 func (r *RadioStation) Copy() MediaItem {
-	return r // no need to copy since RadioStations are immutable
+	return &RadioStation{
+		ID:          r.ID,
+		StationName: r.StationName,
+		HomePageURL: r.HomePageURL,
+		StreamURL:   r.StreamURL,
+
+		Title:      r.Title,
+		Artists:    slices.Clone(r.Artists),
+		CoverArtID: r.CoverArtID,
+	}
 }
 
 type ContentType int

@@ -29,6 +29,7 @@ type PlaybackHandler interface {
 	PlayAlbum(string, int, bool) error
 	PlayPlaylist(string, int, bool) error
 	PlayTrack(string) error
+	NowPlaying() mediaprovider.MediaItem
 }
 
 type IPCServer interface {
@@ -41,16 +42,21 @@ type ServerManager interface {
 }
 
 type serverImpl struct {
-	server          *http.Server
-	pbHandler       PlaybackHandler
-	rateFn          func(int)
-	sm              ServerManager
-	showFn          func()
-	quitFn          func()
-	reloadThemeFn   func()
+	server        *http.Server
+	pbHandler     PlaybackHandler
+	rateFn        func(int)
+	sm            ServerManager
+	showFn        func()
+	quitFn        func()
+	reloadThemeFn func()
 }
 
-func NewServer(pbHandler PlaybackHandler, rateFn func(int), sm ServerManager, showFn, quitFn, reloadThemeFn func()) IPCServer {
+func NewServer(
+	pbHandler PlaybackHandler,
+	rateFn func(int),
+	sm ServerManager,
+	showFn, quitFn, reloadThemeFn func(),
+) IPCServer {
 	s := &serverImpl{pbHandler: pbHandler, rateFn: rateFn, sm: sm, showFn: showFn, quitFn: quitFn, reloadThemeFn: reloadThemeFn}
 	s.server = &http.Server{
 		Handler: s.createHandler(),
@@ -175,6 +181,13 @@ func (s *serverImpl) createHandler() http.Handler {
 
 		return tracks, nil
 	}))
+	m.HandleFunc(CurrentTrackPath, s.makeStatusEndpointHandler(func() (any, error) {
+		track := s.pbHandler.NowPlaying()
+		if track == nil {
+			return nil, errors.New("nothing is playing right now")
+		}
+		return track.Metadata(), nil
+	}))
 	m.HandleFunc(RateCurrentTrackPath, func(w http.ResponseWriter, r *http.Request) {
 		v := r.URL.Query().Get("r")
 		if rating, err := strconv.Atoi(v); err == nil {
@@ -228,6 +241,21 @@ func (s *serverImpl) makeTracklistEndpointHandler(f func(string, int, bool) erro
 		}
 		f(id, firstTrack, shuffle)
 		s.writeOK(w)
+	}
+}
+
+func (s *serverImpl) makeStatusEndpointHandler(f func() (any, error)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, err := f()
+		if err != nil {
+			s.writeErr(w, err)
+			return
+		}
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			s.writeErr(w, err)
+		}
+		s.writeData(w, bytes)
 	}
 }
 
