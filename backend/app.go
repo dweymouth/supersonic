@@ -714,6 +714,12 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.Show()
 	case *FlagReloadTheme:
 		return cli.ReloadTheme()
+	case *FlagCurrentTrack:
+		data, err := cli.CurrentTrack()
+		if err == nil {
+			fmt.Println(data)
+		}
+		return err
 	case VolumeCLIArg >= 0:
 		return cli.SetVolume(VolumeCLIArg)
 	case VolumePctCLIArg != 0:

@@ -170,17 +170,24 @@ func (p *playbackEngine) registerPlayerCallbacks(pl player.BasePlayer) {
 	pl.OnSeek(func() {
 		p.handleTimePosUpdate(true)
 		p.invokeNoArgCallbacks(p.onSeek)
+		seekState := "playing"
+		if p.PlaybackStatus().State == player.Paused {
+			seekState = "paused"
+		}
+		p.reportPlayback(seekState)
 	})
 	pl.OnStopped(p.handleOnStopped)
 	pl.OnPaused(func() {
 		p.playTimeStopwatch.Stop()
 		p.stopPollTimePos()
 		p.invokeNoArgCallbacks(p.onPaused)
+		p.reportPlayback("paused")
 	})
 	pl.OnPlaying(func() {
 		p.playTimeStopwatch.Start()
 		p.startPollTimePos()
 		p.invokeNoArgCallbacks(p.onPlaying)
+		p.reportPlayback("playing")
 	})
 }
 
@@ -926,6 +933,7 @@ func (p *playbackEngine) handleOnStopped() {
 	p.handleTimePosUpdate(false)
 	p.invokeOnSongChangeCallbacks()
 	p.invokeNoArgCallbacks(p.onStopped)
+	p.reportPlayback("stopped")
 	p.alreadyScrobbled = false
 	p.wasStopped = true
 	p.nowPlayingIdx = -1
@@ -1091,6 +1099,7 @@ func (p *playbackEngine) sendNowPlayingScrobble() {
 		track.PlayCount += 1
 	}
 	go p.sm.Server.TrackBeganPlayback(track.ID)
+	p.reportPlayback("starting")
 }
 
 // creates a deep copy of the track info so that we can maintain our own state
@@ -1111,6 +1120,22 @@ func (p *playbackEngine) invokeOnSongChangeCallbacks() {
 		cb(p.NowPlaying(), p.lastScrobbled)
 	}
 	p.lastScrobbled = nil
+}
+
+func (p *playbackEngine) reportPlayback(state string) {
+	reporter, ok := p.sm.Server.(mediaprovider.CanReportPlayback)
+	if !ok {
+		return
+	}
+	if p.getPlayQueueLength() == 0 || p.nowPlayingIdx < 0 {
+		return
+	}
+	np := p.NowPlaying()
+	if np == nil || np.Metadata().Type != mediaprovider.MediaItemTypeTrack {
+		return
+	}
+	posMs := int64(p.latestTrackPosition * 1000)
+	go reporter.ReportPlayback(np.Metadata().ID, posMs, state)
 }
 
 func (pm *playbackEngine) invokeNoArgCallbacks(cbs []func()) {
