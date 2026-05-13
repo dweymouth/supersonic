@@ -8,6 +8,8 @@ github.com/FyshOS/fancyfs v0.0.1 h1:kgvm7VvwOMLkYTqSflplp62SlMVWQ2uAoHw9CXwXHYg=
 github.com/FyshOS/fancyfs v0.0.1/go.mod h1:S5SHVz/5R72iCXOxCqdcyTPSlg3JxNd0gaHyGBSrY8A=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
+github.com/andrewdunndev/go-upnpcast v0.0.0-20260513021743-c8704c9e23ed h1:dogIo/KEEk72Hy55YlgZJMES1wU8F05Hu5lY2SUYZxM=
+github.com/andrewdunndev/go-upnpcast v0.0.0-20260513021743-c8704c9e23ed/go.mod h1:o/QGDTK3qdaS3h9Bt8aH5ywgbWbrPVzPCHlZYFs0IHY=
 github.com/boxes-ltd/imaging v1.7.5 h1:k4kYxJEhysoGhEEN1IEeKoSbnG8/8snjj7M48Ok0fnk=
 github.com/boxes-ltd/imaging v1.7.5/go.mod h1:+8H+oRvis3InOFtTpcoCCB1RDXqo6p9tQBtjZfWnrC8=
 github.com/cenkalti/dominantcolor v1.0.3 h1:Pt0vfRZ8enkZh1n22RvoboA53SMM/v2aEwNQTZKSqww=
@@ -125,8 +127,6 @@ github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449 h1:UHIPI43
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
 github.com/supersonic-app/go-subsonic v0.0.0-20260416152144-7a5f505a273c h1:wms3FvahSfcnacW2rs9L+vzJR8FmTE5xTrRgf3+k3eQ=
 github.com/supersonic-app/go-subsonic v0.0.0-20260416152144-7a5f505a273c/go.mod h1:ClhAgC2qobwH19D6kdwULLYSHlOmldDGkdu2G2Z0Ijo=
-github.com/supersonic-app/go-upnpcast v0.1.0 h1:SL0WVgnqvAVaLT9MSRhSeVwF9pcUw1cgBITKVoWXN3g=
-github.com/supersonic-app/go-upnpcast v0.1.0/go.mod h1:o/QGDTK3qdaS3h9Bt8aH5ywgbWbrPVzPCHlZYFs0IHY=
 github.com/yuin/goldmark v1.7.16 h1:n+CJdUxaFMiDUNnWC3dMWCIQJSkxH4uz3ZwQBkAlVNE=
 github.com/yuin/goldmark v1.7.16/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
 github.com/zalando/go-keyring v0.2.8 h1:6sD/Ucpl7jNq10rM2pgqTs0sZ9V3qMrqfIIy5YPccHs=
