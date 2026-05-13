@@ -31,6 +31,12 @@ type PlaybackManager struct {
 	appCfg   *AppConfig
 	cfg      *PlaybackConfig
 
+	// CoverArtPathFn returns a local filesystem path to the cached cover
+	// art image for the given CoverArtID. Used by DLNA cast so the
+	// renderer can fetch album art via the local proxy. Set externally
+	// (typically wired to ImageManager.GetCoverArtPath).
+	CoverArtPathFn func(coverArtID string) (string, error)
+
 	localPlayer         player.BasePlayer
 	remotePlayersLock   sync.Mutex
 	remotePlayers       []RemotePlaybackDevice
@@ -247,17 +253,18 @@ func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, fastScan bool) 
 func (p *PlaybackManager) scanRemotePlayers(ctx context.Context, waitSec int) {
 	devices, _ := device.SearchMediaRenderers(ctx, waitSec, services.AVTransport, services.RenderingControl)
 
+	coverArtPathFn := p.CoverArtPathFn
 	var discovered []RemotePlaybackDevice
 	for _, d := range devices {
-		p := RemotePlaybackDevice{
+		rp := RemotePlaybackDevice{
 			Name:     d.FriendlyName,
 			URL:      d.URL,
 			Protocol: "DLNA",
 			new: func() (player.BasePlayer, error) {
-				return dlna.NewDLNAPlayer(d)
+				return dlna.NewDLNAPlayer(d, coverArtPathFn)
 			},
 		}
-		discovered = append(discovered, p)
+		discovered = append(discovered, rp)
 	}
 
 	p.remotePlayersLock.Lock()
