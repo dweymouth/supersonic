@@ -112,6 +112,14 @@ func main() {
 	myApp.OnExit = util.FyneDoFunc(mainWindow.Quit)
 	myApp.OnReloadTheme = util.FyneDoFunc(mainWindow.ReloadTheme)
 
+	if runtime.GOOS == "linux" {
+		// On Wayland, the render loop stalls when the window is on an inactive
+		// workspace. Force a refresh when focus returns to update the display.
+		fyneApp.Lifecycle().SetOnEnteredForeground(func() {
+			mainWindow.Canvas().Refresh(mainWindow.Canvas().Content())
+		})
+	}
+
 	if runtime.GOOS == "windows" {
 		windowStartupTasks := sync.OnceFunc(func() {
 			mainWindow.Window.(driver.NativeWindow).RunNative(func(ctx any) {
