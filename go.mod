@@ -18,7 +18,7 @@ require (
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/pelletier/go-toml/v2 v2.3.0
+	github.com/pelletier/go-toml/v2 v2.3.1
 	github.com/quarckster/go-mpris-server v1.0.3
 	github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410
 	github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449
