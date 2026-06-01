@@ -224,16 +224,22 @@ const (
 )
 
 type MediaItemMetadata struct {
-	Type       MediaItemType
-	MIMEType   string
-	ID         string
-	Name       string
-	Artists    []string
-	ArtistIDs  []string
-	Album      string
-	AlbumID    string
-	CoverArtID string
-	Duration   time.Duration
+	Type         MediaItemType
+	MIMEType     string
+	ID           string
+	Name         string
+	Artists      []string
+	ArtistIDs    []string
+	Album        string
+	AlbumID      string
+	CoverArtID   string
+	Duration     time.Duration
+	TrackNumber  int
+	Size         int64
+	BitRate      int // kbps as reported by the server
+	SampleRate   int // Hz
+	BitDepth     int
+	ChannelCount int
 }
 
 type MediaItem interface {
@@ -246,16 +252,22 @@ func (t *Track) Metadata() MediaItemMetadata {
 		return MediaItemMetadata{}
 	}
 	return MediaItemMetadata{
-		Type:       MediaItemTypeTrack,
-		MIMEType:   t.ContentType,
-		ID:         t.ID,
-		Name:       t.Title,
-		Artists:    t.ArtistNames,
-		ArtistIDs:  t.ArtistIDs,
-		Album:      t.Album,
-		AlbumID:    t.AlbumID,
-		CoverArtID: t.CoverArtID,
-		Duration:   t.Duration,
+		Type:         MediaItemTypeTrack,
+		MIMEType:     t.ContentType,
+		ID:           t.ID,
+		Name:         t.Title,
+		Artists:      t.ArtistNames,
+		ArtistIDs:    t.ArtistIDs,
+		Album:        t.Album,
+		AlbumID:      t.AlbumID,
+		CoverArtID:   t.CoverArtID,
+		Duration:     t.Duration,
+		TrackNumber:  t.TrackNumber,
+		Size:         t.Size,
+		BitRate:      t.BitRate,
+		SampleRate:   t.SampleRate,
+		BitDepth:     t.BitDepth,
+		ChannelCount: t.Channels,
 	}
 }
 
