@@ -272,6 +272,7 @@ func (m *MainWindow) DesiredSize() fyne.Size {
 
 func (m *MainWindow) setInitialSize() {
 	m.Window.Resize(m.DesiredSize())
+	m.Window.CenterOnScreen()
 }
 
 func (m *MainWindow) ReloadTheme() {
