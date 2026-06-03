@@ -229,3 +229,35 @@ jobs:
         with:
           name: Supersonic-x86_64.AppImage
           path: Supersonic-x86_64.AppImage
+
+  build-freebsd:
+    name: Build FreeBSD
+    runs-on: self-hosted
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 'stable'
+
+      - name: Install dependencies
+        run: |
+          sudo pkg update
+          sudo pkg install -y mpv gcc gmake xorgproto libX11 libXext
+
+      - name: Install Fyne tool
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Build app
+        run: gmake package_freebsd
+
+      - name: Rename artifact
+        run: mv Supersonic.tar.xz Supersonic_freebsd_x64.tar.xz
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Supersonic_freebsd_x64.tar.xz
+          path: Supersonic_freebsd_x64.tar.xz
