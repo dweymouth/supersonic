@@ -45,6 +45,13 @@ type DLNAPlayer struct {
 	avTransport   *avtransport.Client
 	renderControl *renderingcontrol.Client
 
+	// coverArtPathFn returns a local filesystem path to the cached cover
+	// art image for the given CoverArtID, or an error if no path is
+	// available. When set and the resolver succeeds, the path is exposed
+	// through the local proxy and emitted as upnp:albumArtURI in DIDL-Lite
+	// so the renderer can fetch it.
+	coverArtPathFn func(coverArtID string) (string, error)
+
 	state   int // stopped, playing, paused
 	seeking bool
 
@@ -88,7 +95,7 @@ type DLNAPlayer struct {
 	resetChan   chan (time.Duration)
 }
 
-func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
+func NewDLNAPlayer(device *device.MediaRenderer, coverArtPathFn func(coverArtID string) (string, error)) (*DLNAPlayer, error) {
 	retry := retryablehttp.NewClient()
 	retry.RetryMax = 3
 	retry.RetryWaitMin = 100 * time.Millisecond
@@ -114,10 +121,45 @@ func NewDLNAPlayer(device *device.MediaRenderer) (*DLNAPlayer, error) {
 	}
 
 	return &DLNAPlayer{
-		avTransport:   avt,
-		renderControl: rc,
-		resetChan:     make(chan time.Duration),
+		avTransport:    avt,
+		renderControl:  rc,
+		resetChan:      make(chan time.Duration),
+		coverArtPathFn: coverArtPathFn,
 	}, nil
+}
+
+// buildMediaItem assembles the avtransport.MediaItem for a track. It
+// populates the audio metadata fields (artist, album, track number, sample
+// rate, bit depth, channel count, size, bitrate, duration) so the
+// resulting DIDL-Lite includes the information the renderer needs to
+// display cover art, artist, album, and a stream-format readout.
+//
+// playbackURL is the proxy URL the renderer will fetch the stream from.
+func (d *DLNAPlayer) buildMediaItem(playbackURL string, meta mediaprovider.MediaItemMetadata) avtransport.MediaItem {
+	item := avtransport.MediaItem{
+		URL:         playbackURL,
+		Title:       meta.Name,
+		ContentType: meta.MIMEType,
+		Seekable:    true,
+		Duration:    meta.Duration,
+		Artist:      strings.Join(meta.Artists, ", "),
+		Album:       meta.Album,
+		TrackNumber: meta.TrackNumber,
+		Size:        meta.Size,
+		// DIDL-Lite res@bitrate is bytes/sec; meta.BitRate is kbps from
+		// the server. Convert: kbps * 1000 / 8 = bytes/sec.
+		Bitrate:         meta.BitRate * 125,
+		SampleFrequency: meta.SampleRate,
+		BitsPerSample:   meta.BitDepth,
+		NrAudioChannels: meta.ChannelCount,
+	}
+	if meta.CoverArtID != "" && d.coverArtPathFn != nil {
+		if path, err := d.coverArtPathFn(meta.CoverArtID); err == nil {
+			artKey := d.addURLToProxy(path)
+			item.AlbumArtURI = d.urlForItem(artKey)
+		}
+	}
+	return item
 }
 
 func (d *DLNAPlayer) SetVolume(vol int) error {
@@ -153,12 +195,7 @@ func (d *DLNAPlayer) PlayFile(urlstr string, meta mediaprovider.MediaItemMetadat
 	d.metaLock.Unlock()
 	key := d.addURLToProxy(urlstr)
 
-	media := avtransport.MediaItem{
-		URL:         d.urlForItem(key),
-		Title:       meta.Name,
-		ContentType: meta.MIMEType,
-		Seekable:    true,
-	}
+	media := d.buildMediaItem(d.urlForItem(key), meta)
 
 	if err := d.playAVTransportMedia(&media); err != nil {
 		return err
@@ -223,12 +260,8 @@ func (d *DLNAPlayer) SetNextFile(url string, meta mediaprovider.MediaItemMetadat
 		d.ensureSetupProxy()
 
 		key := d.addURLToProxy(url)
-		media = &avtransport.MediaItem{
-			URL:         d.urlForItem(key),
-			ContentType: meta.MIMEType,
-			Title:       meta.Name,
-			Seekable:    true,
-		}
+		item := d.buildMediaItem(d.urlForItem(key), meta)
+		media = &item
 	} else {
 		// empty media item to signify erasing next track in device queue
 		media = &avtransport.MediaItem{}
