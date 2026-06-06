@@ -2,28 +2,36 @@
 Name = "Orange Mate"
 Version = "0.2"
 SupportsDark = true
-SupportsLight = true
+SupportsLight = false
 
 [DarkColors]
-PageBackground = "#0F0F0F"
-ListHeader = "#232323"
-PageHeader = "#181d25"
-Background = "#232323"
-ScrollBar = "#F3F3F3"
-Button = "#14141432"
-Foreground = "#e6e6e6"
-InputBackground = "#14141432"
-Primary = "#FF8C00"
+PageBackground = "#030303"
+PageHeader = "#030303"
+ListHeader = "#0F0F0F"
+Background = "#0F0F0F"
+ScrollBar = "#AAAAAA80"
+Button = "#FFFFFF1A"
+DisabledButton = "#FFFFFF0A"
+Disabled = "#717171"
+Error = "#FF8C00"
+Focus = "#FF8C00"
+Foreground = "#FFFFFF"
+Hover = "#FFFFFF10"
 Hyperlink = "#FF8C00"
+InputBackground = "#0F0F0F"
+InputBorder = "#2B2B2B"
+MenuBackground = "#212121"
+OverlayBackground = "#212121E6"
+Placeholder = "#717171"
+Pressed = "#FFFFFF20"
+Primary = "#FF8C00"
+Selection = "#FFFFFF1A"
+Separator = "#2B2B2B"
 
-[LightColors]
-PageBackground = "#FAFAFA"
-ListHeader = "#E1DFE1"
-PageHeader = "#e1dfe1"
-Background = "#E1DFE1"
-ScrollBar = "#565656"
-Button = "#C8C8C8F0"
-DisabledButton = "#CDCDCDF0"
-Foreground = "#262626"
-Hyperlink = "#FF8C00"
-Primary = "#FF8C00"
+[Sizes]
+InputRadius = 8.0
+ScrollBar = 6.0
+
+[Fonts]
+Normal = "Comfortaa-Regular.ttf"
+Bold = "Comfortaa-Bold.ttf"
