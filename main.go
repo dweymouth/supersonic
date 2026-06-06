@@ -104,7 +104,7 @@ func main() {
 	}
 
 	fyneApp := app.New()
-	fyneApp.SetIcon(res.ResAppicon256Png)
+	fyneApp.SetIcon(res.GetAppIcon(myApp.Config.Theme.AppIcon))
 
 	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp)
 	mainWindow.Window.SetMaster()

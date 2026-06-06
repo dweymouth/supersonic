@@ -696,6 +696,22 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		themeModeSelect.SetSelectedIndex(0)
 	}
 
+	appIconSelect := widget.NewSelect([]string{
+		"Default",
+		"Super-wave",
+		"Super-fly",
+		"Super-coffee",
+		"Super-play",
+	}, nil)
+	appIconSelect.SetSelected(s.config.Theme.AppIcon)
+	if appIconSelect.Selected == "" {
+		appIconSelect.SetSelectedIndex(0)
+	}
+	appIconSelect.OnChanged = func(val string) {
+		s.config.Theme.AppIcon = val
+		fyne.CurrentApp().SetIcon(res.GetAppIcon(val))
+	}
+
 	normalFontEntry := widget.NewEntry()
 	normalFontEntry.SetPlaceHolder("path to .ttf or empty to use default")
 	normalFontEntry.Text = s.config.Application.FontNormalTTF
@@ -780,6 +796,7 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 			container.NewHBox(widget.NewLabel(lang.L("Mode")), themeModeSelect, util.NewHSpace(5)), // right
 			themeFileSelect, // center
 		),
+		container.NewBorder(nil, nil, widget.NewLabel("App Icon"), nil, appIconSelect),
 		widget.NewRichText(&widget.TextSegment{Text: lang.L("UI Scaling"), Style: util.BoldRichTextStyle}),
 		uiScaleRadio,
 		container.NewBorder(nil, nil, widget.NewLabel(lang.L("Grid card size")), nil, gridCardSize),

@@ -14,14 +14,23 @@ A lightweight cross-platform desktop client for Subsonic and Jellyfin music serv
 
 [Jump to installation instructions](https://github.com/dweymouth/supersonic#installation)
 
+## What's New! (Community Edition Updates)
+
+This fork introduces exciting UI/UX improvements and highly requested customization features:
+* 🎨 **5 New High-Contrast Themes:** Red Tube, Lime Tube, Purple Tube, Orange Mate, and Rose Pink.
+* 🌗 **Light Mode Support:** All new themes seamlessly switch to a clean, bright Light Mode with perfectly tinted accents.
+* 🖼️ **Immersive UI Design:** Increased global corner radius, proper cover art padding, and fully tinted top navigation bars.
+* ⚡ **Portable Build:** Fully standalone executable with a statically linked MPV player (no DLL mess!).
+* 🎭 **Custom App Icons:** Choose between 4 new app icons (Super-wave, Super-fly, Super-coffee, Super-play) directly from the Appearance Settings!
+
 ## Screenshots
 
-Screenshots of Supersonic running against the Navidrome demo server, showcasing the builtin dark and light themes.
+Screenshots showcasing the gorgeous new custom themes in action!
 
-<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/NowPlayingView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/NowPlayingView.png" width="49.5%"/></a>
-<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/AlbumsView.png" width="49.5%"/></a>
-<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/FavoriteSongsView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/FavoriteSongsView.png" width="49.5%"/></a>
-<a href="https://raw.githubusercontent.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png"><img src="https://raw.github.com/dweymouth/supersonic/main/res/screenshots/ArtistView.png" width="49.5%"/></a>
+<a href="res/screenshots/RedTube.jpg"><img src="res/screenshots/RedTube.jpg" width="49.5%" alt="Red Tube Theme"/></a>
+<a href="res/screenshots/LimeGreen.jpg"><img src="res/screenshots/LimeGreen.jpg" width="49.5%" alt="Lime Green Theme"/></a>
+<a href="res/screenshots/RosePink.jpg"><img src="res/screenshots/RosePink.jpg" width="49.5%" alt="Rose Pink Theme"/></a>
+<a href="res/screenshots/PurpleNeon.jpg"><img src="res/screenshots/PurpleNeon.jpg" width="49.5%" alt="Purple Neon Theme"/></a>
 
 ## Supported servers
 

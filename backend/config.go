@@ -161,6 +161,7 @@ type ThemeConfig struct {
 	ThemeFile              string
 	Appearance             string
 	UseRoundedImageCorners bool
+	AppIcon                string
 }
 
 type TranscodingConfig struct {
@@ -299,6 +300,7 @@ func DefaultConfig(appVersionTag string) *Config {
 		Theme: ThemeConfig{
 			Appearance:             "Dark",
 			UseRoundedImageCorners: true,
+			AppIcon:                "Default",
 		},
 		PeakMeter: PeakMeterConfig{
 			WindowWidth:  375,
