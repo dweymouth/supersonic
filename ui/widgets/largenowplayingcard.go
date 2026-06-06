@@ -77,7 +77,7 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 		layout.NewSpacer(),
 	)
 	n.Caption = container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-15),
-		container.NewThemeOverride(n.trackName, &whiteTextTheme{Theme: theme.DefaultTheme()}),
+		n.trackName,
 		n.artistName,
 		n.albumName,
 		util.NewVSpace(20),

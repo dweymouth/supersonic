@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
@@ -33,6 +34,8 @@ type Toolbar struct {
 	sidebarBtn     *ttwidget.Button
 	settingsBtn    *ttwidget.Button
 	settingsMenu   *fyne.Menu
+
+	bg *canvas.Rectangle
 }
 
 func NewToolbar(browsingPane *browsing.BrowsingPane, navigateFn func(controller.Route), homeFunc, showSearchFn, toggleSidebarFn func()) *Toolbar {
@@ -41,6 +44,7 @@ func NewToolbar(browsingPane *browsing.BrowsingPane, navigateFn func(controller.
 		navBtnsContainer: container.NewHBox(),
 		navBtnsPageMap:   make(map[controller.PageName]fyne.Resource),
 		settingsMenu:     fyne.NewMenu(""),
+		bg:               canvas.NewRectangle(theme.PrimaryColor()),
 	}
 	t.ExtendBaseWidget(t)
 
@@ -142,7 +146,18 @@ func (t *Toolbar) CreateRenderer() fyne.WidgetRenderer {
 		container.NewHBox(t.home, t.back, t.forward, t.reload),
 		t.navBtnsContainer,
 		container.NewHBox(layout.NewSpacer(), t.quickSearchBtn, t.sidebarBtn, t.settingsBtn))
-	return widget.NewSimpleRenderer(content)
+	return widget.NewSimpleRenderer(container.NewStack(t.bg, content))
+}
+
+func (t *Toolbar) Refresh() {
+	if fyne.CurrentApp() != nil && fyne.CurrentApp().Settings() != nil {
+		// Use a slightly translucent primary color or solid primary color
+		// The user asked "poner el color de la topbar en color tambien"
+		// which implies they want the accent color. We can use PrimaryColor.
+		t.bg.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNamePrimary, fyne.CurrentApp().Settings().ThemeVariant())
+		t.bg.Refresh()
+	}
+	t.BaseWidget.Refresh()
 }
 
 func (t *Toolbar) setupNavigationButtons(navigateFn func(controller.Route)) {
