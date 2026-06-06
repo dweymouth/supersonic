@@ -186,6 +186,7 @@ func NewNowPlayingPage(
 	}
 	a.lyricsViewer = widgets.NewLyricsViewer(a.onSeekToLyricLine)
 	a.statusLabel = widget.NewLabel(lang.L("Stopped"))
+	a.statusLabel.Alignment = fyne.TextAlignCenter
 
 	a.Reload()
 	return a
@@ -570,15 +571,15 @@ func (a *NowPlayingPage) formatStatusLine() {
 	if np := a.pm.NowPlaying(); np != nil {
 		dur = np.Metadata().Duration.Seconds()
 	}
-	statusSuffix := ""
+	statusSuffix := "00:00/00:00"
 	trackNum := 0
 	if state != stopped {
 		trackNum = a.pm.NowPlayingIndex() + 1
-		statusSuffix = fmt.Sprintf(" %s/%s",
+		statusSuffix = fmt.Sprintf("%s/%s",
 			util.SecondsToMMSS(playerStats.TimePos),
 			util.SecondsToMMSS(dur))
 	}
-	status := fmt.Sprintf("%s (%d/%d)%s · %s: %s", state, trackNum,
+	status := fmt.Sprintf("| %s [%d/%d] | (%s) | %s: %s |", state, trackNum,
 		len(a.queue), statusSuffix, lang.L("Total time"), util.SecondsToTimeString(a.totalTime))
 
 	mediaInfo := ""
@@ -586,7 +587,7 @@ func (a *NowPlayingPage) formatStatusLine() {
 		mediaInfo = a.formatMediaInfoStr(curPlayer)
 	}
 	if mediaInfo != "" {
-		mediaInfo = " | " + mediaInfo
+		mediaInfo = " " + mediaInfo + " |"
 	}
 
 	a.statusLabel.Text = fmt.Sprintf("%s%s", status, mediaInfo)
@@ -612,5 +613,5 @@ func (a *NowPlayingPage) formatMediaInfoStr(player player.BasePlayer) string {
 
 	// Note: bit depth intentionally omitted since MPV reports the decoded bit depth
 	// i.e. 24 bit files get reported as 32 bit. Also b/c bit depth isn't meaningful for lossy.
-	return fmt.Sprintf("%s %g kHz, %d kbps", codec, float64(audioInfo.Samplerate)/1000, audioInfo.Bitrate/1000)
+	return fmt.Sprintf("%s %g kHz - %d Kbps", codec, float64(audioInfo.Samplerate)/1000, audioInfo.Bitrate/1000)
 }

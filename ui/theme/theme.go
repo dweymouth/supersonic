@@ -257,35 +257,10 @@ func (m *MyTheme) ListThemeFiles() map[string]string {
 }
 
 func (m *MyTheme) Font(style fyne.TextStyle) fyne.Resource {
-	switch style {
-	case fyne.TextStyle{}:
-		if m.NormalFont != "" && normalFont == nil {
-			if content, err := readTTFFile(m.NormalFont); err != nil {
-				m.NormalFont = ""
-				m.BoldFont = ""
-			} else {
-				normalFont = fyne.NewStaticResource("normalFont", content)
-			}
-		}
-		if normalFont != nil {
-			return normalFont
-		}
-	case fyne.TextStyle{Bold: true}:
-		if m.BoldFont != "" && boldFont == nil {
-			if content, err := os.ReadFile(m.BoldFont); err != nil {
-				m.BoldFont = ""
-			} else {
-				normalFont = fyne.NewStaticResource("boldFont", content)
-			}
-		}
-		if boldFont != nil {
-			return boldFont
-		}
-		if normalFont != nil {
-			return normalFont
-		}
+	if style.Bold {
+		return res.ResComfortaaBoldTtf
 	}
-	return theme.DefaultTheme().Font(style)
+	return res.ResComfortaaRegularTtf
 }
 
 func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
@@ -299,10 +274,11 @@ func (m *MyTheme) Size(name fyne.ThemeSizeName) float32 {
 	case theme.SizeNameScrollBar:
 		return 14
 	case SizeNameImageCornerRadius:
-		if m.config.UseRoundedImageCorners {
-			return theme.InputRadiusSize()
-		}
-		return 0
+		return 16.0
+	case theme.SizeNameSelectionRadius:
+		return 16.0
+	case theme.SizeNameInputRadius:
+		return 16.0
 	default:
 		return theme.DefaultTheme().Size(name)
 	}

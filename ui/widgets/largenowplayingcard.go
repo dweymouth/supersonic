@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"image"
+	"image/color"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -14,6 +15,17 @@ import (
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 )
+
+type whiteTextTheme struct {
+	fyne.Theme
+}
+
+func (w *whiteTextTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
+	if n == theme.ColorNameForeground || n == theme.ColorNameHyperlink {
+		return color.White
+	}
+	return w.Theme.Color(n, v)
+}
 
 // Shows the current album art, track name, artist name, and album name
 // for the currently playing track. Placed into the left side of the BottomPanel.
@@ -65,7 +77,7 @@ func NewLargeNowPlayingCard() *LargeNowPlayingCard {
 		layout.NewSpacer(),
 	)
 	n.Caption = container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-15),
-		n.trackName,
+		container.NewThemeOverride(n.trackName, &whiteTextTheme{Theme: theme.DefaultTheme()}),
 		n.artistName,
 		n.albumName,
 		util.NewVSpace(20),

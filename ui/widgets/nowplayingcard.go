@@ -130,10 +130,11 @@ func (n *NowPlayingCard) onShare() {
 }
 
 func (n *NowPlayingCard) CreateRenderer() fyne.WidgetRenderer {
+	paddedCover := container.New(&layout.CustomPaddedLayout{TopPadding: 3, BottomPadding: 3, LeftPadding: 3, RightPadding: 3}, n.cover)
 	c := container.New(&layout.CustomPaddedLayout{LeftPadding: -4},
-		container.NewBorder(nil, nil, n.cover, nil,
+		container.NewBorder(nil, nil, paddedCover, nil,
 			container.New(&layout.CustomPaddedLayout{TopPadding: -2},
-				container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-13), n.trackName, n.artistName, n.albumName))),
+				container.New(layout.NewCustomPaddedVBoxLayout(theme.Padding()-13), container.NewThemeOverride(n.trackName, &whiteTextTheme{Theme: theme.DefaultTheme()}), n.artistName, n.albumName))),
 	)
 	return widget.NewSimpleRenderer(c)
 }

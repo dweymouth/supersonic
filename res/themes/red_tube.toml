@@ -1,0 +1,29 @@
+[SupersonicTheme]
+Name = "Red Tube"
+Version = "0.2"
+SupportsDark = true
+SupportsLight = true
+
+[DarkColors]
+PageBackground = "#0F0F0F"
+ListHeader = "#232323"
+PageHeader = "#181d25"
+Background = "#232323"
+ScrollBar = "#F3F3F3"
+Button = "#14141432"
+Foreground = "#e6e6e6"
+InputBackground = "#14141432"
+Primary = "#FF0000"
+Hyperlink = "#FF0000"
+
+[LightColors]
+PageBackground = "#FAFAFA"
+ListHeader = "#E1DFE1"
+PageHeader = "#e1dfe1"
+Background = "#E1DFE1"
+ScrollBar = "#565656"
+Button = "#C8C8C8F0"
+DisabledButton = "#CDCDCDF0"
+Foreground = "#262626"
+Hyperlink = "#FF0000"
+Primary = "#FF0000"

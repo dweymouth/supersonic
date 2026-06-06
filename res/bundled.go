@@ -225,6 +225,55 @@ var ResDefaultToml = &fyne.StaticResource{
 	StaticContent: ResDefaultTomlData,
 }
 
+//go:embed themes/red_tube.toml
+var ResRedTubeTomlData []byte
+var ResRedTubeToml = &fyne.StaticResource{
+	StaticName:    "themes/red_tube.toml",
+	StaticContent: ResRedTubeTomlData,
+}
+
+//go:embed themes/lime_tube.toml
+var ResLimeTubeTomlData []byte
+var ResLimeTubeToml = &fyne.StaticResource{
+	StaticName:    "themes/lime_tube.toml",
+	StaticContent: ResLimeTubeTomlData,
+}
+
+//go:embed themes/purple_tube.toml
+var ResPurpleTubeTomlData []byte
+var ResPurpleTubeToml = &fyne.StaticResource{
+	StaticName:    "themes/purple_tube.toml",
+	StaticContent: ResPurpleTubeTomlData,
+}
+
+//go:embed themes/orange_mate.toml
+var ResOrangeMateTomlData []byte
+var ResOrangeMateToml = &fyne.StaticResource{
+	StaticName:    "themes/orange_mate.toml",
+	StaticContent: ResOrangeMateTomlData,
+}
+
+//go:embed themes/rose_pink.toml
+var ResRosePinkTomlData []byte
+var ResRosePinkToml = &fyne.StaticResource{
+	StaticName:    "themes/rose_pink.toml",
+	StaticContent: ResRosePinkTomlData,
+}
+
+//go:embed themes/Comfortaa-Regular.ttf
+var ResComfortaaRegularTtfData []byte
+var ResComfortaaRegularTtf = &fyne.StaticResource{
+	StaticName:    "themes/Comfortaa-Regular.ttf",
+	StaticContent: ResComfortaaRegularTtfData,
+}
+
+//go:embed themes/Comfortaa-Bold.ttf
+var ResComfortaaBoldTtfData []byte
+var ResComfortaaBoldTtf = &fyne.StaticResource{
+	StaticName:    "themes/Comfortaa-Bold.ttf",
+	StaticContent: ResComfortaaBoldTtfData,
+}
+
 //go:embed LICENSE
 var ResLICENSEData []byte
 var ResLICENSE = &fyne.StaticResource{
