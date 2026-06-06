@@ -2,7 +2,7 @@
 Name = "Orange Mate"
 Version = "0.2"
 SupportsDark = true
-SupportsLight = false
+SupportsLight = true
 
 [DarkColors]
 PageBackground = "#030303"
@@ -27,6 +27,31 @@ Pressed = "#FFFFFF20"
 Primary = "#FF8C00"
 Selection = "#FFFFFF1A"
 Separator = "#2B2B2B"
+
+
+[LightColors]
+PageBackground = "#FFFFFF"
+PageHeader = "#FFFFFF"
+ListHeader = "#FFF9F5"
+Background = "#FFF9F5"
+ScrollBar = "#565656"
+Button = "#0000001A"
+DisabledButton = "#0000000A"
+Disabled = "#888888"
+Error = "#D97600"
+Focus = "#D97600"
+Foreground = "#030303"
+Hover = "#00000010"
+Hyperlink = "#D97600"
+InputBackground = "#F0F0F0"
+InputBorder = "#FFE4D1"
+MenuBackground = "#FFF2E8"
+OverlayBackground = "#FFFFFFE6"
+Placeholder = "#888888"
+Pressed = "#00000020"
+Primary = "#D97600"
+Selection = "#0000001A"
+Separator = "#E0E0E0"
 
 [Sizes]
 InputRadius = 8.0

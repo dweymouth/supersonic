@@ -2,7 +2,7 @@
 Name = "Rose Pink"
 Version = "0.2"
 SupportsDark = true
-SupportsLight = false
+SupportsLight = true
 
 [DarkColors]
 PageBackground = "#030303"
@@ -27,6 +27,31 @@ Pressed = "#FFFFFF20"
 Primary = "#FF007F"
 Selection = "#FFFFFF1A"
 Separator = "#2B2B2B"
+
+
+[LightColors]
+PageBackground = "#FFFFFF"
+PageHeader = "#FFFFFF"
+ListHeader = "#FFF5F9"
+Background = "#FFF5F9"
+ScrollBar = "#565656"
+Button = "#0000001A"
+DisabledButton = "#0000000A"
+Disabled = "#888888"
+Error = "#FF007F"
+Focus = "#FF007F"
+Foreground = "#030303"
+Hover = "#00000010"
+Hyperlink = "#FF007F"
+InputBackground = "#F0F0F0"
+InputBorder = "#FFD1E5"
+MenuBackground = "#FFE8F2"
+OverlayBackground = "#FFFFFFE6"
+Placeholder = "#888888"
+Pressed = "#00000020"
+Primary = "#FF007F"
+Selection = "#0000001A"
+Separator = "#E0E0E0"
 
 [Sizes]
 InputRadius = 8.0

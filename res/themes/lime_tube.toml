@@ -2,7 +2,7 @@
 Name = "Lime Tube"
 Version = "0.2"
 SupportsDark = true
-SupportsLight = false
+SupportsLight = true
 
 [DarkColors]
 PageBackground = "#030303"
@@ -27,6 +27,31 @@ Pressed = "#FFFFFF20"
 Primary = "#BFFF00"
 Selection = "#FFFFFF1A"
 Separator = "#2B2B2B"
+
+
+[LightColors]
+PageBackground = "#FFFFFF"
+PageHeader = "#FFFFFF"
+ListHeader = "#F9FFF5"
+Background = "#F9FFF5"
+ScrollBar = "#565656"
+Button = "#0000001A"
+DisabledButton = "#0000000A"
+Disabled = "#888888"
+Error = "#739900"
+Focus = "#739900"
+Foreground = "#030303"
+Hover = "#00000010"
+Hyperlink = "#739900"
+InputBackground = "#F0F0F0"
+InputBorder = "#E6FFD1"
+MenuBackground = "#F2FFE8"
+OverlayBackground = "#FFFFFFE6"
+Placeholder = "#888888"
+Pressed = "#00000020"
+Primary = "#739900"
+Selection = "#0000001A"
+Separator = "#E0E0E0"
 
 [Sizes]
 InputRadius = 8.0

@@ -2,7 +2,7 @@
 Name = "Red Tube"
 Version = "0.2"
 SupportsDark = true
-SupportsLight = false
+SupportsLight = true
 
 [DarkColors]
 PageBackground = "#030303"
@@ -27,6 +27,31 @@ Pressed = "#FFFFFF20"
 Primary = "#FF0000"
 Selection = "#FFFFFF1A"
 Separator = "#2B2B2B"
+
+
+[LightColors]
+PageBackground = "#FFFFFF"
+PageHeader = "#FFFFFF"
+ListHeader = "#FFF5F5"
+Background = "#FFF5F5"
+ScrollBar = "#565656"
+Button = "#0000001A"
+DisabledButton = "#0000000A"
+Disabled = "#888888"
+Error = "#FF0000"
+Focus = "#FF0000"
+Foreground = "#030303"
+Hover = "#00000010"
+Hyperlink = "#FF0000"
+InputBackground = "#F0F0F0"
+InputBorder = "#FFD6D6"
+MenuBackground = "#FFEBEB"
+OverlayBackground = "#FFFFFFE6"
+Placeholder = "#888888"
+Pressed = "#00000020"
+Primary = "#FF0000"
+Selection = "#0000001A"
+Separator = "#E0E0E0"
 
 [Sizes]
 InputRadius = 8.0

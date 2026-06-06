@@ -2,7 +2,7 @@
 Name = "Purple Tube"
 Version = "0.2"
 SupportsDark = true
-SupportsLight = false
+SupportsLight = true
 
 [DarkColors]
 PageBackground = "#030303"
@@ -27,6 +27,31 @@ Pressed = "#FFFFFF20"
 Primary = "#9D00FF"
 Selection = "#FFFFFF1A"
 Separator = "#2B2B2B"
+
+
+[LightColors]
+PageBackground = "#FFFFFF"
+PageHeader = "#FFFFFF"
+ListHeader = "#F8F5FF"
+Background = "#F8F5FF"
+ScrollBar = "#565656"
+Button = "#0000001A"
+DisabledButton = "#0000000A"
+Disabled = "#888888"
+Error = "#9D00FF"
+Focus = "#9D00FF"
+Foreground = "#030303"
+Hover = "#00000010"
+Hyperlink = "#9D00FF"
+InputBackground = "#F0F0F0"
+InputBorder = "#E0D1FF"
+MenuBackground = "#EFE8FF"
+OverlayBackground = "#FFFFFFE6"
+Placeholder = "#888888"
+Pressed = "#00000020"
+Primary = "#9D00FF"
+Selection = "#0000001A"
+Separator = "#E0E0E0"
 
 [Sizes]
 InputRadius = 8.0
