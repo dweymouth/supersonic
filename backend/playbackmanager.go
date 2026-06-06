@@ -31,6 +31,12 @@ type PlaybackManager struct {
 	appCfg   *AppConfig
 	cfg      *PlaybackConfig
 
+	// CoverArtPathFn returns a local filesystem path to the cached cover
+	// art image for the given CoverArtID. Used by DLNA cast so the
+	// renderer can fetch album art via the local proxy. Set externally
+	// (typically wired to ImageManager.GetCoverArtPath).
+	CoverArtPathFn func(coverArtID string) (string, error)
+
 	localPlayer         player.BasePlayer
 	remotePlayersLock   sync.Mutex
 	remotePlayers       []RemotePlaybackDevice
@@ -47,6 +53,11 @@ type PlaybackManager struct {
 	// whether autoplay tracks are currently being fetched/enqueued
 	pendingAutoplay    bool
 	wasLoadTrackPaused bool
+
+	// current radio metadata
+	radioStationName string
+	radioIcyTitle    string
+	radioIcyArtist   string
 }
 
 type RemotePlaybackDevice struct {
@@ -157,6 +168,11 @@ func (p *PlaybackManager) addOnTrackChangeHook() {
 			}()
 		}
 	})
+	p.OnRadioMetadataChange(func(radioName, title, artist string) {
+		p.radioStationName = radioName
+		p.radioIcyTitle = title
+		p.radioIcyArtist = artist
+	})
 }
 
 func (p *PlaybackManager) handleWaveformImageSongChange(item mediaprovider.MediaItem) {
@@ -237,17 +253,18 @@ func (p *PlaybackManager) ScanRemotePlayers(ctx context.Context, fastScan bool) 
 func (p *PlaybackManager) scanRemotePlayers(ctx context.Context, waitSec int) {
 	devices, _ := device.SearchMediaRenderers(ctx, waitSec, services.AVTransport, services.RenderingControl)
 
+	coverArtPathFn := p.CoverArtPathFn
 	var discovered []RemotePlaybackDevice
 	for _, d := range devices {
-		p := RemotePlaybackDevice{
+		rp := RemotePlaybackDevice{
 			Name:     d.FriendlyName,
 			URL:      d.URL,
 			Protocol: "DLNA",
 			new: func() (player.BasePlayer, error) {
-				return dlna.NewDLNAPlayer(d)
+				return dlna.NewDLNAPlayer(d, coverArtPathFn)
 			},
 		}
-		discovered = append(discovered, p)
+		discovered = append(discovered, rp)
 	}
 
 	p.remotePlayersLock.Lock()
@@ -320,7 +337,15 @@ func (p *PlaybackManager) DisableCallbacks() {
 
 // Gets the now playing media item, if any.
 func (p *PlaybackManager) NowPlaying() mediaprovider.MediaItem {
-	return p.engine.NowPlaying()
+	item := p.engine.NowPlaying()
+	if station, ok := item.(*mediaprovider.RadioStation); ok {
+		station = station.Copy().(*mediaprovider.RadioStation)
+		station.StationName = p.radioStationName
+		station.Title = p.radioIcyTitle
+		station.Artists = []string{p.radioIcyArtist}
+		item = station
+	}
+	return item
 }
 
 func (p *PlaybackManager) NowPlayingIndex() int {

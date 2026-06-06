@@ -101,8 +101,8 @@ github.com/nicksnyder/go-i18n/v2 v2.6.1 h1:JDEJraFsQE17Dut9HFDHzCoAWGEQJom5s0TRd
 github.com/nicksnyder/go-i18n/v2 v2.6.1/go.mod h1:Vee0/9RD3Quc/NmwEjzzD7VTZ+Ir7QbXocrkhOzmUKA=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e h1:fD57ERR4JtEqsWbfPhv4DMiApHyliiK5xCTNVSPiaAs=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
-github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
-github.com/pelletier/go-toml/v2 v2.2.4/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
+github.com/pelletier/go-toml/v2 v2.3.1 h1:MYEvvGnQjeNkRF1qUuGolNtNExTDwct51yp7olPtrEc=
+github.com/pelletier/go-toml/v2 v2.3.1/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
 github.com/pkg/profile v1.7.0 h1:hnbDkaNWPCLMO9wGLdBFTIZvzDrDfBM2072E1S9gJkA=
 github.com/pkg/profile v1.7.0/go.mod h1:8Uer0jas47ZQMJ7VD+OHknK4YDY07LPUC6dEvqDjvNo=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
@@ -123,10 +123,10 @@ github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410 h1:wuDH
 github.com/supersonic-app/fyne-lyrics v0.0.0-20250614151306-b1880a70a410/go.mod h1:XvGBPgXWkKrK+5OsoVkTcTZmwZac1Sj6miEn8q6uA20=
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449 h1:UHIPI43VzyWuIF8z8WVMdjMsC/orZTZQJraD/Iv+ghw=
 github.com/supersonic-app/go-mpv v0.1.1-0.20250822102843-7a8cde5f5449/go.mod h1:1bQz6kBQumJopXEbkiqoLxIXLy7F7yWFBvknvpAtIC0=
-github.com/supersonic-app/go-subsonic v0.0.0-20260311143343-43acfbb184d2 h1:VtrqvDwb44RSErifxchVKYdCf62/cO2Cumyz+uPlqkI=
-github.com/supersonic-app/go-subsonic v0.0.0-20260311143343-43acfbb184d2/go.mod h1:ClhAgC2qobwH19D6kdwULLYSHlOmldDGkdu2G2Z0Ijo=
-github.com/supersonic-app/go-upnpcast v0.1.0 h1:SL0WVgnqvAVaLT9MSRhSeVwF9pcUw1cgBITKVoWXN3g=
-github.com/supersonic-app/go-upnpcast v0.1.0/go.mod h1:o/QGDTK3qdaS3h9Bt8aH5ywgbWbrPVzPCHlZYFs0IHY=
+github.com/supersonic-app/go-subsonic v0.0.0-20260416152144-7a5f505a273c h1:wms3FvahSfcnacW2rs9L+vzJR8FmTE5xTrRgf3+k3eQ=
+github.com/supersonic-app/go-subsonic v0.0.0-20260416152144-7a5f505a273c/go.mod h1:ClhAgC2qobwH19D6kdwULLYSHlOmldDGkdu2G2Z0Ijo=
+github.com/supersonic-app/go-upnpcast v0.1.1-0.20260517163705-d76cd97c192f h1:G2y9HyfAFoTZWrL6mdcH0MgR8EDqdurRcZq9Eu8Xdg8=
+github.com/supersonic-app/go-upnpcast v0.1.1-0.20260517163705-d76cd97c192f/go.mod h1:o/QGDTK3qdaS3h9Bt8aH5ywgbWbrPVzPCHlZYFs0IHY=
 github.com/yuin/goldmark v1.7.16 h1:n+CJdUxaFMiDUNnWC3dMWCIQJSkxH4uz3ZwQBkAlVNE=
 github.com/yuin/goldmark v1.7.16/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
 github.com/zalando/go-keyring v0.2.8 h1:6sD/Ucpl7jNq10rM2pgqTs0sZ9V3qMrqfIIy5YPccHs=

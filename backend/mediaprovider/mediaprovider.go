@@ -302,6 +302,10 @@ type CanSavePlayQueue interface {
 	GetPlayQueue() (*SavedPlayQueue, error)
 }
 
+type CanReportPlayback interface {
+	ReportPlayback(trackID string, positionMs int64, state string) error
+}
+
 type LyricsProvider interface {
 	GetLyrics(track *Track) (*Lyrics, error)
 }

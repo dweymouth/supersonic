@@ -8,7 +8,6 @@ import (
 	"image/color"
 	"io"
 	"log"
-	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -423,14 +422,28 @@ func (c *Controller) SetTrackRatings(trackIDs []string, rating int) {
 }
 
 func (c *Controller) ShowShareDialog(id string) {
+	sh, ok := c.App.ServerManager.Server.(mediaprovider.SupportsSharing)
+	if !ok {
+		// this should not happen since interface checks are done
+		// before showing share menu items, but just in case:
+		c.ToastProvider.ShowErrorToast(lang.L("server does not support sharing"))
+		return
+	}
 	go func() {
-		shareUrl, err := c.createShareURL(id)
+		shareUrl, err := sh.CreateShareURL(id)
 		if err != nil {
+			log.Printf("error creating share URL: %v", err)
+			fyne.Do(func() {
+				c.showError(
+					"Failed to share content. This commonly occurs when the server does not support sharing, " +
+						"or has the feature disabled.\nPlease check the server's settings and try again.",
+				)
+			})
 			return
 		}
-
 		fyne.Do(func() {
 			hyperlink := widget.NewHyperlink(shareUrl.String(), shareUrl)
+			dismissed := false
 			dlg := dialog.NewCustom(lang.L("Share content"), lang.L("OK"),
 				container.NewHBox(
 					hyperlink,
@@ -438,36 +451,30 @@ func (c *Controller) ShowShareDialog(id string) {
 						fyne.CurrentApp().Clipboard().SetContent(hyperlink.Text)
 					}),
 					widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-						if shareUrl, err := c.createShareURL(id); err == nil {
-							hyperlink.Text = shareUrl.String()
-							hyperlink.URL = shareUrl
-							hyperlink.Refresh()
-						}
+						go func() {
+							shareUrl, err := sh.CreateShareURL(id)
+							if err != nil {
+								log.Printf("error creating share URL: %v", err)
+								return
+							}
+							fyne.Do(func() {
+								if !dismissed {
+									hyperlink.Text = shareUrl.String()
+									hyperlink.URL = shareUrl
+									hyperlink.Refresh()
+								}
+							})
+						}()
 					}),
 				),
 				c.MainWindow,
 			)
+			dlg.SetOnClosed(func() {
+				dismissed = true
+			})
 			dlg.Show()
 		})
 	}()
-}
-
-func (c *Controller) createShareURL(id string) (*url.URL, error) {
-	r, ok := c.App.ServerManager.Server.(mediaprovider.SupportsSharing)
-	if !ok {
-		return nil, fmt.Errorf("server does not support sharing")
-	}
-
-	shareUrl, err := r.CreateShareURL(id)
-	if err != nil {
-		log.Printf("error creating share URL: %v", err)
-		c.showError(
-			"Failed to share content. This commonly occurs when the server does not support sharing, " +
-				"or has the feature disabled.\nPlease check the server's settings and try again.",
-		)
-		return nil, err
-	}
-	return shareUrl, nil
 }
 
 func (c *Controller) ShowDownloadDialog(tracks []*mediaprovider.Track, downloadName string) {

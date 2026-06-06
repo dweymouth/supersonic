@@ -70,7 +70,7 @@ func (s *subsonicMediaProvider) SearchAll(searchQuery string, maxResults int) ([
 		r, e := s.GetRadioStations()
 		if e == nil {
 			radios = sharedutil.FilterSlice(r, func(r *mediaprovider.RadioStation) bool {
-				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(r.Name)), queryLowerWords)
+				return helpers.AllTermsMatch(strings.ToLower(sanitize.Accents(r.StationName)), queryLowerWords)
 			})
 		}
 		wg.Done()
@@ -156,7 +156,7 @@ func mergeResults(
 		results = append(results, &mediaprovider.SearchResult{
 			Type: mediaprovider.ContentTypeRadioStation,
 			ID:   r.ID,
-			Name: r.Name,
+			Name: r.StationName,
 			Item: r,
 		})
 	}

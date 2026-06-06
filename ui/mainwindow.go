@@ -61,6 +61,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 		Window: fyneApp.NewWindow(displayAppName),
 		theme:  myTheme.NewMyTheme(&app.Config.Theme, app.ThemesDir()),
 	}
+	installReopenHandler(m.Window)
 	fynetooltip.SetToolTipTextSizeName(myTheme.SizeNameSubText)
 
 	m.theme.NormalFont = app.Config.Application.FontNormalTTF
@@ -184,7 +185,7 @@ func NewMainWindow(fyneApp fyne.App, appName, displayAppName, appVersion string,
 
 	m.Window.SetCloseIntercept(func() {
 		m.SaveWindowSettings()
-		if app.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
+		if (runtime.GOOS == "darwin" && !isRealQuit()) || (app.Config.Application.CloseToSystemTray && m.HaveSystemTray()) {
 			m.Window.Hide()
 		} else {
 			m.Window.Close()
@@ -514,7 +515,7 @@ func (m *MainWindow) addShortcuts() {
 		m.Controller.SelectAll()
 	})
 	m.Canvas().AddShortcut(&shortcuts.ShortcutCloseWindow, func(_ fyne.Shortcut) {
-		if m.App.Config.Application.CloseToSystemTray && m.HaveSystemTray() {
+		if runtime.GOOS == "darwin" || (m.App.Config.Application.CloseToSystemTray && m.HaveSystemTray()) {
 			m.Window.Hide()
 		}
 	})

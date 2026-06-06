@@ -724,16 +724,22 @@ func (s *SettingsDialog) createAppearanceTab(window fyne.Window) *container.TabI
 		s.doChooseTTFFile(window, boldFontEntry)
 	})
 
-	uiScaleRadio := widget.NewRadioGroup([]string{lang.L("Smaller"), lang.L("Normal"), lang.L("Larger")}, func(choice string) {
-		s.config.Application.UIScaleSize = choice
-		s.setRestartRequired()
+	uiScaleLabels := []string{lang.L("Smaller"), lang.L("Normal"), lang.L("Larger")}
+	uiScaleValues := []string{"Smaller", "Normal", "Larger"}
+
+	uiScaleRadio := widget.NewRadioGroup(uiScaleLabels, func(choice string) {
+		if i := slices.Index(uiScaleLabels, choice); i >= 0 {
+			s.config.Application.UIScaleSize = uiScaleValues[i]
+			s.setRestartRequired()
+		}
 	})
 	uiScaleRadio.Required = true
 	uiScaleRadio.Horizontal = true
-	if s.config.Application.UIScaleSize == "Smaller" || s.config.Application.UIScaleSize == "Larger" {
-		uiScaleRadio.Selected = s.config.Application.UIScaleSize
+
+	if i := slices.Index(uiScaleValues, s.config.Application.UIScaleSize); i >= 0 {
+		uiScaleRadio.Selected = uiScaleLabels[i]
 	} else {
-		uiScaleRadio.Selected = "Normal"
+		uiScaleRadio.Selected = lang.L("Normal")
 	}
 
 	disableDPI := widget.NewCheck(lang.L("Disable automatic DPI adjustment"), func(b bool) {

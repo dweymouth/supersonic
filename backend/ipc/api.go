@@ -28,6 +28,7 @@ const (
 	ShowPath              = "/window/show"
 	ReloadThemePath       = "/window/reload-theme"
 	QuitPath              = "/window/quit"
+	CurrentTrackPath      = "/current_track"
 	RateCurrentTrackPath  = "/current_track/rate" // ?r=<rating 0-5>
 )
 
