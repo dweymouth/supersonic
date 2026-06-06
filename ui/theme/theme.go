@@ -118,12 +118,36 @@ func (m *MyTheme) ReloadThemeFile() {
 func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
 	// load theme file if necessary
 	if m.loadedThemeFile == nil || m.config.ThemeFile != m.loadedThemeFilename {
-		t, err := ReadThemeFile(path.Join(m.themeFileDir, m.config.ThemeFile))
-		if err == nil {
-			m.loadedThemeFile = t
+		var embeddedContent []byte
+		switch m.config.ThemeFile {
+		case "red_tube.toml":
+			embeddedContent = res.ResRedTubeToml.StaticContent
+		case "lime_tube.toml":
+			embeddedContent = res.ResLimeTubeToml.StaticContent
+		case "purple_tube.toml":
+			embeddedContent = res.ResPurpleTubeToml.StaticContent
+		case "orange_mate.toml":
+			embeddedContent = res.ResOrangeMateToml.StaticContent
+		case "rose_pink.toml":
+			embeddedContent = res.ResRosePinkToml.StaticContent
+		}
+
+		if embeddedContent != nil {
+			t, err := DecodeThemeFile(bytes.NewReader(embeddedContent))
+			if err == nil {
+				m.loadedThemeFile = t
+			} else {
+				log.Printf("failed to load embedded theme %q: %s", m.config.ThemeFile, err.Error())
+				m.loadedThemeFile = m.defaultThemeFile
+			}
 		} else {
-			log.Printf("failed to load theme file %q: %s", m.config.ThemeFile, err.Error())
-			m.loadedThemeFile = m.defaultThemeFile
+			t, err := ReadThemeFile(path.Join(m.themeFileDir, m.config.ThemeFile))
+			if err == nil {
+				m.loadedThemeFile = t
+			} else {
+				log.Printf("failed to load theme file %q: %s", m.config.ThemeFile, err.Error())
+				m.loadedThemeFile = m.defaultThemeFile
+			}
 		}
 		m.loadedThemeFilename = m.config.ThemeFile
 	}
@@ -242,6 +266,14 @@ func (m *MyTheme) ListThemeFiles() map[string]string {
 	}
 
 	result := make(map[string]string)
+	
+	// Add embedded themes
+	result["red_tube.toml"] = "Red Tube"
+	result["lime_tube.toml"] = "Lime Tube"
+	result["purple_tube.toml"] = "Purple Tube"
+	result["orange_mate.toml"] = "Orange Mate"
+	result["rose_pink.toml"] = "Rose Pink"
+
 	for _, filePath := range files {
 		// Clean the path to avoid issues with slashes
 		cleanPath := filepath.Clean(filePath)
