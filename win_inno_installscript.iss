@@ -44,9 +44,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "libmpv-2.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "SMTC.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "X:\[Tools]\supersonic\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "X:\[Tools]\supersonic\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
