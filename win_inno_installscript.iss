@@ -36,6 +36,7 @@ OutputBaseFilename=supersonic-installer
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=res\appicon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -44,13 +45,14 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "X:\[Tools]\supersonic\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "X:\[Tools]\supersonic\*.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "*.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "res\appicon.ico"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\appicon.ico"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\appicon.ico"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
