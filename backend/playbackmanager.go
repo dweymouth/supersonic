@@ -805,6 +805,9 @@ func (p *PlaybackManager) enqueueAutoplayTracks() {
 	if nowPlaying == nil {
 		return
 	}
+	if nowPlaying.Metadata().Type == mediaprovider.MediaItemTypeRadioStation {
+		return
+	}
 
 	s := p.engine.sm.Server
 	if s == nil {
