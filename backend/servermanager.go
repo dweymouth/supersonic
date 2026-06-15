@@ -228,32 +228,48 @@ func (s *ServerManager) connect(connection ServerConnection, password string) (m
 		}
 		s.checkSetInsecureSkipVerify(connection.SkipSSLVerify, altCli.(*subsonicMP.SubsonicServer).Client.Client)
 	}
-	var authError error
-	pingChan := make(chan bool, 2) // false for primary hostname, true for alternate
-	pingFunc := func(delay time.Duration, cli mediaprovider.Server, val bool) {
-		<-time.After(delay)
+
+	// struct to return hostname type in isAlt and connection success on err
+	type pingResult struct {
+		isAlt bool
+		err   error
+	}
+	pingChan := make(chan pingResult, 2)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pingFunc := func(delay time.Duration, cli mediaprovider.Server, isAlt bool) {
+		// delay before connecting or exit if already cancelled
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return
+		}
+
 		resp := cli.Login(connection.Username, password)
 		if resp.Error != nil && !resp.IsAuthError {
 			return
 		}
-		authError = resp.Error
-		pingChan <- val // reached the server
+
+		// return result or exit if already cancelled
+		select {
+		case pingChan <- pingResult{isAlt: isAlt, err: resp.Error}:
+		case <-ctx.Done():
+		}
 	}
 	go pingFunc(0, cli, false)
 	if connection.AltHostname != "" {
 		go pingFunc(333*time.Millisecond, altCli, true) // give primary hostname ping a head start
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 	select {
 	case <-ctx.Done():
 		return nil, ErrUnreachable
-	case altPing := <-pingChan:
-		if altPing {
-			return altCli, authError
+	case res := <-pingChan:
+		if res.isAlt {
+			return altCli, res.err
 		}
-		return cli, authError
+		return cli, res.err
 	}
 }
 
