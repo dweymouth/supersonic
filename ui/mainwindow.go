@@ -281,6 +281,8 @@ func (m *MainWindow) ReloadTheme() {
 
 func (m *MainWindow) StartupPage() controller.Route {
 	switch m.App.Config.Application.StartupPage {
+	case "All Tracks":
+		return controller.AllTracksRoute()
 	case "Artists":
 		return controller.ArtistsRoute()
 	case "Favorites":
