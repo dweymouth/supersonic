@@ -1,6 +1,5 @@
-//go:build !darwin
+//go:build !darwin && !windows
 
 package controller
 
-func setWindowDarkTheme(nsWindowPtr uintptr, mode int) {
-}
+func setWindowDarkTheme(ptr uintptr, mode int) {}

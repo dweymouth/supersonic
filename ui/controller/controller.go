@@ -667,9 +667,12 @@ func SetWindowThemeMode(win fyne.Window, mode myTheme.AppearanceMode) {
 		arg = 2
 	}
 	win.(driver.NativeWindow).RunNative(func(ctx any) {
-		if runtime.GOOS == "darwin" {
+		switch runtime.GOOS {
+		case "darwin":
 			// ensure dark mode setting is applied to window controls in title bar on Mac
 			setWindowDarkTheme(ctx.(driver.MacWindowContext).NSWindow, arg)
+		case "windows":
+			setWindowDarkTheme(ctx.(driver.WindowsWindowContext).HWND, arg)
 		}
 	})
 }
