@@ -22,7 +22,8 @@ jobs:
           install: >-
             wget
             zip
-      - uses: actions/checkout@v6
+            p7zip
+      - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
       - name: Install Dependencies
         run: >
@@ -61,7 +62,7 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -89,7 +90,7 @@ jobs:
     runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -116,7 +117,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y libavformat-dev libavcodec-dev libavfilter-dev libavutil-dev libswresample-dev libswscale-dev libwavpack-dev gcc libegl1-mesa-dev xorg-dev
@@ -135,7 +136,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y libavformat-dev libavcodec-dev libavfilter-dev libavutil-dev libswresample-dev libswscale-dev libwavpack-dev gcc libegl1-mesa-dev xorg-dev
@@ -154,7 +155,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y libavformat-dev libavcodec-dev libavfilter-dev libavutil-dev libswresample-dev libswscale-dev libwavpack-dev gcc libegl1-mesa-dev xorg-dev
