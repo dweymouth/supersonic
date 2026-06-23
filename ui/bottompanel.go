@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/dweymouth/supersonic/backend"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
-	"github.com/dweymouth/supersonic/backend/player/mpv"
+	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/ui/controller"
 	"github.com/dweymouth/supersonic/ui/layouts"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -11,6 +13,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -42,6 +45,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 			if !pm.IsSeeking() {
 				bp.Controls.UpdatePlayTime(cur, total)
 			}
+			bp.updateSoftwareVolumeLock(pm)
 		})
 	})
 
@@ -50,6 +54,7 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	pm.OnStopped(util.FyneDoFunc(func() {
 		bp.Controls.SetPlaying(false)
 		bp.Controls.UpdatePlayTime(0, 0)
+		bp.AuxControls.VolumeControl.SetSoftwareVolumeLocked(false, "")
 	}))
 
 	bp.NowPlaying = widgets.NewNowPlayingCard()
@@ -122,10 +127,16 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 		fyne.Do(func() { bp.AuxControls.VolumeControl.SetVolume(vol) })
 	})
 	pm.OnPlayerChange(func() {
-		_, local := pm.CurrentPlayer().(*mpv.Player)
-		fyne.Do(func() { bp.AuxControls.SetIsRemotePlayer(!local) })
+		_, local := pm.CurrentPlayer().(player.LocalPlayer)
+		fyne.Do(func() {
+			bp.AuxControls.SetIsRemotePlayer(!local)
+			bp.updateSoftwareVolumeLock(pm)
+		})
 	})
 	bp.AuxControls.VolumeControl.OnSetVolume = func(v int) {
+		if bp.AuxControls.VolumeControl.SoftwareVolumeLocked() {
+			return
+		}
 		pm.SetVolume(v)
 	}
 	bp.AuxControls.OnChangeAutoplay = func(autoplay bool) {
@@ -135,10 +146,82 @@ func NewBottomPanel(pm *backend.PlaybackManager, im *backend.ImageManager, contr
 	bp.AuxControls.OnShowCastMenu(contr.ShowCastMenu)
 
 	bp.imageLoader = util.NewThumbnailLoader(im, bp.NowPlaying.SetImage)
+	bp.updateSoftwareVolumeLock(pm)
 
 	bp.container = container.New(layouts.NewLeftMiddleRightLayout(300, 0.4),
 		bp.NowPlaying, bp.Controls, bp.AuxControls)
 	return bp
+}
+
+func (bp *BottomPanel) updateSoftwareVolumeLock(pm *backend.PlaybackManager) {
+	locked := false
+	reason := ""
+	quality := widgets.QualityPathInfo{
+		Badge:  "Audio",
+		Status: lang.L("Stopped"),
+	}
+	if pm.PlaybackStatus().State != player.Stopped {
+		if localPlayer, ok := pm.CurrentPlayer().(player.LocalPlayer); ok {
+			if info, err := localPlayer.GetMediaInfo(); err == nil {
+				quality = qualityPathInfo(info)
+				if info.SoftwareVolumeLocked {
+					locked = true
+					reason = lang.L("Bit Perfect playback is active; software volume is locked at 100%. Use hardware/DAC volume or turn Bit Perfect off.")
+				}
+			}
+		}
+	}
+	bp.AuxControls.SetQualityPath(quality)
+	bp.AuxControls.VolumeControl.SetSoftwareVolumeLocked(locked, reason)
+}
+
+func qualityPathInfo(info player.MediaInfo) widgets.QualityPathInfo {
+	status := info.SignalStatus
+	if status == "" {
+		if info.BitPerfectActive {
+			status = "Bit-Perfect"
+		} else if info.ExclusiveActive {
+			status = "Exclusive Mode"
+		} else {
+			status = "Shared Output"
+		}
+	}
+	badge := "Audio"
+	if info.SourceIsDSD && info.DSDRate > 0 {
+		badge = fmt.Sprintf("DSD %.4f MHz", float64(info.DSDRate)/1000000)
+		if info.DoPCarrierRate > 0 {
+			badge = fmt.Sprintf("%s / DoP %.1f kHz", badge, float64(info.DoPCarrierRate)/1000)
+		}
+	} else if info.OutputSamplerate > 0 && info.OutputFormat != "" {
+		badge = fmt.Sprintf("%.1f kHz / %s", float64(info.OutputSamplerate)/1000, info.OutputFormat)
+	}
+	if info.BitPerfectActive {
+		badge = "Bit-perfect " + badge
+	}
+	return widgets.QualityPathInfo{
+		Badge:                badge,
+		Status:               status,
+		SourceFormat:         info.SourceFormat,
+		DecodePath:           info.DecodePath,
+		OutputPath:           info.OutputPath,
+		DACFormat:            info.DACFormat,
+		DeviceName:           info.DeviceName,
+		DeviceTransport:      info.DeviceTransport,
+		PlaybackPath:         info.PlaybackPath,
+		Reason:               info.BitPerfectReason,
+		ExclusiveActive:      info.ExclusiveActive,
+		BitPerfectActive:     info.BitPerfectActive,
+		OutputMixable:        info.OutputMixable,
+		PhysicalFormatCount:  info.DevicePhysicalFormats,
+		ExclusiveFormatCount: info.DeviceExclusiveFormats,
+		DeviceMinSampleRate:  info.DeviceMinSampleRate,
+		DeviceMaxSampleRate:  info.DeviceMaxSampleRate,
+		DeviceMaxBitDepth:    info.DeviceMaxBitDepth,
+		DeviceChannels:       info.DeviceChannels,
+		SourceIsDSD:          info.SourceIsDSD,
+		DSDRate:              info.DSDRate,
+		DoPCarrierRate:       info.DoPCarrierRate,
+	}
 }
 
 func (bp *BottomPanel) onSongChange(song mediaprovider.MediaItem, _ *mediaprovider.Track) {

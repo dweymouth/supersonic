@@ -17,11 +17,9 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version: 'stable'
+      - uses: jdx/mise-action@v4
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
+        run: sudo apt update && sudo apt install -y libavformat-dev libavcodec-dev libavfilter-dev libavutil-dev libswresample-dev libswscale-dev libwavpack-dev gcc libegl1-mesa-dev xorg-dev
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
@@ -40,33 +38,25 @@ jobs:
           path-type: inherit
           update: true
           install: >-
-            make
             wget
             zip
-            p7zip
       - uses: actions/checkout@v6
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 'stable'
+      - uses: jdx/mise-action@v4
       - name: Install Dependencies
         run: >
           pacman -Syu &&
-          pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-mpv
-      - name: Install Fyne tool
-        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+          pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-ffmpeg mingw-w64-x86_64-wavpack
       - name: Package
-        run: make package_windows
-      - name: Download mpv dll
-        run: >
-          wget https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20260301/mpv-dev-x86_64-20260301-git-05fac7f.7z &&
-          7z x mpv-dev-x86_64-20260301-git-05fac7f.7z
+        run: mise run package:windows
       - name: Download smtc dll
         run: >
           wget https://github.com/supersonic-app/smtc-dll/releases/download/v0.1.2/SMTC.dll
+      - name: Copy runtime DLLs
+        run: >
+          ldd Supersonic.exe | awk '/mingw64/ { print $3 }' | xargs -I{} cp -n "{}" .
       - name: Generate zip bundle
         run: >
-          zip Supersonic_windows_x64.zip Supersonic.exe libmpv-2.dll SMTC.dll
+          zip Supersonic_windows_x64.zip Supersonic.exe *.dll
       - name: Generate installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.8
         with:
@@ -94,21 +84,16 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 'stable'
+      - uses: jdx/mise-action@v4
       - name: Install Dependencies
-        run: brew install --force mpv && brew install --force dylibbundler
+        run: brew install --force ffmpeg wavpack dylibbundler
       - name: Setup path
         run: export C_INCLUDE_PATH=/usr/local/include:/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib:$LIBRARY_PATH
-      - name: Install Fyne tool
-        run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Package app bundle
         run: >
-          make package_macos &&
-          make bundledeps_macos_homebrew &&
-          make zip_macos
+          mise run package:macos &&
+          mise run bundledeps:macos:homebrew &&
+          mise run zip:macos
       - name: Rename artifact
         run: mv Supersonic.zip Supersonic_mac_arm64.zip
       - name: Upload package
@@ -127,36 +112,22 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 'stable'
+      - uses: jdx/mise-action@v4
       - name: Install Dependencies
-        run: brew install --force mpv && brew install --force dylibbundler
+        run: brew install --force ffmpeg wavpack dylibbundler
       - name: Setup path
         run: export C_INCLUDE_PATH=/usr/local/include:/opt/homebrew/include:$C_INCLUDE_PATH && export LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib:$LIBRARY_PATH
-      - name: Install Fyne tool
-        run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Build and package app bundles
         run: >
-          make package_macos &&
-          cp -r Supersonic.app Supersonic.app.2 &&
-          make bundledeps_macos_homebrew && make zip_macos &&
-          mv Supersonic.zip Supersonic_mac_x64_BigSur+.zip &&
-          rm -r Supersonic.app &&
-          mv Supersonic.app.2 Supersonic.app &&
-          make bundledeps_macos_highsierra && make zip_macos &&
-          mv Supersonic.zip Supersonic_mac_x64_HighSierra+.zip
-      - name: Upload Big Sur+ package
+          mise run package:macos &&
+          mise run bundledeps:macos:homebrew &&
+          mise run zip:macos &&
+          mv Supersonic.zip Supersonic_mac_x64.zip
+      - name: Upload package
         uses: actions/upload-artifact@v7
         with:
-          name: Supersonic_mac_x64_BigSur+.zip
-          path: Supersonic_mac_x64_BigSur+.zip
-      - name: Upload High Sierra+ package
-        uses: actions/upload-artifact@v7
-        with:
-          name: Supersonic_mac_x64_HighSierra+.zip
-          path: Supersonic_mac_x64_HighSierra+.zip
+          name: Supersonic_mac_x64.zip
+          path: Supersonic_mac_x64.zip
 
   build-ubuntu-22:
     name: Build Ubuntu 22.04
@@ -164,16 +135,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 'stable'
+      - uses: jdx/mise-action@v4
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
-      - name: Install Fyne tool
-        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+        run: sudo apt update && sudo apt install -y libavformat-dev libavcodec-dev libavfilter-dev libavutil-dev libswresample-dev libswscale-dev libwavpack-dev gcc libegl1-mesa-dev xorg-dev
       - name: Fyne package
-        run: make package_linux
+        run: mise run package:linux
       - name: Rename artifact
         run: mv Supersonic.tar.xz Supersonic_ubuntu22.04_x64.tar.xz
       - name: Upload artifact
@@ -188,16 +154,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 'stable'
+      - uses: jdx/mise-action@v4
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
-      - name: Install Fyne tool
-        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+        run: sudo apt update && sudo apt install -y libavformat-dev libavcodec-dev libavfilter-dev libavutil-dev libswresample-dev libswscale-dev libwavpack-dev gcc libegl1-mesa-dev xorg-dev
       - name: Fyne package
-        run: make package_linux
+        run: mise run package:linux
       - name: Rename artifact
         run: mv Supersonic.tar.xz Supersonic_ubuntu24.04_x64.tar.xz
       - name: Upload artifact
@@ -212,18 +173,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 'stable'
+      - uses: jdx/mise-action@v4
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
+        run: sudo apt update && sudo apt install -y libavformat-dev libavcodec-dev libavfilter-dev libavutil-dev libswresample-dev libswscale-dev libwavpack-dev gcc libegl1-mesa-dev xorg-dev
       - name: Build
-        run: make build
+        run: mise run build
       - name: Make appimage
         run: |
           chmod +x ./scripts/appimage-build.sh
-          ./scripts/appimage-build.sh --manual-libs
+          ./scripts/appimage-build.sh
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:

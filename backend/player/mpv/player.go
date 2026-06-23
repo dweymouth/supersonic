@@ -1,3 +1,5 @@
+//go:build mpv
+
 package mpv
 
 import (
@@ -18,59 +20,36 @@ import (
 // Error returned by many Player functions if called before the player has not been initialized.
 var ErrUnitialized error = errors.New("mpv player uninitialized")
 
-// Information about a specific audio device.
-// Returned by ListAudioDevices.
-type AudioDevice struct {
-	// The name of the audio device.
-	// This is the string to pass to SetAudioDevice.
-	Name string
+// AudioDevice and MediaInfo are now in the parent player package.
+// Type aliases are provided for backwards compatibility.
+type (
+	AudioDevice = player.AudioDevice
+	MediaInfo   = player.MediaInfo
+)
 
-	// The description of the audio device.
-	// This is the friendly string that should be used in UIs.
-	Description string
-}
-
-// Media information about the currently playing media.
-type MediaInfo struct {
-	// The sample format as string. This uses the same names as used in other places of mpv.
-	// NOTE: this is the format that the decoder outputs, NOT necessarily the format of the file.
-	Format string
-
-	// Audio samplerate.
-	Samplerate int
-
-	// The number of channels.
-	ChannelCount int
-
-	// The audio codec.
-	Codec string
-
-	// The average bit rate in bits per second.
-	Bitrate int
-}
-
-var _ player.URLPlayer = (*Player)(nil)
+var _ player.LocalPlayer = (*Player)(nil)
 
 // Player encapsulates the mpv instance and provides functions
 // to control it and to check its status.
 type Player struct {
 	player.BasePlayerCallbackImpl
 
-	mpv            *mpv.Mpv
-	initialized    bool
-	vol            int
-	replayGainOpts player.ReplayGainOptions
-	haveRGainOpts  bool
-	audioExclusive bool
-	status         player.Status
-	seeking        bool
-	curPlaylistPos int64
-	lenPlaylist    int64
-	prePausedState player.State
-	clientName     string
-	equalizer      Equalizer
-	peaksEnabled   bool
-	pauseFade      bool
+	mpv             *mpv.Mpv
+	initialized     bool
+	vol             int
+	replayGainOpts  player.ReplayGainOptions
+	haveRGainOpts   bool
+	audioExclusive  bool
+	audioBitPerfect bool
+	status          player.Status
+	seeking         bool
+	curPlaylistPos  int64
+	lenPlaylist     int64
+	prePausedState  player.State
+	clientName      string
+	equalizer       Equalizer
+	peaksEnabled    bool
+	pauseFade       bool
 
 	icyTitleCb func(string)
 
@@ -123,7 +102,9 @@ func (p *Player) Init(maxCacheMB int) error {
 		}
 		m.SetOption("volume", mpv.FORMAT_INT64, p.vol)
 
-		p.SetAudioExclusive(p.audioExclusive)
+		if err := p.SetAudioExclusive(p.audioExclusive); err != nil {
+			return err
+		}
 		if p.haveRGainOpts {
 			p.SetReplayGainOptions(p.replayGainOpts)
 		}
@@ -278,15 +259,27 @@ func (p *Player) SetReplayGainOptions(options player.ReplayGainOptions) error {
 // Sets the audio exclusive option of the player.
 // Unlike most Player functions, SetAudioExclusive can be called
 // before Init, to set the initial option of the player on startup.
-func (p *Player) SetAudioExclusive(tf bool) {
+func (p *Player) SetAudioExclusive(tf bool) error {
 	p.audioExclusive = tf
+	if !tf {
+		p.audioBitPerfect = false
+	}
 	if p.initialized {
 		val := "no"
 		if tf {
 			val = "yes"
 		}
-		p.mpv.SetOptionString("audio-exclusive", val)
+		return p.mpv.SetOptionString("audio-exclusive", val)
 	}
+	return nil
+}
+
+func (p *Player) SetAudioBitPerfect(tf bool) error {
+	p.audioBitPerfect = tf
+	if tf {
+		return p.SetAudioExclusive(true)
+	}
+	return nil
 }
 
 func (p *Player) SetPauseFade(pauseFade bool) {
@@ -430,7 +423,9 @@ func (p *Player) GetMediaInfo() (MediaInfo, error) {
 		return info, err
 	}
 	nodeMap := n.(*mpv.Node).Data.(map[string]*mpv.Node)
-	info.Format = nodeMap["format"].Data.(string)
+	if format, ok := nodeMap["format"]; ok {
+		info.Format = format.Data.(string)
+	}
 	info.Samplerate = int(nodeMap["samplerate"].Data.(int64))
 	info.ChannelCount = int(nodeMap["channel-count"].Data.(int64))
 
@@ -442,6 +437,23 @@ func (p *Player) GetMediaInfo() (MediaInfo, error) {
 	if err == nil {
 		info.Codec = codec.(string)
 	}
+	info.ExclusiveRequested = p.audioExclusive
+	info.ExclusiveActive = p.audioExclusive
+	info.BitPerfectRequested = p.audioBitPerfect
+	info.BitPerfectActive = p.audioExclusive && p.audioBitPerfect
+	info.SoftwareVolumeLocked = info.BitPerfectActive
+	if info.BitPerfectActive {
+		info.PlaybackPath = "MPVExclusive"
+		info.SignalStatus = "Bit-Perfect"
+	} else if p.audioExclusive {
+		info.PlaybackPath = "MPVExclusive"
+		info.SignalStatus = "Exclusive Mode"
+	} else {
+		info.PlaybackPath = "MPVShared"
+		info.SignalStatus = "Shared Output"
+	}
+	info.SourceFormat = fmt.Sprintf("%d Hz / %s / %dch", info.Samplerate, info.Format, info.ChannelCount)
+	info.OutputPath = info.SourceFormat
 
 	return info, nil
 }

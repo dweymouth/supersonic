@@ -23,7 +23,7 @@
     <ul>
       <li>Fast, lightweight, native UI, with infinite scrolling</li>
       <li>Light and Dark themes, with optional auto theme switching</li>
-      <li>High-quality gapless audio playback powered by MPV, with optional  audio exclusive mode</li>
+      <li>High-quality gapless audio playback powered by FFmpeg and miniaudio, with optional exclusive/hog and bit-perfect modes</li>
       <li>ReplayGain support (depends on files being tagged on server)</li>
       <li>MPRIS and Mac OS media center integration</li>
       <li>Scrobble plays to server, with configurable criteria</li>

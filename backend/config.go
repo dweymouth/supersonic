@@ -133,10 +133,11 @@ type PlaybackConfig struct {
 type LocalPlaybackConfig struct {
 	AudioDeviceName       string
 	AudioExclusive        bool
+	AudioBitPerfect       bool
 	InMemoryCacheSizeMB   int
 	Volume                int
 	EqualizerEnabled      bool
-	EqualizerType         string    // "ISO10Band" or "ISO15Band"
+	EqualizerType         string // "ISO10Band" or "ISO15Band"
 	EqualizerPreamp       float64
 	GraphicEqualizerBands []float64
 	ActiveEQPresetName    string // Name of currently selected EQ preset
@@ -269,9 +270,10 @@ func DefaultConfig(appVersionTag string) *Config {
 			UseWaveformSeekbar: false,
 		},
 		LocalPlayback: LocalPlaybackConfig{
-			// "auto" is the name to pass to MPV for autoselecting the output device
+			// "auto" means the local player should use the system default output device.
 			AudioDeviceName:       "auto",
 			AudioExclusive:        false,
+			AudioBitPerfect:       false,
 			InMemoryCacheSizeMB:   30,
 			Volume:                100,
 			EqualizerEnabled:      false,

@@ -9,6 +9,7 @@ import (
 	"image/jpeg"
 	"io/fs"
 	"log"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -151,9 +152,7 @@ func (i *ImageManager) GetFullSizeCoverArtAsync(coverID string, cb func(image.Im
 func (i *ImageManager) GetCoverArtUrl(coverID string) (string, error) {
 	path := i.filePathForCover(coverID)
 	if _, err := os.Stat(path); err == nil {
-		// this is probably broken for Windows but it's currently only used
-		// for MPRIS, so we are OK for now
-		return fmt.Sprintf("file://%s", path), nil
+		return (&url.URL{Scheme: "file", Path: path}).String(), nil
 	}
 	return "", errors.New("cover not found")
 }

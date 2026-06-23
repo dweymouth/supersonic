@@ -7,7 +7,8 @@ When contributing to this repository, please first discuss the change you wish t
 To set up your development environment, you need the following things:
 
 * The build dependencies for the Fyne toolkit on your OS (see README.md)
-* Libmpv and development headers installed (e.g. via apt, brew, or MinGW pacman)
+* FFmpeg and WavPack libraries and development headers installed (e.g. via apt, brew, or MinGW pacman)
+* `mise` for the pinned Go toolchain and project tasks (`mise install`, then `mise run test`)
 * A Subsonic server to connect to for testing (your own server or the Navidrome demo server)
 
 Alternately you can use a Dev Container.  See `.devcontainer/DEVCONTAINER.md` for more info
@@ -28,7 +29,7 @@ As this application is in early development, major refactorings and re-organizat
 
 * `backend` - To the extent possible all backend logic should reside in this package
   - `playbackmanager.go` - Subsonic-aware high level playback APIs. Manages play queue and communication between the UI and various player backends.
-  - `player` - Interface and package for different player backends, currently MPV (local), and Jukebox, and in the future, DLNA and Chromecast
+  - `player` - Interface and package for different player backends, currently localav/FFmpeg (local), Jukebox, DLNA, and other remote players
 * `res` - Application resource files
 * `sharedutil` - Utility functions shared between the backend and UI layers
 * `ui` - The UI and UI business logic

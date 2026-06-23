@@ -15,7 +15,6 @@ import (
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/dlna"
-	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/sharedutil"
 	"github.com/supersonic-app/go-upnpcast/device"
 	"github.com/supersonic-app/go-upnpcast/services"
@@ -58,6 +57,10 @@ type PlaybackManager struct {
 	radioStationName string
 	radioIcyTitle    string
 	radioIcyArtist   string
+}
+
+type forceRestartPlaybacker interface {
+	ForceRestartPlayback(isPaused bool) error
 }
 
 type RemotePlaybackDevice struct {
@@ -113,7 +116,7 @@ func (p *PlaybackManager) addWfmImageJob(job *WaveformImageJob) {
 
 func (p *PlaybackManager) addOnTrackChangeHook() {
 	// See https://github.com/dweymouth/supersonic/issues/483
-	// On Windows, MPV sometimes fails to start playback when switching to a track
+	// On Windows, the old MPV backend sometimes failed to start playback when switching to a track
 	// with a different sample rate than the previous. If this is detected,
 	// send a command to the MPV player to force restart playback.
 	p.OnPlayTimeUpdate(func(curTime, totalTime float64, _ bool) {
@@ -951,8 +954,8 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 			case cmdLoadTrackPaused:
 				logIfErr("LoadTrackPaused", p.engine.loadTrackPaused(c.Arg.(int), c.Arg2.(float64)))
 			case cmdForceRestartPlayback:
-				if mpv, ok := p.engine.CurrentPlayer().(*mpv.Player); ok {
-					log.Println("Force-restarting MPV playback")
+				if localPlayer, ok := p.engine.CurrentPlayer().(forceRestartPlaybacker); ok {
+					log.Println("Force-restarting local playback")
 
 					// restart player, but perserve the state
 					isPaused := false
@@ -960,7 +963,7 @@ func (p *PlaybackManager) runCmdQueue(ctx context.Context) {
 					if stat.State == player.Paused {
 						isPaused = true
 					}
-					mpv.ForceRestartPlayback(isPaused)
+					_ = localPlayer.ForceRestartPlayback(isPaused)
 				}
 			}
 			if c.OnDone != nil {

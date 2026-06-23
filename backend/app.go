@@ -18,7 +18,6 @@ import (
 	"github.com/dweymouth/supersonic/backend/ipc"
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
-	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/backend/windows"
 	"github.com/dweymouth/supersonic/sharedutil"
@@ -54,7 +53,7 @@ type App struct {
 	AutoEQManager   *AutoEQManager
 	EQPresetManager *EQPresetManager
 	PlaybackManager *PlaybackManager
-	LocalPlayer     *mpv.Player
+	LocalPlayer     player.LocalPlayer
 	UpdateChecker   UpdateChecker
 	MPRISHandler    *MPRISHandler
 	WinSMTC         *windows.SMTC
@@ -143,10 +142,10 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		a.UpdateChecker.Start(a.bgrndCtx, 24*time.Hour)
 	}
 
-	if err := a.initMPV(); err != nil {
+	if err := a.initLocalPlayer(); err != nil {
 		return nil, err
 	}
-	if err := a.setupMPV(); err != nil {
+	if err := a.setupLocalPlayer(); err != nil {
 		return nil, err
 	}
 
@@ -366,18 +365,7 @@ func (a *App) callOnExit() error {
 	return nil
 }
 
-func (a *App) initMPV() error {
-	p := mpv.NewWithClientName(a.appName)
-	c := a.Config.LocalPlayback
-	c.InMemoryCacheSizeMB = clamp(c.InMemoryCacheSizeMB, 10, 500)
-	if err := p.Init(c.InMemoryCacheSizeMB); err != nil {
-		return fmt.Errorf("failed to initialize mpv player: %s", err.Error())
-	}
-	a.LocalPlayer = p
-	return nil
-}
-
-func (a *App) setupMPV() error {
+func (a *App) setupLocalPlayer() error {
 	a.Config.LocalPlayback.Volume = clamp(a.Config.LocalPlayback.Volume, 0, 100)
 	a.LocalPlayer.SetVolume(a.Config.LocalPlayback.Volume)
 
@@ -422,13 +410,21 @@ func (a *App) setupMPV() error {
 		PreventClipping: a.Config.ReplayGain.PreventClipping,
 		PreampGain:      a.Config.ReplayGain.PreampGainDB,
 	})
-	a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive)
+	if a.Config.LocalPlayback.AudioBitPerfect {
+		a.Config.LocalPlayback.AudioExclusive = true
+	}
+	if err := a.LocalPlayer.SetAudioExclusive(a.Config.LocalPlayback.AudioExclusive); err != nil {
+		log.Printf("error applying audio exclusive setting: %v", err)
+	}
+	if err := a.LocalPlayer.SetAudioBitPerfect(a.Config.LocalPlayback.AudioBitPerfect); err != nil {
+		log.Printf("error applying bit-perfect setting: %v", err)
+	}
 	a.LocalPlayer.SetPauseFade(a.Config.LocalPlayback.PauseFade)
 
 	// Initialize the appropriate equalizer type based on config
-	var eq mpv.Equalizer
+	var eq player.Equalizer
 	if a.Config.LocalPlayback.EqualizerType == "ISO10Band" {
-		eq10 := &mpv.ISO10BandEqualizer{
+		eq10 := &player.ISO10BandEqualizer{
 			EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
 			Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
 		}
@@ -439,7 +435,7 @@ func (a *App) setupMPV() error {
 		}
 		eq = eq10
 	} else {
-		eq15 := &mpv.ISO15BandEqualizer{
+		eq15 := &player.ISO15BandEqualizer{
 			EQPreamp: a.Config.LocalPlayback.EqualizerPreamp,
 			Disabled: !a.Config.LocalPlayback.EqualizerEnabled,
 		}

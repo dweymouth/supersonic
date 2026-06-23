@@ -1,7 +1,9 @@
 package widgets
 
 import (
+	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -10,6 +12,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
@@ -23,20 +27,51 @@ type AuxControls struct {
 	OnChangeAutoplay func(autoplay bool)
 
 	VolumeControl *VolumeControl
+	quality       *ttwidget.Button
 	autoplay      *IconButton
 	cast          *IconButton
 	showQueue     *IconButton
 
-	container *fyne.Container
+	qualityInfo QualityPathInfo
+	qualityPop  *widget.PopUp
+	container   *fyne.Container
+}
+
+type QualityPathInfo struct {
+	Badge                string
+	Status               string
+	SourceFormat         string
+	DecodePath           string
+	OutputPath           string
+	DACFormat            string
+	DeviceName           string
+	DeviceTransport      string
+	PlaybackPath         string
+	Reason               string
+	ExclusiveActive      bool
+	BitPerfectActive     bool
+	OutputMixable        bool
+	PhysicalFormatCount  int
+	ExclusiveFormatCount int
+	DeviceMinSampleRate  int
+	DeviceMaxSampleRate  int
+	DeviceMaxBitDepth    int
+	DeviceChannels       int
+	SourceIsDSD          bool
+	DSDRate              int
+	DoPCarrierRate       int
 }
 
 func NewAuxControls(initialVolume int, initialAutoplay bool) *AuxControls {
 	a := &AuxControls{
 		VolumeControl: NewVolumeControl(initialVolume),
+		quality:       ttwidget.NewButton("Audio", nil),
 		autoplay:      NewIconButton(myTheme.AutoplayIcon, nil),
 		cast:          NewIconButton(myTheme.CastIcon, nil),
 		showQueue:     NewIconButton(myTheme.PlayQueueIcon, nil),
 	}
+	a.quality.Importance = widget.LowImportance
+	a.quality.OnTapped = a.showQualityPath
 
 	a.cast.IconSize = IconButtonSizeSmaller
 	a.cast.SetToolTip(lang.L("Cast to device"))
@@ -58,6 +93,7 @@ func NewAuxControls(initialVolume int, initialAutoplay bool) *AuxControls {
 		layout.NewSpacer(),
 		container.NewVBox(
 			layout.NewSpacer(),
+			container.NewHBox(layout.NewSpacer(), a.quality, layout.NewSpacer()),
 			a.VolumeControl,
 			container.New(
 				layout.NewCustomPaddedHBoxLayout(theme.Padding()*1.5),
@@ -66,6 +102,78 @@ func NewAuxControls(initialVolume int, initialAutoplay bool) *AuxControls {
 		),
 	)
 	return a
+}
+
+func (a *AuxControls) SetQualityPath(info QualityPathInfo) {
+	if info.Badge == "" {
+		info.Badge = "Audio"
+	}
+	if info.Status == "" {
+		info.Status = "Shared Output"
+	}
+	a.qualityInfo = info
+	a.quality.SetText(info.Badge)
+	a.quality.SetToolTip(a.qualityToolTip(info))
+	if a.qualityPop != nil {
+		fynetooltip.DestroyPopUpToolTipLayer(a.qualityPop)
+		a.qualityPop.Hide()
+		a.qualityPop = nil
+	}
+	a.Refresh()
+}
+
+func (a *AuxControls) qualityToolTip(info QualityPathInfo) string {
+	parts := []string{info.Status}
+	if info.DeviceName != "" {
+		parts = append(parts, info.DeviceName)
+	}
+	if info.Reason != "" && !info.BitPerfectActive {
+		parts = append(parts, info.Reason)
+	}
+	return strings.Join(parts, " - ")
+}
+
+func (a *AuxControls) showQualityPath() {
+	canvas := fyne.CurrentApp().Driver().CanvasForObject(a.quality)
+	if canvas == nil {
+		return
+	}
+	info := a.qualityInfo
+	title := widget.NewLabelWithStyle(info.Status, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	rows := []fyne.CanvasObject{title, widget.NewSeparator()}
+	addRow := func(label, value string) {
+		if value == "" {
+			return
+		}
+		rows = append(rows, container.NewGridWithColumns(2,
+			widget.NewLabel(label),
+			widget.NewLabel(value),
+		))
+	}
+	addRow("Source", info.SourceFormat)
+	addRow("Decode", info.DecodePath)
+	addRow("Output", info.OutputPath)
+	addRow("DAC format", info.DACFormat)
+	addRow("Device", strings.TrimSpace(strings.Join([]string{info.DeviceName, info.DeviceTransport}, " ")))
+	addRow("Backend", info.PlaybackPath)
+	if info.DeviceMaxSampleRate > 0 || info.DeviceMaxBitDepth > 0 || info.PhysicalFormatCount > 0 {
+		addRow("DAC capability", fmt.Sprintf("%d-bit / %.1f kHz, %d physical (%d exclusive)",
+			info.DeviceMaxBitDepth,
+			float64(info.DeviceMaxSampleRate)/1000,
+			info.PhysicalFormatCount,
+			info.ExclusiveFormatCount))
+	}
+	if info.SourceIsDSD && info.DoPCarrierRate > 0 {
+		addRow("DoP carrier", fmt.Sprintf("%.1f kHz", float64(info.DoPCarrierRate)/1000))
+	}
+	if info.Reason != "" && !info.BitPerfectActive {
+		addRow("Reason", info.Reason)
+	}
+	content := container.NewPadded(container.NewVBox(rows...))
+	a.qualityPop = widget.NewPopUp(content, canvas)
+	fynetooltip.AddPopUpToolTipLayer(a.qualityPop)
+	pos := fyne.NewPos(0, -content.MinSize().Height-theme.Padding())
+	a.qualityPop.ShowAtRelativePosition(pos, a.quality)
 }
 
 func (a *AuxControls) CreateRenderer() fyne.WidgetRenderer {
@@ -102,19 +210,21 @@ func (a *AuxControls) OnShowCastMenu(f func(func())) {
 }
 
 type volumeSlider struct {
-	widget.Slider
+	ttwidget.Slider
 
 	Width float32
 }
 
 func NewVolumeSlider(width float32) *volumeSlider {
 	v := &volumeSlider{
-		Slider: widget.Slider{
-			Min:         0,
-			Max:         100,
-			Step:        1,
-			Orientation: widget.Horizontal,
-			Value:       100,
+		Slider: ttwidget.Slider{
+			Slider: widget.Slider{
+				Min:         0,
+				Max:         100,
+				Step:        1,
+				Orientation: widget.Horizontal,
+				Value:       100,
+			},
 		},
 		Width: width,
 	}
@@ -152,6 +262,9 @@ type VolumeControl struct {
 	delaySetVolume  bool
 	pendingVolume   int
 
+	softwareVolumeLocked bool
+	volumeLockReason     string
+
 	container *fyne.Container
 }
 
@@ -180,11 +293,50 @@ func NewVolumeControl(initialVol int) *VolumeControl {
 	return v
 }
 
+func (v *VolumeControl) SoftwareVolumeLocked() bool {
+	return v.softwareVolumeLocked
+}
+
+func (v *VolumeControl) SetSoftwareVolumeLocked(locked bool, reason string) {
+	if v.softwareVolumeLocked == locked && v.volumeLockReason == reason {
+		return
+	}
+	v.softwareVolumeLocked = locked
+	v.volumeLockReason = reason
+
+	if locked {
+		v.delaySetVolume = false
+		v.setDisplayedVolume(100)
+		v.icon.Disable()
+		v.slider.Disable()
+		v.icon.SetToolTip(reason)
+		v.slider.SetToolTip(reason)
+	} else {
+		if v.muted {
+			v.setDisplayedVolume(0)
+		} else {
+			v.setDisplayedVolume(v.lastVol)
+		}
+		v.icon.Enable()
+		v.slider.Enable()
+		v.icon.SetToolTip(lang.L("Mute"))
+		v.slider.SetToolTip("")
+	}
+	v.Refresh()
+}
+
 // Sets the volume that is displayed in the slider.
 // Does not invoke OnSetVolume callback.
 func (v *VolumeControl) SetVolume(vol int) {
 	if v.delaySetVolume {
 		v.pendingVolume = vol
+		return
+	}
+
+	if v.softwareVolumeLocked {
+		v.lastVol = vol
+		v.muted = false
+		v.setDisplayedVolume(100)
 		return
 	}
 
@@ -197,6 +349,10 @@ func (v *VolumeControl) SetVolume(vol int) {
 }
 
 func (v *VolumeControl) onChanged(volume float64) {
+	if v.softwareVolumeLocked {
+		v.setDisplayedVolume(100)
+		return
+	}
 	vol := int(volume)
 	v.delaySetVolume = true
 	v.setVolDebouncer()
@@ -207,6 +363,9 @@ func (v *VolumeControl) onChanged(volume float64) {
 }
 
 func (v *VolumeControl) toggleMute() {
+	if v.softwareVolumeLocked {
+		return
+	}
 	if !v.muted {
 		v.muted = true
 		v.lastVol = int(v.slider.Value)

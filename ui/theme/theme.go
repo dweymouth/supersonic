@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -118,12 +117,16 @@ func (m *MyTheme) ReloadThemeFile() {
 func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
 	// load theme file if necessary
 	if m.loadedThemeFile == nil || m.config.ThemeFile != m.loadedThemeFilename {
-		t, err := ReadThemeFile(path.Join(m.themeFileDir, m.config.ThemeFile))
-		if err == nil {
-			m.loadedThemeFile = t
-		} else {
-			log.Printf("failed to load theme file %q: %s", m.config.ThemeFile, err.Error())
+		if m.config.ThemeFile == "" {
 			m.loadedThemeFile = m.defaultThemeFile
+		} else {
+			t, err := ReadThemeFile(filepath.Join(m.themeFileDir, m.config.ThemeFile))
+			if err == nil {
+				m.loadedThemeFile = t
+			} else {
+				log.Printf("failed to load theme file %q: %s", m.config.ThemeFile, err.Error())
+				m.loadedThemeFile = m.defaultThemeFile
+			}
 		}
 		m.loadedThemeFilename = m.config.ThemeFile
 	}
@@ -235,7 +238,7 @@ func (m *MyTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 // Returns a map [themeFileName] -> displayName
 func (m *MyTheme) ListThemeFiles() map[string]string {
 	// Use filepath.Join to create a cross-platform file path
-	pattern := filepath.Join(m.themeFileDir, "/*.toml")
+	pattern := filepath.Join(m.themeFileDir, "*.toml")
 	files, err := filepath.Glob(pattern)
 	if err != nil {
 		log.Printf("Failed to glob files: %v", err)

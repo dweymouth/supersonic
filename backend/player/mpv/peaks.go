@@ -1,3 +1,5 @@
+//go:build mpv
+
 package mpv
 
 // #include <mpv/client.h>

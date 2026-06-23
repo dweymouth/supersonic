@@ -1,0 +1,100 @@
+[tools]
+go = "1.26.4"
+
+[tasks.build]
+description = "Build Supersonic with the localav backend"
+run = "go build -tags migrated_fynedo"
+
+[tasks."build:debug"]
+description = "Build Supersonic with localav/CoreAudio debug logging"
+run = "go build -tags 'migrated_fynedo debug' -gcflags='all=-N -l'"
+
+[tasks.launch]
+description = "Launch Supersonic from source"
+run = "go run -tags migrated_fynedo ."
+
+[tasks."launch:debug"]
+description = "Launch Supersonic from source with localav/CoreAudio debug logging"
+run = "go run -tags 'migrated_fynedo debug' ."
+
+[tasks.test]
+description = "Run the migrated localav test suite"
+run = "go test -tags migrated_fynedo ./..."
+
+[tasks."test:mpv"]
+description = "Run compatibility tests for the optional mpv backend"
+run = "go test -tags 'migrated_fynedo mpv' ./backend/player/mpv ./backend ./ui/browsing ./ui/widgets ./ui"
+
+[tasks.lint]
+description = "Run golangci-lint"
+run = "golangci-lint run"
+
+[tasks."tools:fyne"]
+description = "Install the Fyne packaging tool if missing"
+run = "command -v fyne >/dev/null || go install fyne.io/fyne/v2/cmd/fyne@latest"
+
+[tasks."package:macos"]
+description = "Create the macOS .app bundle"
+run = "mise run tools:fyne && fyne package -os darwin -tags migrated_fynedo"
+
+[tasks."bundledeps:macos:homebrew"]
+description = "Bundle Homebrew dylib dependencies into Supersonic.app"
+run = """
+command -v dylibbundler >/dev/null || { echo "dylibbundler not found. Install it with: brew install dylibbundler"; exit 1; }
+dylibbundler -od -b -x ./Supersonic.app/Contents/MacOS/supersonic -d ./Supersonic.app/Contents/Frameworks/ -p @executable_path/../Frameworks/
+codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "./Supersonic.app/Contents/MacOS/supersonic"
+"""
+
+[tasks."bundledeps:macos:macports"]
+description = "Bundle MacPorts dylib dependencies into Supersonic.app"
+run = """
+command -v dylibbundler >/dev/null || { echo "dylibbundler not found. Install it with: sudo port install dylibbundler"; exit 1; }
+dylibbundler -od -b -x ./Supersonic.app/Contents/MacOS/supersonic -d ./Supersonic.app/Contents/Frameworks/ -p @executable_path/../Frameworks/
+codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "./Supersonic.app/Contents/MacOS/supersonic"
+"""
+
+[tasks."zip:macos"]
+description = "Zip Supersonic.app"
+run = "zip --symlinks -r Supersonic.zip Supersonic.app/"
+
+[tasks."package:windows"]
+description = "Create the Windows executable bundle"
+run = "mise run tools:fyne && fyne package -os windows -tags migrated_fynedo"
+
+[tasks."package:linux"]
+description = "Create the Linux .tar.xz bundle"
+run = "mise run tools:fyne && fyne package -os linux -tags migrated_fynedo"
+
+[tasks.package]
+description = "Create a package for the current platform"
+run = """
+case "$(go env GOOS)" in
+  darwin) mise run package:macos ;;
+  linux) mise run package:linux ;;
+  windows) mise run package:windows ;;
+  *) echo "unsupported GOOS: $(go env GOOS)" >&2; exit 1 ;;
+esac
+"""
+
+[tasks.all]
+description = "Build and package everything needed for the current platform"
+run = """
+mise run build
+case "$(go env GOOS)" in
+  darwin)
+    mise run package:macos
+    mise run bundledeps:macos:homebrew
+    mise run zip:macos
+    ;;
+  linux)
+    mise run package:linux
+    ;;
+  windows)
+    mise run package:windows
+    ;;
+  *)
+    echo "unsupported GOOS: $(go env GOOS)" >&2
+    exit 1
+    ;;
+esac
+"""

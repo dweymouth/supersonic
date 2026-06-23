@@ -2,11 +2,14 @@ package util
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -16,6 +19,7 @@ type FileStreamerServer struct {
 	listener   net.Listener
 	server     *http.Server
 	done       chan struct{}
+	doneOnce   sync.Once
 }
 
 // NewFileStreamerServer creates a new server but doesn't start it yet.
@@ -59,13 +63,19 @@ func (fs *FileStreamerServer) Serve() error {
 	return fs.server.Shutdown(ctx)
 }
 
+func (fs *FileStreamerServer) signalDone() {
+	fs.doneOnce.Do(func() {
+		close(fs.done)
+	})
+}
+
 // Handler that streams the file using chunked transfer encoding.
-func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, _ *http.Request) {
-	defer close(fs.done) // signal Serve() to shut down after this request
+func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, req *http.Request) {
+	defer fs.signalDone() // signal Serve() to shut down after this request
 
 	file, err := os.Open(fs.Path)
 	if err != nil {
-		log.Println("File streamer failed to open source file")
+		log.Printf("File streamer failed to open source file %q: %v", fs.Path, err)
 		http.Error(w, "could not open file", http.StatusInternalServerError)
 		return
 	}
@@ -80,6 +90,10 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, _ *http.Reque
 	bytesRead := int64(0)
 	buf := make([]byte, 4096)
 	for {
+		if req.Context().Err() != nil {
+			break
+		}
+
 		complete := fs.IsComplete()
 		if !complete {
 			if s, err := os.Stat(fs.Path); err == nil {
@@ -100,7 +114,9 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, _ *http.Reque
 		if n > 0 {
 			_, err := w.Write(buf[:n])
 			if err != nil {
-				log.Printf("client write error: %v", err)
+				if !isFileStreamerClientDisconnect(err) {
+					log.Printf("client write error: %v", err)
+				}
 				break
 			}
 			if canFlush {
@@ -117,6 +133,19 @@ func (fs *FileStreamerServer) streamHandler(w http.ResponseWriter, _ *http.Reque
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
+}
+
+func isFileStreamerClientDisconnect(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, net.ErrClosed) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "broken pipe") ||
+		strings.Contains(msg, "connection reset by peer") ||
+		strings.Contains(msg, "client disconnected")
 }
 
 type handler struct {

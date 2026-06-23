@@ -12,7 +12,6 @@ import (
 
 	"github.com/dweymouth/supersonic/backend/mediaprovider"
 	"github.com/dweymouth/supersonic/backend/player"
-	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/backend/util"
 	"github.com/dweymouth/supersonic/sharedutil"
 )
@@ -94,7 +93,7 @@ type playbackEngine struct {
 	pendingPlayerChangeStatus player.Status
 
 	// set when restoring session state: track is conceptually loaded+paused
-	// but MPV hasn't been touched yet; cleared on Continue or playTrackAt
+	// but the local player hasn't been touched yet; cleared on Continue or playTrackAt
 	pendingLoadPaused    bool
 	pendingLoadStartTime float64
 
@@ -228,7 +227,7 @@ func (p *playbackEngine) SetPlayer(pl player.BasePlayer) error {
 	}
 
 	oldVol := p.player.GetVolume()
-	if _, isMPV := p.player.(*mpv.Player); !isMPV {
+	if _, isLocal := p.player.(player.LocalPlayer); !isLocal {
 		p.player.Destroy()
 	}
 	p.player = pl
@@ -464,6 +463,9 @@ func (p *playbackEngine) PlaybackStatus() PlaybackStatus {
 }
 
 func (p *playbackEngine) SetVolume(vol int) error {
+	if p.softwareVolumeLocked() {
+		return nil
+	}
 	vol = clamp(vol, 0, 100)
 	if err := p.player.SetVolume(vol); err != nil {
 		return err
@@ -472,6 +474,15 @@ func (p *playbackEngine) SetVolume(vol int) error {
 		cb(vol)
 	}
 	return nil
+}
+
+func (p *playbackEngine) softwareVolumeLocked() bool {
+	localPlayer, ok := p.player.(player.LocalPlayer)
+	if !ok {
+		return false
+	}
+	info, err := localPlayer.GetMediaInfo()
+	return err == nil && info.SoftwareVolumeLocked
 }
 
 func (p *playbackEngine) CurrentPlayer() player.BasePlayer {
@@ -992,8 +1003,8 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 					url = filepath
 				}
 			}
-			if mpvP, ok := p.player.(*mpv.Player); ok && !isTrack {
-				mpvP.ObserveIcyRadioTitle(func(icytitle string) {
+			if lpP, ok := p.player.(player.LocalPlayer); ok && !isTrack {
+				lpP.ObserveIcyRadioTitle(func(icytitle string) {
 					var title, artist string
 					if s := strings.Split(icytitle, " - "); len(s) == 2 {
 						title, artist = s[1], s[0]
@@ -1005,7 +1016,7 @@ func (p *playbackEngine) setTrack(idx int, next bool, startTime float64) error {
 					}
 				})
 			} else if ok {
-				mpvP.UnobserveIcyRadioTitle()
+				lpP.UnobserveIcyRadioTitle()
 			}
 			if url == "" {
 				return errors.New("no stream URL")
@@ -1148,6 +1159,10 @@ func (pm *playbackEngine) invokeNoArgCallbacks(cbs []func()) {
 }
 
 func (p *playbackEngine) startPollTimePos() {
+	if p.cancelPollPos != nil {
+		return // already polling
+	}
+
 	ctx, cancel := context.WithCancel(p.ctx)
 	p.cancelPollPos = cancel
 	pollFrequency := 250 * time.Millisecond
