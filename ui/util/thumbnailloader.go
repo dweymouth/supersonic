@@ -52,6 +52,7 @@ func (i *ThumbnailLoader) Load(coverID string) {
 		fyne.Do(func() {
 			if err != nil {
 				log.Printf("Error loading cover image: %s", err.Error())
+				i.callOnLoaded(nil)
 			} else {
 				i.callOnLoaded(img)
 			}

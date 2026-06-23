@@ -198,7 +198,7 @@ type Config struct {
 	PeakMeter        PeakMeterConfig
 }
 
-var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists", "Artists"}
+var SupportedStartupPages = []string{"Albums", "Favorites", "Playlists", "Artists", "All Tracks"}
 
 func DefaultConfig(appVersionTag string) *Config {
 	return &Config{
