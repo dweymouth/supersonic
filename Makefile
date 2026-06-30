@@ -34,7 +34,7 @@ package_windows:
 	fyne package -os windows -tags migrated_fynedo
 
 package_linux:
-	fyne package -os linux -tags migrated_fynedo
+	fyne package -os linux -tags migrated_fynedo,x11
 
 .PHONY: lint
 lint:
