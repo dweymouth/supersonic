@@ -21,7 +21,7 @@ jobs:
         with:
           go-version: 'stable'
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev
+        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
@@ -169,7 +169,7 @@ jobs:
         with:
           go-version: 'stable'
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev
+        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
       - name: Install Fyne tool
         run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Fyne package
@@ -217,7 +217,7 @@ jobs:
         with:
           go-version: 'stable'
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev
+        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
       - name: Build
         run: make build
       - name: Make appimage
