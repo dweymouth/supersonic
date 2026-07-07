@@ -1,11 +1,5 @@
-GO_TAGS := migrated_fynedo
-
-ifeq ($(shell uname -s),Linux)
-GO_TAGS := $(GO_TAGS),x11
-endif
-
 build:
-	go build -tags "$(GO_TAGS)"
+	go build -tags migrated_fynedo
 
 # dylibbundler doesn't seem to pick up on the Python framework dependency,
 # so the last 3 cmds move it over manually. This is a bit fragile though
@@ -34,7 +28,7 @@ package_windows:
 	fyne package -os windows -tags migrated_fynedo
 
 package_linux:
-	fyne package -os linux -tags migrated_fynedo,x11
+	fyne package -os linux -tags migrated_fynedo
 
 .PHONY: lint
 lint:
