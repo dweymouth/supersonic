@@ -242,7 +242,7 @@
     "Scrobble when": "Scrobbler quand",
     "Search": "Recherche",
     "Search Everywhere": "Rechercher dans toutes les données du serveur",
-    "Search headphones...": "Chercher casques...",
+    "Search headphones...": "Rechercher casques...",
     "Search page": "Recherche",
     "Search playlists or new playlist name": "Nom de liste de lecture à rechercher ou à créer",
     "Select Library": "Choisir une bibliothèque",
@@ -318,7 +318,7 @@
     "Username": "Nom d'utilisateur",
     "Visualizations": "Mesures graphiques",
     "Volume": "Volume",
-    "When enqueuing random": "Dans une mise en file d'attente",
+    "When enqueuing random": "Lors d'une mise aléatoire en file d'attente",
     "Year": "Année",
     "Year (ascending)": "Année (croissant)",
     "Year (descending)": "Année (décroissant)",
@@ -354,7 +354,32 @@
     "version": "version",
     "wrong URL": "URL invalide",
     "wrong username/password": "nom d'utilisateur ou mot de passe invalide",
+    "x_days_ago": {
+        "one": "hier",
+        "other": "il y a {{.days}} jours"
+    },
+    "x_hours_ago": {
+        "one": "il y a une heure",
+        "other": "il y a {{.hours}} heure"
+    },
     "x_minutes_ago": {
-        "other": "il y a 59 minutes"
+        "one": "il y a une minute",
+        "other": "il y a {{.minutes}} minutes"
+    },
+    "x_months_ago": {
+        "one": "il y a un mois",
+        "other": "il y a {{.months}} mois"
+    },
+    "x_years_ago": {
+        "one": "il y a un an",
+        "other": "il y a {{.years}} ans"
+    },
+    "{{.albumsCount}} albums": {
+        "one": "{{.albumsCount}} album",
+        "other": "{{.albumsCount}} albums"
+    },
+    "{{.trackCount}} tracks": {
+        "one": "{{.trackCount}} piste",
+        "other": "{{.trackCount}} pistes"
     }
 }
