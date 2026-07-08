@@ -7,10 +7,10 @@ To build Supersonic from source, first clone the Git repo or download the source
 ### Ubuntu dependencies
 * ``sudo snap install --classic go``
 * Make sure the Go bin directory is in your `$PATH` (`export PATH=~/go/bin:$PATH`)
-* ``sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev``
+* ``sudo apt install libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev``
 
 ### Debian dependencies
-* ``sudo apt install golang libmpv-dev gcc libegl1-mesa-dev xorg-dev``
+* ``sudo apt install golang libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev``
 
 ### Fedora dependencies
 ### Fedora dependencies

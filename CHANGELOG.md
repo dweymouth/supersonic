@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.21.1]
+
+### Added
+- [#887](https://github.com/dweymouth/supersonic/pull/887) Turkish translation
+
+### Fixed
+- [#877](https://github.com/dweymouth/supersonic/issues/877) Regression: library not loading for Funkwhale servers
+- [#895](https://github.com/dweymouth/supersonic/issues/895) Fix crash when playing track with index shorter than previous queue length while shuffling
+- [#888](https://github.com/dweymouth/supersonic/issues/888) Fix intermittent crash when creating share URLs
+- [#878](https://github.com/dweymouth/supersonic/pull/878) Close to dock behavior for MacOS
+- [#881](https://github.com/dweymouth/supersonic/issues/881) Regression: Sorting artist discography not working
+- [#875](https://github.com/dweymouth/supersonic/issues/875) Shuffle button on albums and playlists not working after introduction of queue shuffle mode feature
+
 ## [0.21.0]
 
 ### Added

@@ -122,7 +122,7 @@ func (a *RadiosPage) onSearched(query string) {
 	} else {
 		query = strings.ToLower(query)
 		result := sharedutil.FilterSlice(a.radios, func(x *mediaprovider.RadioStation) bool {
-			return strings.Contains(strings.ToLower(x.Name), query)
+			return strings.Contains(strings.ToLower(x.StationName), query)
 		})
 		a.list.SetRadios(result)
 	}
@@ -288,7 +288,7 @@ func NewRadioList(nowPlayingIDPtr *string) *RadioList {
 				row.EnsureUnfocused()
 				row.ListItemID = id
 				row.Item = a.radios[id]
-				row.nameLabel.Segments[0].(*widget.TextSegment).Text = row.Item.Name
+				row.nameLabel.Segments[0].(*widget.TextSegment).Text = row.Item.StationName
 				row.homePageLink.Text = row.Item.HomePageURL
 				if u, err := url.Parse(row.Item.HomePageURL); err == nil {
 					row.homePageLink.URL = u

@@ -16,6 +16,8 @@ import (
 	"github.com/dweymouth/supersonic/res"
 	"github.com/dweymouth/supersonic/res/wintaskbarthumbs"
 	"github.com/dweymouth/supersonic/ui"
+	"github.com/dweymouth/supersonic/ui/controller"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"golang.org/x/term"
 
@@ -133,6 +135,9 @@ func main() {
 		fyneApp.Run()
 	} else {
 		fyneApp.Lifecycle().SetOnStarted(func() {
+			if mode := fyne.CurrentApp().Settings().Theme().(*myTheme.MyTheme).AppearanceMode(); mode != myTheme.AppearanceAuto {
+				controller.SetWindowThemeMode(mainWindow.Window, mode)
+			}
 			defaultServer := myApp.ServerManager.GetDefaultServer()
 			if defaultServer == nil {
 				mainWindow.Controller.PromptForFirstServer()

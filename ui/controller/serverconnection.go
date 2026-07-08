@@ -49,14 +49,24 @@ func (m *Controller) PromptForFirstServer() {
 
 // DoConnectToServerWorkflow does the workflow for connecting to the last active server on startup
 func (c *Controller) DoConnectToServerWorkflow(server *backend.ServerConfig) {
-	pass, err := c.App.ServerManager.GetServerPassword(server.ID)
-	if err != nil {
-		log.Printf("error getting password from keyring: %v", err)
-		c.PromptForLoginAndConnect()
-		return
-	}
+	// GetServerPassword may block on keyring unlock (showing a system dialog),
+	// so run it in a goroutine to avoid freezing the Fyne event loop.
+	go func() {
+		pass, err := c.App.ServerManager.GetServerPassword(server.ID)
+		if err != nil {
+			log.Printf("error getting password from keyring: %v", err)
+			fyne.Do(c.PromptForLoginAndConnect)
+			return
+		}
 
-	// try connecting to last used server - set up cancelable modal dialog
+		// Password retrieved; show the dialog and connect from the Fyne thread
+		fyne.Do(func() {
+			c.doConnectWithPassword(server, pass)
+		})
+	}()
+}
+
+func (c *Controller) doConnectWithPassword(server *backend.ServerConfig, pass string) {
 	canceled := false
 	ctx, cancel := context.WithCancel(context.Background())
 	dlg := dialog.NewCustom(lang.L("Connecting"), lang.L("Cancel"),

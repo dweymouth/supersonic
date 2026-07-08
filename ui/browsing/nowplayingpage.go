@@ -330,6 +330,25 @@ func (a *NowPlayingPage) onImageLoaded(img image.Image, err error) {
 
 	fyne.Do(func() { a.card.SetCoverImage(img) })
 	if img == nil {
+		if a.conf.UseBackgroundImage {
+			fyne.Do(func() {
+				if !a.backgroundImgA.Hidden {
+					a.backgroundImgA.Hide()
+				}
+				if !a.backgroundImgB.Hidden {
+					a.backgroundImgB.Hide()
+				}
+			})
+		} else {
+			if a.backgroundGradient.StartColor != color.Transparent {
+				anim := canvas.NewColorRGBAAnimation(
+					a.backgroundGradient.StartColor, color.Transparent, myTheme.AnimationDurationMedium, func(c color.Color) {
+						a.backgroundGradient.StartColor = c
+						a.backgroundGradient.Refresh()
+					})
+				anim.Start()
+			}
+		}
 		return
 	}
 

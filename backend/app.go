@@ -160,6 +160,13 @@ func StartupApp(appName, displayAppName, appVersion, appVersionTag, latestReleas
 		a.AudioCache = ac
 	}
 	a.PlaybackManager = NewPlaybackManager(a.bgrndCtx, a.ServerManager, a.AudioCache, a.LocalPlayer, &a.Config.Playback, &a.Config.Scrobbling, &a.Config.Transcoding, &a.Config.Application)
+	a.PlaybackManager.CoverArtPathFn = func(coverArtID string) (string, error) {
+		// Ensure the thumbnail is cached on disk, then return its path so
+		// the DLNA player can expose it through the local proxy as
+		// upnp:albumArtURI.
+		a.ImageManager.GetCoverThumbnail(coverArtID)
+		return a.ImageManager.GetCoverArtPath(coverArtID)
+	}
 	a.Config.Application.MaxImageCacheSizeMB = clamp(a.Config.Application.MaxImageCacheSizeMB, 1, 500)
 	a.ImageManager.SetMaxOnDiskCacheSizeBytes(int64(a.Config.Application.MaxImageCacheSizeMB) * 1_048_576)
 	a.ServerManager.SetPrefetchAlbumCoverCallback(func(coverID string) {
@@ -717,6 +724,12 @@ func (a *App) checkFlagsAndSendIPCMsg(cli *ipc.Client) error {
 		return cli.Show()
 	case *FlagReloadTheme:
 		return cli.ReloadTheme()
+	case *FlagCurrentTrack:
+		data, err := cli.CurrentTrack()
+		if err == nil {
+			fmt.Println(data)
+		}
+		return err
 	case VolumeCLIArg >= 0:
 		return cli.SetVolume(VolumeCLIArg)
 	case VolumePctCLIArg != 0:
