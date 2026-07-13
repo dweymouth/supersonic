@@ -1,5 +1,29 @@
 # Change Log
 
+## [0.22.0]
+
+### Added
+- [#909](https://github.com/dweymouth/supersonic/issues/909) IPC endpoint for getting the current track/radio station
+- [#910](https://github.com/dweymouth/supersonic/pull/910) Support for the OpenSubsonic `playbackReport` extension
+- [#955](https://github.com/dweymouth/supersonic/pull/955) "All Tracks" option on the Startup page
+- Cover art support for internet radio stations
+- Updated Polish, Spanish, Greek, Turkish, and French translations
+
+### Changed
+- [#54](https://github.com/dweymouth/supersonic/issues/54) Migrate to Fyne 2.8, adding Wayland support
+- [#958](https://github.com/dweymouth/supersonic/pull/958) Match window border color to app theme rather than OS theme
+- [#803](https://github.com/dweymouth/supersonic/issues/803) Artist biography text now scrolls instead of being truncated
+
+### Fixed
+- [#560](https://github.com/dweymouth/supersonic/issues/560) UI freeze after switching workspaces on Wayland
+- [#823](https://github.com/dweymouth/supersonic/issues/823) Segfault when clicking the tray icon on Wayland
+- [#899](https://github.com/dweymouth/supersonic/issues/899) Crash/freeze when system keyring unlock dialog blocked the main event loop on startup
+- [#740](https://github.com/dweymouth/supersonic/issues/740) Race condition when using an alternate hostname caused 401 auth errors
+- [#917](https://github.com/dweymouth/supersonic/issues/917) UI scale setting not applied correctly when using a non-English language
+- [#931](https://github.com/dweymouth/supersonic/issues/931) DLNA cast DIDL-Lite metadata missing artist, album, cover art, and `<res>` audio attributes
+- Stale cover art and Now Playing background persisting on tracks without art
+- Autoplay (similar songs) incorrectly enqueuing tracks while a radio station is playing
+
 ## [0.21.1]
 
 ### Added

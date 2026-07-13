@@ -63,29 +63,44 @@
   </screenshots>
 
  <releases>
-  <release date="2026-04-05" version="0.21.1">
+  <release date="2026-07-13" version="0.22.0">
    <description>
      <p>
-       Version 0.21.1 of Supersonic
+       Version 0.22.0 of Supersonic
      </p>
 
      <p>
        Added
      </p>
      <ul>
-       <li>Turkish translation</li>
+       <li>IPC endpoint for getting the current track/radio station</li>
+       <li>Support for the OpenSubsonic playbackReport extension</li>
+       <li>"All Tracks" option on the Startup page</li>
+       <li>Cover art support for internet radio stations</li>
+       <li>Updated Polish, Spanish, Greek, Turkish, and French translations</li>
+     </ul>
+
+     <p>
+       Changed
+     </p>
+     <ul>
+       <li>Migrate to Fyne 2.8, adding Wayland support</li>
+       <li>Match window border color to app theme rather than OS theme</li>
+       <li>Artist biography text now scrolls instead of being truncated</li>
      </ul>
 
      <p>
        Fixed
      </p>
      <ul>
-       <li>Regression: library not loading for Funkwhale servers</li>
-       <li>Fix crash when playing track with index shorter than previous queue length while shuffling</li>
-       <li>Fix intermittent crash when creating share URLs</li>
-       <li>Close to dock behavior for MacOS</li>
-       <li>Regression: Sorting artist discography not working</li>
-       <li>Shuffle button on albums and playlists not working after introduction of queue shuffle mode feature</li>
+       <li>UI freeze after switching workspaces on Wayland</li>
+       <li>Segfault when clicking the tray icon on Wayland</li>
+       <li>Crash/freeze when system keyring unlock dialog blocked the main event loop on startup</li>
+       <li>Race condition when using an alternate hostname caused 401 auth errors</li>
+       <li>UI scale setting not applied correctly when using a non-English language</li>
+       <li>DLNA cast DIDL-Lite metadata missing artist, album, cover art, and &lt;res&gt; audio attributes</li>
+       <li>Stale cover art and Now Playing background persisting on tracks without art</li>
+       <li>Autoplay incorrectly enqueuing tracks while a radio station is playing</li>
      </ul>
 
    </description>
