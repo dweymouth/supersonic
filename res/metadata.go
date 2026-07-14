@@ -3,7 +3,7 @@ package res
 const (
 	AppName          = "supersonic"
 	DisplayName      = "Supersonic"
-	AppVersion       = "0.21.1"
+	AppVersion       = "0.22.0"
 	AppVersionTag    = "v" + AppVersion
 	ConfigFile       = "config.toml"
 	GithubURL        = "https://github.com/dweymouth/supersonic"
@@ -15,14 +15,23 @@ const (
 var (
 	WhatsAdded = `
 ## Added
-* Turkish translation`
+* IPC endpoint for getting the current track/radio station
+* Support for the OpenSubsonic playbackReport extension
+* "All Tracks" option on the Startup page
+* Cover art support for internet radio stations
+* Updated Polish, Spanish, Greek, Turkish, and French translations
+* Migrate to Fyne 2.8, adding Wayland support
+* Match window border color to app theme rather than OS theme
+* Artist biography text now scrolls instead of being truncated`
 
 	WhatsFixed = `
 ## Fixed
-* Regression: library not loading for Funkwhale servers
-* Fix crash when playing track with index shorter than previous queue length while shuffling
-* Fix intermittent crash when creating share URLs
-* Close to dock behavior for MacOS
-* Regression: Sorting artist discography not working
-* Shuffle button on albums and playlists not working after introduction of queue shuffle mode feature`
+* UI freeze after switching workspaces on Wayland
+* Segfault when clicking the tray icon on Wayland
+* Crash/freeze when system keyring unlock dialog blocked the main event loop on startup
+* Race condition when using an alternate hostname caused 401 auth errors
+* UI scale setting not applied correctly when using a non-English language
+* DLNA cast DIDL-Lite metadata missing artist, album, cover art, and <res> audio attributes
+* Stale cover art and Now Playing background persisting on tracks without art
+* Autoplay incorrectly enqueuing tracks while a radio station is playing`
 )

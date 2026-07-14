@@ -281,6 +281,8 @@ func (m *MainWindow) ReloadTheme() {
 
 func (m *MainWindow) StartupPage() controller.Route {
 	switch m.App.Config.Application.StartupPage {
+	case "All Tracks":
+		return controller.AllTracksRoute()
 	case "Artists":
 		return controller.ArtistsRoute()
 	case "Favorites":
@@ -555,6 +557,9 @@ func (m *MainWindow) addShortcuts() {
 func (m *MainWindow) showSettingsDialog() {
 	m.Controller.ShowSettingsDialog(func() {
 		fyne.CurrentApp().Settings().SetTheme(m.theme)
+		for _, w := range fyne.CurrentApp().Driver().AllWindows() {
+			controller.SetWindowThemeMode(w, m.theme.AppearanceMode())
+		}
 	}, m.theme.ListThemeFiles())
 }
 

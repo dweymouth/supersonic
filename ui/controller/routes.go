@@ -66,6 +66,10 @@ func AlbumRoute(albumID string) Route {
 	return Route{Page: Album, Arg: albumID}
 }
 
+func AllTracksRoute() Route {
+	return Route{Page: Tracks}
+}
+
 func FavoritesRoute() Route {
 	return Route{Page: Favorites}
 }

@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
@@ -26,6 +27,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -654,4 +656,23 @@ func (c *Controller) GetSongRadioTracks(sourceTrack *mediaprovider.Track) ([]*me
 	tracks := []*mediaprovider.Track{sourceTrack}
 	tracks = append(tracks, filteredTracks...)
 	return tracks, nil
+}
+
+func SetWindowThemeMode(win fyne.Window, mode myTheme.AppearanceMode) {
+	arg := 0
+	switch fyne.CurrentApp().Settings().Theme().(*myTheme.MyTheme).AppearanceMode() {
+	case myTheme.AppearanceDark:
+		arg = 1
+	case myTheme.AppearanceLight:
+		arg = 2
+	}
+	win.(driver.NativeWindow).RunNative(func(ctx any) {
+		switch runtime.GOOS {
+		case "darwin":
+			// ensure dark mode setting is applied to window controls in title bar on Mac
+			setWindowDarkTheme(ctx.(driver.MacWindowContext).NSWindow, arg)
+		case "windows":
+			setWindowDarkTheme(ctx.(driver.WindowsWindowContext).HWND, arg)
+		}
+	})
 }

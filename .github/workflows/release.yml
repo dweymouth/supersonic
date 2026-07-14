@@ -24,7 +24,7 @@ jobs:
             wget
             zip
             p7zip
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
@@ -39,8 +39,8 @@ jobs:
         run: make package_windows
       - name: Download mpv dll
         run: >
-          wget https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20260301/mpv-dev-x86_64-20260301-git-05fac7f.7z &&
-          7z x mpv-dev-x86_64-20260301-git-05fac7f.7z
+          wget https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20260610/mpv-dev-x86_64-20260610-git-304426c.7z &&
+          7z x mpv-dev-x86_64-20260610-git-304426c.7z
       - name: Download smtc dll
         run: >
           wget https://github.com/supersonic-app/smtc-dll/releases/download/v0.1.2/SMTC.dll
@@ -69,7 +69,7 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -102,7 +102,7 @@ jobs:
     runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -143,13 +143,13 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: 'stable'
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
+        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
       - name: Install Fyne tool
         run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Fyne package
@@ -167,13 +167,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: 'stable'
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
+        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
       - name: Install Fyne tool
         run: go install fyne.io/fyne/v2/cmd/fyne@latest
       - name: Fyne package
@@ -191,13 +191,13 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: 'stable'
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev
+        run: sudo apt update && sudo apt install -y libmpv-dev gcc libegl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
       - name: Build
         run: make build
       - name: Make appimage

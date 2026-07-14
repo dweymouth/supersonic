@@ -9,6 +9,7 @@ import (
 	"github.com/dweymouth/supersonic/backend/player"
 	"github.com/dweymouth/supersonic/backend/player/mpv"
 	"github.com/dweymouth/supersonic/ui/shortcuts"
+	myTheme "github.com/dweymouth/supersonic/ui/theme"
 	"github.com/dweymouth/supersonic/ui/util"
 	"github.com/dweymouth/supersonic/ui/visualizations"
 )
@@ -68,6 +69,7 @@ func (c *Controller) ShowPeakMeter() {
 		c.peakMeter.Refresh()
 	}
 	c.peakMeterWin.Show()
+	SetWindowThemeMode(c.peakMeterWin, fyne.CurrentApp().Settings().Theme().(*myTheme.MyTheme).AppearanceMode())
 }
 
 func (c *Controller) stopVisualizationAnim() {

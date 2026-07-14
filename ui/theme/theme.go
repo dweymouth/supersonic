@@ -115,6 +115,16 @@ func (m *MyTheme) ReloadThemeFile() {
 	m.loadedThemeFile = nil
 }
 
+func (m *MyTheme) AppearanceMode() AppearanceMode {
+	v := DefaultAppearance // default if config has invalid or missing setting
+	if slices.Contains(
+		[]string{string(AppearanceLight), string(AppearanceDark), string(AppearanceAuto)},
+		m.config.Appearance) {
+		v = AppearanceMode(m.config.Appearance)
+	}
+	return v
+}
+
 func (m *MyTheme) Color(name fyne.ThemeColorName, defVariant fyne.ThemeVariant) color.Color {
 	// load theme file if necessary
 	if m.loadedThemeFile == nil || m.config.ThemeFile != m.loadedThemeFilename {
