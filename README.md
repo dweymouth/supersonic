@@ -76,7 +76,7 @@ fedora 42+ <br/>
 
 * **(Debian) .tar.xz:** The.tar.xz builds from the Releases page support Debian-based distros. You **must** have libmpv installed on your system, and choose the correct release build (libmpv2 or libmpv1) based on which is available in your distro's package manager. On apt-based systems, run `sudo apt install libmpv1` (or libmpv2) if it is not already installed. To install the Linux release build, after ensuring the required libmpv is installed, extract the .tar.xz bundle and run `make user-install` or `sudo make install`.
 
-* **Packages:** On Linux, Supersonic is [available as a Flatpak](https://flathub.org/apps/details/io.github.dweymouth.supersonic). (Thank you @anarcat!) Third-party packages are also available for Arch and Nix OS. **Please note** that the Flatpak package currently does not support CJK fonts as the sandboxing breaks font lookup.
+* **Packages:** On Linux, Supersonic is [available as a Flatpak](https://flathub.org/apps/details/io.github.dweymouth.supersonic). (Thank you @anarcat!) Third-party packages are also available for Arch, Nix OS, and [Fedora (COPR)](https://copr.fedorainfracloud.org/coprs/coffeeicus/supersonic/). **Please note** that the Flatpak package currently does not support CJK fonts as the sandboxing breaks font lookup.
 
 ### Windows
 
