@@ -78,7 +78,6 @@ fedora 42+ <br/>
 
 * **Packages:** On Linux, Supersonic is [available as a Flatpak](https://flathub.org/apps/details/io.github.dweymouth.supersonic). (Thank you @anarcat!) Third-party packages are also available for Arch, Nix OS, and [Fedora (COPR)](https://copr.fedorainfracloud.org/coprs/coffeeicus/supersonic/). **Please note** that the Flatpak package currently does not support CJK fonts as the sandboxing breaks font lookup.
 
-
 ### Windows
 
 Download the [latest release](https://github.com/dweymouth/supersonic/releases). You can choose between the installer, or a standalone zip file which can be extracted and run without requiring system installation.
