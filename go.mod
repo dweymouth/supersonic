@@ -8,7 +8,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/boxes-ltd/imaging v1.7.5
 	github.com/cenkalti/dominantcolor v1.0.3
-	github.com/charlievieth/strcase v0.0.5
+	github.com/charlievieth/strcase v0.0.6
 	github.com/deluan/sanitize v0.0.0-20241120162836-fdfd8fdfaa55
 	github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c
 	github.com/dweymouth/fyne-tooltip v0.4.0
