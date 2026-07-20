@@ -1,4 +1,5 @@
 [Details]
+  ID = "io.github.dweymouth.supersonic"
   Icon = "res/appicon-512.png"
   Name = "Supersonic"
   Version = "0.22.0"

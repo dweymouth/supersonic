@@ -105,7 +105,7 @@ func main() {
 		}
 	}
 
-	fyneApp := app.New()
+	fyneApp := app.NewWithID(res.DesktopID)
 	fyneApp.SetIcon(res.ResAppicon256Png)
 
 	mainWindow := ui.NewMainWindow(fyneApp, res.AppName, res.DisplayName, res.AppVersion, myApp)
