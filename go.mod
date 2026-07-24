@@ -12,7 +12,7 @@ require (
 	github.com/deluan/sanitize v0.0.0-20241120162836-fdfd8fdfaa55
 	github.com/dweymouth/fyne-advanced-list v0.0.0-20250211191927-58ea85eec72c
 	github.com/dweymouth/fyne-tooltip v0.4.0
-	github.com/dweymouth/go-jellyfin v0.0.0-20250928223159-bd2fb9681ef5
+	github.com/dweymouth/go-jellyfin v0.0.0-20260422144755-ac6d50639b1a
 	github.com/go-audio/audio v1.0.0
 	github.com/go-audio/wav v1.1.0
 	github.com/godbus/dbus/v5 v5.2.2

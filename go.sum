@@ -30,8 +30,8 @@ github.com/dweymouth/fyne-tooltip v0.4.0 h1:ZkMhy4f8lHklyjNnKJlSEJ2pLPnYWVD7tu2+
 github.com/dweymouth/fyne-tooltip v0.4.0/go.mod h1:jXYbY561DTIXXqkauzltI3o/hsVaQd2KY8Ry2FXy7Xk=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20260707001049-35cc7c250c08 h1:1+Q8NdMlkW7hhfeTdCdFzbU6GCnOiwZshZBh3iBrWY4=
 github.com/dweymouth/fyne/v2 v2.3.0-rc1.0.20260707001049-35cc7c250c08/go.mod h1:+ETXlHUmD90jUgSCI91+f/nITsEIkb4cdC53SyAWhlE=
-github.com/dweymouth/go-jellyfin v0.0.0-20250928223159-bd2fb9681ef5 h1:Or5VJodg7cGmdnBIcS+FrEH0twBi7mZsFCz6V0vCOQI=
-github.com/dweymouth/go-jellyfin v0.0.0-20250928223159-bd2fb9681ef5/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
+github.com/dweymouth/go-jellyfin v0.0.0-20260422144755-ac6d50639b1a h1:+eCkDF2Os8Vr9MUM8Z0+JVw9Wq6hxcEyYyVCMrVYulo=
+github.com/dweymouth/go-jellyfin v0.0.0-20260422144755-ac6d50639b1a/go.mod h1:fcUagHBaQnt06GmBAllNE0J4O/7064zXRWdqnTTtVjI=
 github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0 h1:mYcctuWgVArHhSLJxndlUM43C3hoE18BLDBkXKM2tl0=
 github.com/dweymouth/go-wav v0.0.0-20250719173115-e60429a83eb0/go.mod h1:bp2870jtp/ixAJLIOdShBfl1WpyLGDZ57jnVWMgkgIc=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
