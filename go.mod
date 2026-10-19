@@ -1,11 +1,11 @@
 module github.com/supersonic-app/supersonic
 
-go 1.24.0
+go 1.26.0
 
 require (
 	fyne.io/fyne/v2 v2.8.0
 	github.com/20after4/configdir v0.1.1
-	github.com/Microsoft/go-winio v0.6.2
+	github.com/Microsoft/go-winio v0.6.4
 	github.com/boxes-ltd/imaging v1.7.5
 	github.com/cenkalti/dominantcolor v1.0.3
 	github.com/charlievieth/strcase v0.0.6
@@ -26,7 +26,7 @@ require (
 	github.com/supersonic-app/go-upnpcast v0.1.1-0.20260517163705-d76cd97c192f
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/net v0.50.0
-	golang.org/x/sys v0.41.0
+	golang.org/x/sys v0.49.0
 	golang.org/x/term v0.40.0
 	golang.org/x/text v0.34.0
 )
