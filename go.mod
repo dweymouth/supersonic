@@ -15,7 +15,7 @@ require (
 	github.com/dweymouth/go-jellyfin v0.0.0-20260422144755-ac6d50639b1a
 	github.com/go-audio/audio v1.0.0
 	github.com/go-audio/wav v1.1.0
-	github.com/godbus/dbus/v5 v5.2.2
+	github.com/godbus/dbus/v5 v5.2.4
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/pelletier/go-toml/v2 v2.4.2
