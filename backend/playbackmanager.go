@@ -770,6 +770,9 @@ func (p *PlaybackManager) Stop() {
 
 func (p *PlaybackManager) Shutdown() {
 	p.cmdQueue.StopAndWait()
+	if p.wfmGen != nil {
+		p.wfmGen.Close()
+	}
 }
 
 func (p *PlaybackManager) Pause() {
