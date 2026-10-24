@@ -296,7 +296,11 @@ func (p *playbackEngine) setShuffledPlayQueue(items []mediaprovider.MediaItem) {
 }
 
 func (p *playbackEngine) getPlayQueueItemAt(idx int) mediaprovider.MediaItem {
-	return p.getActivePlayQueue()[idx]
+	queue := p.getActivePlayQueue()
+	if idx < 0 || idx >= len(queue) {
+		return nil
+	}
+	return queue[idx]
 }
 
 func (p *playbackEngine) insertItemsIntoPlayQueueAt(items []mediaprovider.MediaItem, idx int, queueType QueueType) {
@@ -376,7 +380,7 @@ func (p *playbackEngine) playTrackAt(idx int, startTime float64) error {
 
 // Gets the curently playing media item, if any.
 func (p *playbackEngine) NowPlaying() mediaprovider.MediaItem {
-	if p.nowPlayingIdx < 0 || p.getPlayQueueLength() == 0 {
+	if p.nowPlayingIdx < 0 {
 		return nil
 	}
 	if !p.pendingLoadPaused && p.player.GetStatus().State == player.Stopped {
@@ -918,6 +922,10 @@ func (p *playbackEngine) handleOnTrackChange() {
 		p.pendingTrackChangeNum = -1
 	}
 	nowPlaying := p.getPlayQueueItemAt(p.nowPlayingIdx)
+	if nowPlaying == nil {
+		p.handleOnStopped()
+		return
+	}
 	_, isRadio := nowPlaying.(*mediaprovider.RadioStation)
 	p.isRadio = isRadio
 
